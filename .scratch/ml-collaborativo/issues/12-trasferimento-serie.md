@@ -54,3 +54,24 @@ serie stanno vicine alle serie perche il grafo e costruito sui metadati.
 
 Cura: un grafo costruito sulle POSIZIONI PROPAGATE (collaborative) metterebbe le serie vicino ai film.
 Il 41% scoperto non e un limite del metodo ma del grafo.
+
+---
+
+## TENTATIVO FALLITO (08/10/2026): pseudo-target dalle posizioni
+
+[Ricerca 17](../ricerche/17-serie-stesso-spazio.md). L idea dell utente (stesso spazio, stesso
+classificatore) e corretta ed e gia cosi; ma lo spazio ha un ASSE TIPO (AUC 0,979). Il tentativo di
+dare alle serie lo pseudo-target propagato ha PEGGIORATO tutto: AUC tipo 0,995, serie<->serie 0,502,
+serie<->film 0,095 (era 0,157), vicini film 1 (era 2), serie scoperte 43% (era 22%), e anche i film
+sono peggiorati (0,43 -> 0,419).
+
+Cause: (1) la propagazione propaga cio che i vicini contengono, e i vicini erano gia tipo-correlati ->
+rinforzo circolare; (2) 30.881 righe di pseudo-target (di cui 21.157 film senza teacher) = 44% della
+massa.
+
+L asse tipo e strutturale (i metadati determinano il tipo). Per toglierlo: debiasing avversariale,
+o dati serie veri (MAL), o TMDB recs a peso basso. E NON e un problema per il prodotto: la produzione
+filtra gia per tipo, la classifica avviene dentro un tipo.
+
+Il blocco POSF in build-film-graph.py va disattivato prima di ricostruire; film-graph-typeclean.npz
+non va usato.

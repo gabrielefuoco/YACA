@@ -252,8 +252,32 @@ mid_to_zi = {int(m): j for j, m in enumerate(mids)}
 for i in trainable:
     Yall[i] = Zitem[mid_to_zi[int(to_pos[i])]]
 
+# --- SERIE NELLO STESSO SPAZIO: pseudo-target dalla propagazione (i vicini FILM col teacher).
+# Oggi lo student addestra solo sui film e le serie finiscono in un grumo "fuori distribuzione":
+# un classificatore lineare sulle posizioni predice film/serie con AUC 0,979. Le serie entrano
+# nell'addestramento con un bersaglio PIU' DEBOLE (stabilita' 0,573 contro 0,7-0,83 dei film),
+# quindi peso 0,5: imparano la collocazione senza dominare il compito dei film.
+POSF = ROOT / ".cache" / "movielens" / "positions.json"
+pseudo_idx = np.array([], dtype="int64")
+if POSF.exists():
+    pos = json.loads(POSF.read_text())
+    rows_p = []
+    for i in range(len(cat)):
+        if to_pos[i] >= 0:
+            continue                                  # i film hanno il teacher vero
+        v = pos.get(f"{cat['type'].iloc[i]}:{int(cat['id'].iloc[i])}")
+        if v is None:
+            continue
+        Yall[i] = np.array(v, dtype=np.float32)
+        rows_p.append(i)
+    pseudo_idx = np.array(rows_p, dtype="int64")
+    log(f"  SERIE nello stesso spazio: {len(pseudo_idx):,} pseudo-target dalla propagazione (peso 0,5)")
+train_all = np.concatenate([train_idx, pseudo_idx])
+w_all = np.ones(len(train_all), dtype=np.float32)
+w_all[len(train_idx):] = 0.5
+
 model = Ridge(alpha=1.0, solver="lsqr", max_iter=500)
-model.fit(F[train_idx], Yall[train_idx])
+model.fit(F[train_all], Yall[train_all], sample_weight=w_all)
 pred_te = model.predict(F[test_idx])
 def cos_rows(A, B):
     A = A / (np.linalg.norm(A, axis=1, keepdims=True) + 1e-9)
@@ -377,3 +401,28 @@ np.savez_compressed(out, embeddings=P.astype(np.float32), member=member,
                     ids=cat["id"].to_numpy(), types=cat["type"].to_numpy(),
                     edges=np.array(sorted(edges), dtype=np.int32), topk=topk_idx)
 log(f"  scritto {out} (embeddings + cluster + archi k-NN)")
+
+# ============================================================ MISURA: lo spazio e' agnostico al tipo?
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+y_t = (cat["type"].to_numpy() == "tv").astype(int)
+if y_t.min() != y_t.max():
+    Pn_ = P / (np.linalg.norm(P, axis=1, keepdims=True) + 1e-9)
+    Xtr, Xte, ytr, yte = train_test_split(Pn_, y_t, test_size=0.2, random_state=SEED, stratify=y_t)
+    clf = LogisticRegression(max_iter=300).fit(Xtr, ytr)
+    log(f"  [TIPO] un classificatore lineare predice film/serie dalle posizioni con AUC "
+        f"{roc_auc_score(yte, clf.predict_proba(Xte)[:, 1]):.3f}   (prima: 0,979)")
+    tv_i = np.where(y_t == 1)[0]; fl_i = np.where(y_t == 0)[0]
+    rng2 = np.random.default_rng(SEED)
+    st = rng2.choice(tv_i, size=min(1500, len(tv_i)), replace=False)
+    sf = rng2.choice(fl_i, size=min(1500, len(fl_i)), replace=False)
+    log(f"  [PONTE] coseno serie<->serie {float((Pn_[st] @ Pn_[st].T).mean()):+.3f} · "
+        f"film<->film {float((Pn_[sf] @ Pn_[sf].T).mean()):+.3f} · "
+        f"serie<->film {float((Pn_[st] @ Pn_[sf].T).mean()):+.3f}   (prima: 0,405 / 0,153 / 0,157)")
+    NEI = [[] for _ in range(len(member))]
+    for a, b in edges:
+        NEI[int(a)].append(int(b)); NEI[int(b)].append(int(a))
+    nf = np.array([sum(1 for nb in NEI[nd] if y_t[nb] == 0) for nd in range(len(member))])
+    log(f"  [VICINI] vicini film di una serie: mediana {int(np.median(nf[tv_i]))} (prima 2) · "
+        f"serie senza alcun vicino film: {100*(nf[tv_i] == 0).mean():.0f}% (prima 22%)")
