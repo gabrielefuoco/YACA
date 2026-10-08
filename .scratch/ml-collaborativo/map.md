@@ -106,3 +106,27 @@ rigido e multi-interesse dell'utente.
 - `.scratch/livello-latente/` — DNA deterministico: **risolto e in produzione** (`a20add6`).
 - `.scratch/ocean-prototipo/` — OCEAN come vettore di punteggio: **respinto** sui numeri; sopravvive come
   *descrizione* per i giudici di dosaggio, mai come asse di scoring.
+
+## Il grafo vecchio non era usato correttamente — verificato l'08/10/2026
+
+Prima di costruire il grafo nuovo bisognava rispondere a «il vecchio viene usato bene?». **No.** Tre
+fenomeni, tutti **silenziosi** (`?.` e `|| []` non lanciano e non loggano):
+
+1. **`L1_adjacency` è morta** ([ticket 13](issues/13-l1-adjacency.md)): il codice la legge
+   (`HierarchicalGraph.js:117`), il JSON non la contiene (il builder la scrive, `build_graph.py:512`). Era la
+   **sola** sorgente di segnale *laterale* del grafo, e valeva **+90%…+164% di massa vettoriale** — senza di
+   essa due keyword in micro-cluster *vicini* hanno coseno **0**. Il "grafo a più livelli" oggi è solo una
+   gerarchia verticale: L0 54,8% · L1 27,4% · L2 13,5% · L3 2,7% · L4 1,3% · L5 **0,3%**.
+2. **`getKeywordsForNodeIds` restituisce NOMI in uno slot usato come ID** (`catalogStrategies.js:105`): le
+   chiavi di `kw_to_L1` sono nomi (`"evil"`), il DB costruisce le regole come `'k:' || (k->>'id')`, e il
+   risultato finisce in `F.keywordStr(k)` in due percorsi SQL (righe 672 e 1241). Che il mix sia reale lo dice
+   già il codice: l'ordinamento finale gestisce apposta sia numeri sia stringhe.
+3. **`children_L1` esiste solo sui nodi L2** (per progetto: il builder la scrive così, riga 441), ma
+   `getKeywordsForNodeIds` la cerca a ogni livello → con L3/L4 restituisce `[]` in silenzio. Oggi le chiamate
+   sono solo `'L2'` (righe 628, 1239): **latente**, non ancora un danno.
+
+E il file di produzione non è riproducibile dal builder del repo ([ticket 16](issues/16-json-non-riproducibile.md)).
+
+**Conseguenza per questo filone**: il termine di paragone di tutte le misure dell'imbuto è il grafo vecchio
+**con il segnale laterale spento**. Riaccenderlo costa quasi zero e va fatto *prima* di dichiarare che il
+grafo nuovo vince.

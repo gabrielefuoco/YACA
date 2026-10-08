@@ -1,23 +1,40 @@
-# 13 — `L1_adjacency`: scritto dal builder, assente dal JSON di produzione
+# 13 — `L1_adjacency`: il segnale laterale del grafo vecchio è morto in produzione
 
-**Status**: `needs-triage` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `ready-for-human` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Verificato**: 08/10/2026, con tre prove indipendenti (sotto)
 
-## Il fatto
+## Il fatto (non un sospetto: verificato)
 
-`offline_graph_builder/build_graph.py:512` **scrive** `L1_adjacency` — i collegamenti fra i macro-gruppi L1 —
-ma il JSON consumato in produzione **non la contiene**. Conseguenza: la **diffusione fra L1 non parte mai**,
-e il livello gerarchico, pur connesso per il 91% degli item, pesa una **mediana dello 0,1%** sul punteggio
-tematico ([report](../../livello-latente/ricerche/02-dosaggio.md)).
+| prova | esito |
+|---|---|
+| Il codice **legge** `L1_adjacency` | `HierarchicalGraph.js:117`: `const adj = this.data.L1_adjacency?.[l1Id]` |
+| Il JSON di produzione **non la contiene** | 7 chiavi: `metadata, kw_to_L1, L1, L2, L3, L4, L5` — l'adiacenza non c'è |
+| Il builder **la scrive** | `offline_graph_builder/build_graph.py:512`: `"L1_adjacency": final_adjacency_l1` |
 
-## Perché sta qui e non nel filone del DNA
+E l'`?.` non lancia e non logga: **`undefined`, zero errori**. Il meccanismo è morto senza che nessuno se ne
+accorgesse.
 
-Perché è il **collegamento fra i due filoni**: la mappa dei nodi e le loro adiacenze è esattamente la base su
-cui poggia l'idea degli embedding appresi ([ticket 09](09-embedding-appresi.md)). Non è un dettaglio di pulizia:
-è infrastruttura che esiste già da una parte e manca dall'altra.
+## Quanto valeva il pezzo morto
 
-## Cosa fare (da decidere)
+Il vettore di una keyword, coi pesi veri del codice, pesa **3,66** (L0 = 2, L1 = 1, L2 = 0,5, L3 = 0,1,
+L4 = 0,05, L5 = 0,01). La diffusione orizzontale aggiungeva fino a **+0,6 per ciascuno dei 10 micro-cluster
+vicini** → **+90% / +164%** di massa, e **tutta orizzontale**:
 
-1. Verificare se l'assenza è voluta (peso) o una dimenticanza del build di produzione.
-2. Se è una dimenticanza: ricostruire il JSON e **misurare** l'effetto del dosaggio
-   ([ticket 02 di `livello-latente`](../../livello-latente/issues/02-peso-livelli-alti.md)).
-3. **Tocca `src/` e la produzione**: richiede decisione esplicita dell'utente, non è un esperimento.
+> **Senza di essa, due keyword che stanno in micro-cluster *vicini* (non lo stesso) hanno coseno 0.**
+
+Conseguenza sulla struttura: il "grafo a più livelli" oggi è **solo una gerarchia verticale** —
+L0 54,8% · L1 27,4% · L2 13,5% · L3 2,7% · L4 1,3% · L5 **0,3%**. Coerente con quanto già misurato in
+`livello-latente`: la gerarchia si connette per il 91% degli item ma pesa una mediana dello 0,1% del punteggio.
+
+## Perché conta per il filone del grafo nuovo
+
+**Il termine di paragone di tutte le misure dell'imbuto è il grafo vecchio con il segnale laterale spento.**
+Riaccenderlo costa quasi zero (rigenerare la chiave) e va fatto **prima** di dichiarare che il grafo nuovo
+vince: altrimenti si confronta un grafo completo contro uno mutilato.
+
+## Cosa fare
+
+1. Rigenerare `hierarchical_graph.json` includendo `L1_adjacency` (o iniettarla come già si fa per la mappa
+   id→nome, che è la via a costo zero e già collaudata).
+2. **Misurare l'effetto**: il DNA e l'imbuto con e senza diffusione, a parità di tutto il resto.
+3. **Tocca `src/` e la produzione** → decisione esplicita dell'utente.
