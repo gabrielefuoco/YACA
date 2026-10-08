@@ -100,7 +100,10 @@ log(f"  lingua: {cat['original_language'].notna().mean()*100:.0f}% · paesi: {(c
 
 # ---------------------------------------------------------------- teacher
 log("\n=== teacher (SVD 64, corretta per popolarità) ===")
-covered_mids = set(int(x) for x in cat.loc[cat["type"] == "movie", "id"] if int(x) in movieid_by_tmdb)
+# il teacher vive nel namespace dei movieId di MovieLens: qui si converte UNA volta.
+# (l'errore del primo probe: filtrare i voti con i tmdbId — due namespace che collidono per caso)
+covered_mids = set(movieid_by_tmdb[int(x)] for x in cat.loc[cat["type"] == "movie", "id"]
+                   if int(x) in movieid_by_tmdb)
 ratings = pd.read_csv(ML / "ratings.csv", usecols=["userId", "movieId"], dtype="int32")
 ratings = ratings[ratings["movieId"].isin(covered_mids)]
 mids = sorted(covered_mids); mid_pos = {m: i for i, m in enumerate(mids)}
@@ -113,8 +116,9 @@ Xw = X.multiply((1.0 / np.log1p(np.maximum(n_item, 1)))[None, :]).tocsr()
 U, S, Vt = svds(Xw, k=EMB_DIM)
 Z = Vt.T
 Z = Z / (np.linalg.norm(Z, axis=1, keepdims=True) + 1e-9)
-row_of_teacher = {int(m): j for j, m in enumerate(mids)}
-cov = np.array([(t == "movie" and int(i) in row_of_teacher) for t, i in zip(cat["type"], cat["id"])], dtype=bool)
+row_of_teacher = {int(m): j for j, m in enumerate(mids)}          # chiave: movieId
+cov = np.array([(t == "movie" and int(i) in movieid_by_tmdb
+                 and movieid_by_tmdb[int(i)] in row_of_teacher) for t, i in zip(cat["type"], cat["id"])], dtype=bool)
 log(f"  film con teacher: {int(cov.sum()):,} su {int((cat['type']=='movie').sum()):,}")
 
 # ---------------------------------------------------------------- feature
@@ -201,7 +205,7 @@ log(f"  feature: base {FB.shape[1]} colonne · estese {FX.shape[1]} colonne (+{F
 log("\n=== A) IL RIDGE SOTTO-ADATTA? ===")
 Y = np.zeros((len(cat), EMB_DIM), dtype=np.float32)
 for i in np.where(cov)[0]:
-    Y[i] = Z[row_of_teacher[int(cat['id'].iloc[i])]]
+    Y[i] = Z[row_of_teacher[movieid_by_tmdb[int(cat['id'].iloc[i])]]]
 idx = np.where(cov)[0]
 perm = rng.permutation(idx)
 n_test = int(0.2 * len(perm))

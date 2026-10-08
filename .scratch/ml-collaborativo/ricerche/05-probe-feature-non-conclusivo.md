@@ -64,3 +64,58 @@ Due numeri in conflitto sulla stessa matematica sono un **buco nel metodo**, e v
 ancora" che pubblicare 0,044 come se fosse un risultato sul modello. Le conclusioni precedenti (teacher
 ortogonale, candidati densi 11 per mille, pool vero più stretto) **non dipendono** da questo: sono misure
 fatte con l'altro script, quello con il vettore medio a 0,224, e restano valide.
+
+---
+
+## Risoluzione (08/10/2026) — la causa era un errore mio di namespace
+
+**Il bug**: nel probe filtro i voti di MovieLens con i **tmdbId** invece che con i **movieId**
+(`ratings[ratings["movieId"].isin(covered_mids)]` dove `covered_mids` conteneva id TMDB). Sono due namespace
+diversi che **collidono per caso** sugli stessi numeri: la SVD veniva costruita su un insieme arbitrario. La
+diagnostica lo ha smascherato in una riga: **18.913 colonne vuote su 23.309** — cioè quasi tutte.
+
+Il `build-film-graph.py` faceva giusto (convertiva una volta sola, `to_pos` conteneva movieId). **La
+riconciliazione dice quindi: il build è corretto, il probe era rotto.** Il controllo del vettore medio è
+tornato a **0,224**, identico al riferimento.
+
+## I due test, ora validi
+
+Controllo del banale (vettore medio): **0,224**.
+
+| feature | held-out | in-sample | gap |
+|---|---|---|---|
+| BASE (topoi + generi + 5 numeriche) | 0,430 | 0,484 | **+0,054** |
+| **ESTESE** (+ lingua, persone, franchise, budget…) | **0,479** | 0,607 | +0,128 |
+
+### A) Il Ridge sotto-adatta? **No, poco** — e la leva sono le feature
+
+Il gap base è **+0,054**: il modello non sta sotto-adattando, quindi **una testa non lineare non è la prima
+leva**. Con le feature estese il gap sale (+0,128): lì c'è margine per regolarizzazione o riduzione di
+dimensionalità, ma **l'held-out migliora lo stesso**.
+
+Dove sbaglia il modello base (held-out):
+
+| fascia | coseno |
+|---|---|
+| 0-3 keyword / 4-8 / 9-15 / 16+ | 0,419 / 0,440 / 0,440 / 0,415 → **il numero di keyword conta poco** |
+| pre-1980 / 1980-1999 / 2000-2014 / 2015+ | 0,466 / **0,368** / 0,414 / 0,455 |
+| poveri di voti / medi / molto votati | **0,361** / 0,449 / 0,461 |
+
+Il buco non è «titoli con poche keyword»: è **film poco votati (0,361) e degli anni '80-'90 (0,368)**. Su quelli
+il teacher stesso è più debole (meno co-visione), non le feature.
+
+### B) Le feature che non usavamo: **valgono +0,049 di coseno** (0,430 → 0,479, +11% relativo)
+
+Lingua, persone (cast+registi/creatori, top 3.000), franchise (top 800), budget/incassi, `content_rating`,
+stagioni. Vanno **dentro il grafo** — ed è l'unico esperimento di oggi che ha migliorato il bersaglio.
+
+Due avvertenze dai numeri: le feature ad alta cardinalità (persone, franchise) alzano molto anche l'in-sample
+(+0,128 di gap) → **vanno regolarizzate o ridotte a embedding**; e i paesi di produzione restano da parsare
+(chiave `iso_3166_1`, non `id`) — erano 0% di copertura nel primo giro.
+
+## Il passo che segue
+
+Ricostruire il grafo con le feature estese (10 minuti) e **rimisurare l'imbuto** (`bench-graph-funnel.js`):
+il coseno migliore (+11%) si traduce in **candidati migliori**? Questa è la catena da tenere: feature →
+coseno → selezione dei candidati → liste servite. Se il miglioramento non arriva in fondo alla catena, non
+conta.
