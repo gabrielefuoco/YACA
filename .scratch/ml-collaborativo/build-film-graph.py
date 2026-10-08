@@ -148,7 +148,9 @@ log("\n=== 2. STUDENT: feature → embedding (Ridge, standard) ===")
 N_TOPO = len(l1_ids) + len(l2_ids) + len(l3_ids)
 rows_i, cols_i, vals_i = [], [], []
 genres_vocab = {}
-extra = np.zeros((len(cat), 6), dtype=np.float32)       # anno, log voti, bayes, durata, pop, è serie
+extra = np.zeros((len(cat), 5), dtype=np.float32)       # anno, log voti, bayes, durata, pop — NIENTE 'e'' serie':
+# era la feature che insegnava al modello a separare film e serie (ponte film->serie a 0%).
+# Il modello deve proiettare film e serie con la STESSA funzione dei metadati.
 topo_done = 0
 for i in range(len(cat)):
     names, genres, row = cat["kw_names"].iloc[i], cat["genres_set"].iloc[i], []
@@ -170,10 +172,10 @@ for i in range(len(cat)):
     y = cat["year"].iloc[i]
     extra[i] = [0.0 if pd.isna(y) else (y - 1990) / 30.0, np.log1p(cat["vote_count"].iloc[i]),
                 cat["bayes"].iloc[i], 0.0 if pd.isna(cat["runtime"].iloc[i]) else cat["runtime"].iloc[i] / 120.0,
-                np.log1p(cat["popularity"].iloc[i]), 1.0 if cat["type"].iloc[i] == "tv" else 0.0]
+                np.log1p(cat["popularity"].iloc[i])]
 F = sparse.hstack([sparse.csr_matrix((vals_i, (rows_i, cols_i)), shape=(len(cat), N_TOPO + len(genres_vocab))),
                    sparse.csr_matrix(extra)]).tocsr()
-log(f"  feature: {F.shape[1]} colonne ({N_TOPO} nodi del sottografo + {len(genres_vocab)} generi + 6 numeriche) · titoli con topoi {topo_done}/{len(cat)}")
+log(f"  feature: {F.shape[1]} colonne ({N_TOPO} nodi del sottografo + {len(genres_vocab)} generi + 5 numeriche) · titoli con topoi {topo_done}/{len(cat)}")
 
 trainable = np.array([i for i, p in enumerate(to_pos) if p >= 0], dtype="int64")
 shuffled = rng.permutation(trainable)
@@ -306,5 +308,6 @@ nmi = normalized_mutual_info_score(l2_of[ok], member[ok])
 log(f"\n  confronto con i topoi L2 della gerarchia: ARI {ari:.3f} · NMI {nmi:.3f} (0 = indipendenti)")
 out = OUT_DIR / "film-graph.npz"
 np.savez_compressed(out, embeddings=P.astype(np.float32), member=member,
-                    ids=cat["id"].to_numpy(), types=cat["type"].to_numpy())
-log(f"  scritto {out} (embeddings + assegnazione cluster)")
+                    ids=cat["id"].to_numpy(), types=cat["type"].to_numpy(),
+                    edges=np.array(sorted(edges), dtype=np.int32), topk=topk_idx)
+log(f"  scritto {out} (embeddings + cluster + archi k-NN)")

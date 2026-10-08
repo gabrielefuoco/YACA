@@ -59,3 +59,57 @@ l'unico modo in cui il grafo denso può fare il ponte che la gerarchia già fa.
 2. **Allargare il candidato** con una variante misurabile: 2-hop dal cluster, oppure i top-N cluster dei semi,
    e rimisurare copertura **e** densità (il trade-off è tutto lì). Solo dopo ha senso il test di retrieval
    completo col ranking.
+
+---
+
+## Addendum — candidati allargati, e una correzione mia
+
+### Candidati allargati (punto 2), a parità di posti
+
+| fonte | recupera (nel grafo) | candidati | **per 1.000 posti** |
+|---|---|---|---|
+| generi (pool di oggi) | 75,8% | 71.729 | 1 |
+| keyword | 67,4% | 14.095 | 5 |
+| **1 HOP dal seme** | 3,0% | **49** | **63** |
+| **2 HOP dal seme** | 12,3% (20,5% su tutta la cronologia) | **606** | **22** |
+| CLUSTER | 15,0% (22,8%) | 1.502 | 10 |
+| CLUSTER + cluster dei vicini | **25,2% (31,4%)** | 2.951 | 9 |
+
+Le tre varianti sono **complementari e tutte migliori del pool attuale come densità**:
+
+- **1 hop** (49 candidati, 63 per mille): la testa della lista, quasi tutta roba giusta;
+- **2 hop** (606 candidati, 22 per mille): la dimensione naturale di uno stadio di retrieval;
+- **cluster + cluster dei vicini** (2.951 candidati, copertura 31%): quando serve più copertura.
+
+Il pool di oggi resta l'unico che copre il 76%, ma con 71.729 candidati: non è uno stadio di retrieval, è il
+catalogo. **La proposta operativa**: il grafo fa il primo imbuto (49 → 606 → 3.000 candidati), il punteggio di
+produzione ordina. Questo non è ancora stato provato sul serving.
+
+### Correzione: il ponte film↔serie **non** è rotto
+
+Avevo ipotizzato che la feature `è_serie` separasse film e serie. **L'ho tolta e il risultato non è cambiato**
+(0% sui profili reali). Ho quindi controllato il grafo intero invece di fidarmi di quel numero:
+
+| misura | valore |
+|---|---|
+| cluster | 246 · **solo-film 85 · solo-serie 0 · misti (>5 film e >5 serie) 81** |
+| coseno medio film↔film | 0,254 |
+| coseno medio film↔serie | **0,325** (più alto: le due popolazioni non sono lontane) |
+
+Quindi il grafo **mescola** film e serie in un terzo dei cluster (un terzo abbondante, se si contano i misti
+piccoli), e non c'è nessuna separazione sistematica. Lo 0% sui cinque profili reali è un fatto dei **loro**
+titoli: film blockbuster/fantascienza (*Avatar*, *Oppenheimer*, *Chien 51*, *La tomba delle lucciole*) e serie
+sitcom/anime (*Scrubs*, *How I Met Your Mother*, *House of the Dragon*, *Berserk*, *Code Geass*). Sono
+micro-generi diversi, e **un buon sistema non deve forzarli insieme**. La conclusione precedente era sbagliata:
+l'avevo tratta da un numero (0%) senza guardare il grafo.
+
+### Cosa resta, in una riga ciascuno
+
+| | |
+|---|---|
+| il grafo esiste ed è navigabile | 87.848 titoli, 1 componente, 246 cluster (manopola: 254 a res 16, 827 a res 64) |
+| è una sorgente di **precisione** | 1 hop = 63 per mille contro 1 del pool attuale; 2 hop = 22 per mille con 606 candidati |
+| non è una sorgente di **copertura** | 31% al massimo con ~3.000 candidati, contro il 76% del pool (che ne usa 71.729) |
+| film e serie **convivono** | 81 cluster misti · coseno film↔serie 0,325 ≥ film↔film 0,254 |
+| è **indipendente** dalla gerarchia | ARI 0,055: struttura nuova, non una ricopiatura |
+| prossimo passo | provare il grafo come **primo imbuto** nel serving (1/2 hop → punteggio di produzione → top-50) e misurarlo sulle liste servite |

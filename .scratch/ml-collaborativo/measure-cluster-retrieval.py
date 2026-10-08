@@ -42,7 +42,15 @@ def log(m): print(m, flush=True)
 log("carico il grafo e i cataloghi...")
 g = np.load(GRAPH, allow_pickle=True)
 member = g["member"]; ids = g["ids"]; types = g["types"]
-log(f"  grafo: {len(member):,} nodi · {len(set(member.tolist()))} cluster")
+edges = g["edges"]
+log(f"  grafo: {len(member):,} nodi · {len(set(member.tolist()))} cluster · {len(edges):,} archi")
+
+# adiacenza per le varianti "allargate" (1 hop, 2 hop, cluster dei vicini)
+NEIGH = [set() for _ in range(len(member))]
+for a, b in edges:
+    NEIGH[int(a)].add(int(b))
+    NEIGH[int(b)].add(int(a))
+log(f"  grado medio: {np.mean([len(n) for n in NEIGH]):.1f} · massimo {max(len(n) for n in NEIGH)}")
 
 movies = pd.read_parquet(PQ / "movies.parquet", columns=["id", "title", "keywords", "genres"])
 tv = pd.read_parquet(PQ / "tv.parquet", columns=["id", "name", "keywords", "genres"])
@@ -87,6 +95,19 @@ for ctx, watched, inside in profiles:
         cluster_union = set()
         for r in seed_rows:
             cluster_union.update(cluster_members[int(member[r])])
+        # varianti allargate
+        one_hop = set()
+        for r in seed_rows:
+            one_hop |= NEIGH[r]
+        two_hop = set()
+        for r in seed_rows:
+            two_hop |= NEIGH[r]
+            for nb in NEIGH[r]:
+                two_hop |= NEIGH[nb]
+        cluster_plus = set(cluster_union)
+        for r in seed_rows:
+            for nb in list(NEIGH[r])[:5]:
+                cluster_plus.update(cluster_members[int(member[nb])])
         seed_gen = set().union(*[meta[s][1] for s in seeds])
         seed_kw = set().union(*[meta[s][0] for s in seeds])
 
@@ -103,8 +124,10 @@ for ctx, watched, inside in profiles:
             "caso": lambda t: row_of.get(t) in cluster_union,
             "generi (pool di oggi)": lambda t: bool(meta.get(t, (set(), set()))[1] & seed_gen),
             "keyword": lambda t: bool(meta.get(t, (set(), set()))[0] & seed_kw),
-            "CLUSTER": lambda t: row_of.get(t) in cluster_union,
-            "cluster + generi": lambda t: row_of.get(t) in cluster_union and bool(meta.get(t, (set(), set()))[1] & seed_gen),
+            "CLUSTER (1 hop logico)": lambda t: row_of.get(t) in cluster_union,
+            "CLUSTER + cluster dei vicini": lambda t: row_of.get(t) in cluster_plus,
+            "2 HOP dal seme": lambda t: row_of.get(t) in two_hop,
+            "1 HOP dal seme": lambda t: row_of.get(t) in one_hop,
         }
         for name, pred in sources.items():
             if name == "caso":
@@ -115,7 +138,7 @@ for ctx, watched, inside in profiles:
             hit_in, hit_all = covered(pred)
             cand = set_of(pred)
             results.append({"ctx": ctx, "source": name,
-                            "ceiling_obs": hit_in / max(1, len(gold_in)) if name != "CLUSTER" else len([g_ for g_ in gold_in if row_of.get(g_) in cluster_union]) / max(1, len(gold_in)),
+                            "ceiling_obs": hit_in / max(1, len(gold_in)),
                             "ceiling": hit_all / max(1, len(watched)),
                             "slots": len(cand),
                             "n_gold": len(gold_in), "n_all": len(watched)})
@@ -123,7 +146,7 @@ for ctx, watched, inside in profiles:
 df = pd.DataFrame(results)
 log("| fonte | tetto sui visti NEL GRAFO | tetto su TUTTA la cronologia | slot di candidati | **tetto per 1.000 slot** |")
 log("|---|---|---|---|---|")
-for name in ["caso", "generi (pool di oggi)", "keyword", "CLUSTER", "cluster + generi"]:
+for name in ["caso", "generi (pool di oggi)", "keyword", "1 HOP dal seme", "2 HOP dal seme", "CLUSTER (1 hop logico)", "CLUSTER + cluster dei vicini"]:
     sub = df[df["source"] == name]
     if len(sub) == 0:
         continue
