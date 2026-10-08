@@ -29,6 +29,16 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
 
 (async () => {
     await require('../livello-latente/bootstrap-map.js')();
+    // --- INIEZIONE DEL SEGNALE LATERALE (L1_adjacency): la chiave che la produzione non ha.
+    // Senza L1_ADJ il banco gira nello stato di oggi: grafo con diffusione orizzontale MORTA.
+    if (process.env.L1_ADJ) {
+        const adj = JSON.parse(fs.readFileSync(process.env.L1_ADJ, 'utf8'));
+        graph.data.L1_adjacency = adj;
+        if (typeof graph.invalidateKeywordCaches === 'function') graph.invalidateKeywordCaches();
+        console.log('[bench] L1_adjacency INIETTATA: ' + Object.keys(adj).length + ' cluster con vicini');
+    } else {
+        console.log('[bench] L1_adjacency ASSENTE (stato di produzione)');
+    }
     const trials = JSON.parse(fs.readFileSync(path.join(CACHE, 'graph-candidates.json'), 'utf8'));
 
     const keys = new Set();
@@ -47,6 +57,7 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         items.set(`${it.type}:${it.id}`, it);
     }
     console.log(`titoli nel pool proxy: ${items.size}`);
+    { const sz = [...items.values()].map(i => Object.keys(i.hVector).length).sort((a,b)=>a-b); console.log(`  chiavi del vettore gerarchico per item: mediana ${sz[sz.length>>1]} · max ${sz[sz.length-1]}  <- la prova che l iniezione e viva`); }
     // carico anche gli item dei trial fuori dal pool (i visti)
     const missing = [...keys].filter(k => !items.has(k));
     if (missing.length) {

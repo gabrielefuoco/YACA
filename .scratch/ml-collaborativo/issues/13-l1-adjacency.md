@@ -38,3 +38,32 @@ vince: altrimenti si confronta un grafo completo contro uno mutilato.
    id→nome, che è la via a costo zero e già collaudata).
 2. **Misurare l'effetto**: il DNA e l'imbuto con e senza diffusione, a parità di tutto il resto.
 3. **Tocca `src/` e la produzione** → decisione esplicita dell'utente.
+
+---
+
+## Misura (08/10/2026) — ricostruita, iniettata, misurata
+
+Report completo: [`ricerche/06-misura-diffusione-l1.md`](../ricerche/06-misura-diffusione-l1.md).
+
+**Ricostruzione** (`rebuild-l1-adjacency.py`, regola del builder: PPMI → archi fra cluster → top-50):
+**70.821 archi**, 1.381 cluster su 1.382 hanno vicini, sanità semantica confermata
+(`racing → car 26,6 · victory · motorcycle`). Il builder usava la *sua* PPMI fusa: questa è una
+ricostruzione dalla definizione classica, non l'originale (che non esiste più in nessuna cache).
+
+**Misura** (75 trial, 5 profili reali, scorer di produzione, iniezione via `L1_ADJ=`):
+
+| braccio | @50 A→B | @200 A→B | solo popolarità | caso |
+|---|---|---|---|---|
+| **graph 2 hop** (candidati fissi) | 5,9 → 5,9 | 8,7 → **9,2** | **4,9 → 4,9** | 2,8 → 3,5 |
+| POOL VERO | 1,9 → 1,9 | 4,2 → 4,9 | 0,9 → 0,9 | 2,8 → 3,5 |
+
+**Lettura**: sul braccio a candidati **fissi** il controllo popolarità resta fermo e lo scorer sale
+→ contributo marginale **3,8 → 4,3 (+13%)**, tutto in profondità (@50 fermo). Sul POOL VERO il
+numero sale ma **sale anche il controllo casuale**: la diffusione cambia i semi, quindi cambia il
+pool — **non attribuibile**.
+
+**Verdetto**: riaccenderlo è una decisione a sé — costo ~zero, rischio ~zero, guadagno **piccolo e
+solo in profondità**. Non è una vittoria, e il guadagno grande apparente non è suo.
+
+**Manca il test pulito**: pool fissato dai due run (esportare anche il pool vero in
+`export-graph-candidates.py` e leggerlo dal file) → la differenza sarebbe *solo* della diffusione.
