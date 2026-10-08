@@ -68,3 +68,18 @@ distinguere. Da *Mad Max* si arriva a *Sister Act*.
 - Altre dimensioni (10, 20, 50 assi) e altri spazi densi (embedding item-side): qui si è misurato il
   caso da 5, che è quello proposto.
 - Il racconto del profilo a partire da L3/L4 (`ui_name`): è presentazione, ha una sua mappa.
+
+## Secondo giro (08/10/2026) — i «bisogni» e il ponte film↔serie
+
+Dopo una precisazione dell'utente (OCEAN come *parte* del DNA: lunghezza, novità, complessità, temi
+ dominanti, per discriminare e non contaminare), due esperimenti in più — [report 02](ricerche/02-bisogni-e-crossmedia.md).
+
+| Ipotesi | Esito |
+|---|---|
+| «i suggerimenti sono quasi uguali fra i profili» | **Solo a metà**: Jaccard medio fra i 5 profili reali **9,4%** (liste quasi disgiunte), ma col *solo genere* due profili arrivano all'**85%**. La differenza la fanno le keyword: è quella la parte da potenziare |
+| la contaminazione (bambini/anime in un profilo generale) | **Confermata e localizzata**: il profilo `global` ha `16 Animazione` nel top-3 generi → **44/50 titoli per bambini e anime**. Non è il grafo: è la **composizione del vettore**, e ciò che la contiene oggi è la politica anime, non lo score |
+| i «bisogni» come gate sul punteggio (durata, epoca, nicchia) | **Nessuna prova solida** (40 prove): a 3 semi non fanno nulla, a 5 semi solo la durata ha segno coerente (+2,5 punti, dentro il rumore). Da non integrare così |
+| **associare i film alle serie** | **Confermata, e forte**: semi di soli film recuperano le serie nascoste al **18,2% @50** contro il 4,1% del caso — **4,4×**. Il ponte esiste già nello spazio delle keyword: manca solo di essere usato |
+| «quali elementi devono brillare» | **Aperta**: va misurata la *nitidezza* della cima (quanto la top-50 sta sopra la mediana del pool). Nessuno la misura oggi |
+
+Decisioni aggiunte: **D5** i «bisogni» non entrano come moltiplicatore di score (se entrano, come filtro/pavimento e con una misura più grande); **D6** la contaminazione si cura nella composizione del vettore e nella politica di tipo, non con nuovi assi; **D7** il ponte film↔serie è la leva pronta (zero costo di modello) e va verificato sulle liste servite.
