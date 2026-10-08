@@ -62,3 +62,62 @@ scoring, meno latenza, e una testa di lista più densa di titoli giusti.
   quelli con meno metadati). Serve il fallback, e va misurato quanto pesa.
 - Il grafo è **offline**: si ricostruisce periodicamente (nuovi titoli, nuovo MovieLens), non in tempo reale.
 - Non è stato toccato `src/`: la misura è fuori produzione. L'integrazione è un lavoro a sé, con i suoi test.
+
+---
+
+## Addendum — i buchi, cercati e trovati (08/10/2026)
+
+### Buco 1 (grave): il mio «pool attuale» era un proxy — e il pool VERO è peggiore
+
+Ho replicato la logica esatta di `fetchSmartAndPool`: **(uno dei top-3 generi del profilo) E (una keyword dei
+cluster dei top-3 nodi L2)**, con i nodi L2 espansi a keyword dal grafo.
+
+| sorgente | candidati | recall@50 | recall@200 |
+|---|---|---|---|
+| **grafo 2 hop** | 573 | **4,7%** | **8,0%** |
+| **POOL VERO (fetchSmartAndPool)** | 1.604 | **1,7%** | 4,1% |
+| pool proxy (generi condivisi) | 17.794 | 3,3% | 8,6% |
+| caso (\|2 hop\| dal pool vero) | 381 | 1,0% | 1,6% |
+
+**Il pool vero è più stretto del proxy e perde di più**: 1.604 candidati contro 17.794, e il suo tetto è
+**1,7% @50 contro 3,3%**. La causa è l'`AND` fra genere e keyword: il vincolo sulle keyword taglia via titoli
+che l'utente ha davvero guardato. Il grafo lo batte **2,8× @50 e 2× @200 con 3 volte meno candidati**.
+
+→ **Azione indipendente dal grafo**: allargare la generazione del pool (OR invece di AND fra genere e keyword,
+oppure più generi/keyword) è una correzione a costo quasi zero che vale da sola.
+
+### Buco 2 (grave): il vantaggio del grafo è nella SELEZIONE, non nell'ordinamento
+
+| sorgente | recall@50 con lo scorer | **recall@50 ordinando per POPOLARITÀ** | voti mediani dei candidati |
+|---|---|---|---|
+| graph 2 hop | 4,7% | **4,2%** | 162 |
+| graph 1 hop | 3,2% | 3,2% | 258 |
+| POOL VERO | 1,7% | 0,9% | 22 |
+| pool proxy | 3,3% | 0,0% | 144 |
+
+Dentro i candidati del grafo **la popolarità da sola prende 4,2 dei 4,7 punti**: lo scorer aggiunge +0,5. Il
+valore del grafo è *restringere bene* (17.794 → 573 aumentando la densità di titoli giusti), non ordinare
+meglio. Due conseguenze:
+
+- **buona notizia operativa**: l'imbuto funziona anche con un ranker quasi gratis → latenza bassa;
+- **cattiva notizia per la tesi «gusto»**: i vicini del grafo sono popolarità-correlati (la co-visione è
+  guidata da ciò che tutti guardano) e i titoli visti da questi profili sono popolari. Il vantaggio misurabile
+  è «selezione popolarità-consapevole», non «comprensione del gusto». Chi vuole il gusto deve migliorare la
+  **selezione**, e il posto per farlo è il *controllo di popolarità* già impostato nel teacher (`npmi`), non
+  il ranker.
+
+### Cosa NON è un buco (verificato)
+
+- **Il fallback per il 25% fuori dal grafo**: i titoli delle cronologie reali sono **tutti** nel grafo
+  (100%: 21/21, 20/20, 19/19). Il 25% mancante è catalogo senza keyword, non titoli visti. Il fallback serve,
+  ma pesa molto meno di quanto avessi scritto.
+- **La separazione film/serie**: smentita (81 cluster misti su 246, coseno film↔serie ≥ film↔film).
+
+### I buchi che restano aperti (e come si colmano)
+
+| buco | come si misura | costo |
+|---|---|---|
+| **Statistica debole**: 19-21 titoli per profilo, 5 profili | usare **utenti MovieLens tenuti fuori** dalla costruzione del grafo: migliaia di utenti, hold-out dei loro voti. Il grafo si costruisce su un sottoinsieme di utenti, si valuta sul resto | alto (ricostruzione del grafo su split utenti) |
+| **Stabilità ai parametri** (k=12, soglia 0,45, res 16) | rigirare il banco con k=8/20, soglia 0,35/0,55, res 8/32/64 e vedere se il vantaggio resta | medio |
+| **Popolarità come confondente** del vantaggio del grafo | rifare il banco **a parità di popolarità**: candidati del grafo e del pool appaiati per fascia di voti | medio |
+| **Il grafo invecchia**: MovieLens fermo a fine 2023, grafo offline | misurare la quota di catalogo 2024-2026 **senza** segnale collaborativo (i 2020s erano coperti al 36,5%): quelli dipendono dallo student, e va misurato quanto perdono | basso |
