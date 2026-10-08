@@ -124,3 +124,60 @@ mosse:
    di riferimento: risolve il «non possiamo validare sulle serie».
 3. **Levigatezza**: ridurre le feature ad alta cardinalità a embedding (node2vec, ticket 09) — un modello
    liscio nei metadati trasferisce, uno con un peso enorme su una singola persona no.
+
+---
+
+## Il protocollo giusto: bersaglio denoised e cold-start (08/10/2026)
+
+Le due mosse che l'osservazione dell'utente ha reso evidenti, misurate.
+
+### 1. Addestrare su una metà degli utenti, validare sull'altra
+
+I rumori delle due metà sono **indipendenti**: memorizzare il rumore di A non aiuta a predire B, quindi
+quello che resta nella misura è **solo il segnale trasferibile**. Il soffitto di questo confronto è
+`√(0,422) = 0,650`.
+
+| addestrato su | validato su | coseno | **quota del soffitto** |
+|---|---|---|---|
+| metà A | metà B | **0,362** | **56%** |
+| metà B | metà A | 0,357 | 55% |
+| media A+B (in-sample, riferimento) | — | 0,542 | — |
+
+**Il modello cattura il 56% del segnale trasferibile.** E i due giri sono concordi (56% e 55%), quindi
+non è un artefatto di una direzione. Nota: questo protocollo è **immune alla memorizzazione dei film**
+(il rumore di A non predice B) — è la misura più pulita che abbiamo.
+
+**Coerente con il resto**: il 0,500 contro il teacher intero era il **50%** del suo soffitto (0,771);
+qui, con un protocollo indipendente, è il **56%**. Due strade, stessa risposta: **siamo a metà del
+massimo, non al 75%.**
+
+### 2. Cold-start per regista: l'analogo su film del caso serie
+
+Si tengono fuori **tutti i film di un regista** (708 registi su 7.081 con ≥3 film, 3.296 film) e si
+misura lì. Controllo: un hold-out **casuale** della stessa taglia — per separare "cold-start" da "meno
+dati".
+
+| | film | coseno |
+|---|---|---|
+| **COLD-START (regista mai visto)** | 3.296 | **0,494** |
+| controllo: hold-out casuale | 3.296 | 0,507 |
+
+**Il divario è 1,3 punti (2,5% relativo): tenere fuori un'entità intera costa quasi nulla.** Il modello
+**non dipende dal memorizzare persone o franchise**: generalizza a entità mai viste. È l'evidenza
+migliore che possiamo avere sulle serie — dove il teacher non esiste e non possiamo misurare nulla.
+
+### La cautela che resta
+
+Un regista tenuto fuori ha comunque film **dentro la distribuzione** dei metadati (stessi generi, stessa
+epoca, stesso tipo di cast). Le serie sono un salto più grande: tipo diverso, durate diverse, stagioni,
+niente budget. E il probe film→serie di stamattina diceva che quel ponte **non è gratis** (0% nel grafo,
+nessuna vittoria netta in miscela). Quindi: **condizione necessaria, non sufficiente.**
+
+### Gli errori di questo giro (per il catalogo)
+
+1. **Il primo run ha dato −0,031**, un coseno *negativo* per un modello addestrato: **numero impossibile**.
+   Causa: i due spazi SVD differiscono per una **rotazione arbitraria** e non li avevo allineati — la
+   stessa cosa che avevo gestito con Procrustes nella misura del soffitto e poi dimenticato. Corretto con
+   Procrustes + un controllo dell'allineamento (coseno fra i due teacher dopo l'allineamento = 0,422 ✓).
+2. Lezione: **un numero impossibile va trattato come un bug, non come un risultato.** Il coseno negativo
+   non era "il modello non impara": era la mia rotazione.

@@ -234,3 +234,83 @@ evaluate("+ peso per affidabilita'", F, w=reliab)
 evaluate("+ peso, alpha 100", F, w=reliab, alpha=100.0)
 evaluate("MLP 256 (capacita')", F, model="mlp")
 log("\n  (previsione dichiarata prima: il peso aiuta SUL SOTTOINSIEME AFFIDABILE, l'MLP non batte il Ridge)")
+
+# ============================================================ 4. TRASFERIMENTO
+# Le due mosse che l'osservazione dell'utente ha reso evidenti:
+#  (1) BERSAGLIO DENOISED: addestrare su UNA meta' degli utenti e validare sull'ALTRA. I rumori delle
+#      due meta' sono INDIPENDENTI, quindi memorizzare il rumore di A non aiuta a predire B: quello che
+#      resta nella misura e' SOLO il segnale trasferibile. E' il protocollo giusto per questo problema.
+#      Il soffitto di questo confronto e' sqrt(0,422) = 0,650 (affidabilita' di UNA meta').
+#  (2) COLD-START per regista: si tengono fuori TUTTI i film di un regista e si misura li'. E' l'analogo
+#      su film del caso serie (entita' mai vista), con la verita' di riferimento. Controllo: un hold-out
+#      CASUALE della stessa taglia, per separare "cold-start" da "meno dati".
+log("\n=== 4. TRASFERIMENTO ===")
+users = np.sort(r["userId"].unique())
+halfmask = rng.permutation(len(users)) < len(users) // 2
+setA = set(int(u) for u in users[halfmask]); setB = set(int(u) for u in users[~halfmask])
+
+def build_teacher(uids):
+    rr = r[r["userId"].isin(uids)]
+    Xh = sparse.csr_matrix((np.ones(len(rr), dtype=np.float32),
+                            (rr["userId"].to_numpy(np.int32), rr["i"].to_numpy(np.int32))),
+                           shape=(int(rr["userId"].max()) + 1, len(covered)))
+    Xh.sum_duplicates(); Xh.data[:] = 1.0
+    n_i = np.asarray(Xh.sum(axis=0)).ravel()
+    Xhw = Xh.multiply((1.0 / np.log1p(np.maximum(n_i, 1)))[None, :]).tocsr()
+    _, _, Vt2 = svds(Xhw, k=EMB_DIM)
+    Zh = Vt2.T
+    return Zh / (np.linalg.norm(Zh, axis=1, keepdims=True) + 1e-9)
+
+ZA = build_teacher(setA); ZB = build_teacher(setB)
+# I due spazi SVD differiscono per una ROTAZIONE ARBITRARIA: senza allineare, il confronto non
+# significa nulla. (Il primo run ha dato -0,031, un numero impossibile per un modello addestrato:
+# era l'errore, non il risultato.) Procrustes: R ottimale da ZB a ZA. 64x64 = 4.096 parametri su
+# 49.709 film, ininfluente.
+U_, S_, Vt_ = np.linalg.svd(ZB.T @ ZA, full_matrices=False)
+ZB = ZB @ (U_ @ Vt_)
+log(f"  allineamento di Procrustes applicato a ZB (la rotazione fra i due spazi)")
+log(f"  controllo dell'allineamento: coseno medio fra i due teacher dopo Procrustes = "
+    f"{np.einsum('ij,ij->i', ZA, ZB).mean():.3f} (atteso ~0,422)")
+log(f"  due teacher indipendenti: {ZA.shape[0]:,} film ciascuno ({len(setA):,} e {len(setB):,} utenti)")
+
+def targets(Zh):
+    Yh = np.zeros((len(cat), EMB_DIM), dtype=np.float32)
+    for i in idx:
+        Yh[i] = Zh[row_of[movieid_by_tmdb[int(cat["id"].iloc[i])]]]
+    return Yh
+YA, YB = targets(ZA), targets(ZB)
+CEIL_HALF = np.sqrt(0.422)          # soffitto del confronto fra due meta'
+log(f"  soffitto di questo confronto: sqrt(0,422) = {CEIL_HALF:.3f}")
+log("\n  | addestrato su | validato su | coseno | quota del soffitto |")
+log("  |---|---|---|---|")
+for lbl, (Ytr_, Yte_) in [("meta' A", (YA, YB)), ("meta' B", (YB, YA)), ("media A+B", (None, None))]:
+    if Ytr_ is None:
+        Yavg = (YA + YB) / 2.0
+        m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(F[idx], Yavg[idx])
+        p = m.predict(F[idx])
+        # contro la MEDIA il confronto e' in-sample sul bersaglio: si riporta solo come riferimento
+        log(f"  | media A+B | (in-sample) | {cos(p, Yavg[idx]).mean():.3f} | — |")
+        continue
+    m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(F[idx], Ytr_[idx])
+    p = m.predict(F[idx])
+    c_ = cos(p, Yte_[idx]).mean()
+    log(f"  | {lbl} | l'altra meta' | {c_:.3f} | {100*c_/CEIL_HALF:.0f}% |")
+
+# cold-start per regista
+log("\n  COLD-START (analogo su film del caso serie):")
+dirs = [json.loads(s) if isinstance(s, str) else [] for s in cat["directors"]]
+keys = [tuple(sorted(int(x.get("id", 0)) for x in d if isinstance(x, dict))) for d in dirs]
+cnt = Counter(k for k in keys if k)
+eligible = [k for k, n in cnt.items() if n >= 3]
+held_dirs = set(eligible[i] for i in rng.choice(len(eligible), size=max(1, len(eligible) // 10), replace=False))
+cold = np.array([i for i in idx if keys[i] and keys[i] in held_dirs])
+rand_same = np.array([i for i in idx if i not in set(cold.tolist())])
+rand_same = rng.choice(rand_same, size=min(len(cold), len(rand_same)), replace=False)
+log(f"    registi tenuti fuori: {len(held_dirs):,} su {len(eligible):,} con >=3 film · film cold-start: {len(cold):,}")
+for lbl, hold in [("COLD-START (regista mai visto)", cold), ("controllo: hold-out casuale", rand_same)]:
+    keep = np.array([i for i in idx if i not in set(hold.tolist())])
+    m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(F[keep], Y[keep])
+    p = m.predict(F[hold])
+    log(f"    {lbl:<34} {len(hold):>6,} film · coseno {cos(p, Y[hold]).mean():.3f}")
+log("\n  (se il cold-start regge vicino al controllo, il modello generalizza a entita' mai viste:")
+log("   ed e' l'unica evidenza che possiamo avere sulle serie, dove il teacher non esiste)")
