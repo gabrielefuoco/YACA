@@ -13,6 +13,7 @@ Uso: offline_graph_builder/venv/Scripts/python.exe .scratch/ml-collaborativo/tra
 """
 import glob
 import json
+import os
 import pathlib
 
 import numpy as np
@@ -27,7 +28,8 @@ FEATS_NOGRAPH = ["prod", "lpop", "collab", "yeardiff", "genrec"]
 
 def load():
     rows = []
-    for f in sorted(glob.glob(str(CACHE / "ranker-*.ndjson"))):
+    pat = os.environ.get("ROWS_GLOB", "ranker-*.ndjson")
+    for f in sorted(glob.glob(str(CACHE / pat))):
         with open(f, encoding="utf-8") as fh:
             for line in fh:
                 if line.strip():
@@ -76,7 +78,10 @@ def main():
     tr = [r for r in rows if r["c"] in set(train)]
     te = [r for r in rows if r["c"] in set(test)]
     print(f"train: {len(train)} account ({len(tr):,} righe) · test: {len(test)} account ({len(te):,} righe)")
-    print(f"soffitto dell'universo: la verita' raggiungibile e' il {100*coverage(rows, rows):.1f}% (per costruzione)")
+    tf = os.environ.get("TRIALS_FILE", "graph-candidates-synth.json")
+    _raw = json.loads((CACHE / tf).read_text())
+    tot_gold = sum(len(t["gold"]) for t in (_raw["trials"] if isinstance(_raw, dict) else _raw))
+    print(f"soffitto dell'universo: {sum(r['y'] for r in rows):,} su {tot_gold:,} titoli della verita' = {100*sum(r['y'] for r in rows)/tot_gold:.1f}%")
 
     Xtr = np.array([[r[f] for f in FEATS] for r in tr], dtype=np.float64)
     ytr = np.array([r["y"] for r in tr])
