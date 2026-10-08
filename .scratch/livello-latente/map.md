@@ -102,3 +102,18 @@ con almeno un match). Con la mappa iniettata: **91%**.
 - [01 — La cache decideva il DNA: misurare il non determinismo](issues/01-cache-decide-il-dna.md) · `resolved` 08/10/2026 →
   [misura e fix](ricerche/01-misura-id-nome.md)
 - [02 — Il tono connette ma non conta: il peso dei livelli alti](issues/02-peso-livelli-alti.md) · `ready-for-agent`, `research`
+
+## Dosaggio della fusione — testato (08/10/2026)
+
+Il peso fra metà dichiarata e comportamentale non era mai stato misurato. Fatto: [report 02](ricerche/02-dosaggio.md).
+
+- **Banco (leave-out sulla cronologia vera, 120 prove)**: il dosaggio alto vince **solo in profondità**
+  (@200: 50% → 65% dà +2,9 pt, 80% dà +5,4 pt) e al limite della significatività (t ≈ 1,9; 8-12 estrazioni
+  su 20). In cima (@50) non cambia nulla.
+- **Difetto di forma della curva**: `0,85·T/(T+50)` assegna 5-32% dove il banco preferisce 50-100%, e lo fa
+  in modo coerente a ogni livello. Sottostima il comportamento.
+- **Verifica sulle liste servite**: segno opposto e piccolo — nitidezza −2/−4 pt, ponte film→serie 56% → 50%.
+  La nitidezza però non è invariante al dosaggio (un profilo più sparso appiattisce la distribuzione), quindi
+  è un indizio, non una prova.
+- **Verdetto**: non si cambia la curva su queste prove. Se si tocca, la verifica va fatta con i **giudici**
+  della rubrica `qc-cataloghi`, non con la nitidezza.
