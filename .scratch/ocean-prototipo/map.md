@@ -83,3 +83,24 @@ Dopo una precisazione dell'utente (OCEAN come *parte* del DNA: lunghezza, novit�
 | «quali elementi devono brillare» | **Aperta**: va misurata la *nitidezza* della cima (quanto la top-50 sta sopra la mediana del pool). Nessuno la misura oggi |
 
 Decisioni aggiunte: **D5** i «bisogni» non entrano come moltiplicatore di score (se entrano, come filtro/pavimento e con una misura più grande); **D6** la contaminazione si cura nella composizione del vettore e nella politica di tipo, non con nuovi assi; **D7** il ponte film↔serie è la leva pronta (zero costo di modello) e va verificato sulle liste servite.
+
+## Terzo giro (08/10/2026) — deploy, ricostruzione, verifica
+
+Fatto il deploy del fix id↔nome (`f4bbeb9` → immagine `ed1f1bad…`), ricostruiti i **10 profili** (5 reali +
+5 cloni) in 4,5 s, e misurato il prima/dopo sulle **liste servite** — [report 03](ricerche/03-deploy-e-verifica.md).
+
+| Misura (55 cataloghi serviti) | Prima | Dopo |
+|---|---|---|
+| Liste identiche | — | 22/55 (Jaccard medio 81,6%) |
+| Quota di lista nel top 5% del pool (nitidezza) | 30% | **33%** |
+| Percentile dell'ultimo item | 69% | 71% |
+| Quota bambini/animazione | 35% | **33%** |
+| Ponte film→serie (contro il caso 13%) | 49% | **56%** |
+
+Il guadagno è modesto in media e **concentrato dove il profilo era più povero** (`4159713d/hidden_gems_series`
+55% → 80% nel top 5%, con **−25 pt** di bambini/animazione). Il DNA dei profili reali è passato da ~1.400 a
+~2.065 chiavi, con le chiavi a nome che ora coprono quelle numeriche.
+
+**Trappola operativa**: gli hero vivono in `recommendation_cache` con **TTL 7 giorni** — dopo una ricostruzione
+i cataloghi restano vecchi finché non si svuota (`POST /api/admin/system/flush {"namespace":"recommendation_cache"}`).
+Senza quel passaggio, la prima misura "dopo" è tornata byte-identica al "prima".
