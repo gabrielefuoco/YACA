@@ -52,3 +52,37 @@ Controllo che il debiasing non distrugga il resto: **Il padrino ↔ Quei bravi r
 3. **Jev** resta l'ultima spiaggia, con la validazione sui film (protocollo TMDB: AUC 0,768) — e la
    precisazione dell'utente è giusta: un modello di decisione addestrato su giudizi umani non è "solo
    linguistico", ma non è co-visione.
+
+---
+
+## Trakt `/related`: alta qualità, ma **same-type** — e la conclusione strutturale
+
+10 titoli chiave (client id in `.env`, +User-Agent: senza, Trakt risponde non-JSON). Script:
+`trakt-related.js` → `.cache/movielens/trakt-related.json`.
+
+| titolo | Trakt suggerisce | tipo |
+|---|---|---|
+| **Attack on Titan** (serie) | Fullmetal Alchemist: Brotherhood · Hunter x Hunter · Berserk · Devilman Crybaby | **tutte serie** |
+| **Your Name** (film) | A Silent Voice · I Want to Eat Your Pancreas · The Girl Who Leapt Through Time | **tutti film** |
+| **The Last of Us** (serie) | Fallout · The Walking Dead · Station Eleven · The 100 | **tutte serie** |
+| **World War Z** (film) | I Am Legend · 28 Days Later · Land of the Dead · #Alive | **tutti film** |
+
+**La qualità è alta** — migliore delle raccomandazioni TMDB (The Last of Us → Fallout/TWD, World War Z →
+I Am Legend sono centrati). Ma **il `related` di Trakt è same-type**, esattamente come le raccomandazioni
+TMDB: `shows/{id}/related` restituisce serie, `movies/{id}/related` restituisce film.
+
+### La conclusione che ne segue (strutturale, non di gusto)
+
+**Nessun servizio di relatedness item-item che abbiamo trovato dà il ponte cross-tipo.** TMDB: same-type.
+Trakt: same-type. E le fonti comportamentali (MovieLens, MAL) sono per definizione mono-dominio.
+
+Quindi il ponte film↔serie può venire **solo** da:
+1. **la semantica del modello** (il lavoro di debiasing: 0,979 → 0,838, e il ponte già aperto a +0,311);
+2. **un modello di decisione** (Jev) che giudica *attraverso* i tipi — l'unico strumento che può farlo,
+   con la validazione sui film;
+3. **il comportamento dell'utente stesso** (chi guarda *sia* GoT *sia* Le crociate — la strada del DNA,
+   che l'utente ha messo per ultima).
+
+Trakt resta utile per altro: è una **validazione esterna della struttura within-type** (i nostri vicini
+di una serie, confrontati con quelli di Trakt, sono un metro che non dipende da noi) e una fonte di
+**relazioni same-type di qualità** se un giorno servisse rinforzare quel lato.
