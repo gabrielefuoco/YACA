@@ -65,3 +65,46 @@ MovieLens copre **0 serie**. Quindi:
 offline_graph_builder/venv/Scripts/python.exe .scratch/ml-collaborativo/probe2-teacher.py
 node .scratch/ml-collaborativo/export-histories.js   # cronologie reali (solo film) per il test leave-out
 ```
+
+---
+
+## Addendum — il test del trasferimento (probe3) e perché NON ha deciso
+
+Costruito secondo le tre decisioni: controllo di popolarità (target `npmi`), test del trasferimento
+film→serie, metrica = recupero della cronologia vera sul banco leave-out. Cronologie reali esportate:
+**5 film e 14-16 serie per profilo**.
+
+Risultato:
+
+| setting | modello | film nascosti @50 | **serie nascoste @50** | serie @200 |
+|---|---|---|---|---|
+| semi = SOLO FILM (trasferimento puro) | base (keyword) | — | **0,0%** | 0,0% |
+| | student | — | **0,0%** | 0,3% |
+| | teacher (oracolo film) | — | 0,0% | 0,0% |
+| semi = misti (realistico) | base (keyword) | 5,4% | **11,6%** | 32,1% |
+| | student | 1,6% | 9,1% | 19,8% |
+| | pop (controllo) | 0,0% | 8,5% | 14,0% |
+| | blend base+student | 2,1% | **14,0%** | 30,7% |
+| | teacher (oracolo film) | 20,4% | 0,0% | — |
+
+*(caso casuale @50 ≈ 1,6% · @200 ≈ 6,2%)*
+
+**Perché questo tabellone non risponde**: nel setting «semi = solo film» **tutti** i modelli fanno 0,0%
+sulle serie, incluso il baseline. Non è un risultato sul trasferimento: è un difetto dello strumento. Il
+proxy Python del baseline usa **solo keyword pesate IDF + generi**, mentre lo score di produzione passa
+anche dalla **gerarchia L1-L5** — ed è proprio la gerarchia il ponte che fa funzionare il trasferimento
+film→serie: l'avevo misurato stamattina in Node, **18,2% @50 contro il 4,1% del caso**, con il codice vero.
+Il proxy ha buttato via il ponte e quindi misura l'assenza del ponte.
+
+Secondo difetto: l'AUC 0,977 dello student in questo giro è **su dati di addestramento** (il probe2, con
+lo split per item, dava 0,920 — quello è il numero da usare).
+
+**Cosa serve per chiudere davvero il test** (una sola cosa, già chiara):
+
+1. il baseline deve essere lo **scorer di produzione** (Node, con L1-L5 e la curva logaritmica), non un proxy;
+2. lo student gira in Python → si esportano i suoi punteggi per coppia (semi × candidati) in JSON e si
+   fanno ordinare a Node, così i due concorrenti vedono lo stesso pool con la stessa metrica.
+
+Nel setting misto, per quel poco che vale, il blend batte il baseline **sulle serie @50** (14,0% vs 11,6%)
+ma **peggiora** su film (2,1% vs 5,4%) e su serie @200 (30,7% vs 32,1%): nessuna vittoria netta, e con un
+baseline mutilato non si può concludere nulla.
