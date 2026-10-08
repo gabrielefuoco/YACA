@@ -26,3 +26,18 @@ addestrato sui film, sappia collocare le serie.
 3. Il transfer va misurato **senza leakage**: la verità deve restare su item che lo student non ha visto.
 
 **Questo ticket è la priorità più alta fra gli aperti**: è l'unico che può ridimensionare tutto il resto.
+
+---
+
+## Aggiornamento (08/10/2026): il meccanismo c e, va misurato sulle serie
+
+Dalla [ricerca 15](../ricerche/15-le-due-strade.md): la **propagazione sul grafo dei film** (la
+posizione di un film = media pesata delle posizioni dei suoi vicini col teacher, normalizzata per
+grado, leave-one-out) **batte i metadati da sola** (A->B 0,369 con 64 dimensioni contro 0,362 con
+5.842) e sul **cold-start** fa 0,539 contro 0,494. Aggiunta ai metadati: cold-start **0,544** (+10%).
+
+Per una serie il meccanismo e naturale: i suoi vicini nel grafo sono FILM, che il teacher ce l hanno.
+
+**Prossimo passo di questo ticket**: misurare quante serie hanno almeno un vicino film con un teacher
+e con quale qualita (la propagazione funziona per 49.650 film su 49.709: 99,9%). Se la copertura serie
+e alta, il ticket si chiude con un meccanismo invece che con un 0%.

@@ -347,3 +347,121 @@ for lbl, M in [("topoi one-hot (oggi)", F), ("EMBEDDING appresi", sparse.csr_mat
     cr = cos(m.predict(M[rand_same]), Y[rand_same]).mean()
     log(f"  | {lbl} | {M.shape[1]:,} | {c_ab[0]:.3f} | {c_ba[0]:.3f} | {cs:.3f} | {cr:.3f} |")
 log("\n  (riferimenti: one-hot A->B 0,362 = 56% del soffitto 0,650 · cold-start 0,494 · controllo 0,507)")
+
+# ============================================================ 6. LE DUE STRADE DEL BRAINSTORMING
+# Strada 2: GRAFO COMPORTAMENTALE A LIVELLO DI KEYWORD. Per ogni keyword il centroide collaborativo
+#   dei film che la portano (dal teacher), similarita' fra keyword = coseno fra centroidi,
+#   sparsificazione top-k, embedding. La struttura NON e' la partizione in cluster (che il one-hot gia'
+#   contiene): e' comportamento, quindi la media delle keyword smette di essere ridondante.
+# Strada 1: PROPAGAZIONE SUL GRAFO DEI FILM. La posizione di un film = media pesata delle posizioni
+#   dei suoi VICINI (che il teacher ce l'hanno). Le keyword servono a trovare i vicini, non a essere
+#   la rappresentazione. E' il ponte per le serie, i cui vicini sono film.
+# In entrambe: leave-one-out (il film non contribuisce al proprio centroide ne' alla propria stima) e
+# le feature vengono dalla META' A mentre il bersaglio e' la META' B: rumori indipendenti.
+log("\n=== 6. LE DUE STRADE (feature dalla struttura) ===")
+kw_index = {k: i for i, k in enumerate(G["kw_to_L1"].keys())}
+NK = len(kw_index)
+trow_of_cat = np.full(len(cat), -1, dtype=int)
+for i in range(len(cat)):
+    if cat["type"].iloc[i] == "movie":
+        m = movieid_by_tmdb.get(int(cat["id"].iloc[i]))
+        if m is not None and m in row_of:
+            trow_of_cat[i] = row_of[m]
+kw_of_cat = []
+for raw in cat["keywords"]:
+    kw_of_cat.append([kw_index[n] for n in (str(k.get("name", "")).strip().lower()
+                                            for k in json.loads(raw)) if n in kw_index] if isinstance(raw, str) else [])
+log(f"  keyword: {NK:,} · film con riga teacher: {int((trow_of_cat>=0).sum()):,}")
+
+# --- centroidi per keyword dalla META' A (pesati per affidabilita', col contributo del film a parte)
+sumA = np.zeros((NK, EMB_DIM), dtype=np.float32); cntA = np.zeros(NK, dtype=np.float32)
+for i in idx:
+    if trow_of_cat[i] < 0:
+        continue
+    v = ZA[trow_of_cat[i]] * reliab[i]; w = reliab[i]
+    for j in kw_of_cat[i]:
+        sumA[j] += v; cntA[j] += w
+centA = sumA / np.maximum(cntA, 1e-9)[:, None]
+centA /= (np.linalg.norm(centA, axis=1, keepdims=True) + 1e-9)
+log(f"  centroidi collaborativi: {int((cntA>0).sum()):,} keyword con almeno un film")
+
+# --- grafo comportamentale fra keyword, sparsificato (top-K per nodo: le clique erano l'errore)
+K_NN = 20
+S_kw = centA @ centA.T
+np.fill_diagonal(S_kw, -1.0)
+top = np.argpartition(-S_kw, K_NN, axis=1)[:, :K_NN]
+r_, c_ = np.repeat(np.arange(NK), K_NN), top.ravel()
+A_kw = sparse.csr_matrix((S_kw[r_, c_].clip(0), (r_, c_)), shape=(NK, NK))
+A_kw = A_kw.maximum(A_kw.T)
+deg = np.asarray(A_kw.sum(1)).ravel(); dinv = 1.0 / np.sqrt(np.maximum(deg, 1e-9))
+An = sparse.diags(dinv) @ A_kw @ sparse.diags(dinv)
+U_k, S_k, _ = svds(An.tocsr(), k=EMB_DIM)
+Ekw = U_k * np.sqrt(np.maximum(S_k, 1e-9))
+Ekw /= (np.linalg.norm(Ekw, axis=1, keepdims=True) + 1e-9)
+log(f"  grafo keyword: {A_kw.nnz:,} archi · grado mediano {int(np.median(np.diff(A_kw.indptr)))} · "
+    f"prime 5 componenti {100*np.sum(S_k[-5:]**2)/np.sum(S_k**2):.0f}% della varianza")
+
+# --- feature strada 2: media (e max-pooling) degli embedding delle keyword, LOO sul proprio centroide
+FE2 = np.zeros((len(cat), EMB_DIM), dtype=np.float32)
+FE2max = np.zeros((len(cat), EMB_DIM), dtype=np.float32)
+for i in range(len(cat)):
+    js = kw_of_cat[i]
+    if not js:
+        continue
+    # LOO: si toglie il contributo del film stesso dal centroide delle sue keyword
+    w = reliab[i]
+    v = (sumA[js].sum(0) - w * (ZA[trow_of_cat[i]] if trow_of_cat[i] >= 0 else 0)) / np.maximum((cntA[js].sum() - w * len(js)), 1e-9)
+    v = v / (np.linalg.norm(v) + 1e-9)
+    cs = centA[js] @ v                                    # quanto ogni sua keyword e' vicina alla media
+    FE2[i] = Ekw[js].mean(0); FE2[i] /= (np.linalg.norm(FE2[i]) + 1e-9)
+    FE2max[i] = Ekw[js].max(0); FE2max[i] /= (np.linalg.norm(FE2max[i]) + 1e-9)
+log(f"  feature strada 2: {int((np.abs(FE2).sum(1)>0).sum()):,} titoli")
+
+# --- feature strada 1: propagazione sul grafo dei film (vicini con teacher, k-NN, LOO)
+fg = np.load(ROOT / ".cache" / "movielens" / "film-graph.npz", allow_pickle=True)
+fg_key = {f"{t}:{int(i)}": k for k, (t, i) in enumerate(zip(fg["types"], fg["ids"]))}
+NEIGH = [[] for _ in range(len(fg["member"]))]
+for a, b in fg["edges"]:
+    NEIGH[int(a)].append(int(b)); NEIGH[int(b)].append(int(a))
+cat_key = {f"{cat['type'].iloc[i]}:{int(cat['id'].iloc[i])}": i for i in range(len(cat))}
+node2cat = {fg_key[k]: cat_key[k] for k in fg_key if k in cat_key}
+FE3 = np.zeros((len(cat), EMB_DIM), dtype=np.float32)
+n_prop = 0
+for i in idx:
+    k = f"{cat['type'].iloc[i]}:{int(cat['id'].iloc[i])}"
+    nd = fg_key.get(k)
+    if nd is None:
+        continue
+    vs, ws = [], []
+    for nb in NEIGH[nd]:
+        j = node2cat.get(nb)
+        if j is None or j == i or trow_of_cat[j] < 0:
+            continue
+        vs.append(ZA[trow_of_cat[j]]); ws.append(1.0 / max(1.0, len(NEIGH[nb]) ** 0.5))   # normalizza per grado (hubness)
+    if not vs:
+        continue
+    v = np.average(np.array(vs), axis=0, weights=np.array(ws))
+    FE3[i] = v / (np.linalg.norm(v) + 1e-9); n_prop += 1
+log(f"  feature strada 1: {n_prop:,} titoli con almeno un vicino col teacher")
+
+log("\n  | feature | dim | A->B | cold-start | controllo |")
+log("  |---|---|---|---|---|")
+for lbl, M in [("one-hot (oggi)", F),
+               ("strada 2: embedding comportamentale", sparse.csr_matrix(FE2)),
+               ("strada 2b: max-pooling", sparse.csr_matrix(FE2max)),
+               ("strada 1: propagazione dai vicini", sparse.csr_matrix(FE3)),
+               ("one-hot + strada 2", sparse.hstack([F, sparse.csr_matrix(FE2)]).tocsr()),
+               ("one-hot + strada 1", sparse.hstack([F, sparse.csr_matrix(FE3)]).tocsr()),
+               ("one-hot + entrambe", sparse.hstack([F, sparse.csr_matrix(FE2), sparse.csr_matrix(FE3)]).tocsr())]:
+    m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[idx], YA[idx])
+    ab = cos(m.predict(M[idx]), YB[idx]).mean()
+    keep = np.array([i for i in idx if i not in set(cold.tolist())])
+    m2 = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[keep], Y[keep])
+    cs = cos(m2.predict(M[cold]), Y[cold]).mean()
+    keepr = np.array([i for i in idx if i not in set(rand_same.tolist())])
+    m3 = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[keepr], Y[keepr])
+    cr = cos(m3.predict(M[rand_same]), Y[rand_same]).mean()
+    log(f"  | {lbl} | {M.shape[1]:,} | {ab:.3f} | {cs:.3f} | {cr:.3f} |")
+log("\n  (riferimenti: one-hot A->B 0,362 · cold-start 0,494 · controllo 0,507 · banale 0,224)")
+log("   avvertenza dichiarata: il GRAFO dei film e' costruito dalle previsioni dello student, quindi la")
+log("   strada 1 porta una circolarita' residua — la si misura come INCREMENTO su one-hot, non da sola)")
