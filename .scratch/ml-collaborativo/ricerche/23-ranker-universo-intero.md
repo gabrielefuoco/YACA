@@ -64,15 +64,15 @@ soffitto dell'universo: 9,305 su 13,950 titoli della verita' = 66.7%
 1. **Il ranker tiene la sua leadership su un universo 5 volte piu' grande**: 5,1% contro 3,5% della
    popolarita' (**+46%**) e 2,4x lo scorer di produzione. La gerarchia e' la stessa dei due universi:
    ranker > popolarita' > posizione collaborativa > scorer di produzione > generi.
-2. **La quota del raggiungibile crolla** (dal 78% del vecchio universo al ~6%), ma il raggiungibile ora
-   e' l'85-89% invece del 22,8%: i titoli che il vecchio strumento non vedeva erano i piu' difficili
+2. **La quota del raggiungibile crolla** (dal 79% del vecchio universo all'8%), ma il raggiungibile ora
+   e' il 66,7% invece del 22,8%: i titoli che il vecchio strumento non vedeva erano i piu' difficili
    (nicchia, 199 voti mediani contro 4.872). **Il compito e' piu' difficile, non il risultato peggiore**:
-   su 10k candidati, 50 posti prendono il 6% di tutto cio' che si puo' prendere.
+   su 10k candidati, 50 posti prendono l'8% di tutto cio' che si puo' prendere (popolarita' 5%, scorer 3%).
 3. **Il pattern e' stabile su due universi indipendenti**: `prod` pesa +0.03 in entrambi (**zavorra**),
    `collab` e' la seconda feature in entrambi (+0.65 e +0.79), il guadagno e' tutto sulla nicchia
    (fondo: 3,3% contro 1,4% = **2,4x** la popolarita'; resto: 10,0% contro 9,6% = **pari**).
-4. Quindi: la **generazione** e' risolta dal 2 hop del grafo (85% raggiungibile, contro il 67% del pool
-   da solo); l'**ordinamento** batte la popolarita' grazie alla nicchia; **il lavoro che resta e' trovare
+4. Quindi: la **generazione** e' risolta dal 2 hop del grafo (66,7% raggiungibile con il pool vero, 89,2% con
+   il pool intero: vedi sotto); l'**ordinamento** batte la popolarita' grazie alla nicchia; **il lavoro che resta e' trovare
    la nicchia dentro 10k candidati**, ed e' esattamente dove il collaborativo e' l'unica cosa che funziona
    (sul fondo la sola posizione collaborativa fa 2x la popolarita': 2,8% contro 1,4%).
 5. **Una feature instabile, da non usare**: `yeardiff` passa da +0.02 a -0.17 fra i due universi e cambia
@@ -87,3 +87,23 @@ soffitto dell'universo: 9,305 su 13,950 titoli della verita' = 66.7%
 - **La serie**: non misurate da nessuno strumento (MovieLens e' solo film).
 - **La produzione**: le feature che vincono (posizione collaborativa, vicinato del grafo) esistono solo
   nel prototipo. Portarle in `src/` e' un lavoro a parte, e servirebbe training data vero.
+
+
+## Il filtro del pool costa 22 punti (trovato calcolando il soffitto)
+
+Il soffitto di questo run e' **66,7%** (9.305 su 13.950), non l'89,2% che lo sweep aveva misurato.
+Non e' un errore dello sweep: lo sweep usava il **pool proxy intero** (18k titoli popolari), questo run
+il **pool di produzione filtrato** (i titoli che passano il filtro genere+keyword del profilo, ~3k).
+
+**Differenza: 89,2% - 66,7% = 22,5 punti di verita' che il filtro del pool butta via.**
+
+Il pool e' solo la lista da cui l'ordinamento pesca: **filtrarlo in anticipo elimina titoli che il ranker
+saprebbe ordinare bene**. Allargare il pool (o togliere il filtro e lasciare che sia l'ordinamento a
+decidere) e' **il guadagno piu' economico trovato in tutta la giornata**: nessun modello nuovo, nessuna
+feature nuova, solo non scartare candidati prima di ordinarli.
+
+## Correzione al mio stesso report
+
+Avevo scritto "il raggiungibile ora e' l'85-89%": **sbagliato**, era una stima non calcolata. Il numero
+esatto e' 66,7%. L'ho scoperto calcolando il soffitto *dopo* aver scritto la conclusione: la lezione e'
+che il soffitto va **calcolato**, non stimato, e prima di scrivere.
