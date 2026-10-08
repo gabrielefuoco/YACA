@@ -56,10 +56,15 @@ log(f"  links.csv: {len(links)} righe · tmdbId distinti {links['tmdbId'].nuniqu
 
 movies = pd.read_parquet(PQ / "movies.parquet", columns=["id", "title", "keywords", "genres", "release_date",
                                                         "vote_count", "vote_average", "runtime", "original_language",
-                                                        "production_countries", "popularity"])
+                                                        "production_countries", "popularity", "cast", "directors",
+                                                        "collection_id", "budget", "revenue", "content_rating"])
 tv = pd.read_parquet(PQ / "tv.parquet", columns=["id", "name", "keywords", "genres", "first_air_date",
                                                  "vote_count", "vote_average", "original_language",
-                                                 "production_countries", "popularity"])
+                                                 "production_countries", "popularity", "cast", "created_by",
+                                                 "content_rating", "number_of_seasons"])
+movies["number_of_seasons"] = np.nan
+tv["budget"] = np.nan; tv["revenue"] = np.nan; tv["collection_id"] = np.nan
+tv["directors"] = tv["created_by"]
 movies["type"] = "movie"; tv["type"] = "tv"
 movies["date"] = movies["release_date"]; tv["date"] = tv["first_air_date"]
 tv["title"] = tv["name"]; tv["runtime"] = np.nan
@@ -175,6 +180,59 @@ for i in range(len(cat)):
                 np.log1p(cat["popularity"].iloc[i])]
 F = sparse.hstack([sparse.csr_matrix((vals_i, (rows_i, cols_i)), shape=(len(cat), N_TOPO + len(genres_vocab))),
                    sparse.csr_matrix(extra)]).tocsr()
+
+# --- FEATURE ESTESE (probe4: valgono +0,049 di coseno held-out)
+# lingua · paesi · persone (cast+registi/creatori) · franchise · budget/incassi · rating · stagioni
+def json_list(s, key):
+    if not isinstance(s, str) or not s:
+        return []
+    try:
+        v = json.loads(s)
+    except Exception:
+        return []
+    out = []
+    for x in v if isinstance(v, list) else []:
+        if isinstance(x, dict) and x.get(key) is not None:
+            out.append(x[key])
+        elif isinstance(x, (int, float)) and not isinstance(x, bool):
+            out.append(int(x))
+    return out
+
+cat["countries"] = cat["production_countries"].map(lambda x: json_list(x, "iso_3166_1"))
+cat["people"] = cat.apply(lambda r: json_list(r["cast"], "id")[:8] + json_list(r["directors"], "id"), axis=1)
+cat["collections"] = cat["collection_id"].map(lambda x: [] if pd.isna(x) else [int(x)])
+lang_vocab = {l: i for i, l in enumerate(cat["original_language"].dropna().value_counts().head(25).index)}
+country_vocab = {c: i for i, (c, _) in enumerate(Counter(c for lst in cat["countries"] for c in lst).most_common(40))}
+people_vocab = {p: i for i, (p, _) in enumerate(Counter(p for lst in cat["people"] for p in lst).most_common(3000))}
+coll_vocab = {c: i for i, (c, _) in enumerate(Counter(c for lst in cat["collections"] for c in lst).most_common(800))}
+rows_x, cols_x, vals_x = [], [], []
+for i in range(len(cat)):
+    lang = cat["original_language"].iloc[i]
+    if lang in lang_vocab:
+        rows_x.append(i); cols_x.append(lang_vocab[lang]); vals_x.append(1.0)
+    for c in cat["countries"].iloc[i]:
+        if c in country_vocab:
+            rows_x.append(i); cols_x.append(len(lang_vocab) + country_vocab[c]); vals_x.append(1.0)
+    for p in cat["people"].iloc[i]:
+        if p in people_vocab:
+            rows_x.append(i); cols_x.append(len(lang_vocab) + len(country_vocab) + people_vocab[p]); vals_x.append(1.0)
+    for c in cat["collections"].iloc[i]:
+        if c in coll_vocab:
+            rows_x.append(i); cols_x.append(len(lang_vocab) + len(country_vocab) + len(people_vocab) + coll_vocab[c]); vals_x.append(1.0)
+extra2 = np.zeros((len(cat), 3), dtype=np.float32)
+for i in range(len(cat)):
+    _bud = cat["budget"].iloc[i]
+    _bud = 0.0 if pd.isna(_bud) else float(_bud)
+    extra2[i] = [np.log1p(_bud),
+                 0.0 if pd.isna(cat["number_of_seasons"].iloc[i]) else float(cat["number_of_seasons"].iloc[i]) / 5.0,
+                 1.0 if str(cat["content_rating"].iloc[i] or "").upper() in ("R", "NC-17", "TV-MA") else 0.0]
+F = sparse.hstack([F,
+                   sparse.csr_matrix((vals_x, (rows_x, cols_x)),
+                                     shape=(len(cat), len(lang_vocab) + len(country_vocab) + len(people_vocab) + len(coll_vocab))),
+                   sparse.csr_matrix(extra2)]).tocsr()
+log(f"  feature ESTESE: {len(lang_vocab)} lingue · {len(country_vocab)} paesi · {len(people_vocab)} persone "
+    f"· {len(coll_vocab)} franchise · 3 numeriche · copertura paesi {100*(cat['countries'].map(len)>0).mean():.0f}% "
+    f"persone {100*(cat['people'].map(len)>0).mean():.0f}% franchise {100*(cat['collections'].map(len)>0).mean():.0f}%")
 log(f"  feature: {F.shape[1]} colonne ({N_TOPO} nodi del sottografo + {len(genres_vocab)} generi + 5 numeriche) · titoli con topoi {topo_done}/{len(cat)}")
 
 trainable = np.array([i for i, p in enumerate(to_pos) if p >= 0], dtype="int64")

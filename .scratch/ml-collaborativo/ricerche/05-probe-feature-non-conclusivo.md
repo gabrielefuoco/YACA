@@ -119,3 +119,40 @@ Ricostruire il grafo con le feature estese (10 minuti) e **rimisurare l'imbuto**
 il coseno migliore (+11%) si traduce in **candidati migliori**? Questa è la catena da tenere: feature →
 coseno → selezione dei candidati → liste servite. Se il miglioramento non arriva in fondo alla catena, non
 conta.
+
+---
+
+## La catena tiene: +11% di coseno → +26% di recall sui candidati
+
+Ricostruito il grafo con le feature estese e rimisurato l'imbuto (`export-graph-candidates.py` →
+`bench-graph-funnel.js`, 75 trial, 5 profili reali, ranker di produzione).
+
+| sorgente | candidati (mediana) | recall@50 prima → **dopo** | recall@200 prima → **dopo** |
+|---|---|---|---|
+| **grafo 2 hop** | 573 → 824 | 4,7% → **5,9%** | 8,0% → **8,7%** |
+| grafo 1 hop | 48 → 53 | 3,2% → **3,5%** | 3,2% → 3,5% |
+| grafo cluster+vicini | 2.869 → 4.118 | 2,5% → **2,9%** | 6,3% → **7,3%** |
+| POOL VERO (`fetchSmartAndPool`) | 1.604 → 1.851 | 1,7% → 1,9% | 4,1% → 4,2% |
+| caso (stessi posti, dal pool vero) | 381 → 534 | 1,0% | 1,3% / 2,8% |
+
+**Il grafo 2 hop batte il pool di produzione 3,1× sul recall@50** (5,9% contro 1,9%) con **2,2 volte meno
+candidati**; ieri era 2,8×. La catena `feature → coseno → selezione → liste` **regge**: le feature valgono
++11% di coseno, e quel guadagno arriva intatto (anzi amplificato) nella metrica che tocca il prodotto.
+
+Due effetti collaterali da annotare:
+
+- **Il grafo è diventato più connesso**: la mediana del 2-hop passa da 573 a 824 candidati e i cluster da
+  2.872 a 4.118 — le feature estese creano più similarità, quindi la manopola della risoluzione va ritoccata.
+- **Meno popolarità, più gusto**: i voti mediani dei candidati del grafo scendono da 162 a 63, e la quota
+  spiegata dalla sola popolarità passa da 4,2/4,7 a 4,9/5,9. Il segnale "gusto" cresce rispetto a "fama",
+  che era il buco 2 della misura precedente.
+
+## Cosa resta da fare su questo filone
+
+1. **Ritoccare la risoluzione di Leiden** (i cluster sono cresciuti: 4.118 di mediana a res 16 è troppo) e
+   rimisurare.
+2. **Regolarizzare o ridurre a embedding le feature ad alta cardinalità** (persone, franchise): il gap
+   in-sample è +0,128, c'è margine e ora si sa che le feature contano.
+3. **Il banco appaiato per popolarità** (il buco ancora aperto): misurare il vantaggio del grafo a parità di
+   fascia di voti, per vedere quanto resta dopo aver tolto la fama.
+4. **La statistica forte**: utenti MovieLens tenuti fuori, per passare da "5 profili" a migliaia.
