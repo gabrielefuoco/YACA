@@ -22,6 +22,67 @@ function isRetiredTmdbKeywordId(value) {
     return id !== null && RETIRED_TMDB_KEYWORD_ID_SET.has(Number(id));
 }
 
+// ============================================================================
+// Mappa id <-> nome delle keyword (iniettata dall'esterno).
+//
+// PERCHÉ ESISTE. Il grafo gerarchico (`hierarchical_graph.json`) è indicizzato
+// **per nome**: `kw_to_L1['time travel']`. Il parquet, i preset e ProfileBuilder
+// consegnano invece **ID numerici**. Senza questa mappa un id non può raggiungere
+// la gerarchia (niente `L1:`-`L5:`), e la ricchezza del DNA finiva per dipendere
+// dall'ordine delle richieste nel processo, perché `singleKwCache` usava la stessa
+// chiave `id:<id>` sia per l'input oggetto `{id,name}` sia per il solo id:
+// misurato sullo stesso titolo, 14 chiavi a freddo e 74 a caldo.
+//
+// NIENTE I/O QUI: la mappa la costruisce `src/db/duckDbStore.js` con la stessa
+// query che già legge tutte le keyword del dump, come per la cache df.
+// ============================================================================
+
+let keywordIdToName = null;
+let keywordNameToId = null;
+
+const normalizeKeywordName = (value) => {
+    if (typeof value !== 'string') return null;
+    const clean = value.trim().toLowerCase();
+    return clean.length > 0 ? clean : null;
+};
+
+/**
+ * Inietta le due direzioni della mappa. Chiamata una volta all'avvio dal dump.
+ * @param {{ idToName?: Map<string,string>|null, nameToId?: Map<string,string>|null }} maps
+ */
+function setKeywordNameMaps({ idToName = null, nameToId = null } = {}) {
+    keywordIdToName = idToName instanceof Map ? idToName : null;
+    keywordNameToId = nameToId instanceof Map ? nameToId : null;
+}
+
+/**
+ * Nome canonico di una keyword a partire dall'id. Null se la mappa non è
+ * caricata o la keyword non è nel dump: chi chiama deve degradare, non inventare.
+ * @param {string|number|{id?: string|number}} value
+ * @returns {string|null}
+ */
+function keywordNameForId(value) {
+    const id = normalizeKeywordId(value);
+    if (id === null || !keywordIdToName) return null;
+    return keywordIdToName.get(id) || null;
+}
+
+/**
+ * Id numerico di una keyword a partire dal nome (forma usata dal grafo).
+ * @param {string} value
+ * @returns {string|null}
+ */
+function keywordIdForName(value) {
+    const name = normalizeKeywordName(value);
+    if (name === null || !keywordNameToId) return null;
+    return keywordNameToId.get(name) || null;
+}
+
+/** Solo per i test e per chi deve verificare che la mappa sia quella giusta. */
+function getKeywordNameMaps() {
+    return { idToName: keywordIdToName, nameToId: keywordNameToId };
+}
+
 function filterRetiredTmdbKeywords(keywords) {
     if (!Array.isArray(keywords)) return [];
     return keywords.filter(keyword => !isRetiredTmdbKeywordId(keyword));
@@ -71,5 +132,9 @@ module.exports = {
     RETIRED_TMDB_KEYWORD_IDS,
     isRetiredTmdbKeywordId,
     filterRetiredTmdbKeywords,
-    sanitizeDnaVector
+    sanitizeDnaVector,
+    setKeywordNameMaps,
+    getKeywordNameMaps,
+    keywordNameForId,
+    keywordIdForName
 };

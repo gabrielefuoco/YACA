@@ -355,6 +355,13 @@ class DuckDbStore {
     /**
      * Calcola e memorizza in RAM la tabella dei Document Frequencies (DF)
      * per il calcolo della rarità dolce nel DNA.
+     *
+     * Dalla stessa lettura costruisce anche la mappa id <-> nome delle keyword
+     * (ticket «il livello latente»): il grafo gerarchico è indicizzato per NOME,
+     * mentre parquet, preset e ProfileBuilder consegnano ID. Senza la mappa un id
+     * non raggiunge `L1:`-`L5:` e il contenuto del DNA dipendeva dall'ordine delle
+     * richieste nel processo. Costo: zero query in più — le keyword si leggono già
+     * tutte qui per la rarità.
      */
     async buildDfCache() {
         if (!this.isInitialized) return;
@@ -368,7 +375,7 @@ class DuckDbStore {
                 ) GROUP BY k
             `);
             const kwRes = await this.query(`
-                SELECT 'k:' || (k->>'id') as k, count(*) as df
+                SELECT 'k:' || (k->>'id') as k, max(k->>'name') as name, count(*) as df
                 FROM (
                     SELECT unnest(from_json(keywords, '["JSON"]')) as k FROM movies WHERE keywords IS NOT NULL
                     UNION ALL
@@ -377,9 +384,34 @@ class DuckDbStore {
             `);
             const dfMap = new Map();
             for (const r of (genresRes || [])) if (r.k) dfMap.set(r.k, Number(r.df));
-            for (const r of (kwRes || [])) if (r.k) dfMap.set(r.k, Number(r.df));
+
+            const idToName = new Map();
+            const nameToId = new Map();
+            for (const r of (kwRes || [])) {
+                if (!r.k) continue;
+                const df = Number(r.df);
+                dfMap.set(r.k, df);
+                const id = String(r.k).slice(2);
+                const name = typeof r.name === 'string' ? r.name.trim().toLowerCase() : '';
+                if (!name) continue;
+                // Le due forme della stessa keyword devono avere la STESSA rarità:
+                // il vettore può contenerle entrambe (id + nome) e un fallback
+                // stimato per una sola delle due altererebbe i pesi in silenzio.
+                dfMap.set(`k:${name}`, df);
+                idToName.set(id, name);
+                if (!nameToId.has(name)) nameToId.set(name, id);
+            }
             const { setGlobalDfCache } = require('../utils/dnaRarity');
             setGlobalDfCache(dfMap);
+
+            const { setKeywordNameMaps } = require('../data/keywordIds');
+            setKeywordNameMaps({ idToName, nameToId });
+            // La mappa cambia ciò che `vectorizeKeywords` può produrre: le cache
+            // costruite prima dell'iniezione (es. in un test, o se il dump si
+            // carica dopo le prime richieste) vanno buttate, non riusate.
+            try {
+                require('../engines/graph/HierarchicalGraph').invalidateKeywordCaches();
+            } catch (_e) { /* grafo non caricato: niente da invalidare */ }
         } catch (err) {
             console.warn('[DuckDbStore] Error building DF cache:', err.message);
         }

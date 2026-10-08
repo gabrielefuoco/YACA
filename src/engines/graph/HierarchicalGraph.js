@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const LRUCache = require('../../utils/LRUCache');
+const { keywordNameForId } = require('../../data/keywordIds');
 
 class HierarchicalGraph {
     constructor() {
@@ -39,14 +40,19 @@ class HierarchicalGraph {
             return {};
         }
 
-        // Costruisci una chiave di cache deterministica
+        // Chiave di cache deterministica, e **sensibile alla forma dell'input**:
+        // un oggetto `{id,name}` e il solo id producevano la stessa parte di chiave
+        // (l'id), quindi l'array etichettato a nome poteva essere restituito a chi
+        // aveva passato solo id — e viceversa. È la stessa falla della cache per
+        // singola keyword, un livello più su.
         const keyParts = [];
         for (const kw of tmdbKeywordsArray) {
             if (typeof kw === 'object' && kw !== null) {
-                if (kw.id) keyParts.push(String(kw.id));
-                else if (kw.name) keyParts.push(String(kw.name).toLowerCase().trim());
+                if (kw.id) keyParts.push(`id:${String(kw.id)}`);
+                else if (kw.name) keyParts.push(`name:${String(kw.name).toLowerCase().trim()}`);
             } else {
-                keyParts.push(String(kw).toLowerCase().trim());
+                const s = String(kw).toLowerCase().trim();
+                keyParts.push(/^\d+$/.test(s) ? `bare-id:${s}` : `name:${s}`);
             }
         }
         const cacheKey = keyParts.sort().join('|');
@@ -72,7 +78,22 @@ class HierarchicalGraph {
                 }
             }
 
-            const singleKey = kwId ? `id:${kwId}` : (kwStr ? `str:${kwStr}` : null);
+            // Un ID da solo non raggiunge il grafo: `kw_to_L1` è indicizzato per
+            // nome. Il nome lo risolve la mappa iniettata dal dump — niente rete,
+            // niente attesa, stessa risposta per tutti.
+            if (!kwStr && kwId) {
+                const resolved = keywordNameForId(kwId);
+                if (resolved) kwStr = resolved;
+            }
+
+            // La chiave di cache descrive ESATTAMENTE l'informazione disponibile.
+            // Quando il nome manca, il vettore prodotto è più povero (niente
+            // `k:<nome>`, niente L1-L5) e non deve essere riusato — né offrire il
+            // proprio — a una chiamata che il nome ce l'ha. Prima la chiave era
+            // `id:<id>` in entrambi i casi: il contenuto del DNA dipendeva
+            // dall'ordine delle richieste (14 chiavi a freddo, 74 a caldo).
+            const singleKey = `${kwId ? `id:${kwId}` : 'noid'}|${kwStr ? `kw:${kwStr}` : 'noname'}`;
+
             if (singleKey && this.singleKwCache.has(singleKey)) {
                 const singleVec = this.singleKwCache.get(singleKey);
                 for (const [node, weight] of Object.entries(singleVec)) {
@@ -145,6 +166,17 @@ class HierarchicalGraph {
         }
 
         return { ...vector };
+    }
+
+    /**
+     * Butta le cache delle keyword. Serve quando cambia ciò che il vettore può
+     * produrre — cioè quando il dump inietta la mappa id <-> nome: le voci
+     * costruite prima non valgono più, e riusarle rimetterebbe in circolo un
+     * vettore povero senza che nessuno se ne accorga.
+     */
+    invalidateKeywordCaches() {
+        this.singleKwCache.clear();
+        this.arrayVectorCache.clear();
     }
 
     /**

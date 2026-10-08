@@ -1,6 +1,6 @@
 const { getProfileDnaFilters } = require('../../utils/helpers');
 const { G } = require('../../data/filters');
-const { isRetiredTmdbKeywordId } = require('../../data/keywordIds');
+const { isRetiredTmdbKeywordId, keywordIdForName } = require('../../data/keywordIds');
 
 function extractVectorByPrefix(vFinal, prefix) {
     if (!vFinal || typeof vFinal !== 'object') return {};
@@ -20,9 +20,22 @@ function computeTopElements(profile, prefix, filterType, n = 5, user = null, con
     if (vFinal && Object.keys(vFinal).length > 0) {
         scores = extractVectorByPrefix(vFinal, prefix);
         if (filterType === 'keyword') {
-            Object.keys(scores).forEach(id => {
-                if (isRetiredTmdbKeywordId(id)) delete scores[id];
-            });
+            // Il vettore porta la stessa keyword in DUE forme: `k:<id>` e `k:<nome>`
+            // (la seconda è quella che il grafo gerarchico sa leggere). Chi consuma
+            // `computeTopKeywords` le usa però come ID — filtri DuckDB e `with_keywords`
+            // di TMDB discover — quindi qui si tiene solo la forma numerica,
+            // risolvendo i nomi con la mappa del dump e scartando ciò che non si
+            // risolve invece di propagare una stringa dove serve un id.
+            const normalized = {};
+            for (const [key, value] of Object.entries(scores)) {
+                if (isRetiredTmdbKeywordId(key)) continue;
+                const id = /^\d+$/.test(key) ? key : keywordIdForName(key);
+                if (!id) continue;
+                // Stessa keyword su due chiavi: si tiene il peso maggiore, non la
+                // somma, altrimenti quella keyword peserebbe il doppio delle altre.
+                normalized[id] = Math.max(normalized[id] || 0, Number(value) || 0);
+            }
+            scores = normalized;
         }
     }
 
