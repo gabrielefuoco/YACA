@@ -3,60 +3,106 @@
 **Aperta**: 08/10/2026 · **Tracker**: markdown locale, `.scratch/ml-collaborativo/issues/` · **Stato**: aperta
 **Origine**: brainstorming dell'utente (PDF `blank.pdf`, dialogo con Gemini), sintetizzato qui in una scheda di lavoro.
 
-## L'idea, in quattro righe
+## Destination
 
-1. **Teacher** — MovieLens (32M voti di 200.948 utenti) dà una similarità *collaborativa* fra film: chi guarda X guarda anche Y, secondo una popolazione esterna. Sono informazioni che le keyword di TMDB **non contengono**.
-2. **Student** — si addestra un modello che impara a **predire quella posizione collaborativa dai soli metadati** (keyword pesate IDF, generi, anno, durata, voto bayesiano, lingua): distillazione dallo spazio collaborativo a quello dei metadati.
-3. **Grafo** — ogni titolo riceve un vettore denso (anche serie, anime e uscite nuove, che in MovieLens non esistono), si collega ai suoi k vicini più prossimi e si passa Leiden per ottenere micro-generi latenti, come già facciamo oggi sulle keyword.
-4. **Uso** — i cluster diventano il primo imbuto (500-1000 candidati, pescati in proporzione ai gusti multipli dello storico utente), poi punteggio, re-ranking e diversità.
+**Capire se esiste una rappresentazione densa dei titoli — distillata dalla co-visione reale di 200.948 utenti
+MovieLens e proiettata sui metadati — che generi candidati migliori di quelli che la produzione pesca oggi**,
+senza toccare `src/` finché la misura non lo giustifica.
 
-## Perché ora, e perché è la risposta giusta
+Il grafo **non è il fine**: è il modo di rispondere a una domanda che il DNA e il grafo delle keyword non possono
+rispondere. La regola lasciata dal prototipo OCEAN è la premessa di tutto: *una rappresentazione densa serve solo
+se porta informazione che le keyword non hanno*. MovieLens è esattamente quella informazione mancante.
 
-Il prototipo OCEAN di oggi ha chiuso con una regola: **una rappresentazione densa serve solo se porta informazione che le keyword non hanno** — riproiettare gli stessi dati su 5 assi peggiora il risultato ([report](../ocean-prototipo/ricerche/01-ocean-prototipo.md)). MovieLens è esattamente l'informazione mancante: co-visione reale di 200.000 persone.
+Uso previsto, se i cancelli passano: i cluster diventano il **primo imbuto** (500-1.000 candidati pescati in
+proporzione ai gusti multipli dello storico), poi punteggio, re-ranking e diversità.
 
-E la pipeline proposta (denso → k-NN → Leiden → cluster → retrieval → re-rank) **è già la nostra**: `offline_graph_builder` fa PPMI + embedding + Leiden sulle keyword e produce i livelli L1-L5. Qui cambia la similarità (collaborativa invece che co-occorrenza di keyword), non l'impianto.
+**Stato al 08/10/2026** — la catena `feature → coseno → selezione → liste` regge, misurata end-to-end:
 
-## Il gate, già misurato (08/10/2026)
-
-Dati scaricati in `.cache/movielens/` (1,1 GB, gitignorato): `ml-32m.zip`, `links.csv`, `movies.csv`, `ratings.csv`.
-
-| Misura | Valore |
-|---|---|
-| Catalogo YACA | **97.613 film** + 19.585 serie |
-| Film coperti da MovieLens | **62.516 (64,0%)** — con ≥100 voti TMDB: **87,9%** · ≥1.000: **93,3%** · ≥10.000: **99,7%** |
-| Serie TV coperte | **0** — `links.csv` rimanda solo a `/movie/{id}` |
-| Decennio 2020s coperto | **36,5%** (snapshot di fine 2023: il buco che lo *student* deve colmare) |
-| Film MovieLens con ≥20 voti | **23.350** · ≥50: 16.034 · ≥200: 9.322 · ≥1.000: 4.397 |
-| **Nostri film con ≥20 voti MovieLens** | **22.551** (mediana 228 voti TMDB) · di cui solo il **20%** sono "popolari" da noi (<1.000 voti) |
-
-Due letture che contano:
-
-- **Il teacher esiste e non è solo blockbuster**: 22.551 nostri film hanno almeno 20 voti MovieLens, e l'**80% di quelli non è popolare** nel nostro catalogo. La matrice cioè contiene anche cinema di nicchia, che è dove il gusto si distingue.
-- **Il buco è dove serve lo student**: serie (0%) e 2020s (36,5%). Se il teacher servisse solo a se stesso, varrebbe poco; vale perché la sua lezione si trasferisce ai metadati.
-
-## Il piano, a cancelli (non si costruisce tutto prima di aver misurato)
-
-| # | Passo | Cancello: se non passa, ci si ferma lì |
+| | valore | contro |
 |---|---|---|
-| 1 | **Teacher**: matrice item-item dai voti MovieLens (solo item con ≥20 voti, top-N simili per item) | copre abbastanza catalogo da permettere un test onesto (già verificato: 22,5k film) |
-| 2 | **Student**: modello metadati → similarità collaborativa, addestrato su coppie tenute fuori | **AUC su coppie tenute fuori** chiaramente sopra il caso, e la similarità appresa **non è una ricopiatura** della similarità delle keyword (correlazione di rango misurata e dichiarata) |
-| 3 | **Valore aggiunto**: proiezione dello student applicata a serie, film senza teacher e uscite recenti | sul banco leave-out che usiamo da stamattina (recupero della cronologia reale), lo student batte **il grafo delle keyword** e/o aggiunge in miscela |
-| 4 | **Grafo + Leiden**: k-NN mutuale sui vettori dello student, Leiden, confronto con L1-L5 | i cluster sono **diversi** da quelli attuali (se sono gli stessi, non serve un grafo nuovo: basta quello che c'è) |
+| Student (coseno held-out) | **0,500** | base 0,430 · **controllo del banale 0,224** |
+| Imbuto: grafo 2 hop, recall@50 | **5,9%** | pool di produzione 1,9% · caso 1,3% |
+| Grafo | 87.848 nodi · 897.020 archi · **276 cluster** (mediana 299 titoli, coerenza 0,618) | |
 
-## Sfide dichiarate (dalla letteratura + quello che abbiamo imparato oggi)
+Il vantaggio del grafo sul pool di produzione è **3,1×** con **2,2 volte meno candidati**.
 
-- **Popolarità**: la co-visione è dominata dai titoli visti da tutti. Va controllata (pesare/normalizzare, e valutare su item non-blockbuster) altrimenti lo student impara "popolare" e ci ritroviamo il catalogo popolare travestito — il difetto che la campagna QC ha già trovato nei hero.
-- **Hubness**: negli spazi densi alcuni titoli diventano hub di tutti i vicini; si usa **k-NN mutuale** e si controlla la distribuzione dei gradi prima di Leiden.
-- **Ricopiatura**: gli input dello student sono le stesse keyword che già usiamo. Il rischio è un giro lunghissimo per ottenere ciò che il grafo L1-L5 già dà. Per questo il cancello 3 è **incrementale**, non correlazionale.
-- **Sforzo di calcolo**: EASE sulla matrice intera (84k item) è fuori scala (~30 GB di matrice); si resta su item-item con soglia di voti e, se serve, su `implicit` (ALS) che è nativo per matrici sparse. Tutto offline, una volta.
-- **Uscite recenti**: nessun dato collaborativo, quindi lo student è *l'unica* via — ma anche la sua validazione va fatta su item che il teacher non ha mai visto, altrimenti si misura il teacher.
+## Decisions so far
 
-## Fuori ambito
+1. **Il teacher è MovieLens, non EASE/ALS sulla matrice intera**: 32M voti, item-item con soglia ≥20 voti.
+   Copre il **64%** dei film e **0%** delle serie. EASE su 84k item è fuori scala (~30 GB).
+2. **Il teacher si costruisce con SVD pesata anti-popolare** (`1/log1p(n_item)`): la prima componente spiega il
+   42% della varianza e il vettore medio ha coseno **0,224** coi bersagli — è il controllo del banale, e va
+   stampato accanto a ogni misura.
+3. **Lo student è un Ridge lineare sui metadati, non un modello non lineare**: misurato, il gap in-sample della
+   base è +0,054 → **non sotto-adatta**, quindi una testa non lineare non era la prima leva. La leva erano le
+   **feature** e la **regolarizzazione** (alpha 30).
+4. **Le feature estese entrano nel grafo**: lingua, persone (cast+creatori, top 3.000), franchise (top 800),
+   budget, `content_rating`, stagioni → +0,049 di coseno held-out (**+11% relativo**), e il guadagno si
+   trasferisce **intatto** sui candidati (2 hop: 4,7% → **5,9% @50**).
+5. **La regolarizzazione è la risposta all'alta cardinalità**: alpha 1 → 30 porta l'held-out 0,479 → **0,500** e
+   dimezza il gap (0,135 → 0,081). La normalizzazione L2 delle righe fa lo stesso lavoro (0,494) e **non si
+   somma** ad alpha: sono due risposte allo stesso problema.
+6. **La risoluzione di Leiden resta 16** (276 cluster, mediana 299 titoli): la manopola esiste (res 64 → 899
+   cluster da 94, coerenza 0,618 → 0,676) ma il livello attuale è già micro-genere.
+7. **Il grafo si costruisce fuori da `src/`** (`offline_graph_builder/venv`, output in `.cache/movielens/`,
+   gitignorato). Nessuna modifica irreversibile al prodotto.
+8. **La catena da tenere è `feature → coseno → selezione → liste`**: un miglioramento che non arriva in fondo
+   alla catena non conta. Il coseno non è un risultato, è un passaggio.
 
-- Sostituire il grafo delle keyword: l'esito atteso è un **secondo segnale** (o una estensione), non un rimpiazzo senza confronto.
-- Teacher per serie e anime: non esiste un MovieLens equivalente pulito (MAL copre anime ma con mappatura per titolo, da valutare **dopo** il cancello 3).
-- Riscrivere la pipeline di serving: qui si misura e si prototipa fuori da `src/`.
+## Not yet specified
+
+- **Embedding appresi dal sottografo** (idea dell'utente): al posto di 1.982 nodi binari + 3.000 persone + 800
+  franchise, un vettore per nodo (node2vec sulle adiacenze L1) e per il titolo la media appresa. Ticket 09.
+- **Il trasferimento alle serie**: il teacher è cieco (0%), le serie sono l'80% delle cronologie reali, e il
+  test misto **non ha dato nessuna vittoria netta** (student 9,9% vs baseline 13,0% @50). Ticket 12.
+- **La statistica forte**: le misure dell'imbuto poggiano su 5 profili e 75 trial. Serve il banco con utenti
+  MovieLens tenuti fuori. Ticket 11.
+- **Il buco della popolarità**: la quota spiegata dalla sola popolarità è 4,9/5,9 nel 2 hop — il vantaggio
+  *dopo* aver tolto la fama non è ancora misurato. Ticket 10.
+- **`L1_adjacency`**: scritto dal builder (`build_graph.py:512`) ma **assente dal JSON di produzione** → la
+  diffusione fra L1 non parte mai. Ticket 13.
+- **Le liste servite** (rank 10→30): la metrica di prodotto vera, non ancora misurata. Ticket 14.
+
+## Out of scope
+
+- **Sostituire il grafo delle keyword**: l'esito atteso è un **secondo segnale** o una estensione, mai un
+  rimpiazzo senza confronto a parità di budget (ed è il confronto che l'imbuto fa già).
+- **Un teacher per serie e anime**: non esiste un MovieLens equivalente pulito (MAL copre gli anime con
+  mappatura per titolo, da valutare *dopo* il cancello del ticket 12).
+- **Riscrivere la pipeline di serving**: si misura e si prototipa fuori da `src/`.
+- **Modelli non lineari come prima leva**: escluso dai numeri (decisione 3), non per gusto.
+- **LLM/Transformer/autoencoder sul catalogo**: l'utente ha chiesto classificatori standard e la strada
+  dell'embedding di nodo, non una nuova famiglia di modelli.
+
+## Gli errori da non rifare (cari, già pagati)
+
+1. **Confusione di namespace**: i voti MovieLens filtrati con i **tmdbId** invece che con i **movieId** —
+   due namespace che collidono per caso. Ha prodotto un coseno di 0,044 falso per mezza giornata. **Convertire
+   una volta sola, al confine, e stampare la copertura** (`colonne vuote 18.913 su 23.309`: la diagnostica l'ha
+   smascherato in una riga).
+2. **Il controllo del banale accanto a ogni misura, sempre**. Il vettore medio a 0,224 è ciò che ha reso
+   visibile il bug: senza, 0,044 sarebbe sembrato un risultato.
+3. **Un numero senza l'oggetto che misura non è un numero**: «mediana 4.118» era la mediana dei *candidati*,
+   non dei *cluster* (299), e mi ha fatto inseguire un problema che non esisteva.
+4. **Nessuna conclusione da un numero solo**: la struttura va guardata prima (per fascia di popolarità, per
+   epoca, per numero di keyword). È così che è emerso che il buco sono i film poco votati (0,361) e gli anni
+   '80-'90 (0,368), non i titoli con poche keyword.
+5. **L'interpretazione si scrive prima dell'esperimento**: se (1) sale e (2) no → il collo di bottiglia è
+   altrove. Decidere dopo aver visto i numeri è come non aver deciso.
+6. **Mai validare su item che il teacher ha visto**: per serie e uscite recenti il teacher è cieco, e ogni
+   misura lì è una misura dello student — ma non del teacher.
+7. **La popolarità è un confondente, non un dettaglio**: sempre il ranker "solo popolarità" accanto allo
+   scorer, e sempre la fascia non-blockbuster guardata a parte.
 
 ## Provenienza
 
-Sintesi della conversazione in `blank.pdf` (10 pagine, 08/10/2026): architettura a tre stadi, librerie open source, e — la parte che interessa — il passaggio da lookup table statica a **Knowledge Distillation dal collaborativo al content space**, con le insidie su budget/incassi (assenti per le serie), keyword come 70% del segnale, hubness, clustering rigido e multi-interesse dell'utente.
+Sintesi della conversazione in `blank.pdf` (10 pagine, 08/10/2026): architettura a tre stadi, librerie open
+source, e il passaggio da lookup table statica a **Knowledge Distillation dal collaborativo al content space**,
+con le insidie su budget/incassi (assenti per le serie), keyword come 70% del segnale, hubness, clustering
+rigido e multi-interesse dell'utente.
+
+## Effort collegati
+
+- `.scratch/livello-latente/` — DNA deterministico: **risolto e in produzione** (`a20add6`).
+- `.scratch/ocean-prototipo/` — OCEAN come vettore di punteggio: **respinto** sui numeri; sopravvive come
+  *descrizione* per i giudici di dosaggio, mai come asse di scoring.
