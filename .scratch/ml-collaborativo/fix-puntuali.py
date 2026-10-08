@@ -314,3 +314,36 @@ for lbl, hold in [("COLD-START (regista mai visto)", cold), ("controllo: hold-ou
     log(f"    {lbl:<34} {len(hold):>6,} film · coseno {cos(p, Y[hold]).mean():.3f}")
 log("\n  (se il cold-start regge vicino al controllo, il modello generalizza a entita' mai viste:")
 log("   ed e' l'unica evidenza che possiamo avere sulle serie, dove il teacher non esiste)")
+
+# ============================================================ 5. L'IDEA DELL'UTENTE
+# Al posto di 1.982 nodi one-hot: un vettore APPRESO per keyword (SVD spettrale del grafo costruito
+# sull'adiacenza appresa = il grafo comportamentale) e per titolo la media dei suoi. Misura col
+# protocollo pulito (meta' A -> meta' B) e sul cold-start. Ipotesi dichiarata prima: l'embedding
+# generalizza MEGLIO (feature dense e levigate), quindi il vantaggio deve vedersi soprattutto sul
+# cold-start e sulle fasce rumorose, non necessariamente sull'aggregato.
+log("\n=== 5. EMBEDDING APPRESI DAL SOTTOGRAFO (l'idea dell'utente) ===")
+_emb = np.load(ROOT / ".cache" / "movielens" / "film-emb.npz", allow_pickle=True)
+key2vec = {str(k): v for k, v in zip(_emb["keys"], _emb["vecs"])}
+FE = np.zeros((len(cat), _emb["vecs"].shape[1]), dtype=np.float32)
+hasE = np.zeros(len(cat), dtype=bool)
+for i in range(len(cat)):
+    v = key2vec.get(f"{cat['type'].iloc[i]}:{int(cat['id'].iloc[i])}")
+    if v is not None:
+        FE[i] = v; hasE[i] = True
+log(f"  titoli con embedding: {int(hasE.sum()):,} su {len(cat):,} · dimensioni {FE.shape[1]}")
+Fmix = sparse.hstack([F, sparse.csr_matrix(FE)]).tocsr()
+
+log("\n  | feature | dim | A->B | B->A | cold-start | controllo |")
+log("  |---|---|---|---|---|---|")
+for lbl, M in [("topoi one-hot (oggi)", F), ("EMBEDDING appresi", sparse.csr_matrix(FE)), ("one-hot + embedding", Fmix)]:
+    c_ab, c_ba = [], []
+    for Ytr_, Yte_ in ((YA, YB), (YB, YA)):
+        m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[idx], Ytr_[idx])
+        c_ab.append(cos(m.predict(M[idx]), Yte_[idx]).mean()) if Ytr_ is YA else c_ba.append(cos(m.predict(M[idx]), Yte_[idx]).mean())
+    keep = np.array([i for i in idx if i not in set(cold.tolist())])
+    m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[keep], Y[keep])
+    cs = cos(m.predict(M[cold]), Y[cold]).mean()
+    m = Ridge(alpha=30.0, solver="lsqr", max_iter=1000).fit(M[np.array([i for i in idx if i not in set(rand_same.tolist())])], Y[np.array([i for i in idx if i not in set(rand_same.tolist())])])
+    cr = cos(m.predict(M[rand_same]), Y[rand_same]).mean()
+    log(f"  | {lbl} | {M.shape[1]:,} | {c_ab[0]:.3f} | {c_ba[0]:.3f} | {cs:.3f} | {cr:.3f} |")
+log("\n  (riferimenti: one-hot A->B 0,362 = 56% del soffitto 0,650 · cold-start 0,494 · controllo 0,507)")

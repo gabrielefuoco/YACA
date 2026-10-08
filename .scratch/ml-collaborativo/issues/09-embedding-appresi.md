@@ -1,6 +1,6 @@
 # 09 — Embedding appresi dal sottografo (l'idea dell'utente)
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `resolved` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 (le premesse sono misurate: [07](07-feature-estese.md) e [08](08-fix-puntuali.md))
 
 ## Ipotesi
@@ -57,3 +57,30 @@ Quindi questo ticket diventa **due bracci della stessa gara**, con lo stesso met
 L'ipotesi da verificare, dichiarata **prima** della misura: A **non** batterà le feature binarie di oggi
 (il grafo che embedda descrive la realtà all'8,7%); B sì. Se sbaglio su A, la struttura conta più di
 quanto dica il ρ — e sarà il ρ a essere sospetto, non l'ipotesi.
+
+---
+
+## CHIUSO (08/10/2026): risultato NEGATIVO
+
+Report: [`ricerche/14-embedding-appresi.md`](../ricerche/14-embedding-appresi.md)
+
+| feature | dim | A->B | cold-start |
+|---|---|---|---|
+| topoi one-hot (oggi) | 5.842 | **0,362** | **0,494** |
+| EMBEDDING appresi | 64 | **0,227** | 0,303 |
+| one-hot + embedding | 5.906 | 0,363 | 0,494 |
+
+Gli embedding da soli valgono il banale (0,227 contro 0,224 del vettore medio) e aggiunti non
+cambiano nulla: la loro informazione e gia nei topoi. L ipotesi (generalizzano meglio) e
+falsificata: sono peggiori ovunque, cold-start compreso.
+
+Cause: (1) la MEDIA di ~15 embedding e un bag-of-embeddings, molto lossy rispetto al one-hot
+che lascia pesare le singole keyword; (2) il grafo e quasi completo (grado mediano 216) e il
+suo spettro e piatto (13% di varianza nelle prime 5 componenti), quindi l embedding e poco
+discriminante.
+
+Scope: e SVD spettrale, non node2vec vero (gensim assente). node2vec potrebbe fare meglio,
+ma il collo di bottiglia della media resterebbe.
+
+**Conclusione: la rappresentazione non e il collo di bottiglia.** Il margine residuo non si
+recupera cambiando come descriviamo i film.
