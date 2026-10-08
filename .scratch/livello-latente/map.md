@@ -68,8 +68,10 @@ con almeno un match). Con la mappa iniettata: **91%**.
 - **Quanto del «i suggerimenti sono inutili sui profili nuovi» era questo** e quanto il pool costruito da poche
   chiavi (top-3 generi + cluster di keyword; il commento nel codice prevede già il degrado a coppie di keyword,
   «es. profilo nuovo»). Il fix cambia metà del catalogo a freddo: da qui in poi si misura con i giudici.
-- **Quale denso, se serve**: gerarchia (già calcolata, costo zero) vs annotazione OCEAN item-side su tutto
-  il catalogo (costo alto, da rigenerare a ogni cambio di modello) vs embedding item-side.
+- **Quale denso, se serve**: la gerarchia (già calcolata, costo zero) ha **vinto** il confronto col prototipo OCEAN a 5 assi
+  ([report](../ocean-prototipo/ricerche/01-ocean-prototipo.md)). Un denso può entrare solo se porta informazione che le keyword
+  non hanno — co-visione, embedding addestrati, annotazione LLM dei titoli — **e** con ranghi adeguati: 5 dimensioni sono un
+  collo di bottiglia misurato, non un'ipotesi.
 - **I 201 assi nominati che esistono e non si vedono**: `ui_name`/`ui_emoji` su L3/L4 sono già nomi italiani.
   Decidere se diventano il racconto del profilo (risposta al dolore «tanti assi, nessun nome»).
 - **Igiene del grafo**: `r_4 = mazzaropi`, L1 con una sola keyword, L2/L5 senza `ui_name`.
@@ -79,7 +81,7 @@ con almeno un match). Con la mappa iniettata: **91%**.
 | # | Decisione | Alternativa scartata, perché |
 |---|---|---|
 | D1 | **OCEAN non entra come asse di profilo dedotto dal DNA** | È una proiezione a basso rango di un vettore che già esiste: ricodifica, non aggiunge segnale. Vale solo se anche gli item vivono in quello spazio |
-| D2 | **Se OCEAN entra, entra item-side** — e il suo termine di paragone è la gerarchia L1–L5 | Confrontare un denso nuovo con un concorrente non deterministico non è una misura |
+| D2 | **Se OCEAN entra, entra item-side** — e il suo termine di paragone è la gerarchia L1–L5. **Misurato l'08/10/2026** in [`.scratch/ocean-prototipo/`](../ocean-prototipo/map.md): una proiezione a 5 assi derivata da questi stessi dati **perde** contro il vettore sparso a ogni livello di freddo (a 10 semi: 10,2% vs 4,0% @50) e azzera la discriminazione (coseno medio 0,63 vs 0,03) | Confrontare un denso nuovo con un concorrente non deterministico non è una misura; e riproiettare le stesse keyword su 5 assi è lavoro che peggiora il risultato |
 | D3 | **Prima il determinismo, poi la misura, poi la spesa** | Il giudizio cieco ha Δ fino a 34 punti: un guadagno non dimostrato sta sotto il rumore del banco che abbiamo |
 | D4 | **Nessun questionario di personalità**: se serve più segnale su un profilo nuovo si chiede **gusto** (tessere, dislike), non psicometria | Il questionario è l'unica variante di OCEAN che non è funzione del DNA, ma è anche l'unica che un utente di addon non compila |
 | D5 | **La cache non deve decidere il contenuto del DNA**: il passaggio id→nome va reso esplicito nel percorso DNA | «Tanto a caldo funziona» è il motivo per cui il difetto è sopravvissuto: la produzione è quasi sempre calda, quindi non si vede |
