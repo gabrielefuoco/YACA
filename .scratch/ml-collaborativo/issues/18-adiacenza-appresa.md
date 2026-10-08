@@ -52,3 +52,18 @@ keyword, e il genere oggi non entra nel segnale dell adiacenza.
 
 **Resta aperto il cancello 2**: ricostruire il grafo dei film sull adiacenza appresa e rimisurare
 l imbuto (2 hop >= 5,9% @50 e >= 9,2% @200).
+
+---
+
+## Cancello 2 (prodotto): NON PASSATO (08/10/2026)
+
+Report: [`ricerche/09-cancello-prodotto.md`](../ricerche/09-cancello-prodotto.md)
+
+L adiacenza appresa entra nei vettori del DNA e del profilo (non nel grafo dei film: verificato).
+Cinque bracci (nessuna / PPMI / appresa / affilata / 2 vicini): e un **compromesso monotono
+testa-profondita**, col dosaggio come pomello. Con 10 vicini: 2 hop @200 8,7 -> **10,7**, ma @50 5,9 ->
+4,9 e cluster @50 2,9 -> 1,3. Con 2 vicini tutto torna al baseline: i pesi imparati non aggiungono nulla
+di misurabile a basso dosaggio.
+
+La struttura migliore **non** si trasferisce alle liste in modo automatico. Serve il disaccoppiamento
+testa/imbuto e la statistica forte (ticket 11).
