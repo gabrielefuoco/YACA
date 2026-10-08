@@ -164,3 +164,53 @@ reale. Le due cose che avrebbero senso, in ordine:
    versione peggiore. Costo: mezza giornata, esito binario.
 2. Se anche così non batte il baseline, **chiudere il filone**: il collaborativo MovieLens non porta valore
    sui nostri dati (che sono per l'80% serie, dove MovieLens è cieco).
+
+---
+
+## Secondo giro del banco, con il SOTTOGRAFO nelle feature — e verdetto
+
+L'utente ha chiarito l'architettura: il grafo delle keyword **resta la base**, non si contamina; si costruisce un
+**secondo** grafo con gli stessi principi, dove ogni film è rappresentato dal **sottografo delle sue keyword**
+(i topoi L1/L2/L3) **più** i metadati, e gli **archi da imparare sono quelli del dataset** (MovieLens) proiettati
+sui nostri film; poi si estende a chi nel dataset non c'è.
+
+Ho aggiunto allo student le feature del sottografo (Jaccard sui set di nodi L1/L2/L3, risaliti dalla catena
+keyword→L1→L2→L3: 6.125 catene, 85.176 titoli su 87.848 con topoi risolti).
+
+**Effetto sullo student: AUC 0,920 → 0,922.** Nessun miglioramento: i topoi non aiutano a predire l'affinità
+collaborativa — coerente con l'ortogonalità misurata (Spearman 0,04).
+
+**Effetto sul banco (semi misti, il caso d'uso):**
+
+| modello | film @50 | **serie @50** | serie @200 | film @200 |
+|---|---|---|---|---|
+| **base (produzione, L1-L5)** | 4,1% | 13,0% | **41,7%** | 13,6% |
+| student (con topoi) | 2,0% | 12,7% | 27,3% | 9,7% |
+| pop (controllo) | 0,0% | 1,0% | 9,2% | 0,8% |
+| blend base+student | 3,1% | **15,0%** | 34,4% | 14,6% |
+
+*(prima dei topoi lo student faceva 9,9% @50 sulle serie: il sottografo ha **chiuso il divario in testa** — 12,7%
+contro 13,0% è un pareggio — ma non in profondità: 27,3% contro 41,7%.)*
+
+### Verdetto definitivo su questo filone
+
+| cancello | esito |
+|---|---|
+| 1 · copertura del teacher | ✅ passa (22.551 nostri film con ≥20 voti, 88-93% dei titoli che contano) |
+| 2 · student imparabile | ✅ passa (AUC 0,922 su item tenuti fuori) |
+| 3 · **valore aggiunto sui suggerimenti** | ❌ **non passa**: lo student non batte il grafo delle keyword; il blend vince solo la testa delle serie (@50 +2 punti) e perde la coda (−7,3) |
+| 4 · grafo k-NN + Leiden | non tentato: senza il cancello 3 non ha senso costruirlo |
+
+**Cosa resta vero, e va tenuto:**
+
+1. Lo spazio collaborativo è **ortogonale** al nostro (Spearman 0,04; top-10 in comune 0,3/10): è informazione
+   nuova, non una ricopiatura. Il posto giusto per usarla non è *sostituire* il grafo delle keyword — che resta
+   la base, come dice l'utente — ma un **canale separato**: un carosello «chi ha amato X ha amato Y» sui film
+   coperti, senza toccare il grafo.
+2. La popolarità va controllata sempre (`npmi`): col cosine i vicini di qualunque film sono Matrix e Fight Club.
+3. Il numero che tiene in piedi il canale separato è la testa: +2 punti di recall sulle serie quando si miscela.
+   Poco, e solo in cima: motivo in più per non ricostruire il grafo su questo segnale.
+
+**Raccomandazione**: chiudere qui il filone «secondo grafo denso». Se si vuole provare MovieLens, farlo come
+**canale di candidati per i film** (economico, verificabile sulle liste servite con i giudici), non come
+riproiezione di tutto il catalogo.

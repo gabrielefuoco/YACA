@@ -61,13 +61,43 @@ for kws in catalog["kw"]:
 N_DOCS = len(catalog)
 idf = lambda k: float(np.log(1.0 + N_DOCS / (1.0 + df_counter.get(k, 1))))
 
+# ---------------------------------------------------------------- il SOTTOGRAFO
+# Le feature dello student devono includere il grafo delle keyword, non le keyword
+# grezze: si risale la catena keyword(nome) -> L1 -> L2 -> L3 e si costruiscono i
+# set di topoi di ogni titolo. E' lo strato che fa generalizzare (e il ponte
+# film<->serie). Senza, si chiede di estendere il grafo senza dargli il grafo.
+GRAPH_PATH = ROOT / "src" / "data" / "hierarchical_graph.json"
+G = json.loads(GRAPH_PATH.read_text(encoding="utf-8"))
+CHAIN = {}
+for name, c in G["kw_to_L1"].items():
+    t = (G["L1"].get(c) or {}).get("parent")
+    v = (G["L2"].get(t) or {}).get("parent") if t else None
+    CHAIN[name] = (c, t, v)
+log(f"  catene keyword->L1->L2->L3: {len(CHAIN)}")
+
+def topos_sets(keyword_objs):
+    l1, l2, l3 = set(), set(), set()
+    for k in keyword_objs:
+        name = str(k.get("name", "")).strip().lower() if isinstance(k, dict) else str(k).strip().lower()
+        ch = CHAIN.get(name)
+        if not ch:
+            continue
+        if ch[0]: l1.add(ch[0])
+        if ch[1]: l2.add(ch[1])
+        if ch[2]: l3.add(ch[2])
+    return l1, l2, l3
+
 meta = {}
 for row in catalog.itertuples():
+    l1, l2, l3 = topos_sets(json.loads(row.keywords))
     meta[(row.type, int(row.id))] = dict(kw=row.kw, genres=row.genres_set,
                                          year=float(row.year) if pd.notna(row.year) else np.nan,
                                          votes=float(row.vote_count or 0),
                                          runtime=float(row.runtime) if pd.notna(row.runtime) else np.nan,
-                                         lang=row.original_language, pop=float(row.popularity or 0))
+                                         lang=row.original_language, pop=float(row.popularity or 0),
+                                         l1=l1, l2=l2, l3=l3)
+withtopos = sum(1 for m in meta.values() if m["l1"])
+log(f"  titoli con topoi risolti: {withtopos}/{len(meta)}")
 
 
 def fv(a, b):
@@ -80,10 +110,12 @@ def fv(a, b):
     yb = mb["year"] if pd.notna(mb["year"]) else 0.0
     ra = ma["runtime"] if pd.notna(ma["runtime"]) else 0.0
     rb = mb["runtime"] if pd.notna(mb["runtime"]) else 0.0
+    lj = lambda s: len(ma[s] & mb[s]) / (len(ma[s] | mb[s]) or 1)
     return [iv, iv / iu, float(len(inter)), float(gj), abs(ya - yb),
             abs(np.log1p(ma["votes"]) - np.log1p(mb["votes"])), abs(ra - rb),
             1.0 if ma["lang"] == mb["lang"] else 0.0,
-            np.log1p(ma["votes"]), np.log1p(mb["votes"]), np.log1p(ma["pop"]), np.log1p(mb["pop"])]
+            np.log1p(ma["votes"]), np.log1p(mb["votes"]), np.log1p(ma["pop"]), np.log1p(mb["pop"]),
+            float(lj("l1")), float(lj("l2")), float(lj("l3"))]
 
 
 # ------------------------------------------------------------------ student (target npmi, film)
