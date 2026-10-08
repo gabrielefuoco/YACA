@@ -39,7 +39,7 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
     } else {
         console.log('[bench] L1_adjacency ASSENTE (stato di produzione)');
     }
-    const trials = JSON.parse(fs.readFileSync(path.join(CACHE, 'graph-candidates.json'), 'utf8'));
+    const trials = JSON.parse(fs.readFileSync(path.join(CACHE, process.env.CAND_FILE || 'graph-candidates.json'), 'utf8'));
 
     const keys = new Set();
     for (const t of trials) { for (const k of [...t.seeds, ...t.gold, ...t.onehop, ...t.twohop, ...t.cluster]) keys.add(k); }
@@ -70,7 +70,7 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
                 const chunk = ids.slice(i, i + 400);
                 const rs = await all(db, `SELECT id, ${col} AS name, genres, keywords, vote_count FROM read_parquet('${PARDIR}/${table}.parquet') WHERE id IN (${chunk.join(',')})`);
                 for (const r of rs) {
-                    const it = { type: t, id: Number(r.id), name: r.name, genres: parse(r.genres) || [], keywords: parse(r.keywords) || [] };
+                    const it = { type: t, id: Number(r.id), name: r.name, genres: parse(r.genres) || [], keywords: parse(r.keywords) || [], voteCount: Number(r.vote_count) || 0 };
                     it.genreIds = it.genres.map(g => Number(g.id ?? g));
                     it.hVector = graph.vectorizeKeywords(ocean.keywordsOf(it));
                     items.set(`${t}:${it.id}`, it);
@@ -160,7 +160,7 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         for (const [name, cands] of Object.entries(sets)) {
             const order = rank(cands, profile);
             const popOrder = rankByPopularity(cands);
-            rowsOut.push({ ctx: t.ctx, source: name, size: cands.length,
+            rowsOut.push({ ctx: t.ctx, strato: t.strato || '?', source: name, size: cands.length,
                 r50: recall(order, gold, 50), r200: recall(order, gold, 200),
                 pop50: recall(popOrder, gold, 50),
                 medVotes: median(cands.map(k => items.get(k)?.voteCount || 0)),
@@ -173,7 +173,7 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         if (!bySource.has(r.source)) bySource.set(r.source, []);
         bySource.get(r.source).push(r);
     }
-    console.log(`\n== IL GRAFO DAVANTI ALLO SCORER, A PARITA' DI BUDGET (${trials.length} trial, 5 profili reali) ==\n`);
+    console.log(`\n== IL GRAFO DAVANTI ALLO SCORER, A PARITA' DI BUDGET (${trials.length} trial${process.env.CAND_FILE ? ' · TEST SET CONGELATO' : ' · 5 profili reali'}) ==\n`);
     console.log('| sorgente di candidati | candidati (mediana) | recall@50 | recall@200 | se ordinassi per POPOLARITÀ | voti mediani | ≥1000 voti |');
     console.log('|---|---|---|---|---|---|---|');
     for (const name of ['graph 1 hop', 'CASO = |1 hop| dal pool vero', 'graph 2 hop', 'CASO = |2 hop| dal pool vero', 'graph cluster+vicini', 'POOL VERO (fetchSmartAndPool)', , 'pool proxy (generi condivisi)']) {
@@ -181,6 +181,20 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         if (!g) continue;
         const p = n => `${(100 * mean(g.map(r => r[n]).filter(v => v !== null))).toFixed(1)}%`;
         console.log(`| ${name} | ${median(g.map(r => r.size))} | ${p('r50')} | ${p('r200')} | ${p('pop50')} | ${median(g.map(r => r.medVotes))} | ${(100 * mean(g.map(r => r.popWins))).toFixed(0)}% |`);
+    }
+    const strata = [...new Set(rowsOut.map(r => r.strato).filter(s => s && s !== '?'))];
+    if (strata.length > 1) {
+        console.log(`\n== PER STRATO (il 'fondo' e' il meno mainstream dello strumento) ==`);
+        console.log('| strato | sorgente | candidati | recall@50 | recall@200 | solo popolarità |');
+        console.log('|---|---|---|---|---|---|');
+        for (const st of strata.sort()) {
+            for (const name of ['graph 2 hop', 'CASO = |2 hop| dal pool vero', 'POOL VERO (fetchSmartAndPool)']) {
+                const gg = rowsOut.filter(r => r.strato === st && r.source === name);
+                if (!gg.length) continue;
+                const p = n => `${(100 * mean(gg.map(r => r[n]).filter(v => v !== null))).toFixed(1)}%`;
+                console.log(`| ${st} | ${name} | ${median(gg.map(r => r.size))} | ${p('r50')} | ${p('r200')} | ${p('pop50')} |`);
+            }
+        }
     }
     db.close();
     process.exit(0);

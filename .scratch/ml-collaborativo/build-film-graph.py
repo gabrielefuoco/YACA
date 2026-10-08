@@ -19,6 +19,7 @@ IL GRAFO DEI FILM, come chiesto dall'utente (08/10/2026):
 Uso: offline_graph_builder/venv/Scripts/python.exe .scratch/ml-collaborativo/build-film-graph.py
 """
 import json
+import os
 import pathlib
 import time
 from collections import Counter, defaultdict
@@ -128,6 +129,13 @@ log(f"  controllo collisione: serie con id presente in links.csv che NON ricevon
 # ==================================================================== 1. teacher
 log("\n=== 1. TEACHER: embedding dalla co-visione (SVD, corretta per popolarità) ===")
 ratings = pd.read_csv(ML / "ratings.csv", usecols=["userId", "movieId"], dtype="int32")
+# EXCLUDE TENERE FUORI GLI UTENTI DEL TEST SET (evita il leakage)
+_EXC = pathlib.Path(__file__).resolve().parents[2] / ".cache" / "movielens" / "testset-users.json"
+if _EXC.exists():
+    _ev = set(int(u) for u in json.loads(_EXC.read_text())["eval_users"])
+    _n0 = len(ratings)
+    ratings = ratings[~ratings["userId"].isin(_ev)]
+    log(f"  [heldout] utenti di valutazione esclusi: {len(_ev):,} · voti tolti: {_n0-len(ratings):,}")
 covered_mids = set(int(m) for m in to_pos[to_pos >= 0])
 ratings = ratings[ratings["movieId"].isin(covered_mids)]
 mids = sorted(covered_mids)
@@ -364,7 +372,7 @@ from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 ari = adjusted_rand_score(l2_of[ok], member[ok])
 nmi = normalized_mutual_info_score(l2_of[ok], member[ok])
 log(f"\n  confronto con i topoi L2 della gerarchia: ARI {ari:.3f} · NMI {nmi:.3f} (0 = indipendenti)")
-out = OUT_DIR / "film-graph.npz"
+out = OUT_DIR / (os.environ.get("GRAPH_OUT") or "film-graph.npz")
 np.savez_compressed(out, embeddings=P.astype(np.float32), member=member,
                     ids=cat["id"].to_numpy(), types=cat["type"].to_numpy(),
                     edges=np.array(sorted(edges), dtype=np.int32), topk=topk_idx)

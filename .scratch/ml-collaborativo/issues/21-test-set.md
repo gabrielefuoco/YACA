@@ -1,6 +1,6 @@
 # 21 — Il test set congelato: la linea di base per migliorie e regressioni
 
-**Status**: `claimed` · **Type**: `task` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `resolved` · **Type**: `task` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Fatto
 
@@ -28,3 +28,24 @@ Regola d'uso: si misura **sempre qui**, mai ricampionato, risultati **per strato
 2. Da lì in avanti, ogni modifica si misura con gli stessi 4 passi sugli stessi 400 trial.
 3. Se un miglioramento misurato sul banco vecchio (5 contesti di un utente) non si replica qui, **vince
    il test set**: il banco vecchio ha esaurito il suo credito.
+
+---
+
+## Fatto: la linea di base (08/10/2026)
+
+Report: [`ricerche/11-linea-di-base.md`](../ricerche/11-linea-di-base.md)
+
+Teacher e grafo de-leakati (200 utenti esclusi), 400 trial su 200 utenti indipendenti.
+
+| | recall@50 | recall@200 | solo popolarita |
+|---|---|---|---|
+| graph 2 hop | **4,3%** | **9,6%** | 6,1% |
+| POOL VERO | 1,8% (75 candidati) | 3,2% | 2,8% |
+| caso | 1,2% | 2,2% | 1,6% |
+
+Il vantaggio del grafo **si replica** (2,4x @50 e 3,0x @200 sul pool; 3,6x e 4,4x sul caso):
+la direzione regge, i numeri si sono rivisti. Nuove letture: per i profili freddi il pool di
+produzione da **75 candidati** (fame); e **il ranker e il punto debole** — ordinare per
+popolarita batte lo scorer a @50 (6,1% contro 4,3%, e 8,5% contro 5,0% sulla fascia mainstream).
+
+Comando d uso: `CAND_FILE=graph-candidates-testset.json node bench-graph-funnel.js`
