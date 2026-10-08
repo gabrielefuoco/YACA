@@ -156,3 +156,74 @@ Due effetti collaterali da annotare:
 3. **Il banco appaiato per popolarità** (il buco ancora aperto): misurare il vantaggio del grafo a parità di
    fascia di voti, per vedere quanto resta dopo aver tolto la fama.
 4. **La statistica forte**: utenti MovieLens tenuti fuori, per passare da "5 profili" a migliaia.
+
+---
+
+## I due fix puntuali (08/10/2026)
+
+### Fix 1 — risoluzione di Leiden: **non era un problema**
+
+Avevo scritto che i cluster erano «cresciuti a 4.118 di mediana»: avevo letto la mediana dei **candidati**,
+non dei cluster. Sul grafo ricostruito:
+
+| res | cluster | mediana | max | modularità | coerenza media |
+|---|---|---|---|---|---|
+| **16** | **276** | **299** | 1.222 | 0,696 | 0,618 |
+| 32 | 491 | 170 | 520 | 0,635 | 0,646 |
+| 64 | 899 | 94 | 334 | 0,573 | 0,676 |
+| 128 | 1.724 | 46 | 173 | 0,504 | 0,708 |
+| 256 | 3.217 | 24 | 105 | 0,434 | 0,736 |
+
+Res 16 dà già micro-generi da **299 titoli** di mediana: va bene così. La manopola esiste se si vuole più
+fine (res 64 → 899 cluster da 94), con la coerenza che sale e la modularità che scende — il trade-off atteso.
+
+### Fix 2 — feature ad alta cardinalità: **alpha 30 è la risposta** (+0,021, e meno overfit)
+
+| feature | alpha | held-out | in-sample | gap |
+|---|---|---|---|---|
+| grezze | 1 | 0,479 | 0,614 | +0,135 |
+| **grezze** | **30** | **0,500** | 0,581 | **+0,081** |
+| righe normalizzate (solo binarie) | 1 | 0,494 | 0,582 | +0,088 |
+| righe normalizzate | 30 | 0,475 | 0,499 | +0,024 |
+
+Due cose da leggere:
+
+1. **Più regolarizzazione = meglio**: alpha 1 → 30 porta l'held-out da 0,479 a **0,500** e dimezza quasi il gap
+   (0,135 → 0,081). Il modello *non* era sotto-adattato: era **sovra-adattato** sulle feature ad alta
+   cardinalità (3.000 persone, 800 franchise). La normalizzazione delle righe fa lo stesso lavoro di alpha
+   (0,494 a alpha 1) ma **non si somma** ad alpha (0,475 a alpha 30): sono due modi per lo stesso problema,
+   non due leve.
+2. **Il bilancio delle feature, aggiornato**: base 0,430 → estese 0,479 → **estese + alpha 30 = 0,500**.
+   **+16% relativo** in coseno, con meno overfit. Controllo del vettore medio sempre a 0,224.
+
+### Dove siamo sul filone
+
+| stato | valore |
+|---|---|
+| student (coseno held-out) | 0,430 → **0,500** (+16%) |
+| imbuto: grafo 2 hop @50 | 4,7% → **5,9%** (pool di produzione: 1,9%) |
+| vantaggio sul pool | **3,1×** con 2,2 volte meno candidati |
+| cluster | 276, mediana 299 titoli, coerenza 0,618 |
+| buco aperto | feature ad alta cardinalità (persone/franchise): **la leva è lì**, e la risposta giusta è un
+  **embedding appreso**, non 3.000 colonne binarie + regularizzazione |
+
+## E l'idea dell'utente (embedding appresi dal sottografo)?
+
+**Regge, e adesso c'è l'evidenza che la sostiene**:
+
+1. le feature **contano** (+0,07 di coseno dalle estese, +0,02 dalla regolarizzazione);
+2. le feature grezze ad alta cardinalità sono **il collo di bottiglia** (overfit, gap 0,135 → 0,081 con alpha);
+3. il grafo delle keyword ha già i collegamenti per farlo: **`L1_adjacency` è scritto dal builder
+   (`build_graph.py:512`) ma assente dal JSON di produzione** → la diffusione fra L1 non parte mai.
+
+Il disegno dell'esperimento, con le metriche già pronte:
+
+- **input**: al posto di 1.982 nodi binari + 3.000 persone + 800 franchise, un **vettore appreso per nodo**
+  (node2vec/DeepWalk sulle adiacenze L1, o autoencoder sulla matrice keyword×keyword), e per il film la
+  **media appresa** degli embedding delle sue keyword, persone e franchise;
+- **misura 1**: coseno held-out, sempre col controllo del banale (0,224) accanto — deve battere 0,500;
+- **misura 2**: l'imbuto (grafo 2 hop @50) — deve battere 5,9%;
+- **costo**: basso (node2vec su 6.125 keyword + 1.382 nodi L1 è un giro da minuti, non da ore).
+
+Se (1) migliora e (2) no, è il segno che lo student è già «abbastanza buono» e il collo di bottiglia è altrove
+(la copertura del teacher, la statistica debole). Se migliorano entrambe, è la strada.
