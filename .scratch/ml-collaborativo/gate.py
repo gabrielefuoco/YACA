@@ -30,7 +30,9 @@ def yr(d):
     return int(s) if s.isdigit() else 0
 
 
-z = np.load(ML / "spazi-cap0.npz", allow_pickle=True)
+import os
+SP = os.environ.get("SPAZI", "spazi-cap0")
+z = np.load(ML / f"{SP}.npz", allow_pickle=True)
 Pc, Pb, tmdb, tipo, coll, year, votes = z["Pc"], z["Pb"], z["tmdb"], z["tipo"], z["coll"], z["year"], z["votes"]
 n = len(tmdb)
 is_tv = (tipo == "tv")
@@ -73,7 +75,7 @@ def find(title, year_):
 
 row_of = {f"{t}:{int(i)}": r for r, (t, i) in enumerate(zip(tipo, tmdb))}
 gold = {"sources": []}
-for f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json"):
+for f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json", "link-manuali-4.json"):
     p = ROOT / ".scratch" / "ml-collaborativo" / "gold" / f
     if p.exists():
         gold["sources"] += json.loads(p.read_text(encoding="utf-8"))["sources"]
