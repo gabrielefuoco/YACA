@@ -1,0 +1,855 @@
+{
+ "batch": 4,
+ "sources": [
+  {
+   "id": "tv:103157",
+   "titolo": "The Hidden Dungeon Only I Can Enter",
+   "cluster": "isekai-harem",
+   "links": [
+    "movie:532067:3",
+    "movie:553835:2",
+    "movie:331061:2",
+    "tv:62745:3",
+    "tv:82684:3",
+    "tv:94664:2",
+    "tv:114477:2",
+    "tv:208493:2"
+   ]
+  },
+  {
+   "id": "tv:220801",
+   "titolo": "Un inganno di troppo",
+   "cluster": "coben-mystery",
+   "links": [
+    "movie:11324:1",
+    "tv:252000:2",
+    "tv:244628:2",
+    "tv:37602:2"
+   ],
+   "add": [
+    "tv|Safe|2018|3",
+    "tv|Stay Close|2021|3",
+    "tv|The Five|2016|2"
+   ]
+  },
+  {
+   "id": "tv:84452",
+   "titolo": "Nicky Jam: El Ganador",
+   "cluster": "music-biopic",
+   "links": [
+    "tv:97180:3"
+   ],
+   "add": [
+    "movie|8 Mile|2002|2",
+    "movie|Straight Outta Compton|2015|2",
+    "tv|Luis Miguel - La serie|2018|3",
+    "tv|The Get Down|2016|2",
+    "movie|Notorious B.I.G.|2009|1",
+    "tv|Empire|2015|1"
+   ]
+  },
+  {
+   "id": "tv:68467",
+   "titolo": "3%",
+   "cluster": "dystopian-selection",
+   "links": [
+    "movie:9355:1",
+    "tv:63351:1"
+   ],
+   "add": [
+    "movie|Divergent|2014|3",
+    "movie|The Hunger Games|2012|3",
+    "movie|Elysium|2013|2",
+    "tv|The 100|2014|2",
+    "tv|The Wilds|2020|2",
+    "tv|Black Mirror|2011|1"
+   ]
+  },
+  {
+   "id": "tv:82809",
+   "titolo": "Falsa identidad",
+   "cluster": "identity-crime-soap",
+   "links": [
+    "movie:1213:2",
+    "movie:84287:1",
+    "tv:68878:2"
+   ],
+   "add": [
+    "movie|A letto con il nemico|1991|3",
+    "tv|Señora Acero|2014|2",
+    "movie|Il fuggitivo|1993|1",
+    "tv|Ozark|2017|1",
+    "tv|El Chapo|2017|1"
+   ]
+  },
+  {
+   "id": "tv:259731",
+   "titolo": "La sua verità",
+   "cluster": "murder-couple-mystery",
+   "links": [
+    "tv:70453:2",
+    "tv:97173:1"
+   ],
+   "add": [
+    "tv|The Undoing - Le verità non dette|2020|3",
+    "movie|Gone Girl|2014|3",
+    "tv|The Affair|2014|2",
+    "tv|Omicidio a Easttown|2021|2",
+    "tv|Big Little Lies - Piccole grandi bugie|2017|1"
+   ]
+  },
+  {
+   "id": "tv:88061",
+   "titolo": "Hensuki: Sei disposto ad innamorarti di un pervertito, purché sia ​​una ragazza carina?",
+   "cluster": "harem-romcom",
+   "links": [
+    "movie:820067:3",
+    "movie:460399:2",
+    "movie:331061:2",
+    "tv:93019:3",
+    "tv:46169:2",
+    "tv:46025:2"
+   ],
+   "add": [
+    "tv|Nisekoi|2014|2",
+    "tv|The Quintessential Quintuplets|2019|2"
+   ]
+  },
+  {
+   "id": "tv:34105",
+   "titolo": "Golden Boy",
+   "cluster": "ecchi-comedy",
+   "links": [
+    "tv:45967:1"
+   ],
+   "add": [
+    "tv|Great Teacher Onizuka|1999|3",
+    "tv|Cromartie High School|2003|2",
+    "tv|Prison School|2015|2",
+    "tv|Grand Blue|2018|2",
+    "movie|Il laureato|1967|1"
+   ]
+  },
+  {
+   "id": "tv:135918",
+   "titolo": "Strappare lungo i bordi",
+   "cluster": "italian-adult-animation",
+   "links": [
+    "tv:2604:1"
+   ],
+   "add": [
+    "tv|BoJack Horseman|2014|3",
+    "movie|Persepolis|2007|2",
+    "tv|Undone|2019|2",
+    "tv|Rick and Morty|2013|1",
+    "tv|Questo mondo non mi renderà cattivo|2023|3",
+    "movie|La profezia dell'Armadillo|2018|3"
+   ]
+  },
+  {
+   "id": "tv:241554",
+   "titolo": "Murderbot",
+   "cluster": "ai-sci-fi",
+   "links": [
+    "movie:775996:1",
+    "tv:95403:2"
+   ],
+   "add": [
+    "tv|Westworld - Dove tutto è concesso|2016|3",
+    "tv|Humans|2015|3",
+    "movie|Ex Machina|2014|3",
+    "movie|Io, robot|2004|2",
+    "tv|The Expanse|2015|1"
+   ]
+  },
+  {
+   "id": "tv:61014",
+   "titolo": "The Knick",
+   "cluster": "period-medical",
+   "links": [
+    "movie:8649:2",
+    "movie:25269:2",
+    "tv:1408:2",
+    "tv:47523:3",
+    "tv:6467:1"
+   ],
+   "add": [
+    "tv|L'alienista|2018|2",
+    "movie|Risvegli|1990|2"
+   ]
+  },
+  {
+   "id": "tv:7317",
+   "titolo": "The Inbetweeners",
+   "cluster": "british-teen-comedy",
+   "links": [
+    "movie:348296:3",
+    "movie:42889:2",
+    "movie:2108:2",
+    "movie:13342:2",
+    "tv:74204:2",
+    "tv:100883:2"
+   ],
+   "add": [
+    "movie|Superbad|2007|3",
+    "tv|Skins|2007|2"
+   ]
+  },
+  {
+   "id": "tv:236",
+   "titolo": "Flash",
+   "cluster": "classic-superhero",
+   "links": [
+    "movie:9531:1",
+    "movie:8536:2",
+    "movie:7220:1",
+    "tv:95057:2"
+   ],
+   "add": [
+    "tv|The Flash|2014|3",
+    "movie|Superman|1978|3",
+    "tv|Lois & Clark - Le nuove avventure di Superman|1993|2",
+    "tv|Smallville|2001|2"
+   ]
+  },
+  {
+   "id": "tv:66871",
+   "titolo": "SIX",
+   "cluster": "military-action",
+   "links": [
+    "movie:97630:3",
+    "movie:75674:3",
+    "movie:193756:3",
+    "movie:4421:2",
+    "tv:71789:3",
+    "tv:44652:2",
+    "tv:60802:1"
+   ],
+   "add": [
+    "movie|13 Hours: The Secret Soldiers of Benghazi|2016|2"
+   ]
+  },
+  {
+   "id": "tv:4879",
+   "titolo": "El Cuerpo del Deseo",
+   "cluster": "reincarnation-soap",
+   "links": [
+    "movie:581726:1",
+    "movie:663558:1",
+    "movie:876792:1",
+    "tv:99491:1",
+    "tv:97525:1"
+   ],
+   "add": [
+    "tv|Pasión de Gavilanes|2003|2",
+    "movie|Il paradiso può attendere|1978|2",
+    "movie|Ghost - Fantasma|1990|2"
+   ]
+  },
+  {
+   "id": "tv:72339",
+   "titolo": "Happy!",
+   "cluster": "dark-violent-comedy",
+   "links": [
+    "movie:8068:2",
+    "movie:74725:2",
+    "movie:64689:2",
+    "tv:33400:3",
+    "tv:67642:2",
+    "tv:18653:2"
+   ],
+   "add": [
+    "tv|Preacher|2016|3",
+    "tv|The Boys|2019|2"
+   ]
+  },
+  {
+   "id": "tv:3122",
+   "titolo": "Star Wars: Clone Wars",
+   "cluster": "star-wars-animation",
+   "links": [
+    "movie:70608:2",
+    "movie:74849:1",
+    "tv:82856:3",
+    "tv:83867:3",
+    "tv:79093:2"
+   ],
+   "add": [
+    "tv|Star Wars: The Clone Wars|2008|3",
+    "tv|Star Wars Rebels|2014|2",
+    "movie|Star Wars: Episodio III - La vendetta dei Sith|2005|2"
+   ]
+  },
+  {
+   "id": "tv:745",
+   "titolo": "Spaced",
+   "cluster": "british-sitcom",
+   "links": [
+    "tv:903:3",
+    "tv:6056:3",
+    "tv:4483:2",
+    "tv:4292:2",
+    "movie:11129:2"
+   ],
+   "add": [
+    "movie|Shaun of the Dead|2004|3",
+    "tv|The IT Crowd|2006|2",
+    "movie|Scott Pilgrim vs. the World|2010|2"
+   ]
+  },
+  {
+   "id": "tv:3868",
+   "titolo": "The Lost Room",
+   "cluster": "paranormal-objects",
+   "links": [
+    "movie:446021:2",
+    "movie:8413:1",
+    "tv:58808:1"
+   ],
+   "add": [
+    "tv|Warehouse 13|2009|3",
+    "tv|Fringe|2008|3",
+    "tv|The X-Files|1993|2",
+    "tv|The Twilight Zone|1959|2",
+    "movie|Cube - Il cubo|1998|2"
+   ]
+  },
+  {
+   "id": "tv:219937",
+   "titolo": "Dexter: Original Sin",
+   "cluster": "vigilante-serial-killer",
+   "links": [
+    "tv:1405:3",
+    "tv:131927:3",
+    "tv:259909:3"
+   ],
+   "add": [
+    "movie|American Psycho|2000|3",
+    "tv|Bates Motel|2013|2",
+    "tv|Hannibal|2013|2",
+    "movie|Nightcrawler|2014|1"
+   ]
+  },
+  {
+   "id": "tv:215866",
+   "titolo": "American Primeval",
+   "cluster": "gritty-western",
+   "links": [
+    "movie:9028:3",
+    "movie:273248:3",
+    "movie:33:3",
+    "movie:28894:2",
+    "tv:86941:3",
+    "tv:20056:3"
+   ],
+   "add": [
+    "tv|Godless|2017|3",
+    "tv|1883|2021|3"
+   ]
+  },
+  {
+   "id": "tv:93784",
+   "titolo": "Loop",
+   "cluster": "retro-sci-fi-small-town",
+   "links": [
+    "movie:9944:2"
+   ],
+   "add": [
+    "movie|Super 8|2011|3",
+    "tv|Stranger Things|2016|2",
+    "movie|E.T. l'extra-terrestre|1982|2",
+    "tv|Black Mirror|2011|2",
+    "tv|Devs|2020|2",
+    "movie|Midnight Special|2015|1",
+    "tv|The Twilight Zone|1959|1"
+   ]
+  },
+  {
+   "id": "tv:112160",
+   "titolo": "La via del grembiule - Lo yakuza casalingo",
+   "cluster": "yakuza-comedy",
+   "links": [
+    "tv:80613:3",
+    "tv:76758:3",
+    "movie:283127:2",
+    "movie:184608:2",
+    "movie:14943:1",
+    "movie:13754:1"
+   ],
+   "add": [
+    "tv|Gintama|2006|2",
+    "tv|The Yakuza's Guide to Babysitting|2022|2"
+   ]
+  },
+  {
+   "id": "tv:71340",
+   "titolo": "Krypton",
+   "cluster": "sci-fi-prequel",
+   "links": [
+    "movie:49521:3",
+    "movie:830:2",
+    "movie:9425:1",
+    "tv:877:3",
+    "tv:96658:1"
+   ],
+   "add": [
+    "tv|Smallville|2001|2",
+    "movie|Superman|1978|2"
+   ]
+  },
+  {
+   "id": "tv:124800",
+   "titolo": "Love & Death",
+   "cluster": "true-crime",
+   "links": [
+    "movie:460071:3",
+    "movie:244509:2",
+    "movie:331583:2",
+    "movie:93:2",
+    "movie:51391:2",
+    "tv:105804:3",
+    "tv:208720:2",
+    "tv:66738:2"
+   ]
+  },
+  {
+   "id": "tv:203085",
+   "titolo": "Star Wars: Tales of the Jedi",
+   "cluster": "star-wars-animation",
+   "links": [
+    "tv:241388:1"
+   ],
+   "add": [
+    "tv|Star Wars: The Clone Wars|2008|3",
+    "tv|Star Wars Rebels|2014|3",
+    "tv|Star Wars: The Bad Batch|2021|2",
+    "tv|Star Wars: Visions|2021|3",
+    "tv|Ahsoka|2023|2",
+    "movie|Star Wars: The Clone Wars|2008|2"
+   ]
+  },
+  {
+   "id": "tv:79863",
+   "titolo": "Pretty Little Liars: The Perfectionists",
+   "cluster": "teen-mystery",
+   "links": [
+    "tv:69050:3",
+    "tv:64548:2",
+    "movie:368031:2",
+    "movie:109491:1"
+   ],
+   "add": [
+    "tv|Pretty Little Liars|2010|3",
+    "tv|Elite|2018|2"
+   ]
+  },
+  {
+   "id": "tv:42503",
+   "titolo": "Deadman Wonderland",
+   "cluster": "death-game",
+   "links": [
+    "movie:3176:3",
+    "movie:357411:2",
+    "tv:61374:3",
+    "tv:45125:3",
+    "tv:1429:2",
+    "tv:61223:2"
+   ],
+   "add": [
+    "tv|Diario del Futuro|2011|3",
+    "movie|The Hunger Games|2012|2"
+   ]
+  },
+  {
+   "id": "tv:46671",
+   "titolo": "Diario del Futuro",
+   "cluster": "death-game",
+   "links": [
+    "movie:3176:3",
+    "movie:50461:3",
+    "movie:341006:3",
+    "movie:24056:2",
+    "tv:112163:3",
+    "tv:101571:3",
+    "tv:45125:3",
+    "tv:42503:3"
+   ]
+  },
+  {
+   "id": "tv:71225",
+   "titolo": "Le ragazze del centralino",
+   "cluster": "spanish-period-drama",
+   "links": [
+    "movie:814338:1",
+    "movie:26561:1",
+    "tv:91239:1",
+    "tv:98187:1"
+   ],
+   "add": [
+    "tv|Velvet|2014|3",
+    "tv|Downton Abbey|2010|2",
+    "tv|Isabel|2012|2",
+    "movie|Suffragette|2015|2"
+   ]
+  },
+  {
+   "id": "tv:4331",
+   "titolo": "Wonder Woman",
+   "cluster": "classic-superhero",
+   "links": [
+    "movie:297762:3",
+    "movie:8536:2",
+    "movie:9531:1",
+    "tv:95057:2"
+   ],
+   "add": [
+    "movie|Superman|1978|3",
+    "tv|L'incredibile Hulk|1977|2",
+    "movie|Wonder Woman 1984|2020|2",
+    "tv|Batman|1966|1"
+   ]
+  },
+  {
+   "id": "tv:64394",
+   "titolo": "Outcast",
+   "cluster": "exorcism-horror",
+   "links": [
+    "movie:9552:3",
+    "movie:493922:3",
+    "movie:608994:2",
+    "movie:645856:2",
+    "tv:1622:3",
+    "tv:60743:2"
+   ],
+   "add": [
+    "tv|The Exorcist|2016|3",
+    "movie|The Exorcism of Emily Rose|2005|3"
+   ]
+  },
+  {
+   "id": "tv:93392",
+   "titolo": "Dion",
+   "cluster": "kid-superpowers",
+   "links": [
+    "movie:23483:2",
+    "movie:961323:2",
+    "tv:103768:3",
+    "tv:87194:2"
+   ],
+   "add": [
+    "movie|Chronicle|2012|3",
+    "tv|Misfits|2009|2",
+    "movie|Shazam!|2019|2",
+    "tv|The Umbrella Academy|2019|2"
+   ]
+  },
+  {
+   "id": "tv:216082",
+   "titolo": "Zero Day",
+   "cluster": "political-conspiracy",
+   "links": [
+    "movie:820:2",
+    "movie:9331:2",
+    "movie:23518:2",
+    "movie:17365:3",
+    "movie:137094:2",
+    "movie:11963:3",
+    "tv:1407:3"
+   ],
+   "add": [
+    "tv|The Night Agent|2023|2"
+   ]
+  },
+  {
+   "id": "tv:42942",
+   "titolo": "Angel Beats!",
+   "cluster": "afterlife-drama",
+   "links": [
+    "movie:372058:2",
+    "movie:572154:2",
+    "movie:916192:1",
+    "tv:34164:3",
+    "tv:67915:2"
+   ],
+   "add": [
+    "tv|Clannad|2007|3",
+    "tv|Toradora!|2008|1",
+    "tv|Charlotte|2015|2"
+   ]
+  },
+  {
+   "id": "tv:78903",
+   "titolo": "Utopia",
+   "cluster": "conspiracy-thriller",
+   "links": [
+    "tv:67026:1"
+   ],
+   "add": [
+    "tv|Rubicon|2010|2",
+    "tv|Mr. Robot|2015|2",
+    "movie|La conversazione|1974|2",
+    "movie|V per Vendetta|2005|1",
+    "tv|The Prisoner|1967|1"
+   ]
+  },
+  {
+   "id": "tv:111800",
+   "titolo": "The Old Man",
+   "cluster": "spy-thriller",
+   "links": [],
+   "add": [
+    "tv|Slow Horses|2022|3",
+    "movie|The Bourne Identity|2002|3",
+    "movie|I tre giorni del Condor|1975|3",
+    "movie|The American|2010|2",
+    "tv|The Night Manager|2016|2",
+    "movie|La spia - A Most Wanted Man|2014|2"
+   ]
+  },
+  {
+   "id": "tv:245703",
+   "titolo": "Dept. Q - Sezione casi irrisolti",
+   "cluster": "cold-case-crime",
+   "links": [
+    "movie:85889:2",
+    "movie:866463:1",
+    "tv:61555:3"
+   ],
+   "add": [
+    "tv|Unforgotten|2015|3",
+    "tv|Broadchurch|2013|3",
+    "tv|Happy Valley|2014|2",
+    "movie|Prisoners|2013|3",
+    "tv|Shetland|2013|1"
+   ]
+  },
+  {
+   "id": "tv:98161",
+   "titolo": "Home Before Dark",
+   "cluster": "kid-investigator",
+   "links": [
+    "tv:1920:2",
+    "tv:69050:2",
+    "tv:61405:2",
+    "tv:80054:1",
+    "tv:201948:1"
+   ],
+   "add": [
+    "tv|Stranger Things|2016|2",
+    "movie|Detective in erba|2020|2"
+   ]
+  },
+  {
+   "id": "tv:79026",
+   "titolo": "The Protector",
+   "cluster": "turkish-fantasy",
+   "links": [
+    "movie:320:1",
+    "tv:67915:2",
+    "tv:96481:2"
+   ],
+   "add": [
+    "tv|The Gift|2019|3",
+    "movie|Highlander - L'ultimo immortale|1986|3",
+    "tv|Kuruluş Osman|2019|2"
+   ]
+  },
+  {
+   "id": "tv:119988",
+   "titolo": "Suburbia killer",
+   "cluster": "coben-crime",
+   "links": [
+    "tv:110356:1",
+    "tv:131927:1"
+   ],
+   "add": [
+    "tv|Safe|2018|3",
+    "tv|The Five|2016|2",
+    "tv|Your Honor|2020|2",
+    "movie|Gone Girl|2014|1",
+    "tv|Stay Close|2021|1"
+   ]
+  },
+  {
+   "id": "tv:46849",
+   "titolo": "Generation War",
+   "cluster": "wwii-drama",
+   "links": [
+    "movie:423:3",
+    "movie:2117:3",
+    "movie:121835:3",
+    "movie:515001:2",
+    "movie:8741:2",
+    "tv:15571:3",
+    "tv:68558:2",
+    "tv:33189:2"
+   ]
+  },
+  {
+   "id": "tv:235930",
+   "titolo": "Devil May Cry",
+   "cluster": "demon-hunter-action",
+   "links": [
+    "movie:242546:2",
+    "movie:664767:2",
+    "movie:647:1",
+    "tv:85937:2",
+    "tv:32871:1",
+    "tv:94605:2"
+   ],
+   "add": [
+    "tv|Castlevania|2017|3",
+    "tv|Hellsing Ultimate|2006|2"
+   ]
+  },
+  {
+   "id": "tv:61421",
+   "titolo": "Terror in Resonance - L’eco del terrore",
+   "cluster": "psychological-thriller",
+   "links": [
+    "movie:1073:2",
+    "movie:357411:2",
+    "tv:43865:3",
+    "tv:42509:2",
+    "tv:80564:2",
+    "tv:77529:2"
+   ],
+   "add": [
+    "tv|Death Note|2006|3",
+    "tv|Monster|2004|3"
+   ]
+  },
+  {
+   "id": "tv:66958",
+   "titolo": "Orange",
+   "cluster": "time-travel-romance",
+   "links": [
+    "movie:372058:3",
+    "movie:359171:3",
+    "movie:378064:3",
+    "movie:572154:2",
+    "tv:36941:3",
+    "tv:62602:3",
+    "tv:52878:2",
+    "tv:42557:1"
+   ]
+  },
+  {
+   "id": "tv:98178",
+   "titolo": "Storie incredibili",
+   "cluster": "sci-fi-anthology",
+   "links": [
+    "movie:13581:2",
+    "movie:300:2",
+    "movie:9913:1",
+    "tv:1026:3",
+    "tv:4346:1"
+   ],
+   "add": [
+    "tv|The Twilight Zone|1959|3",
+    "tv|Guillermo del Toro's Cabinet of Curiosities|2022|2",
+    "tv|Black Mirror|2011|2"
+   ]
+  },
+  {
+   "id": "tv:83103",
+   "titolo": "Domestic Girlfriend",
+   "cluster": "forbidden-romance",
+   "links": [
+    "movie:1010581:2",
+    "tv:206629:3",
+    "tv:129516:3",
+    "tv:45998:2",
+    "tv:70878:1",
+    "tv:72296:1"
+   ],
+   "add": [
+    "tv|Scum's Wish|2017|2",
+    "tv|Rent-a-Girlfriend|2020|1"
+   ]
+  },
+  {
+   "id": "tv:279060",
+   "titolo": "Chespirito: Sin querer queriendo",
+   "cluster": "latin-biopic",
+   "links": [
+    "tv:70128:2",
+    "tv:60602:2",
+    "tv:49157:2",
+    "tv:153282:1",
+    "movie:88794:1"
+   ],
+   "add": [
+    "tv|Luis Miguel - La serie|2018|3",
+    "movie|Cantinflas|2014|3",
+    "tv|Selena: La serie|2020|2"
+   ]
+  },
+  {
+   "id": "tv:39525",
+   "titolo": "Wilfred",
+   "cluster": "surreal-dark-comedy",
+   "links": [
+    "movie:798286:2",
+    "movie:68:2",
+    "movie:627:2",
+    "movie:396461:2",
+    "tv:73411:2",
+    "tv:903:2"
+   ],
+   "add": [
+    "tv|Legion|2017|2",
+    "movie|Donnie Darko|2001|2"
+   ]
+  },
+  {
+   "id": "tv:204154",
+   "titolo": "Scavengers Reign",
+   "cluster": "alien-survival",
+   "links": [
+    "movie:16306:3",
+    "movie:49529:1",
+    "movie:27072:1",
+    "tv:86831:2",
+    "tv:88041:2"
+   ],
+   "add": [
+    "tv|Pantheon|2022|3",
+    "movie|Annientamento|2018|3",
+    "tv|Raised by Wolves - Una nuova umanità|2020|3"
+   ]
+  },
+  {
+   "id": "tv:86428",
+   "titolo": "The Spanish Princess",
+   "cluster": "tudor-drama",
+   "links": [
+    "movie:22522:3",
+    "movie:12184:3",
+    "movie:43122:2",
+    "movie:4518:2",
+    "tv:2942:3",
+    "tv:61697:3",
+    "tv:57092:3",
+    "tv:48865:1"
+   ]
+  },
+  {
+   "id": "tv:129495",
+   "titolo": "Clickbait",
+   "cluster": "social-media-mystery",
+   "links": [
+    "movie:146233:2",
+    "tv:201289:3",
+    "tv:130853:1",
+    "tv:202308:1"
+   ],
+   "add": [
+    "movie|Searching|2018|3",
+    "tv|Safe|2018|2",
+    "movie|Gone Girl|2014|2",
+    "tv|The Five|2016|1"
+   ]
+  }
+ ]
+}
