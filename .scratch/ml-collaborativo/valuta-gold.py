@@ -65,6 +65,11 @@ for s in gold["sources"]:
 print(f"sorgenti agganciate: {len(srcs)}/{len(gold['sources'])} · collegamenti {sum(len(s['links']) for s in srcs)} · falsi amici {sum(len(s['ffs']) for s in srcs)}")
 if miss: print("  non agganciate:", ", ".join(miss))
 Sf = sp.load_npz(ML/f"{SP}-tfidf.npz").tocsr()
+_zt = np.load(ML/"temi-scores.npz", allow_pickle=True)
+TB, TC, TKEYS = _zt["bag"], _zt["cen"], [str(x) for x in _zt["keys"]]
+TB = TB / (np.abs(TB).max() + 1e-9); TC = TC / (np.abs(TC).max() + 1e-9)   # scale confrontabili
+temi_row = {k: a for a, k in enumerate(TKEYS)}
+key_of_row = {r: f"{tipo[r]}:{int(tmdb[r])}" for r in range(n)}
 is_tv = (tipo == "tv")
 def centra(P):
     Q = P.astype(np.float64).copy()
@@ -99,7 +104,7 @@ even = [k for k in range(len(srcs)) if k % 2 == 0]
 print("")
 voti = z["votes"].astype(float)
 COLD = voti < 200          # sotto questa soglia il teacher non ha dati: le coordinate apprese sono rumore
-def sims_of(row, wc, wb, wf, wy, sig, boost):
+def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0):
     sims = wc*(Pc2 @ Pc2[row]) + wb*(Pb2 @ Pb2[row])
     if wf and COLD[row]:
         sims = sims + wf*(Sf[row] @ Sf.T).toarray().ravel()
@@ -107,14 +112,19 @@ def sims_of(row, wc, wb, wf, wy, sig, boost):
         sims = sims + wy*np.exp(-((year - year[row])/sig)**2)
     if boost:
         sims = sims + boost*((coll == coll[row]) & ~pd.isna(coll))
+    if wt or wz:
+        a = temi_row.get(key_of_row[row])
+        if a is not None:
+            if wt: sims = sims + wt*TB[a]
+            if wz: sims = sims + wz*TC[a]
     sims[row] = -9
     return sims
-def valuta(wc, wb, wf, wy, sig, boost, nome, subset=None):
+def valuta(wc, wb, wf, wy, sig, boost, nome, subset=None, wt=0.0, wz=0.0):
     ss = srcs if subset is None else [srcs[k] for k in subset]
     tot = {w: 0 for w in W_K}; hit = {w: 0 for w in W_K}
     byt = {}; ff10 = ff_tot = 0
     for s_ in ss:
-        order = np.argsort(-sims_of(s_["i"], wc, wb, wf, wy, sig, boost))
+        order = np.argsort(-sims_of(s_["i"], wc, wb, wf, wy, sig, boost, wt, wz))
         rank = {int(x): k for k, x in enumerate(order)}
         for j, t, w, _ in s_["links"]:
             tot[w] += 1; hit[w] += rank[j] < W_K[w]
@@ -134,20 +144,19 @@ valuta(1,0,1,0,6,0, "contenuto + feature grezze (sempre)")
 valuta(0.7,0.3,0,0.3,6,0, "contenuto+comport + anno")
 valuta(0.7,0.3,0,0.3,6,0.4, "+ saga")
 print("")
-print("=== SWEEP (calibro sui dispari, verifico sui pari) ===")
+print("=== I TEMI DENTRO LA FUSIONE (altri pesi fissi al meglio: cont 1.0 · anno 0.15 sig8 · saga 0.4) ===")
+print("  [calibrazione sui dispari]")
 best = None
-for (wc, wb) in ((0.7,0.3),(0.75,0.25),(0.8,0.2),(1.0,0.0)):
-    for wy in (0.0, 0.15, 0.3):
-        for sig in (3, 8):
-            for wf in (0.0, 0.4):
-                for b in (0.0, 0.4):
-                    r = valuta(wc, wb, wf, wy, sig, b, f"c{wc} b{wb} f{wf} y{wy} s{sig} bst{b}", subset=odd)
-                    if best is None or r["score"] > best[-1]["score"]:
-                        best = (wc, wb, wf, wy, sig, b, r)
+for wt in (0.0, 0.05, 0.1, 0.2, 0.4):
+    for wz in (0.0, 0.05, 0.1, 0.2):
+        r = valuta(1.0, 0.0, 0.0, 0.15, 8, 0.4, f"temi_bag {wt} · temi_cen {wz}", subset=odd, wt=wt, wz=wz)
+        if best is None or r["score"] > best[-1]["score"]:
+            best = (wt, wz, r)
 print("")
-print(f"=== MIGLIORE: cont {best[0]} · comp {best[1]} · feature {best[2]} · anno {best[3]} (sigma {best[4]}) · saga {best[5]} ===")
-valuta(best[0], best[1], best[2], best[3], best[4], best[5], "TUTTO IL SET")
-r_ev = valuta(best[0], best[1], best[2], best[3], best[4], best[5], "VERIFICA (solo pari)", subset=even)
+valuta(1.0, 0.0, 0.0, 0.15, 8, 0.4, "SENZA temi (riferimento)", subset=even)
+print(f"=== MIGLIORE: temi_bag {best[0]} · temi_cen {best[1]} ===")
+valuta(1.0, 0.0, 0.0, 0.15, 8, 0.4, "TUTTO IL SET", wt=best[0], wz=best[1])
+r_ev = valuta(1.0, 0.0, 0.0, 0.15, 8, 0.4, "VERIFICA (solo pari)", subset=even, wt=best[0], wz=best[1])
 print("")
 print("=== PER TIPO (verifica) ===")
 for t in sorted(r_ev["byt"], key=lambda x: -r_ev["byt"][x][1]):
