@@ -65,16 +65,16 @@ soffitto dell'universo: 11,027 su 13,950 titoli della verita' = 79.0%
 | | pool filtrato (run 23) | **pool intero (run 24)** |
 |---|---|---|
 | candidati (mediana) | ~10.000 | **~24.700** |
-| soffitto (verita' raggiungibile) | 66,7% | **~89%** |
+| soffitto (verita' raggiungibile) | 66,7% | **79,0%** (calcolato) |
 | popolarita' @50 | 3,5% | 2,4% |
 | scorer di produzione @50 | 2,1% | 1,2% |
 | posizione collaborativa @50 | 3,0% | 2,7% |
 | **RANKER @50** | **5,1%** | **4,2%** |
 | ranker in quota del soffitto | 7,6% | **4,7%** |
 
-Il soffitto sale di 22 punti e il ranker **ne prende meno**. Non e' un errore: e' il risultato.
+Il soffitto sale di **12,3 punti** e il ranker **ne prende meno**. Non e' un errore: e' il risultato.
 
-1. **Perche'**: i 22 punti di verita' che il filtro esclude sono proprio i titoli **senza legame di
+1. **Perche'**: i 12,3 punti di verita' che il filtro esclude sono proprio i titoli **senza legame di
    genere/keyword con il profilo** — i piu' difficili, quelli "sorpresa". Renderli *raggiungibili* non li
    rende *trovabili*: il ranker non ha le feature per distinguerli in un pagliaio 2,4 volte piu' grande.
 2. **Il filtro non e' un bug: e' un riduttore di pagliaio.** Costa soffitto, guadagna efficienza. Con
@@ -92,10 +92,22 @@ Il soffitto sale di 22 punti e il ranker **ne prende meno**. Non e' un errore: e
 
 ## La conclusione che cambia la priorita'
 
-Il collo di bottiglia **non e' il soffitto** (89% raggiungibile) ma la **trovabilita'**: 50 posti prendono
+Il collo di bottiglia **non e' il soffitto** (79% raggiungibile) ma la **trovabilita'**: 50 posti prendono
 il 4,7% di cio' che si puo' prendere. Non servono candidati piu' numerosi — servono **feature che trovino
 la nicchia**. E l'unico segnale che oggi lo fa e' la **posizione collaborativa** (6x la popolarita' sul
 fondo, dove tutto il resto crolla).
 
 **Quindi**: smettere di allargare i candidati e lavorare sulla nicchia — che e' anche l'unica parte dove
 il prodotto ha un vantaggio reale, perche' sui gusti diffusi la popolarita' basta e avanza.
+
+
+## Correzione (di nuovo un numero stimato)
+
+Avevo scritto "~89%", stimandolo dalla sweep di 60 account invece di calcolarlo. Il soffitto esatto di
+questo run e' **79,0%** (11.027 su 13.950), quindi il guadagno di raggiungibilita' togliendo il filtro e'
+**+12,3 punti**, non +22.
+
+**E' la seconda volta in due report che scrivo un numero stimato invece di calcolarlo** (il primo: "85-89%"
+nel report 23). La direzione delle conclusioni non cambia — il soffitto sale e il recall scende comunque —
+ma e' un errore ricorrente e va nominato: **il soffitto si calcola prima di scrivere, sempre**. La
+prossima volta il numero sta nel comando, non nella frase.
