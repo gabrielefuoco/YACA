@@ -234,3 +234,48 @@ def valuta2(nome, modo, subset=None):
 valuta2("pesi FISSI (come oggi)", "fisso", even)
 valuta2("GATE FORTE (nicchia: 0.2/1.0)", "gate", even)
 valuta2("controllo UNIFORME (0.2/1.0 sempre)", "uniforme", even)
+
+# ---------------------------------------------------------------- L'ORACOLO: il soffitto di ogni combinazione
+log("")
+log("=== L'ORACOLO: i collegamenti stanno nell'UNIONE delle componenti? ===")
+log("(se no, nessuna fusione puo' trovarli: servono segnali nuovi)")
+even_idx = [k for k in range(len(srcs)) if k % 2 == 0]
+odd_idx = [k for k in range(len(srcs)) if k % 2 == 1]
+for nome_sub, sub in (("verifica (pari)", even_idx), ("calibrazione (dispari)", odd_idx)):
+    ss = [srcs[k] for k in sub]
+    for K in (10, 20, 50):
+        uni = 0; tot = 0; uni5 = 0
+        for s in ss:
+            r = s["r"]
+            inK = {c: set(np.flatnonzero(R[c][r] < K).tolist()) for c in COMP}
+            u = set().union(*inK.values())
+            for j, w in s["links"]:
+                tot += 1; uni += j in u
+        log(f"  {nome_sub:<22} K={K:<3} unione delle 5 componenti copre {100*uni/max(1,tot):5.1f}% ({uni}/{tot})")
+log("")
+log("=== CONTRIBUTO UNICO di ogni componente (link coperti SOLO da lei, K=20) ===")
+for c in COMP:
+    unico = 0; tot = 0
+    for s in even_idx:
+        s_ = srcs[s]; r = s_["r"]
+        altri = set()
+        for c2 in COMP:
+            if c2 != c: altri |= set(np.flatnonzero(R[c2][r] < 20).tolist())
+        miei = set(np.flatnonzero(R[c][r] < 20).tolist())
+        for j, w in s_["links"]:
+            tot += 1; unico += (j in miei) and (j not in altri)
+    log(f"  {c:<14} link che SOLO lei prende (nei primi 20): {unico}/{tot} = {100*unico/max(1,tot):.1f}%")
+log("")
+log("=== LE MIGLIORI COPPIE (K=20, verifica) ===")
+best = []
+for a in range(len(COMP)):
+    for b in range(a + 1, len(COMP)):
+        uni = tot = 0
+        for s in even_idx:
+            s_ = srcs[s]; r = s_["r"]
+            u = set(np.flatnonzero(R[COMP[a]][r] < 20).tolist()) | set(np.flatnonzero(R[COMP[b]][r] < 20).tolist())
+            for j, w in s_["links"]:
+                tot += 1; uni += j in u
+        best.append((100*uni/max(1,tot), COMP[a], COMP[b]))
+for v, a, b in sorted(best, reverse=True)[:6]:
+    log(f"  {a} + {b:<14} {v:5.1f}%")
