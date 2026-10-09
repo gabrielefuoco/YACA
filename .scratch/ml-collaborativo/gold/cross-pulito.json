@@ -1,0 +1,8232 @@
+{
+ "sources": [
+  {
+   "id": "tv:70523",
+   "title": "Dark",
+   "year": 2017,
+   "cluster": "viaggio-nel-tempo",
+   "links": [
+    {
+     "id": "movie:14337",
+     "title": "Primer",
+     "year": 2004,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:141",
+     "title": "Donnie Darko",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:157336",
+     "title": "Interstellar",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:59967",
+     "title": "Looper - In fuga dal passato",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:662",
+     "title": "La jetée",
+     "year": 1962,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:206487",
+     "title": "Predestination",
+     "year": 2014,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:90669",
+   "title": "1899",
+   "year": 2022,
+   "cluster": "viaggio-nel-tempo",
+   "links": [
+    {
+     "id": "movie:14337",
+     "title": "Primer",
+     "year": 2004,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:157336",
+     "title": "Interstellar",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:206487",
+     "title": "Predestination",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1933",
+     "title": "The Others",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11324",
+     "title": "Shutter Island",
+     "year": 2010,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:77",
+     "title": "Memento",
+     "year": 2000,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:70523",
+     "title": "Dark",
+     "year": 2017,
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:1705",
+   "title": "Fringe",
+   "year": 2008,
+   "cluster": "viaggio-nel-tempo",
+   "links": [
+    {
+     "id": "movie:14337",
+     "title": "Primer",
+     "year": 2004,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:141",
+     "title": "Donnie Darko",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:157336",
+     "title": "Interstellar",
+     "year": 2014,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:4087",
+     "title": "X-Files",
+     "year": 1993,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:1091",
+     "title": "La cosa",
+     "year": 1982,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:840",
+     "title": "Incontri ravvicinati del terzo tipo",
+     "year": 1977,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:69061",
+     "title": "The OA",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:81349",
+   "title": "Devs",
+   "year": 2020,
+   "cluster": "viaggio-nel-tempo",
+   "links": [
+    {
+     "id": "movie:14337",
+     "title": "Primer",
+     "year": 2004,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:264660",
+     "title": "Ex Machina",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:520901",
+     "title": "Doom: Annihilation",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1398",
+     "title": "Stalker",
+     "year": 1979,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:97370",
+     "title": "Under the Skin",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:63247",
+   "title": "Westworld - Dove tutto è concesso",
+   "year": 2016,
+   "cluster": "viaggio-nel-tempo",
+   "links": [
+    {
+     "id": "movie:78",
+     "title": "Blade Runner",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:264660",
+     "title": "Ex Machina",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:603",
+     "title": "The Matrix",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10163",
+     "title": "Il tagliaerbe",
+     "year": 1992,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:644",
+     "title": "A.I. - Intelligenza Artificiale",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:68421",
+     "title": "Altered Carbon",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:69061",
+   "title": "The OA",
+   "year": 2016,
+   "cluster": "viaggio-nel-tempo",
+   "links": [
+    {
+     "id": "movie:14337",
+     "title": "Primer",
+     "year": 2004,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:141",
+     "title": "Donnie Darko",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:157336",
+     "title": "Interstellar",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:329865",
+     "title": "Arrival",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1705",
+     "title": "Fringe",
+     "year": 2008,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:70523",
+     "title": "Dark",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:62215",
+     "title": "Melancholia",
+     "year": 2011,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:42009",
+   "title": "Black Mirror",
+   "year": 2011,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "movie:264660",
+     "title": "Ex Machina",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:152601",
+     "title": "Her",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:603",
+     "title": "The Matrix",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:782",
+     "title": "Gattaca - La porta dell'universo",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:68",
+     "title": "Brazil",
+     "year": 1985,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:86831",
+     "title": "Love, Death & Robots",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:69478",
+   "title": "The Handmaid's Tale",
+   "year": 2017,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "movie:752",
+     "title": "V per Vendetta",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9314",
+     "title": "Orwell 1984",
+     "year": 1984,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:782",
+     "title": "Gattaca - La porta dell'universo",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:87104",
+     "title": "Years and Years",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:87104",
+   "title": "Years and Years",
+   "year": 2019,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:69478",
+     "title": "The Handmaid's Tale",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:62215",
+     "title": "Melancholia",
+     "year": 2011,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:646380",
+     "title": "Don't Look Up",
+     "year": 2021,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:49830",
+     "title": "Contagion",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:68421",
+   "title": "Altered Carbon",
+   "year": 2018,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "movie:78",
+     "title": "Blade Runner",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9323",
+     "title": "Ghost in the Shell",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:603",
+     "title": "The Matrix",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:63247",
+     "title": "Westworld - Dove tutto è concesso",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:105248",
+     "title": "Cyberpunk: Edgerunners",
+     "year": 2022,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:86831",
+   "title": "Love, Death & Robots",
+   "year": 2019,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9323",
+     "title": "Ghost in the Shell",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:603",
+     "title": "The Matrix",
+     "year": 1999,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:55931",
+     "title": "Animatrix",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:94605",
+     "title": "Arcane",
+     "year": 2021,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:11827",
+     "title": "Heavy Metal",
+     "year": 1981,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:105248",
+   "title": "Cyberpunk: Edgerunners",
+   "year": 2022,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9323",
+     "title": "Ghost in the Shell",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:78",
+     "title": "Blade Runner",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:68421",
+     "title": "Altered Carbon",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:94605",
+     "title": "Arcane",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:86831",
+     "title": "Love, Death & Robots",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:70391",
+   "title": "Philip K. Dick's Electric Dreams",
+   "year": 2017,
+   "cluster": "distopia-tech",
+   "links": [
+    {
+     "id": "movie:78",
+     "title": "Blade Runner",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:180",
+     "title": "Minority Report",
+     "year": 2002,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:264660",
+     "title": "Ex Machina",
+     "year": 2015,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:3509",
+     "title": "A Scanner Darkly",
+     "year": 2006,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:86831",
+     "title": "Love, Death & Robots",
+     "year": 2019,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:1396",
+   "title": "Breaking Bad",
+   "year": 2008,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:275",
+     "title": "Fargo",
+     "year": 1996,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6977",
+     "title": "Non è un paese per vecchi",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:111",
+     "title": "Scarface",
+     "year": 1983,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60059",
+     "title": "Better Call Saul",
+     "year": 2015,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1398",
+     "title": "I Soprano",
+     "year": 1999,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:69740",
+     "title": "Ozark",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:60059",
+   "title": "Better Call Saul",
+   "year": 2015,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10731",
+     "title": "Il cliente",
+     "year": 1994,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:275",
+     "title": "Fargo",
+     "year": 1996,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1396",
+     "title": "Breaking Bad",
+     "year": 2008,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:37680",
+     "title": "Suits",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:4566",
+     "title": "Michael Clayton",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1398",
+   "title": "I Soprano",
+   "year": 1999,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:311",
+     "title": "C'era una volta in America",
+     "year": 1984,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:524",
+     "title": "Casinò",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9366",
+     "title": "Donnie Brasco",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1621",
+     "title": "Boardwalk Empire - L'impero del crimine",
+     "year": 2010,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1396",
+     "title": "Breaking Bad",
+     "year": 2008,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:524369",
+     "title": "I molti santi del New Jersey",
+     "year": 2021,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:60574",
+   "title": "Peaky Blinders",
+   "year": 2013,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:311",
+     "title": "C'era una volta in America",
+     "year": 1984,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:524",
+     "title": "Casinò",
+     "year": 1995,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1621",
+     "title": "Boardwalk Empire - L'impero del crimine",
+     "year": 2010,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1409",
+     "title": "Sons of Anarchy",
+     "year": 2008,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1621",
+   "title": "Boardwalk Empire - L'impero del crimine",
+   "year": 2010,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:311",
+     "title": "C'era una volta in America",
+     "year": 1984,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:117",
+     "title": "The Untouchables - Gli intoccabili",
+     "year": 1987,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:60574",
+     "title": "Peaky Blinders",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1398",
+     "title": "I Soprano",
+     "year": 1999,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:379",
+     "title": "Crocevia della morte",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:63351",
+   "title": "Narcos",
+   "year": 2015,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:1900",
+     "title": "Traffic",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:273481",
+     "title": "Sicario",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4133",
+     "title": "Blow",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:111",
+     "title": "Scarface",
+     "year": 1983,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4982",
+     "title": "American Gangster",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:69740",
+     "title": "Ozark",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:92137",
+     "title": "ZeroZeroZero",
+     "year": 2020,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:71411",
+     "title": "El Chapo",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:69740",
+   "title": "Ozark",
+   "year": 2017,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:275",
+     "title": "Fargo",
+     "year": 1996,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:6977",
+     "title": "Non è un paese per vecchi",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1396",
+     "title": "Breaking Bad",
+     "year": 2008,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:63351",
+     "title": "Narcos",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:188166",
+     "title": "Blue Ruin",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:61068",
+   "title": "Gomorra - La Serie",
+   "year": 2014,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:8882",
+     "title": "Gomorra",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:598",
+     "title": "City of God",
+     "year": 2002,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:356296",
+     "title": "Suburra",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:92137",
+     "title": "ZeroZeroZero",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:41597",
+     "title": "Romanzo criminale - La serie",
+     "year": 2008,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1438",
+     "title": "The Wire",
+     "year": 2002,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:73671",
+   "title": "Suburra: La serie",
+   "year": 2017,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:356296",
+     "title": "Suburra",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:8882",
+     "title": "Gomorra",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:14375",
+     "title": "Romanzo criminale",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:41597",
+     "title": "Romanzo criminale - La serie",
+     "year": 2008,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:8832",
+     "title": "Il Divo",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:179144",
+     "title": "La grande bellezza",
+     "year": 2013,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:92137",
+   "title": "ZeroZeroZero",
+   "year": 2020,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:8882",
+     "title": "Gomorra",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:273481",
+     "title": "Sicario",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1900",
+     "title": "Traffic",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:63351",
+     "title": "Narcos",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:575452",
+     "title": "Il traditore",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:453347",
+     "title": "Sicilian Ghost Story",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1438",
+   "title": "The Wire",
+   "year": 2002,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:598",
+     "title": "City of God",
+     "year": 2002,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1900",
+     "title": "Traffic",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1414",
+     "title": "The Shield",
+     "year": 2002,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:63351",
+     "title": "Narcos",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1409",
+   "title": "Sons of Anarchy",
+   "year": 2008,
+   "cluster": "crimine-famiglia",
+   "links": [
+    {
+     "id": "movie:769",
+     "title": "Quei bravi ragazzi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60574",
+     "title": "Peaky Blinders",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1396",
+     "title": "Breaking Bad",
+     "year": 2008,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:44629",
+     "title": "Animal Kingdom",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:46648",
+   "title": "True Detective",
+   "year": 2014,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:807",
+     "title": "Seven",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1949",
+     "title": "Zodiac",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:274",
+     "title": "Il silenzio degli innocenti",
+     "year": 1991,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6977",
+     "title": "Non è un paese per vecchi",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11423",
+     "title": "Memories of Murder",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:67744",
+     "title": "MINDHUNTER",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:67744",
+   "title": "MINDHUNTER",
+   "year": 2017,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:1949",
+     "title": "Zodiac",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:807",
+     "title": "Seven",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:210577",
+     "title": "L'amore bugiardo - Gone Girl",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:274",
+     "title": "Il silenzio degli innocenti",
+     "year": 1991,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11423",
+     "title": "Memories of Murder",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:46648",
+     "title": "True Detective",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:40008",
+   "title": "Hannibal",
+   "year": 2013,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:274",
+     "title": "Il silenzio degli innocenti",
+     "year": 1991,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:807",
+     "title": "Seven",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1359",
+     "title": "American Psycho",
+     "year": 2000,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1405",
+     "title": "Dexter",
+     "year": 2006,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67744",
+     "title": "MINDHUNTER",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:539",
+     "title": "Psycho",
+     "year": 1960,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1405",
+   "title": "Dexter",
+   "year": 2006,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:1359",
+     "title": "American Psycho",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:807",
+     "title": "Seven",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:274",
+     "title": "Il silenzio degli innocenti",
+     "year": 1991,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:40008",
+     "title": "Hannibal",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:242582",
+     "title": "Lo sciacallo - Nightcrawler",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:3432",
+     "title": "Mr. Brooks",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1427",
+   "title": "Broadchurch",
+   "year": 2013,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:146233",
+     "title": "Prisoners",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:322",
+     "title": "Mystic River",
+     "year": 2003,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1949",
+     "title": "Zodiac",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:32368",
+     "title": "The Killing",
+     "year": 2007,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:15472",
+     "title": "Uomini che odiano le donne",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:103663",
+     "title": "Il sospetto",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:32368",
+   "title": "The Killing",
+   "year": 2007,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:15472",
+     "title": "Uomini che odiano le donne",
+     "year": 2009,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1949",
+     "title": "Zodiac",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:146233",
+     "title": "Prisoners",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1427",
+     "title": "Broadchurch",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:103663",
+     "title": "Il sospetto",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:26610",
+     "title": "Insomnia",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:70453",
+   "title": "Sharp Objects",
+   "year": 2018,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:210577",
+     "title": "L'amore bugiardo - Gone Girl",
+     "year": 2014,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:322",
+     "title": "Mystic River",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:66292",
+     "title": "Big Little Lies - Piccole grandi bugie",
+     "year": 2017,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:146233",
+     "title": "Prisoners",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:83851",
+     "title": "The Undoing - Le verità non dette",
+     "year": 2020,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:400617",
+     "title": "Il filo nascosto",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:19885",
+   "title": "Sherlock",
+   "year": 2010,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:1949",
+     "title": "Zodiac",
+     "year": 2007,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:807",
+     "title": "Seven",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:192",
+     "title": "Il nome della rosa",
+     "year": 1986,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1426",
+     "title": "Luther",
+     "year": 2010,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:46648",
+     "title": "True Detective",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67744",
+     "title": "MINDHUNTER",
+     "year": 2017,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:1426",
+   "title": "Luther",
+   "year": 2010,
+   "cluster": "detective-serial-killer",
+   "links": [
+    {
+     "id": "movie:807",
+     "title": "Seven",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1949",
+     "title": "Zodiac",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:274",
+     "title": "Il silenzio degli innocenti",
+     "year": 1991,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:19885",
+     "title": "Sherlock",
+     "year": 2010,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:49010",
+     "title": "The Fall - Caccia al serial killer",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:146233",
+     "title": "Prisoners",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:242582",
+     "title": "Lo sciacallo - Nightcrawler",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:76331",
+   "title": "Succession",
+   "year": 2018,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:15",
+     "title": "Quarto potere",
+     "year": 1941,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:7345",
+     "title": "There Will Be Blood",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:50839",
+     "title": "Margin Call",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62852",
+     "title": "Billions",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1425",
+     "title": "House of Cards",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:106646",
+     "title": "The Wolf of Wall Street",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:65494",
+   "title": "The Crown",
+   "year": 2016,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:1165",
+     "title": "The Queen - La regina",
+     "year": 2006,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:45269",
+     "title": "Il discorso del re",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:535544",
+     "title": "Downton Abbey",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:5279",
+     "title": "Gosford Park",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1104",
+     "title": "Mad Men",
+     "year": 2007,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:33907",
+     "title": "Downton Abbey",
+     "year": 2010,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:4518",
+     "title": "Elizabeth",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1425",
+   "title": "House of Cards",
+   "year": 2013,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:15",
+     "title": "Quarto potere",
+     "year": 1941,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10316",
+     "title": "Le idi di marzo",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:76331",
+     "title": "Succession",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:688",
+     "title": "West Wing - Tutti gli uomini del Presidente",
+     "year": 1999,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:6521",
+     "title": "The Contender",
+     "year": 2000,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:1104",
+   "title": "Mad Men",
+   "year": 2007,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:4148",
+     "title": "Revolutionary Road",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:466272",
+     "title": "C'era una volta a… Hollywood",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:15",
+     "title": "Quarto potere",
+     "year": 1941,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:65494",
+     "title": "The Crown",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:284",
+     "title": "L'appartamento",
+     "year": 1960,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:14",
+     "title": "American Beauty",
+     "year": 1999,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:62852",
+   "title": "Billions",
+   "year": 2016,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:50839",
+     "title": "Margin Call",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:106646",
+     "title": "The Wolf of Wall Street",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:10673",
+     "title": "Wall Street",
+     "year": 1987,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:76331",
+     "title": "Succession",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:90812",
+     "title": "Industry",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:90812",
+   "title": "Industry",
+   "year": 2020,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:50839",
+     "title": "Margin Call",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:106646",
+     "title": "The Wolf of Wall Street",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10673",
+     "title": "Wall Street",
+     "year": 1987,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62852",
+     "title": "Billions",
+     "year": 2016,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:76331",
+     "title": "Succession",
+     "year": 2018,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:37799",
+     "title": "The Social Network",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:15621",
+   "title": "The Newsroom",
+   "year": 2012,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:37799",
+     "title": "The Social Network",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:45269",
+     "title": "Il discorso del re",
+     "year": 2010,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:688",
+     "title": "West Wing - Tutti gli uomini del Presidente",
+     "year": 1999,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1425",
+     "title": "House of Cards",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:300693",
+     "title": "Truth - Il prezzo della verità",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:688",
+   "title": "West Wing - Tutti gli uomini del Presidente",
+   "year": 1999,
+   "cluster": "potere-prestige",
+   "links": [
+    {
+     "id": "movie:10316",
+     "title": "Le idi di marzo",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:21711",
+     "title": "Il candidato",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6521",
+     "title": "The Contender",
+     "year": 2000,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1425",
+     "title": "House of Cards",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:15621",
+     "title": "The Newsroom",
+     "year": 2012,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:891",
+     "title": "Tutti gli uomini del Presidente",
+     "year": 1976,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:2947",
+     "title": "Veep - Vicepresidente incompetente",
+     "year": 2012,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:1399",
+   "title": "Il Trono di Spade",
+   "year": 2011,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:120",
+     "title": "Il Signore degli Anelli - La Compagnia dell'Anello",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11527",
+     "title": "Excalibur",
+     "year": 1981,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9387",
+     "title": "Conan il barbaro",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61856",
+     "title": "Vikings",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:94997",
+     "title": "House of the Dragon",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:71912",
+     "title": "The Witcher",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:98",
+     "title": "Il gladiatore",
+     "year": 2000,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:94997",
+   "title": "House of the Dragon",
+   "year": 2022,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:120",
+     "title": "Il Signore degli Anelli - La Compagnia dell'Anello",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11527",
+     "title": "Excalibur",
+     "year": 1981,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:63333",
+     "title": "The Last Kingdom",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61856",
+     "title": "Vikings",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:1495",
+     "title": "Le crociate - Kingdom of Heaven",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:61856",
+   "title": "Vikings",
+   "year": 2012,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:9387",
+     "title": "Conan il barbaro",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:120",
+     "title": "Il Signore degli Anelli - La Compagnia dell'Anello",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:63333",
+     "title": "The Last Kingdom",
+     "year": 2015,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:639933",
+     "title": "The Northman",
+     "year": 2022,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:37861",
+     "title": "Valhalla Rising - Regno di sangue",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:63333",
+   "title": "The Last Kingdom",
+   "year": 2015,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:197",
+     "title": "Braveheart - Cuore impavido",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11527",
+     "title": "Excalibur",
+     "year": 1981,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61856",
+     "title": "Vikings",
+     "year": 2012,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:639933",
+     "title": "The Northman",
+     "year": 2022,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1495",
+     "title": "Le crociate - Kingdom of Heaven",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:71912",
+   "title": "The Witcher",
+   "year": 2019,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:120",
+     "title": "Il Signore degli Anelli - La Compagnia dell'Anello",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9387",
+     "title": "Conan il barbaro",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11527",
+     "title": "Excalibur",
+     "year": 1981,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:847",
+     "title": "Willow",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:34584",
+     "title": "La storia infinita",
+     "year": 1984,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61856",
+     "title": "Vikings",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:84773",
+   "title": "Il Signore degli Anelli: Gli Anelli del Potere",
+   "year": 2022,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:120",
+     "title": "Il Signore degli Anelli - La Compagnia dell'Anello",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:49051",
+     "title": "Lo Hobbit: Un viaggio inaspettato",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:847",
+     "title": "Willow",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11527",
+     "title": "Excalibur",
+     "year": 1981,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:34584",
+     "title": "La storia infinita",
+     "year": 1984,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:94997",
+     "title": "House of the Dragon",
+     "year": 2022,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:71912",
+     "title": "The Witcher",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:90802",
+   "title": "The Sandman",
+   "year": 2022,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:120",
+     "title": "Il Signore degli Anelli - La Compagnia dell'Anello",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:14517",
+     "title": "MirrorMask",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2270",
+     "title": "Stardust",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:46639",
+     "title": "American Gods",
+     "year": 2017,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:71915",
+     "title": "Good Omens",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:34584",
+     "title": "La storia infinita",
+     "year": 1984,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:46639",
+   "title": "American Gods",
+   "year": 2017,
+   "cluster": "fantasy-epica",
+   "links": [
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2270",
+     "title": "Stardust",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:90802",
+     "title": "The Sandman",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:71915",
+     "title": "Good Omens",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:14836",
+     "title": "Coraline e la porta magica",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:331962",
+     "title": "Nell'ombra di un delitto",
+     "year": 2016,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:72844",
+   "title": "The Haunting of Hill House",
+   "year": 2018,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:694",
+     "title": "The Shining",
+     "year": 1980,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:493922",
+     "title": "Hereditary - Le radici del male",
+     "year": 2018,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11906",
+     "title": "Suspiria",
+     "year": 1977,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1933",
+     "title": "The Others",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:97400",
+     "title": "Midnight Mass",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:75191",
+     "title": "The Terror",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:97400",
+   "title": "Midnight Mass",
+   "year": 2021,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:493922",
+     "title": "Hereditary - Le radici del male",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9552",
+     "title": "L'esorcista",
+     "year": 1973,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:694",
+     "title": "The Shining",
+     "year": 1980,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:72844",
+     "title": "The Haunting of Hill House",
+     "year": 2018,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:530385",
+     "title": "Midsommar - Il villaggio dei dannati",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:75191",
+     "title": "The Terror",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:75191",
+   "title": "The Terror",
+   "year": 2018,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:1091",
+     "title": "La cosa",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:348",
+     "title": "Alien",
+     "year": 1979,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:694",
+     "title": "The Shining",
+     "year": 1980,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:72844",
+     "title": "The Haunting of Hill House",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61335",
+     "title": "Fortitude",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:639933",
+     "title": "The Northman",
+     "year": 2022,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:54671",
+   "title": "Penny Dreadful",
+   "year": 2014,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:653",
+     "title": "Nosferatu, il vampiro",
+     "year": 1922,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:3035",
+     "title": "Frankenstein",
+     "year": 1931,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:3019",
+     "title": "Il dottor Jekyll",
+     "year": 1931,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11906",
+     "title": "Suspiria",
+     "year": 1977,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6114",
+     "title": "Bram Stoker's Dracula",
+     "year": 1992,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:157065",
+     "title": "The Fall of the House of Usher",
+     "year": 2023,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:157065",
+   "title": "The Fall of the House of Usher",
+   "year": 2023,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:694",
+     "title": "The Shining",
+     "year": 1980,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11906",
+     "title": "Suspiria",
+     "year": 1977,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:493922",
+     "title": "Hereditary - Le radici del male",
+     "year": 2018,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:72844",
+     "title": "The Haunting of Hill House",
+     "year": 2018,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:54671",
+     "title": "Penny Dreadful",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:97400",
+     "title": "Midnight Mass",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:1933",
+     "title": "The Others",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:46786",
+   "title": "Bates Motel",
+   "year": 2013,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:539",
+     "title": "Psycho",
+     "year": 1960,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:694",
+     "title": "The Shining",
+     "year": 1980,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:493922",
+     "title": "Hereditary - Le radici del male",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:72844",
+     "title": "The Haunting of Hill House",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:40008",
+     "title": "Hannibal",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:1933",
+     "title": "The Others",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:92916",
+   "title": "Marianne",
+   "year": 2019,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:9552",
+     "title": "L'esorcista",
+     "year": 1973,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11906",
+     "title": "Suspiria",
+     "year": 1977,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:493922",
+     "title": "Hereditary - Le radici del male",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:72844",
+     "title": "The Haunting of Hill House",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:20126",
+     "title": "Profondo rosso",
+     "year": 1975,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:805",
+     "title": "Rosemary's baby: nastro rosso a New York",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1413",
+   "title": "American Horror Story",
+   "year": 2011,
+   "cluster": "horror-autore",
+   "links": [
+    {
+     "id": "movie:694",
+     "title": "The Shining",
+     "year": 1980,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9552",
+     "title": "L'esorcista",
+     "year": 1973,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:805",
+     "title": "Rosemary's baby: nastro rosso a New York",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11906",
+     "title": "Suspiria",
+     "year": 1977,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:72844",
+     "title": "The Haunting of Hill House",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:54671",
+     "title": "Penny Dreadful",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:493922",
+     "title": "Hereditary - Le radici del male",
+     "year": 2018,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:67070",
+   "title": "Fleabag",
+   "year": 2016,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:334541",
+     "title": "Manchester by the Sea",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:153",
+     "title": "Lost in Translation - L'amore tradotto",
+     "year": 2003,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:429191",
+     "title": "Una donna fantastica",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:492188",
+     "title": "Storia di un matrimonio",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61222",
+     "title": "BoJack Horseman",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:42282",
+     "title": "Girls",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:121986",
+     "title": "Frances Ha",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:61222",
+   "title": "BoJack Horseman",
+   "year": 2014,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:334541",
+     "title": "Manchester by the Sea",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:153",
+     "title": "Lost in Translation - L'amore tradotto",
+     "year": 2003,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:152601",
+     "title": "Her",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:60625",
+     "title": "Rick and Morty",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:121986",
+     "title": "Frances Ha",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:65495",
+   "title": "Atlanta",
+   "year": 2016,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:376867",
+     "title": "Moonlight",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:424781",
+     "title": "Sorry to Bother You",
+     "year": 2018,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:419430",
+     "title": "Scappa - Get Out",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:598",
+     "title": "City of God",
+     "year": 2002,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:87382",
+     "title": "Ramy",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:394117",
+     "title": "The Florida Project",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:73107",
+   "title": "Barry",
+   "year": 2018,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:275",
+     "title": "Fargo",
+     "year": 1996,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:500",
+     "title": "Le iene",
+     "year": 1992,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:680",
+     "title": "Pulp Fiction",
+     "year": 1994,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:65495",
+     "title": "Atlanta",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:194662",
+     "title": "Birdman o (L'imprevedibile virtù dell'ignoranza)",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8321",
+     "title": "In Bruges - La coscienza dell'assassino",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:84977",
+   "title": "Russian Doll",
+   "year": 2019,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:137",
+     "title": "Ricomincio da capo",
+     "year": 1993,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:141",
+     "title": "Donnie Darko",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:153",
+     "title": "Lost in Translation - L'amore tradotto",
+     "year": 2003,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:587792",
+     "title": "Palm Springs - Vivi come se non ci fosse un domani",
+     "year": 2020,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:334541",
+     "title": "Manchester by the Sea",
+     "year": 2016,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:64254",
+   "title": "Master of None",
+   "year": 2015,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:153",
+     "title": "Lost in Translation - L'amore tradotto",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:121986",
+     "title": "Frances Ha",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:492188",
+     "title": "Storia di un matrimonio",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:42282",
+     "title": "Girls",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:9675",
+     "title": "Sideways - In viaggio con Jack",
+     "year": 2004,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:773",
+     "title": "Little Miss Sunshine",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:79410",
+   "title": "After Life",
+   "year": 2019,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:334541",
+     "title": "Manchester by the Sea",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:429191",
+     "title": "Una donna fantastica",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:61222",
+     "title": "BoJack Horseman",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:74577",
+     "title": "The End of the F***ing World",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:153",
+     "title": "Lost in Translation - L'amore tradotto",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:97546",
+   "title": "Ted Lasso",
+   "year": 2020,
+   "cluster": "dramedy-commedia",
+   "links": [
+    {
+     "id": "movie:773",
+     "title": "Little Miss Sunshine",
+     "year": 2006,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:45269",
+     "title": "Il discorso del re",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9390",
+     "title": "Jerry Maguire",
+     "year": 1996,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:212778",
+     "title": "Chef - La ricetta perfetta",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:8592",
+     "title": "Parks and Recreation",
+     "year": 2009,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:136311",
+     "title": "Shrinking",
+     "year": 2023,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:453",
+     "title": "A Beautiful Mind",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:94605",
+   "title": "Arcane",
+   "year": 2021,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:324857",
+     "title": "Spider-Man: Un nuovo universo",
+     "year": 2018,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9323",
+     "title": "Ghost in the Shell",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:105248",
+     "title": "Cyberpunk: Edgerunners",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:13754",
+     "title": "Tekkonkinkreet - Soli contro tutti",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:71883",
+     "title": "Redline",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:60625",
+   "title": "Rick and Morty",
+   "year": 2013,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:105",
+     "title": "Ritorno al futuro",
+     "year": 1985,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9473",
+     "title": "South Park: Il film - Più grosso, più lungo & tutto intero",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:35",
+     "title": "I Simpson - Il film",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:615",
+     "title": "Futurama",
+     "year": 1999,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:61222",
+     "title": "BoJack Horseman",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:11827",
+     "title": "Heavy Metal",
+     "year": 1981,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:4977",
+     "title": "Paprika - Sognando un sogno",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:615",
+   "title": "Futurama",
+   "year": 1999,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:105",
+     "title": "Ritorno al futuro",
+     "year": 1985,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:35",
+     "title": "I Simpson - Il film",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:7453",
+     "title": "Guida galattica per autostoppisti",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60625",
+     "title": "Rick and Morty",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:456",
+     "title": "I Simpson",
+     "year": 1989,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:75",
+     "title": "Mars Attacks!",
+     "year": 1996,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:890",
+   "title": "Neon Genesis Evangelion",
+   "year": 1995,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9323",
+     "title": "Ghost in the Shell",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:62",
+     "title": "2001: Odissea nello spazio",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:30991",
+     "title": "Cowboy Bebop",
+     "year": 1998,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:129",
+     "title": "La città incantata",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:78",
+     "title": "Blade Runner",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:30991",
+   "title": "Cowboy Bebop",
+   "year": 1998,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:9323",
+     "title": "Ghost in the Shell",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:78",
+     "title": "Blade Runner",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:890",
+     "title": "Neon Genesis Evangelion",
+     "year": 1995,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1437",
+     "title": "Firefly",
+     "year": 2002,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:391",
+     "title": "Per un pugno di dollari",
+     "year": 1964,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:348",
+     "title": "Alien",
+     "year": 1979,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:88803",
+   "title": "Vinland Saga",
+   "year": 2019,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:639933",
+     "title": "The Northman",
+     "year": 2022,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:37861",
+     "title": "Valhalla Rising - Regno di sangue",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61856",
+     "title": "Vikings",
+     "year": 2012,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:129",
+     "title": "La città incantata",
+     "year": 2001,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:1495",
+     "title": "Le crociate - Kingdom of Heaven",
+     "year": 2005,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:114410",
+   "title": "Chainsaw Man",
+   "year": 2022,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:23483",
+     "title": "Kick-Ass",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:95479",
+     "title": "Jujutsu Kaisen",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:85937",
+     "title": "Demon Slayer: Kimetsu no Yaiba",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:293660",
+     "title": "Deadpool",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:95479",
+   "title": "Jujutsu Kaisen",
+   "year": 2020,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:23483",
+     "title": "Kick-Ass",
+     "year": 2010,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:114410",
+     "title": "Chainsaw Man",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:85937",
+     "title": "Demon Slayer: Kimetsu no Yaiba",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:324857",
+     "title": "Spider-Man: Un nuovo universo",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:85937",
+   "title": "Demon Slayer: Kimetsu no Yaiba",
+   "year": 2019,
+   "cluster": "animazione-adulta",
+   "links": [
+    {
+     "id": "movie:129",
+     "title": "La città incantata",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:81",
+     "title": "Nausicaä della Valle del vento",
+     "year": 1984,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:95479",
+     "title": "Jujutsu Kaisen",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:114410",
+     "title": "Chainsaw Man",
+     "year": 2022,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:64852",
+   "title": "Trapped",
+   "year": 2015,
+   "cluster": "noir-nordico",
+   "links": [
+    {
+     "id": "movie:26610",
+     "title": "Insomnia",
+     "year": 1997,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:103663",
+     "title": "Il sospetto",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:15472",
+     "title": "Uomini che odiano le donne",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:32368",
+     "title": "The Killing",
+     "year": 2007,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61335",
+     "title": "Fortitude",
+     "year": 2015,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:1091",
+     "title": "The Thing",
+     "year": 1982,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:31766",
+   "title": "Wallander",
+   "year": 2005,
+   "cluster": "noir-nordico",
+   "links": [
+    {
+     "id": "movie:15472",
+     "title": "Uomini che odiano le donne",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:26610",
+     "title": "Insomnia",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:103663",
+     "title": "Il sospetto",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:32368",
+     "title": "The Killing",
+     "year": 2007,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:103663",
+     "title": "Il sospetto",
+     "year": 2012,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:309",
+     "title": "Festen - Festa in famiglia",
+     "year": 1998,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:91557",
+   "title": "Ragnarok",
+   "year": 2020,
+   "cluster": "noir-nordico",
+   "links": [
+    {
+     "id": "movie:639933",
+     "title": "The Northman",
+     "year": 2022,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:61856",
+     "title": "Vikings",
+     "year": 2012,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:63333",
+     "title": "The Last Kingdom",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:13310",
+     "title": "Let the Right One In",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:530385",
+     "title": "Midsommar - Il villaggio dei dannati",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:61335",
+   "title": "Fortitude",
+   "year": 2015,
+   "cluster": "noir-nordico",
+   "links": [
+    {
+     "id": "movie:1091",
+     "title": "La cosa",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:26610",
+     "title": "Insomnia",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:75191",
+     "title": "The Terror",
+     "year": 2018,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:64852",
+     "title": "Trapped",
+     "year": 2015,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:4513",
+     "title": "30 giorni di buio",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:68327",
+   "title": "Bordertown",
+   "year": 2016,
+   "cluster": "noir-nordico",
+   "links": [
+    {
+     "id": "movie:15472",
+     "title": "Uomini che odiano le donne",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:26610",
+     "title": "Insomnia",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:103663",
+     "title": "Il sospetto",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:64852",
+     "title": "Trapped",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:32368",
+     "title": "The Killing",
+     "year": 2007,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:70670",
+     "title": "Headhunters",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:93405",
+   "title": "Squid Game",
+   "year": 2021,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:496243",
+     "title": "Parasite",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1255",
+     "title": "The Host",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11423",
+     "title": "Memories of Murder",
+     "year": 2003,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:110415",
+     "title": "Snowpiercer",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:110316",
+     "title": "Alice in Borderland",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:106651",
+     "title": "Hellbound",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:3176",
+     "title": "Battle Royale",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:70593",
+   "title": "Kingdom",
+   "year": 2019,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:396535",
+     "title": "Train to Busan",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1255",
+     "title": "The Host",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1402",
+     "title": "The Walking Dead",
+     "year": 2010,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:99966",
+     "title": "All of Us Are Dead",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:49797",
+     "title": "I Saw the Devil",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:99966",
+   "title": "All of Us Are Dead",
+   "year": 2022,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:396535",
+     "title": "Train to Busan",
+     "year": 2016,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:170",
+     "title": "28 giorni dopo",
+     "year": 2002,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1402",
+     "title": "The Walking Dead",
+     "year": 2010,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:70593",
+     "title": "Kingdom",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:66732",
+     "title": "Stranger Things",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:1255",
+     "title": "The Host",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:72190",
+     "title": "World War Z",
+     "year": 2013,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:136283",
+   "title": "The Glory",
+   "year": 2022,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:496243",
+     "title": "Parasite",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:110356",
+     "title": "My Name",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:117376",
+     "title": "Vincenzo",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:290098",
+     "title": "Mademoiselle",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:110356",
+   "title": "My Name",
+   "year": 2021,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:49797",
+     "title": "I Saw the Devil",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11344",
+     "title": "Bittersweet life",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:136283",
+     "title": "The Glory",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:93405",
+     "title": "Squid Game",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:117376",
+     "title": "Vincenzo",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:51608",
+     "title": "The Man from Nowhere",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:117376",
+   "title": "Vincenzo",
+   "year": 2021,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:496243",
+     "title": "Parasite",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:290098",
+     "title": "Mademoiselle",
+     "year": 2016,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:110356",
+     "title": "My Name",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:136283",
+     "title": "The Glory",
+     "year": 2022,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:11344",
+     "title": "Bittersweet life",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:106651",
+   "title": "Hellbound",
+   "year": 2021,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:496243",
+     "title": "Parasite",
+     "year": 2019,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:1255",
+     "title": "The Host",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:93405",
+     "title": "Squid Game",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:110316",
+     "title": "Alice in Borderland",
+     "year": 2020,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:96648",
+     "title": "Sweet Home",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:396535",
+     "title": "Train to Busan",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:110316",
+   "title": "Alice in Borderland",
+   "year": 2020,
+   "cluster": "onda-coreana",
+   "links": [
+    {
+     "id": "movie:3176",
+     "title": "Battle Royale",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:93405",
+     "title": "Squid Game",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:96648",
+     "title": "Sweet Home",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:106651",
+     "title": "Hellbound",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:431",
+     "title": "Cube - Il cubo",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:70160",
+     "title": "Hunger Games",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:41597",
+   "title": "Romanzo criminale - La serie",
+   "year": 2008,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:14375",
+     "title": "Romanzo criminale",
+     "year": 2005,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:8882",
+     "title": "Gomorra",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:356296",
+     "title": "Suburra",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8832",
+     "title": "Il Divo",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:73671",
+     "title": "Suburra: La serie",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:12822",
+     "title": "La Piovra",
+     "year": 1984,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:575452",
+     "title": "Il traditore",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:12822",
+   "title": "La Piovra",
+   "year": 1984,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8882",
+     "title": "Gomorra",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:14375",
+     "title": "Romanzo criminale",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:41597",
+     "title": "Romanzo criminale - La serie",
+     "year": 2008,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:575452",
+     "title": "Il traditore",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:58658",
+     "title": "Il giorno della civetta",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:37290",
+   "title": "Il Commissario Montalbano",
+   "year": 1999,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:192",
+     "title": "Il nome della rosa",
+     "year": 1986,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:11216",
+     "title": "Nuovo Cinema Paradiso",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:58658",
+     "title": "Il giorno della civetta",
+     "year": 1968,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:12822",
+     "title": "La Piovra",
+     "year": 1984,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:381341",
+     "title": "Perfetti sconosciuti",
+     "year": 2016,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:36189",
+   "title": "Boris",
+   "year": 2007,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:179144",
+     "title": "La grande bellezza",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8832",
+     "title": "Il Divo",
+     "year": 2008,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:11216",
+     "title": "Nuovo Cinema Paradiso",
+     "year": 1988,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:2316",
+     "title": "The Office",
+     "year": 2005,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:4546",
+     "title": "Curb Your Enthusiasm",
+     "year": 2000,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:24188",
+     "title": "Il sorpasso",
+     "year": 1962,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:62699",
+   "title": "The Young Pope",
+   "year": 2016,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:179144",
+     "title": "La grande bellezza",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:310593",
+     "title": "Youth – La giovinezza",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:8832",
+     "title": "Il Divo",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:439",
+     "title": "La dolce vita",
+     "year": 1960,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1040",
+     "title": "Il gattopardo",
+     "year": 1963,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:88713",
+   "title": "We Are Who We Are",
+   "year": 2020,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:398818",
+     "title": "Chiamami col tuo nome",
+     "year": 2017,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:41110",
+     "title": "Io sono l'amore",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:179144",
+     "title": "La grande bellezza",
+     "year": 2013,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:453270",
+     "title": "A Ciambra",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:481432",
+     "title": "Lazzaro felice",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:77826",
+     "title": "SKAM Italia",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:85552",
+     "title": "Euphoria",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:86343",
+   "title": "Il nome della rosa",
+   "year": 2019,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:192",
+     "title": "Il nome della rosa",
+     "year": 1986,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:490",
+     "title": "Il settimo sigillo",
+     "year": 1957,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:238",
+     "title": "Il padrino",
+     "year": 1972,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:60699",
+     "title": "Marco Polo",
+     "year": 2014,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:66761",
+     "title": "I Medici",
+     "year": 2016,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:1040",
+     "title": "Il gattopardo",
+     "year": 1963,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:96346",
+   "title": "Luna Nera",
+   "year": 2020,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:192",
+     "title": "Il nome della rosa",
+     "year": 1986,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:11906",
+     "title": "Suspiria",
+     "year": 1977,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:310131",
+     "title": "The Witch",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:54671",
+     "title": "Penny Dreadful",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:71912",
+     "title": "The Witcher",
+     "year": 2019,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:92916",
+     "title": "Marianne",
+     "year": 2019,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:77826",
+   "title": "SKAM Italia",
+   "year": 2018,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:398818",
+     "title": "Chiamami col tuo nome",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:152584",
+     "title": "La vita di Adele: Capitoli 1 & 2",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:381341",
+     "title": "Perfetti sconosciuti",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:85552",
+     "title": "Euphoria",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:81356",
+     "title": "Sex Education",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:88713",
+     "title": "We Are Who We Are",
+     "year": 2020,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:538362",
+     "title": "Sulla mia pelle",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:110283",
+   "title": "Mare Fuori",
+   "year": 2020,
+   "cluster": "italiano",
+   "links": [
+    {
+     "id": "movie:8882",
+     "title": "Gomorra",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:538362",
+     "title": "Sulla mia pelle",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:574436",
+     "title": "La paranza dei bambini",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:61068",
+     "title": "Gomorra - La Serie",
+     "year": 2014,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:77826",
+     "title": "SKAM Italia",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:73671",
+     "title": "Suburra: La serie",
+     "year": 2017,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:483184",
+     "title": "Dogman",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:33907",
+   "title": "Downton Abbey",
+   "year": 2010,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:535544",
+     "title": "Downton Abbey",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:5279",
+     "title": "Gosford Park",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:65494",
+     "title": "The Crown",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:45269",
+     "title": "Il discorso del re",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:3175",
+     "title": "Barry Lyndon",
+     "year": 1975,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11257",
+     "title": "Camera con vista",
+     "year": 1986,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62084",
+     "title": "Poldark",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1406",
+   "title": "Deadwood",
+   "year": 2004,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:538225",
+     "title": "Deadwood - Il film",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:33",
+     "title": "Gli spietati",
+     "year": 1992,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:335",
+     "title": "C'era una volta il West",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6977",
+     "title": "Non è un paese per vecchi",
+     "year": 2007,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1401",
+     "title": "Hell on Wheels",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:581",
+     "title": "Balla coi lupi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:281957",
+     "title": "Revenant - Redivivo",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1401",
+   "title": "Hell on Wheels",
+   "year": 2011,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:335",
+     "title": "C'era una volta il West",
+     "year": 1968,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:33",
+     "title": "Gli spietati",
+     "year": 1992,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:581",
+     "title": "Balla coi lupi",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1406",
+     "title": "Deadwood",
+     "year": 2004,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:281957",
+     "title": "Revenant - Redivivo",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:14384",
+     "title": "Soldato blu",
+     "year": 1970,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:66761",
+   "title": "I Medici",
+   "year": 2016,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:1040",
+     "title": "Il gattopardo",
+     "year": 1963,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:192",
+     "title": "Il nome della rosa",
+     "year": 1986,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1399",
+     "title": "Il Trono di Spade",
+     "year": 2011,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:34388",
+     "title": "Borgia",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:2942",
+     "title": "I Tudors",
+     "year": 2007,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:4518",
+     "title": "Elizabeth",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:13398",
+     "title": "Ancient Rome: The Rise and Fall of an Empire",
+     "year": 2006,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:2942",
+   "title": "I Tudors",
+   "year": 2007,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:4518",
+     "title": "Elizabeth",
+     "year": 1998,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:45269",
+     "title": "Il discorso del re",
+     "year": 2010,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:3175",
+     "title": "Barry Lyndon",
+     "year": 1975,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:34388",
+     "title": "Borgia",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:66761",
+     "title": "I Medici",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61697",
+     "title": "Wolf Hall",
+     "year": 2015,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:10452",
+     "title": "La regina Margot",
+     "year": 1994,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:13398",
+   "title": "Ancient Rome: The Rise and Fall of an Empire",
+   "year": 2006,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:98",
+     "title": "Il gladiatore",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:967",
+     "title": "Spartacus",
+     "year": 1960,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:17277",
+     "title": "La caduta dell'impero romano",
+     "year": 1964,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:34388",
+     "title": "Borgia",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:66761",
+     "title": "I Medici",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:26428",
+     "title": "Agora",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:56570",
+   "title": "Outlander",
+   "year": 2014,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:197",
+     "title": "Braveheart - Cuore impavido",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11780",
+     "title": "Rob Roy",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:3175",
+     "title": "Barry Lyndon",
+     "year": 1975,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62084",
+     "title": "Poldark",
+     "year": 2015,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:63333",
+     "title": "The Last Kingdom",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:11257",
+     "title": "Camera con vista",
+     "year": 1986,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8009",
+     "title": "Highlander - L'ultimo immortale",
+     "year": 1986,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:65708",
+   "title": "Taboo",
+   "year": 2017,
+   "cluster": "storico-costume",
+   "links": [
+    {
+     "id": "movie:3175",
+     "title": "Barry Lyndon",
+     "year": 1975,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:117",
+     "title": "The Untouchables - Gli intoccabili",
+     "year": 1987,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:60574",
+     "title": "Peaky Blinders",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1406",
+     "title": "Deadwood",
+     "year": 2004,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:28",
+     "title": "Apocalypse Now",
+     "year": 1979,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:3131",
+     "title": "Gangs of New York",
+     "year": 2002,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:281957",
+     "title": "Revenant - Redivivo",
+     "year": 2015,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:4613",
+   "title": "Band of Brothers - Fratelli al fronte",
+   "year": 2001,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "movie:857",
+     "title": "Salvate il soldato Ryan",
+     "year": 1998,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:16997",
+     "title": "The Pacific",
+     "year": 2010,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:28",
+     "title": "Apocalypse Now",
+     "year": 1979,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:600",
+     "title": "Full Metal Jacket",
+     "year": 1987,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8741",
+     "title": "La sottile linea rossa",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:46518",
+     "title": "Masters of the Air",
+     "year": 2024,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:11778",
+     "title": "Il cacciatore",
+     "year": 1978,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:16997",
+   "title": "The Pacific",
+   "year": 2010,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "movie:857",
+     "title": "Salvate il soldato Ryan",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:4613",
+     "title": "Band of Brothers - Fratelli al fronte",
+     "year": 2001,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:1251",
+     "title": "Lettere da Iwo Jima",
+     "year": 2006,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:8741",
+     "title": "La sottile linea rossa",
+     "year": 1998,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:600",
+     "title": "Full Metal Jacket",
+     "year": 1987,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:46518",
+     "title": "Masters of the Air",
+     "year": 2024,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:3683",
+     "title": "Flags of Our Fathers",
+     "year": 2006,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:46518",
+   "title": "Masters of the Air",
+   "year": 2024,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "tv:4613",
+     "title": "Band of Brothers - Fratelli al fronte",
+     "year": 2001,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:16997",
+     "title": "The Pacific",
+     "year": 2010,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:857",
+     "title": "Salvate il soldato Ryan",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:374720",
+     "title": "Dunkirk",
+     "year": 2017,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:8741",
+     "title": "La sottile linea rossa",
+     "year": 1998,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:16121",
+     "title": "Il grande uno rosso",
+     "year": 1980,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:12651",
+     "title": "Memphis Belle",
+     "year": 1990,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:87108",
+   "title": "Chernobyl",
+   "year": 2019,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "movie:872585",
+     "title": "Oppenheimer",
+     "year": 2023,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:7012",
+     "title": "The Day After - Il giorno dopo",
+     "year": 1983,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:613",
+     "title": "La caduta - Gli ultimi giorni di Hitler",
+     "year": 2004,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:1398",
+     "title": "Stalker",
+     "year": 1979,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:524348",
+     "title": "The Report",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:12502",
+     "title": "Silkwood",
+     "year": 1983,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:17035",
+   "title": "Generation Kill",
+   "year": 2008,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "movie:600",
+     "title": "Full Metal Jacket",
+     "year": 1987,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:25",
+     "title": "Jarhead",
+     "year": 2005,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:12162",
+     "title": "The Hurt Locker",
+     "year": 2008,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:28",
+     "title": "Apocalypse Now",
+     "year": 1979,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:4613",
+     "title": "Band of Brothers - Fratelli al fronte",
+     "year": 2001,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:6415",
+     "title": "Three Kings",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:190859",
+     "title": "American Sniper",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:83936",
+   "title": "Das Boot",
+   "year": 2018,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "movie:8741",
+     "title": "La sottile linea rossa",
+     "year": 1998,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:857",
+     "title": "Salvate il soldato Ryan",
+     "year": 1998,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:11101",
+     "title": "Stalingrad",
+     "year": 1993,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:4613",
+     "title": "Band of Brothers - Fratelli al fronte",
+     "year": 2001,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:11778",
+     "title": "Il cacciatore",
+     "year": 1978,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:16997",
+     "title": "The Pacific",
+     "year": 2010,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:82744",
+   "title": "Catch-22",
+   "year": 2019,
+   "cluster": "guerra",
+   "links": [
+    {
+     "id": "movie:651",
+     "title": "M*A*S*H",
+     "year": 1970,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:600",
+     "title": "Full Metal Jacket",
+     "year": 1987,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:28",
+     "title": "Apocalypse Now",
+     "year": 1979,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:918",
+     "title": "M*A*S*H",
+     "year": 1972,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:801",
+     "title": "Good Morning, Vietnam",
+     "year": 1987,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:975",
+     "title": "Orizzonti di gloria",
+     "year": 1957,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:46533",
+   "title": "The Americans",
+   "year": 2013,
+   "cluster": "spionaggio",
+   "links": [
+    {
+     "id": "movie:49517",
+     "title": "La talpa",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11963",
+     "title": "Three Days of the Condor",
+     "year": 1975,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1247",
+     "title": "The Good Shepherd - L'ombra del potere",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1407",
+     "title": "Homeland - Caccia alla spia",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:661",
+     "title": "Il matrimonio di Maria Braun",
+     "year": 1979,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:296098",
+     "title": "Il ponte delle spie",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1407",
+   "title": "Homeland - Caccia alla spia",
+   "year": 2011,
+   "cluster": "spionaggio",
+   "links": [
+    {
+     "id": "movie:97630",
+     "title": "Zero Dark Thirty",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:12162",
+     "title": "The Hurt Locker",
+     "year": 2008,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:231",
+     "title": "Syriana",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:46533",
+     "title": "The Americans",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:69557",
+     "title": "Fauda",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:80307",
+     "title": "Bodyguard",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:68734",
+     "title": "Argo",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:95480",
+   "title": "Slow Horses",
+   "year": 2022,
+   "cluster": "spionaggio",
+   "links": [
+    {
+     "id": "movie:49517",
+     "title": "La talpa",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:46533",
+     "title": "The Americans",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:296098",
+     "title": "Il ponte delle spie",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:157849",
+     "title": "La spia - A Most Wanted Man",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:612",
+     "title": "Munich",
+     "year": 2005,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:69557",
+   "title": "Fauda",
+   "year": 2015,
+   "cluster": "spionaggio",
+   "links": [
+    {
+     "id": "movie:612",
+     "title": "Munich",
+     "year": 2005,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:97630",
+     "title": "Zero Dark Thirty",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:231",
+     "title": "Syriana",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1407",
+     "title": "Homeland - Caccia alla spia",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:46533",
+     "title": "The Americans",
+     "year": 2013,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:80307",
+     "title": "Bodyguard",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:80307",
+   "title": "Bodyguard",
+   "year": 2018,
+   "cluster": "spionaggio",
+   "links": [
+    {
+     "id": "movie:49517",
+     "title": "La talpa",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11963",
+     "title": "Three Days of the Condor",
+     "year": 1975,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:752",
+     "title": "V per Vendetta",
+     "year": 2006,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1407",
+     "title": "Homeland - Caccia alla spia",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:95480",
+     "title": "Slow Horses",
+     "year": 2022,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:72750",
+     "title": "Killing Eve",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61859",
+     "title": "The Night Manager",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:66732",
+   "title": "Stranger Things",
+   "year": 2016,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:601",
+     "title": "E.T. l'extra-terrestre",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9340",
+     "title": "I Goonies",
+     "year": 1985,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:37686",
+     "title": "Super 8",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9872",
+     "title": "Explorers",
+     "year": 1985,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:235",
+     "title": "Stand by Me - Ricordo di un'estate",
+     "year": 1986,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:70523",
+     "title": "Dark",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:346364",
+     "title": "It",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:81356",
+   "title": "Sex Education",
+   "year": 2019,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:2108",
+     "title": "Breakfast Club",
+     "year": 1985,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:7326",
+     "title": "Juno",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:391713",
+     "title": "Lady Bird",
+     "year": 2017,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:84892",
+     "title": "The Perks of Being a Wallflower",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:77826",
+     "title": "SKAM Italia",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:85552",
+     "title": "Euphoria",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:124834",
+     "title": "Heartstopper",
+     "year": 2022,
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:85552",
+   "title": "Euphoria",
+   "year": 2019,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:84892",
+     "title": "The Perks of Being a Wallflower",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:391713",
+     "title": "Lady Bird",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:437586",
+     "title": "mid90s",
+     "year": 2018,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9344",
+     "title": "Kids",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:77826",
+     "title": "SKAM Italia",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:81356",
+     "title": "Sex Education",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:11023",
+     "title": "Thirteen - 13 anni",
+     "year": 2003,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:900",
+   "title": "Skins",
+   "year": 2007,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:9344",
+     "title": "Kids",
+     "year": 1995,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:627",
+     "title": "Trainspotting",
+     "year": 1996,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:84892",
+     "title": "The Perks of Being a Wallflower",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:85552",
+     "title": "Euphoria",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:74577",
+     "title": "The End of the F***ing World",
+     "year": 2017,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:11798",
+     "title": "This Is England",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11129",
+     "title": "Human Traffic",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:74577",
+   "title": "The End of the F***ing World",
+   "year": 2017,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:241",
+     "title": "Natural Born Killers",
+     "year": 1994,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:49020",
+     "title": "Submarine",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:900",
+     "title": "Skins",
+     "year": 2007,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:3133",
+     "title": "La rabbia giovane",
+     "year": 1973,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:83666",
+     "title": "Moonrise Kingdom - Una fuga d'amore",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:2382",
+   "title": "Freaks and Geeks",
+   "year": 1999,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:2108",
+     "title": "Breakfast Club",
+     "year": 1985,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:786",
+     "title": "Quasi famosi",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:489925",
+     "title": "Eighth Grade - Terza Media",
+     "year": 2018,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1101",
+     "title": "My So-Called Life",
+     "year": 1994,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:66732",
+     "title": "Stranger Things",
+     "year": 2016,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:391713",
+     "title": "Lady Bird",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:89905",
+   "title": "Normal People",
+   "year": 2020,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:152584",
+     "title": "La vita di Adele: Capitoli 1 & 2",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:398818",
+     "title": "Call Me by Your Name",
+     "year": 2017,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:124834",
+     "title": "Heartstopper",
+     "year": 2022,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:81356",
+     "title": "Sex Education",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:492188",
+     "title": "Storia di un matrimonio",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:429191",
+     "title": "Una donna fantastica",
+     "year": 2017,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:124834",
+   "title": "Heartstopper",
+   "year": 2022,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:398818",
+     "title": "Call Me by Your Name",
+     "year": 2017,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:84892",
+     "title": "The Perks of Being a Wallflower",
+     "year": 2012,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:391713",
+     "title": "Lady Bird",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:89905",
+     "title": "Normal People",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:81356",
+     "title": "Sex Education",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:125910",
+     "title": "Young Royals",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:4278",
+   "title": "Friday Night Lights",
+   "year": 2006,
+   "cluster": "teen-coming-of-age",
+   "links": [
+    {
+     "id": "movie:85350",
+     "title": "Boyhood",
+     "year": 2014,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:22881",
+     "title": "The Blind Side",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:2382",
+     "title": "Freaks and Geeks",
+     "year": 1999,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:14709",
+     "title": "Varsity Blues",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9390",
+     "title": "Jerry Maguire",
+     "year": 1996,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:37680",
+   "title": "Suits",
+   "year": 2011,
+   "cluster": "legale-politico",
+   "links": [
+    {
+     "id": "movie:10731",
+     "title": "Il cliente",
+     "year": 1994,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:881",
+     "title": "Codice d'onore",
+     "year": 1992,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:37233",
+     "title": "Il socio",
+     "year": 1993,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:24226",
+     "title": "Il verdetto",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60059",
+     "title": "Better Call Saul",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1435",
+     "title": "The Good Wife",
+     "year": 2009,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:4566",
+     "title": "Michael Clayton",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:1435",
+   "title": "The Good Wife",
+   "year": 2009,
+   "cluster": "legale-politico",
+   "links": [
+    {
+     "id": "movie:24226",
+     "title": "Il verdetto",
+     "year": 1982,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4566",
+     "title": "Michael Clayton",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:462",
+     "title": "Erin Brockovich - Forte come la verità",
+     "year": 2000,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:37680",
+     "title": "Suits",
+     "year": 2011,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:4920",
+     "title": "Damages",
+     "year": 2007,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:9944",
+     "title": "Il rapporto Pelican",
+     "year": 1993,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11329",
+     "title": "La giuria",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:4920",
+   "title": "Damages",
+   "year": 2007,
+   "cluster": "legale-politico",
+   "links": [
+    {
+     "id": "movie:4566",
+     "title": "Michael Clayton",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:24226",
+     "title": "Il verdetto",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1592",
+     "title": "Primal Fear",
+     "year": 1996,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:1435",
+     "title": "The Good Wife",
+     "year": 2009,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:1813",
+     "title": "L'avvocato del diavolo",
+     "year": 1997,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:210577",
+     "title": "L'amore bugiardo - Gone Girl",
+     "year": 2014,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:116799",
+   "title": "Avvocato di difesa - The Lincoln Lawyer",
+   "year": 2022,
+   "cluster": "legale-politico",
+   "links": [
+    {
+     "id": "movie:50348",
+     "title": "The Lincoln Lawyer",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:10731",
+     "title": "Il cliente",
+     "year": 1994,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:1592",
+     "title": "Primal Fear",
+     "year": 1996,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:37680",
+     "title": "Suits",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:881",
+     "title": "Codice d'onore",
+     "year": 1992,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:24226",
+     "title": "Il verdetto",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:156933",
+   "title": "Presunto innocente",
+   "year": 2024,
+   "cluster": "legale-politico",
+   "links": [
+    {
+     "id": "movie:24226",
+     "title": "Il verdetto",
+     "year": 1982,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1592",
+     "title": "Primal Fear",
+     "year": 1996,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:50348",
+     "title": "The Lincoln Lawyer",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1435",
+     "title": "The Good Wife",
+     "year": 2009,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:93",
+     "title": "Anatomia di un omicidio",
+     "year": 1959,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:389",
+     "title": "La parola ai giurati",
+     "year": 1957,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:2316",
+   "title": "The Office",
+   "year": 2005,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:2292",
+     "title": "Clerks - Commessi",
+     "year": 1994,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:500",
+     "title": "Le iene",
+     "year": 1992,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:8592",
+     "title": "Parks and Recreation",
+     "year": 2009,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:48891",
+     "title": "Brooklyn Nine-Nine",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:115",
+     "title": "Il grande Lebowski",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62649",
+     "title": "Superstore",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:8592",
+   "title": "Parks and Recreation",
+   "year": 2009,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:773",
+     "title": "Little Miss Sunshine",
+     "year": 2006,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:115",
+     "title": "Il grande Lebowski",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:2316",
+     "title": "The Office",
+     "year": 2005,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:48891",
+     "title": "Brooklyn Nine-Nine",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:2947",
+     "title": "Veep - Vicepresidente incompetente",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:97546",
+     "title": "Ted Lasso",
+     "year": 2020,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:48891",
+   "title": "Brooklyn Nine-Nine",
+   "year": 2013,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:37136",
+     "title": "Una pallottola spuntata",
+     "year": 1988,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:629",
+     "title": "I soliti sospetti",
+     "year": 1995,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:90",
+     "title": "Beverly Hills Cop - Un piedipiatti a Beverly Hills",
+     "year": 1984,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:8592",
+     "title": "Parks and Recreation",
+     "year": 2009,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:2316",
+     "title": "The Office",
+     "year": 2005,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:18347",
+     "title": "Community",
+     "year": 2009,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:4638",
+     "title": "Hot Fuzz",
+     "year": 2007,
+     "type": "movie",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:18347",
+   "title": "Community",
+   "year": 2009,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:8469",
+     "title": "Animal House",
+     "year": 1978,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:105",
+     "title": "Ritorno al futuro",
+     "year": 1985,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:22538",
+     "title": "Scott Pilgrim vs. the World",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:8592",
+     "title": "Parks and Recreation",
+     "year": 2009,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:4589",
+     "title": "Arrested Development - Ti presento i miei",
+     "year": 2003,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:4608",
+     "title": "30 Rock",
+     "year": 2006,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:115",
+     "title": "Il grande Lebowski",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:4589",
+   "title": "Arrested Development - Ti presento i miei",
+   "year": 2003,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:115",
+     "title": "Il grande Lebowski",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:115",
+     "title": "Il grande Lebowski",
+     "year": 1998,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:9428",
+     "title": "The Royal Tenenbaums",
+     "year": 2001,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:18347",
+     "title": "Community",
+     "year": 2009,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:4608",
+     "title": "30 Rock",
+     "year": 2006,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:4546",
+     "title": "Curb Your Enthusiasm",
+     "year": 2000,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:11545",
+     "title": "Rushmore",
+     "year": 1998,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:60573",
+   "title": "Silicon Valley",
+   "year": 2014,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:37799",
+     "title": "The Social Network",
+     "year": 2010,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:2316",
+     "title": "The Office",
+     "year": 2005,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:2947",
+     "title": "Veep - Vicepresidente incompetente",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:3293",
+     "title": "I pirati di Silicon Valley",
+     "year": 1999,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:115782",
+     "title": "Jobs",
+     "year": 2013,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:2947",
+   "title": "Veep - Vicepresidente incompetente",
+   "year": 2012,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:19833",
+     "title": "In the Loop",
+     "year": 2009,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:76493",
+     "title": "Il dittatore",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:4507",
+     "title": "The Thick of It",
+     "year": 2005,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:8592",
+     "title": "Parks and Recreation",
+     "year": 2009,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:2316",
+     "title": "The Office",
+     "year": 2005,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:136315",
+   "title": "The Bear",
+   "year": 2022,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:367412",
+     "title": "Whiplash",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:212778",
+     "title": "Chef - La ricetta perfetta",
+     "year": 2014,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:492188",
+     "title": "Storia di un matrimonio",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:334541",
+     "title": "Manchester by the Sea",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:34307",
+     "title": "Shameless",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:107113",
+   "title": "Only Murders in the Building",
+   "year": 2021,
+   "cluster": "commedia-lavoro",
+   "links": [
+    {
+     "id": "movie:546554",
+     "title": "Cena con delitto - Knives Out",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4176",
+     "title": "Assassinio sull'Orient Express",
+     "year": 1974,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:963",
+     "title": "Il mistero del falco",
+     "year": 1941,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:19885",
+     "title": "Sherlock",
+     "year": 2010,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:1435",
+     "title": "The Good Wife",
+     "year": 2009,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:661374",
+     "title": "Glass Onion - Knives Out",
+     "year": 2022,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:1402",
+   "title": "The Walking Dead",
+   "year": 2010,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:170",
+     "title": "28 giorni dopo",
+     "year": 2002,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:924",
+     "title": "L'alba dei morti viventi",
+     "year": 2004,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:19908",
+     "title": "Benvenuti a Zombieland",
+     "year": 2009,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:97794",
+     "title": "The Road",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:100088",
+     "title": "The Last of Us",
+     "year": 2023,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:72190",
+     "title": "World War Z",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:396535",
+     "title": "Train to Busan",
+     "year": 2016,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:100088",
+   "title": "The Last of Us",
+   "year": 2023,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:97794",
+     "title": "The Road",
+     "year": 2011,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:170",
+     "title": "28 giorni dopo",
+     "year": 2002,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6479",
+     "title": "Io sono leggenda",
+     "year": 2007,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1402",
+     "title": "The Walking Dead",
+     "year": 2010,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:90972",
+     "title": "Station Eleven",
+     "year": 2021,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:263115",
+     "title": "Logan - The Wolverine",
+     "year": 2017,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:90972",
+   "title": "Station Eleven",
+   "year": 2021,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:97794",
+     "title": "The Road",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:62215",
+     "title": "Melancholia",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:100088",
+     "title": "The Last of Us",
+     "year": 2023,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:87104",
+     "title": "Years and Years",
+     "year": 2019,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:400617",
+     "title": "Il filo nascosto",
+     "year": 2017,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:51999",
+     "title": "Perfect Sense",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:125988",
+   "title": "Silo",
+   "year": 2023,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:110415",
+     "title": "Snowpiercer",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:603",
+     "title": "The Matrix",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1635",
+     "title": "The Island",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:782",
+     "title": "Gattaca - La porta dell'universo",
+     "year": 1997,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:106379",
+     "title": "Fallout",
+     "year": 2024,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:42009",
+     "title": "Black Mirror",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:29425",
+     "title": "La città verrà distrutta all'alba",
+     "year": 1973,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:106379",
+   "title": "Fallout",
+   "year": 2024,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:76341",
+     "title": "Mad Max: Fury Road",
+     "year": 2015,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:157336",
+     "title": "Interstellar",
+     "year": 2014,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:149",
+     "title": "Akira",
+     "year": 1988,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:871",
+     "title": "Il pianeta delle scimmie",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:125988",
+     "title": "Silo",
+     "year": 2023,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:100088",
+     "title": "The Last of Us",
+     "year": 2023,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:79680",
+   "title": "Snowpiercer",
+   "year": 2020,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:110415",
+     "title": "Snowpiercer",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:496243",
+     "title": "Parasite",
+     "year": 2019,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:76341",
+     "title": "Mad Max: Fury Road",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:100088",
+     "title": "The Last of Us",
+     "year": 2023,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:125988",
+     "title": "Silo",
+     "year": 2023,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:3482",
+     "title": "Il treno",
+     "year": 1964,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:68724",
+     "title": "Elysium",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:103768",
+   "title": "Sweet Tooth",
+   "year": 2021,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:97794",
+     "title": "The Road",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1417",
+     "title": "Il labirinto del fauno",
+     "year": 2006,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:129",
+     "title": "La città incantata",
+     "year": 2001,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:90972",
+     "title": "Station Eleven",
+     "year": 2021,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:100088",
+     "title": "The Last of Us",
+     "year": 2023,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:587",
+     "title": "Big Fish - Le storie di una vita incredibile",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10386",
+     "title": "Il gigante di ferro",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:48866",
+   "title": "The 100",
+   "year": 2014,
+   "cluster": "post-apocalittico",
+   "links": [
+    {
+     "id": "movie:871",
+     "title": "Il pianeta delle scimmie",
+     "year": 1968,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:3176",
+     "title": "Battle Royale",
+     "year": 2000,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:4607",
+     "title": "Lost",
+     "year": 2004,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:70160",
+     "title": "Hunger Games",
+     "year": 2012,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:76341",
+     "title": "Mad Max: Fury Road",
+     "year": 2015,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:79680",
+     "title": "Snowpiercer",
+     "year": 2020,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:66292",
+   "title": "Big Little Lies - Piccole grandi bugie",
+   "year": 2017,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:210577",
+     "title": "L'amore bugiardo - Gone Girl",
+     "year": 2014,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:322",
+     "title": "Mystic River",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:70453",
+     "title": "Sharp Objects",
+     "year": 2018,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:14",
+     "title": "American Beauty",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:83851",
+     "title": "The Undoing - Le verità non dette",
+     "year": 2020,
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:72750",
+   "title": "Killing Eve",
+   "year": 2018,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:274",
+     "title": "Il silenzio degli innocenti",
+     "year": 1991,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:691",
+     "title": "La spia che mi amava",
+     "year": 1977,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:80307",
+     "title": "Bodyguard",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:50456",
+     "title": "Hanna",
+     "year": 2011,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:787",
+     "title": "Mr. & Mrs. Smith",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:91275",
+   "title": "Unbelievable",
+   "year": 2019,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:146233",
+     "title": "Prisoners",
+     "year": 2013,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:322",
+     "title": "Mystic River",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1427",
+     "title": "Broadchurch",
+     "year": 2013,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:26101",
+     "title": "The Keepers",
+     "year": 2017,
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:83851",
+   "title": "The Undoing - Le verità non dette",
+   "year": 2020,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:210577",
+     "title": "L'amore bugiardo - Gone Girl",
+     "year": 2014,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:66292",
+     "title": "Big Little Lies - Piccole grandi bugie",
+     "year": 2017,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:70453",
+     "title": "Sharp Objects",
+     "year": 2018,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:116",
+     "title": "Match Point",
+     "year": 2005,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:345",
+     "title": "Eyes Wide Shut",
+     "year": 1999,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:90282",
+   "title": "The Morning Show",
+   "year": 2019,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:525661",
+     "title": "Bombshell - La voce dello scandalo",
+     "year": 2019,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:15621",
+     "title": "The Newsroom",
+     "year": 2012,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:80443",
+     "title": "The Loudest Voice - Sesso e potere",
+     "year": 2019,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:455565",
+     "title": "Bombshell - La storia di Hedy Lamarr",
+     "year": 2018,
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:1424",
+   "title": "Orange Is the New Black",
+   "year": 2013,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:278",
+     "title": "Le ali della libertà",
+     "year": 1994,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:687",
+     "title": "Dead Man Walking - Condannato a morte",
+     "year": 1995,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:429191",
+     "title": "Una donna fantastica",
+     "year": 2017,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1438",
+     "title": "The Wire",
+     "year": 2002,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:71715",
+     "title": "Good Girls",
+     "year": 2018,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:400090",
+     "title": "The Nightingale",
+     "year": 2018,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:34307",
+     "title": "Shameless",
+     "year": 2011,
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:42282",
+   "title": "Girls",
+   "year": 2012,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:121986",
+     "title": "Frances Ha",
+     "year": 2013,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:47607",
+     "title": "Tiny Furniture",
+     "year": 2010,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:153",
+     "title": "Lost in Translation - L'amore tradotto",
+     "year": 2003,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:64254",
+     "title": "Master of None",
+     "year": 2015,
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:492188",
+     "title": "Storia di un matrimonio",
+     "year": 2019,
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:99581",
+   "title": "Unorthodox",
+   "year": 2020,
+   "cluster": "ritratto-donna",
+   "links": [
+    {
+     "id": "movie:429191",
+     "title": "Una donna fantastica",
+     "year": 2017,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:661",
+     "title": "Il matrimonio di Maria Braun",
+     "year": 1979,
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:152584",
+     "title": "La vita di Adele: Capitoli 1 & 2",
+     "year": 2013,
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:56017",
+     "title": "Shtisel",
+     "year": 2013,
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:67070",
+     "title": "Fleabag",
+     "year": 2016,
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:419743",
+     "title": "Disobedience",
+     "year": 2018,
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:89905",
+     "title": "Normal People",
+     "year": 2020,
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  }
+ ]
+}

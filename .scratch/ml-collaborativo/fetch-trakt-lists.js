@@ -27,7 +27,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
             fs.writeFileSync(f, JSON.stringify(lists));
             await sleep(400);
         }
-        for (const L of lists) {
+        for (const W of lists) {
+            const L = W.list || W;              // la lista vera sta sotto 'list' nell'involucro
             const id = L.ids && L.ids.trakt;
             if (!id) continue;
             const fi = path.join(CACHE, `items-${id}.json`);

@@ -1,0 +1,250 @@
+LINK 'Coherence - Il collasso' (2013) [src Dark] -> non risolta
+      vicini: Coherence - Oltre lo spazio tempo (2014) movie:220289 [0.36]
+LINK '12 Monkeys' (1995) [src Dark] -> non risolta
+      vicini: 9 settimane e ½  - La conclusione (1997) movie:18167 [0.25]  |  12:01 - Un minuto dopo mezzanotte (1993) movie:17803 [0.23]  |  The Hamster Factor and Other Tales of 'Twelve Monkeys' (1996) movie:30565 [0.21]
+SORGENTE 'Severance' (2022) [viaggio-nel-tempo] -> non risolta
+      vicini: 
+LINK 'Severance' (2022) [src Devs] -> non risolta
+      vicini: 
+LINK 'Children of Men' (2006) [src Black Mirror] -> non risolta
+      vicini: The Children (2008) movie:16342 [0.62]  |  Little Children (2006) movie:1440 [0.50]  |  Ice Men (2004) movie:44489 [0.45]
+LINK 'Severance' (2022) [src Black Mirror] -> non risolta
+      vicini: 
+LINK 'Children of Men' (2006) [src The Handmaid's Tale] -> non risolta
+      vicini: The Children (2008) movie:16342 [0.62]  |  Little Children (2006) movie:1440 [0.50]  |  Ice Men (2004) movie:44489 [0.45]
+LINK 'Never Let Me Go' (2010) [src The Handmaid's Tale] -> non risolta
+      vicini: Let Go (2011) movie:119197 [0.53]  |  Let My People Go ! (2011) movie:137871 [0.46]  |  I'll Never Die Alone (2008) movie:30026 [0.35]
+LINK 'Children of Men' (2006) [src Years and Years] -> non risolta
+      vicini: The Children (2008) movie:16342 [0.62]  |  Little Children (2006) movie:1440 [0.50]  |  Ice Men (2004) movie:44489 [0.45]
+LINK 'Threads' (1984) [src Years and Years] -> non risolta
+      vicini: 
+LINK 'Dredd - La legge sono io' (2012) [src Altered Carbon] -> non risolta
+      vicini: Io sono Bruce Lee (2012) movie:84383 [0.51]  |  Io sono Li (2011) movie:75562 [0.49]  |  Io sono l'amore (2010) movie:41110 [0.48]
+LINK 'Total Recall' (1990) [src Altered Carbon] -> non risolta
+      vicini: 
+LINK 'Dredd - La legge sono io' (2012) [src Cyberpunk: Edgerunners] -> non risolta
+      vicini: Io sono Bruce Lee (2012) movie:84383 [0.51]  |  Io sono Li (2011) movie:75562 [0.49]  |  Io sono l'amore (2010) movie:41110 [0.48]
+LINK 'Total Recall' (1990) [src Electric Dreams] -> non risolta
+      vicini: 
+LINK 'Leggende criminali' (2015) [src Peaky Blinders] -> non risolta
+      vicini: The Hunters - Cacciatori di leggende (2013) movie:231474 [0.38]  |  Le leggende del Tempio Nascosto (2016) movie:424661 [0.30]  |  Muscle Shoals - Dove nascono le leggende (2013) movie:159151 [0.24]
+LINK 'Winter's Bone' (2010) [src Ozark] -> non risolta
+      vicini: Golden Winter (2012) movie:134671 [0.43]  |  Deep Winter (2009) movie:15571 [0.42]  |  Winter Vacation (2011) movie:95361 [0.41]
+LINK 'Il colore della notte' (1997) [src Ozark] -> non risolta
+      vicini: Complice la notte (1997) movie:12616 [0.51]  |  Le Cento e una Notte (1995) movie:94771 [0.44]  |  La dodicesima notte (1996) movie:44705 [0.43]
+LINK 'Il potere della polvere' (2000) [src The Wire] -> non risolta
+      vicini: Potere Assoluto (2001) movie:73973 [0.45]  |  Gioco di potere (2001) movie:59996 [0.45]  |  Giochi di potere (2000) movie:70121 [0.44]
+LINK 'The Place Beyond the Pines' (2012) [src Sons of Anarchy] -> risolta Beyond (2012) movie:87293 ma FUORI dal grafo
+      vicini: Beyond (2012) movie:87293 [0.40]  |  Beyond (2014) movie:302036 [0.40]  |  Beyond Justice (2014) movie:288818 [0.40]
+LINK 'Una vita violenta' (2016) [src Sons of Anarchy] -> risolta Una vita violenta (2017) movie:453352 ma FUORI dal grafo
+      vicini: Una vita violenta (2017) movie:453352 [1.00]  |  Una vita (2016) movie:408543 [0.49]  |  Una vita spericolata (2018) movie:526990 [0.48]
+LINK 'Mare of Easttown' (2021) [src True Detective] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'Manhunter - Frammenti di un omicidio' (1986) [src Mindhunter] -> non risolta
+      vicini: Mysteria - Replica di un omicidio (1985) movie:240860 [0.32]  |  Omicidio di una playmate (1984) movie:159324 [0.29]  |  Omicidio a luci rosse (1984) movie:11507 [0.29]
+LINK 'Manhunter - Frammenti di un omicidio' (1986) [src Hannibal] -> non risolta
+      vicini: Mysteria - Replica di un omicidio (1985) movie:240860 [0.32]  |  Omicidio di una playmate (1984) movie:159324 [0.29]  |  Omicidio a luci rosse (1984) movie:11507 [0.29]
+LINK 'You' (2018) [src Dexter] -> non risolta
+      vicini: 
+SORGENTE 'Mare of Easttown' (2021) [detective-serial-killer] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'Three Billboards - Oltre il confine' (2017) [src Mare of Easttown] -> non risolta
+      vicini: Border - Creature di confine (2018) movie:517839 [0.37]  |  Three Stories of Love (2015) movie:362366 [0.32]  |  Le Ardenne - Oltre i confini dell'amore (2015) movie:351037 [0.31]
+LINK 'Mare of Easttown' (2021) [src Broadchurch] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'Bron - Il ponte' (2011) [src The Killing] -> non risolta
+      vicini: 
+LINK 'Mare of Easttown' (2021) [src Sharp Objects] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'Il segreto di Mary Magdalene' (2006) [src Sherlock] -> non risolta
+      vicini: Il segreto di Esma (2006) movie:317 [0.39]  |  The Secret - Il segreto (2006) movie:26594 [0.37]  |  Il segreto di Claire (2006) movie:22066 [0.37]
+LINK 'The Big Short' (2015) [src Succession] -> non risolta
+      vicini: Big Sur (2013) movie:156277 [0.50]  |  The Short Game (2013) movie:169864 [0.49]  |  Get Big (2017) movie:467431 [0.45]
+LINK 'The Big Short' (2015) [src House of Cards] -> non risolta
+      vicini: Big Sur (2013) movie:156277 [0.50]  |  The Short Game (2013) movie:169864 [0.49]  |  Get Big (2017) movie:467431 [0.45]
+LINK 'The Big Short' (2015) [src Billions] -> non risolta
+      vicini: Big Sur (2013) movie:156277 [0.50]  |  The Short Game (2013) movie:169864 [0.49]  |  Get Big (2017) movie:467431 [0.45]
+LINK 'Boiler Room' (2000) [src Billions] -> non risolta
+      vicini: Home Room (2002) movie:55015 [0.48]  |  Panic Room (2002) movie:4547 [0.43]  |  Darkened Room (2002) movie:104391 [0.40]
+LINK 'Il lupo di Wall Street' (2013) [src Industry] -> risolta Assalto a Wall Street (2013) movie:184125 ma FUORI dal grafo
+      vicini: Assalto a Wall Street (2013) movie:184125 [0.62]  |  The Wolf of Wall Street (2013) movie:106646 [0.57]  |  Waffle Street (2015) movie:386501 [0.43]
+LINK 'Network' (1976) [src The Newsroom] -> non risolta
+      vicini: 
+LINK 'Spotlight - Segreti svelati' (2015) [src The Newsroom] -> non risolta
+      vicini: Il caso Spotlight (2015) movie:314365 [0.38]  |  Segreti in soffitta (2016) movie:413096 [0.36]  |  Séptimo: i segreti del settimo piano (2013) movie:214761 [0.34]
+LINK 'Il 13esimo guerriero' (1999) [src Il Trono di Spade] -> non risolta
+      vicini: Il 13° guerriero (1999) movie:1911 [0.53]  |  La principessa + il guerriero (2000) movie:9301 [0.39]
+LINK 'Il 13esimo guerriero' (1999) [src House of the Dragon] -> non risolta
+      vicini: Il 13° guerriero (1999) movie:1911 [0.53]  |  La principessa + il guerriero (2000) movie:9301 [0.39]
+LINK 'Il 13esimo guerriero' (1999) [src Vikings] -> non risolta
+      vicini: Il 13° guerriero (1999) movie:1911 [0.53]  |  La principessa + il guerriero (2000) movie:9301 [0.39]
+LINK 'Il 13esimo guerriero' (1999) [src The Last Kingdom] -> non risolta
+      vicini: Il 13° guerriero (1999) movie:1911 [0.53]  |  La principessa + il guerriero (2000) movie:9301 [0.39]
+LINK 'Mary and Max' (2009) [src BoJack Horseman] -> risolta Mary and Max (2009) movie:24238 ma FUORI dal grafo
+      vicini: Mary and Max (2009) movie:24238 [1.00]  |  Max Manus (2008) movie:13752 [0.48]  |  Max & Co (2007) movie:67941 [0.43]
+LINK 'Severance' (2022) [src Russian Doll] -> non risolta
+      vicini: 
+LINK 'Mary and Max' (2009) [src After Life] -> risolta Mary and Max (2009) movie:24238 ma FUORI dal grafo
+      vicini: Mary and Max (2009) movie:24238 [1.00]  |  Max Manus (2008) movie:13752 [0.48]  |  Max & Co (2007) movie:67941 [0.43]
+LINK 'Attack on Titan' (2013) [src Arcane] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Star Wars - Una nuova speranza' (1977) [src Futurama] -> non risolta
+      vicini: The Star Wars Holiday Special (1978) movie:74849 [0.48]  |  The Making of Star Wars (1977) movie:72694 [0.46]  |  Hardware Wars (1978) movie:50157 [0.27]
+SORGENTE 'Attack on Titan' (2013) [animazione-adulta] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Attack on Titan' (2013) [src Neon Genesis Evangelion] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Il 13esimo guerriero' (1999) [src Vinland Saga] -> non risolta
+      vicini: Il 13° guerriero (1999) movie:1911 [0.53]  |  La principessa + il guerriero (2000) movie:9301 [0.39]
+LINK 'Attack on Titan' (2013) [src Vinland Saga] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Attack on Titan' (2013) [src Chainsaw Man] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Attack on Titan' (2013) [src Jujutsu Kaisen] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Principessa Mononoke' (1997) [src Demon Slayer] -> non risolta
+      vicini: Princess Mononoke (1997) movie:128 [0.57]  |  La Principessa Minerva (1995) movie:191507 [0.51]  |  La piccola principessa (1995) movie:19101 [0.47]
+LINK 'Attack on Titan' (2013) [src Demon Slayer] -> non risolta
+      vicini: Attack on Titan: Junior High (2015) tv:63510 [0.65]  |  Cyber Attack (2013) tv:63822 [0.36]
+LINK 'Il viaggio di Chihiro' (2001) [src Demon Slayer] -> non risolta
+      vicini: Il viaggio di Carol (2002) movie:56746 [0.51]  |  Il viaggio di Felicia (1999) movie:47692 [0.47]  |  Viaggio a Kandahar (2001) movie:28171 [0.46]
+SORGENTE 'Bron - Il ponte' (2011) [noir-nordico] -> non risolta
+      vicini: 
+LINK 'Bron - Il ponte' (2011) [src Trapped - Intrappolati] -> non risolta
+      vicini: 
+LINK 'Bron - Il ponte' (2011) [src Wallander] -> non risolta
+      vicini: 
+LINK 'Il 13esimo guerriero' (1999) [src Ragnarok] -> non risolta
+      vicini: Il 13° guerriero (1999) movie:1911 [0.53]  |  La principessa + il guerriero (2000) movie:9301 [0.39]
+LINK 'Trollhunter - Il cacciatore di troll' (2010) [src Ragnarok] -> non risolta
+      vicini: Il cacciatore di ex (2010) movie:27573 [0.38]  |  Il Cacciatore di Zombie (2011) movie:74726 [0.38]  |  Troll Hunter (2010) movie:46146 [0.31]
+LINK 'Bron - Il ponte' (2011) [src Fortitude] -> non risolta
+      vicini: 
+LINK 'Bron - Il ponte' (2011) [src Bordertown - I misteri di Sorjonen] -> non risolta
+      vicini: 
+LINK 'Oldboy' (2003) [src Squid Game] -> non risolta
+      vicini: 
+SORGENTE 'Parasite' (2019) [onda-coreana] -> non risolta
+      vicini: 
+LINK 'Burning - L'incendio' (2018) [src Parasite] -> non risolta
+      vicini: Burning - L'amore brucia (2018) movie:491584 [0.42]  |  L'inganno (2017) movie:399019 [0.39]  |  The Nest - L'inganno (2020) movie:545237 [0.32]
+LINK 'Shoplifters - Un affetto prezioso' (2018) [src Parasite] -> non risolta
+      vicini: 
+LINK 'Oldboy' (2003) [src Kingdom] -> non risolta
+      vicini: 
+SORGENTE 'Oldboy' (2003) [onda-coreana] -> non risolta
+      vicini: 
+LINK 'Sympathy for Mr. Vengeance' (2002) [src Oldboy] -> non risolta
+      vicini: Mr. Vendetta (2002) movie:4689 [0.30]  |  Il vendicatore – Out for a kill (2003) movie:30806 [0.27]  |  Quest for the Ring (2001) movie:445652 [0.24]
+LINK 'Oldboy' (2003) [src The Glory] -> non risolta
+      vicini: 
+LINK 'Sympathy for Mr. Vengeance' (2002) [src The Glory] -> non risolta
+      vicini: Mr. Vendetta (2002) movie:4689 [0.30]  |  Il vendicatore – Out for a kill (2003) movie:30806 [0.27]  |  Quest for the Ring (2001) movie:445652 [0.24]
+LINK 'Burning - L'incendio' (2018) [src The Glory] -> non risolta
+      vicini: Burning - L'amore brucia (2018) movie:491584 [0.42]  |  L'inganno (2017) movie:399019 [0.39]  |  The Nest - L'inganno (2020) movie:545237 [0.32]
+LINK 'Oldboy' (2003) [src My Name] -> non risolta
+      vicini: 
+LINK 'Burning - L'incendio' (2018) [src Hellbound] -> non risolta
+      vicini: Burning - L'amore brucia (2018) movie:491584 [0.42]  |  L'inganno (2017) movie:399019 [0.39]  |  The Nest - L'inganno (2020) movie:545237 [0.32]
+LINK 'Rocco Schiavone' (2016) [src Il commissario Montalbano] -> risolta Rocco Schiavone (2016) tv:67639 ma FUORI dal grafo
+      vicini: Rocco Schiavone (2016) tv:67639 [1.00]
+LINK 'Imma Tataranni - Sostituto procuratore' (2019) [src Il commissario Montalbano] -> risolta Imma Tataranni - Sostituto procuratore (2019) tv:94931 ma FUORI dal grafo
+      vicini: Imma Tataranni - Sostituto procuratore (2019) tv:94931 [1.00]
+LINK '8½ - Otto e mezzo' (1963) [src Boris] -> non risolta
+      vicini: Un mostro e mezzo (1964) movie:132095 [0.53]  |  Un generale e mezzo (1961) movie:55863 [0.44]  |  Il piccolo principe e il drago a otto teste (1963) movie:84480 [0.26]
+LINK 'Le conseguenze dell'amore' (2004) [src The Young Pope] -> risolta Le conseguenze dell'amore (2004) movie:24653 ma FUORI dal grafo
+      vicini: Le conseguenze dell'amore (2004) movie:24653 [1.00]  |  Il quiz dell'amore (2006) movie:14055 [0.52]  |  La forza dell'amore (2005) movie:21753 [0.51]
+LINK '8½ - Otto e mezzo' (1963) [src The Young Pope] -> non risolta
+      vicini: Un mostro e mezzo (1964) movie:132095 [0.53]  |  Un generale e mezzo (1961) movie:55863 [0.44]  |  Il piccolo principe e il drago a otto teste (1963) movie:84480 [0.26]
+LINK 'The Assassination of Jesse James' (2007) [src Hell on Wheels] -> risolta The Assassination of Jesse James: Death of an Outlaw (2008) movie:17171 ma FUORI dal grafo
+      vicini: The Assassination of Jesse James: Death of an Outlaw (2008) movie:17171 [0.68]  |  L'assassinio di Jesse James per mano del codardo Robert Ford (2007) movie:4512 [0.35]  |  James (2008) movie:45196 [0.33]
+LINK 'Il Gladiatore II' (2024) [src Rome] -> risolta Il gladiatore II (2024) movie:558449 ma FUORI dal grafo
+      vicini: Il gladiatore II (2024) movie:558449 [1.00]  |  വാഴ II (2026) movie:1336770 [0.41]  |  விடுதலை: பாகம் II (2024) movie:1020354 [0.41]
+LINK 'Threads' (1984) [src Chernobyl] -> non risolta
+      vicini: 
+LINK 'Das Boot - Il sommergibile' (1981) [src Das Boot] -> non risolta
+      vicini: Il sommergibile più pazzo del mondo (1982) movie:372233 [0.39]  |  U-Boot 96 (1981) movie:387 [0.30]
+LINK 'Il dottor Stranamore' (1964) [src Catch-22] -> non risolta
+      vicini: Il dottor Zivago (1965) movie:907 [0.44]  |  Il testamento del dottor Mabuse (1962) movie:10444 [0.38]  |  Il gabinetto del dottor Caligari (1962) movie:109133 [0.32]
+LINK 'Le Bureau des Legendes' (2015) [src The Americans] -> non risolta
+      vicini: Au-delà des murs (2016) tv:67979 [0.31]  |  Quartier des banques (2017) tv:75159 [0.30]  |  Le Bureau - Sotto copertura (2015) tv:62476 [0.30]
+SORGENTE 'Le Bureau des Legendes' (2015) [spionaggio] -> non risolta
+      vicini: Au-delà des murs (2016) tv:67979 [0.31]  |  Quartier des banques (2017) tv:75159 [0.30]  |  Le Bureau - Sotto copertura (2015) tv:62476 [0.30]
+LINK 'Le Samourai - Il samurai' (1967) [src Le Bureau des Legendes] -> non risolta
+      vicini: Samurai (1965) movie:79406 [0.54]  |  Killer Samurai (1966) movie:19884 [0.44]  |  Samurai Spy (1965) movie:46916 [0.41]
+LINK 'Le Bureau des Legendes' (2015) [src Slow Horses - Pecore nere] -> non risolta
+      vicini: Au-delà des murs (2016) tv:67979 [0.31]  |  Quartier des banques (2017) tv:75159 [0.30]  |  Le Bureau - Sotto copertura (2015) tv:62476 [0.30]
+LINK 'Il direttore di banca' (2015) [src Slow Horses - Pecore nere] -> non risolta
+      vicini: 
+LINK 'Le Bureau des Legendes' (2015) [src Fauda] -> non risolta
+      vicini: Au-delà des murs (2016) tv:67979 [0.31]  |  Quartier des banques (2017) tv:75159 [0.30]  |  Le Bureau - Sotto copertura (2015) tv:62476 [0.30]
+LINK 'Bonnie and Clyde' (1967) [src The End of the F***ing World] -> non risolta
+      vicini: 
+LINK 'Dazed and Confused' (1993) [src Freaks and Geeks] -> non risolta
+      vicini: 
+LINK 'Blue Is the Warmest Colour' (2013) [src Normal People] -> non risolta
+      vicini: Where is Good? (2015) movie:372227 [0.31]  |  From What Is Before (2014) movie:280492 [0.30]  |  This Is Our Time (2013) movie:192160 [0.30]
+LINK 'Love, Simon' (2018) [src Heartstopper] -> non risolta
+      vicini: Love (2016) movie:399875 [0.53]  |  Love Sonia (2018) movie:444000 [0.52]  |  リベンジポルノ PAIN OF LOVE (2019) movie:1033051 [0.49]
+LINK 'Dazed and Confused' (1993) [src Friday Night Lights] -> non risolta
+      vicini: 
+LINK 'Remember the Titans - Ricordando i Titani' (2000) [src Friday Night Lights] -> non risolta
+      vicini: I'll Remember April (1999) movie:119349 [0.23]  |  Bob the Builder: A Christmas to Remember (2001) movie:28694 [0.20]
+LINK 'How to Get Away with Murder' (2014) [src Damages - Presa di mira] -> non risolta
+      vicini: Murder Comes To Town (2014) tv:70582 [0.37]  |  How We Got to Now (2014) tv:61896 [0.35]  |  How to Rock (2012) tv:39034 [0.34]
+SORGENTE 'Goliath' (2016) [legale-politico] -> non risolta
+      vicini: 
+LINK 'Goliath' (2016) [src The Lincoln Lawyer] -> non risolta
+      vicini: 
+LINK 'Goliath' (2016) [src Presunto innocente] -> non risolta
+      vicini: 
+LINK 'Office Space' (1999) [src The Office] -> non risolta
+      vicini: Outer Space (1999) movie:110650 [0.48]  |  Space Cowboys (2000) movie:5551 [0.42]  |  Lost in Space (1998) movie:2157 [0.37]
+LINK 'Office Space' (1999) [src Parks and Recreation] -> non risolta
+      vicini: Outer Space (1999) movie:110650 [0.48]  |  Space Cowboys (2000) movie:5551 [0.42]  |  Lost in Space (1998) movie:2157 [0.37]
+LINK 'Office Space' (1999) [src Silicon Valley] -> non risolta
+      vicini: Outer Space (1999) movie:110650 [0.48]  |  Space Cowboys (2000) movie:5551 [0.42]  |  Lost in Space (1998) movie:2157 [0.37]
+LINK 'The Big Short' (2015) [src Silicon Valley] -> non risolta
+      vicini: Big Sur (2013) movie:156277 [0.50]  |  The Short Game (2013) movie:169864 [0.49]  |  Get Big (2017) movie:467431 [0.45]
+LINK 'Wag the Dog - Mai dire mai' (1997) [src Veep - Vicepresidente inqualificabile] -> non risolta
+      vicini: Mai dire ninja (1997) movie:9622 [0.51]  |  Dog Watch (1997) movie:152597 [0.31]  |  Ghost Dog - Il codice del samurai (1999) movie:4816 [0.31]
+LINK 'Dr. Stranamore' (1964) [src Veep - Vicepresidente inqualificabile] -> non risolta
+      vicini: Dr. Satán (1966) movie:95245 [0.47]  |  Dr. No (1962) movie:646 [0.42]  |  Dr. Sex (1964) movie:135371 [0.41]
+LINK 'Burnt' (2015) [src The Bear] -> non risolta
+      vicini: Burn Burn Burn (2016) movie:359870 [0.36]  |  Burn Country (2016) movie:328796 [0.24]  |  Let the Fire Burn (2013) movie:174352 [0.22]
+LINK 'Boiling Point - Il punto di ebollizione' (2021) [src The Bear] -> non risolta
+      vicini: Boiling Point (2019) movie:643847 [0.54]  |  Boiling Point - Il disastro è servito (2021) movie:807196 [0.41]  |  Hollow Point - Punto di non ritorno (2019) movie:611562 [0.39]
+LINK 'Vedi alla voce delitto' (1976) [src Only Murders in the Building] -> non risolta
+      vicini: 5 matti alla riscossa (1974) movie:62659 [0.27]  |  Detective Harper: acqua alla gola (1975) movie:32620 [0.27]  |  La soldatessa alla visita militare (1977) movie:45933 [0.27]
+LINK 'Children of Men' (2006) [src The Last of Us] -> non risolta
+      vicini: The Children (2008) movie:16342 [0.62]  |  Little Children (2006) movie:1440 [0.50]  |  Ice Men (2004) movie:44489 [0.45]
+LINK 'Children of Men' (2006) [src Station Eleven] -> non risolta
+      vicini: The Children (2008) movie:16342 [0.62]  |  Little Children (2006) movie:1440 [0.50]  |  Ice Men (2004) movie:44489 [0.45]
+LINK 'Book of Eli - Il libro di Eli' (2010) [src Fallout] -> non risolta
+      vicini: A Closed Book (2012) movie:34211 [0.34]  |  Il libro dei draghi (2011) movie:79379 [0.33]  |  Merlin and the Book of Beasts (2009) movie:21358 [0.32]
+LINK 'Dune' (2021) [src The 100] -> risolta Dűne (2020) movie:697620 ma FUORI dal grafo
+      vicini: Dűne (2020) movie:697620 [1.00]  |  Dune (2021) movie:438631 [1.00]  |  Planet Dune (2021) movie:881460 [0.51]
+LINK 'Three Billboards - Oltre il confine' (2017) [src Big Little Lies] -> non risolta
+      vicini: Border - Creature di confine (2018) movie:517839 [0.37]  |  Three Stories of Love (2015) movie:362366 [0.32]  |  Le Ardenne - Oltre i confini dell'amore (2015) movie:351037 [0.31]
+LINK 'Mare of Easttown' (2021) [src Big Little Lies] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'Atomic Blonde' (2017) [src Killing Eve] -> non risolta
+      vicini: Atomic Falafel (2015) movie:359298 [0.47]  |  Atomic Shark (2016) movie:564837 [0.42]
+LINK 'Three Billboards - Oltre il confine' (2017) [src Unbelievable] -> non risolta
+      vicini: Border - Creature di confine (2018) movie:517839 [0.37]  |  Three Stories of Love (2015) movie:362366 [0.32]  |  Le Ardenne - Oltre i confini dell'amore (2015) movie:351037 [0.31]
+LINK 'Mare of Easttown' (2021) [src Unbelievable] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'Spotlight - Segreti svelati' (2015) [src Unbelievable] -> non risolta
+      vicini: Il caso Spotlight (2015) movie:314365 [0.38]  |  Segreti in soffitta (2016) movie:413096 [0.36]  |  Séptimo: i segreti del settimo piano (2013) movie:214761 [0.34]
+LINK 'Mare of Easttown' (2021) [src The Undoing - Le verita' non dette] -> non risolta
+      vicini: Alto mare (2019) tv:88239 [0.49]  |  Omicidio a Easttown (2021) tv:115004 [0.47]  |  Mare Fuori (2020) tv:110283 [0.41]
+LINK 'La verita' e' che ti amo' (2005) [src The Undoing - Le verita' non dette] -> non risolta
+      vicini: Confess - La verità.. è in rete (2005) movie:18428 [0.39]  |  Diciamoci la verità (2003) movie:282098 [0.37]  |  La stella che non c'è (2006) movie:24189 [0.37]
+LINK 'Spotlight - Segreti svelati' (2015) [src The Morning Show] -> non risolta
+      vicini: Il caso Spotlight (2015) movie:314365 [0.38]  |  Segreti in soffitta (2016) movie:413096 [0.36]  |  Séptimo: i segreti del settimo piano (2013) movie:214761 [0.34]
+LINK 'Network' (1976) [src The Morning Show] -> non risolta
+      vicini: 
+LINK 'Tootsie - Una donna in carriera' (1982) [src The Morning Show] -> non risolta
+      vicini: La donna in fiamme (1983) movie:11192 [0.40]  |  Terrore in città (1982) movie:27150 [0.30]  |  In compagnia dei lupi (1984) movie:11905 [0.28]
+LINK 'The Squid and the Whale' (2005) [src Girls] -> non risolta
+      vicini: 
