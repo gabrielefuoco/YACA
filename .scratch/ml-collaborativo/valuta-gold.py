@@ -3,12 +3,13 @@ valuta-gold.py — IL METRO CURATO. Valuta uno spazio sui collegamenti scritti a
 Metriche: per PESO (3 = primi 10, 2 = primi 20, 1 = primi 50), per TIPO, e i FALSI AMICI (devono stare fuori).
 Uso: python .scratch/ml-collaborativo/valuta-gold.py
 """
-import json, pathlib, re, unicodedata, difflib
+import json, os, pathlib, re, unicodedata, difflib
 import numpy as np, pandas as pd
 from scipy import sparse as sp
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PQ, ML = ROOT/".cache"/"tmdb", ROOT/".cache"/"movielens"
-z = np.load(ML/"spazi.npz", allow_pickle=True)
+SP = os.environ.get("SPAZI", "spazi")
+z = np.load(ML/f"{SP}.npz", allow_pickle=True)
 Pc, Pb, tmdb, tipo, coll, year = z["Pc"], z["Pb"], z["tmdb"], z["tipo"], z["coll"], z["year"]
 n = len(tmdb)
 def norm(s):
@@ -58,7 +59,7 @@ for s in gold["sources"]:
     srcs.append(dict(i=i, why=s["why"], links=links, ffs=ffs))
 print(f"sorgenti agganciate: {len(srcs)}/{len(gold['sources'])} · collegamenti {sum(len(s['links']) for s in srcs)} · falsi amici {sum(len(s['ffs']) for s in srcs)}")
 if miss: print("  non agganciate:", ", ".join(miss))
-Sf = sp.load_npz(ML/"spazi-tfidf.npz").tocsr()
+Sf = sp.load_npz(ML/f"{SP}-tfidf.npz").tocsr()
 is_tv = (tipo == "tv")
 def centra(P):
     Q = P.astype(np.float64).copy()
