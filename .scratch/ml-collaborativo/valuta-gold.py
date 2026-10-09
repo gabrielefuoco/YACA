@@ -123,7 +123,7 @@ even = [k for k in range(len(srcs)) if k % 2 == 0]
 print("")
 voti = z["votes"].astype(float)
 COLD = voti < 200          # sotto questa soglia il teacher non ha dati: le coordinate apprese sono rumore
-def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0, wx=0.0):
+def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0, wx=0.0, wxs=None):
     sims = wc*(Pc2 @ Pc2[row]) + wb*(Pb2 @ Pb2[row])
     if wf and COLD[row]:
         sims = sims + wf*(Sf[row] @ Sf.T).toarray().ravel()
@@ -132,7 +132,16 @@ def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0, wx=0.0):
     if boost:
         sims = sims + boost*((coll == coll[row]) & ~pd.isna(coll))
     if wx and Ec2 is not None:
-        sims = sims + wx*(Ec2 @ Ec2[row])
+        _ec = Ec2 @ Ec2[row]
+        if wxs is None:
+            sims = sims + wx*_ec                      # peso uniforme (controllo)
+        else:
+            # GATE PER QUERY (non per coppia): dipende da CHI chiede, non da chi risponde.
+            # Sorgente serie -> il teacher pesa molto (le coordinate delle serie sono
+            # un'estrapolazione: li' il contenuto e' debole). Sorgente film -> pesa poco
+            # (li' il comportamento MovieLens e' forte e il teacher aggiunge meno).
+            _p = wx if is_tv[row] else wxs
+            sims = sims + _p*_ec
     if wt or wz:
         a = temi_row.get(key_of_row[row])
         if a is not None:
@@ -141,13 +150,13 @@ def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0, wx=0.0):
     sims[row] = -9
     return sims
 CLEAN = os.environ.get("CLEAN", "0") == "1"
-def valuta(wc, wb, wf, wy, sig, boost, nome, subset=None, wt=0.0, wz=0.0, wx=0.0):
+def valuta(wc, wb, wf, wy, sig, boost, nome, subset=None, wt=0.0, wz=0.0, wx=0.0, wxs=None):
     ss = srcs if subset is None else [srcs[k] for k in subset]
     tot = {w: 0 for w in W_K}; hit = {w: 0 for w in W_K}
     byt = {}; ff10 = ff_tot = 0
     for s_ in ss:
         _src = key_of_row[s_["i"]]
-        order = np.argsort(-sims_of(s_["i"], wc, wb, wf, wy, sig, boost, wt, wz, wx))
+        order = np.argsort(-sims_of(s_["i"], wc, wb, wf, wy, sig, boost, wt, wz, wx, wxs))
         rank = {int(x): k for k, x in enumerate(order)}
         for j, t, w, _ in s_["links"]:
             if CLEAN and (_src, key_of_row[j]) in _viste: continue
@@ -229,3 +238,49 @@ print("=== SOLO LEGAMI NON VISTI DAL TEACHER (decontaminato) ===")
 import subprocess, sys
 env = dict(os.environ, CLEAN="1")
 print("(per questo serve una seconda esecuzione con CLEAN=1)")
+
+
+print("")
+print("=== IL GATE DEL TEACHER: peso diverso per candidati di ALTRO medium vs stesso medium ===")
+if Ec2 is not None:
+    base = (1.0, 0.0, 0.0, 0.15, 8, 0.4)
+    r0 = valuta(*base, "base (riferimento)", subset=even)
+    print("-- CONTROLLO: peso UNIFORME (nessuna scelta per-query) --")
+    for wx in (0.6, 1.0, 1.5):
+        valuta(*base, f"uniforme wx={wx}", subset=even, wx=wx)
+    print("-- GATE: alto sul cross-medium, basso sullo stesso medium --")
+    best = None
+    for wx in (1.5, 2.5, 4.0, 6.0):
+        for wxs in (0.0, 0.2, 0.6):
+            r = valuta(*base, f"gate wx={wx} wxs={wxs}", subset=odd, wx=wx, wxs=wxs)
+            if best is None or r["score"] > best[2]["score"]: best = (wx, wxs, r)
+    wx, wxs = best[0], best[1]
+    print(f"-- migliore sul calibro: wx={wx} wxs={wxs} --")
+    r1 = valuta(*base, f"GATE {wx}/{wxs} (verifica)", subset=even, wx=wx, wxs=wxs)
+    print("")
+    print(f"  verifica: PUNTEGGIO {100*r0['score']:.1f} -> {100*r1['score']:.1f}  ·  p3@10 {100*r0['c3']:.1f}% -> {100*r1['c3']:.1f}%")
+    for k in sorted(set(list(r0["byt"].keys()) + list(r1["byt"].keys()))):
+        a, b = r0["byt"].get(k, [0,0]), r1["byt"].get(k, [0,0])
+        if a[1] or b[1]:
+            print(f"    {k:<14} {100*a[0]/max(1,a[1]):5.1f}% -> {100*b[0]/max(1,b[1]):5.1f}%   ({a[1]} legami)")
+
+
+print("")
+print("=== GATE PER QUERY: sorgente serie -> teacher forte · sorgente film -> teacher debole ===")
+if Ec2 is not None:
+    base = (1.0, 0.0, 0.0, 0.15, 8, 0.4)
+    r0 = valuta(*base, "base (riferimento)", subset=even)
+    best = None
+    for wx in (1.0, 1.5, 2.5):
+        for wxs in (0.0, 0.3, 0.6):
+            r = valuta(*base, f"query-gate serie={wx} film={wxs}", subset=odd, wx=wx, wxs=wxs)
+            if best is None or r["score"] > best[2]["score"]: best = (wx, wxs, r)
+    wx, wxs = best[0], best[1]
+    print(f"-- migliore sul calibro: serie={wx} film={wxs} --")
+    r1 = valuta(*base, f"QUERY-GATE {wx}/{wxs} (verifica)", subset=even, wx=wx, wxs=wxs)
+    print("")
+    print(f"  verifica: PUNTEGGIO {100*r0['score']:.1f} -> {100*r1['score']:.1f}  ·  p3@10 {100*r0['c3']:.1f}% -> {100*r1['c3']:.1f}%")
+    for k in sorted(set(list(r0["byt"].keys()) + list(r1["byt"].keys()))):
+        a, b = r0["byt"].get(k, [0,0]), r1["byt"].get(k, [0,0])
+        if a[1] or b[1]:
+            print(f"    {k:<14} {100*a[0]/max(1,a[1]):5.1f}% -> {100*b[0]/max(1,b[1]):5.1f}%   ({a[1]} legami)")
