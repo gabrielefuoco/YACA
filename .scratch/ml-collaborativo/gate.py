@@ -75,7 +75,7 @@ def find(title, year_):
 
 row_of = {f"{t}:{int(i)}": r for r, (t, i) in enumerate(zip(tipo, tmdb))}
 gold = {"sources": []}
-for f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json", "link-manuali-4.json"):
+for f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json", "link-manuali-4.json", "link-manuali-5.json"):
     p = ROOT / ".scratch" / "ml-collaborativo" / "gold" / f
     if p.exists():
         gold["sources"] += json.loads(p.read_text(encoding="utf-8"))["sources"]

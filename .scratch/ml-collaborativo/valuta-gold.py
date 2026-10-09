@@ -47,7 +47,7 @@ def find(title, year_):
             if r > bs: bs, best = r, j
     return best if bs >= 0.82 else None
 gold = {"sources": []}
-for _f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json", "link-manuali-4.json"):
+for _f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json", "link-manuali-4.json", "link-manuali-5.json"):
     _p = ROOT / ".scratch" / "ml-collaborativo" / "gold" / _f
     if _p.exists():
         gold["sources"] += json.loads(_p.read_text(encoding="utf-8"))["sources"]
