@@ -10075,6 +10075,2042 @@
      "y": 2001
     }
    ]
+  },
+  {
+   "id": "tv:83125",
+   "titolo": "Cursed",
+   "cluster": "fantasy-arturiano",
+   "links": [
+    {
+     "id": "movie:11527",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:120",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:559907",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:274857",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:849",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:71914",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:64122",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:81046",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:74387",
+   "titolo": "Final Space",
+   "cluster": "animazione-spazio",
+   "links": [
+    {
+     "id": "tv:60625",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:3793",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1855",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:118340",
+     "type": "movie",
+     "w": 3,
+     "t": "Guardiani della Galassia",
+     "y": 2014
+    },
+    {
+     "id": "movie:926",
+     "type": "movie",
+     "w": 2,
+     "t": "Galaxy Quest",
+     "y": 1999
+    }
+   ]
+  },
+  {
+   "id": "tv:62687",
+   "titolo": "Limitless",
+   "cluster": "genio-droga",
+   "links": [
+    {
+     "id": "movie:51876",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:7516",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:273481",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:136795",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:240832",
+     "type": "movie",
+     "w": 3,
+     "t": "Lucy",
+     "y": 2014
+    },
+    {
+     "id": "movie:157353",
+     "type": "movie",
+     "w": 1,
+     "t": "Transcendence",
+     "y": 2014
+    }
+   ]
+  },
+  {
+   "id": "tv:111141",
+   "titolo": "Maid",
+   "cluster": "poverta-sopravvivenza",
+   "links": [
+    {
+     "id": "movie:8942",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:592984",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:78133",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:81355",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1424",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:66292",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:136283",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:581734",
+     "type": "movie",
+     "w": 3,
+     "t": "Nomadland",
+     "y": 2021
+    },
+    {
+     "id": "movie:394117",
+     "type": "movie",
+     "w": 3,
+     "t": "The Florida Project",
+     "y": 2017
+    },
+    {
+     "id": "movie:374473",
+     "type": "movie",
+     "w": 2,
+     "t": "Io, Daniel Blake",
+     "y": 2016
+    }
+   ]
+  },
+  {
+   "id": "tv:88236",
+   "titolo": "Come vendere droga online (in fretta)",
+   "cluster": "spaccio-teen",
+   "links": [
+    {
+     "id": "movie:850329",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:44945",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:127517",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9040",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1438",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:86942",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:63351",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:97970",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:4133",
+     "type": "movie",
+     "w": 2,
+     "t": "Blow",
+     "y": 2001
+    }
+   ]
+  },
+  {
+   "id": "tv:83639",
+   "titolo": "Girl from Nowhere",
+   "cluster": "anthology-horror",
+   "links": [
+    {
+     "id": "movie:3176",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:588",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:17467",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9378",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:89959",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67915",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:74183",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:11075",
+     "type": "movie",
+     "w": 2,
+     "t": "Audition",
+     "y": 2000
+    }
+   ]
+  },
+  {
+   "id": "tv:96713",
+   "titolo": "The Midnight Gospel",
+   "cluster": "animazione-psichedelica",
+   "links": [
+    {
+     "id": "movie:34647",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:300668",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:29455",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11553",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:566038",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9081",
+     "type": "movie",
+     "w": 3,
+     "t": "Waking Life",
+     "y": 2001
+    },
+    {
+     "id": "movie:3509",
+     "type": "movie",
+     "w": 3,
+     "t": "A Scanner Darkly",
+     "y": 2006
+    },
+    {
+     "id": "movie:16306",
+     "type": "movie",
+     "w": 2,
+     "t": "Il pianeta selvaggio",
+     "y": 1973
+    },
+    {
+     "id": "movie:4977",
+     "type": "movie",
+     "w": 2,
+     "t": "Paprika - Sognando un sogno",
+     "y": 2006
+    }
+   ]
+  },
+  {
+   "id": "tv:88055",
+   "titolo": "Servant",
+   "cluster": "horror-domestico",
+   "links": [
+    {
+     "id": "movie:745",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:381288",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:502416",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8461",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:520763",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:1920",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:40008",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:89959",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:805",
+     "type": "movie",
+     "w": 3,
+     "t": "Rosemary's baby: nastro rosso a New York",
+     "y": 1968
+    }
+   ]
+  },
+  {
+   "id": "tv:43899",
+   "titolo": "La Bibbia",
+   "cluster": "biblico",
+   "links": [
+    {
+     "id": "movie:6844",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:8967",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:35031",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:45139",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:335778",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:19649",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:85077",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:62287",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:24192",
+     "type": "movie",
+     "w": 3,
+     "t": "Il vangelo secondo Matteo",
+     "y": 1965
+    },
+    {
+     "id": "movie:665",
+     "type": "movie",
+     "w": 2,
+     "t": "Ben-Hur",
+     "y": 1959
+    }
+   ]
+  },
+  {
+   "id": "tv:67773",
+   "titolo": "Dirk Gently",
+   "cluster": "mistero-assurdo",
+   "links": [
+    {
+     "id": "movie:76459",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:34415",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:67743",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:115",
+     "type": "movie",
+     "w": 3,
+     "t": "Il grande Lebowski",
+     "y": 1998
+    },
+    {
+     "id": "movie:7453",
+     "type": "movie",
+     "w": 3,
+     "t": "Guida galattica per autostoppisti",
+     "y": 2005
+    },
+    {
+     "id": "movie:4638",
+     "type": "movie",
+     "w": 2,
+     "t": "Hot Fuzz",
+     "y": 2007
+    },
+    {
+     "id": "tv:19885",
+     "type": "tv",
+     "w": 2,
+     "t": "Sherlock",
+     "y": 2010
+    },
+    {
+     "id": "tv:57243",
+     "type": "tv",
+     "w": 2,
+     "t": "Doctor Who",
+     "y": 2005
+    }
+   ]
+  },
+  {
+   "id": "tv:86374",
+   "titolo": "War of the Worlds",
+   "cluster": "invasione-aliena",
+   "links": [
+    {
+     "id": "movie:74",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:10785",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6479",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:5491",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:108545",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:51704",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:34967",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:48866",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:2675",
+     "type": "movie",
+     "w": 2,
+     "t": "Signs",
+     "y": 2002
+    },
+    {
+     "id": "movie:329865",
+     "type": "movie",
+     "w": 2,
+     "t": "Arrival",
+     "y": 2016
+    },
+    {
+     "id": "movie:7191",
+     "type": "movie",
+     "w": 2,
+     "t": "Cloverfield",
+     "y": 2008
+    }
+   ]
+  },
+  {
+   "id": "tv:80564",
+   "titolo": "Banana Fish",
+   "cluster": "crimine-anime",
+   "links": [
+    {
+     "id": "movie:11328",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:357411",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:100281",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:93816",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:46283",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:83097",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:598",
+     "type": "movie",
+     "w": 3,
+     "t": "City of God",
+     "y": 2002
+    },
+    {
+     "id": "movie:11344",
+     "type": "movie",
+     "w": 2,
+     "t": "Bittersweet life",
+     "y": 2005
+    },
+    {
+     "id": "movie:327",
+     "type": "movie",
+     "w": 2,
+     "t": "Brother",
+     "y": 2000
+    }
+   ]
+  },
+  {
+   "id": "tv:110642",
+   "titolo": "RESIDENT EVIL: Infinite Darkness",
+   "cluster": "zombie-anime",
+   "links": [
+    {
+     "id": "movie:1576",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1577",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:71679",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:7737",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:400136",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1083862",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:924",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:588",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:108296",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:170",
+     "type": "movie",
+     "w": 2,
+     "t": "28 giorni dopo",
+     "y": 2002
+    }
+   ]
+  },
+  {
+   "id": "tv:80169",
+   "titolo": "La casa de las flores",
+   "cluster": "famiglia-nera",
+   "links": [
+    {
+     "id": "movie:1958",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:773",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:27103",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9716",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1274",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:76331",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:40",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:99",
+     "type": "movie",
+     "w": 2,
+     "t": "Tutto su mia madre",
+     "y": 1999
+    },
+    {
+     "id": "movie:14",
+     "type": "movie",
+     "w": 2,
+     "t": "American Beauty",
+     "y": 1999
+    }
+   ]
+  },
+  {
+   "id": "tv:54155",
+   "titolo": "Hanna",
+   "cluster": "assassino-teen",
+   "links": [
+    {
+     "id": "movie:84175",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:63247",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:101",
+     "type": "movie",
+     "w": 3,
+     "t": "Léon",
+     "y": 1994
+    },
+    {
+     "id": "movie:9322",
+     "type": "movie",
+     "w": 2,
+     "t": "Nikita",
+     "y": 1990
+    },
+    {
+     "id": "movie:2501",
+     "type": "movie",
+     "w": 2,
+     "t": "The Bourne Identity",
+     "y": 2002
+    }
+   ]
+  },
+  {
+   "id": "tv:9687",
+   "titolo": "L'Odissea",
+   "cluster": "mito",
+   "links": [
+    {
+     "id": "movie:43194",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:652",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:10323",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:57165",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:111111",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:4616",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:25406",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:134",
+     "type": "movie",
+     "w": 2,
+     "t": "Fratello, dove sei?",
+     "y": 2000
+    }
+   ]
+  },
+  {
+   "id": "tv:61593",
+   "titolo": "Mr. Pickles",
+   "cluster": "animazione-estrema",
+   "links": [
+    {
+     "id": "movie:587092",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:89456",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:75208",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:86831",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:95557",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:12593",
+     "type": "movie",
+     "w": 2,
+     "t": "Fritz il gatto",
+     "y": 1972
+    },
+    {
+     "id": "movie:11827",
+     "type": "movie",
+     "w": 2,
+     "t": "Heavy Metal",
+     "y": 1981
+    },
+    {
+     "id": "tv:60625",
+     "type": "tv",
+     "w": 2,
+     "t": "Rick and Morty",
+     "y": 2013
+    }
+   ]
+  },
+  {
+   "id": "tv:86850",
+   "titolo": "Dracula (2020)",
+   "cluster": "vampiri",
+   "links": [
+    {
+     "id": "movie:653",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:138",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11868",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:5620",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:6404",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:58928",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:54671",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1413",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:6114",
+     "type": "movie",
+     "w": 3,
+     "t": "Bram Stoker's Dracula",
+     "y": 1992
+    },
+    {
+     "id": "movie:628",
+     "type": "movie",
+     "w": 2,
+     "t": "Intervista col vampiro",
+     "y": 1994
+    }
+   ]
+  },
+  {
+   "id": "tv:225180",
+   "titolo": "Blue Eye Samurai",
+   "cluster": "samurai",
+   "links": [
+    {
+     "id": "movie:346",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:14537",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:58857",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:41471",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:41474",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:79406",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:126308",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:13862",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:24",
+     "type": "movie",
+     "w": 2,
+     "t": "Kill Bill: Volume 1",
+     "y": 2003
+    }
+   ]
+  },
+  {
+   "id": "tv:2207",
+   "titolo": "Fawlty Towers",
+   "cluster": "sitcom-britannica",
+   "links": [
+    {
+     "id": "tv:7246",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:4543",
+     "type": "movie",
+     "w": 3,
+     "t": "Monty Python - Il senso della vita",
+     "y": 1983
+    },
+    {
+     "id": "movie:623",
+     "type": "movie",
+     "w": 2,
+     "t": "Un pesce di nome Wanda",
+     "y": 1988
+    },
+    {
+     "id": "tv:2996",
+     "type": "tv",
+     "w": 2,
+     "t": "The Office",
+     "y": 2001
+    }
+   ]
+  },
+  {
+   "id": "tv:95601",
+   "titolo": "Merli. Sapere Aude",
+   "cluster": "filosofia-scuola",
+   "links": [
+    {
+     "id": "movie:207",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:140",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:104634",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11004",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62914",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:17187",
+     "type": "movie",
+     "w": 2,
+     "t": "Il club degli imperatori",
+     "y": 2002
+    }
+   ]
+  },
+  {
+   "id": "tv:210232",
+   "titolo": "The Watcher",
+   "cluster": "vicini-ossessione",
+   "links": [
+    {
+     "id": "movie:2655",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:504172",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:91275",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:567",
+     "type": "movie",
+     "w": 3,
+     "t": "La finestra sul cortile",
+     "y": 1954
+    },
+    {
+     "id": "movie:8271",
+     "type": "movie",
+     "w": 2,
+     "t": "Disturbia",
+     "y": 2007
+    }
+   ]
+  },
+  {
+   "id": "tv:61709",
+   "titolo": "Dragon Ball Kai",
+   "cluster": "anime-azione",
+   "links": [
+    {
+     "id": "tv:12971",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:12609",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:12697",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:46298",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:503314",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:610150",
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:88040",
+   "titolo": "Given",
+   "cluster": "musica-queer",
+   "links": [
+    {
+     "id": "movie:632632",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:120811",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:372058",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:414453",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42557",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:88042",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:36941",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:378064",
+     "type": "movie",
+     "w": 3,
+     "t": "La Forma della Voce",
+     "y": 2016
+    },
+    {
+     "id": "movie:398818",
+     "type": "movie",
+     "w": 2,
+     "t": "Chiamami col tuo nome",
+     "y": 2017
+    }
+   ]
+  },
+  {
+   "id": "tv:82816",
+   "titolo": "Lovecraft Country",
+   "cluster": "horror-razzismo",
+   "links": [
+    {
+     "id": "movie:548473",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:516632",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:378018",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9552",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:5876",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:72844",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:124364",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67135",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:419430",
+     "type": "movie",
+     "w": 3,
+     "t": "Scappa - Get Out",
+     "y": 2017
+    },
+    {
+     "id": "movie:310131",
+     "type": "movie",
+     "w": 2,
+     "t": "The Witch",
+     "y": 2016
+    }
+   ]
+  },
+  {
+   "id": "tv:36250",
+   "titolo": "xxxHOLiC",
+   "cluster": "soprannaturale-anime",
+   "links": [
+    {
+     "id": "movie:129",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:568160",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:13754",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:16660",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:26867",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:62741",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:93149",
+   "titolo": "Plunderer",
+   "cluster": "anime-azione",
+   "links": [
+    {
+     "id": "movie:714194",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:81",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11633",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:109080",
+     "type": "movie",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:100",
+   "titolo": "I Am Not an Animal",
+   "cluster": "animazione-nera",
+   "links": [
+    {
+     "id": "movie:30060",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:61791",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61222",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:36189",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:203489",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:62428",
+   "titolo": "Saint Seiya - Soul of Gold",
+   "cluster": "anime-mitologico",
+   "links": [
+    {
+     "id": "movie:83091",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:83090",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:66105",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:50253",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42444",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:61389",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67199",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:90855",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:75208",
+   "titolo": "Devilman Crybaby",
+   "cluster": "anime-oscuro",
+   "links": [
+    {
+     "id": "movie:635302",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:14282",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9463",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:919",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42671",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:16830",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:95479",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:64710",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:149",
+     "type": "movie",
+     "w": 2,
+     "t": "Akira",
+     "y": 1988
+    }
+   ]
+  },
+  {
+   "id": "tv:60808",
+   "titolo": "No Game No Life",
+   "cluster": "isekai",
+   "links": [
+    {
+     "id": "movie:445030",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:532067",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:631132",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:357786",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:82684",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:83095",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:94664",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:63663",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:67135",
+   "titolo": "The Exorcist (2016)",
+   "cluster": "esorcismo",
+   "links": [
+    {
+     "id": "movie:9552",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11586",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11587",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:758323",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60743",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1622",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:38464",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:44305",
+   "titolo": "Dragons",
+   "cluster": "animazione-fantasy",
+   "links": [
+    {
+     "id": "movie:10191",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:82702",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:166428",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2310",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:78173",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:81046",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:65320",
+   "titolo": "SKAM",
+   "cluster": "teen-nordico",
+   "links": [
+    {
+     "id": "movie:197033",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:84892",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:513111",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:76880",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:124834",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:81356",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:62914",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:112163",
+   "titolo": "High-Rise Invasion",
+   "cluster": "anime-sopravvivenza",
+   "links": [
+    {
+     "id": "movie:396263",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:573730",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:714194",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:635302",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:11279",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:46671",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:42671",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:42503",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1429",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:112314",
+   "titolo": "Archive 81",
+   "cluster": "found-footage",
+   "links": [
+    {
+     "id": "movie:609972",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:508642",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:925786",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:207774",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:39758",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1413",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:228958",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:89844",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:8329",
+     "type": "movie",
+     "w": 3,
+     "t": "[REC]",
+     "y": 2007
+    },
+    {
+     "id": "movie:2667",
+     "type": "movie",
+     "w": 3,
+     "t": "The Blair Witch Project",
+     "y": 1999
+    }
+   ]
+  },
+  {
+   "id": "tv:61752",
+   "titolo": "Hellsing Ultimate",
+   "cluster": "anime-vampiri",
+   "links": [
+    {
+     "id": "movie:919",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9463",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:144288",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:16830",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:19849",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:35935",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:42671",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:66390",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:73467",
+   "titolo": "Godless",
+   "cluster": "western",
+   "links": [
+    {
+     "id": "movie:2055",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:384680",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11509",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:12160",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1406",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:65708",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:33",
+     "type": "movie",
+     "w": 3,
+     "t": "Gli spietati",
+     "y": 1992
+    },
+    {
+     "id": "movie:335",
+     "type": "movie",
+     "w": 2,
+     "t": "C'era una volta il West",
+     "y": 1968
+    }
+   ]
+  },
+  {
+   "id": "tv:97173",
+   "titolo": "Dietro i suoi occhi",
+   "cluster": "ossessione-thriller",
+   "links": [
+    {
+     "id": "movie:8055",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:103",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:83251",
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:849",
+   "titolo": "Monty Python's Flying Circus",
+   "cluster": "commedia-surrealista",
+   "links": [
+    {
+     "id": "movie:11598",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8327",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:4593",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:14831",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9267",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:14506",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:2349",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:1440",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:88728",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:196454",
+   "titolo": "La regina Carlotta",
+   "cluster": "costume-britannico",
+   "links": [
+    {
+     "id": "movie:4348",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:12184",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:88273",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:12783",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:26165",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:45269",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:91239",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1457",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:72615",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:63333",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:127865",
+   "titolo": "L'uomo delle castagne",
+   "cluster": "noir-nordico",
+   "links": [
+    {
+     "id": "movie:11423",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9437",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:21484",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1949",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:158876",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:93168",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:70613",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:15472",
+     "type": "movie",
+     "w": 2,
+     "t": "Uomini che odiano le donne",
+     "y": 2009
+    }
+   ]
   }
  ]
 }

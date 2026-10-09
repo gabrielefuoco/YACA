@@ -30,13 +30,30 @@ print(f"adiacenza train: {A.nnz:,} archi su {int((A.getnnz(1)>0).sum()):,} titol
 tot = A.sum()
 rs = np.asarray(A.sum(1)).ravel(); cs = np.asarray(A.sum(0)).ravel()
 Co = A.tocoo()
-pmi = np.log((Co.data * tot) / (rs[Co.row] * cs[Co.col] + 1e-9) + 1e-9)
-pmi = np.maximum(pmi - np.log(1.0), 0.0)      # SPPMI con k=1
+SHIFT = float(os.environ.get("SHIFT", 1.0))     # SPPMI: la soglia di denoising
+DEHUB = os.environ.get("DEHUB", "0") == "1"     # 1/log(1+n): abbassa i nodi troppo collegati
+KN = int(os.environ.get("KN", 0))               # k-NN: tiene solo i k vicini piu' forti per riga
+dati = Co.data.astype(np.float64)
+if DEHUB: dati = dati / np.log1p(rs[Co.row])
+pmi = np.log((dati * tot) / (rs[Co.row] * cs[Co.col] + 1e-9) + 1e-9)
+pmi = np.maximum(pmi - np.log(SHIFT), 0.0)
 P = coo_matrix((pmi, (Co.row, Co.col)), shape=(n, n)).tocsr()
-svd = TruncatedSVD(n_components=64, random_state=0)
+if KN:
+    P = P.tocsr()
+    for i in range(P.shape[0]):
+        s_, e_ = P.indptr[i], P.indptr[i+1]
+        if e_ - s_ > KN:
+            d_ = P.data[s_:e_]
+            idx = np.argpartition(-d_, KN)[:KN]
+            mask = np.zeros(e_ - s_, bool); mask[idx] = True
+            P.data[s_:e_] = np.where(mask, d_, 0.0)
+    P.eliminate_zeros()
+print(f"teacher: shift={SHIFT} dehub={DEHUB} knn={KN or 'no'}")
+DIMS = int(os.environ.get('DIMS', 64))
+svd = TruncatedSVD(n_components=DIMS, random_state=0)
 E = svd.fit_transform(P)
 E = E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-9)
-print(f"coordinate: {E.shape} · varianza spiegata {svd.explained_variance_ratio_.sum():.2f}")
+print(f"coordinate: {E.shape} (DIMS={DIMS}) · varianza spiegata {svd.explained_variance_ratio_.sum():.2f}")
 pop = np.asarray(A.sum(1)).ravel()
 rng = np.random.default_rng(0)
 caso = rng.random(n)
