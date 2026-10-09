@@ -10874,6 +10874,13 @@
      "w": 2,
      "t": "The Bourne Identity",
      "y": 2002
+    },
+    {
+     "id": "movie:341013",
+     "type": "movie",
+     "w": 2,
+     "t": "Atomica bionda",
+     "y": 2017
     }
    ]
   },
@@ -11496,6 +11503,13 @@
      "id": "tv:90855",
      "type": "tv",
      "w": 1
+    },
+    {
+     "id": "tv:111111",
+     "type": "tv",
+     "w": 2,
+     "t": "Blood of Zeus",
+     "y": 2020
     }
    ]
   },
@@ -11639,6 +11653,13 @@
      "id": "tv:38464",
      "type": "tv",
      "w": 2
+    },
+    {
+     "id": "movie:8643",
+     "type": "movie",
+     "w": 2,
+     "t": "The Exorcism of Emily Rose",
+     "y": 2005
     }
    ]
   },
@@ -12109,6 +12130,2244 @@
      "w": 2,
      "t": "Uomini che odiano le donne",
      "y": 2009
+    }
+   ]
+  },
+  {
+   "id": "tv:18350",
+   "titolo": "Atrevete a Sonar",
+   "cluster": "telenovela",
+   "links": [
+    {
+     "id": "tv:98387",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:95439",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:21194",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:95160",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "tv:93579",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:97513",
+   "titolo": "La scuola dei misteri",
+   "cluster": "mistero-teen",
+   "links": [
+    {
+     "id": "tv:119565",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:99335",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:207878",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:94924",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:206586",
+   "titolo": "The Walking Dead: The Ones Who Live",
+   "cluster": "zombie",
+   "links": [
+    {
+     "id": "tv:62286",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:211684",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:136248",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:94305",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:1070514",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:170",
+     "type": "movie",
+     "w": 2,
+     "t": "28 giorni dopo",
+     "y": 2002
+    },
+    {
+     "id": "movie:924",
+     "type": "movie",
+     "w": 2,
+     "t": "L'alba dei morti viventi",
+     "y": 2004
+    }
+   ]
+  },
+  {
+   "id": "tv:80828",
+   "titolo": "The Nevers",
+   "cluster": "fantasy-vittoriano",
+   "links": [
+    {
+     "id": "movie:91683",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9026",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8447",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:98187",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:90184",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:799",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:59950",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "movie:8698",
+     "type": "movie",
+     "w": 2,
+     "t": "La leggenda degli uomini straordinari",
+     "y": 2003
+    },
+    {
+     "id": "movie:7131",
+     "type": "movie",
+     "w": 1,
+     "t": "Van Helsing",
+     "y": 2004
+    }
+   ]
+  },
+  {
+   "id": "tv:72710",
+   "titolo": "The Continental",
+   "cluster": "action-sicari",
+   "links": [
+    {
+     "id": "movie:101",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:718930",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:849869",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:29564",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:787",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:68006",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:245891",
+     "type": "movie",
+     "w": 3,
+     "t": "John Wick",
+     "y": 2014
+    },
+    {
+     "id": "movie:156022",
+     "type": "movie",
+     "w": 2,
+     "t": "The Equalizer - Il vendicatore",
+     "y": 2014
+    }
+   ]
+  },
+  {
+   "id": "tv:40293",
+   "titolo": "Da Vinci's Demons",
+   "cluster": "rinascimento",
+   "links": [
+    {
+     "id": "movie:56798",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:96230",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:66761",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:33025",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:42276",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:192",
+     "type": "movie",
+     "w": 2,
+     "t": "Il nome della rosa",
+     "y": 1986
+    }
+   ]
+  },
+  {
+   "id": "tv:86836",
+   "titolo": "Why the hell are you here, Teacher!?",
+   "cluster": "anime-ecchi",
+   "links": [
+    {
+     "id": "tv:64706",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:37183",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:139287",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:223564",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:331061",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:95170",
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:46511",
+   "titolo": "Utopia (2013)",
+   "cluster": "cospirazione",
+   "links": [
+    {
+     "id": "movie:736769",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:13820",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:300668",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:752",
+     "type": "movie",
+     "w": 2,
+     "t": "V per Vendetta",
+     "y": 2006
+    },
+    {
+     "id": "movie:133369",
+     "type": "movie",
+     "w": 2,
+     "t": "The Conspiracy",
+     "y": 2012
+    },
+    {
+     "id": "movie:49517",
+     "type": "movie",
+     "w": 2,
+     "t": "La talpa",
+     "y": 2011
+    }
+   ]
+  },
+  {
+   "id": "tv:95281",
+   "titolo": "S.O.Z: Soldados o Zombies",
+   "cluster": "zombie-narco",
+   "links": [
+    {
+     "id": "movie:923",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:924",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9035",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9017",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:91837",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:99966",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:97766",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:170",
+     "type": "movie",
+     "w": 2,
+     "t": "28 giorni dopo",
+     "y": 2002
+    }
+   ]
+  },
+  {
+   "id": "tv:96203",
+   "titolo": "Gleipnir",
+   "cluster": "anime-body-horror",
+   "links": [
+    {
+     "id": "movie:9426",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:53064",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:396263",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:585077",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42671",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:61459",
+     "type": "tv",
+     "w": 3
+    }
+   ]
+  },
+  {
+   "id": "tv:146176",
+   "titolo": "Berlino e i gioielli di Parigi",
+   "cluster": "rapina-commedia",
+   "links": [
+    {
+     "id": "movie:11657",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60059",
+     "type": "tv",
+     "w": 1
+    },
+    {
+     "id": "movie:161",
+     "type": "movie",
+     "w": 3,
+     "t": "Ocean's Eleven - Fate il vostro gioco",
+     "y": 2001
+    },
+    {
+     "id": "movie:339403",
+     "type": "movie",
+     "w": 2,
+     "t": "Baby Driver - Il genio della fuga",
+     "y": 2017
+    },
+    {
+     "id": "movie:9654",
+     "type": "movie",
+     "w": 2,
+     "t": "The Italian Job",
+     "y": 2003
+    },
+    {
+     "id": "tv:104555",
+     "type": "tv",
+     "w": 2,
+     "t": "La rapina del secolo",
+     "y": 2020
+    }
+   ]
+  },
+  {
+   "id": "tv:64684",
+   "titolo": "Dieci piccoli indiani",
+   "cluster": "giallo-classico",
+   "links": [
+    {
+     "id": "movie:4879",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4192",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4193",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:392044",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:5279",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:41956",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:56484",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:15655",
+   "titolo": "Knight Rider",
+   "cluster": "action-macchine",
+   "links": [
+    {
+     "id": "movie:9268",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:955",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:954",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9384",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:10964",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:4636",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:93785",
+   "titolo": "Barbari",
+   "cluster": "roma",
+   "links": [
+    {
+     "id": "movie:967",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:17277",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9453",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9703",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:24248",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:5487",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:116135",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:40360",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:61389",
+   "titolo": "Saint Seiya: The Lost Canvas",
+   "cluster": "anime-mitologico",
+   "links": [
+    {
+     "id": "movie:83091",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:83090",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:66105",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:50253",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:42444",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:67199",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:44317",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:62428",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:68129",
+   "titolo": "Yuri!! on Ice",
+   "cluster": "sport",
+   "links": [
+    {
+     "id": "movie:389015",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:9955",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:13374",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:50541",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:82766",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:60863",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:237529",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:60726",
+   "titolo": "Forever",
+   "cluster": "immortale-medico",
+   "links": [
+    {
+     "id": "movie:11306",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:397243",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:60866",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:32708",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:32895",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:2179",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:8009",
+     "type": "movie",
+     "w": 2,
+     "t": "Highlander - L'ultimo immortale",
+     "y": 1986
+    }
+   ]
+  },
+  {
+   "id": "tv:1087",
+   "titolo": "Serial Experiments Lain",
+   "cluster": "cyber-anime",
+   "links": [
+    {
+     "id": "movie:10428",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:707408",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11525",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:43865",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1097",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:8974",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:93241",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:603",
+     "type": "movie",
+     "w": 3,
+     "t": "The Matrix",
+     "y": 1999
+    },
+    {
+     "id": "movie:9323",
+     "type": "movie",
+     "w": 3,
+     "t": "Ghost in the Shell",
+     "y": 1995
+    },
+    {
+     "id": "movie:1946",
+     "type": "movie",
+     "w": 2,
+     "t": "eXistenZ",
+     "y": 1999
+    }
+   ]
+  },
+  {
+   "id": "tv:89844",
+   "titolo": "30 Coins",
+   "cluster": "esorcismo",
+   "links": [
+    {
+     "id": "movie:9552",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11586",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11587",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10307",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:423108",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:1622",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:39758",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:88046",
+   "titolo": "Fire Force",
+   "cluster": "anime-azione",
+   "links": [
+    {
+     "id": "movie:553600",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:296917",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:240341",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11633",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:114410",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:61374",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:42503",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:86034",
+   "titolo": "Arifureta",
+   "cluster": "isekai",
+   "links": [
+    {
+     "id": "movie:553835",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:631132",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:14003",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:45782",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:94664",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:99618",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:113808",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:96444",
+   "titolo": "Interspecies Reviewers",
+   "cluster": "anime-ecchi",
+   "links": [
+    {
+     "id": "movie:95170",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:331061",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:428292",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:94664",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:114477",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:194774",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:113901",
+   "titolo": "Maradona: sogno benedetto",
+   "cluster": "calcio",
+   "links": [
+    {
+     "id": "movie:536841",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:785976",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:245913",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:361931",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:694254",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:21641",
+     "type": "movie",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:903",
+   "titolo": "Black Books",
+   "cluster": "commedia-britannica",
+   "links": [
+    {
+     "id": "movie:19265",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10247",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:15677",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61413",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:745",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:4543",
+     "type": "movie",
+     "w": 2,
+     "t": "Monty Python - Il senso della vita",
+     "y": 1983
+    }
+   ]
+  },
+  {
+   "id": "tv:73321",
+   "titolo": "The King of Fighters",
+   "cluster": "arti-marziali",
+   "links": [
+    {
+     "id": "movie:9462",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:180299",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:24056",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61579",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:9316",
+     "type": "movie",
+     "w": 2,
+     "t": "Ong-Bak - Nato per combattere",
+     "y": 2003
+    }
+   ]
+  },
+  {
+   "id": "tv:111111",
+   "titolo": "Blood of Zeus",
+   "cluster": "mitologia",
+   "links": [
+    {
+     "id": "movie:18823",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:10323",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:57165",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:32657",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:9687",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:103540",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:25406",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:652",
+     "type": "movie",
+     "w": 2,
+     "t": "Troy",
+     "y": 2004
+    }
+   ]
+  },
+  {
+   "id": "tv:42025",
+   "titolo": "Mako Mermaids",
+   "cluster": "sirene",
+   "links": [
+    {
+     "id": "movie:600479",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:59593",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:83965",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:71886",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:83381",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67018",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:10144",
+     "type": "movie",
+     "w": 3,
+     "t": "La sirenetta",
+     "y": 1989
+    },
+    {
+     "id": "movie:2619",
+     "type": "movie",
+     "w": 3,
+     "t": "Splash - Una sirena a Manhattan",
+     "y": 1984
+    }
+   ]
+  },
+  {
+   "id": "tv:79084",
+   "titolo": "POSE",
+   "cluster": "queer-ballroom",
+   "links": [
+    {
+     "id": "movie:31225",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:11171",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:546",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:634544",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:537116",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:65817",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:116174",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:11245",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:376867",
+     "type": "movie",
+     "w": 3,
+     "t": "Moonlight",
+     "y": 2016
+    }
+   ]
+  },
+  {
+   "id": "tv:61901",
+   "titolo": "Death Parade",
+   "cluster": "anime-aldila",
+   "links": [
+    {
+     "id": "movie:3176",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:13198",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10856",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:67915",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:218230",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:137",
+     "type": "movie",
+     "w": 2,
+     "t": "Ricomincio da capo",
+     "y": 1993
+    },
+    {
+     "id": "movie:490",
+     "type": "movie",
+     "w": 2,
+     "t": "Il settimo sigillo",
+     "y": 1957
+    }
+   ]
+  },
+  {
+   "id": "tv:16830",
+   "titolo": "Hellsing",
+   "cluster": "anime-vampiri",
+   "links": [
+    {
+     "id": "movie:919",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9463",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:144288",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:61752",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:19849",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:42671",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61374",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:104555",
+   "titolo": "La rapina del secolo",
+   "cluster": "rapina",
+   "links": [
+    {
+     "id": "movie:949",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:629",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:2322",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:623",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:873125",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:5916",
+     "type": "movie",
+     "w": 1
+    },
+    {
+     "id": "tv:71446",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:96677",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:81791",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:70637",
+   "titolo": "Akashic Records",
+   "cluster": "anime-magia-scuola",
+   "links": [
+    {
+     "id": "movie:431821",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:445030",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:60833",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:85844",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:67154",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:97617",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:79008",
+   "titolo": "Luis Miguel - La serie",
+   "cluster": "biografia-musicale",
+   "links": [
+    {
+     "id": "movie:498402",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:354912",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:817758",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:928344",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:424694",
+     "type": "movie",
+     "w": 3,
+     "t": "Bohemian Rhapsody",
+     "y": 2018
+    },
+    {
+     "id": "movie:504608",
+     "type": "movie",
+     "w": 3,
+     "t": "Rocketman",
+     "y": 2019
+    },
+    {
+     "id": "movie:1677",
+     "type": "movie",
+     "w": 3,
+     "t": "Ray",
+     "y": 2004
+    }
+   ]
+  },
+  {
+   "id": "tv:93811",
+   "titolo": "Into the Night",
+   "cluster": "aereo-apocalisse",
+   "links": [
+    {
+     "id": "movie:87502",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9829",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:509585",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "tv:195930",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:198102",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:72190",
+     "type": "movie",
+     "w": 2,
+     "t": "World War Z",
+     "y": 2013
+    }
+   ]
+  },
+  {
+   "id": "tv:104819",
+   "titolo": "La jauria",
+   "cluster": "thriller-femminile",
+   "links": [
+    {
+     "id": "tv:82883",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:91725",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:322",
+     "type": "movie",
+     "w": 2,
+     "t": "Mystic River",
+     "y": 2003
+    },
+    {
+     "id": "movie:359940",
+     "type": "movie",
+     "w": 2,
+     "t": "Tre manifesti a Ebbing, Missouri",
+     "y": 2017
+    }
+   ]
+  },
+  {
+   "id": "tv:32218",
+   "titolo": "Soy tu duena",
+   "cluster": "telenovela",
+   "links": [
+    {
+     "id": "tv:63407",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:42280",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:12965",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:61720",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:7458",
+   "titolo": "El Cartel de los Sapos",
+   "cluster": "narco",
+   "links": [
+    {
+     "id": "movie:136735",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:4133",
+     "type": "movie",
+     "w": 2,
+     "t": "Blow",
+     "y": 2001
+    },
+    {
+     "id": "tv:63351",
+     "type": "tv",
+     "w": 2,
+     "t": "Narcos",
+     "y": 2015
+    }
+   ]
+  },
+  {
+   "id": "tv:233629",
+   "titolo": "Bodies",
+   "cluster": "tempo-crimine",
+   "links": [
+    {
+     "id": "movie:137113",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:63",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:576845",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:273271",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10528",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:70523",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:1426",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:206487",
+     "type": "movie",
+     "w": 2,
+     "t": "Predestination",
+     "y": 2014
+    }
+   ]
+  },
+  {
+   "id": "tv:67389",
+   "titolo": "Golden Time",
+   "cluster": "anime-romance",
+   "links": [
+    {
+     "id": "movie:916192",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:820067",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:460399",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:255413",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:45501",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:24835",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:113687",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:96608",
+   "titolo": "The Stranger",
+   "cluster": "mistero",
+   "links": [
+    {
+     "id": "movie:60670",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:280996",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:4771",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:910",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:845",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:790",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:15472",
+     "type": "movie",
+     "w": 2,
+     "t": "Uomini che odiano le donne",
+     "y": 2009
+    }
+   ]
+  },
+  {
+   "id": "tv:51019",
+   "titolo": "Almost Human",
+   "cluster": "androidi",
+   "links": [
+    {
+     "id": "movie:335984",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:262543",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:198184",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2277",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:19959",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:644",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:606234",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:95403",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:91997",
+     "type": "tv",
+     "w": 2
+    }
+   ]
+  },
+  {
+   "id": "tv:84231",
+   "titolo": "Wayne",
+   "cluster": "teen-vendetta",
+   "links": [
+    {
+     "id": "movie:310133",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:31462",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:23483",
+     "type": "movie",
+     "w": 2,
+     "t": "Kick-Ass",
+     "y": 2010
+    },
+    {
+     "id": "movie:8363",
+     "type": "movie",
+     "w": 2,
+     "t": "Superbad",
+     "y": 2007
+    },
+    {
+     "id": "tv:74577",
+     "type": "tv",
+     "w": 3,
+     "t": "The End of the F***ing World",
+     "y": 2017
+    }
+   ]
+  },
+  {
+   "id": "tv:226362",
+   "titolo": "L'Eternauta",
+   "cluster": "fantascienza-aliena",
+   "links": [
+    {
+     "id": "movie:8337",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:10547",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:87178",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:157239",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:108353",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:74",
+     "type": "movie",
+     "w": 2,
+     "t": "La guerra dei mondi",
+     "y": 2005
+    },
+    {
+     "id": "movie:752",
+     "type": "movie",
+     "w": 2,
+     "t": "V per Vendetta",
+     "y": 2006
+    }
+   ]
+  },
+  {
+   "id": "tv:19649",
+   "titolo": "Gesu di Nazareth",
+   "cluster": "biblico",
+   "links": [
+    {
+     "id": "movie:615",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:583",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:36362",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2428",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2447",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2331",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:85077",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:62287",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:24192",
+     "type": "movie",
+     "w": 3,
+     "t": "Il vangelo secondo Matteo",
+     "y": 1965
+    },
+    {
+     "id": "movie:665",
+     "type": "movie",
+     "w": 2,
+     "t": "Ben-Hur",
+     "y": 1959
+    }
+   ]
+  },
+  {
+   "id": "tv:5739",
+   "titolo": "Dr. Horrible's Sing-Along Blog",
+   "cluster": "supereroi-commedia-musical",
+   "links": [
+    {
+     "id": "movie:38055",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:2182",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:3034",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:2418",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:98892",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:61698",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "movie:23483",
+     "type": "movie",
+     "w": 2,
+     "t": "Kick-Ass",
+     "y": 2010
+    }
+   ]
+  },
+  {
+   "id": "tv:1457",
+   "titolo": "Orgoglio e pregiudizio (1995)",
+   "cluster": "austen",
+   "links": [
+    {
+     "id": "movie:4348",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:556678",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:12783",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:8293",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:331482",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:3175",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:18156",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:13892",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:14264",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:56484",
+     "type": "tv",
+     "w": 1
+    }
+   ]
+  },
+  {
+   "id": "tv:87763",
+   "titolo": "Toy Boy",
+   "cluster": "strip-thriller",
+   "links": [
+    {
+     "id": "movie:8986",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:755",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:62516",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:130567",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:87017",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:77930",
+     "type": "movie",
+     "w": 3,
+     "t": "Magic Mike",
+     "y": 2012
+    }
+   ]
+  },
+  {
+   "id": "tv:133748",
+   "titolo": "Twisted Metal",
+   "cluster": "post-apocalittico-action",
+   "links": [
+    {
+     "id": "movie:9312",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:664767",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:1576",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:237",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:76341",
+     "type": "movie",
+     "w": 3,
+     "t": "Mad Max: Fury Road",
+     "y": 2015
+    },
+    {
+     "id": "movie:10483",
+     "type": "movie",
+     "w": 2,
+     "t": "Death Race",
+     "y": 2008
+    }
+   ]
+  },
+  {
+   "id": "tv:91977",
+   "titolo": "Motherland: Fort Salem",
+   "cluster": "streghe",
+   "links": [
+    {
+     "id": "movie:590995",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9100",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:9954",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:605",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:310131",
+     "type": "movie",
+     "w": 2,
+     "t": "The Witch",
+     "y": 2016
+    },
+    {
+     "id": "movie:11906",
+     "type": "movie",
+     "w": 2,
+     "t": "Suspiria",
+     "y": 1977
+    }
+   ]
+  },
+  {
+   "id": "tv:117023",
+   "titolo": "Sky Rojo",
+   "cluster": "fuga-crimine",
+   "links": [
+    {
+     "id": "movie:51497",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:11826",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:2112",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10427",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:96677",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "tv:201076",
+     "type": "tv",
+     "w": 3
+    },
+    {
+     "id": "tv:66911",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:339403",
+     "type": "movie",
+     "w": 2,
+     "t": "Baby Driver - Il genio della fuga",
+     "y": 2017
+    }
+   ]
+  },
+  {
+   "id": "tv:88516",
+   "titolo": "AlRawabi School for Girls",
+   "cluster": "vendetta-scuola",
+   "links": [
+    {
+     "id": "movie:9909",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "movie:10625",
+     "type": "movie",
+     "w": 3,
+     "t": "Mean Girls",
+     "y": 2004
+    },
+    {
+     "id": "movie:1807",
+     "type": "movie",
+     "w": 2,
+     "t": "Elephant",
+     "y": 2003
+    },
+    {
+     "id": "movie:7340",
+     "type": "movie",
+     "w": 2,
+     "t": "Carrie - Lo sguardo di Satana",
+     "y": 1976
+    }
+   ]
+  },
+  {
+   "id": "tv:110695",
+   "titolo": "Dopesick",
+   "cluster": "farmaceutica-crimine",
+   "links": [
+    {
+     "id": "movie:552178",
+     "type": "movie",
+     "w": 3
+    },
+    {
+     "id": "movie:22683",
+     "type": "movie",
+     "w": 2
+    },
+    {
+     "id": "tv:47523",
+     "type": "tv",
+     "w": 2
+    },
+    {
+     "id": "movie:9008",
+     "type": "movie",
+     "w": 3,
+     "t": "Insider - Dietro la verità",
+     "y": 1999
+    },
+    {
+     "id": "movie:462",
+     "type": "movie",
+     "w": 3,
+     "t": "Erin Brockovich - Forte come la verità",
+     "y": 2000
+    },
+    {
+     "id": "movie:314365",
+     "type": "movie",
+     "w": 2,
+     "t": "Il caso Spotlight",
+     "y": 2015
     }
    ]
   }

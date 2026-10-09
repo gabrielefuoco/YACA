@@ -1,0 +1,6231 @@
+{
+ "instructions": {
+  "task": "Curate cross-medium recommendation links for these TV series.",
+  "why": "This dataset becomes a TEACHER (adjacency -> SVD -> coordinates) for a recommender. The cross-medium case (user watches a series -> what film next) currently has NO signal at all: three behavioural sources were tested and all fail (~0%), because a curated link is taste, not behaviour.",
+  "what_to_do": [
+   "For EACH series, choose 4-8 links (a MIX of movies and series).",
+   "The 'film' and 'serie' arrays are machine-proposed candidates by shared keywords. Use them as a starting point, but JUDGE them: drop the incoherent ones, keep the good ones, and ADD the ones you know are missing.",
+   "Use the candidate ids EXACTLY as given (they are already verified against the catalogue). For your own additions use the 'add' format: type|Title|Year|weight - they get resolved and validated later.",
+   "Weights: 3 = strong (the model/obvious companion), 2 = good, 1 = plausible.",
+   "Only films/series you are reasonably confident exist with that exact title and year. Anything wrong gets dropped by the validator (and that is fine, it just shrinks the dataset).",
+   "Aim for quality, not quantity. A series with only 3 defensible links is better than one with 8 invented ones."
+  ],
+  "output_file": "Write ONE json file at the path given in 'output'. Same format as this example:",
+  "example": {
+   "batch": 3,
+   "sources": [
+    {
+     "id": "tv:12345",
+     "titolo": "Series name",
+     "cluster": "short-theme-label",
+     "links": [
+      "movie:388:3",
+      "movie:949:2",
+      "tv:104555:2"
+     ],
+     "add": [
+      "movie|The Town|2010|2",
+      "tv|Bosch|2014|1"
+     ]
+    }
+   ]
+  },
+  "notes": [
+   "Do NOT modify any other file.",
+   "Do NOT run the validator.",
+   "Keep the ids exactly as they appear in the candidate lists."
+  ]
+ },
+ "output": ".scratch\\ml-collaborativo\\gold\\cura-4.json",
+ "count": 52,
+ "series": [
+  {
+   "id": "tv:103157",
+   "titolo": "The Hidden Dungeon Only I Can Enter",
+   "anno": 2021,
+   "voto": 7.9,
+   "voti": 548,
+   "film": [
+    {
+     "id": "movie:553835",
+     "t": "DanMachi - La freccia di Orione",
+     "y": 2019,
+     "vc": 295
+    },
+    {
+     "id": "movie:761898",
+     "t": "Sword Art Online The Movie: Progressive - Aria of a Starless Night",
+     "y": 2021,
+     "vc": 345
+    },
+    {
+     "id": "movie:631132",
+     "t": "Goblin Slayer, la corona del Goblin",
+     "y": 2020,
+     "vc": 315
+    },
+    {
+     "id": "movie:182131",
+     "t": "Little Witch Academia",
+     "y": 2013,
+     "vc": 188
+    },
+    {
+     "id": "movie:331061",
+     "t": "Date A Live: Mayuri Judgment",
+     "y": 2015,
+     "vc": 76
+    },
+    {
+     "id": "movie:570269",
+     "t": "Trinity Seven: Heaven's Library & Crimson Lord",
+     "y": 2019,
+     "vc": 62
+    },
+    {
+     "id": "movie:428292",
+     "t": "Trinity Seven: Eternity Library & Alchemic Girl",
+     "y": 2017,
+     "vc": 62
+    },
+    {
+     "id": "movie:433422",
+     "t": "Fairy Tail The Movie: Dragon Cry",
+     "y": 2017,
+     "vc": 427
+    },
+    {
+     "id": "movie:135531",
+     "t": "Fairy Tail The Movie: Phoenix Priestess",
+     "y": 2012,
+     "vc": 238
+    },
+    {
+     "id": "movie:532067",
+     "t": "KonoSuba - La leggenda di Crimson",
+     "y": 2019,
+     "vc": 642
+    },
+    {
+     "id": "movie:507569",
+     "t": "The Seven Deadly Sins the Movie: Prisoners of the Sky",
+     "y": 2018,
+     "vc": 1098
+    },
+    {
+     "id": "movie:876792",
+     "t": "That Time I Got Reincarnated as a Slime the Movie: Scarlet Bond",
+     "y": 2022,
+     "vc": 460
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:62745",
+     "t": "DanMachi - Familia Myth - È sbagliato cercare di incontrare ragazze in un Dungeon?",
+     "y": 2015,
+     "vc": 326
+    },
+    {
+     "id": "tv:208493",
+     "t": "I Got a Cheat Skill in Another World and Became Unrivaled in The Real World, Too",
+     "y": 2023,
+     "vc": 311
+    },
+    {
+     "id": "tv:114477",
+     "t": "Harem in the Labyrinth of Another World",
+     "y": 2022,
+     "vc": 176
+    },
+    {
+     "id": "tv:99071",
+     "t": "Redo of Healer",
+     "y": 2021,
+     "vc": 1052
+    },
+    {
+     "id": "tv:94664",
+     "t": "Mushoku Tensei: Jobless Reincarnation",
+     "y": 2021,
+     "vc": 1765
+    },
+    {
+     "id": "tv:82684",
+     "t": "That Time I Got Reincarnated as a Slime",
+     "y": 2018,
+     "vc": 994
+    }
+   ]
+  },
+  {
+   "id": "tv:220801",
+   "titolo": "Un inganno di troppo",
+   "anno": 2024,
+   "voto": 7.2,
+   "voti": 547,
+   "film": [
+    {
+     "id": "movie:9311",
+     "t": "Il senso di Smilla per la neve",
+     "y": 1997,
+     "vc": 274
+    },
+    {
+     "id": "movie:297239",
+     "t": "Boy 7",
+     "y": 2016,
+     "vc": 74
+    },
+    {
+     "id": "movie:260346",
+     "t": "Taken 3 - L'ora della verità",
+     "y": 2014,
+     "vc": 6295
+    },
+    {
+     "id": "movie:74915",
+     "t": "Episode 50",
+     "y": 2011,
+     "vc": 56
+    },
+    {
+     "id": "movie:335866",
+     "t": "Circle",
+     "y": 2015,
+     "vc": 2177
+    },
+    {
+     "id": "movie:9727",
+     "t": "End Game",
+     "y": 2006,
+     "vc": 105
+    },
+    {
+     "id": "movie:42700",
+     "t": "La notte dei generali",
+     "y": 1967,
+     "vc": 191
+    },
+    {
+     "id": "movie:566387",
+     "t": "12 Suicidal Teens",
+     "y": 2019,
+     "vc": 92
+    },
+    {
+     "id": "movie:42341",
+     "t": "Suspect X",
+     "y": 2008,
+     "vc": 145
+    },
+    {
+     "id": "movie:11324",
+     "t": "Shutter Island",
+     "y": 2010,
+     "vc": 26529
+    },
+    {
+     "id": "movie:10528",
+     "t": "Sherlock Holmes",
+     "y": 2009,
+     "vc": 15083
+    },
+    {
+     "id": "movie:945729",
+     "t": "Assassinio a Venezia",
+     "y": 2023,
+     "vc": 2973
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:252000",
+     "t": "Down Cemetery Road",
+     "y": 2025,
+     "vc": 112
+    },
+    {
+     "id": "tv:244628",
+     "t": "Long Bright River - I cieli di Philadelphia",
+     "y": 2025,
+     "vc": 122
+    },
+    {
+     "id": "tv:76796",
+     "t": "Collateral",
+     "y": 2018,
+     "vc": 241
+    },
+    {
+     "id": "tv:67394",
+     "t": "Midnattssol",
+     "y": 2016,
+     "vc": 71
+    },
+    {
+     "id": "tv:37602",
+     "t": "The Shadow Line",
+     "y": 2011,
+     "vc": 83
+    },
+    {
+     "id": "tv:220056",
+     "t": "The Madness",
+     "y": 2024,
+     "vc": 196
+    }
+   ]
+  },
+  {
+   "id": "tv:84452",
+   "titolo": "Nicky Jam: El Ganador",
+   "anno": 2018,
+   "voto": 7.3,
+   "voti": 547,
+   "film": [
+    {
+     "id": "movie:9025",
+     "t": "Canicola",
+     "y": 2001,
+     "vc": 107
+    },
+    {
+     "id": "movie:8363",
+     "t": "Su×bad: 3 menti sopra il pelo",
+     "y": 2007,
+     "vc": 8420
+    },
+    {
+     "id": "movie:75345",
+     "t": "I Melt with You",
+     "y": 2011,
+     "vc": 87
+    },
+    {
+     "id": "movie:75118",
+     "t": "Absolument fabuleux",
+     "y": 2001,
+     "vc": 58
+    },
+    {
+     "id": "movie:7351",
+     "t": "Julia",
+     "y": 2008,
+     "vc": 127
+    },
+    {
+     "id": "movie:602198",
+     "t": "Saving Zoe - Alla ricerca della verità",
+     "y": 2019,
+     "vc": 184
+    },
+    {
+     "id": "movie:37410",
+     "t": "La follia di Henry",
+     "y": 1998,
+     "vc": 113
+    },
+    {
+     "id": "movie:36915",
+     "t": "Omicidio a New Orleans",
+     "y": 1996,
+     "vc": 89
+    },
+    {
+     "id": "movie:32020",
+     "t": "A donne con gli amici",
+     "y": 1980,
+     "vc": 102
+    },
+    {
+     "id": "movie:308024",
+     "t": "The Overnight - tutto in una notte",
+     "y": 2015,
+     "vc": 372
+    },
+    {
+     "id": "movie:26579",
+     "t": "Ingannevole è il cuore più di ogni cosa",
+     "y": 2004,
+     "vc": 163
+    },
+    {
+     "id": "movie:23949",
+     "t": "Tape",
+     "y": 2001,
+     "vc": 256
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:97180",
+     "t": "Selena: La serie",
+     "y": 2020,
+     "vc": 1585
+    },
+    {
+     "id": "tv:82700",
+     "t": "Baby",
+     "y": 2018,
+     "vc": 917
+    },
+    {
+     "id": "tv:785",
+     "t": "Men Behaving Badly",
+     "y": 1992,
+     "vc": 82
+    },
+    {
+     "id": "tv:4292",
+     "t": "Bottom",
+     "y": 1991,
+     "vc": 148
+    },
+    {
+     "id": "tv:34121",
+     "t": "Baccano!",
+     "y": 2007,
+     "vc": 213
+    },
+    {
+     "id": "tv:96231",
+     "t": "Awkwafina è Nora del Queens",
+     "y": 2020,
+     "vc": 55
+    }
+   ]
+  },
+  {
+   "id": "tv:68467",
+   "titolo": "3%",
+   "anno": 2016,
+   "voto": 7.1,
+   "voti": 546,
+   "film": [
+    {
+     "id": "movie:11929",
+     "t": "L'ultima eclissi",
+     "y": 1995,
+     "vc": 911
+    },
+    {
+     "id": "movie:989589",
+     "t": "Los colonos",
+     "y": 2023,
+     "vc": 163
+    },
+    {
+     "id": "movie:9741",
+     "t": "Unbreakable - Il predestinato",
+     "y": 2000,
+     "vc": 10189
+    },
+    {
+     "id": "movie:9659",
+     "t": "Interceptor",
+     "y": 1979,
+     "vc": 5116
+    },
+    {
+     "id": "movie:961268",
+     "t": "Ballerina",
+     "y": 2023,
+     "vc": 743
+    },
+    {
+     "id": "movie:9566",
+     "t": "The Fan - Il mito",
+     "y": 1996,
+     "vc": 909
+    },
+    {
+     "id": "movie:9516",
+     "t": "Nella giungla di cemento",
+     "y": 1993,
+     "vc": 958
+    },
+    {
+     "id": "movie:9469",
+     "t": "He Got Game",
+     "y": 1998,
+     "vc": 826
+    },
+    {
+     "id": "movie:9400",
+     "t": "Set It Off - Farsi notare",
+     "y": 1996,
+     "vc": 410
+    },
+    {
+     "id": "movie:9355",
+     "t": "Mad Max - Oltre la sfera del tuono",
+     "y": 1985,
+     "vc": 3394
+    },
+    {
+     "id": "movie:925",
+     "t": "Fa' la cosa giusta",
+     "y": 1989,
+     "vc": 2089
+    },
+    {
+     "id": "movie:881957",
+     "t": "Capitan Nova",
+     "y": 2021,
+     "vc": 113
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:85844",
+     "t": "The Wiseman's Grandchild",
+     "y": 2019,
+     "vc": 356
+    },
+    {
+     "id": "tv:83251",
+     "t": "Dirty John",
+     "y": 2018,
+     "vc": 140
+    },
+    {
+     "id": "tv:72141",
+     "t": "I ribelli",
+     "y": 2017,
+     "vc": 107
+    },
+    {
+     "id": "tv:71694",
+     "t": "Snowfall",
+     "y": 2017,
+     "vc": 817
+    },
+    {
+     "id": "tv:67883",
+     "t": "Insecure",
+     "y": 2016,
+     "vc": 230
+    },
+    {
+     "id": "tv:63351",
+     "t": "Narcos",
+     "y": 2015,
+     "vc": 3457
+    }
+   ]
+  },
+  {
+   "id": "tv:82809",
+   "titolo": "Falsa identidad",
+   "anno": 2018,
+   "voto": 7.6,
+   "voti": 545,
+   "film": [
+    {
+     "id": "movie:1213",
+     "t": "Il talento di Mr. Ripley",
+     "y": 1999,
+     "vc": 4318
+    },
+    {
+     "id": "movie:1957",
+     "t": "Via dall'incubo",
+     "y": 2002,
+     "vc": 1270
+    },
+    {
+     "id": "movie:42602",
+     "t": "Passione",
+     "y": 1969,
+     "vc": 207
+    },
+    {
+     "id": "movie:36266",
+     "t": "Cyclo",
+     "y": 1995,
+     "vc": 123
+    },
+    {
+     "id": "movie:979",
+     "t": "Irréversible",
+     "y": 2002,
+     "vc": 3443
+    },
+    {
+     "id": "movie:9696",
+     "t": "Ichi the Killer",
+     "y": 2001,
+     "vc": 1154
+    },
+    {
+     "id": "movie:15940",
+     "t": "Beautiful Creatures",
+     "y": 2000,
+     "vc": 80
+    },
+    {
+     "id": "movie:12593",
+     "t": "Fritz il gatto",
+     "y": 1972,
+     "vc": 403
+    },
+    {
+     "id": "movie:21252",
+     "t": "Niente per bocca",
+     "y": 1997,
+     "vc": 156
+    },
+    {
+     "id": "movie:9394",
+     "t": "Lo chiamavano Trinità...",
+     "y": 1970,
+     "vc": 1501
+    },
+    {
+     "id": "movie:84287",
+     "t": "L'Impostore - The Imposter",
+     "y": 2012,
+     "vc": 819
+    },
+    {
+     "id": "movie:633908",
+     "t": "The Stand In",
+     "y": 2020,
+     "vc": 124
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:89446",
+     "t": "Stateless",
+     "y": 2020,
+     "vc": 135
+    },
+    {
+     "id": "tv:59312",
+     "t": "The Bletchley Circle",
+     "y": 2012,
+     "vc": 149
+    },
+    {
+     "id": "tv:1920",
+     "t": "I segreti di Twin Peaks",
+     "y": 1990,
+     "vc": 2726
+    },
+    {
+     "id": "tv:68878",
+     "t": "La Doña",
+     "y": 2016,
+     "vc": 642
+    },
+    {
+     "id": "tv:249042",
+     "t": "Adolescence",
+     "y": 2025,
+     "vc": 1802
+    },
+    {
+     "id": "tv:33880",
+     "t": "La leggenda di Korra",
+     "y": 2012,
+     "vc": 2439
+    }
+   ]
+  },
+  {
+   "id": "tv:259731",
+   "titolo": "La sua verità",
+   "anno": 2026,
+   "voto": 7.3,
+   "voti": 541,
+   "film": [
+    {
+     "id": "movie:417830",
+     "t": "Diario di una schiappa - Portatemi a casa!",
+     "y": 2017,
+     "vc": 550
+    },
+    {
+     "id": "movie:320882",
+     "t": "The Seven Five",
+     "y": 2015,
+     "vc": 108
+    },
+    {
+     "id": "movie:47508",
+     "t": "Il mago di Oz",
+     "y": 1925,
+     "vc": 52
+    },
+    {
+     "id": "movie:47931",
+     "t": "Tropa de elite 2 - Il nemico ora è un altro",
+     "y": 2010,
+     "vc": 2115
+    },
+    {
+     "id": "movie:8055",
+     "t": "The Reader - A voce alta",
+     "y": 2008,
+     "vc": 3474
+    },
+    {
+     "id": "movie:643532",
+     "t": "Il collezionista di carte",
+     "y": 2021,
+     "vc": 1129
+    },
+    {
+     "id": "movie:1991",
+     "t": "Grindhouse - A prova di morte",
+     "y": 2007,
+     "vc": 5826
+    },
+    {
+     "id": "movie:829280",
+     "t": "Enola Holmes 2",
+     "y": 2022,
+     "vc": 3181
+    },
+    {
+     "id": "movie:12764",
+     "t": "Missing in Action 2",
+     "y": 1985,
+     "vc": 348
+    },
+    {
+     "id": "movie:10802",
+     "t": "Showgirls",
+     "y": 1995,
+     "vc": 1448
+    },
+    {
+     "id": "movie:8966",
+     "t": "Twilight",
+     "y": 2008,
+     "vc": 14720
+    },
+    {
+     "id": "movie:68812",
+     "t": "The Iceman",
+     "y": 2012,
+     "vc": 1188
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:323411",
+     "t": "Il vampiro Lestat",
+     "y": 2026,
+     "vc": 59
+    },
+    {
+     "id": "tv:277439",
+     "t": "Cape Fear",
+     "y": 2026,
+     "vc": 182
+    },
+    {
+     "id": "tv:113988",
+     "t": "DAHMER - Mostro: la storia di Jeffrey Dahmer",
+     "y": 2022,
+     "vc": 2948
+    },
+    {
+     "id": "tv:256226",
+     "t": "친애하는 X",
+     "y": 2025,
+     "vc": 126
+    },
+    {
+     "id": "tv:97173",
+     "t": "Dietro i suoi occhi",
+     "y": 2021,
+     "vc": 748
+    },
+    {
+     "id": "tv:70453",
+     "t": "Sharp Objects",
+     "y": 2018,
+     "vc": 1137
+    }
+   ]
+  },
+  {
+   "id": "tv:88061",
+   "titolo": "Hensuki: Sei disposto ad innamorarti di un pervertito, purché sia ​​una ragazza carina?",
+   "anno": 2019,
+   "voto": 7.7,
+   "voti": 540,
+   "film": [
+    {
+     "id": "movie:95170",
+     "t": "Heaven's Lost Property the Movie: The Angeloid of Clockwork",
+     "y": 2011,
+     "vc": 59
+    },
+    {
+     "id": "movie:570269",
+     "t": "Trinity Seven: Heaven's Library & Crimson Lord",
+     "y": 2019,
+     "vc": 62
+    },
+    {
+     "id": "movie:428292",
+     "t": "Trinity Seven: Eternity Library & Alchemic Girl",
+     "y": 2017,
+     "vc": 62
+    },
+    {
+     "id": "movie:331061",
+     "t": "Date A Live: Mayuri Judgment",
+     "y": 2015,
+     "vc": 76
+    },
+    {
+     "id": "movie:553835",
+     "t": "DanMachi - La freccia di Orione",
+     "y": 2019,
+     "vc": 295
+    },
+    {
+     "id": "movie:362585",
+     "t": "Kizumonogatari Part 3: Reiketsu",
+     "y": 2017,
+     "vc": 245
+    },
+    {
+     "id": "movie:362584",
+     "t": "Kizumonogatari Part 2: Nekketsu",
+     "y": 2016,
+     "vc": 238
+    },
+    {
+     "id": "movie:357786",
+     "t": "Kizumonogatari Part 1: Tekketsu",
+     "y": 2016,
+     "vc": 324
+    },
+    {
+     "id": "movie:820067",
+     "t": "The Quintessential Quintuplets Movie",
+     "y": 2022,
+     "vc": 457
+    },
+    {
+     "id": "movie:761898",
+     "t": "Sword Art Online The Movie: Progressive - Aria of a Starless Night",
+     "y": 2021,
+     "vc": 345
+    },
+    {
+     "id": "movie:460399",
+     "t": "Love, Chunibyo & Other Delusions: Take on Me",
+     "y": 2018,
+     "vc": 133
+    },
+    {
+     "id": "movie:938567",
+     "t": "Teasing Master Takagi-san: The Movie",
+     "y": 2022,
+     "vc": 147
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:93019",
+     "t": "ORESUKI Are you the only one who loves me?",
+     "y": 2019,
+     "vc": 293
+    },
+    {
+     "id": "tv:46169",
+     "t": "Mayo Chiki!",
+     "y": 2011,
+     "vc": 61
+    },
+    {
+     "id": "tv:46025",
+     "t": "Infinite Stratos",
+     "y": 2011,
+     "vc": 154
+    },
+    {
+     "id": "tv:99071",
+     "t": "Redo of Healer",
+     "y": 2021,
+     "vc": 1052
+    },
+    {
+     "id": "tv:94664",
+     "t": "Mushoku Tensei: Jobless Reincarnation",
+     "y": 2021,
+     "vc": 1765
+    },
+    {
+     "id": "tv:74092",
+     "t": "A Sister's All You Need",
+     "y": 2017,
+     "vc": 68
+    }
+   ]
+  },
+  {
+   "id": "tv:34105",
+   "titolo": "Golden Boy",
+   "anno": 1995,
+   "voto": 8.2,
+   "voti": 539,
+   "film": [
+    {
+     "id": "movie:433422",
+     "t": "Fairy Tail The Movie: Dragon Cry",
+     "y": 2017,
+     "vc": 427
+    },
+    {
+     "id": "movie:916224",
+     "t": "Suzume",
+     "y": 2022,
+     "vc": 1860
+    },
+    {
+     "id": "movie:507569",
+     "t": "The Seven Deadly Sins the Movie: Prisoners of the Sky",
+     "y": 2018,
+     "vc": 1098
+    },
+    {
+     "id": "movie:135531",
+     "t": "Fairy Tail The Movie: Phoenix Priestess",
+     "y": 2012,
+     "vc": 238
+    },
+    {
+     "id": "movie:573730",
+     "t": "Made in Abyss: Dawn of the Deep Soul",
+     "y": 2020,
+     "vc": 320
+    },
+    {
+     "id": "movie:566466",
+     "t": "Laid-Back Camp the Movie",
+     "y": 2022,
+     "vc": 74
+    },
+    {
+     "id": "movie:526429",
+     "t": "Made in Abyss Movie 2: Wandering Twilight",
+     "y": 2019,
+     "vc": 150
+    },
+    {
+     "id": "movie:526426",
+     "t": "Made in Abyss: Journey's Dawn",
+     "y": 2019,
+     "vc": 88
+    },
+    {
+     "id": "movie:81",
+     "t": "Nausicaä della Valle del vento",
+     "y": 1984,
+     "vc": 4223
+    },
+    {
+     "id": "movie:80518",
+     "t": "Fullmetal Alchemist - La sacra stella di Milos",
+     "y": 2011,
+     "vc": 298
+    },
+    {
+     "id": "movie:384345",
+     "t": "Doraemon: Il film - Nobita e la nascita del Giappone",
+     "y": 2016,
+     "vc": 78
+    },
+    {
+     "id": "movie:374205",
+     "t": "One Piece Gold - Il film",
+     "y": 2016,
+     "vc": 548
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:74185",
+     "t": "Girls' Last Tour",
+     "y": 2017,
+     "vc": 122
+    },
+    {
+     "id": "tv:60654",
+     "t": "Magi: The Labyrinth of Magic",
+     "y": 2012,
+     "vc": 222
+    },
+    {
+     "id": "tv:26867",
+     "t": "Mushishi",
+     "y": 2005,
+     "vc": 251
+    },
+    {
+     "id": "tv:209867",
+     "t": "Frieren - Oltre la Fine del Viaggio",
+     "y": 2023,
+     "vc": 985
+    },
+    {
+     "id": "tv:45967",
+     "t": "B gata H kei",
+     "y": 2010,
+     "vc": 156
+    },
+    {
+     "id": "tv:62104",
+     "t": "The Seven Deadly Sins",
+     "y": 2014,
+     "vc": 5200
+    }
+   ]
+  },
+  {
+   "id": "tv:135918",
+   "titolo": "Strappare lungo i bordi",
+   "anno": 2021,
+   "voto": 8.4,
+   "voti": 538,
+   "film": [
+    {
+     "id": "movie:9606",
+     "t": "Metropolis",
+     "y": 2001,
+     "vc": 583
+    },
+    {
+     "id": "movie:703771",
+     "t": "Deathstroke: Knights & Dragons - The Movie",
+     "y": 2020,
+     "vc": 480
+    },
+    {
+     "id": "movie:537056",
+     "t": "Batman: Hush",
+     "y": 2019,
+     "vc": 986
+    },
+    {
+     "id": "movie:510318",
+     "t": "Buñuel nel labirinto delle tartarughe",
+     "y": 2019,
+     "vc": 132
+    },
+    {
+     "id": "movie:487242",
+     "t": "Suicide Squad - Un inferno da scontare",
+     "y": 2018,
+     "vc": 734
+    },
+    {
+     "id": "movie:485942",
+     "t": "Batman Ninja",
+     "y": 2018,
+     "vc": 1095
+    },
+    {
+     "id": "movie:471474",
+     "t": "Batman contro Jack lo squartatore",
+     "y": 2018,
+     "vc": 777
+    },
+    {
+     "id": "movie:366924",
+     "t": "Batman: Bad Blood",
+     "y": 2016,
+     "vc": 1020
+    },
+    {
+     "id": "movie:23127",
+     "t": "The Haunted World of El Superbeasto",
+     "y": 2009,
+     "vc": 233
+    },
+    {
+     "id": "movie:227738",
+     "t": "Mortadello e Polpetta contro Jimmy lo Sguercio",
+     "y": 2014,
+     "vc": 213
+    },
+    {
+     "id": "movie:16774",
+     "t": "Hellboy: La spada maledetta",
+     "y": 2006,
+     "vc": 162
+    },
+    {
+     "id": "movie:14919",
+     "t": "Batman - La maschera del fantasma",
+     "y": 1993,
+     "vc": 1297
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:95557",
+     "t": "INVINCIBLE",
+     "y": 2021,
+     "vc": 6100
+    },
+    {
+     "id": "tv:56021",
+     "t": "The Maxx",
+     "y": 1995,
+     "vc": 75
+    },
+    {
+     "id": "tv:3072",
+     "t": "Stripperella",
+     "y": 2003,
+     "vc": 142
+    },
+    {
+     "id": "tv:2604",
+     "t": "The Boondocks",
+     "y": 2005,
+     "vc": 515
+    },
+    {
+     "id": "tv:219543",
+     "t": "Creature Commandos",
+     "y": 2024,
+     "vc": 395
+    },
+    {
+     "id": "tv:152483",
+     "t": "The Boys Presenta: Diabolico!",
+     "y": 2022,
+     "vc": 449
+    }
+   ]
+  },
+  {
+   "id": "tv:241554",
+   "titolo": "Murderbot",
+   "anno": 2025,
+   "voto": 7.3,
+   "voti": 535,
+   "film": [
+    {
+     "id": "movie:800279",
+     "t": "Corner Office",
+     "y": 2023,
+     "vc": 166
+    },
+    {
+     "id": "movie:775996",
+     "t": "Outside the Wire",
+     "y": 2021,
+     "vc": 1990
+    },
+    {
+     "id": "movie:505914",
+     "t": "A.I. Rising - Il futuro è adesso",
+     "y": 2018,
+     "vc": 319
+    },
+    {
+     "id": "movie:79544",
+     "t": "The Wicker Tree",
+     "y": 2011,
+     "vc": 62
+    },
+    {
+     "id": "movie:69526",
+     "t": "Assassination Bureau",
+     "y": 1969,
+     "vc": 96
+    },
+    {
+     "id": "movie:157849",
+     "t": "La spia - A Most Wanted Man",
+     "y": 2014,
+     "vc": 1530
+    },
+    {
+     "id": "movie:452507",
+     "t": "1922",
+     "y": 2017,
+     "vc": 2971
+    },
+    {
+     "id": "movie:18196",
+     "t": "Sentinel",
+     "y": 1977,
+     "vc": 238
+    },
+    {
+     "id": "movie:14748",
+     "t": "Boy A",
+     "y": 2008,
+     "vc": 512
+    },
+    {
+     "id": "movie:11850",
+     "t": "Terrore dallo spazio profondo",
+     "y": 1978,
+     "vc": 1396
+    },
+    {
+     "id": "movie:11549",
+     "t": "L'invasione degli ultracorpi",
+     "y": 1956,
+     "vc": 1240
+    },
+    {
+     "id": "movie:559957",
+     "t": "Shanghai Fortress",
+     "y": 2019,
+     "vc": 168
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:96677",
+     "t": "Lupin",
+     "y": 2021,
+     "vc": 2679
+    },
+    {
+     "id": "tv:242054",
+     "t": "The Residence",
+     "y": 2025,
+     "vc": 361
+    },
+    {
+     "id": "tv:139155",
+     "t": "Gli ansiosi",
+     "y": 2021,
+     "vc": 73
+    },
+    {
+     "id": "tv:95403",
+     "t": "Inverso - The Peripheral",
+     "y": 2022,
+     "vc": 1406
+    },
+    {
+     "id": "tv:44045",
+     "t": "All Watched Over by Machines of Loving Grace",
+     "y": 2011,
+     "vc": 54
+    },
+    {
+     "id": "tv:228878",
+     "t": "Common Side Effects",
+     "y": 2025,
+     "vc": 351
+    }
+   ]
+  },
+  {
+   "id": "tv:61014",
+   "titolo": "The Knick",
+   "anno": 2014,
+   "voto": 7.9,
+   "voti": 534,
+   "film": [
+    {
+     "id": "movie:11306",
+     "t": "Extreme Measures - Soluzioni estreme",
+     "y": 1996,
+     "vc": 364
+    },
+    {
+     "id": "movie:340027",
+     "t": "Brain on Fire",
+     "y": 2017,
+     "vc": 1442
+    },
+    {
+     "id": "movie:4922",
+     "t": "Il curioso caso di Benjamin Button",
+     "y": 2008,
+     "vc": 14098
+    },
+    {
+     "id": "movie:8649",
+     "t": "Al di là della vita",
+     "y": 1999,
+     "vc": 1280
+    },
+    {
+     "id": "movie:19625",
+     "t": "मुन्ना भाई एम बी बी एस",
+     "y": 2003,
+     "vc": 378
+    },
+    {
+     "id": "movie:433033",
+     "t": "Unrest",
+     "y": 2017,
+     "vc": 51
+    },
+    {
+     "id": "movie:8619",
+     "t": "Master & Commander - Sfida ai confini del mare",
+     "y": 2003,
+     "vc": 3691
+    },
+    {
+     "id": "movie:12628",
+     "t": "Playing God - La vita in gioco",
+     "y": 1997,
+     "vc": 129
+    },
+    {
+     "id": "movie:2359",
+     "t": "Sicko",
+     "y": 2007,
+     "vc": 811
+    },
+    {
+     "id": "movie:29589",
+     "t": "Delitto in bianco",
+     "y": 1946,
+     "vc": 104
+    },
+    {
+     "id": "movie:25269",
+     "t": "Articolo 99",
+     "y": 1992,
+     "vc": 70
+    },
+    {
+     "id": "movie:55922",
+     "t": "Porky Hospital",
+     "y": 2004,
+     "vc": 58
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:1408",
+     "t": "Dr. House - Medical Division",
+     "y": 2004,
+     "vc": 7929
+    },
+    {
+     "id": "tv:47523",
+     "t": "Appunti di un giovane medico",
+     "y": 2012,
+     "vc": 206
+    },
+    {
+     "id": "tv:92967",
+     "t": "Il Dottor Alì",
+     "y": 2019,
+     "vc": 1064
+    },
+    {
+     "id": "tv:66545",
+     "t": "Pure Genius",
+     "y": 2016,
+     "vc": 87
+    },
+    {
+     "id": "tv:6467",
+     "t": "Chicago Hope",
+     "y": 1994,
+     "vc": 83
+    },
+    {
+     "id": "tv:68398",
+     "t": "낭만닥터 김사부",
+     "y": 2016,
+     "vc": 134
+    }
+   ]
+  },
+  {
+   "id": "tv:7317",
+   "titolo": "The Inbetweeners",
+   "anno": 2008,
+   "voto": 7.7,
+   "voti": 533,
+   "film": [
+    {
+     "id": "movie:348296",
+     "t": "The Bad Education Movie",
+     "y": 2015,
+     "vc": 150
+    },
+    {
+     "id": "movie:980996",
+     "t": "I Like Movies",
+     "y": 2023,
+     "vc": 84
+    },
+    {
+     "id": "movie:2978",
+     "t": "Ghostbusters II (Acchiappafantasmi II)",
+     "y": 1989,
+     "vc": 5013
+    },
+    {
+     "id": "movie:9571",
+     "t": "La vita è un sogno",
+     "y": 1993,
+     "vc": 2360
+    },
+    {
+     "id": "movie:2108",
+     "t": "Breakfast Club",
+     "y": 1985,
+     "vc": 8760
+    },
+    {
+     "id": "movie:13342",
+     "t": "Fuori di testa",
+     "y": 1982,
+     "vc": 1416
+    },
+    {
+     "id": "movie:2280",
+     "t": "Big",
+     "y": 1988,
+     "vc": 4197
+    },
+    {
+     "id": "movie:9611",
+     "t": "Romy & Michelle",
+     "y": 1997,
+     "vc": 620
+    },
+    {
+     "id": "movie:42889",
+     "t": "The Virginity Hit - La prima volta è online",
+     "y": 2010,
+     "vc": 78
+    },
+    {
+     "id": "movie:814776",
+     "t": "Bottoms",
+     "y": 2023,
+     "vc": 928
+    },
+    {
+     "id": "movie:129139",
+     "t": "The To Do List - L'estate prima del college",
+     "y": 2013,
+     "vc": 1120
+    },
+    {
+     "id": "movie:437557",
+     "t": "Giù le mani dalle nostre figlie",
+     "y": 2018,
+     "vc": 2173
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:74204",
+     "t": "Big Mouth",
+     "y": 2017,
+     "vc": 1260
+    },
+    {
+     "id": "tv:3089",
+     "t": "Parker Lewis Can't Lose",
+     "y": 1990,
+     "vc": 84
+    },
+    {
+     "id": "tv:31497",
+     "t": "The League",
+     "y": 2009,
+     "vc": 238
+    },
+    {
+     "id": "tv:2710",
+     "t": "C'è sempre il sole a Philadelphia",
+     "y": 2005,
+     "vc": 1425
+    },
+    {
+     "id": "tv:100883",
+     "t": "Non ho mai...",
+     "y": 2020,
+     "vc": 1940
+    },
+    {
+     "id": "tv:201834",
+     "t": "ted",
+     "y": 2024,
+     "vc": 761
+    }
+   ]
+  },
+  {
+   "id": "tv:236",
+   "titolo": "Flash",
+   "anno": 1990,
+   "voto": 7.4,
+   "voti": 532,
+   "film": [
+    {
+     "id": "movie:36647",
+     "t": "Blade",
+     "y": 1998,
+     "vc": 7003
+    },
+    {
+     "id": "movie:8867",
+     "t": "Il vendicatore",
+     "y": 1989,
+     "vc": 717
+    },
+    {
+     "id": "movie:7220",
+     "t": "The Punisher",
+     "y": 2004,
+     "vc": 3299
+    },
+    {
+     "id": "movie:9738",
+     "t": "I Fantastici 4",
+     "y": 2005,
+     "vc": 10240
+    },
+    {
+     "id": "movie:9531",
+     "t": "Superman III",
+     "y": 1983,
+     "vc": 1947
+    },
+    {
+     "id": "movie:886396",
+     "t": "Batman and Superman: Battle of the Super Sons",
+     "y": 2022,
+     "vc": 367
+    },
+    {
+     "id": "movie:8536",
+     "t": "Superman II",
+     "y": 1980,
+     "vc": 2628
+    },
+    {
+     "id": "movie:736069",
+     "t": "Justice Society: World War II",
+     "y": 2021,
+     "vc": 616
+    },
+    {
+     "id": "movie:71676",
+     "t": "Ghost Rider - Spirito di vendetta",
+     "y": 2011,
+     "vc": 4206
+    },
+    {
+     "id": "movie:71129",
+     "t": "The Mechanical Monsters",
+     "y": 1941,
+     "vc": 72
+    },
+    {
+     "id": "movie:64202",
+     "t": "Batman of the Future - Il film",
+     "y": 1999,
+     "vc": 208
+    },
+    {
+     "id": "movie:618354",
+     "t": "Superman: Man of Tomorrow",
+     "y": 2020,
+     "vc": 513
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:95557",
+     "t": "INVINCIBLE",
+     "y": 2021,
+     "vc": 6100
+    },
+    {
+     "id": "tv:95350",
+     "t": "Lanterns",
+     "y": 2026,
+     "vc": 607
+    },
+    {
+     "id": "tv:95057",
+     "t": "Superman & Lois",
+     "y": 2021,
+     "vc": 2769
+    },
+    {
+     "id": "tv:92783",
+     "t": "She-Hulk: Attorney at Law",
+     "y": 2022,
+     "vc": 2598
+    },
+    {
+     "id": "tv:92782",
+     "t": "Ms. Marvel",
+     "y": 2022,
+     "vc": 1531
+    },
+    {
+     "id": "tv:76479",
+     "t": "The Boys",
+     "y": 2019,
+     "vc": 13509
+    }
+   ]
+  },
+  {
+   "id": "tv:66871",
+   "titolo": "SIX",
+   "anno": 2017,
+   "voto": 7.3,
+   "voti": 526,
+   "film": [
+    {
+     "id": "movie:97630",
+     "t": "Zero Dark Thirty",
+     "y": 2012,
+     "vc": 5037
+    },
+    {
+     "id": "movie:9802",
+     "t": "The Rock",
+     "y": 1996,
+     "vc": 5403
+    },
+    {
+     "id": "movie:767304",
+     "t": "Redemption Day",
+     "y": 2021,
+     "vc": 275
+    },
+    {
+     "id": "movie:75674",
+     "t": "Act of Valor",
+     "y": 2012,
+     "vc": 1298
+    },
+    {
+     "id": "movie:335788",
+     "t": "Renegades: Commando d'assalto",
+     "y": 2017,
+     "vc": 379
+    },
+    {
+     "id": "movie:4421",
+     "t": "Soldato Jane",
+     "y": 1997,
+     "vc": 1917
+    },
+    {
+     "id": "movie:193756",
+     "t": "Lone Survivor",
+     "y": 2013,
+     "vc": 4893
+    },
+    {
+     "id": "movie:481203",
+     "t": "All the Devil's Men - Squadra speciale",
+     "y": 2018,
+     "vc": 166
+    },
+    {
+     "id": "movie:3512",
+     "t": "Trappola sulle Montagne Rocciose",
+     "y": 1995,
+     "vc": 1073
+    },
+    {
+     "id": "movie:42205",
+     "t": "Commando Black Tigers",
+     "y": 1978,
+     "vc": 99
+    },
+    {
+     "id": "movie:13922",
+     "t": "The Great Raid - Un pugno di eroi",
+     "y": 2005,
+     "vc": 394
+    },
+    {
+     "id": "movie:357407",
+     "t": "L'organo genocida",
+     "y": 2017,
+     "vc": 95
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:71789",
+     "t": "SEAL Team",
+     "y": 2017,
+     "vc": 1682
+    },
+    {
+     "id": "tv:4614",
+     "t": "NCIS - Unità anticrimine",
+     "y": 2003,
+     "vc": 2581
+    },
+    {
+     "id": "tv:61387",
+     "t": "NCIS: New Orleans",
+     "y": 2014,
+     "vc": 481
+    },
+    {
+     "id": "tv:60802",
+     "t": "The Last Ship",
+     "y": 2014,
+     "vc": 1087
+    },
+    {
+     "id": "tv:44652",
+     "t": "Last Resort",
+     "y": 2012,
+     "vc": 192
+    },
+    {
+     "id": "tv:4376",
+     "t": "JAG - Avvocati in divisa",
+     "y": 1995,
+     "vc": 410
+    }
+   ]
+  },
+  {
+   "id": "tv:4879",
+   "titolo": "El Cuerpo del Deseo",
+   "anno": 2005,
+   "voto": 7.6,
+   "voti": 525,
+   "film": [
+    {
+     "id": "movie:93519",
+     "t": "कारन अर्जुन",
+     "y": 1995,
+     "vc": 123
+    },
+    {
+     "id": "movie:9067",
+     "t": "Tank Girl",
+     "y": 1995,
+     "vc": 601
+    },
+    {
+     "id": "movie:876792",
+     "t": "That Time I Got Reincarnated as a Slime the Movie: Scarlet Bond",
+     "y": 2022,
+     "vc": 460
+    },
+    {
+     "id": "movie:86889",
+     "t": "Il demone nero",
+     "y": 1974,
+     "vc": 82
+    },
+    {
+     "id": "movie:732713",
+     "t": "L’occhio del male",
+     "y": 2020,
+     "vc": 182
+    },
+    {
+     "id": "movie:71945",
+     "t": "La casa delle ombre maledette",
+     "y": 1971,
+     "vc": 60
+    },
+    {
+     "id": "movie:71943",
+     "t": "La casa dei vampiri",
+     "y": 1970,
+     "vc": 88
+    },
+    {
+     "id": "movie:663558",
+     "t": "New Gods: Nezha Reborn",
+     "y": 2021,
+     "vc": 535
+    },
+    {
+     "id": "movie:599960",
+     "t": "Fuga a Parigi",
+     "y": 2021,
+     "vc": 178
+    },
+    {
+     "id": "movie:59726",
+     "t": "Wake Wood",
+     "y": 2011,
+     "vc": 218
+    },
+    {
+     "id": "movie:583132",
+     "t": "Sadako",
+     "y": 2019,
+     "vc": 139
+    },
+    {
+     "id": "movie:581726",
+     "t": "Infinite",
+     "y": 2021,
+     "vc": 2230
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:253296",
+     "t": "ปาฏิหาริย์รักร้อยปี",
+     "y": 2024,
+     "vc": 56
+    },
+    {
+     "id": "tv:99624",
+     "t": "The 8th Son? Are You Kidding Me?",
+     "y": 2020,
+     "vc": 151
+    },
+    {
+     "id": "tv:99491",
+     "t": "Mystic pop-up bar",
+     "y": 2020,
+     "vc": 79
+    },
+    {
+     "id": "tv:99073",
+     "t": "I've Been Killing Slimes for 300 Years and Maxed Out My Level",
+     "y": 2021,
+     "vc": 243
+    },
+    {
+     "id": "tv:97617",
+     "t": "The Misfit of Demon King Academy",
+     "y": 2020,
+     "vc": 877
+    },
+    {
+     "id": "tv:97525",
+     "t": "To Your Eternity",
+     "y": 2021,
+     "vc": 345
+    }
+   ]
+  },
+  {
+   "id": "tv:72339",
+   "titolo": "Happy!",
+   "anno": 2017,
+   "voto": 7.4,
+   "voti": 522,
+   "film": [
+    {
+     "id": "movie:8068",
+     "t": "Desperado",
+     "y": 1995,
+     "vc": 3259
+    },
+    {
+     "id": "movie:74725",
+     "t": "Kill List",
+     "y": 2011,
+     "vc": 915
+    },
+    {
+     "id": "movie:64689",
+     "t": "Cogan - Killing Them Softly",
+     "y": 2012,
+     "vc": 2492
+    },
+    {
+     "id": "movie:2252",
+     "t": "La promessa dell'assassino",
+     "y": 2007,
+     "vc": 3852
+    },
+    {
+     "id": "movie:154400",
+     "t": "Chi è senza colpa",
+     "y": 2014,
+     "vc": 2506
+    },
+    {
+     "id": "movie:516632",
+     "t": "The Empty Man",
+     "y": 2020,
+     "vc": 1123
+    },
+    {
+     "id": "movie:9573",
+     "t": "Debito di sangue",
+     "y": 2002,
+     "vc": 927
+    },
+    {
+     "id": "movie:89340",
+     "t": "Codice marziale III: Missione giustizia",
+     "y": 1992,
+     "vc": 62
+    },
+    {
+     "id": "movie:581600",
+     "t": "Spenser Confidential",
+     "y": 2020,
+     "vc": 2584
+    },
+    {
+     "id": "movie:281",
+     "t": "Strange Days",
+     "y": 1995,
+     "vc": 1619
+    },
+    {
+     "id": "movie:204082",
+     "t": "Homefront",
+     "y": 2013,
+     "vc": 3963
+    },
+    {
+     "id": "movie:11657",
+     "t": "I senza nome",
+     "y": 1970,
+     "vc": 756
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:33400",
+     "t": "Terriers - Cani sciolti",
+     "y": 2010,
+     "vc": 109
+    },
+    {
+     "id": "tv:2384",
+     "t": "Supercar",
+     "y": 1982,
+     "vc": 1466
+    },
+    {
+     "id": "tv:67642",
+     "t": "Swedish Dicks",
+     "y": 2016,
+     "vc": 51
+    },
+    {
+     "id": "tv:245312",
+     "t": "A Man on the Inside",
+     "y": 2024,
+     "vc": 255
+    },
+    {
+     "id": "tv:18653",
+     "t": "Human Target",
+     "y": 2010,
+     "vc": 175
+    },
+    {
+     "id": "tv:220102",
+     "t": "Spider-Noir",
+     "y": 2026,
+     "vc": 875
+    }
+   ]
+  },
+  {
+   "id": "tv:3122",
+   "titolo": "Star Wars: Clone Wars",
+   "anno": 2003,
+   "voto": 7.8,
+   "voti": 521,
+   "film": [
+    {
+     "id": "movie:8870",
+     "t": "Pianeta rosso",
+     "y": 2000,
+     "vc": 1214
+    },
+    {
+     "id": "movie:841",
+     "t": "Dune",
+     "y": 1984,
+     "vc": 3562
+    },
+    {
+     "id": "movie:76757",
+     "t": "Jupiter - Il destino dell'universo",
+     "y": 2015,
+     "vc": 7261
+    },
+    {
+     "id": "movie:76180",
+     "t": "L'Impero dei sogni: La storia della trilogia di Star Wars",
+     "y": 2004,
+     "vc": 218
+    },
+    {
+     "id": "movie:74849",
+     "t": "The Star Wars Holiday Special",
+     "y": 1978,
+     "vc": 523
+    },
+    {
+     "id": "movie:7453",
+     "t": "Guida galattica per autostoppisti",
+     "y": 2005,
+     "vc": 4384
+    },
+    {
+     "id": "movie:70703",
+     "t": "The Captains",
+     "y": 2011,
+     "vc": 125
+    },
+    {
+     "id": "movie:70608",
+     "t": "LEGO Star Wars: La Minaccia Padawan",
+     "y": 2011,
+     "vc": 166
+    },
+    {
+     "id": "movie:62",
+     "t": "2001: Odissea nello spazio",
+     "y": 1968,
+     "vc": 13009
+    },
+    {
+     "id": "movie:581389",
+     "t": "Space Sweepers",
+     "y": 2021,
+     "vc": 1179
+    },
+    {
+     "id": "movie:54138",
+     "t": "Into Darkness - Star Trek",
+     "y": 2013,
+     "vc": 9902
+    },
+    {
+     "id": "movie:447365",
+     "t": "Guardiani della Galassia Vol. 3",
+     "y": 2023,
+     "vc": 8873
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:93740",
+     "t": "Fondazione",
+     "y": 2021,
+     "vc": 1835
+    },
+    {
+     "id": "tv:9156",
+     "t": "I figli di Dune",
+     "y": 2003,
+     "vc": 251
+    },
+    {
+     "id": "tv:8880",
+     "t": "Space Adventure Cobra",
+     "y": 1982,
+     "vc": 227
+    },
+    {
+     "id": "tv:83867",
+     "t": "Andor",
+     "y": 2022,
+     "vc": 2247
+    },
+    {
+     "id": "tv:82856",
+     "t": "The Mandalorian",
+     "y": 2019,
+     "vc": 11281
+    },
+    {
+     "id": "tv:79093",
+     "t": "Star Wars Resistance",
+     "y": 2018,
+     "vc": 180
+    }
+   ]
+  },
+  {
+   "id": "tv:745",
+   "titolo": "Spaced",
+   "anno": 1999,
+   "voto": 7.9,
+   "voti": 521,
+   "film": [
+    {
+     "id": "movie:24909",
+     "t": "Young Americans",
+     "y": 1993,
+     "vc": 63
+    },
+    {
+     "id": "movie:9430",
+     "t": "Go - Una notte da dimenticare",
+     "y": 1999,
+     "vc": 865
+    },
+    {
+     "id": "movie:23655",
+     "t": "Groove",
+     "y": 2000,
+     "vc": 50
+    },
+    {
+     "id": "movie:11129",
+     "t": "Human Traffic",
+     "y": 1999,
+     "vc": 414
+    },
+    {
+     "id": "movie:9905",
+     "t": "Piccoli omicidi tra amici",
+     "y": 1994,
+     "vc": 1203
+    },
+    {
+     "id": "movie:49462",
+     "t": "Ragazze",
+     "y": 1997,
+     "vc": 96
+    },
+    {
+     "id": "movie:792307",
+     "t": "Povere creature!",
+     "y": 2023,
+     "vc": 5791
+    },
+    {
+     "id": "movie:457943",
+     "t": "Slaughterhouse spacca",
+     "y": 2018,
+     "vc": 517
+    },
+    {
+     "id": "movie:209249",
+     "t": "The Love Punch",
+     "y": 2014,
+     "vc": 477
+    },
+    {
+     "id": "movie:509",
+     "t": "Notting Hill",
+     "y": 1999,
+     "vc": 6918
+    },
+    {
+     "id": "movie:42719",
+     "t": "Georgy svegliati!",
+     "y": 1966,
+     "vc": 53
+    },
+    {
+     "id": "movie:1052",
+     "t": "Blow-up",
+     "y": 1966,
+     "vc": 1422
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:4483",
+     "t": "The Young Ones",
+     "y": 1982,
+     "vc": 153
+    },
+    {
+     "id": "tv:4292",
+     "t": "Bottom",
+     "y": 1991,
+     "vc": 148
+    },
+    {
+     "id": "tv:40632",
+     "t": "Fresh Meat",
+     "y": 2011,
+     "vc": 142
+    },
+    {
+     "id": "tv:815",
+     "t": "Peep Show",
+     "y": 2003,
+     "vc": 453
+    },
+    {
+     "id": "tv:903",
+     "t": "Black Books",
+     "y": 2000,
+     "vc": 646
+    },
+    {
+     "id": "tv:6056",
+     "t": "The New Statesman",
+     "y": 1987,
+     "vc": 54
+    }
+   ]
+  },
+  {
+   "id": "tv:3868",
+   "titolo": "The Lost Room",
+   "anno": 2006,
+   "voto": 7.8,
+   "voti": 520,
+   "film": [
+    {
+     "id": "movie:16867",
+     "t": "Gardens of the Night",
+     "y": 2008,
+     "vc": 81
+    },
+    {
+     "id": "movie:44571",
+     "t": "The King of Fighters",
+     "y": 2009,
+     "vc": 168
+    },
+    {
+     "id": "movie:13836",
+     "t": "Corsa a Witch Mountain",
+     "y": 2009,
+     "vc": 1870
+    },
+    {
+     "id": "movie:8413",
+     "t": "Punto di non ritorno",
+     "y": 1997,
+     "vc": 3502
+    },
+    {
+     "id": "movie:569094",
+     "t": "Spider-Man: Across the Spider-Verse",
+     "y": 2023,
+     "vc": 9359
+    },
+    {
+     "id": "movie:11133",
+     "t": "Poltergeist II - L'altra dimensione",
+     "y": 1986,
+     "vc": 795
+    },
+    {
+     "id": "movie:87825",
+     "t": "Di nuovo in gioco",
+     "y": 2012,
+     "vc": 1736
+    },
+    {
+     "id": "movie:773975",
+     "t": "End of the Road",
+     "y": 2022,
+     "vc": 356
+    },
+    {
+     "id": "movie:6977",
+     "t": "Non è un paese per vecchi",
+     "y": 2007,
+     "vc": 13849
+    },
+    {
+     "id": "movie:616073",
+     "t": "Return to Horror Hotel",
+     "y": 2019,
+     "vc": 295
+    },
+    {
+     "id": "movie:446021",
+     "t": "7 sconosciuti a El Royale",
+     "y": 2018,
+     "vc": 3974
+    },
+    {
+     "id": "movie:395841",
+     "t": "Hold the Dark",
+     "y": 2018,
+     "vc": 1073
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:77238",
+     "t": "Kamen Rider: Dragon Knight",
+     "y": 2008,
+     "vc": 97
+    },
+    {
+     "id": "tv:124396",
+     "t": "Sonny Boy",
+     "y": 2021,
+     "vc": 93
+    },
+    {
+     "id": "tv:58808",
+     "t": "The Secret of Crickley Hall",
+     "y": 2012,
+     "vc": 50
+    },
+    {
+     "id": "tv:246386",
+     "t": "All Her Fault",
+     "y": 2025,
+     "vc": 343
+    },
+    {
+     "id": "tv:217667",
+     "t": "Eric",
+     "y": 2024,
+     "vc": 318
+    },
+    {
+     "id": "tv:18712",
+     "t": "La ricerca",
+     "y": 2020,
+     "vc": 350
+    }
+   ]
+  },
+  {
+   "id": "tv:219937",
+   "titolo": "Dexter: Original Sin",
+   "anno": 2024,
+   "voto": 8.1,
+   "voti": 517,
+   "film": [
+    {
+     "id": "movie:1923",
+     "t": "Twin Peaks: Fuoco cammina con me",
+     "y": 1992,
+     "vc": 2372
+    },
+    {
+     "id": "movie:591275",
+     "t": "Fear Street Parte 3: 1666",
+     "y": 2021,
+     "vc": 2070
+    },
+    {
+     "id": "movie:568620",
+     "t": "Snake Eyes - G.I. Joe Le origini",
+     "y": 2021,
+     "vc": 1772
+    },
+    {
+     "id": "movie:53426",
+     "t": "Professione giustiziere",
+     "y": 1984,
+     "vc": 118
+    },
+    {
+     "id": "movie:584",
+     "t": "2 Fast 2 Furious",
+     "y": 2003,
+     "vc": 8419
+    },
+    {
+     "id": "movie:153609",
+     "t": "Hercules: Zero to Hero",
+     "y": 1999,
+     "vc": 52
+    },
+    {
+     "id": "movie:284457",
+     "t": "Twin Peaks: The Missing Pieces",
+     "y": 2014,
+     "vc": 288
+    },
+    {
+     "id": "movie:320288",
+     "t": "X-Men: Dark Phoenix",
+     "y": 2019,
+     "vc": 7329
+    },
+    {
+     "id": "movie:522417",
+     "t": "Il Re Scorpione 5 - Il libro delle anime",
+     "y": 2018,
+     "vc": 322
+    },
+    {
+     "id": "movie:438148",
+     "t": "Minions 2 - Come Gru diventa cattivissimo",
+     "y": 2022,
+     "vc": 4202
+    },
+    {
+     "id": "movie:9471",
+     "t": "Charlie's Angels - Più che mai",
+     "y": 2003,
+     "vc": 3379
+    },
+    {
+     "id": "movie:951491",
+     "t": "Saw X",
+     "y": 2023,
+     "vc": 2485
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:259909",
+     "t": "Dexter: Resurrection",
+     "y": 2025,
+     "vc": 668
+    },
+    {
+     "id": "tv:131927",
+     "t": "Dexter: New Blood",
+     "y": 2021,
+     "vc": 1729
+    },
+    {
+     "id": "tv:1405",
+     "t": "Dexter",
+     "y": 2006,
+     "vc": 5907
+    },
+    {
+     "id": "tv:224372",
+     "t": "A Knight of the Seven Kingdoms",
+     "y": 2026,
+     "vc": 1205
+    },
+    {
+     "id": "tv:225647",
+     "t": "Boots",
+     "y": 2025,
+     "vc": 234
+    },
+    {
+     "id": "tv:94696",
+     "t": "Brotherhood",
+     "y": 2019,
+     "vc": 53
+    }
+   ]
+  },
+  {
+   "id": "tv:215866",
+   "titolo": "American Primeval",
+   "anno": 2025,
+   "voto": 7.7,
+   "voti": 516,
+   "film": [
+    {
+     "id": "movie:9028",
+     "t": "Il grande silenzio",
+     "y": 1968,
+     "vc": 481
+    },
+    {
+     "id": "movie:13",
+     "t": "Forrest Gump",
+     "y": 1994,
+     "vc": 30590
+    },
+    {
+     "id": "movie:273248",
+     "t": "The Hateful Eight",
+     "y": 2015,
+     "vc": 15676
+    },
+    {
+     "id": "movie:613722",
+     "t": "Bullets of Justice",
+     "y": 2020,
+     "vc": 54
+    },
+    {
+     "id": "movie:1947",
+     "t": "Il vento del perdono",
+     "y": 2005,
+     "vc": 723
+    },
+    {
+     "id": "movie:801112",
+     "t": "Rapito",
+     "y": 2023,
+     "vc": 392
+    },
+    {
+     "id": "movie:698508",
+     "t": "Riscatto d'amore",
+     "y": 2022,
+     "vc": 775
+    },
+    {
+     "id": "movie:41282",
+     "t": "Skipped Parts",
+     "y": 2000,
+     "vc": 77
+    },
+    {
+     "id": "movie:72976",
+     "t": "Lincoln",
+     "y": 2012,
+     "vc": 4155
+    },
+    {
+     "id": "movie:576379",
+     "t": "Hell on the Border - Cowboy da leggenda",
+     "y": 2019,
+     "vc": 108
+    },
+    {
+     "id": "movie:33",
+     "t": "Gli spietati",
+     "y": 1992,
+     "vc": 5134
+    },
+    {
+     "id": "movie:28894",
+     "t": "Rancho Notorious",
+     "y": 1952,
+     "vc": 129
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:65369",
+     "t": "Hai to Gensou no Grimgar",
+     "y": 2016,
+     "vc": 149
+    },
+    {
+     "id": "tv:20056",
+     "t": "Broken Trail - Un viaggio pericoloso",
+     "y": 2006,
+     "vc": 173
+    },
+    {
+     "id": "tv:8068",
+     "t": "Shaka Zulu",
+     "y": 1986,
+     "vc": 143
+    },
+    {
+     "id": "tv:86941",
+     "t": "The North Water",
+     "y": 2021,
+     "vc": 189
+    },
+    {
+     "id": "tv:202208",
+     "t": "The Artful Dodger",
+     "y": 2023,
+     "vc": 250
+    },
+    {
+     "id": "tv:83054",
+     "t": "Karakuri Circus",
+     "y": 2018,
+     "vc": 133
+    }
+   ]
+  },
+  {
+   "id": "tv:93784",
+   "titolo": "Loop",
+   "anno": 2020,
+   "voto": 7.0,
+   "voti": 516,
+   "film": [
+    {
+     "id": "movie:8871",
+     "t": "Il Grinch",
+     "y": 2000,
+     "vc": 8484
+    },
+    {
+     "id": "movie:128756",
+     "t": "Porky in Strambilandia",
+     "y": 1938,
+     "vc": 85
+    },
+    {
+     "id": "movie:999644",
+     "t": "Non sei invitata al mio bat mitzvah",
+     "y": 2023,
+     "vc": 545
+    },
+    {
+     "id": "movie:9986",
+     "t": "La tela di Carlotta",
+     "y": 2006,
+     "vc": 1496
+    },
+    {
+     "id": "movie:9978",
+     "t": "Alex Rider - Stormbreaker",
+     "y": 2006,
+     "vc": 688
+    },
+    {
+     "id": "movie:996518",
+     "t": "Royalteen - L'erede",
+     "y": 2022,
+     "vc": 184
+    },
+    {
+     "id": "movie:9960",
+     "t": "Il signore delle mosche",
+     "y": 1963,
+     "vc": 597
+    },
+    {
+     "id": "movie:9956",
+     "t": "Il coraggioso",
+     "y": 1997,
+     "vc": 210
+    },
+    {
+     "id": "movie:9945",
+     "t": "Vampires",
+     "y": 1998,
+     "vc": 1414
+    },
+    {
+     "id": "movie:9944",
+     "t": "Il rapporto Pelican",
+     "y": 1993,
+     "vc": 1841
+    },
+    {
+     "id": "movie:994",
+     "t": "Cane di paglia",
+     "y": 1971,
+     "vc": 1124
+    },
+    {
+     "id": "movie:9922",
+     "t": "L'uomo del giorno dopo",
+     "y": 1997,
+     "vc": 1238
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:12584",
+     "t": "Ritorno al mondo di Oz",
+     "y": 2007,
+     "vc": 197
+    },
+    {
+     "id": "tv:31072",
+     "t": "La familia P. Luche",
+     "y": 2002,
+     "vc": 1076
+    },
+    {
+     "id": "tv:99747",
+     "t": "Conversations with Friends",
+     "y": 2022,
+     "vc": 90
+    },
+    {
+     "id": "tv:99741",
+     "t": "Diavoli",
+     "y": 2020,
+     "vc": 185
+    },
+    {
+     "id": "tv:99631",
+     "t": "เพราะเราคู่กัน",
+     "y": 2020,
+     "vc": 118
+    },
+    {
+     "id": "tv:99617",
+     "t": "Halston",
+     "y": 2021,
+     "vc": 137
+    }
+   ]
+  },
+  {
+   "id": "tv:112160",
+   "titolo": "La via del grembiule - Lo yakuza casalingo",
+   "anno": 2021,
+   "voto": 8.3,
+   "voti": 512,
+   "film": [
+    {
+     "id": "movie:483455",
+     "t": "Bungo Stray Dogs: Dead Apple",
+     "y": 2018,
+     "vc": 199
+    },
+    {
+     "id": "movie:255413",
+     "t": "Ano hana The Movie - Una lettera per menma",
+     "y": 2013,
+     "vc": 197
+    },
+    {
+     "id": "movie:283127",
+     "t": "Yakuza Apocalypse",
+     "y": 2015,
+     "vc": 180
+    },
+    {
+     "id": "movie:12487",
+     "t": "Gozu",
+     "y": 2003,
+     "vc": 246
+    },
+    {
+     "id": "movie:378108",
+     "t": "In questo angolo di mondo",
+     "y": 2016,
+     "vc": 651
+    },
+    {
+     "id": "movie:14943",
+     "t": "Crows Zero",
+     "y": 2007,
+     "vc": 402
+    },
+    {
+     "id": "movie:938567",
+     "t": "Teasing Master Takagi-san: The Movie",
+     "y": 2022,
+     "vc": 147
+    },
+    {
+     "id": "movie:820067",
+     "t": "The Quintessential Quintuplets Movie",
+     "y": 2022,
+     "vc": 457
+    },
+    {
+     "id": "movie:610892",
+     "t": "Violet Evergarden: Eternity and the Auto Memory Doll",
+     "y": 2019,
+     "vc": 480
+    },
+    {
+     "id": "movie:184608",
+     "t": "Saint Young Men",
+     "y": 2013,
+     "vc": 101
+    },
+    {
+     "id": "movie:13754",
+     "t": "Tekkonkinkreet - Soli contro tutti",
+     "y": 2006,
+     "vc": 448
+    },
+    {
+     "id": "movie:997317",
+     "t": "Kaguya-sama: Love Is War -The First Kiss That Never Ends-",
+     "y": 2022,
+     "vc": 103
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:80613",
+     "t": "Back Street Girls -GOKUDOLS-",
+     "y": 2018,
+     "vc": 65
+    },
+    {
+     "id": "tv:76758",
+     "t": "Hinamatsuri",
+     "y": 2018,
+     "vc": 137
+    },
+    {
+     "id": "tv:209707",
+     "t": "The Café Terrace and Its Goddesses",
+     "y": 2023,
+     "vc": 57
+    },
+    {
+     "id": "tv:207784",
+     "t": "Dungeon Food",
+     "y": 2024,
+     "vc": 362
+    },
+    {
+     "id": "tv:95697",
+     "t": "Arte",
+     "y": 2020,
+     "vc": 80
+    },
+    {
+     "id": "tv:95550",
+     "t": "Sing \"Yesterday\" for Me",
+     "y": 2020,
+     "vc": 101
+    }
+   ]
+  },
+  {
+   "id": "tv:71340",
+   "titolo": "Krypton",
+   "anno": 2018,
+   "voto": 7.1,
+   "voti": 510,
+   "film": [
+    {
+     "id": "movie:49521",
+     "t": "L'uomo d'acciaio",
+     "y": 2013,
+     "vc": 16659
+    },
+    {
+     "id": "movie:339964",
+     "t": "Valerian e la città dei mille pianeti",
+     "y": 2017,
+     "vc": 8243
+    },
+    {
+     "id": "movie:284053",
+     "t": "Thor: Ragnarok",
+     "y": 2017,
+     "vc": 22564
+    },
+    {
+     "id": "movie:9425",
+     "t": "Soldier",
+     "y": 1998,
+     "vc": 1002
+    },
+    {
+     "id": "movie:9102",
+     "t": "Screamers - Urla dallo spazio",
+     "y": 1995,
+     "vc": 627
+    },
+    {
+     "id": "movie:887357",
+     "t": "Lanterna Verde - Attenti al mio potere",
+     "y": 2022,
+     "vc": 277
+    },
+    {
+     "id": "movie:869",
+     "t": "Planet of the Apes - Il pianeta delle scimmie",
+     "y": 2001,
+     "vc": 4569
+    },
+    {
+     "id": "movie:830",
+     "t": "Il pianeta proibito",
+     "y": 1956,
+     "vc": 1102
+    },
+    {
+     "id": "movie:8069",
+     "t": "Barbarella",
+     "y": 1968,
+     "vc": 882
+    },
+    {
+     "id": "movie:76600",
+     "t": "Avatar: La via dell'acqua",
+     "y": 2022,
+     "vc": 14713
+    },
+    {
+     "id": "movie:718789",
+     "t": "Lightyear - La vera storia di Buzz",
+     "y": 2022,
+     "vc": 3965
+    },
+    {
+     "id": "movie:70773",
+     "t": "Alieni in famiglia",
+     "y": 2000,
+     "vc": 54
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:40351",
+     "t": "Lanterna Verde",
+     "y": 2011,
+     "vc": 223
+    },
+    {
+     "id": "tv:10079",
+     "t": "Spider-Man Unlimited",
+     "y": 1999,
+     "vc": 261
+    },
+    {
+     "id": "tv:96658",
+     "t": "Masters of the Universe: Revelation",
+     "y": 2021,
+     "vc": 415
+    },
+    {
+     "id": "tv:931",
+     "t": "He-Man e i dominatori dell'universo",
+     "y": 1983,
+     "vc": 446
+    },
+    {
+     "id": "tv:877",
+     "t": "Caprica",
+     "y": 2010,
+     "vc": 423
+    },
+    {
+     "id": "tv:85948",
+     "t": "Star Trek: Lower Decks",
+     "y": 2020,
+     "vc": 483
+    }
+   ]
+  },
+  {
+   "id": "tv:124800",
+   "titolo": "Love & Death",
+   "anno": 2023,
+   "voto": 7.8,
+   "voti": 508,
+   "film": [
+    {
+     "id": "movie:434775",
+     "t": "Il terzo omicidio",
+     "y": 2017,
+     "vc": 306
+    },
+    {
+     "id": "movie:331583",
+     "t": "Una doppia verità",
+     "y": 2016,
+     "vc": 1293
+    },
+    {
+     "id": "movie:244509",
+     "t": "Cold in July - Freddo a luglio",
+     "y": 2014,
+     "vc": 845
+    },
+    {
+     "id": "movie:226",
+     "t": "Boys Don't Cry",
+     "y": 1999,
+     "vc": 1512
+    },
+    {
+     "id": "movie:820",
+     "t": "JFK - Un caso ancora aperto",
+     "y": 1991,
+     "vc": 2505
+    },
+    {
+     "id": "movie:27150",
+     "t": "Terrore in città",
+     "y": 1982,
+     "vc": 192
+    },
+    {
+     "id": "movie:51391",
+     "t": "Un coupable idéal",
+     "y": 2001,
+     "vc": 65
+    },
+    {
+     "id": "movie:460071",
+     "t": "Lizzie",
+     "y": 2018,
+     "vc": 306
+    },
+    {
+     "id": "movie:70368",
+     "t": "I prevaricatori",
+     "y": 1915,
+     "vc": 74
+    },
+    {
+     "id": "movie:47739",
+     "t": "Voi Assassini",
+     "y": 1955,
+     "vc": 50
+    },
+    {
+     "id": "movie:69069",
+     "t": "The Chant of Jimmie Blacksmith",
+     "y": 1978,
+     "vc": 69
+    },
+    {
+     "id": "movie:93",
+     "t": "Anatomia di un omicidio",
+     "y": 1959,
+     "vc": 1219
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:105804",
+     "t": "Candy: Morte in Texas",
+     "y": 2022,
+     "vc": 241
+    },
+    {
+     "id": "tv:299939",
+     "t": "Monster: La storia di Lizzie Borden",
+     "y": 2026,
+     "vc": 165
+    },
+    {
+     "id": "tv:261034",
+     "t": "American Murder: il caso Laci Peterson",
+     "y": 2024,
+     "vc": 62
+    },
+    {
+     "id": "tv:208720",
+     "t": "Sins of Our Mother",
+     "y": 2022,
+     "vc": 74
+    },
+    {
+     "id": "tv:85833",
+     "t": "Conversazioni con un killer: Il caso Bundy",
+     "y": 2019,
+     "vc": 403
+    },
+    {
+     "id": "tv:66738",
+     "t": "O.J.: Made in America",
+     "y": 2016,
+     "vc": 58
+    }
+   ]
+  },
+  {
+   "id": "tv:203085",
+   "titolo": "Star Wars: Tales of the Jedi",
+   "anno": 2022,
+   "voto": 8.0,
+   "voti": 507,
+   "film": [
+    {
+     "id": "movie:9982",
+     "t": "Chicken Little - Amici per le penne",
+     "y": 2005,
+     "vc": 4277
+    },
+    {
+     "id": "movie:82702",
+     "t": "Dragon Trainer 2",
+     "y": 2014,
+     "vc": 10707
+    },
+    {
+     "id": "movie:73723",
+     "t": "Lorax - Il guardiano della foresta",
+     "y": 2012,
+     "vc": 3999
+    },
+    {
+     "id": "movie:635389",
+     "t": "姜子牙",
+     "y": 2020,
+     "vc": 234
+    },
+    {
+     "id": "movie:588921",
+     "t": "Ainbo - Spirito dell'Amazzonia",
+     "y": 2021,
+     "vc": 479
+    },
+    {
+     "id": "movie:560057",
+     "t": "Il mostro dei mari",
+     "y": 2022,
+     "vc": 1780
+    },
+    {
+     "id": "movie:166428",
+     "t": "Dragon Trainer - Il mondo nascosto",
+     "y": 2019,
+     "vc": 7300
+    },
+    {
+     "id": "movie:140300",
+     "t": "Kung Fu Panda 3",
+     "y": 2016,
+     "vc": 6798
+    },
+    {
+     "id": "movie:87818",
+     "t": "Comic Movie",
+     "y": 2013,
+     "vc": 2585
+    },
+    {
+     "id": "movie:208478",
+     "t": "Destricted",
+     "y": 2006,
+     "vc": 83
+    },
+    {
+     "id": "movie:98857",
+     "t": "L'Era Glaciale - Un continente di risate - Parte 2",
+     "y": 2011,
+     "vc": 129
+    },
+    {
+     "id": "movie:876716",
+     "t": "Ciao Alberto",
+     "y": 2021,
+     "vc": 714
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:241388",
+     "t": "Eyes of Wakanda",
+     "y": 2025,
+     "vc": 208
+    },
+    {
+     "id": "tv:83135",
+     "t": "The Twilight Zone",
+     "y": 2019,
+     "vc": 471
+    },
+    {
+     "id": "tv:237512",
+     "t": "Jurassic World: Teoria del caos",
+     "y": 2024,
+     "vc": 203
+    },
+    {
+     "id": "tv:138503",
+     "t": "Il vostro amichevole Spider-Man di quartiere",
+     "y": 2025,
+     "vc": 298
+    },
+    {
+     "id": "tv:9203",
+     "t": "Apocalypse - L'apocalisse",
+     "y": 2006,
+     "vc": 84
+    },
+    {
+     "id": "tv:4613",
+     "t": "Band of Brothers - Fratelli al fronte",
+     "y": 2001,
+     "vc": 4389
+    }
+   ]
+  },
+  {
+   "id": "tv:79863",
+   "titolo": "Pretty Little Liars: The Perfectionists",
+   "anno": 2019,
+   "voto": 7.7,
+   "voti": 505,
+   "film": [
+    {
+     "id": "movie:109491",
+     "t": "Beautiful Creatures - La sedicesima luna",
+     "y": 2013,
+     "vc": 2980
+    },
+    {
+     "id": "movie:10188",
+     "t": "4 amiche e un paio di jeans 2",
+     "y": 2008,
+     "vc": 815
+    },
+    {
+     "id": "movie:1016121",
+     "t": "Uno splendido disastro",
+     "y": 2023,
+     "vc": 916
+    },
+    {
+     "id": "movie:9285",
+     "t": "Road Trip",
+     "y": 2000,
+     "vc": 2289
+    },
+    {
+     "id": "movie:82533",
+     "t": "Damsels in Distress - Ragazze allo sbando",
+     "y": 2012,
+     "vc": 209
+    },
+    {
+     "id": "movie:46127",
+     "t": "Le ragazze del campus",
+     "y": 2009,
+     "vc": 209
+    },
+    {
+     "id": "movie:440021",
+     "t": "Auguri per la tua morte",
+     "y": 2017,
+     "vc": 6721
+    },
+    {
+     "id": "movie:368031",
+     "t": "Friend Request - La morte ha il tuo profilo",
+     "y": 2016,
+     "vc": 1342
+    },
+    {
+     "id": "movie:270302",
+     "t": "Posh",
+     "y": 2014,
+     "vc": 1030
+    },
+    {
+     "id": "movie:13969",
+     "t": "Una teenager alla Casa Bianca",
+     "y": 2004,
+     "vc": 1032
+    },
+    {
+     "id": "movie:114150",
+     "t": "Voices",
+     "y": 2012,
+     "vc": 7011
+    },
+    {
+     "id": "movie:11137",
+     "t": "Un principe tutto mio",
+     "y": 2004,
+     "vc": 1067
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:71885",
+     "t": "Grown-ish",
+     "y": 2018,
+     "vc": 172
+    },
+    {
+     "id": "tv:2014",
+     "t": "Bayside School - Un anno dopo",
+     "y": 1993,
+     "vc": 64
+    },
+    {
+     "id": "tv:70767",
+     "t": "Dear White People",
+     "y": 2017,
+     "vc": 201
+    },
+    {
+     "id": "tv:69050",
+     "t": "Riverdale",
+     "y": 2017,
+     "vc": 13794
+    },
+    {
+     "id": "tv:64548",
+     "t": "치즈인더트랩",
+     "y": 2016,
+     "vc": 84
+    },
+    {
+     "id": "tv:566",
+     "t": "Baby Sitter",
+     "y": 1984,
+     "vc": 75
+    }
+   ]
+  },
+  {
+   "id": "tv:42503",
+   "titolo": "Deadman Wonderland",
+   "anno": 2011,
+   "voto": 7.5,
+   "voti": 504,
+   "film": [
+    {
+     "id": "movie:3176",
+     "t": "Battle Royale",
+     "y": 2000,
+     "vc": 3953
+    },
+    {
+     "id": "movie:714194",
+     "t": "L'Attacco dei Giganti Chronicle",
+     "y": 2020,
+     "vc": 208
+    },
+    {
+     "id": "movie:635302",
+     "t": "Demon Slayer - Il treno Mugen",
+     "y": 2020,
+     "vc": 4698
+    },
+    {
+     "id": "movie:492999",
+     "t": "L'attacco dei giganti: l'urlo del risveglio",
+     "y": 2018,
+     "vc": 357
+    },
+    {
+     "id": "movie:330081",
+     "t": "L'attacco dei giganti - Il film - Parte 2: Le ali della libertà",
+     "y": 2015,
+     "vc": 390
+    },
+    {
+     "id": "movie:357411",
+     "t": "Harmony",
+     "y": 2015,
+     "vc": 101
+    },
+    {
+     "id": "movie:810693",
+     "t": "Jujutsu Kaisen 0 - Il film",
+     "y": 2021,
+     "vc": 1873
+    },
+    {
+     "id": "movie:23153",
+     "t": "The Garden of Sinners - Chapter 3: Remaining Sense of Pain",
+     "y": 2008,
+     "vc": 120
+    },
+    {
+     "id": "movie:432131",
+     "t": "Black Butler: Book of the Atlantic",
+     "y": 2017,
+     "vc": 109
+    },
+    {
+     "id": "movie:900667",
+     "t": "One Piece Film - Red",
+     "y": 2022,
+     "vc": 1158
+    },
+    {
+     "id": "movie:768744",
+     "t": "My Hero Academia: The Movie - World Heroes' Mission",
+     "y": 2021,
+     "vc": 652
+    },
+    {
+     "id": "movie:592350",
+     "t": "My Hero Academia: Heroes Rising",
+     "y": 2019,
+     "vc": 1316
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:61374",
+     "t": "Tokyo Ghoul",
+     "y": 2014,
+     "vc": 2603
+    },
+    {
+     "id": "tv:1429",
+     "t": "L'attacco dei giganti",
+     "y": 2013,
+     "vc": 7735
+    },
+    {
+     "id": "tv:46298",
+     "t": "Hunter x Hunter",
+     "y": 2011,
+     "vc": 2214
+    },
+    {
+     "id": "tv:64710",
+     "t": "Noragami",
+     "y": 2014,
+     "vc": 721
+    },
+    {
+     "id": "tv:45125",
+     "t": "BTOOOM!",
+     "y": 2012,
+     "vc": 247
+    },
+    {
+     "id": "tv:61223",
+     "t": "Akame ga Kill!",
+     "y": 2014,
+     "vc": 1256
+    }
+   ]
+  },
+  {
+   "id": "tv:46671",
+   "titolo": "Diario del Futuro",
+   "anno": 2011,
+   "voto": 7.6,
+   "voti": 503,
+   "film": [
+    {
+     "id": "movie:3176",
+     "t": "Battle Royale",
+     "y": 2000,
+     "vc": 3953
+    },
+    {
+     "id": "movie:635302",
+     "t": "Demon Slayer - Il treno Mugen",
+     "y": 2020,
+     "vc": 4698
+    },
+    {
+     "id": "movie:549787",
+     "t": "Tokyo Ghoul 'S'",
+     "y": 2019,
+     "vc": 99
+    },
+    {
+     "id": "movie:714194",
+     "t": "L'Attacco dei Giganti Chronicle",
+     "y": 2020,
+     "vc": 208
+    },
+    {
+     "id": "movie:492999",
+     "t": "L'attacco dei giganti: l'urlo del risveglio",
+     "y": 2018,
+     "vc": 357
+    },
+    {
+     "id": "movie:330081",
+     "t": "L'attacco dei giganti - Il film - Parte 2: Le ali della libertà",
+     "y": 2015,
+     "vc": 390
+    },
+    {
+     "id": "movie:432131",
+     "t": "Black Butler: Book of the Atlantic",
+     "y": 2017,
+     "vc": 109
+    },
+    {
+     "id": "movie:24056",
+     "t": "The Tournament",
+     "y": 2009,
+     "vc": 696
+    },
+    {
+     "id": "movie:483455",
+     "t": "Bungo Stray Dogs: Dead Apple",
+     "y": 2018,
+     "vc": 199
+    },
+    {
+     "id": "movie:50461",
+     "t": "Liar Game: The Final Stage",
+     "y": 2010,
+     "vc": 50
+    },
+    {
+     "id": "movie:341006",
+     "t": "The Belko Experiment - Chi sopravviverà?",
+     "y": 2017,
+     "vc": 1724
+    },
+    {
+     "id": "movie:362585",
+     "t": "Kizumonogatari Part 3: Reiketsu",
+     "y": 2017,
+     "vc": 245
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:45125",
+     "t": "BTOOOM!",
+     "y": 2012,
+     "vc": 247
+    },
+    {
+     "id": "tv:61374",
+     "t": "Tokyo Ghoul",
+     "y": 2014,
+     "vc": 2603
+    },
+    {
+     "id": "tv:112163",
+     "t": "High-Rise Invasion",
+     "y": 2021,
+     "vc": 756
+    },
+    {
+     "id": "tv:101571",
+     "t": "Talentless Nana",
+     "y": 2020,
+     "vc": 125
+    },
+    {
+     "id": "tv:114892",
+     "t": "Platinum End",
+     "y": 2021,
+     "vc": 254
+    },
+    {
+     "id": "tv:42503",
+     "t": "Deadman Wonderland",
+     "y": 2011,
+     "vc": 504
+    }
+   ]
+  },
+  {
+   "id": "tv:71225",
+   "titolo": "Le ragazze del centralino",
+   "anno": 2017,
+   "voto": 7.8,
+   "voti": 500,
+   "film": [
+    {
+     "id": "movie:814338",
+     "t": "L'amante di Lady Chatterley",
+     "y": 2022,
+     "vc": 548
+    },
+    {
+     "id": "movie:26561",
+     "t": "Un incantevole aprile",
+     "y": 1991,
+     "vc": 78
+    },
+    {
+     "id": "movie:830991",
+     "t": "Ride the Eagle",
+     "y": 2021,
+     "vc": 84
+    },
+    {
+     "id": "movie:612491",
+     "t": "Supereroi",
+     "y": 2021,
+     "vc": 228
+    },
+    {
+     "id": "movie:513576",
+     "t": "Finché forse non vi separi",
+     "y": 2019,
+     "vc": 1442
+    },
+    {
+     "id": "movie:446044",
+     "t": "Les Ex",
+     "y": 2017,
+     "vc": 152
+    },
+    {
+     "id": "movie:34857",
+     "t": "Baciami Kate!",
+     "y": 1953,
+     "vc": 102
+    },
+    {
+     "id": "movie:9759",
+     "t": "Cellular",
+     "y": 2004,
+     "vc": 2171
+    },
+    {
+     "id": "movie:96546",
+     "t": "Non credo più all'amore - La paura",
+     "y": 1954,
+     "vc": 71
+    },
+    {
+     "id": "movie:9373",
+     "t": "Non aprite quella porta",
+     "y": 2003,
+     "vc": 3032
+    },
+    {
+     "id": "movie:9039",
+     "t": "24 ore",
+     "y": 2002,
+     "vc": 634
+    },
+    {
+     "id": "movie:565",
+     "t": "The Ring",
+     "y": 2002,
+     "vc": 6908
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:98187",
+     "t": "Gli Irregolari di Baker Street",
+     "y": 2021,
+     "vc": 366
+    },
+    {
+     "id": "tv:66272",
+     "t": "Indissolubilmente legati",
+     "y": 2016,
+     "vc": 100
+    },
+    {
+     "id": "tv:5639",
+     "t": "Pushing Daisies",
+     "y": 2007,
+     "vc": 492
+    },
+    {
+     "id": "tv:99657",
+     "t": "La direttrice",
+     "y": 2021,
+     "vc": 163
+    },
+    {
+     "id": "tv:91275",
+     "t": "Unbelievable",
+     "y": 2019,
+     "vc": 859
+    },
+    {
+     "id": "tv:91239",
+     "t": "Bridgerton",
+     "y": 2020,
+     "vc": 3413
+    }
+   ]
+  },
+  {
+   "id": "tv:4331",
+   "titolo": "Wonder Woman",
+   "anno": 1975,
+   "voto": 7.0,
+   "voti": 499,
+   "film": [
+    {
+     "id": "movie:297762",
+     "t": "Wonder Woman",
+     "y": 2017,
+     "vc": 21256
+    },
+    {
+     "id": "movie:9738",
+     "t": "I Fantastici 4",
+     "y": 2005,
+     "vc": 10240
+    },
+    {
+     "id": "movie:9531",
+     "t": "Superman III",
+     "y": 1983,
+     "vc": 1947
+    },
+    {
+     "id": "movie:886396",
+     "t": "Batman and Superman: Battle of the Super Sons",
+     "y": 2022,
+     "vc": 367
+    },
+    {
+     "id": "movie:8536",
+     "t": "Superman II",
+     "y": 1980,
+     "vc": 2628
+    },
+    {
+     "id": "movie:736069",
+     "t": "Justice Society: World War II",
+     "y": 2021,
+     "vc": 616
+    },
+    {
+     "id": "movie:71676",
+     "t": "Ghost Rider - Spirito di vendetta",
+     "y": 2011,
+     "vc": 4206
+    },
+    {
+     "id": "movie:71129",
+     "t": "The Mechanical Monsters",
+     "y": 1941,
+     "vc": 72
+    },
+    {
+     "id": "movie:64202",
+     "t": "Batman of the Future - Il film",
+     "y": 1999,
+     "vc": 208
+    },
+    {
+     "id": "movie:618354",
+     "t": "Superman: Man of Tomorrow",
+     "y": 2020,
+     "vc": 513
+    },
+    {
+     "id": "movie:569094",
+     "t": "Spider-Man: Across the Spider-Verse",
+     "y": 2023,
+     "vc": 9359
+    },
+    {
+     "id": "movie:539681",
+     "t": "DC League of Super-Pets",
+     "y": 2022,
+     "vc": 1785
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:95557",
+     "t": "INVINCIBLE",
+     "y": 2021,
+     "vc": 6100
+    },
+    {
+     "id": "tv:95350",
+     "t": "Lanterns",
+     "y": 2026,
+     "vc": 607
+    },
+    {
+     "id": "tv:95057",
+     "t": "Superman & Lois",
+     "y": 2021,
+     "vc": 2769
+    },
+    {
+     "id": "tv:92783",
+     "t": "She-Hulk: Attorney at Law",
+     "y": 2022,
+     "vc": 2598
+    },
+    {
+     "id": "tv:92782",
+     "t": "Ms. Marvel",
+     "y": 2022,
+     "vc": 1531
+    },
+    {
+     "id": "tv:76479",
+     "t": "The Boys",
+     "y": 2019,
+     "vc": 13509
+    }
+   ]
+  },
+  {
+   "id": "tv:64394",
+   "titolo": "Outcast",
+   "anno": 2016,
+   "voto": 7.1,
+   "voti": 497,
+   "film": [
+    {
+     "id": "movie:968051",
+     "t": "The Nun II",
+     "y": 2023,
+     "vc": 2587
+    },
+    {
+     "id": "movie:9552",
+     "t": "L'esorcista",
+     "y": 1973,
+     "vc": 8913
+    },
+    {
+     "id": "movie:807172",
+     "t": "L'esorcista - Il credente",
+     "y": 2023,
+     "vc": 1335
+    },
+    {
+     "id": "movie:80280",
+     "t": "[•REC]³ - La genesi",
+     "y": 2012,
+     "vc": 1677
+    },
+    {
+     "id": "movie:734353",
+     "t": "Anything for Jackson",
+     "y": 2020,
+     "vc": 299
+    },
+    {
+     "id": "movie:713704",
+     "t": "La casa - Il risveglio del male",
+     "y": 2023,
+     "vc": 4022
+    },
+    {
+     "id": "movie:645856",
+     "t": "Il settimo giorno",
+     "y": 2021,
+     "vc": 301
+    },
+    {
+     "id": "movie:63350",
+     "t": "Father's Day",
+     "y": 2011,
+     "vc": 104
+    },
+    {
+     "id": "movie:608994",
+     "t": "The Cleansing Hour",
+     "y": 2019,
+     "vc": 284
+    },
+    {
+     "id": "movie:493922",
+     "t": "Hereditary - Le radici del male",
+     "y": 2018,
+     "vc": 8960
+    },
+    {
+     "id": "movie:439079",
+     "t": "The Nun - La vocazione del male",
+     "y": 2018,
+     "vc": 7311
+    },
+    {
+     "id": "movie:436549",
+     "t": "The Field Guide to Evil",
+     "y": 2019,
+     "vc": 93
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:95479",
+     "t": "Jujutsu Kaisen",
+     "y": 2020,
+     "vc": 4675
+    },
+    {
+     "id": "tv:60743",
+     "t": "Constantine",
+     "y": 2014,
+     "vc": 1665
+    },
+    {
+     "id": "tv:255752",
+     "t": "Haunted Hotel - L'hotel infestato",
+     "y": 2025,
+     "vc": 120
+    },
+    {
+     "id": "tv:210702",
+     "t": "Revenant",
+     "y": 2023,
+     "vc": 93
+    },
+    {
+     "id": "tv:1622",
+     "t": "Supernatural",
+     "y": 2005,
+     "vc": 8727
+    },
+    {
+     "id": "tv:80707",
+     "t": "GHOUL",
+     "y": 2018,
+     "vc": 233
+    }
+   ]
+  },
+  {
+   "id": "tv:93392",
+   "titolo": "Dion",
+   "anno": 2019,
+   "voto": 7.5,
+   "voti": 497,
+   "film": [
+    {
+     "id": "movie:640146",
+     "t": "Ant-Man and the Wasp: Quantumania",
+     "y": 2023,
+     "vc": 6148
+    },
+    {
+     "id": "movie:569094",
+     "t": "Spider-Man: Across the Spider-Verse",
+     "y": 2023,
+     "vc": 9359
+    },
+    {
+     "id": "movie:23483",
+     "t": "Kick-Ass",
+     "y": 2010,
+     "vc": 12652
+    },
+    {
+     "id": "movie:43922",
+     "t": "Legendary - Il giorno del riscatto",
+     "y": 2010,
+     "vc": 135
+    },
+    {
+     "id": "movie:961323",
+     "t": "Nimona",
+     "y": 2023,
+     "vc": 1498
+    },
+    {
+     "id": "movie:9947",
+     "t": "Elektra",
+     "y": 2005,
+     "vc": 2760
+    },
+    {
+     "id": "movie:9495",
+     "t": "Il corvo - The Crow",
+     "y": 1994,
+     "vc": 4695
+    },
+    {
+     "id": "movie:9456",
+     "t": "Il corvo 3 - Salvation",
+     "y": 2000,
+     "vc": 418
+    },
+    {
+     "id": "movie:854",
+     "t": "The Mask: Da zero a mito",
+     "y": 1994,
+     "vc": 11642
+    },
+    {
+     "id": "movie:561",
+     "t": "Constantine",
+     "y": 2005,
+     "vc": 8576
+    },
+    {
+     "id": "movie:495764",
+     "t": "Birds of Prey e la fantasmagorica rinascita di Harley Quinn",
+     "y": 2020,
+     "vc": 11027
+    },
+    {
+     "id": "movie:16456",
+     "t": "Il corvo - Preghiera maledetta",
+     "y": 2005,
+     "vc": 264
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:103768",
+     "t": "Sweet Tooth",
+     "y": 2021,
+     "vc": 1666
+    },
+    {
+     "id": "tv:69050",
+     "t": "Riverdale",
+     "y": 2017,
+     "vc": 13794
+    },
+    {
+     "id": "tv:67915",
+     "t": "Goblin",
+     "y": 2016,
+     "vc": 3135
+    },
+    {
+     "id": "tv:87194",
+     "t": "Special",
+     "y": 2019,
+     "vc": 72
+    },
+    {
+     "id": "tv:96580",
+     "t": "Resident Alien",
+     "y": 2021,
+     "vc": 1071
+    },
+    {
+     "id": "tv:90802",
+     "t": "The Sandman",
+     "y": 2022,
+     "vc": 2756
+    }
+   ]
+  },
+  {
+   "id": "tv:216082",
+   "titolo": "Zero Day",
+   "anno": 2025,
+   "voto": 7.0,
+   "voti": 495,
+   "film": [
+    {
+     "id": "movie:5857",
+     "t": "Il nome del mio assassino",
+     "y": 2007,
+     "vc": 406
+    },
+    {
+     "id": "movie:240832",
+     "t": "Lucy",
+     "y": 2014,
+     "vc": 17394
+    },
+    {
+     "id": "movie:9727",
+     "t": "End Game",
+     "y": 2006,
+     "vc": 105
+    },
+    {
+     "id": "movie:820",
+     "t": "JFK - Un caso ancora aperto",
+     "y": 1991,
+     "vc": 2505
+    },
+    {
+     "id": "movie:9331",
+     "t": "Sotto il segno del pericolo",
+     "y": 1994,
+     "vc": 1756
+    },
+    {
+     "id": "movie:864873",
+     "t": "Hypnotic",
+     "y": 2021,
+     "vc": 712
+    },
+    {
+     "id": "movie:651070",
+     "t": "La verità di Grace",
+     "y": 2020,
+     "vc": 998
+    },
+    {
+     "id": "movie:35435",
+     "t": "Eden of the East Movie I: The King of Eden",
+     "y": 2009,
+     "vc": 80
+    },
+    {
+     "id": "movie:23518",
+     "t": "7 giorni a maggio",
+     "y": 1964,
+     "vc": 235
+    },
+    {
+     "id": "movie:17365",
+     "t": "Perché un assassinio",
+     "y": 1974,
+     "vc": 389
+    },
+    {
+     "id": "movie:137094",
+     "t": "Jack Ryan - L'iniziazione",
+     "y": 2014,
+     "vc": 3194
+    },
+    {
+     "id": "movie:11963",
+     "t": "I tre giorni del Condor",
+     "y": 1975,
+     "vc": 1427
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:1407",
+     "t": "Homeland - Caccia alla spia",
+     "y": 2011,
+     "vc": 2705
+    },
+    {
+     "id": "tv:46518",
+     "t": "Masters of the Air",
+     "y": 2024,
+     "vc": 661
+    },
+    {
+     "id": "tv:252000",
+     "t": "Down Cemetery Road",
+     "y": 2025,
+     "vc": 112
+    },
+    {
+     "id": "tv:259731",
+     "t": "La sua verità",
+     "y": 2026,
+     "vc": 541
+    },
+    {
+     "id": "tv:255859",
+     "t": "Wayward - Ribelli",
+     "y": 2025,
+     "vc": 189
+    },
+    {
+     "id": "tv:12117",
+     "t": "Human Trafficking - Le schiave del sesso",
+     "y": 2005,
+     "vc": 222
+    }
+   ]
+  },
+  {
+   "id": "tv:42942",
+   "titolo": "Angel Beats!",
+   "anno": 2010,
+   "voto": 7.9,
+   "voti": 493,
+   "film": [
+    {
+     "id": "movie:572154",
+     "t": "Rascal Does Not Dream of a Dreaming Girl",
+     "y": 2019,
+     "vc": 617
+    },
+    {
+     "id": "movie:372058",
+     "t": "Your Name.",
+     "y": 2016,
+     "vc": 13029
+    },
+    {
+     "id": "movie:528225",
+     "t": "Sound! Euphonium the Movie - Our Promise: A Brand New Day",
+     "y": 2019,
+     "vc": 58
+    },
+    {
+     "id": "movie:594188",
+     "t": "Ni no Kuni",
+     "y": 2019,
+     "vc": 282
+    },
+    {
+     "id": "movie:916192",
+     "t": "The Tunnel to Summer, the Exit of Goodbyes",
+     "y": 2022,
+     "vc": 302
+    },
+    {
+     "id": "movie:810693",
+     "t": "Jujutsu Kaisen 0 - Il film",
+     "y": 2021,
+     "vc": 1873
+    },
+    {
+     "id": "movie:17205",
+     "t": "L'invincibile ninja",
+     "y": 1981,
+     "vc": 143
+    },
+    {
+     "id": "movie:446171",
+     "t": "Madame Hyde",
+     "y": 2018,
+     "vc": 122
+    },
+    {
+     "id": "movie:307696",
+     "t": "Coda",
+     "y": 2013,
+     "vc": 67
+    },
+    {
+     "id": "movie:3176",
+     "t": "Battle Royale",
+     "y": 2000,
+     "vc": 3953
+    },
+    {
+     "id": "movie:997317",
+     "t": "Kaguya-sama: Love Is War -The First Kiss That Never Ends-",
+     "y": 2022,
+     "vc": 103
+    },
+    {
+     "id": "movie:25716",
+     "t": "Crows Zero II",
+     "y": 2009,
+     "vc": 250
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:67915",
+     "t": "Goblin",
+     "y": 2016,
+     "vc": 3135
+    },
+    {
+     "id": "tv:65356",
+     "t": "Ground Control to Psychoelectric Girl",
+     "y": 2011,
+     "vc": 80
+    },
+    {
+     "id": "tv:42589",
+     "t": "Another",
+     "y": 2012,
+     "vc": 1090
+    },
+    {
+     "id": "tv:43079",
+     "t": "Black Rock Shooter",
+     "y": 2012,
+     "vc": 70
+    },
+    {
+     "id": "tv:34164",
+     "t": "Charcoal Feathers Federation",
+     "y": 2002,
+     "vc": 133
+    },
+    {
+     "id": "tv:223564",
+     "t": "The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You",
+     "y": 2023,
+     "vc": 226
+    }
+   ]
+  },
+  {
+   "id": "tv:78903",
+   "titolo": "Utopia",
+   "anno": 2020,
+   "voto": 7.2,
+   "voti": 493,
+   "film": [
+    {
+     "id": "movie:787752",
+     "t": "Fresh",
+     "y": 2022,
+     "vc": 1941
+    },
+    {
+     "id": "movie:381283",
+     "t": "Madre!",
+     "y": 2017,
+     "vc": 7281
+    },
+    {
+     "id": "movie:166428",
+     "t": "Dragon Trainer - Il mondo nascosto",
+     "y": 2019,
+     "vc": 7300
+    },
+    {
+     "id": "movie:627290",
+     "t": "Antebellum",
+     "y": 2020,
+     "vc": 1019
+    },
+    {
+     "id": "movie:474764",
+     "t": "The Lodge",
+     "y": 2020,
+     "vc": 1473
+    },
+    {
+     "id": "movie:614199",
+     "t": "Spiral",
+     "y": 2019,
+     "vc": 172
+    },
+    {
+     "id": "movie:37094",
+     "t": "Un giorno di ordinaria follia",
+     "y": 1993,
+     "vc": 4267
+    },
+    {
+     "id": "movie:1700",
+     "t": "Misery non deve morire",
+     "y": 1990,
+     "vc": 5438
+    },
+    {
+     "id": "movie:686002",
+     "t": "Buchi neri - Ai limiti della conoscenza",
+     "y": 2020,
+     "vc": 66
+    },
+    {
+     "id": "movie:943930",
+     "t": "Tin & Tina",
+     "y": 2023,
+     "vc": 474
+    },
+    {
+     "id": "movie:979924",
+     "t": "On the Line",
+     "y": 2022,
+     "vc": 606
+    },
+    {
+     "id": "movie:499556",
+     "t": "An Elephant Sitting Still",
+     "y": 2018,
+     "vc": 245
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:67026",
+     "t": "Designated Survivor",
+     "y": 2016,
+     "vc": 1187
+    },
+    {
+     "id": "tv:218194",
+     "t": "Saint X",
+     "y": 2023,
+     "vc": 75
+    },
+    {
+     "id": "tv:203857",
+     "t": "The Diplomat",
+     "y": 2023,
+     "vc": 481
+    },
+    {
+     "id": "tv:47663",
+     "t": "The Ark",
+     "y": 2023,
+     "vc": 178
+    },
+    {
+     "id": "tv:85077",
+     "t": "The Chosen",
+     "y": 2019,
+     "vc": 1008
+    },
+    {
+     "id": "tv:73554",
+     "t": "Liar - L'amore bugiardo",
+     "y": 2017,
+     "vc": 121
+    }
+   ]
+  },
+  {
+   "id": "tv:111800",
+   "titolo": "The Old Man",
+   "anno": 2022,
+   "voto": 7.2,
+   "voti": 492,
+   "film": [
+    {
+     "id": "movie:74534",
+     "t": "Marigold Hotel",
+     "y": 2012,
+     "vc": 1492
+    },
+    {
+     "id": "movie:8489",
+     "t": "Alì",
+     "y": 2001,
+     "vc": 1933
+    },
+    {
+     "id": "movie:8197",
+     "t": "Mezzanotte nel giardino del bene e del male",
+     "y": 1997,
+     "vc": 649
+    },
+    {
+     "id": "movie:779057",
+     "t": "The Survivalist",
+     "y": 2021,
+     "vc": 106
+    },
+    {
+     "id": "movie:778810",
+     "t": "Luce - Accendi il tuo coraggio",
+     "y": 2022,
+     "vc": 296
+    },
+    {
+     "id": "movie:638220",
+     "t": "Elfkins - Missione Best Bakery",
+     "y": 2019,
+     "vc": 51
+    },
+    {
+     "id": "movie:617762",
+     "t": "Il visionario mondo di Louis Wain",
+     "y": 2021,
+     "vc": 551
+    },
+    {
+     "id": "movie:589761",
+     "t": "Chernobyl 1986",
+     "y": 2021,
+     "vc": 586
+    },
+    {
+     "id": "movie:551499",
+     "t": "70 Binladens - Le iene di Bilbao",
+     "y": 2019,
+     "vc": 90
+    },
+    {
+     "id": "movie:47931",
+     "t": "Tropa de elite 2 - Il nemico ora è un altro",
+     "y": 2010,
+     "vc": 2115
+    },
+    {
+     "id": "movie:470918",
+     "t": "Beast",
+     "y": 2018,
+     "vc": 357
+    },
+    {
+     "id": "movie:461774",
+     "t": "O Animal Cordial",
+     "y": 2018,
+     "vc": 136
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:225647",
+     "t": "Boots",
+     "y": 2025,
+     "vc": 234
+    },
+    {
+     "id": "tv:87731",
+     "t": "Tales of the City",
+     "y": 2019,
+     "vc": 94
+    },
+    {
+     "id": "tv:130368",
+     "t": "Love Between Fairy and Devil",
+     "y": 2022,
+     "vc": 185
+    },
+    {
+     "id": "tv:212462",
+     "t": "Mary & George",
+     "y": 2024,
+     "vc": 106
+    },
+    {
+     "id": "tv:958",
+     "t": "Rombi di tuono e cieli di fuoco per i Biocombat",
+     "y": 1996,
+     "vc": 330
+    },
+    {
+     "id": "tv:47663",
+     "t": "The Ark",
+     "y": 2023,
+     "vc": 178
+    }
+   ]
+  },
+  {
+   "id": "tv:245703",
+   "titolo": "Dept. Q - Sezione casi irrisolti",
+   "anno": 2025,
+   "voto": 7.9,
+   "voti": 487,
+   "film": [
+    {
+     "id": "movie:85889",
+     "t": "Il lercio",
+     "y": 2013,
+     "vc": 1983
+    },
+    {
+     "id": "movie:890980",
+     "t": "Quando Dio imparò a scrivere",
+     "y": 2022,
+     "vc": 865
+    },
+    {
+     "id": "movie:226486",
+     "t": "Tammy",
+     "y": 2014,
+     "vc": 1300
+    },
+    {
+     "id": "movie:401981",
+     "t": "Red Sparrow",
+     "y": 2018,
+     "vc": 6476
+    },
+    {
+     "id": "movie:13703",
+     "t": "Al di là di tutti i limiti",
+     "y": 1987,
+     "vc": 312
+    },
+    {
+     "id": "movie:788929",
+     "t": "Lamb",
+     "y": 2021,
+     "vc": 1085
+    },
+    {
+     "id": "movie:166428",
+     "t": "Dragon Trainer - Il mondo nascosto",
+     "y": 2019,
+     "vc": 7300
+    },
+    {
+     "id": "movie:866463",
+     "t": "Reptile",
+     "y": 2023,
+     "vc": 1300
+    },
+    {
+     "id": "movie:537788",
+     "t": "Daniel Isn't Real",
+     "y": 2019,
+     "vc": 249
+    },
+    {
+     "id": "movie:787752",
+     "t": "Fresh",
+     "y": 2022,
+     "vc": 1941
+    },
+    {
+     "id": "movie:75638",
+     "t": "Red Lights",
+     "y": 2012,
+     "vc": 1446
+    },
+    {
+     "id": "movie:47931",
+     "t": "Tropa de elite 2 - Il nemico ora è un altro",
+     "y": 2010,
+     "vc": 2115
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:67026",
+     "t": "Designated Survivor",
+     "y": 2016,
+     "vc": 1187
+    },
+    {
+     "id": "tv:47663",
+     "t": "The Ark",
+     "y": 2023,
+     "vc": 178
+    },
+    {
+     "id": "tv:200875",
+     "t": "IT: Welcome to Derry",
+     "y": 2025,
+     "vc": 1692
+    },
+    {
+     "id": "tv:72141",
+     "t": "I ribelli",
+     "y": 2017,
+     "vc": 107
+    },
+    {
+     "id": "tv:224372",
+     "t": "A Knight of the Seven Kingdoms",
+     "y": 2026,
+     "vc": 1205
+    },
+    {
+     "id": "tv:61555",
+     "t": "The Missing",
+     "y": 2014,
+     "vc": 310
+    }
+   ]
+  },
+  {
+   "id": "tv:98161",
+   "titolo": "Home Before Dark",
+   "anno": 2020,
+   "voto": 7.5,
+   "voti": 485,
+   "film": [
+    {
+     "id": "movie:683340",
+     "t": "Vengeance",
+     "y": 2022,
+     "vc": 490
+    },
+    {
+     "id": "movie:260346",
+     "t": "Taken 3 - L'ora della verità",
+     "y": 2014,
+     "vc": 6295
+    },
+    {
+     "id": "movie:652004",
+     "t": "Il lupo della neve",
+     "y": 2020,
+     "vc": 537
+    },
+    {
+     "id": "movie:8390",
+     "t": "Certamente, forse",
+     "y": 2008,
+     "vc": 2691
+    },
+    {
+     "id": "movie:307081",
+     "t": "Southpaw - L'ultima sfida",
+     "y": 2015,
+     "vc": 5951
+    },
+    {
+     "id": "movie:534338",
+     "t": "An Interview with God",
+     "y": 2018,
+     "vc": 285
+    },
+    {
+     "id": "movie:526973",
+     "t": "Trappola Infernale",
+     "y": 2020,
+     "vc": 137
+    },
+    {
+     "id": "movie:459992",
+     "t": "Non succede, ma se succede...",
+     "y": 2019,
+     "vc": 2967
+    },
+    {
+     "id": "movie:443463",
+     "t": "Senza lasciare traccia",
+     "y": 2018,
+     "vc": 1416
+    },
+    {
+     "id": "movie:597219",
+     "t": "L'altra metà",
+     "y": 2020,
+     "vc": 1625
+    },
+    {
+     "id": "movie:546121",
+     "t": "Run",
+     "y": 2020,
+     "vc": 2991
+    },
+    {
+     "id": "movie:475375",
+     "t": "Il frutto dell'amore",
+     "y": 2017,
+     "vc": 50
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:1920",
+     "t": "I segreti di Twin Peaks",
+     "y": 1990,
+     "vc": 2726
+    },
+    {
+     "id": "tv:69050",
+     "t": "Riverdale",
+     "y": 2017,
+     "vc": 13794
+    },
+    {
+     "id": "tv:61405",
+     "t": "Gracepoint",
+     "y": 2014,
+     "vc": 90
+    },
+    {
+     "id": "tv:30301",
+     "t": "Archangel",
+     "y": 2005,
+     "vc": 72
+    },
+    {
+     "id": "tv:80054",
+     "t": "Truth Be Told",
+     "y": 2019,
+     "vc": 227
+    },
+    {
+     "id": "tv:201948",
+     "t": "Alaska Daily",
+     "y": 2022,
+     "vc": 89
+    }
+   ]
+  },
+  {
+   "id": "tv:79026",
+   "titolo": "The Protector",
+   "anno": 2018,
+   "voto": 7.2,
+   "voti": 483,
+   "film": [
+    {
+     "id": "movie:363088",
+     "t": "Ant-Man and the Wasp",
+     "y": 2018,
+     "vc": 14560
+    },
+    {
+     "id": "movie:473149",
+     "t": "Traffik - In trappola",
+     "y": 2018,
+     "vc": 491
+    },
+    {
+     "id": "movie:93013",
+     "t": "La Principessa e il Pilota",
+     "y": 2011,
+     "vc": 144
+    },
+    {
+     "id": "movie:868",
+     "t": "Il suo nome è Tsotsi",
+     "y": 2005,
+     "vc": 364
+    },
+    {
+     "id": "movie:31640",
+     "t": "Blood & Wine",
+     "y": 1996,
+     "vc": 194
+    },
+    {
+     "id": "movie:10856",
+     "t": "Intacto - Gioca o muori",
+     "y": 2001,
+     "vc": 212
+    },
+    {
+     "id": "movie:421281",
+     "t": "Borrowed Time",
+     "y": 2015,
+     "vc": 192
+    },
+    {
+     "id": "movie:320",
+     "t": "Insomnia",
+     "y": 2002,
+     "vc": 5568
+    },
+    {
+     "id": "movie:24936",
+     "t": "I segreti del lago",
+     "y": 2001,
+     "vc": 164
+    },
+    {
+     "id": "movie:20106",
+     "t": "Pistole nude",
+     "y": 2003,
+     "vc": 357
+    },
+    {
+     "id": "movie:795813",
+     "t": "I'm Your Man",
+     "y": 2021,
+     "vc": 382
+    },
+    {
+     "id": "movie:58129",
+     "t": "Il carretto fantasma",
+     "y": 1921,
+     "vc": 375
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:96481",
+     "t": "L'impero ottomano",
+     "y": 2020,
+     "vc": 352
+    },
+    {
+     "id": "tv:81499",
+     "t": "Un milione di piccole cose",
+     "y": 2018,
+     "vc": 153
+    },
+    {
+     "id": "tv:67915",
+     "t": "Goblin",
+     "y": 2016,
+     "vc": 3135
+    },
+    {
+     "id": "tv:13945",
+     "t": "Gute Zeiten, schlechte Zeiten",
+     "y": 1992,
+     "vc": 50
+    },
+    {
+     "id": "tv:130330",
+     "t": "Light the Night",
+     "y": 2021,
+     "vc": 58
+    },
+    {
+     "id": "tv:78204",
+     "t": "Sword Art Online Alternative - Gun Gale Online",
+     "y": 2018,
+     "vc": 311
+    }
+   ]
+  },
+  {
+   "id": "tv:119988",
+   "titolo": "Suburbia killer",
+   "anno": 2021,
+   "voto": 7.6,
+   "voti": 483,
+   "film": [
+    {
+     "id": "movie:166428",
+     "t": "Dragon Trainer - Il mondo nascosto",
+     "y": 2019,
+     "vc": 7300
+    },
+    {
+     "id": "movie:10604",
+     "t": "Zorba il greco",
+     "y": 1964,
+     "vc": 401
+    },
+    {
+     "id": "movie:10191",
+     "t": "Dragon Trainer",
+     "y": 2010,
+     "vc": 14777
+    },
+    {
+     "id": "movie:466420",
+     "t": "Killers of the Flower Moon",
+     "y": 2023,
+     "vc": 4375
+    },
+    {
+     "id": "movie:36245",
+     "t": "Il diario di una cameriera",
+     "y": 1964,
+     "vc": 244
+    },
+    {
+     "id": "movie:73723",
+     "t": "Lorax - Il guardiano della foresta",
+     "y": 2012,
+     "vc": 3999
+    },
+    {
+     "id": "movie:639933",
+     "t": "The Northman",
+     "y": 2022,
+     "vc": 5316
+    },
+    {
+     "id": "movie:1003180",
+     "t": "Nella mente di un gatto",
+     "y": 2022,
+     "vc": 282
+    },
+    {
+     "id": "movie:591",
+     "t": "Il codice da Vinci",
+     "y": 2006,
+     "vc": 10337
+    },
+    {
+     "id": "movie:808",
+     "t": "Shrek",
+     "y": 2001,
+     "vc": 19395
+    },
+    {
+     "id": "movie:653",
+     "t": "Nosferatu, il vampiro",
+     "y": 1922,
+     "vc": 2546
+    },
+    {
+     "id": "movie:13008",
+     "t": "An American Crime",
+     "y": 2007,
+     "vc": 792
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:79460",
+     "t": "Legacies",
+     "y": 2018,
+     "vc": 3050
+    },
+    {
+     "id": "tv:201285",
+     "t": "LIGHT & MAGIC",
+     "y": 2022,
+     "vc": 62
+    },
+    {
+     "id": "tv:110356",
+     "t": "My Name",
+     "y": 2021,
+     "vc": 1095
+    },
+    {
+     "id": "tv:131927",
+     "t": "Dexter: New Blood",
+     "y": 2021,
+     "vc": 1729
+    },
+    {
+     "id": "tv:66788",
+     "t": "Tredici",
+     "y": 2017,
+     "vc": 4673
+    },
+    {
+     "id": "tv:39758",
+     "t": "Mucchio d'ossa",
+     "y": 2011,
+     "vc": 190
+    }
+   ]
+  },
+  {
+   "id": "tv:46849",
+   "titolo": "Generation War",
+   "anno": 2013,
+   "voto": 8.1,
+   "voti": 482,
+   "film": [
+    {
+     "id": "movie:50183",
+     "t": "L'ascesa",
+     "y": 1977,
+     "vc": 258
+    },
+    {
+     "id": "movie:515001",
+     "t": "Jojo Rabbit",
+     "y": 2019,
+     "vc": 10698
+    },
+    {
+     "id": "movie:12555",
+     "t": "Ho servito il re d'Inghilterra",
+     "y": 2007,
+     "vc": 119
+    },
+    {
+     "id": "movie:423",
+     "t": "Il pianista",
+     "y": 2002,
+     "vc": 10495
+    },
+    {
+     "id": "movie:8268",
+     "t": "Sopravvivere coi lupi",
+     "y": 2007,
+     "vc": 83
+    },
+    {
+     "id": "movie:8741",
+     "t": "La sottile linea rossa",
+     "y": 1998,
+     "vc": 3446
+    },
+    {
+     "id": "movie:10364",
+     "t": "Comma 22",
+     "y": 1970,
+     "vc": 370
+    },
+    {
+     "id": "movie:60378",
+     "t": "Hitler - Una carriera",
+     "y": 1977,
+     "vc": 88
+    },
+    {
+     "id": "movie:5336",
+     "t": "Salò o le 120 giornate di Sodoma",
+     "y": 1976,
+     "vc": 2377
+    },
+    {
+     "id": "movie:2117",
+     "t": "La rosa bianca - Sophie Scholl",
+     "y": 2005,
+     "vc": 474
+    },
+    {
+     "id": "movie:121835",
+     "t": "Lore",
+     "y": 2012,
+     "vc": 323
+    },
+    {
+     "id": "movie:61650",
+     "t": "Scandalo internazionale",
+     "y": 1948,
+     "vc": 165
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:15571",
+     "t": "Olocausto",
+     "y": 1978,
+     "vc": 76
+    },
+    {
+     "id": "tv:21009",
+     "t": "Colditz",
+     "y": 2005,
+     "vc": 58
+    },
+    {
+     "id": "tv:68558",
+     "t": "Apocalypse, Hitler",
+     "y": 2011,
+     "vc": 58
+    },
+    {
+     "id": "tv:33189",
+     "t": "Apocalypse - La Seconda Guerra Mondiale",
+     "y": 2009,
+     "vc": 157
+    },
+    {
+     "id": "tv:93781",
+     "t": "The Defeated",
+     "y": 2020,
+     "vc": 65
+    },
+    {
+     "id": "tv:505",
+     "t": "Dad's Army",
+     "y": 1968,
+     "vc": 82
+    }
+   ]
+  },
+  {
+   "id": "tv:235930",
+   "titolo": "Devil May Cry",
+   "anno": 2025,
+   "voto": 8.2,
+   "voti": 480,
+   "film": [
+    {
+     "id": "movie:390634",
+     "t": "Fate/stay night: Heaven’s Feel II. Lost Butterfly",
+     "y": 2019,
+     "vc": 276
+    },
+    {
+     "id": "movie:242546",
+     "t": "Bayonetta: Bloody Fate",
+     "y": 2013,
+     "vc": 132
+    },
+    {
+     "id": "movie:841755",
+     "t": "Mortal Kombat Legends: Battle of the Realms",
+     "y": 2021,
+     "vc": 520
+    },
+    {
+     "id": "movie:664767",
+     "t": "Mortal Kombat Legends: Scorpion's Revenge",
+     "y": 2020,
+     "vc": 1528
+    },
+    {
+     "id": "movie:2114",
+     "t": "Final Fantasy",
+     "y": 2001,
+     "vc": 1668
+    },
+    {
+     "id": "movie:1007401",
+     "t": "Mortal Kombat Legends: Snow Blind",
+     "y": 2022,
+     "vc": 247
+    },
+    {
+     "id": "movie:1941",
+     "t": "Exodus",
+     "y": 1960,
+     "vc": 239
+    },
+    {
+     "id": "movie:7345",
+     "t": "Il petroliere",
+     "y": 2007,
+     "vc": 7760
+    },
+    {
+     "id": "movie:7342",
+     "t": "Carrie",
+     "y": 2002,
+     "vc": 582
+    },
+    {
+     "id": "movie:45767",
+     "t": "Time Changer",
+     "y": 2003,
+     "vc": 53
+    },
+    {
+     "id": "movie:662708",
+     "t": "Il film Pokémon - I segreti della giungla",
+     "y": 2020,
+     "vc": 206
+    },
+    {
+     "id": "movie:647",
+     "t": "Final Fantasy VII: Advent Children",
+     "y": 2005,
+     "vc": 1291
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:85937",
+     "t": "Demon Slayer: Kimetsu no Yaiba",
+     "y": 2019,
+     "vc": 7487
+    },
+    {
+     "id": "tv:32871",
+     "t": "Supernatural The Animation",
+     "y": 2011,
+     "vc": 267
+    },
+    {
+     "id": "tv:94605",
+     "t": "Arcane",
+     "y": 2021,
+     "vc": 6212
+    },
+    {
+     "id": "tv:261579",
+     "t": "Secret Level",
+     "y": 2024,
+     "vc": 601
+    },
+    {
+     "id": "tv:127372",
+     "t": "Captain Laserhawk: A Blood Dragon Remix",
+     "y": 2023,
+     "vc": 108
+    },
+    {
+     "id": "tv:99769",
+     "t": "Dragon's Dogma",
+     "y": 2020,
+     "vc": 202
+    }
+   ]
+  },
+  {
+   "id": "tv:61421",
+   "titolo": "Terror in Resonance - L’eco del terrore",
+   "anno": 2014,
+   "voto": 7.7,
+   "voti": 480,
+   "film": [
+    {
+     "id": "movie:3176",
+     "t": "Battle Royale",
+     "y": 2000,
+     "vc": 3953
+    },
+    {
+     "id": "movie:77617",
+     "t": "Detective Conan: Quarter of Silence",
+     "y": 2011,
+     "vc": 158
+    },
+    {
+     "id": "movie:20677",
+     "t": "Detective Conan - Solo nei suoi occhi",
+     "y": 2000,
+     "vc": 213
+    },
+    {
+     "id": "movie:357411",
+     "t": "Harmony",
+     "y": 2015,
+     "vc": 101
+    },
+    {
+     "id": "movie:372058",
+     "t": "Your Name.",
+     "y": 2016,
+     "vc": 13029
+    },
+    {
+     "id": "movie:16007",
+     "t": "Death Note - Il film",
+     "y": 2006,
+     "vc": 833
+    },
+    {
+     "id": "movie:1073",
+     "t": "Arlington Road - L'inganno",
+     "y": 1999,
+     "vc": 1311
+    },
+    {
+     "id": "movie:46164",
+     "t": "Castigo",
+     "y": 2007,
+     "vc": 114
+    },
+    {
+     "id": "movie:655431",
+     "t": "Psycho-Pass 3: Primo Ispettore",
+     "y": 2020,
+     "vc": 113
+    },
+    {
+     "id": "movie:559566",
+     "t": "Psycho-Pass: Sinners of the System - Case.3 On the Other Side of Love and Hate",
+     "y": 2019,
+     "vc": 78
+    },
+    {
+     "id": "movie:559562",
+     "t": "Psycho-Pass: Sinners of the System - Case.2 First Guardian",
+     "y": 2019,
+     "vc": 86
+    },
+    {
+     "id": "movie:510242",
+     "t": "Psycho-Pass: Sinners of the System - Case.1 Delitto e Castigo",
+     "y": 2019,
+     "vc": 104
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:43865",
+     "t": "Psycho-Pass",
+     "y": 2012,
+     "vc": 492
+    },
+    {
+     "id": "tv:42509",
+     "t": "Steins;Gate",
+     "y": 2011,
+     "vc": 1008
+    },
+    {
+     "id": "tv:80564",
+     "t": "Banana Fish",
+     "y": 2018,
+     "vc": 935
+    },
+    {
+     "id": "tv:8974",
+     "t": "Hell Girl",
+     "y": 2005,
+     "vc": 247
+    },
+    {
+     "id": "tv:100281",
+     "t": "Moriarty the Patriot",
+     "y": 2020,
+     "vc": 246
+    },
+    {
+     "id": "tv:77529",
+     "t": "B: The Beginning",
+     "y": 2018,
+     "vc": 188
+    }
+   ]
+  },
+  {
+   "id": "tv:66958",
+   "titolo": "Orange",
+   "anno": 2016,
+   "voto": 8.0,
+   "voti": 477,
+   "film": [
+    {
+     "id": "movie:372058",
+     "t": "Your Name.",
+     "y": 2016,
+     "vc": 13029
+    },
+    {
+     "id": "movie:359171",
+     "t": "Orange",
+     "y": 2015,
+     "vc": 112
+    },
+    {
+     "id": "movie:916192",
+     "t": "The Tunnel to Summer, the Exit of Goodbyes",
+     "y": 2022,
+     "vc": 302
+    },
+    {
+     "id": "movie:810693",
+     "t": "Jujutsu Kaisen 0 - Il film",
+     "y": 2021,
+     "vc": 1873
+    },
+    {
+     "id": "movie:378064",
+     "t": "La Forma della Voce",
+     "y": 2016,
+     "vc": 4711
+    },
+    {
+     "id": "movie:938567",
+     "t": "Teasing Master Takagi-san: The Movie",
+     "y": 2022,
+     "vc": 147
+    },
+    {
+     "id": "movie:783675",
+     "t": "The First Slam Dunk",
+     "y": 2022,
+     "vc": 569
+    },
+    {
+     "id": "movie:3176",
+     "t": "Battle Royale",
+     "y": 2000,
+     "vc": 3953
+    },
+    {
+     "id": "movie:2168",
+     "t": "2:37",
+     "y": 2006,
+     "vc": 153
+    },
+    {
+     "id": "movie:572154",
+     "t": "Rascal Does Not Dream of a Dreaming Girl",
+     "y": 2019,
+     "vc": 617
+    },
+    {
+     "id": "movie:438551",
+     "t": "Peach Girl",
+     "y": 2017,
+     "vc": 64
+    },
+    {
+     "id": "movie:33333",
+     "t": "Blue Spring",
+     "y": 2001,
+     "vc": 119
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:42589",
+     "t": "Another",
+     "y": 2012,
+     "vc": 1090
+    },
+    {
+     "id": "tv:36941",
+     "t": "Fruits Basket",
+     "y": 2001,
+     "vc": 81
+    },
+    {
+     "id": "tv:42557",
+     "t": "Kids on the Slope",
+     "y": 2012,
+     "vc": 74
+    },
+    {
+     "id": "tv:62602",
+     "t": "A un passo da te",
+     "y": 2014,
+     "vc": 360
+    },
+    {
+     "id": "tv:52878",
+     "t": "Say \"I Love You.\"",
+     "y": 2012,
+     "vc": 101
+    },
+    {
+     "id": "tv:76124",
+     "t": "School Babysitters",
+     "y": 2018,
+     "vc": 68
+    }
+   ]
+  },
+  {
+   "id": "tv:98178",
+   "titolo": "Storie incredibili",
+   "anno": 2020,
+   "voto": 7.3,
+   "voti": 477,
+   "film": [
+    {
+     "id": "movie:13581",
+     "t": "Incubi notturni",
+     "y": 1945,
+     "vc": 312
+    },
+    {
+     "id": "movie:55689",
+     "t": "Baba Yaga",
+     "y": 1973,
+     "vc": 83
+    },
+    {
+     "id": "movie:47508",
+     "t": "Il mago di Oz",
+     "y": 1925,
+     "vc": 52
+    },
+    {
+     "id": "movie:428288",
+     "t": "Ancien and the Magic Tablet",
+     "y": 2017,
+     "vc": 134
+    },
+    {
+     "id": "movie:300",
+     "t": "L'arte del sogno",
+     "y": 2006,
+     "vc": 871
+    },
+    {
+     "id": "movie:26945",
+     "t": "Card Captor Sakura - The Movie",
+     "y": 1999,
+     "vc": 170
+    },
+    {
+     "id": "movie:109491",
+     "t": "Beautiful Creatures - La sedicesima luna",
+     "y": 2013,
+     "vc": 2980
+    },
+    {
+     "id": "movie:616073",
+     "t": "Return to Horror Hotel",
+     "y": 2019,
+     "vc": 295
+    },
+    {
+     "id": "movie:9962",
+     "t": "The Good Girl",
+     "y": 2002,
+     "vc": 700
+    },
+    {
+     "id": "movie:9913",
+     "t": "The Skeleton Key",
+     "y": 2005,
+     "vc": 2399
+    },
+    {
+     "id": "movie:9872",
+     "t": "Explorers",
+     "y": 1985,
+     "vc": 526
+    },
+    {
+     "id": "movie:9761",
+     "t": "Elephants Dream",
+     "y": 2006,
+     "vc": 69
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:4346",
+     "t": "Freddy's Nightmares",
+     "y": 1988,
+     "vc": 216
+    },
+    {
+     "id": "tv:40075",
+     "t": "Gravity Falls",
+     "y": 2012,
+     "vc": 3615
+    },
+    {
+     "id": "tv:87846",
+     "t": "Memorie di Idhun",
+     "y": 2020,
+     "vc": 64
+    },
+    {
+     "id": "tv:1026",
+     "t": "Storie Incredibili - Amazing Stories",
+     "y": 1985,
+     "vc": 237
+    },
+    {
+     "id": "tv:99491",
+     "t": "Mystic pop-up bar",
+     "y": 2020,
+     "vc": 79
+    },
+    {
+     "id": "tv:96420",
+     "t": "Pokemon: Ali del crepuscolo",
+     "y": 2020,
+     "vc": 71
+    }
+   ]
+  },
+  {
+   "id": "tv:83103",
+   "titolo": "Domestic Girlfriend",
+   "anno": 2019,
+   "voto": 8.1,
+   "voti": 473,
+   "film": [
+    {
+     "id": "movie:783675",
+     "t": "The First Slam Dunk",
+     "y": 2022,
+     "vc": 569
+    },
+    {
+     "id": "movie:1010581",
+     "t": "È colpa mia?",
+     "y": 2023,
+     "vc": 4202
+    },
+    {
+     "id": "movie:95170",
+     "t": "Heaven's Lost Property the Movie: The Angeloid of Clockwork",
+     "y": 2011,
+     "vc": 59
+    },
+    {
+     "id": "movie:428292",
+     "t": "Trinity Seven: Eternity Library & Alchemic Girl",
+     "y": 2017,
+     "vc": 62
+    },
+    {
+     "id": "movie:810693",
+     "t": "Jujutsu Kaisen 0 - Il film",
+     "y": 2021,
+     "vc": 1873
+    },
+    {
+     "id": "movie:76815",
+     "t": "Barely Legal",
+     "y": 2011,
+     "vc": 81
+    },
+    {
+     "id": "movie:42889",
+     "t": "The Virginity Hit - La prima volta è online",
+     "y": 2010,
+     "vc": 78
+    },
+    {
+     "id": "movie:26449",
+     "t": "Sex and the Teenage Mind",
+     "y": 2002,
+     "vc": 50
+    },
+    {
+     "id": "movie:2105",
+     "t": "American Pie",
+     "y": 1999,
+     "vc": 8587
+    },
+    {
+     "id": "movie:820067",
+     "t": "The Quintessential Quintuplets Movie",
+     "y": 2022,
+     "vc": 457
+    },
+    {
+     "id": "movie:528225",
+     "t": "Sound! Euphonium the Movie - Our Promise: A Brand New Day",
+     "y": 2019,
+     "vc": 58
+    },
+    {
+     "id": "movie:938567",
+     "t": "Teasing Master Takagi-san: The Movie",
+     "y": 2022,
+     "vc": 147
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:206629",
+     "t": "Days with My Stepsister",
+     "y": 2024,
+     "vc": 61
+    },
+    {
+     "id": "tv:70878",
+     "t": "Eromanga Sensei",
+     "y": 2017,
+     "vc": 108
+    },
+    {
+     "id": "tv:129516",
+     "t": "My Stepmom's Daughter is my Ex",
+     "y": 2022,
+     "vc": 74
+    },
+    {
+     "id": "tv:72296",
+     "t": "My First Girlfriend is a Gal",
+     "y": 2017,
+     "vc": 423
+    },
+    {
+     "id": "tv:45998",
+     "t": "KissXsis",
+     "y": 2010,
+     "vc": 129
+    },
+    {
+     "id": "tv:36941",
+     "t": "Fruits Basket",
+     "y": 2001,
+     "vc": 81
+    }
+   ]
+  },
+  {
+   "id": "tv:279060",
+   "titolo": "Chespirito: Sin querer queriendo",
+   "anno": 2025,
+   "voto": 8.0,
+   "voti": 472,
+   "film": [
+    {
+     "id": "movie:12698",
+     "t": "The Fog of War - La guerra secondo Robert McNamara",
+     "y": 2003,
+     "vc": 307
+    },
+    {
+     "id": "movie:48564",
+     "t": "Viva! Viva Villa!",
+     "y": 1968,
+     "vc": 67
+    },
+    {
+     "id": "movie:9549",
+     "t": "Uomini veri",
+     "y": 1983,
+     "vc": 1011
+    },
+    {
+     "id": "movie:913521",
+     "t": "Io & Sissi",
+     "y": 2023,
+     "vc": 54
+    },
+    {
+     "id": "movie:88794",
+     "t": "J. Edgar",
+     "y": 2011,
+     "vc": 2646
+    },
+    {
+     "id": "movie:860278",
+     "t": "Stephen Curry: Underrated",
+     "y": 2023,
+     "vc": 108
+    },
+    {
+     "id": "movie:75900",
+     "t": "Marilyn",
+     "y": 2011,
+     "vc": 1374
+    },
+    {
+     "id": "movie:74469",
+     "t": "La vita del dottor Pasteur",
+     "y": 1936,
+     "vc": 57
+    },
+    {
+     "id": "movie:72899",
+     "t": "L'altra faccia dell'amore",
+     "y": 1971,
+     "vc": 57
+    },
+    {
+     "id": "movie:60378",
+     "t": "Hitler - Una carriera",
+     "y": 1977,
+     "vc": 88
+    },
+    {
+     "id": "movie:598065",
+     "t": "Our godfather: la vera storia di Tommaso Buscetta",
+     "y": 2019,
+     "vc": 70
+    },
+    {
+     "id": "movie:55309",
+     "t": "Vincent & Theo",
+     "y": 1990,
+     "vc": 70
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:50878",
+     "t": "Empresses In The Palace",
+     "y": 2011,
+     "vc": 75
+    },
+    {
+     "id": "tv:206693",
+     "t": "연인",
+     "y": 2023,
+     "vc": 59
+    },
+    {
+     "id": "tv:60602",
+     "t": "Fleming - Essere James Bond",
+     "y": 2014,
+     "vc": 61
+    },
+    {
+     "id": "tv:153282",
+     "t": "Sissi",
+     "y": 2021,
+     "vc": 121
+    },
+    {
+     "id": "tv:70128",
+     "t": "Genius",
+     "y": 2017,
+     "vc": 312
+    },
+    {
+     "id": "tv:49157",
+     "t": "Houdini",
+     "y": 2014,
+     "vc": 327
+    }
+   ]
+  },
+  {
+   "id": "tv:39525",
+   "titolo": "Wilfred",
+   "anno": 2011,
+   "voto": 7.5,
+   "voti": 469,
+   "film": [
+    {
+     "id": "movie:892",
+     "t": "Delicatessen",
+     "y": 1991,
+     "vc": 1697
+    },
+    {
+     "id": "movie:798286",
+     "t": "Beau ha paura",
+     "y": 2023,
+     "vc": 1412
+    },
+    {
+     "id": "movie:68",
+     "t": "Brazil",
+     "y": 1985,
+     "vc": 3839
+    },
+    {
+     "id": "movie:627",
+     "t": "Trainspotting",
+     "y": 1996,
+     "vc": 10715
+    },
+    {
+     "id": "movie:483",
+     "t": "Cuore selvaggio",
+     "y": 1990,
+     "vc": 1994
+    },
+    {
+     "id": "movie:460885",
+     "t": "Mandy",
+     "y": 2018,
+     "vc": 2244
+    },
+    {
+     "id": "movie:396461",
+     "t": "Under the Silver Lake",
+     "y": 2018,
+     "vc": 1687
+    },
+    {
+     "id": "movie:37628",
+     "t": "Estasi di un delitto",
+     "y": 1955,
+     "vc": 182
+    },
+    {
+     "id": "movie:348672",
+     "t": "Sulla infinitezza",
+     "y": 2019,
+     "vc": 233
+    },
+    {
+     "id": "movie:21356",
+     "t": "Rock & Rule",
+     "y": 1983,
+     "vc": 101
+    },
+    {
+     "id": "movie:1878",
+     "t": "Paura e delirio a Las Vegas",
+     "y": 1998,
+     "vc": 5193
+    },
+    {
+     "id": "movie:16133",
+     "t": "SURVIVE STYLE5+",
+     "y": 2004,
+     "vc": 231
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:73411",
+     "t": "Maniac",
+     "y": 2018,
+     "vc": 1055
+    },
+    {
+     "id": "tv:5639",
+     "t": "Pushing Daisies",
+     "y": 2007,
+     "vc": 492
+    },
+    {
+     "id": "tv:112164",
+     "t": "Aunty Donna's Big Ol House of Fun",
+     "y": 2020,
+     "vc": 60
+    },
+    {
+     "id": "tv:94523",
+     "t": "Magia Record: Puella Magi Madoka Magica Side Story",
+     "y": 2020,
+     "vc": 85
+    },
+    {
+     "id": "tv:92602",
+     "t": "ID:Invaded",
+     "y": 2020,
+     "vc": 96
+    },
+    {
+     "id": "tv:903",
+     "t": "Black Books",
+     "y": 2000,
+     "vc": 646
+    }
+   ]
+  },
+  {
+   "id": "tv:204154",
+   "titolo": "Scavengers Reign",
+   "anno": 2023,
+   "voto": 8.5,
+   "voti": 468,
+   "film": [
+    {
+     "id": "movie:16306",
+     "t": "Il pianeta selvaggio",
+     "y": 1973,
+     "vc": 1153
+    },
+    {
+     "id": "movie:49529",
+     "t": "John Carter",
+     "y": 2012,
+     "vc": 6301
+    },
+    {
+     "id": "movie:12587",
+     "t": "Arachnid - Il predatore",
+     "y": 2001,
+     "vc": 86
+    },
+    {
+     "id": "movie:2114",
+     "t": "Final Fantasy",
+     "y": 2001,
+     "vc": 1668
+    },
+    {
+     "id": "movie:7453",
+     "t": "Guida galattica per autostoppisti",
+     "y": 2005,
+     "vc": 4384
+    },
+    {
+     "id": "movie:718789",
+     "t": "Lightyear - La vera storia di Buzz",
+     "y": 2022,
+     "vc": 3965
+    },
+    {
+     "id": "movie:500",
+     "t": "Le iene",
+     "y": 1992,
+     "vc": 15882
+    },
+    {
+     "id": "movie:18993",
+     "t": "L'isola misteriosa",
+     "y": 1961,
+     "vc": 213
+    },
+    {
+     "id": "movie:27072",
+     "t": "Sul globo d'argento",
+     "y": 1989,
+     "vc": 187
+    },
+    {
+     "id": "movie:9753",
+     "t": "L'isola dei sopravvissuti",
+     "y": 2005,
+     "vc": 302
+    },
+    {
+     "id": "movie:753091",
+     "t": "The Moon",
+     "y": 2023,
+     "vc": 219
+    },
+    {
+     "id": "movie:7305",
+     "t": "Alive - Sopravvissuti",
+     "y": 1993,
+     "vc": 1639
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:158811",
+     "t": "Bargain - Trattativa mortale",
+     "y": 2022,
+     "vc": 85
+    },
+    {
+     "id": "tv:79003",
+     "t": "James Cameron - Viaggio nella fantascienza",
+     "y": 2018,
+     "vc": 51
+    },
+    {
+     "id": "tv:239770",
+     "t": "Doctor Who",
+     "y": 2024,
+     "vc": 344
+    },
+    {
+     "id": "tv:86831",
+     "t": "Love, Death & Robots",
+     "y": 2019,
+     "vc": 4180
+    },
+    {
+     "id": "tv:615",
+     "t": "Futurama",
+     "y": 1999,
+     "vc": 3927
+    },
+    {
+     "id": "tv:88041",
+     "t": "Astra Lost in Space",
+     "y": 2019,
+     "vc": 139
+    }
+   ]
+  },
+  {
+   "id": "tv:86428",
+   "titolo": "The Spanish Princess",
+   "anno": 2019,
+   "voto": 7.5,
+   "voti": 468,
+   "film": [
+    {
+     "id": "movie:22522",
+     "t": "Anna dei mille giorni",
+     "y": 1969,
+     "vc": 136
+    },
+    {
+     "id": "movie:12184",
+     "t": "L'altra donna del re",
+     "y": 2008,
+     "vc": 2292
+    },
+    {
+     "id": "movie:457136",
+     "t": "Maria regina di Scozia",
+     "y": 2018,
+     "vc": 1974
+    },
+    {
+     "id": "movie:46067",
+     "t": "Maria Stuarda regina di Scozia",
+     "y": 1971,
+     "vc": 64
+    },
+    {
+     "id": "movie:4518",
+     "t": "Elizabeth",
+     "y": 1998,
+     "vc": 1536
+    },
+    {
+     "id": "movie:34372",
+     "t": "The Execution of Mary, Queen of Scots",
+     "y": 1895,
+     "vc": 133
+    },
+    {
+     "id": "movie:16902",
+     "t": "Il conte di Essex",
+     "y": 1939,
+     "vc": 100
+    },
+    {
+     "id": "movie:43122",
+     "t": "Le sei mogli di Enrico VIII",
+     "y": 1933,
+     "vc": 98
+    },
+    {
+     "id": "movie:24569",
+     "t": "Carry On Henry",
+     "y": 1971,
+     "vc": 70
+    },
+    {
+     "id": "movie:874",
+     "t": "Un uomo per tutte le stagioni",
+     "y": 1966,
+     "vc": 516
+    },
+    {
+     "id": "movie:4517",
+     "t": "Elizabeth: The Golden Age",
+     "y": 2007,
+     "vc": 1346
+    },
+    {
+     "id": "movie:26165",
+     "t": "Giovanna la pazza",
+     "y": 2001,
+     "vc": 79
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:2942",
+     "t": "I Tudors",
+     "y": 2007,
+     "vc": 863
+    },
+    {
+     "id": "tv:42276",
+     "t": "Isabel",
+     "y": 2012,
+     "vc": 66
+    },
+    {
+     "id": "tv:65494",
+     "t": "The Crown",
+     "y": 2016,
+     "vc": 2439
+    },
+    {
+     "id": "tv:61697",
+     "t": "Wolf Hall",
+     "y": 2015,
+     "vc": 154
+    },
+    {
+     "id": "tv:48865",
+     "t": "Reign",
+     "y": 2013,
+     "vc": 893
+    },
+    {
+     "id": "tv:57092",
+     "t": "The White Queen",
+     "y": 2013,
+     "vc": 372
+    }
+   ]
+  },
+  {
+   "id": "tv:129495",
+   "titolo": "Clickbait",
+   "anno": 2021,
+   "voto": 7.1,
+   "voti": 468,
+   "film": [
+    {
+     "id": "movie:9437",
+     "t": "Il collezionista",
+     "y": 1997,
+     "vc": 1974
+    },
+    {
+     "id": "movie:10742",
+     "t": "In ostaggio",
+     "y": 2004,
+     "vc": 264
+    },
+    {
+     "id": "movie:11324",
+     "t": "Shutter Island",
+     "y": 2010,
+     "vc": 26529
+    },
+    {
+     "id": "movie:26268",
+     "t": "Detective's Story",
+     "y": 1966,
+     "vc": 202
+    },
+    {
+     "id": "movie:419430",
+     "t": "Scappa - Get Out",
+     "y": 2017,
+     "vc": 19424
+    },
+    {
+     "id": "movie:635",
+     "t": "Angel Heart - Ascensore per l'inferno",
+     "y": 1987,
+     "vc": 1812
+    },
+    {
+     "id": "movie:539",
+     "t": "Psyco",
+     "y": 1960,
+     "vc": 11311
+    },
+    {
+     "id": "movie:426",
+     "t": "La donna che visse due volte",
+     "y": 1958,
+     "vc": 6530
+    },
+    {
+     "id": "movie:810171",
+     "t": "The Valet",
+     "y": 2022,
+     "vc": 685
+    },
+    {
+     "id": "movie:722149",
+     "t": "Luther: Verso l'Inferno",
+     "y": 2023,
+     "vc": 1161
+    },
+    {
+     "id": "movie:984",
+     "t": "Ispettore Callaghan: Il caso Scorpio è tuo!!",
+     "y": 1971,
+     "vc": 2864
+    },
+    {
+     "id": "movie:146233",
+     "t": "Prisoners",
+     "y": 2013,
+     "vc": 13572
+    }
+   ],
+   "serie": [
+    {
+     "id": "tv:272586",
+     "t": "Synden",
+     "y": 2026,
+     "vc": 75
+    },
+    {
+     "id": "tv:253249",
+     "t": "Ashley Madison: sesso, scandali e bugie",
+     "y": 2024,
+     "vc": 89
+    },
+    {
+     "id": "tv:130853",
+     "t": "Carl Hiaasen’s Bad Monkey",
+     "y": 2024,
+     "vc": 230
+    },
+    {
+     "id": "tv:78",
+     "t": "Dateline",
+     "y": 1992,
+     "vc": 53
+    },
+    {
+     "id": "tv:202308",
+     "t": "Alert: Missing Persons Unit",
+     "y": 2023,
+     "vc": 80
+    },
+    {
+     "id": "tv:201289",
+     "t": "L'ultima cosa che mi ha detto",
+     "y": 2023,
+     "vc": 205
+    }
+   ]
+  }
+ ]
+}
