@@ -147,3 +147,17 @@ print("=== PER TIPO (verifica) ===")
 for t in sorted(r_ev["byt"], key=lambda x: -r_ev["byt"][x][1]):
     h, tt = r_ev["byt"][t]
     print(f"  {t:<11} {100*h/max(1,tt):5.1f}% ({h}/{tt})")
+
+print("")
+print("=== SPECIALIZZAZIONE: QUALE CLASSIFICATORE VINCE SU QUALE TIPO (tutto il set) ===")
+print("| tipo | n | contenuto (Pc) | comportamento (Pb) | fusione 0.7/0.3 |")
+print("|---|---|---|---|---|")
+tipi = {}
+for nome, cfg in (("Pc", (1,0,0,0,6,0)), ("Pb", (0,1,0,0,6,0)), ("F", (0.7,0.3,0,0,6,0))):
+    r = valuta(*cfg, nome, subset=None)
+    tipi[nome] = r["byt"]
+allt = sorted(set(t for v in tipi.values() for t in v), key=lambda x: -tipi["F"].get(x, [0,0])[1])
+for t in allt:
+    n_ = max([tipi[k].get(t,[0,0])[1] for k in tipi])
+    row = " | ".join(f"{100*tipi[k].get(t,[0,0])[0]/max(1,tipi[k].get(t,[0,0])[1]):.0f}%" if tipi[k].get(t,[0,0])[1] else "-" for k in ("Pc","Pb","F"))
+    print(f"| {t} | {n_} | {row} |")
