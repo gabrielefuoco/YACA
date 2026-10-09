@@ -242,10 +242,53 @@ for s in samples:
 log(f"  film di test: {len(tests)} · correlate totali: {sum(len(r) for _, r in tests)}")
 
 
+# ================================================================ QUANTO DISCORDANO LE DUE VERITA'
+log("")
+log("=== ML vs TRAKT: quanto discordano? ===")
+inB = ~inA
+XB = csr_matrix((np.ones(int(inB.sum()), np.float32), (r.loc[inB, "userId"].to_numpy("int32"), r.loc[inB, "i"].to_numpy("int32"))),
+                shape=XA.shape)
+XB.sum_duplicates(); XB.data[:] = 1.0
+n_cmp, s_tr, s_ml, s_jac = 0, 0.0, 0.0, 0.0
+pop_ml, pop_tr = [], []
+for src, rel in tests:
+    mid = int(tmdb2mid[int(mv["id"].iloc[src])])
+    if mid not in mid_pos:
+        continue
+    us = XB[:, mid_pos[mid]].nonzero()[0]
+    if len(us) == 0:
+        continue
+    cnts = np.asarray(XB[us].sum(axis=0)).ravel()
+    cnts[mid_pos[mid]] = 0
+    ok = np.flatnonzero(cnts >= 2)
+    if len(ok) < 3:
+        continue
+    ml_set = set()
+    for x in ok[np.argsort(-cnts[ok])][:20]:
+        t = mid2tmdb.get(int(mids[int(x)]))
+        if t is not None and int(t) in row_of_tmdb:
+            ml_set.add(row_of_tmdb[int(t)])
+    if len(ml_set) < 3:
+        continue
+    n_cmp += 1
+    s_tr += len(ml_set & rel) / len(rel)
+    s_ml += len(ml_set & rel) / len(ml_set)
+    s_jac += len(ml_set & rel) / len(ml_set | rel)
+    pop_ml += [mv["vote_count"].iloc[x] for x in ml_set]
+    pop_tr += [mv["vote_count"].iloc[x] for x in rel]
+log(f"  film confrontabili: {n_cmp}")
+log(f"  di Trakt dentro i partner ML : {100*s_tr/max(1,n_cmp):.1f}%")
+log(f"  dei partner ML dentro Trakt  : {100*s_ml/max(1,n_cmp):.1f}%")
+log(f"  Jaccard fra i due POOL       : {100*s_jac/max(1,n_cmp):.1f}%")
+log(f"  voti mediani: partner ML {int(np.median(pop_ml)):,} · related Trakt {int(np.median(pop_tr)):,}")
+
+
 def evaluate(P, name, extra=""):
     """recall@k + mediana del rango + controllo + composizione della top-10."""
     Pn = P / (np.linalg.norm(P, axis=1, keepdims=True) + 1e-9)
     hit = {k: 0.0 for k in KS}
+    prec = {k: 0.0 for k in (10, 20)}
+    jac = 0.0
     ranks, ctrl = [], 0.0
     coll_top = n_top = 0
     for src, rel in tests:
@@ -256,6 +299,10 @@ def evaluate(P, name, extra=""):
             ranks.append(pos[x])
         for k in KS:
             hit[k] += sum(1 for x in order[:k] if x in rel) / len(rel)
+        for k in prec:                       # IL POOL, non il migliore: quanto della MIA lista e' giusta
+            prec[k] += sum(1 for x in order[:k] if x in rel) / k
+        t20 = set(int(x) for x in order[:20])
+        jac += len(t20 & rel) / max(1, len(t20 | rel))   # quanto i due POOL coincidono
         ctrl += sum(1 for x in rng.choice(len(mv), size=50, replace=False) if x in rel) / len(rel)
         c_src = mv["collection_id"].iloc[src]
         for x in order[:10]:
@@ -264,8 +311,8 @@ def evaluate(P, name, extra=""):
             coll_top += (not pd.isna(c_src)) and (not pd.isna(c)) and c == c_src
     n = len(tests)
     r = np.array(ranks)
-    log(f"  {name:<34} @10 {100*hit[10]/n:5.1f}% · @50 {100*hit[50]/n:5.1f}% · rango mediano {int(np.median(r)):>5,} · "
-        f"controllo {100*ctrl/n:4.1f}% · saga in top-10 {100*coll_top/max(1,n_top):2.0f}% {extra}")
+    log(f"  {name:<32} P@10 {100*prec[10]/n:5.1f}% · R@10 {100*hit[10]/n:5.1f}% · R@50 {100*hit[50]/n:5.1f}% · "
+        f"Jaccard@20 {100*jac/n:4.1f}% · rango med {int(np.median(r)):>5,} · ctrl {100*ctrl/n:4.1f}% · saga {100*coll_top/max(1,n_top):2.0f}%")
     return 100 * hit[50] / n
 
 
@@ -297,7 +344,7 @@ def run(cfg):
         nz = np.array([j for j in nz if int(mids[j]) in tmdb2mid and int(tmdb2tmdb_ok(j)) in row_of_tmdb], dtype=int) if False else nz
         pos, neg = [], []
         cK_arr = np.asarray(XK.sum(axis=0)).ravel()
-        for _ in range(4000):
+        for _ in range(1200):
             a = int(rng.choice(len(tr)))
             ia = tr[a]
             j = row_ppmi.get(int(tmdb2mid[int(mv["id"].iloc[ia])]))
@@ -311,13 +358,14 @@ def run(cfg):
             ok = np.flatnonzero(cnts >= MIN_CO)
             if len(ok) == 0:
                 continue
-            pj = int(ok[np.argmax(cnts[ok])])
-            k_mid = int(mids[int(keep_ppmi[pj])])          # posizione -> movieId (namespace!)
-            pk = row_of_tmdb.get(int(mid2tmdb.get(k_mid, -1)))
-            if pk is None or pk == ia:
-                continue
-            pos.append((ia, pk))
-            neg.append((ia, int(rng.choice(len(mv)))))
+            # IL POOL, non il migliore: un film e' collegato a 10-20 altri, non a uno solo.
+            for pj in ok[np.argsort(-cnts[ok])][:20]:
+                k_mid = int(mids[int(keep_ppmi[int(pj)])])     # posizione -> movieId (namespace!)
+                pk = row_of_tmdb.get(int(mid2tmdb.get(k_mid, -1)))
+                if pk is None or pk == ia:
+                    continue
+                pos.append((ia, pk))
+                neg.append((ia, int(rng.choice(len(mv)))))
         Xp = np.array([P[i] * P[j] for i, j in pos], np.float32)
         Xn = np.array([P[i] * P[j] for i, j in neg], np.float32)
         if len(pos) > 200:
