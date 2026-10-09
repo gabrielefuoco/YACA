@@ -86,6 +86,9 @@ const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x
         return dna.computeFinalDNA({}, dna.computeActiveDNA(raw), seeds.length * 3);
     };
     const realPool = (profileVector, exclude) => {
+        // POOL=full: il pool INTERO, senza il filtro genere+keyword. Il pool e' solo la lista da cui
+        // l'ordinamento pesca: filtrarlo in anticipo butta via verita' che il ranker saprebbe ordinare.
+        if (process.env.POOL === "full") return [...poolKeys].filter(k => !exclude.has(k));
         const genres = Object.entries(profileVector).filter(([k]) => k.startsWith('g:'))
             .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => Number(k.slice(2)));
         const l2 = Object.entries(profileVector).filter(([k]) => k.startsWith('L2:'))
