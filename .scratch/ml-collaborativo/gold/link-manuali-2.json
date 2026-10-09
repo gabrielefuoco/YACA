@@ -1,0 +1,604 @@
+{
+  "_design": {
+    "cosa": "SECONDA PARTE DEL SET CURATO: 30 sorgenti in piu', stesso schema della prima (tipo, peso, motivo, falsi amici).",
+    "perche": "Con 87 collegamenti una differenza di 2 link e' +-5%: lo strumento non ha risoluzione. Con ~230 collegamenti un miglioramento di 3 punti si vede, e si puo' addestrare su meta' set e verificare sull'altra.",
+    "copertura_nuova": [
+      "commedia (genere assente nella prima parte)",
+      "animazione e famiglia",
+      "documentario",
+      "cinema italiano (il catalogo e' italiano e la prima parte ne aveva solo 3)",
+      "cinema asiatico (Giappone, Corea)",
+      "horror per sottogeneri (slasher, folk, moderno)",
+      "classici hollywoodiani (l'era, che oggi e' allo 0%)",
+      "film 2020+ (i piu' recenti)",
+      "serie TV di generi diversi (commedia, animazione, thriller, storico)"
+    ],
+    "uso": "come la prima parte: i peso 3 nei primi 10, i peso 2 nei primi 20, i falsi amici fuori dai primi 10"
+  },
+  "sources": [
+    {
+      "source": {"title": "Una notte da leoni", "year": 2009, "type": "movie"},
+      "why": "commedia mainstream: genere assente nella prima parte del set",
+      "links": [
+        {"title": "Animal House", "year": 1978, "type": "mainstream", "w": 2, "why": "commedia di gruppo, caos e trasgressione"},
+        {"title": "Old School", "year": 2003, "type": "mainstream", "w": 3, "why": "stesso regista, stessa comicità di gruppo"},
+        {"title": "Superbad", "year": 2007, "type": "mainstream", "w": 2, "why": "commedia generazionale, amicizia maschile"},
+        {"title": "Very Bad Things", "year": 1998, "type": "niche", "w": 2, "why": "addio al celibato che degenera: il gemello nero"},
+        {"title": "Come ammazzare il capo... e vivere felici", "year": 2011, "type": "mainstream", "w": 1, "why": "commedia corale sul posto di lavoro"}
+      ],
+      "false_friends": [
+        {"title": "Le iene", "year": 1992, "why": "addio al celibato + criminali: registro opposto (commedia vs tragedia)"}
+      ]
+    },
+    {
+      "source": {"title": "Il sorpasso", "year": 1962, "type": "movie"},
+      "why": "commedia italiana d'autore: il caso in cui la commedia e' anche cinema",
+      "links": [
+        {"title": "I soliti ignoti", "year": 1958, "type": "mainstream", "w": 3, "why": "la commedia italiana che diventa cinema"},
+        {"title": "Amici miei", "year": 1975, "type": "mainstream", "w": 2, "why": "commedia all'italiana, amicizia maschile"},
+        {"title": "Il sorpasso", "year": 1962, "type": "franchise", "w": 1, "why": "titolo alternativo nel catalogo"},
+        {"title": "Divorzio all'italiana", "year": 1961, "type": "niche", "w": 2, "why": "stessa stagione della commedia italiana"},
+        {"title": "La dolce vita", "year": 1960, "type": "niche", "w": 2, "why": "l'Italia del boom, sguardo amaro"}
+      ],
+      "false_friends": [
+        {"title": "La vita e' bella", "year": 1997, "why": "commedia italiana + famiglia: stagione e intento diversi"}
+      ]
+    },
+    {
+      "source": {"title": "Amici miei", "year": 1975, "type": "movie"},
+      "why": "commedia italiana corale: l'amicizia come genere",
+      "links": [
+        {"title": "I soliti ignoti", "year": 1958, "type": "mainstream", "w": 2, "why": "corale, toscana, commedia d'autore"},
+        {"title": "Il sorpasso", "year": 1962, "type": "mainstream", "w": 2, "why": "stesso spirito, stessa Italia"},
+        {"title": "Parenti serpenti", "year": 1992, "type": "niche", "w": 1, "why": "commedia italiana amara"},
+        {"title": "C'eravamo tanto amati", "year": 1974, "type": "niche", "w": 3, "why": "amicizia maschile, Italia che cambia"}
+      ],
+      "false_friends": [
+        {"title": "Una notte da leoni", "year": 2009, "why": "commedia di gruppo: cultura e registro diversi"}
+      ]
+    },
+    {
+      "source": {"title": "Toy Story - Il mondo dei giocattoli", "year": 1995, "type": "movie"},
+      "why": "animazione per famiglie: mainstream puro, dove il consiglio ovvio E' giusto",
+      "links": [
+        {"title": "Toy Story 2 - Woody e Buzz alla riscossa", "year": 1999, "type": "franchise", "w": 3, "why": "seguito diretto"},
+        {"title": "Alla ricerca di Nemo", "year": 2003, "type": "mainstream", "w": 3, "why": "stesso studio, stessa animazione per famiglie"},
+        {"title": "Monsters & Co.", "year": 2001, "type": "mainstream", "w": 2, "why": "stesso studio, stessa generazione"},
+        {"title": "Shrek", "year": 2001, "type": "mainstream", "w": 2, "why": "animazione per famiglie con ironia adulta"},
+        {"title": "Coco", "year": 2017, "type": "mainstream", "w": 1, "why": "stesso studio, generazione successiva"}
+      ],
+      "false_friends": [
+        {"title": "Akira", "year": 1988, "why": "animazione + successo: pubblico e intento opposti"}
+      ]
+    },
+    {
+      "source": {"title": "Spider-Man - Un nuovo universo", "year": 2018, "type": "movie"},
+      "why": "animazione stilizzata: nicchia tecnica dentro un franchise mainstream",
+      "links": [
+        {"title": "Spider-Man", "year": 2002, "type": "franchise", "w": 2, "why": "stesso personaggio"},
+        {"title": "The Lego Movie", "year": 2014, "type": "mainstream", "w": 3, "why": "animazione stilizzata, ironia metatestuale"},
+        {"title": "Spider-Man - Across the Spider-Verse", "year": 2023, "type": "franchise", "w": 3, "why": "seguito diretto"},
+        {"title": "Akira", "year": 1988, "type": "niche", "w": 2, "why": "animazione d'autore, sperimentazione visiva"},
+        {"title": "Paura e delirio a Las Vegas", "year": 1998, "type": "niche", "w": 1, "why": "estetica psichedelica"}
+      ],
+      "false_friends": [
+        {"title": "Cars - Motori ruggenti", "year": 2006, "why": "animazione + franchise: niente altro in comune"}
+      ]
+    },
+    {
+      "source": {"title": "Akira", "year": 1988, "type": "movie"},
+      "why": "anime di culto: il caso in cui l'animazione e' cinema d'autore",
+      "links": [
+        {"title": "Ghost in the Shell", "year": 1995, "type": "mainstream", "w": 3, "why": "i due pilastri dell'anime cyberpunk"},
+        {"title": "Perfect Blue", "year": 1997, "type": "niche", "w": 3, "why": "animazione d'autore, identita' e violenza"},
+        {"title": "Ninja Scroll", "year": 1993, "type": "niche", "w": 2, "why": "anime adulto anni '90, violenza stilizzata"},
+        {"title": "Vampire Hunter D - Bloodlust", "year": 2000, "type": "niche", "w": 2, "why": "anime gotico d'autore"},
+        {"title": "Blade Runner", "year": 1982, "type": "mainstream", "w": 2, "why": "citta' futura e corpo modificato"}
+      ],
+      "false_friends": [
+        {"title": "Dragon Ball Z - La battaglia degli dei", "year": 2013, "why": "anime + azione: pubblico e ambizione diversi"}
+      ]
+    },
+    {
+      "source": {"title": "Perfect Blue", "year": 1997, "type": "movie"},
+      "why": "thriller psicologico animato: il ponte fra anime e cinema d'autore",
+      "links": [
+        {"title": "Paprika - Sognando un sogno", "year": 2006, "type": "auteur", "w": 3, "why": "stesso regista (Satoshi Kon), stesso tema"},
+        {"title": "Black Swan", "year": 2010, "type": "mainstream", "w": 3, "why": "l'omaggio dichiarato: doppio, ossessione, palcoscenico"},
+        {"title": "Mulholland Drive", "year": 2001, "type": "niche", "w": 2, "why": "identita' che si sfalda, sogno e realta'"},
+        {"title": "Akira", "year": 1988, "type": "niche", "w": 2, "why": "animazione d'autore, anni '90"},
+        {"title": "Millennium Actress", "year": 2001, "type": "auteur", "w": 3, "why": "stesso regista, memoria e cinema"}
+      ],
+      "false_friends": [
+        {"title": "Saw - L'enigmista", "year": 2004, "why": "thriller + violenza: nessuna affinita' di intento"}
+      ]
+    },
+    {
+      "source": {"title": "Venerdi' 13", "year": 1980, "type": "movie"},
+      "why": "slasher: un sottogenere con regole proprie",
+      "links": [
+        {"title": "Halloween - La notte delle streghe", "year": 1978, "type": "mainstream", "w": 3, "why": "il capostipite dello slasher"},
+        {"title": "Nightmare - Dal profondo della notte", "year": 1984, "type": "mainstream", "w": 3, "why": "il terzo pilastro dello slasher anni '80"},
+        {"title": "Non aprite quella porta", "year": 1974, "type": "niche", "w": 2, "why": "orrore rurale, il modello"},
+        {"title": "Scream", "year": 1996, "type": "mainstream", "w": 2, "why": "lo slasher che cita se stesso"},
+        {"title": "La casa", "year": 1981, "type": "cult", "w": 2, "why": "orrore anni '80, stessa generazione"}
+      ],
+      "false_friends": [
+        {"title": "The Ring", "year": 2002, "why": "orrore + morte: sottogenere diverso (soprannaturale, non slasher)"}
+      ]
+    },
+    {
+      "source": {"title": "Scream", "year": 1996, "type": "movie"},
+      "why": "slasher metatestuale: dove la citazione E' il contenuto",
+      "links": [
+        {"title": "Venerdi' 13", "year": 1980, "type": "mainstream", "w": 3, "why": "citato apertamente, stesso meccanismo"},
+        {"title": "Halloween - La notte delle streghe", "year": 1978, "type": "mainstream", "w": 3, "why": "il modello dichiarato del film"},
+        {"title": "So cosa hai fatto", "year": 1997, "type": "mainstream", "w": 2, "why": "stesso anno, stessa ondata post-Scream"},
+        {"title": "Nightmare - Dal profondo della notte", "year": 1984, "type": "mainstream", "w": 2, "why": "il genere citato"},
+        {"title": "Cabin in the Woods", "year": 2012, "type": "niche", "w": 3, "why": "l'erede metatestuale, stessa logica"}
+      ],
+      "false_friends": [
+        {"title": "Scary Movie", "year": 2000, "why": "parodia dello stesso film: il collegamento c'e' ma e' di natura diversa (commedia, non horror)"}
+      ]
+    },
+    {
+      "source": {"title": "Midsommar - Il villaggio dei dannati", "year": 2019, "type": "movie"},
+      "why": "horror folk moderno: nicchia dentro il mainstream",
+      "links": [
+        {"title": "Hereditary - Le radici del male", "year": 2018, "type": "auteur", "w": 3, "why": "stesso regista, stesso orrore familiare"},
+        {"title": "The Witch", "year": 2015, "type": "niche", "w": 3, "why": "orrore folk, comunita' chiusa"},
+        {"title": "Il presagio", "year": 1976, "type": "mainstream", "w": 1, "why": "culto e bambino, classico"},
+        {"title": "Suspiria", "year": 1977, "type": "niche", "w": 2, "why": "setta, ritualita', orrore visivo"},
+        {"title": "The Wicker Man", "year": 1973, "type": "niche", "w": 3, "why": "il modello dichiarato: comunita' pagana"}
+      ],
+      "false_friends": [
+        {"title": "The Conjuring - L'evocazione", "year": 2013, "why": "horror + setta: registro opposto (spavento vs disagio)"}
+      ]
+    },
+    {
+      "source": {"title": "Free Solo", "year": 2018, "type": "movie"},
+      "why": "documentario: un tipo di contenuto che il sistema deve saper trattare",
+      "links": [
+        {"title": "The Dawn Wall", "year": 2017, "type": "mainstream", "w": 3, "why": "stesso sport, stessa tensione, stesso pubblico"},
+        {"title": "Touching the Void", "year": 2003, "type": "niche", "w": 3, "why": "alpinismo estremo e sopravvivenza"},
+        {"title": "Meru", "year": 2015, "type": "niche", "w": 2, "why": "alpinismo, spedizione, ossessione"},
+        {"title": "Man on Wire", "year": 2008, "type": "mainstream", "w": 2, "why": "documentario su un'impresa impossibile"}
+      ],
+      "false_friends": [
+        {"title": "Everest", "year": 2015, "why": "montagna + sopravvivenza: fiction spettacolare, non documentario"}
+      ]
+    },
+    {
+      "source": {"title": "Citizenfour", "year": 2014, "type": "movie"},
+      "why": "documentario politico: nicchia con impatto mainstream",
+      "links": [
+        {"title": "Snowden", "year": 2016, "type": "mainstream", "w": 3, "why": "stessa vicenda, versione fiction"},
+        {"title": "The Social Dilemma", "year": 2020, "type": "mainstream", "w": 2, "why": "documentario sul potere delle piattaforme"},
+        {"title": "Inside Job", "year": 2010, "type": "niche", "w": 2, "why": "documentario d'inchiesta, stessa struttura"},
+        {"title": "The Panama Papers", "year": 2019, "type": "niche", "w": 2, "why": "inchiesta giornalistica sul potere"}
+      ],
+      "false_friends": [
+        {"title": "La vita e' bella", "year": 1997, "why": "nessun punto in comune: serve a verificare che non colleghi per popolarita'"}
+      ]
+    },
+    {
+      "source": {"title": "Dune", "year": 2021, "type": "movie"},
+      "why": "sci-fi epico contemporaneo: il caso in cui il franchise E' il consiglio",
+      "links": [
+        {"title": "Dune - Parte due", "year": 2024, "type": "franchise", "w": 3, "why": "seguito diretto"},
+        {"title": "Blade Runner 2049", "year": 2017, "type": "auteur", "w": 3, "why": "stesso regista, stessa scala visiva"},
+        {"title": "Arrival", "year": 2016, "type": "auteur", "w": 3, "why": "stesso regista, fantascienza d'autore"},
+        {"title": "Star Wars", "year": 1977, "type": "mainstream", "w": 2, "why": "epica fantascientifica, deserto e profezia"},
+        {"title": "Lawrence d'Arabia", "year": 1962, "type": "niche", "w": 2, "why": "deserto, epica, il modello dichiarato"}
+      ],
+      "false_friends": [
+        {"title": "Jupiter - Il destino dell'universo", "year": 2015, "why": "sci-fi epico: qualita' e ambizione opposte"}
+      ]
+    },
+    {
+      "source": {"title": "Everything Everywhere All at Once", "year": 2022, "type": "movie"},
+      "why": "film 2022 che unisce mainstream e nicchia: il caso perfetto per il test",
+      "links": [
+        {"title": "Matrix", "year": 1999, "type": "mainstream", "w": 3, "why": "realta' molteplici, scelta filosofica"},
+        {"title": "Being John Malkovich", "year": 1999, "type": "niche", "w": 2, "why": "assurdo filosofico, identita'"},
+        {"title": "Swiss Army Man", "year": 2016, "type": "niche", "w": 2, "why": "assurdo, stesso tipo di pubblico"},
+        {"title": "Paprika - Sognando un sogno", "year": 2006, "type": "niche", "w": 2, "why": "piani di realta' e identita'"},
+        {"title": "Inception", "year": 2010, "type": "mainstream", "w": 2, "why": "piani sovrapposti, blockbuster intelligente"}
+      ],
+      "false_friends": [
+        {"title": "Doctor Strange", "year": 2016, "why": "multiverso + arti marziali: blockbuster di studio, non film d'autore"}
+      ]
+    },
+    {
+      "source": {"title": "Oppenheimer", "year": 2023, "type": "movie"},
+      "why": "film 2023: il caso in cui il regista E' il franchise",
+      "links": [
+        {"title": "Dunkirk", "year": 2017, "type": "auteur", "w": 3, "why": "stesso regista, storia e tensione"},
+        {"title": "Interstellar", "year": 2014, "type": "auteur", "w": 2, "why": "stesso regista, scienza e sacrificio"},
+        {"title": "Amadeus", "year": 1984, "type": "niche", "w": 3, "why": "genio, ambizione e rovina: la stessa struttura"},
+        {"title": "The Imitation Game", "year": 2014, "type": "mainstream", "w": 2, "why": "scienziato e storia, dramma biografico"},
+        {"title": "Chernobyl", "year": 2019, "type": "medium", "w": 3, "why": "scienza, catastrofe, responsabilita': serie TV"}
+      ],
+      "false_friends": [
+        {"title": "Pearl Harbor", "year": 2001, "why": "storia + guerra: blockbuster romantico, non dramma morale"}
+      ]
+    },
+    {
+      "source": {"title": "Barbie", "year": 2023, "type": "movie"},
+      "why": "film 2023 mainstream con lettura autoriale: il caso ambiguo",
+      "links": [
+        {"title": "La La Land", "year": 2016, "type": "mainstream", "w": 2, "why": "estetica pop, ironia, musical"},
+        {"title": "Legally Blonde", "year": 2001, "type": "mainstream", "w": 2, "why": "commedia pop con sottotesto femminile"},
+        {"title": "Paura e delirio a Las Vegas", "year": 1998, "type": "niche", "w": 1, "why": "viaggio psichedelico"},
+        {"title": "The Lego Movie", "year": 2014, "type": "mainstream", "w": 3, "why": "giocattolo + critica del mondo che lo contiene: stessa mossa"},
+        {"title": "Clueless - Ragazze a Beverly Hills", "year": 1995, "type": "niche", "w": 2, "why": "commedia pop con lettura colta"}
+      ],
+      "false_friends": [
+        {"title": "Transformers", "year": 2007, "why": "giocattolo + blockbuster: nessuna ironia, nessun sottotesto"}
+      ]
+    },
+    {
+      "source": {"title": "La grande bellezza", "year": 2013, "type": "movie"},
+      "why": "cinema italiano contemporaneo: nicchia nazionale con respiro internazionale",
+      "links": [
+        {"title": "La dolce vita", "year": 1960, "type": "niche", "w": 3, "why": "il modello dichiarato: Roma, vuoto, mondanita'"},
+        {"title": "Roma", "year": 1972, "type": "niche", "w": 2, "why": "Fellini, Roma come personaggio"},
+        {"title": "Youth - La giovinezza", "year": 2015, "type": "auteur", "w": 3, "why": "stesso regista (Sorrentino), stessa poetica"},
+        {"title": "Le conseguenze dell'amore", "year": 2004, "type": "auteur", "w": 3, "why": "stesso regista, solitudine e attesa"},
+        {"title": "Il divo", "year": 2008, "type": "niche", "w": 2, "why": "Italia, potere, stile barocco"}
+      ],
+      "false_friends": [
+        {"title": "La vita e' bella", "year": 1997, "why": "cinema italiano + successo internazionale: intento opposto"}
+      ]
+    },
+    {
+      "source": {"title": "Perfetti sconosciuti", "year": 2016, "type": "movie"},
+      "why": "commedia italiana contemporanea: mainstream nazionale",
+      "links": [
+        {"title": "Carnage - Venere in pelliccia", "year": 2011, "type": "mainstream", "w": 3, "why": "adulti, una stanza, verita' che emergono"},
+        {"title": "La grande bellezza", "year": 2013, "type": "niche", "w": 1, "why": "Italia contemporanea, societa'"},
+        {"title": "Il capitale umano", "year": 2013, "type": "niche", "w": 2, "why": "dramma italiano corale contemporaneo"},
+        {"title": "Manuale d'amore", "year": 2005, "type": "mainstream", "w": 2, "why": "commedia italiana corale sulle relazioni"}
+      ],
+      "false_friends": [
+        {"title": "Una notte da leoni", "year": 2009, "why": "gruppo di amici + segreti: registro comico americano"}
+      ]
+    },
+    {
+      "source": {"title": "Casablanca", "year": 1942, "type": "movie"},
+      "why": "classico hollywoodiano: l'era e' al 0%, e qui si vede",
+      "links": [
+        {"title": "Il grande sonno", "year": 1946, "type": "era", "w": 2, "why": "stesso periodo, atmosfera noir"},
+        {"title": "Notorious - L'amante perduta", "year": 1946, "type": "niche", "w": 2, "why": "spionaggio e amore in tempo di guerra"},
+        {"title": "Via col vento", "year": 1939, "type": "mainstream", "w": 2, "why": "il melodramma epico hollywoodiano"},
+        {"title": "Quarto potere", "year": 1941, "type": "era", "w": 2, "why": "lo stesso anno, il cinema che cambia"},
+        {"title": "Il terzo uomo", "year": 1949, "type": "niche", "w": 2, "why": "guerra, Europa, atmosfera morale"}
+      ],
+      "false_friends": [
+        {"title": "Pearl Harbor", "year": 2001, "why": "guerra + amore: rifacimento moderno, niente a che vedere"}
+      ]
+    },
+    {
+      "source": {"title": "Quarto potere", "year": 1941, "type": "movie"},
+      "why": "il classico per antonomasia: se il sistema non lo collega, l'era e' persa",
+      "links": [
+        {"title": "Viale del tramonto", "year": 1950, "type": "era", "w": 3, "why": "il rovescio: Hollywood raccontata da dentro"},
+        {"title": "Il grande sonno", "year": 1946, "type": "era", "w": 2, "why": "struttura a puzzle, stesso periodo"},
+        {"title": "Casablanca", "year": 1942, "type": "era", "w": 2, "why": "lo stesso anno"},
+        {"title": "L'ultimo imperatore", "year": 1987, "type": "niche", "w": 1, "why": "biografia epica, potere e solitudine"},
+        {"title": "Roma citta' aperta", "year": 1945, "type": "era", "w": 1, "why": "cinema di guerra, stesso decennio"}
+      ],
+      "false_friends": [
+        {"title": "The Social Network", "year": 2010, "why": "potere + biografia: secolo e intento diversi"}
+      ]
+    },
+    {
+      "source": {"title": "Taxi Driver", "year": 1976, "type": "movie"},
+      "why": "New Hollywood: l'era piu' influente del cinema americano",
+      "links": [
+        {"title": "Mean Streets - Domenica in chiesa, lunedi' all'inferno", "year": 1973, "type": "auteur", "w": 3, "why": "stesso regista, stessa New York"},
+        {"title": "Arancia meccanica", "year": 1971, "type": "mainstream", "w": 3, "why": "violenza, societa', alienazione: stesso periodo"},
+        {"title": "Il cacciatore", "year": 1978, "type": "mainstream", "w": 2, "why": "New Hollywood, veterani, America malata"},
+        {"title": "Quei bravi ragazzi", "year": 1990, "type": "auteur", "w": 2, "why": "stesso regista, stessa scena"},
+        {"title": "Fino all'ultimo respiro", "year": 1960, "type": "niche", "w": 2, "why": "l'antenato europeo, stesso spirito"}
+      ],
+      "false_friends": [
+        {"title": "Drive", "year": 2011, "why": "autista + violenza urbana: omaggio, non stesso mondo"}
+      ]
+    },
+    {
+      "source": {"title": "Apocalypse Now", "year": 1979, "type": "movie"},
+      "why": "guerra come incubo: un tipo di legame (il TONO) che le keyword non colgono",
+      "links": [
+        {"title": "Platoon", "year": 1986, "type": "mainstream", "w": 3, "why": "Vietnam, discesa morale"},
+        {"title": "Full Metal Jacket", "year": 1987, "type": "mainstream", "w": 3, "why": "Vietnam, follia militare"},
+        {"title": "Il cacciatore", "year": 1978, "type": "mainstream", "w": 3, "why": "Vietnam, stesso anno, stessa ferita"},
+        {"title": "Cuore di tenebra", "year": 1993, "type": "niche", "w": 2, "why": "il documentario sul making of, la follia reale"},
+        {"title": "Il dottor Stranamore", "year": 1964, "type": "niche", "w": 2, "why": "la guerra nucleare, il rovescio comico"}
+      ],
+      "false_friends": [
+        {"title": "Salvate il soldato Ryan", "year": 1998, "why": "guerra + discesa: spettacolo epico, non incubo morale"}
+      ]
+    },
+    {
+      "source": {"title": "Il Padrino - Parte II", "year": 1974, "type": "movie"},
+      "why": "il seguito che supera l'originale: caso limite per il legame franchise",
+      "links": [
+        {"title": "Il Padrino", "year": 1972, "type": "franchise", "w": 3, "why": "primo capitolo"},
+        {"title": "C'era una volta in America", "year": 1984, "type": "niche", "w": 3, "why": "la stessa epica criminale, il tempo che passa"},
+        {"title": "Quei bravi ragazzi", "year": 1990, "type": "mainstream", "w": 3, "why": "ascesa e tradimento, dall'interno"},
+        {"title": "Scarface", "year": 1983, "type": "mainstream", "w": 2, "why": "impero criminale, caduta"},
+        {"title": "Gomorra", "year": 2008, "type": "niche", "w": 2, "why": "criminalita' organizzata, sguardo contemporaneo"}
+      ],
+      "false_friends": [
+        {"title": "Il padrino - Parte III", "year": 1990, "type": "contested", "w": 1, "why": "stesso franchise ma qualita' contestata: peso 1, non deve dominare"}
+      ]
+    },
+    {
+      "source": {"title": "I Soprano", "year": 1999, "type": "tv"},
+      "why": "la serie che ha aperto l'era delle serie 'adulte': cross-medium e cross-decennio",
+      "links": [
+        {"title": "Breaking Bad", "year": 2008, "type": "mainstream", "w": 3, "why": "l'erede diretto: anti-eroe criminale"},
+        {"title": "The Wire", "year": 2002, "type": "niche", "w": 3, "why": "l'altra vetta del dramma criminale"},
+        {"title": "Il Padrino", "year": 1972, "type": "medium", "w": 3, "why": "il modello cinematografico dichiarato"},
+        {"title": "Quei bravi ragazzi", "year": 1990, "type": "medium", "w": 2, "why": "la famiglia criminale, dal cinema alla serie"},
+        {"title": "Gomorra - La serie", "year": 2014, "type": "mainstream", "w": 2, "why": "criminalita' organizzata, serie europea"}
+      ],
+      "false_friends": [
+        {"title": "Narcos", "year": 2015, "type": "tv", "why": "crimine + droga: struttura e tono diversi"}
+      ]
+    },
+    {
+      "source": {"title": "Il Trono di Spade", "year": 2011, "type": "tv"},
+      "why": "fantasy epico seriale: il cross-medium piu' importante per il prodotto",
+      "links": [
+        {"title": "Il Signore degli Anelli - La Compagnia dell'Anello", "year": 2001, "type": "medium", "w": 3, "why": "epica fantasy, il modello dichiarato"},
+        {"title": "Vikings", "year": 2013, "type": "mainstream", "w": 2, "why": "storia, potere, violenza"},
+        {"title": "Roma", "year": 2005, "type": "niche", "w": 2, "why": "potere antico, serie storica d'autore"},
+        {"title": "The Witcher", "year": 2019, "type": "mainstream", "w": 2, "why": "fantasy seriale, stesso pubblico"},
+        {"title": "Excalibur", "year": 1981, "type": "medium", "w": 1, "why": "il fantasy cavalleresco cinematografico"}
+      ],
+      "false_friends": [
+        {"title": "C'era una volta", "year": 2011, "type": "tv", "why": "fiaba + serie: nessuna affinita' di tono"}
+      ]
+    },
+    {
+      "source": {"title": "Twin Peaks", "year": 1990, "type": "tv"},
+      "why": "la serie d'autore per eccellenza: l'esatto opposto della TV di consumo",
+      "links": [
+        {"title": "Mulholland Drive", "year": 2001, "type": "auteur", "w": 3, "why": "stesso regista, stesso incubo"},
+        {"title": "Blue Velvet", "year": 1986, "type": "auteur", "w": 3, "why": "stesso regista, il male sotto la superficie"},
+        {"title": "Velluto blu", "year": 1986, "type": "franchise", "w": 1, "why": "titolo alternativo nel catalogo"},
+        {"title": "X-Files", "year": 1993, "type": "mainstream", "w": 2, "why": "mistero, indagine, soprannaturale"},
+        {"title": "Fargo", "year": 2014, "type": "medium", "w": 2, "why": "serie d'autore con umorismo nero, erede della lezione"}
+      ],
+      "false_friends": [
+        {"title": "True Detective", "year": 2014, "type": "tv", "why": "indagine + atmosfera: struttura diversa (antologia, non visione d'autore)"}
+      ]
+    },
+    {
+      "source": {"title": "Black Mirror", "year": 2011, "type": "tv"},
+      "why": "antologia fantascientifica: nicchia diventata mainstream",
+      "links": [
+        {"title": "Ai confini della realta'", "year": 1959, "type": "niche", "w": 3, "why": "l'antenato diretto: antologia, morale, fantastico"},
+        {"title": "Electric Dreams", "year": 2017, "type": "niche", "w": 2, "why": "antologia sci-fi, stesso formato"},
+        {"title": "Chernobyl", "year": 2019, "type": "medium", "w": 1, "why": "stesso autore (Mazin), tono opposto"},
+        {"title": "Her", "year": 2013, "type": "medium", "w": 3, "why": "tecnologia e solitudine: film, stesso tema"},
+        {"title": "Ex Machina", "year": 2014, "type": "mainstream", "w": 3, "why": "intelligenza artificiale, stesso pubblico"}
+      ],
+      "false_friends": [
+        {"title": "Westworld", "year": 2016, "type": "tv", "why": "sci-fi + serie: blockbuster di rete, non antologia morale"}
+      ]
+    },
+    {
+      "source": {"title": "Chernobyl", "year": 2019, "type": "tv"},
+      "why": "ricostruzione storica: dove il 'come' conta piu' del 'cosa'",
+      "links": [
+        {"title": "Threads", "year": 1984, "type": "niche", "w": 2, "why": "catastrofe nucleare, il film che ha definito il genere"},
+        {"title": "The Day After - Il giorno dopo", "year": 1983, "type": "niche", "w": 2, "why": "guerra nucleare, stessa generazione"},
+        {"title": "Oppenheimer", "year": 2023, "type": "medium", "w": 3, "why": "scienza, catastrofe, responsabilita'"},
+        {"title": "The Social Network", "year": 2010, "type": "mainstream", "w": 1, "why": "processo e responsabilita'"},
+        {"title": "La caduta - Gli ultimi giorni di Hitler", "year": 2004, "type": "mainstream", "w": 2, "why": "ricostruzione storica claustrofobica"}
+      ],
+      "false_friends": [
+        {"title": "2012", "year": 2009, "why": "catastrofe: spettacolo, non ricostruzione"}
+      ]
+    },
+    {
+      "source": {"title": "Rick and Morty", "year": 2013, "type": "tv"},
+      "why": "animazione per adulti: un genere con regole proprie",
+      "links": [
+        {"title": "Futurama", "year": 1999, "type": "mainstream", "w": 3, "why": "animazione per adulti, fantascienza comica"},
+        {"title": "BoJack Horseman", "year": 2014, "type": "niche", "w": 3, "why": "animazione adulta, depressione e umorismo"},
+        {"title": "South Park", "year": 1997, "type": "mainstream", "w": 2, "why": "animazione adulta, satira"},
+        {"title": "I Simpson", "year": 1989, "type": "mainstream", "w": 2, "why": "il capostipite dell'animazione adulta"},
+        {"title": "Akira", "year": 1988, "type": "medium", "w": 1, "why": "animazione d'autore: legame debole ma reale"}
+      ],
+      "false_friends": [
+        {"title": "Peppa Pig", "year": 2004, "type": "tv", "why": "animazione + serie: pubblico opposto"}
+      ]
+    },
+    {
+      "source": {"title": "The Office", "year": 2005, "type": "tv"},
+      "why": "commedia seriale: il genere piu' lontano da tutto il resto del set",
+      "links": [
+        {"title": "Parks and Recreation", "year": 2009, "type": "mainstream", "w": 3, "why": "stesso formato mockumentary, stessa comicità"},
+        {"title": "Brooklyn Nine-Nine", "year": 2013, "type": "mainstream", "w": 2, "why": "commedia corale sul posto di lavoro"},
+        {"title": "Community", "year": 2009, "type": "niche", "w": 3, "why": "commedia di gruppo, metatestuale"},
+        {"title": "Modern Family", "year": 2009, "type": "mainstream", "w": 2, "why": "commedia familiare, stesso decennio"},
+        {"title": "Una notte da leoni", "year": 2009, "type": "medium", "w": 1, "why": "commedia contemporanea: film vs serie"}
+      ],
+      "false_friends": [
+        {"title": "Suits", "year": 2011, "type": "tv", "why": "ufficio + colleghi: dramma, non commedia"}
+      ]
+    },
+    {
+      "source": {"title": "Parasite", "year": 2019, "type": "movie"},
+      "why": "cinema coreano: un cinema intero assente dal resto del set",
+      "links": [
+        {"title": "Memories of Murder", "year": 2003, "type": "auteur", "w": 3, "why": "stesso regista (Bong Joon-ho), stessa critica sociale"},
+        {"title": "Snowpiercer", "year": 2013, "type": "auteur", "w": 3, "why": "stesso regista, classi sociali in verticale"},
+        {"title": "The Host", "year": 2006, "type": "auteur", "w": 2, "why": "stesso regista, famiglia e mostro"},
+        {"title": "Oldboy", "year": 2003, "type": "mainstream", "w": 2, "why": "cinema coreano d'autore, violenza e vendetta"},
+        {"title": "Burning", "year": 2018, "type": "niche", "w": 2, "why": "cinema coreano d'autore, tensione sociale"}
+      ],
+      "false_friends": [
+        {"title": "Il cavaliere oscuro", "year": 2008, "why": "classi sociali + tensione: blockbuster, non critica sociale"}
+      ]
+    },
+    {
+      "source": {"title": "Oldboy", "year": 2003, "type": "movie"},
+      "why": "thriller coreano: la vendetta come genere",
+      "links": [
+        {"title": "Sympathy for Mr. Vengeance", "year": 2002, "type": "auteur", "w": 3, "why": "stesso regista (Park Chan-wook), trilogia della vendetta"},
+        {"title": "Lady Vendetta", "year": 2005, "type": "auteur", "w": 3, "why": "stesso regista, terzo capitolo"},
+        {"title": "I Saw the Devil", "year": 2010, "type": "niche", "w": 3, "why": "vendetta coreana, stessa intensita'"},
+        {"title": "Parasite", "year": 2019, "type": "mainstream", "w": 2, "why": "cinema coreano, critica sociale"},
+        {"title": "Kill Bill", "year": 2003, "type": "mainstream", "w": 2, "why": "vendetta stilizzata, stesso anno"}
+      ],
+      "false_friends": [
+        {"title": "The Equalizer", "year": 2014, "why": "vendetta + violenza: action americano, nessuna affinita'"}
+      ]
+    },
+    {
+      "source": {"title": "Il labirinto del fauno", "year": 2006, "type": "movie"},
+      "why": "fantastico e storia: due registri in un film solo",
+      "links": [
+        {"title": "La spina del diavolo", "year": 2001, "type": "auteur", "w": 3, "why": "stesso regista (Del Toro), guerra e bambini"},
+        {"title": "Cronos", "year": 1993, "type": "auteur", "w": 2, "why": "stesso regista, fantastico d'autore"},
+        {"title": "La forma dell'acqua", "year": 2017, "type": "auteur", "w": 3, "why": "stesso regista, fiaba e storia"},
+        {"title": "Ai confini del mondo", "year": 2006, "type": "niche", "w": 1, "why": "stesso anno, fantastico europeo"},
+        {"title": "Coraline e la porta magica", "year": 2009, "type": "mainstream", "w": 2, "why": "fiaba oscura, pubblico simile"}
+      ],
+      "false_friends": [
+        {"title": "Le cronache di Narnia", "year": 2005, "why": "fantastico + bambini + guerra: per famiglie, non oscuro"}
+      ]
+    },
+    {
+      "source": {"title": "La caduta - Gli ultimi giorni di Hitler", "year": 2004, "type": "movie"},
+      "why": "cinema tedesco: la storia dal punto di vista di chi l'ha fatta",
+      "links": [
+        {"title": "Schindler's List", "year": 1993, "type": "mainstream", "w": 2, "why": "il nazismo raccontato al grande pubblico"},
+        {"title": "Il pianista", "year": 2002, "type": "mainstream", "w": 2, "why": "stessa materia, sguardo individuale"},
+        {"title": "Notte e nebbia", "year": 1956, "type": "niche", "w": 1, "why": "documentario sull'Olocausto, il modello"},
+        {"title": "La vita e' bella", "year": 1997, "type": "mainstream", "w": 1, "why": "stessa materia, registro opposto"},
+        {"title": "Il labirinto del fauno", "year": 2006, "type": "niche", "w": 1, "why": "fascismo visto dai bambini"}
+      ],
+      "false_friends": [
+        {"title": "Dunkirk", "year": 2017, "why": "seconda guerra mondiale: spettacolo, non dramma storico"}
+      ]
+    },
+    {
+      "source": {"title": "I sette samurai", "year": 1954, "type": "movie"},
+      "why": "cinema giapponese classico: l'era e il paese insieme",
+      "links": [
+        {"title": "Rashomon", "year": 1950, "type": "auteur", "w": 3, "why": "stesso regista (Kurosawa), stessa svolta del cinema"},
+        {"title": "Yojimbo - La sfida del samurai", "year": 1961, "type": "auteur", "w": 3, "why": "stesso regista, stesso samurai"},
+        {"title": "Harakiri - Il suicidio rituale", "year": 1962, "type": "niche", "w": 3, "why": "samurai, onore, critica sociale"},
+        {"title": "Ran", "year": 1985, "type": "auteur", "w": 2, "why": "stesso regista, epica e potere"},
+        {"title": "Per un pugno di dollari", "year": 1964, "type": "mainstream", "w": 2, "why": "il remake non dichiarato: l'influenza diretta"}
+      ],
+      "false_friends": [
+        {"title": "L'ultimo samurai", "year": 2003, "why": "samurai + onore: blockbuster hollywoodiano, altro mondo"}
+      ]
+    },
+    {
+      "source": {"title": "Harakiri - Il suicidio rituale", "year": 1962, "type": "movie"},
+      "why": "il capolavoro di nicchia per eccellenza: pochi voti, altissima reputazione",
+      "links": [
+        {"title": "I sette samurai", "year": 1954, "type": "mainstream", "w": 3, "why": "samurai, stesso periodo"},
+        {"title": "Yojimbo - La sfida del samurai", "year": 1961, "type": "mainstream", "w": 3, "why": "samurai, stesso anno"},
+        {"title": "Ran", "year": 1985, "type": "niche", "w": 2, "why": "epica giapponese"},
+        {"title": "La sfida del samurai", "year": 1961, "type": "franchise", "w": 1, "why": "titolo alternativo nel catalogo"},
+        {"title": "Il crepuscolo del samurai", "year": 2002, "type": "niche", "w": 2, "why": "samurai crepuscolare, l'erede"}
+      ],
+      "false_friends": [
+        {"title": "Kill Bill", "year": 2003, "why": "samurai + vendetta: citazione postmoderna, non stesso cinema"}
+      ]
+    },
+    {
+      "source": {"title": "Non e' un paese per vecchi", "year": 2007, "type": "movie"},
+      "why": "il caso che avevamo visto sbagliare: il legame e' di TONO, non di genere",
+      "links": [
+        {"title": "Sicario", "year": 2015, "type": "mainstream", "w": 3, "why": "confine, violenza, tensione morale"},
+        {"title": "Hell or High Water", "year": 2016, "type": "niche", "w": 3, "why": "neo-western contemporaneo, stessa aria"},
+        {"title": "Wind River", "year": 2017, "type": "niche", "w": 2, "why": "stessa frontiera, stesso silenzio"},
+        {"title": "Blue Ruin", "year": 2013, "type": "niche", "w": 2, "why": "vendetta low-key, stessa tensione"},
+        {"title": "Fargo", "year": 1996, "type": "mainstream", "w": 3, "why": "stessi registi, violenza e paesaggio vuoto"}
+      ],
+      "false_friends": [
+        {"title": "Il buono, il brutto, il cattivo", "year": 1966, "why": "western + violenza: epica, non realismo contemporaneo"}
+      ]
+    },
+    {
+      "source": {"title": "La La Land", "year": 2016, "type": "movie"},
+      "why": "musical contemporaneo: genere assente dal set",
+      "links": [
+        {"title": "Whiplash", "year": 2014, "type": "auteur", "w": 3, "why": "stesso regista, musica e ambizione"},
+        {"title": "Moulin Rouge!", "year": 2001, "type": "mainstream", "w": 3, "why": "musical postmoderno, amore e arte"},
+        {"title": "Cantando sotto la pioggia", "year": 1952, "type": "era", "w": 3, "why": "il musical classico, il modello dichiarato"},
+        {"title": "Chicago", "year": 2002, "type": "mainstream", "w": 2, "why": "musical moderno, ambizione e spettacolo"},
+        {"title": "Black Swan", "year": 2010, "type": "mainstream", "w": 2, "why": "arte, ossessione, palcoscenico"}
+      ],
+      "false_friends": [
+        {"title": "Barbie", "year": 2023, "type": "contested", "w": 1, "why": "estetica pop + musical: legame reale ma superficiale"}
+      ]
+    },
+    {
+      "source": {"title": "Whiplash", "year": 2014, "type": "movie"},
+      "why": "musica e ossessione: un legame che passa dal TEMA, non dal genere",
+      "links": [
+        {"title": "La La Land", "year": 2016, "type": "auteur", "w": 3, "why": "stesso regista, musica e sacrificio"},
+        {"title": "Black Swan", "year": 2010, "type": "mainstream", "w": 3, "why": "perfezione artistica e autodistruzione"},
+        {"title": "Amadeus", "year": 1984, "type": "niche", "w": 3, "why": "genio e invidia, musica come ossessione"},
+        {"title": "Birdman", "year": 2014, "type": "mainstream", "w": 2, "why": "stesso anno, arte e disperazione, piano-sequenza"},
+        {"title": "Il cigno nero", "year": 2010, "type": "franchise", "w": 1, "why": "titolo alternativo nel catalogo"}
+      ],
+      "false_friends": [
+        {"title": "School of Rock", "year": 2003, "why": "musica + scuola: commedia, non ossessione"}
+      ]
+    },
+    {
+      "source": {"title": "Rocky", "year": 1976, "type": "movie"},
+      "why": "sport: un genere con regole narrative rigidissime",
+      "links": [
+        {"title": "Toro scatenato", "year": 1980, "type": "niche", "w": 3, "why": "boxe, stesso periodo, il rovescio d'autore"},
+        {"title": "Ali", "year": 2001, "type": "mainstream", "w": 2, "why": "boxe e biografia"},
+        {"title": "Warrior", "year": 2011, "type": "mainstream", "w": 2, "why": "sport e famiglia, struttura identica"},
+        {"title": "Il campione", "year": 1979, "type": "niche", "w": 1, "why": "sport e riscatto sociale"},
+        {"title": "Rocky II", "year": 1979, "type": "franchise", "w": 3, "why": "seguito diretto"}
+      ],
+      "false_friends": [
+        {"title": "Fast & Furious", "year": 2001, "why": "competizione + riscatto: nessuna affinita' di genere"}
+      ]
+    },
+    {
+      "source": {"title": "Roma citta' aperta", "year": 1945, "type": "movie"},
+      "why": "il neorealismo e' l'era piu' rappresentata del cinema italiano: deve funzionare",
+      "links": [
+        {"title": "Paisa'", "year": 1946, "type": "auteur", "w": 3, "why": "stesso regista (Rossellini), stessa guerra"},
+        {"title": "Ladri di biciclette", "year": 1948, "type": "era", "w": 3, "why": "stesso movimento, stesso anno"},
+        {"title": "Germania anno zero", "year": 1948, "type": "era", "w": 2, "why": "il neorealismo fuori dall'Italia"},
+        {"title": "Sciuscia'", "year": 1946, "type": "era", "w": 2, "why": "dopoguerra, infanzia, poverta'"},
+        {"title": "Il bandito", "year": 1946, "type": "era", "w": 1, "why": "stesso anno, stesso cinema"}
+      ],
+      "false_friends": [
+        {"title": "Salvate il soldato Ryan", "year": 1998, "why": "guerra + Italia: spettacolo hollywoodiano, non neorealismo"}
+      ]
+    },
+    {
+      "source": {"title": "Metropolis", "year": 1927, "type": "movie"},
+      "why": "il muto espressionista: se il sistema collega questi film, l'era funziona",
+      "links": [
+        {"title": "Il gabinetto del dottor Caligari", "year": 1920, "type": "era", "w": 3, "why": "espressionismo tedesco, stesso immaginario"},
+        {"title": "Nosferatu il vampiro", "year": 1922, "type": "era", "w": 3, "why": "stessa stagione, stesso regista di riferimento"},
+        {"title": "L'ultima risata", "year": 1924, "type": "era", "w": 2, "why": "muto tedesco, classe sociale"},
+        {"title": "Tempi moderni", "year": 1936, "type": "niche", "w": 3, "why": "l'industria che schiaccia l'uomo: il gemello comico"},
+        {"title": "Blade Runner", "year": 1982, "type": "mainstream", "w": 2, "why": "citta' verticale e classi: l'erede diretto"}
+      ],
+      "false_friends": [
+        {"title": "Frankenstein", "year": 1931, "why": "mostro + laboratorio + espressionismo: produzione e paese diversi"}
+      ]
+    }
+  ]
+}

@@ -46,7 +46,12 @@ def find(title, year_):
             r = difflib.SequenceMatcher(None, nn, s).ratio()
             if r > bs: bs, best = r, j
     return best if bs >= 0.82 else None
-gold = json.loads((ROOT/".scratch/ml-collaborativo/gold/link-manuali.json").read_text(encoding="utf-8"))
+gold = {"sources": []}
+for _f in ("link-manuali.json", "link-manuali-2.json"):
+    _p = ROOT / ".scratch" / "ml-collaborativo" / "gold" / _f
+    if _p.exists():
+        gold["sources"] += json.loads(_p.read_text(encoding="utf-8"))["sources"]
+print(f"set curato: {len(gold['sources'])} sorgenti da {sum(1 for _ in (1,2))} file")
 srcs = []
 miss = []
 for s in gold["sources"]:
