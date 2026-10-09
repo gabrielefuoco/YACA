@@ -1,0 +1,839 @@
+{
+  "batch": 7,
+  "sources": [
+    {
+      "id": "tv:228878",
+      "titolo": "Common Side Effects",
+      "cluster": "animazione-adulta-cospirazione",
+      "links": [
+        "tv:46511:3",
+        "tv:5715:2",
+        "tv:17420:2",
+        "movie:9275:1"
+      ],
+      "add": [
+        "tv|Scavengers Reign|2023|3",
+        "movie|The Constant Gardener|2005|2",
+        "tv|Dopesick|2021|2",
+        "movie|Michael Clayton|2007|2"
+      ]
+    },
+    {
+      "id": "tv:67487",
+      "titolo": "The Tick",
+      "cluster": "supereroi-commedia",
+      "links": [
+        "movie:2661:2",
+        "movie:415:2",
+        "tv:65930:2",
+        "tv:2098:1"
+      ],
+      "add": [
+        "tv|The Tick|2001|3",
+        "movie|Kick-Ass|2010|2",
+        "movie|Mystery Men|1999|2",
+        "tv|Doom Patrol|2019|2"
+      ]
+    },
+    {
+      "id": "tv:53606",
+      "titolo": "Love",
+      "cluster": "commedia-romantica-disfunzionale",
+      "links": [
+        "tv:250923:2",
+        "tv:61920:2",
+        "movie:5966:1",
+        "movie:313369:1"
+      ],
+      "add": [
+        "tv|You're the Worst|2014|3",
+        "tv|Girls|2012|2",
+        "movie|Molto incinta|2007|2",
+        "tv|Master of None|2015|1"
+      ]
+    },
+    {
+      "id": "tv:10268",
+      "titolo": "Primeval",
+      "cluster": "fantascienza-preistoria",
+      "links": [
+        "tv:41283:3",
+        "tv:3557:2",
+        "movie:27591:1",
+        "movie:351286:1"
+      ],
+      "add": [
+        "movie|Jurassic Park|1993|3",
+        "tv|La Brea|2021|2",
+        "tv|Terra Nova|2011|2",
+        "tv|Doctor Who|2005|1"
+      ]
+    },
+    {
+      "id": "tv:56425",
+      "titolo": "Baki the Grappler",
+      "cluster": "arti-marziali-anime",
+      "links": [
+        "tv:80623:3",
+        "movie:9823:2",
+        "movie:15070:2",
+        "movie:10027:1"
+      ],
+      "add": [
+        "tv|Kengan Ashura|2019|3",
+        "movie|Bloodsport|1988|2",
+        "movie|I 3 dell'Operazione Drago|1973|2",
+        "movie|Ip Man|2008|1"
+      ]
+    },
+    {
+      "id": "tv:19544",
+      "titolo": "Afro Samurai",
+      "cluster": "samurai-vendetta",
+      "links": [
+        "movie:14711:3",
+        "tv:83100:2",
+        "movie:672322:1",
+        "tv:88803:1"
+      ],
+      "add": [
+        "tv|Samurai Champloo|2004|3",
+        "tv|Blue Eye Samurai|2023|3",
+        "movie|Sword of the Stranger|2007|2",
+        "movie|Kill Bill: Volume 1|2003|2"
+      ]
+    },
+    {
+      "id": "tv:5028",
+      "titolo": "La tempesta del secolo",
+      "cluster": "horror-isolamento",
+      "links": [
+        "movie:474764:2",
+        "movie:267852:2",
+        "tv:64684:2",
+        "movie:500840:1"
+      ],
+      "add": [
+        "movie|The Mist|2007|3",
+        "tv|Midnight Mass|2021|2",
+        "tv|The Stand|1994|2",
+        "tv|Haven|2010|1"
+      ]
+    },
+    {
+      "id": "tv:111616",
+      "titolo": "First Kill",
+      "cluster": "vampiri-teen-romance",
+      "links": [
+        "movie:8966:2",
+        "movie:860159:2",
+        "movie:20770:2",
+        "tv:72750:2"
+      ],
+      "add": [
+        "tv|The Vampire Diaries|2009|3",
+        "tv|Buffy the Vampire Slayer|1997|2",
+        "movie|Jennifer's Body|2009|2",
+        "tv|Interview with the Vampire|2022|2"
+      ]
+    },
+    {
+      "id": "tv:97539",
+      "titolo": "Self-made: la vita di Madam C.J. Walker",
+      "cluster": "biografico-imprenditrici",
+      "links": [
+        "tv:99617:2",
+        "movie:16367:1",
+        "tv:72615:1"
+      ],
+      "add": [
+        "movie|Il diritto di contare|2016|3",
+        "movie|The Help|2011|2",
+        "tv|La fantastica signora Maisel|2017|2",
+        "movie|La ricerca della felicità|2006|1"
+      ]
+    },
+    {
+      "id": "tv:81559",
+      "titolo": "V Wars",
+      "cluster": "vampiri-virali",
+      "links": [
+        "movie:644124:2",
+        "movie:4513:2",
+        "movie:36648:2",
+        "tv:4619:2"
+      ],
+      "add": [
+        "tv|The Strain|2014|3",
+        "movie|Daybreakers|2009|2",
+        "tv|The Passage|2019|2",
+        "movie|Io sono leggenda|2007|1"
+      ]
+    },
+    {
+      "id": "tv:18712",
+      "titolo": "La ricerca",
+      "cluster": "indagine-scomparsa",
+      "links": [
+        "movie:9008:2",
+        "movie:446354:2",
+        "movie:84287:2",
+        "tv:61555:2",
+        "tv:246386:2"
+      ],
+      "add": [
+        "movie|Prisoners|2013|2",
+        "tv|Broadchurch|2013|2",
+        "movie|Zodiac|2007|1"
+      ]
+    },
+    {
+      "id": "tv:72787",
+      "titolo": "Patrick Melrose",
+      "cluster": "dramma-dipendenze",
+      "links": [
+        "movie:43004:2",
+        "movie:14441:2",
+        "movie:10468:2",
+        "tv:11245:2",
+        "movie:8649:1"
+      ],
+      "add": [
+        "movie|Trainspotting|1996|2",
+        "tv|Succession|2018|2",
+        "tv|Fleabag|2016|1"
+      ]
+    },
+    {
+      "id": "tv:73117",
+      "titolo": "Knightfall",
+      "cluster": "storico-medievale",
+      "links": [
+        "movie:1495:3",
+        "movie:38543:2",
+        "movie:84981:1",
+        "tv:60699:1"
+      ],
+      "add": [
+        "tv|I pilastri della terra|2010|2",
+        "tv|Vikings|2013|2",
+        "tv|The Last Kingdom|2015|1"
+      ]
+    },
+    {
+      "id": "tv:15114",
+      "titolo": "John Adams",
+      "cluster": "storia-americana",
+      "links": [
+        "movie:14902:3",
+        "tv:197591:3",
+        "movie:87729:2",
+        "movie:12701:2",
+        "tv:245219:2",
+        "tv:56304:1"
+      ],
+      "add": [
+        "tv|Turn: Washington's Spies|2014|2",
+        "movie|Lincoln|2012|2"
+      ]
+    },
+    {
+      "id": "tv:61695",
+      "titolo": "Beyond the Boundary",
+      "cluster": "anime-soprannaturale-romance",
+      "links": [
+        "movie:572154:2",
+        "movie:460399:2",
+        "movie:476292:2",
+        "movie:573730:1",
+        "tv:72091:2"
+      ],
+      "add": [
+        "tv|Noragami|2014|2",
+        "movie|Your Name.|2016|2"
+      ]
+    },
+    {
+      "id": "tv:246386",
+      "titolo": "All Her Fault",
+      "cluster": "thriller-scomparsa-bambino",
+      "links": [
+        "movie:4771:3",
+        "movie:1942:3",
+        "tv:61555:3",
+        "tv:217667:2",
+        "tv:18712:2"
+      ],
+      "add": [
+        "movie|Prisoners|2013|3",
+        "tv|Broadchurch|2013|2",
+        "movie|Mystic River|2003|2"
+      ]
+    },
+    {
+      "id": "tv:7072",
+      "titolo": "Las Tontas No Van al Cielo",
+      "cluster": "telenovela-romantica",
+      "links": [
+        "tv:7537:3",
+        "tv:91621:2",
+        "tv:88053:2",
+        "tv:68878:2",
+        "tv:67335:1"
+      ],
+      "add": [
+        "tv|Rebelde|2004|2",
+        "tv|Cuidado con el ángel|2008|2",
+        "tv|La Usurpadora|1998|1"
+      ]
+    },
+    {
+      "id": "tv:206164",
+      "titolo": "Dejémonos de Vargas",
+      "cluster": "commedia-latina-famiglia",
+      "links": [
+        "tv:78292:2",
+        "movie:438146:1",
+        "tv:121253:1",
+        "movie:568124:1"
+      ],
+      "add": [
+        "tv|Betty la fea|1999|2",
+        "tv|La Reina del Flow|2018|2",
+        "tv|Café con aroma de mujer|1994|1"
+      ]
+    },
+    {
+      "id": "tv:17149",
+      "titolo": "Vampire Knight",
+      "cluster": "shoujo-vampiri",
+      "links": [
+        "tv:61512:3",
+        "tv:9160:2",
+        "tv:85991:2",
+        "movie:283727:1",
+        "movie:438551:1"
+      ],
+      "add": [
+        "tv|Kamisama Kiss|2012|2",
+        "tv|Ouran High School Host Club|2006|2",
+        "tv|Rosario + Vampire|2008|1"
+      ]
+    },
+    {
+      "id": "tv:7831",
+      "titolo": "Dead Set",
+      "cluster": "zombie-commedia",
+      "links": [
+        "movie:747:3",
+        "movie:924:2",
+        "movie:19908:2",
+        "movie:170:1",
+        "tv:104108:3",
+        "tv:70593:1"
+      ],
+      "add": [
+        "tv|Black Mirror|2011|2",
+        "movie|Train to Busan|2016|2"
+      ]
+    },
+    {
+      "id": "tv:126525",
+      "titolo": "Elite Storie Brevi: Carla Samuel",
+      "cluster": "teen-drama-short",
+      "links": [
+        "tv:137570:2",
+        "tv:126526:2",
+        "tv:126531:2",
+        "tv:126528:1",
+        "tv:137571:1",
+        "tv:137569:1"
+      ],
+      "add": [
+        "tv|Élite|2018|3"
+      ]
+    },
+    {
+      "id": "tv:132750",
+      "titolo": "Dead Boy Detectives",
+      "cluster": "detective-fantasy",
+      "links": [
+        "movie:539517:2",
+        "movie:8839:2",
+        "tv:60743:2",
+        "tv:75006:2",
+        "movie:49524:1"
+      ],
+      "add": [
+        "tv|Lockwood & Co.|2023|3",
+        "tv|The Sandman|2022|3",
+        "tv|Dirk Gently's Holistic Detective Agency|2016|2"
+      ]
+    },
+    {
+      "id": "tv:11279",
+      "titolo": "Gantz",
+      "cluster": "death-game-seinen",
+      "links": [
+        "movie:3176:3",
+        "movie:396263:3",
+        "movie:50388:2",
+        "tv:45125:2",
+        "tv:112163:2"
+      ],
+      "add": [
+        "tv|Alice in Borderland|2020|3",
+        "movie|Gantz|2011|2"
+      ]
+    },
+    {
+      "id": "tv:70865",
+      "titolo": "La Promesa",
+      "cluster": "telenovela",
+      "links": [
+        "tv:98387:2",
+        "tv:92433:2",
+        "tv:95439:1",
+        "tv:91621:1"
+      ],
+      "add": [
+        "tv|Rubí|2004|2",
+        "tv|La Usurpadora|1998|2",
+        "tv|Café con aroma de mujer|1994|1"
+      ]
+    },
+    {
+      "id": "tv:240667",
+      "titolo": "One Day",
+      "cluster": "romance-lunga-durata",
+      "links": [
+        "tv:102316:3",
+        "tv:89905:3",
+        "tv:103416:2",
+        "tv:119466:1"
+      ],
+      "add": [
+        "movie|One Day|2011|3",
+        "movie|Prima dell'alba|1995|2",
+        "movie|Questione di tempo|2013|1"
+      ]
+    },
+    {
+      "id": "tv:88043",
+      "titolo": "Magical Sempai",
+      "cluster": "commedia-scolastica",
+      "links": [
+        "tv:60730:2",
+        "movie:120811:2",
+        "movie:36592:2",
+        "movie:30839:1",
+        "tv:88042:1"
+      ],
+      "add": [
+        "tv|K-On!|2009|3",
+        "tv|Teasing Master Takagi-san|2018|2",
+        "tv|Daily Lives of High School Boys|2012|1"
+      ]
+    },
+    {
+      "id": "tv:2973",
+      "titolo": "Life on Mars",
+      "cluster": "poliziesco-viaggio-nel-tempo",
+      "links": [
+        "tv:1180:3",
+        "tv:3725:2",
+        "movie:2750:2",
+        "movie:5677:1",
+        "movie:21641:1"
+      ],
+      "add": [
+        "tv|The Sweeney|1975|2",
+        "tv|Quantum Leap|1989|1",
+        "movie|Il braccio violento della legge|1971|1"
+      ]
+    },
+    {
+      "id": "tv:80477",
+      "titolo": "Angels of Death",
+      "cluster": "horror-psicologico",
+      "links": [
+        "tv:42671:2",
+        "tv:11279:2",
+        "tv:49471:2",
+        "tv:93241:2",
+        "movie:3176:1"
+      ],
+      "add": [
+        "movie|Saw - L'enigmista|2004|2",
+        "tv|Deadman Wonderland|2011|2",
+        "tv|Death Note|2006|1"
+      ]
+    },
+    {
+      "id": "tv:83050",
+      "titolo": "Spinning Out",
+      "cluster": "pattinaggio-dramma-sportivo",
+      "links": [
+        "movie:13374:3",
+        "movie:50541:3",
+        "movie:389015:3",
+        "movie:9955:1",
+        "tv:68129:3",
+        "tv:96716:2"
+      ],
+      "add": [
+        "movie|Il cigno nero|2010|2",
+        "movie|Whiplash|2014|1"
+      ]
+    },
+    {
+      "id": "tv:155421",
+      "titolo": "Tutta la luce che non vediamo",
+      "cluster": "seconda-guerra-mondiale",
+      "links": [
+        "movie:8055:2",
+        "movie:872585:1",
+        "movie:826:1",
+        "tv:4613:2",
+        "tv:28379:2",
+        "tv:157368:1"
+      ],
+      "add": [
+        "movie|La vita è bella|1997|2",
+        "movie|Il bambino con il pigiama a righe|2008|2"
+      ]
+    },
+    {
+      "id": "tv:94423",
+      "titolo": "Japan Sinks: 2020",
+      "cluster": "catastrofe-naturale",
+      "links": [
+        "tv:37866:3",
+        "movie:14161:2",
+        "movie:11123:2",
+        "movie:7191:2",
+        "movie:22843:1"
+      ],
+      "add": [
+        "movie|The Day After Tomorrow|2004|2",
+        "movie|Shin Godzilla|2016|1",
+        "tv|Chernobyl|2019|1"
+      ]
+    },
+    {
+      "id": "tv:61755",
+      "titolo": "Watamote",
+      "cluster": "commedia-ansia-sociale",
+      "links": [
+        "tv:42821:3",
+        "movie:678458:1",
+        "movie:632632:1",
+        "tv:98986:1",
+        "tv:96316:1"
+      ],
+      "add": [
+        "tv|Bocchi the Rock!|2022|3",
+        "tv|Komi Can't Communicate|2021|2",
+        "tv|Lucky Star|2007|1"
+      ]
+    },
+    {
+      "id": "tv:49157",
+      "titolo": "Houdini",
+      "cluster": "biografico-magia",
+      "links": [
+        "movie:43192:3",
+        "movie:13910:3",
+        "tv:70128:2",
+        "tv:87739:1"
+      ],
+      "add": [
+        "movie|The Illusionist|2006|3",
+        "movie|The Prestige|2006|2",
+        "tv|The Knick|2014|1"
+      ]
+    },
+    {
+      "id": "tv:128010",
+      "titolo": "Benvenuti a Eden",
+      "cluster": "thriller-isola-setta",
+      "links": [
+        "movie:37165:3",
+        "movie:339988:2",
+        "movie:347751:1",
+        "movie:339994:1"
+      ],
+      "add": [
+        "tv|The Wilds|2020|3",
+        "movie|Midsommar - Il villaggio dei dannati|2019|2",
+        "tv|The Society|2019|2",
+        "movie|The Beach|2000|1"
+      ]
+    },
+    {
+      "id": "tv:62745",
+      "titolo": "DanMachi - Familia Myth - È sbagliato cercare di incontrare ragazze in un Dungeon?",
+      "cluster": "anime-fantasy-dungeon",
+      "links": [
+        "movie:553835:3",
+        "tv:70590:3",
+        "movie:532067:2",
+        "movie:631132:2",
+        "tv:82684:2",
+        "movie:761898:1"
+      ],
+      "add": [
+        "tv|KonoSuba|2016|2",
+        "tv|Sword Art Online|2012|1"
+      ]
+    },
+    {
+      "id": "tv:61585",
+      "titolo": "Olive Kitteridge",
+      "cluster": "dramma-familiare-piccola-citta",
+      "links": [
+        "tv:14968:3",
+        "movie:49815:2",
+        "movie:1715:2",
+        "movie:32761:1",
+        "tv:235571:1"
+      ],
+      "add": [
+        "movie|Manchester by the Sea|2016|2",
+        "tv|Mildred Pierce|2011|2",
+        "movie|Nebraska|2013|1"
+      ]
+    },
+    {
+      "id": "tv:51370",
+      "titolo": "Resurrection",
+      "cluster": "ritorno-dai-morti",
+      "links": [
+        "tv:63201:3",
+        "tv:46616:3",
+        "tv:62142:2",
+        "movie:8913:2",
+        "movie:499028:2",
+        "movie:335778:1"
+      ],
+      "add": [
+        "tv|The Leftovers - Svaniti nel nulla|2014|2",
+        "tv|Manifest|2018|2"
+      ]
+    },
+    {
+      "id": "tv:67752",
+      "titolo": "Channel Zero",
+      "cluster": "horror-antologia",
+      "links": [
+        "tv:1413:3",
+        "movie:16281:2",
+        "movie:84348:2",
+        "tv:93693:1",
+        "tv:83135:1",
+        "tv:71116:1"
+      ],
+      "add": [
+        "tv|Guillermo del Toro's Cabinet of Curiosities|2022|2",
+        "tv|Black Mirror|2011|1"
+      ]
+    },
+    {
+      "id": "tv:157061",
+      "titolo": "The Devil's Hour",
+      "cluster": "thriller-psicologico-tempo",
+      "links": [
+        "tv:99494:2",
+        "tv:99002:2",
+        "tv:97405:1"
+      ],
+      "add": [
+        "tv|The Sinner|2017|2",
+        "tv|Dietro i suoi occhi|2021|2",
+        "tv|Bodies|2023|2",
+        "movie|Predestination|2014|1",
+        "movie|Shutter Island|2010|1"
+      ]
+    },
+    {
+      "id": "tv:103787",
+      "titolo": "Come sopravvivere da single",
+      "cluster": "commedia-relazioni",
+      "links": [
+        "tv:66008:2",
+        "tv:96164:2",
+        "movie:575299:1",
+        "movie:608980:1",
+        "movie:606865:1"
+      ],
+      "add": [
+        "tv|Fleabag|2016|2",
+        "movie|Il diario di Bridget Jones|2001|2",
+        "movie|Manuale d'amore|2005|1"
+      ]
+    },
+    {
+      "id": "tv:88408",
+      "titolo": "The New Pope",
+      "cluster": "vaticano-potere",
+      "links": [
+        "tv:62699:3",
+        "movie:9045:3",
+        "movie:61667:3",
+        "movie:551332:3",
+        "movie:801112:2",
+        "tv:33025:2"
+      ],
+      "add": [
+        "movie|Conclave|2024|3"
+      ]
+    },
+    {
+      "id": "tv:73946",
+      "titolo": "Inuyashiki Last Hero",
+      "cluster": "anime-sci-fi-potenziamenti",
+      "links": [
+        "movie:447743:3",
+        "movie:9323:2",
+        "tv:1097:2",
+        "tv:61374:1"
+      ],
+      "add": [
+        "movie|RoboCop|1987|2",
+        "tv|Pluto|2023|2",
+        "tv|Kiseiju - L'ospite indesiderato|2014|2"
+      ]
+    },
+    {
+      "id": "tv:126531",
+      "titolo": "Elite Storie Brevi: Guzmán Caye Rebe",
+      "cluster": "teen-drama-short",
+      "links": [
+        "tv:137570:2",
+        "tv:126526:2",
+        "tv:126525:2",
+        "tv:126528:1",
+        "tv:137571:1",
+        "tv:137569:1"
+      ],
+      "add": [
+        "tv|Élite|2018|3"
+      ]
+    },
+    {
+      "id": "tv:114925",
+      "titolo": "Pam & Tommy",
+      "cluster": "scandalo-celebrita",
+      "links": [
+        "movie:314365:2",
+        "movie:92591:1",
+        "tv:155537:1",
+        "tv:74140:1"
+      ],
+      "add": [
+        "tv|American Crime Story|2016|3",
+        "movie|Boogie Nights - L'altra Hollywood|1997|2",
+        "tv|Feud|2017|2",
+        "movie|Larry Flynt - Oltre lo scandalo|1996|2"
+      ]
+    },
+    {
+      "id": "tv:68188",
+      "titolo": "Kiss Him, Not Me",
+      "cluster": "shoujo-commedia",
+      "links": [
+        "movie:997317:2",
+        "movie:820067:2",
+        "movie:372754:1",
+        "tv:65648:2",
+        "tv:27167:2",
+        "tv:61379:3"
+      ],
+      "add": [
+        "tv|Ouran High School Host Club|2006|3",
+        "tv|Kaguya-sama: Love is War|2019|2"
+      ]
+    },
+    {
+      "id": "tv:19125",
+      "titolo": "Mujeres asesinas",
+      "cluster": "antologia-crimine-femminile",
+      "links": [
+        "movie:934131:2",
+        "tv:93693:1",
+        "tv:83135:1"
+      ],
+      "add": [
+        "tv|Why Women Kill|2019|3",
+        "movie|Monster|2003|2",
+        "tv|Snapped|2004|2",
+        "tv|L'altra Grace|2017|1"
+      ]
+    },
+    {
+      "id": "tv:63314",
+      "titolo": "Club de Cuervos",
+      "cluster": "calcio-commedia",
+      "links": [
+        "tv:197549:3",
+        "tv:128009:3",
+        "movie:96424:2",
+        "movie:215848:2",
+        "movie:9353:2"
+      ],
+      "add": [
+        "tv|Ted Lasso|2020|3",
+        "movie|Il maledetto United|2009|1"
+      ]
+    },
+    {
+      "id": "tv:72",
+      "titolo": "Only Fools and Horses",
+      "cluster": "sitcom-britannica",
+      "links": [
+        "movie:1621:2",
+        "tv:1906:2",
+        "tv:7246:2",
+        "tv:2207:2"
+      ],
+      "add": [
+        "tv|Minder|1979|2",
+        "movie|Full Monty - Squattrinati organizzati|1997|2",
+        "tv|Porridge|1974|1"
+      ]
+    },
+    {
+      "id": "tv:128306",
+      "titolo": "Il Boss del condominio",
+      "cluster": "commedia-condominio",
+      "links": [
+        "movie:76696:2",
+        "tv:135340:2",
+        "tv:43188:1",
+        "tv:87731:1"
+      ],
+      "add": [
+        "tv|Aquí no hay quien viva|2003|2",
+        "movie|La comunidad|2000|2",
+        "movie|Delicatessen|1991|1"
+      ]
+    },
+    {
+      "id": "tv:229711",
+      "titolo": "The Bondsman",
+      "cluster": "horror-azione-demoni",
+      "links": [
+        "movie:561:3",
+        "movie:539517:2",
+        "tv:62264:3",
+        "tv:1622:2",
+        "tv:67135:1"
+      ],
+      "add": [
+        "tv|Reaper - In missione per il diavolo|2007|3",
+        "tv|Preacher|2016|2",
+        "tv|Wynonna Earp|2016|1"
+      ]
+    }
+  ]
+}

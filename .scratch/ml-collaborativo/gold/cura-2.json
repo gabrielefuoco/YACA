@@ -6,7 +6,7 @@
      "links": ["movie:11527:3", "movie:120:2", "movie:559907:2", "movie:274857:2", "movie:849:1", "tv:71914:2", "tv:64122:2", "tv:81046:1"]},
     {"id": "tv:74387", "titolo": "Final Space", "cluster": "animazione-spazio",
      "links": ["tv:60625:3", "tv:3793:2", "tv:1855:1"],
-     "add": ["movie|Guardiani della Galassia|2014|3", "movie|WALL-E|2008|2", "movie|Galaxy Quest|1999|2", "movie|Futurama|1999|2"]},
+     "add": ["movie|Guardiani della Galassia|2014|3", "movie|WALL-E|2008|2", "movie|Galaxy Quest|1999|2", "tv|Futurama|1999|2"]},
     {"id": "tv:62687", "titolo": "Limitless", "cluster": "genio-droga",
      "links": ["movie:51876:3", "movie:7516:2", "movie:273481:2", "movie:66857:1", "movie:136795:1"],
      "add": ["movie|Lucy|2014|3", "movie|Transcendence|2014|1"]},

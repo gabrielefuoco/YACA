@@ -1,0 +1,210 @@
+{
+ "batch": 3,
+ "sources": [
+  {"id": "tv:63522", "titolo": "F is for Family", "cluster": "animazione-adulta-anni70",
+   "links": ["movie:68924:3", "movie:8051:2", "tv:4239:3", "tv:4589:2", "tv:2710:2"],
+   "add": ["tv|BoJack Horseman|2014|3", "tv|King of the Hill|1997|2", "movie|Little Miss Sunshine|2006|2"]},
+
+  {"id": "tv:77721", "titolo": "3D Kanojo Real Girl", "cluster": "anime-romance-scuola",
+   "links": ["movie:372754:3", "movie:378064:3", "movie:820067:2", "movie:59944:2", "tv:68854:3", "tv:84669:3", "tv:66941:2"],
+   "add": ["movie|Your Name.|2016|2"]},
+
+  {"id": "tv:84380", "titolo": "Meglio di noi", "cluster": "fantascienza-androidi",
+   "links": ["movie:843794:2", "movie:435615:1", "tv:158373:2", "tv:86831:2"],
+   "add": ["tv|Humans|2015|3", "tv|Westworld - Dove tutto è concesso|2016|2", "movie|Ex Machina|2015|3", "movie|Blade Runner|1982|2"]},
+
+  {"id": "tv:112162", "titolo": "Pacific Rim - La zona oscura", "cluster": "kaiju-mecha",
+   "links": ["movie:68726:3", "movie:268896:3", "movie:38582:2", "movie:427641:1", "tv:66558:3", "tv:96451:2", "tv:3425:2"],
+   "add": ["movie|Godzilla|2014|2"]},
+
+  {"id": "tv:134949", "titolo": "Rebelde", "cluster": "teen-musical",
+   "links": ["tv:234239:3", "tv:124834:3", "movie:762968:2", "movie:84892:2"],
+   "add": ["tv|Élite|2018|3", "tv|Glee|2009|3", "movie|High School Musical|2006|2", "movie|Saranno famosi|1980|2"]},
+
+  {"id": "tv:39434", "titolo": "Ano Hana - Ancora non conosciamo il nome del fiore che abbiamo visto quel giorno", "cluster": "anime-lutto-nostalgia",
+   "links": ["movie:255413:3", "movie:530079:3", "movie:615165:2", "movie:916192:2", "tv:62602:3", "tv:66941:2"],
+   "add": ["movie|Stand by Me - Ricordo di un'estate|1986|2", "movie|Il giardino delle parole|2013|2"]},
+
+  {"id": "tv:248852", "titolo": "UNTAMED", "cluster": "thriller-wilderness",
+   "links": ["movie:1949:3", "movie:603119:2", "movie:524251:2", "tv:84661:3", "tv:204276:2", "tv:70523:1"],
+   "add": ["movie|I segreti di Wind River|2017|3", "tv|Longmire|2012|2"]},
+
+  {"id": "tv:6024", "titolo": "Quelli della pallottola spuntata", "cluster": "commedia-demenziale",
+   "links": ["movie:36593:3", "movie:762:2", "movie:935:2", "tv:7246:2", "tv:95670:2"],
+   "add": ["movie|Una pallottola spuntata|1988|3", "movie|L'aereo più pazzo del mondo|1980|3", "tv|Angie Tribeca|2016|3"]},
+
+  {"id": "tv:68799", "titolo": "Una mamma per amica: Di nuovo insieme", "cluster": "dramedy-famiglia",
+   "links": ["movie:1901:2", "tv:71578:2"],
+   "add": ["tv|Una mamma per amica|2000|3", "tv|Parenthood|2010|3", "tv|This Is Us|2016|2", "movie|Kramer contro Kramer|1979|2"]},
+
+  {"id": "tv:713", "titolo": "Chappelle's Show", "cluster": "sketch-comedy",
+   "links": ["movie:823754:2", "movie:911068:1", "tv:610:3", "tv:64113:2", "tv:88728:2", "tv:709:2"],
+   "add": ["tv|Key & Peele|2012|3", "tv|Saturday Night Live|1975|2"]},
+
+  {"id": "tv:40143", "titolo": "Shaman King", "cluster": "anime-sciamanico",
+   "links": ["movie:366170:2", "movie:15575:2", "tv:63085:3", "tv:73833:2", "tv:902:2", "tv:253811:1"],
+   "add": ["tv|Yu degli spettri|1992|3", "tv|Bleach|2004|2"]},
+
+  {"id": "tv:77532", "titolo": "La Forza di una Donna", "cluster": "dramma-madre-figlia",
+   "links": ["tv:68799:2", "tv:87731:1", "tv:2354:1"],
+   "add": ["tv|Parenthood|2010|2", "movie|Tutto su mia madre|1999|2", "movie|Sinfonia d'autunno|1978|2"]},
+
+  {"id": "tv:152483", "titolo": "The Boys Presenta: Diabolico!", "cluster": "supereroi-animati",
+   "links": ["movie:16281:2", "movie:382322:2", "tv:76479:3", "tv:95557:3", "tv:89456:2", "tv:86831:3"],
+   "add": ["movie|Watchmen|2009|2"]},
+
+  {"id": "tv:242876", "titolo": "Ni una más", "cluster": "teen-denuncia",
+   "links": ["movie:470044:3", "movie:510355:2", "movie:756603:2", "movie:84892:2", "tv:66788:3", "tv:90766:1"],
+   "add": ["tv|Sex Education|2019|3", "tv|Grand Army|2020|2"]},
+
+  {"id": "tv:92592", "titolo": "BNA", "cluster": "anime-beastmen",
+   "links": ["movie:633844:2", "movie:34584:1", "movie:19961:1", "tv:96150:2", "tv:107003:1"],
+   "add": ["tv|BEASTARS|2019|3", "movie|Zootropolis|2016|2"]},
+
+  {"id": "tv:77341", "titolo": "Nemici di sangue", "cluster": "narconovela-fratelli",
+   "links": ["movie:136735:2", "movie:21194:1", "tv:95439:2", "tv:92433:1"],
+   "add": ["tv|El Chapo|2017|2", "tv|La regina del Sud|2011|2", "movie|Sicario|2015|2"]},
+
+  {"id": "tv:85273", "titolo": "NOS4A2", "cluster": "horror-stephen-king",
+   "links": ["movie:9945:2"],
+   "add": ["movie|Doctor Sleep|2019|3", "movie|It|2017|2", "tv|Castle Rock|2018|3", "tv|Stranger Things|2016|2", "tv|The Outsider|2020|2"]},
+
+  {"id": "tv:81292", "titolo": "Messiah", "cluster": "religioso-messia",
+   "links": ["movie:458737:3", "movie:632357:2", "movie:438631:1", "tv:85077:3", "tv:64396:1"],
+   "add": ["tv|The Path|2016|2"]},
+
+  {"id": "tv:94028", "titolo": "RIPLEY", "cluster": "noir-truffatore",
+   "links": ["movie:845:3", "movie:18079:3", "movie:10743:2", "movie:664341:2", "tv:92926:2", "tv:91725:1"],
+   "add": ["movie|Il talento di Mr. Ripley|1999|3"]},
+
+  {"id": "tv:2693", "titolo": "Extras", "cluster": "satira-showbiz",
+   "links": ["movie:188222:1", "movie:480001:1", "tv:2996:3", "tv:4589:2", "tv:79063:2", "tv:7246:1"],
+   "add": ["tv|Life's Too Short|2011|3", "movie|Birdman o (L'imprevedibile virtù dell'ignoranza)|2014|2"]},
+
+  {"id": "tv:2432", "titolo": "Taken", "cluster": "alieni-abduction",
+   "links": ["movie:15613:3", "movie:10547:2", "movie:602:2", "tv:14141:3", "tv:1441:2", "tv:2840:2"],
+   "add": ["tv|X-Files|1993|3", "movie|Incontri ravvicinati del terzo tipo|1977|2"]},
+
+  {"id": "tv:120452", "titolo": "Dan Brown - Il simbolo perduto", "cluster": "conspiracy-simbologia",
+   "links": ["movie:591:3", "movie:207932:3", "movie:2059:2", "movie:260:1", "tv:82149:2", "tv:217211:1"],
+   "add": ["movie|Angeli e demoni|2009|3", "tv|Sherlock|2010|2"]},
+
+  {"id": "tv:117303", "titolo": "Lezioni di chimica", "cluster": "period-women-scienza",
+   "links": ["movie:381284:3", "movie:453:1", "movie:16229:1", "tv:39793:2", "tv:62084:2"],
+   "add": ["tv|Mad Men|2007|3", "tv|La fantastica signora Maisel|2017|3"]},
+
+  {"id": "tv:101881", "titolo": "El Presidente", "cluster": "corruzione-calcio",
+   "links": ["movie:44639:3", "movie:9040:2", "movie:261023:2", "tv:80968:3", "tv:81705:3", "tv:128009:2", "tv:84777:2"],
+   "add": ["tv|Narcos|2015|2"]},
+
+  {"id": "tv:67166", "titolo": "El marginal", "cluster": "prigione-drama",
+   "links": ["movie:575:2", "movie:433498:3", "tv:80564:3"],
+   "add": ["tv|Vis a vis - Il prezzo del riscatto|2015|3", "tv|Oz|1997|2", "tv|Prison Break|2005|3", "movie|Qualcuno volò sul nido del cuculo|1975|2"]},
+
+  {"id": "tv:99779", "titolo": "Noblesse", "cluster": "anime-vampiri-webtoon",
+   "links": ["movie:36647:3", "movie:36586:2", "movie:810693:2", "tv:99778:3", "tv:95479:3", "tv:61752:3", "tv:62327:2"],
+   "add": ["tv|Tower of God|2020|2"]},
+
+  {"id": "tv:61244", "titolo": "Happy Valley", "cluster": "crime-britannico",
+   "links": ["movie:273481:2", "movie:994:1", "tv:1426:3", "tv:44641:1"],
+   "add": ["tv|Broadchurch|2013|3", "tv|Line of Duty|2012|3", "movie|Tre manifesti a Ebbing, Missouri|2017|2"]},
+
+  {"id": "tv:81983", "titolo": "Paradise Police", "cluster": "animazione-crime-commedia",
+   "links": ["movie:474331:1", "movie:738652:1", "tv:88071:3", "tv:247522:1", "tv:2301:2"],
+   "add": ["tv|Brickleberry|2012|3", "tv|Big Mouth|2017|2", "tv|Brooklyn Nine-Nine|2013|2"]},
+
+  {"id": "tv:72296", "titolo": "My First Girlfriend is a Gal", "cluster": "anime-romcom-ecchi",
+   "links": ["movie:938567:2", "movie:820067:2", "movie:95170:1", "tv:223564:3", "tv:105556:3", "tv:83103:2"],
+   "add": ["tv|Nisekoi|2014|2", "tv|Rent-a-Girlfriend|2020|2"]},
+
+  {"id": "tv:19253", "titolo": "Mazinga Z", "cluster": "mecha-classico",
+   "links": ["movie:452970:3", "movie:15618:2", "movie:38582:2", "movie:553600:2", "tv:36249:3", "tv:890:3", "tv:1013:2"],
+   "add": ["tv|Mobile Suit Gundam|1979|2"]},
+
+  {"id": "tv:138505", "titolo": "Marvel Zombies", "cluster": "zombie-supereroi",
+   "links": ["movie:503736:2", "movie:19908:2", "movie:1726:1", "tv:88052:3", "tv:7831:2", "tv:65945:1"],
+   "add": ["tv|The Walking Dead|2010|3", "tv|What If...?|2021|2"]},
+
+  {"id": "tv:7695", "titolo": "En nombre del amor", "cluster": "telenovela-classica",
+   "links": ["tv:98387:2", "tv:92433:2", "tv:95160:1", "movie:21194:1"],
+   "add": ["tv|Betty la cozza|1999|2", "tv|La Madrastra|2005|2"]},
+
+  {"id": "tv:103086", "titolo": "Amar y Vivir", "cluster": "musical-latino",
+   "links": ["movie:45272:2", "movie:785539:1", "tv:97180:3", "tv:80240:3", "tv:83962:2", "tv:9323:2"],
+   "add": ["tv|Luis Miguel - La serie|2018|2"]},
+
+  {"id": "tv:33234", "titolo": "I pilastri della Terra", "cluster": "medievale-storico",
+   "links": ["movie:192:3", "movie:895:3", "movie:41215:3", "movie:12184:2", "movie:10705:2", "tv:33958:2"],
+   "add": ["tv|The Last Kingdom|2015|3", "movie|Le crociate - Kingdom of Heaven|2005|2"]},
+
+  {"id": "tv:31387", "titolo": "Las muñecas de la mafia", "cluster": "narconovela-donne",
+   "links": ["tv:98387:2", "tv:95439:2", "tv:92433:1", "movie:136735:2"],
+   "add": ["tv|La regina del Sud|2011|3", "tv|Sin senos sí hay paraíso|2016|2"]},
+
+  {"id": "tv:90257", "titolo": "Tanti piccoli fuochi", "cluster": "madri-segreti-suburb",
+   "links": ["movie:11050:3", "movie:592984:3", "movie:766798:3", "movie:44472:1", "tv:66292:3", "tv:93097:2"],
+   "add": ["tv|Omicidio a Easttown|2021|2"]},
+
+  {"id": "tv:46638", "titolo": "Top of the Lake - Il mistero del lago", "cluster": "noir-comunita-isolata",
+   "links": ["movie:71859:2", "movie:489999:2", "movie:244761:1", "tv:46923:3", "tv:91275:3", "tv:39551:2"],
+   "add": ["tv|Broadchurch|2013|2", "tv|The Killing|2007|2"]},
+
+  {"id": "tv:21409", "titolo": "Dinosaur King D-Kids Adventure: Pterosaur Legend", "cluster": "kids-dinosauri",
+   "links": ["movie:10077:1", "movie:136793:2", "movie:8779:2", "tv:12536:3", "tv:35790:2", "tv:902:2"],
+   "add": ["tv|Digimon: Digital Monsters|1999|3", "movie|Jurassic Park|1993|2"]},
+
+  {"id": "tv:1097", "titolo": "Ergo Proxy", "cluster": "cyberpunk-filosofico",
+   "links": ["movie:78:3", "movie:335984:3", "movie:9323:3", "movie:9606:2", "tv:43865:3", "tv:8838:3", "tv:1087:3", "tv:60937:1"]},
+
+  {"id": "tv:58928", "titolo": "Dracula", "cluster": "vampiri-vittoriano",
+   "links": ["movie:653:3", "movie:138:3", "movie:11868:3", "movie:49017:2", "tv:54671:3", "tv:86850:3", "tv:46930:1"]},
+
+  {"id": "tv:137893", "titolo": "Griselda", "cluster": "narco-boss",
+   "links": ["movie:598065:2", "movie:43434:2", "movie:6977:1", "tv:63351:3", "tv:80968:3", "tv:105489:1"],
+   "add": ["tv|El Chapo|2017|3", "movie|Scarface|1983|3"]},
+
+  {"id": "tv:128095", "titolo": "In nome del cielo", "cluster": "true-crime-sette",
+   "links": ["movie:6973:1", "movie:11423:1", "tv:155537:3", "tv:115004:3", "tv:84661:2"],
+   "add": ["tv|True Detective|2014|3", "tv|Big Love|2006|3"]},
+
+  {"id": "tv:100087", "titolo": "Hasta que la plata nos separe", "cluster": "telenovela-romantica",
+   "links": ["tv:98387:1", "tv:92433:2", "tv:95160:2", "movie:21194:1"],
+   "add": ["tv|Betty la cozza|1999|3", "tv|La Madrastra|2005|2"]},
+
+  {"id": "tv:279471", "titolo": "Malcolm: Che vita!", "cluster": "sitcom-famiglia",
+   "links": ["movie:11199:1", "tv:74321:1"],
+   "add": ["tv|Malcolm|2000|3", "tv|The Middle|2009|3", "tv|Modern Family|2009|2"]},
+
+  {"id": "tv:2423", "titolo": "Celebrity Deathmatch", "cluster": "wrestling-stopmotion",
+   "links": ["movie:54825:1", "movie:56619:1", "tv:88401:3", "tv:9550:3", "tv:92553:2", "tv:97754:2"],
+   "add": ["tv|Robot Chicken|2005|3"]},
+
+  {"id": "tv:68202", "titolo": "Call me Bruna", "cluster": "sex-work",
+   "links": ["movie:84427:2", "movie:796:1", "movie:884:1", "tv:66389:1"],
+   "add": ["tv|The Girlfriend Experience|2016|3", "tv|Il diario di una Squillo Perbene|2007|3", "movie|Bella di giorno|1967|2"]},
+
+  {"id": "tv:229221", "titolo": "La mia prediletta", "cluster": "sequestro-thriller",
+   "links": ["tv:99581:2", "tv:99626:1"],
+   "add": ["movie|Room|2015|3", "tv|The Handmaid's Tale|2017|3", "tv|Unbelievable|2019|2", "movie|Prisoners|2013|2"]},
+
+  {"id": "tv:219", "titolo": "Kyle XY", "cluster": "teen-superpoteri",
+   "links": ["movie:29146:2", "movie:51876:2", "movie:36657:1", "tv:1449:2"],
+   "add": ["tv|Smallville|2001|3", "tv|Roswell|1999|2", "tv|Heroes|2006|2"]},
+
+  {"id": "tv:105797", "titolo": "I Maghi: I racconti di Arcadia", "cluster": "animazione-fantasy",
+   "links": ["movie:730840:3", "movie:57158:1", "movie:673:1", "tv:68267:3", "tv:84154:3", "tv:84773:2", "tv:7704:1"],
+   "add": ["movie|Harry Potter e la pietra filosofale|2001|2"]},
+
+  {"id": "tv:91602", "titolo": "Modern Love", "cluster": "antologia-amore",
+   "links": ["movie:12572:3", "movie:2266:3", "movie:449563:2", "movie:37056:1", "tv:102316:3", "tv:100771:2"],
+   "add": ["tv|Easy|2016|2", "tv|Master of None|2015|2"]},
+
+  {"id": "tv:102621", "titolo": "KAOS", "cluster": "mitologia-greca",
+   "links": ["movie:11533:3", "movie:10323:3", "movie:18823:2", "movie:639933:2", "tv:4589:2"],
+   "add": ["tv|American Gods|2017|3", "tv|Percy Jackson e gli dei dell'Olimpo|2023|2"]},
+
+  {"id": "tv:93454", "titolo": "The Serpent", "cluster": "true-crime-anni70",
+   "links": ["movie:3173:2", "movie:6414:2", "movie:13184:1", "tv:5738:3", "tv:67744:2", "tv:231811:2"],
+   "add": ["tv|DAHMER - Mostro: la storia di Jeffrey Dahmer|2022|2"]}
+ ]
+}

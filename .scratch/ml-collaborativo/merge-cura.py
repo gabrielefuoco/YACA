@@ -41,11 +41,17 @@ def risolvi(title, year, tipo, soglia=0.86):
         rat = difflib.SequenceMatcher(None, " ".join(sorted(q)), " ".join(sorted(ts))).ratio()
         best.append((0.6*jac + 0.4*rat, k, t2, y, jac))
     if not best: return None, []
-    best.sort(reverse=True); top = best[:3]
-    if top[0][0] >= soglia: return top[0][:4] + ("punteggio",), top
-    for sc, k, t2, y, j1 in top:
+    # ORDINE: punteggio, poi ANNO PIU' VICINO. Senza questo, 'Birdman' (2014) veniva risolto su
+    # 'Birdman' (2015): stesso titolo, punteggio 1.00, e la regola del punteggio ignora l'anno.
+    best.sort(key=lambda x: (-x[0], abs(x[3] - year), x[1]))
+    top = best[:3]
+    # La regola del punteggio deve essere ANNO-ESATTA: con la tolleranza di 2 anni 'Birdman'
+    # (2014) finiva su 'Birdman' (2015) - stesso titolo, punteggio 1.00, film diverso.
+    if top[0][0] >= soglia and abs(top[0][3] - year) == 0:
+        return top[0][:4] + ("punteggio",), top
+    for sc, k, t2, y, j1 in best[:20]:      # non solo i primi 3: il titolo lungo ha punteggio basso
         ts = set(toks(t2)); nt = norm(t2); nq = norm(title)
-        if (nq.startswith(nt) or nt.startswith(nq)) and abs(y - year) <= 1: return (sc,k,t2,y,"prefisso"), top
+        if (nq.startswith(nt) or nt.startswith(nq)) and abs(y - year) == 0: return (sc,k,t2,y,"prefisso"), top
         if abs(y-year) == 0 and j1 >= 0.5 and abs(len(q)-len(ts)) <= 1: return (sc,k,t2,y,"parole"), top
         if ts and ts <= q and abs(y - year) == 0: return (sc,k,t2,y,"corto"), top
     return None, top
