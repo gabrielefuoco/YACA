@@ -118,7 +118,7 @@ log(f"  sacco di temi: {M.nnz:,} valori")
 
 # ---- gold
 gold = {"sources": []}
-for f in ("link-manuali.json", "link-manuali-2.json"):
+for f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json"):
     p = ROOT / ".scratch" / "ml-collaborativo" / "gold" / f
     if p.exists():
         gold["sources"] += json.loads(p.read_text(encoding="utf-8"))["sources"]

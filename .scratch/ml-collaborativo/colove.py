@@ -57,8 +57,8 @@ def mapg(s, is_tv):
 
 
 log(f"=== VOTI (tetto {CAP} per film) ===")
-r = pd.read_csv(ML / "ml-32m" / "ratings.csv", usecols=["userId", "movieId", "timestamp"],
-                dtype={"userId": "int32", "movieId": "int32", "timestamp": "int64"})
+r = pd.read_csv(ML / "ml-32m" / "ratings.csv", usecols=["userId", "movieId", "timestamp", "rating"],
+                dtype={"userId": "int32", "movieId": "int32", "timestamp": "int64", "rating": "float32"})
 links = pd.read_csv(ML / "ml-32m" / "links.csv").dropna(subset=["tmdbId"]).astype({"tmdbId": "int64", "movieId": "int64"})
 tmdb2mid = dict(zip(links["tmdbId"], links["movieId"]))
 mid2tmdb = dict(zip(links["movieId"], links["tmdbId"]))

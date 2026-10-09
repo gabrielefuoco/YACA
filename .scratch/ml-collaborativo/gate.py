@@ -73,7 +73,7 @@ def find(title, year_):
 
 row_of = {f"{t}:{int(i)}": r for r, (t, i) in enumerate(zip(tipo, tmdb))}
 gold = {"sources": []}
-for f in ("link-manuali.json", "link-manuali-2.json"):
+for f in ("link-manuali.json", "link-manuali-2.json", "link-manuali-3.json"):
     p = ROOT / ".scratch" / "ml-collaborativo" / "gold" / f
     if p.exists():
         gold["sources"] += json.loads(p.read_text(encoding="utf-8"))["sources"]
@@ -119,10 +119,10 @@ def fascia(s):
     r = s["r"]
     if tipo[r] == "tv":
         return "serie"
+    if pop[r] < 2000:                       # I VOTI PRIMA: la nicchia e' definita dai voti, non dall'epoca
+        return "nicchia (<2000 voti)"
     if year[r] and year[r] < 1980:
         return "classico (<1980)"
-    if pop[r] <= q1:
-        return "nicchia (pochi voti)"
     if pop[r] >= q2:
         return "mainstream (molti voti)"
     return "medio"
