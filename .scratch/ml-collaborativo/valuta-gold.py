@@ -3,7 +3,7 @@ valuta-gold.py — IL METRO CURATO. Valuta uno spazio sui collegamenti scritti a
 Metriche: per PESO (3 = primi 10, 2 = primi 20, 1 = primi 50), per TIPO, e i FALSI AMICI (devono stare fuori).
 Uso: python .scratch/ml-collaborativo/valuta-gold.py
 """
-import json, os, pathlib, re, unicodedata, difflib
+import json, os, os, pathlib, re, unicodedata, difflib
 import numpy as np, pandas as pd
 from scipy import sparse as sp
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -65,6 +65,16 @@ for s in gold["sources"]:
 print(f"sorgenti agganciate: {len(srcs)}/{len(gold['sources'])} · collegamenti {sum(len(s['links']) for s in srcs)} · falsi amici {sum(len(s['ffs']) for s in srcs)}")
 if miss: print("  non agganciate:", ", ".join(miss))
 Sf = sp.load_npz(ML/f"{SP}-tfidf.npz").tocsr()
+try:
+    _zc = np.load(ML/"cross-teacher.npz", allow_pickle=True)
+    Ecr = _zc["E"]
+    assert list(_zc["keys"]) == [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)], "chiavi disallineate"
+    # centro sul TOTALE, non per medium: centrare per medium distruggerebbe il cross-medium
+    _c = Ecr.astype(np.float64); _c -= _c.mean(0)
+    Ec2 = _c / (np.linalg.norm(_c, axis=1, keepdims=True) + 1e-9)
+    print(f"teacher cross-medium caricato: {Ec2.shape}")
+except FileNotFoundError:
+    Ec2 = None; print("teacher cross-medium NON presente")
 _zt = np.load(ML/"temi-scores.npz", allow_pickle=True)
 TB, TC, TKEYS = _zt["bag"], _zt["cen"], [str(x) for x in _zt["keys"]]
 TB = TB / (np.abs(TB).max() + 1e-9); TC = TC / (np.abs(TC).max() + 1e-9)   # scale confrontabili
@@ -78,6 +88,15 @@ def centra(P):
     return Q / (np.linalg.norm(Q, axis=1, keepdims=True) + 1e-9)
 Pc2, Pb2 = centra(Pc), centra(Pb)
 W_K = {3: 10, 2: 20, 1: 50}
+# DECONTAMINAZIONE: le coppie che il teacher ha visto in addestramento non si contano
+import json as _j
+_viste = set()
+try:
+    _dd = _j.loads((ROOT/".scratch"/"ml-collaborativo"/"gold"/"cross-merged.json").read_text(encoding="utf-8"))
+    for _s in _dd["sources"]:
+        for _l in _s["links"]: _viste.add((_s["id"], _l["id"]))
+except Exception: pass
+print(f"coppie viste dal teacher: {len(_viste):,}")
 def sims_of(row, wc, wb, wf, boost):
     sims = wc * (Pc2 @ Pc2[row]) + wb * (Pb2 @ Pb2[row]) + wf * (Sf[row] @ Sf.T).toarray().ravel()
     if boost:
@@ -104,7 +123,7 @@ even = [k for k in range(len(srcs)) if k % 2 == 0]
 print("")
 voti = z["votes"].astype(float)
 COLD = voti < 200          # sotto questa soglia il teacher non ha dati: le coordinate apprese sono rumore
-def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0):
+def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0, wx=0.0):
     sims = wc*(Pc2 @ Pc2[row]) + wb*(Pb2 @ Pb2[row])
     if wf and COLD[row]:
         sims = sims + wf*(Sf[row] @ Sf.T).toarray().ravel()
@@ -112,6 +131,8 @@ def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0):
         sims = sims + wy*np.exp(-((year - year[row])/sig)**2)
     if boost:
         sims = sims + boost*((coll == coll[row]) & ~pd.isna(coll))
+    if wx and Ec2 is not None:
+        sims = sims + wx*(Ec2 @ Ec2[row])
     if wt or wz:
         a = temi_row.get(key_of_row[row])
         if a is not None:
@@ -119,14 +140,17 @@ def sims_of(row, wc, wb, wf, wy, sig, boost, wt=0.0, wz=0.0):
             if wz: sims = sims + wz*TC[a]
     sims[row] = -9
     return sims
-def valuta(wc, wb, wf, wy, sig, boost, nome, subset=None, wt=0.0, wz=0.0):
+CLEAN = os.environ.get("CLEAN", "0") == "1"
+def valuta(wc, wb, wf, wy, sig, boost, nome, subset=None, wt=0.0, wz=0.0, wx=0.0):
     ss = srcs if subset is None else [srcs[k] for k in subset]
     tot = {w: 0 for w in W_K}; hit = {w: 0 for w in W_K}
     byt = {}; ff10 = ff_tot = 0
     for s_ in ss:
-        order = np.argsort(-sims_of(s_["i"], wc, wb, wf, wy, sig, boost, wt, wz))
+        _src = key_of_row[s_["i"]]
+        order = np.argsort(-sims_of(s_["i"], wc, wb, wf, wy, sig, boost, wt, wz, wx))
         rank = {int(x): k for k, x in enumerate(order)}
         for j, t, w, _ in s_["links"]:
+            if CLEAN and (_src, key_of_row[j]) in _viste: continue
             tot[w] += 1; hit[w] += rank[j] < W_K[w]
             byt.setdefault(t, [0,0]); byt[t][0] += rank[j] < W_K[w]; byt[t][1] += 1
         for j in s_["ffs"]:
@@ -176,3 +200,32 @@ for t in allt:
     n_ = max([tipi[k].get(t,[0,0])[1] for k in tipi])
     row = " | ".join(f"{100*tipi[k].get(t,[0,0])[0]/max(1,tipi[k].get(t,[0,0])[1]):.0f}%" if tipi[k].get(t,[0,0])[1] else "-" for k in ("Pc","Pb","F"))
     print(f"| {t} | {n_} | {row} |")
+
+
+print("")
+print("=== IL TEACHER CROSS-MEDIUM DENTRO LA FUSIONE (calibro sui dispari, verifico sui pari) ===")
+if Ec2 is not None:
+    base = (1.0, 0.0, 0.0, 0.15, 8, 0.4)     # la migliore config nota: contenuto + anno + saga
+    print("-- SENZA teacher (riferimento) --")
+    valuta(*base, "base", subset=odd); r0 = valuta(*base, "base (verifica)", subset=even)
+    print("-- CON teacher --")
+    best = None
+    for wx in (0.2, 0.4, 0.6, 1.0, 1.5):
+        r = valuta(*base, f"base + teacher {wx}", subset=odd, wx=wx)
+        if best is None or r["score"] > best[1]["score"]: best = (wx, r)
+    wx = best[0]
+    r1 = valuta(*base, f"base + teacher {wx} (verifica)", subset=even, wx=wx)
+    print("")
+    print(f"  migliore wx = {wx}")
+    print(f"  verifica: PUNTEGGIO {100*r0['score']:.1f} -> {100*r1['score']:.1f}  ·  p3@10 {100*r0['c3']:.1f}% -> {100*r1['c3']:.1f}%")
+    for k in sorted(set(list(r0["byt"].keys()) + list(r1["byt"].keys()))):
+        a, b = r0["byt"].get(k, [0,0]), r1["byt"].get(k, [0,0])
+        if a[1] or b[1]:
+            print(f"    {k:<14} {100*a[0]/max(1,a[1]):5.1f}% -> {100*b[0]/max(1,b[1]):5.1f}%   ({a[1]} legami)")
+
+
+print("")
+print("=== SOLO LEGAMI NON VISTI DAL TEACHER (decontaminato) ===")
+import subprocess, sys
+env = dict(os.environ, CLEAN="1")
+print("(per questo serve una seconda esecuzione con CLEAN=1)")
