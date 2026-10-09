@@ -1,0 +1,302 @@
+{
+  "_design": {
+    "cosa": "SET CURATO A MANO: collegamenti film->film che NOI consideriamo giusti, con tipo, peso e motivo. E' il metro che dice 'cosa vogliamo', non 'cosa fanno gli utenti'.",
+    "perche": "Trakt (contenuto) e MovieLens (co-visione mainstream) discordano del 97%. Ottimizzare su uno dei due significa scegliere un fenomeno. Qui scriviamo il fenomeno che vogliamo: DUE nature di collegamento, mainstream e nicchia, entrambe necessarie.",
+    "tipi": {
+      "mainstream": "il consiglio ovvio, quello che serve all'utente medio (fantasy -> LOTR)",
+      "niche": "il consiglio da intenditore, quello che distingue (Interstellar -> 2001)",
+      "franchise": "stessa saga/serie/universo: il legame piu' certo che esista",
+      "auteur": "stesso autore (regista/sceneggiatore/studio) con poetica riconoscibile",
+      "era": "stesso movimento o periodo (neorealismo, espressionismo, nouvelle vague)",
+      "mood": "stessa atmosfera/tono, anche attraverso generi diversi",
+      "medium": "attraverso il medium: film <-> serie",
+      "cult": "culto/trash: 'talmente sbagliato da essere giusto'",
+      "contested": "difendibile ma non centrale: peso 1, non deve dominare la lista"
+    },
+    "pesi": "3 = legame forte (deve stare nei primi 10), 2 = legame vero (primi 20), 1 = difendibile (primi 50)",
+    "uso": {
+      "test": "per ogni sorgente: i collegamenti peso 3 nei primi 10? peso 2 nei primi 20? i FALSI AMICI fuori dai primi 10?",
+      "per_tipo": "il metro si legge per tipo: un classificatore mainstream deve vincere sui 'mainstream', uno di nicchia sui 'niche'. Se uno solo vince su tutto, il secondo non serve",
+      "ottimizzazione": "meta' del set per calibrare i pesi della fusione, meta' tenuta fuori. NON addestrare su tutto: con 20 sorgenti l'overfitting e' immediato",
+      "falsi_amici": "la parte piu' utile: coppie che condividono UNA cosa (una keyword, un attore, un genere) e nient'altro. Il nostro spazio oggi mette il 50% di 'keyword condivise' nella top-10: qui si vede il danno"
+    },
+    "limiti": [
+      "20 sorgenti sono poche per un numero: valgono per la PRECISIONE (cosa sbaglia) piu' che per il richiamo",
+      "il mio gusto non e' il tuo: correggi, aggiungi, cancella — e' un documento di lavoro",
+      "i titoli vanno agganciati al catalogo per titolo+anno (il catalogo ha titolo italiano e title_en)",
+      "i collegamenti cross-medium (film<->serie) sono i meno coperti dai dati esistenti"
+    ]
+  },
+  "sources": [
+    {
+      "source": {"title": "Il Signore degli Anelli - La Compagnia dell'Anello", "year": 2001, "type": "movie"},
+      "why": "epica fantasy mainstream: il caso in cui il consiglio ovvio E' quello giusto",
+      "links": [
+        {"title": "Il Signore degli Anelli - Le due torri", "year": 2002, "type": "franchise", "w": 3, "why": "continuazione diretta"},
+        {"title": "Il Signore degli Anelli - Il ritorno del re", "year": 2003, "type": "franchise", "w": 3, "why": "continuazione diretta"},
+        {"title": "Lo Hobbit - Un viaggio inaspettato", "year": 2012, "type": "franchise", "w": 3, "why": "stesso universo, stesso regista"},
+        {"title": "Willow", "year": 1988, "type": "mainstream", "w": 2, "why": "fantasy epico con profezia e viaggio: il pubblico e' lo stesso"},
+        {"title": "Conan il barbaro", "year": 1982, "type": "mainstream", "w": 2, "why": "sword & sorcery, stessa fame di avventura"},
+        {"title": "Excalibur", "year": 1981, "type": "niche", "w": 2, "why": "l'Arthuriano d'autore: chi ama Tolkien spesso arriva qui"},
+        {"title": "La principessa Mononoke", "year": 1997, "type": "niche", "w": 2, "why": "epica fantasy animata, natura contro civilta'"}
+      ],
+      "false_friends": [
+        {"title": "Eragon", "year": 2006, "why": "stesso genere fantasy ma qualita' e pubblico opposti: collegarlo sporca la lista"},
+        {"title": "Le cronache di Narnia", "year": 2005, "why": "fantasy per bambini: confinante, non sovrapposto"}
+      ]
+    },
+    {
+      "source": {"title": "Interstellar", "year": 2014, "type": "movie"},
+      "why": "sci-fi mainstream con anima di nicchia: il caso che richiede DUE classificatori",
+      "links": [
+        {"title": "2001: Odissea nello spazio", "year": 1968, "type": "niche", "w": 3, "why": "il riferimento dichiarato: spazio, tempo, mistero"},
+        {"title": "Arrival", "year": 2016, "type": "mainstream", "w": 3, "why": "sci-fi 'serio' contemporaneo, stesso pubblico"},
+        {"title": "Contact", "year": 1997, "type": "mainstream", "w": 2, "why": "scienza e fede, viaggio verso l'ignoto"},
+        {"title": "Gravity", "year": 2013, "type": "mainstream", "w": 2, "why": "spazio realistico, sopravvivenza"},
+        {"title": "Solaris", "year": 1972, "type": "niche", "w": 2, "why": "sci-fi filosofica sul lutto e la memoria"},
+        {"title": "Sunshine", "year": 2007, "type": "niche", "w": 2, "why": "missione spaziale e sacrificio, meno celebrato"}
+      ],
+      "false_friends": [
+        {"title": "Armageddon", "year": 1998, "why": "spazio + salvare il mondo, ma registro e pubblico opposti"}
+      ]
+    },
+    {
+      "source": {"title": "2001: Odissea nello spazio", "year": 1968, "type": "movie"},
+      "why": "il polo di NICCHIA: chi lo guarda cerca cose precise",
+      "links": [
+        {"title": "Solaris", "year": 1972, "type": "niche", "w": 3, "why": "il gemello sovietico: spazio come specchio interiore"},
+        {"title": "Stalker", "year": 1979, "type": "niche", "w": 3, "why": "Tarkovskij: lento, metafisico, la Zona"},
+        {"title": "Blade Runner", "year": 1982, "type": "mainstream", "w": 2, "why": "sci-fi d'autore, domande su cos'e' umano"},
+        {"title": "Interstellar", "year": 2014, "type": "mainstream", "w": 2, "why": "l'erede popolare"},
+        {"title": "Metropolis", "year": 1927, "type": "era", "w": 2, "why": "la fantascienza visiva delle origini"}
+      ],
+      "false_friends": [
+        {"title": "Star Wars", "year": 1977, "why": "stesso 'spazio', intento opposto: avventura contro meditazione"}
+      ]
+    },
+    {
+      "source": {"title": "Blade Runner", "year": 1982, "type": "movie"},
+      "why": "ponte fra mainstream e nicchia: cyberpunk visivo e filosofico",
+      "links": [
+        {"title": "Blade Runner 2049", "year": 2017, "type": "franchise", "w": 3, "why": "seguito diretto"},
+        {"title": "Ghost in the Shell", "year": 1995, "type": "niche", "w": 3, "why": "cyberpunk e identita' artificiale, il gemello animato"},
+        {"title": "Akira", "year": 1988, "type": "niche", "w": 2, "why": "cyberpunk urbano, animazione d'autore"},
+        {"title": "Brazil", "year": 1985, "type": "niche", "w": 2, "why": "distopia visiva e burocratica"},
+        {"title": "Dune", "year": 2021, "type": "mainstream", "w": 2, "why": "sci-fi visivo su scala epica, stesso pubblico contemporaneo"},
+        {"title": "Metropolis", "year": 1927, "type": "era", "w": 2, "why": "la citta' verticale e la classe: il modello visivo"}
+      ],
+      "false_friends": [
+        {"title": "Io, robot", "year": 2004, "why": "robot + futuro: nessun altro punto in comune"}
+      ]
+    },
+    {
+      "source": {"title": "Alien", "year": 1979, "type": "movie"},
+      "why": "sci-fi horror: il caso in cui il 'mood' conta piu' del genere",
+      "links": [
+        {"title": "Aliens - Scontro finale", "year": 1986, "type": "franchise", "w": 3, "why": "seguito diretto"},
+        {"title": "La cosa", "year": 1982, "type": "mainstream", "w": 3, "why": "isolamento + mostro + paranoia: stesso film emotivamente"},
+        {"title": "Predator", "year": 1987, "type": "mainstream", "w": 2, "why": "caccia e sopravvivenza in ambiente chiuso"},
+        {"title": "Event Horizon", "year": 1997, "type": "niche", "w": 2, "why": "astronave e orrore, meno celebrato"},
+        {"title": "Pandorum", "year": 2009, "type": "niche", "w": 1, "why": "derivativo ma nello stesso solco"}
+      ],
+      "false_friends": [
+        {"title": "Independence Day", "year": 1996, "why": "alieni + astronavi: registro opposto (spettacolo vs claustrofobia)"}
+      ]
+    },
+    {
+      "source": {"title": "Shining", "year": 1980, "type": "movie"},
+      "why": "horror d'autore: separa chi cerca atmosfera da chi cerca spavento",
+      "links": [
+        {"title": "Suspiria", "year": 1977, "type": "niche", "w": 3, "why": "horror come esperienza visiva e sonora"},
+        {"title": "Rosemary's Baby", "year": 1968, "type": "niche", "w": 3, "why": "orrore psicologico, stesso regista di riferimento culturale"},
+        {"title": "Hereditary - Le radici del male", "year": 2018, "type": "mainstream", "w": 2, "why": "horror d'autore contemporaneo"},
+        {"title": "The Witch", "year": 2015, "type": "niche", "w": 2, "why": "atmosfera, isolamento, famiglia"},
+        {"title": "L'esorcista", "year": 1973, "type": "mainstream", "w": 2, "why": "il capostipite dell'horror 'serio'"}
+      ],
+      "false_friends": [
+        {"title": "The Conjuring", "year": 2013, "why": "horror ma di consumo: nessuna affinita' di tono"},
+        {"title": "Biancaneve e i sette nani", "year": 1937, "why": "la parola 'strega' non e' un collegamento"}
+      ]
+    },
+    {
+      "source": {"title": "Il Padrino", "year": 1972, "type": "movie"},
+      "why": "crime mainstream: il caso in cui il consiglio ovvio e' quasi sempre giusto",
+      "links": [
+        {"title": "Il Padrino - Parte II", "year": 1974, "type": "franchise", "w": 3, "why": "continuazione diretta"},
+        {"title": "Quei bravi ragazzi", "year": 1990, "type": "mainstream", "w": 3, "why": "la famiglia criminale raccontata dall'interno"},
+        {"title": "C'era una volta in America", "year": 1984, "type": "niche", "w": 2, "why": "la stessa epica criminale, piu' malinconica"},
+        {"title": "Scarface", "year": 1983, "type": "mainstream", "w": 2, "why": "ascesa e caduta, stesso immaginario"},
+        {"title": "Mean Streets", "year": 1973, "type": "niche", "w": 2, "why": "il preludio grezzo di Scorsese"}
+      ],
+      "false_friends": [
+        {"title": "John Wick", "year": 2014, "why": "criminalita' + vendetta: action, non tragedia"}
+      ]
+    },
+    {
+      "source": {"title": "Pulp Fiction", "year": 1994, "type": "movie"},
+      "why": "cinema indie anni '90: intreccio, citazione, ironia",
+      "links": [
+        {"title": "Le iene", "year": 1992, "type": "mainstream", "w": 3, "why": "stesso autore, struttura a episodi"},
+        {"title": "Fargo", "year": 1996, "type": "mainstream", "w": 2, "why": "crime con ironia nera, festival anni '90"},
+        {"title": "Trainspotting", "year": 1996, "type": "mainstream", "w": 2, "why": "stessa generazione indie europea"},
+        {"title": "Il grande Lebowski", "year": 1998, "type": "mainstream", "w": 2, "why": "personaggi sopra le righe, umorismo"},
+        {"title": "L.A. Confidential", "year": 1997, "type": "niche", "w": 1, "why": "crime d'atmosfera, piu' classico"}
+      ],
+      "false_friends": [
+        {"title": "Ocean's Eleven", "year": 2001, "why": "colpo grosso + ironia: nessuna affinita' di scrittura"}
+      ]
+    },
+    {
+      "source": {"title": "Il buono, il brutto, il cattivo", "year": 1966, "type": "movie"},
+      "why": "western: spaghetti contro classico, un confine che il sistema deve capire",
+      "links": [
+        {"title": "Per un pugno di dollari", "year": 1964, "type": "franchise", "w": 3, "why": "stessa trilogia, stesso autore"},
+        {"title": "C'era una volta il West", "year": 1968, "type": "mainstream", "w": 3, "why": "Leone, il western che diventa opera"},
+        {"title": "Gli spietati", "year": 1992, "type": "niche", "w": 2, "why": "la revisione crepuscolare del genere"},
+        {"title": "Django", "year": 1966, "type": "niche", "w": 2, "why": "spaghetti western, cult"},
+        {"title": "Mezzogiorno di fuoco", "year": 1952, "type": "mainstream", "w": 1, "why": "il western classico: confinante ma altro mondo"}
+      ],
+      "false_friends": [
+        {"title": "I magnifici sette", "year": 1960, "why": "western corale: vicino, ma il tono e' hollywoodiano"}
+      ]
+    },
+    {
+      "source": {"title": "Ladri di biciclette", "year": 1948, "type": "movie"},
+      "why": "neorealismo: il caso in cui l'EPOCA e' il collegamento, non il genere",
+      "links": [
+        {"title": "Roma citta' aperta", "year": 1945, "type": "era", "w": 3, "why": "lo stesso movimento, stesso regista"},
+        {"title": "Umberto D.", "year": 1952, "type": "era", "w": 3, "why": "De Sica, stessa umanita' minima"},
+        {"title": "Sciuscia'", "year": 1946, "type": "era", "w": 2, "why": "infanzia e poverta' nel dopoguerra"},
+        {"title": "Germania anno zero", "year": 1948, "type": "era", "w": 2, "why": "il neorealismo fuori dall'Italia"},
+        {"title": "Miracolo a Milano", "year": 1951, "type": "era", "w": 2, "why": "stesso autore, registro fantastico"}
+      ],
+      "false_friends": [
+        {"title": "La vita e' bella", "year": 1997, "why": "Italia + poverta' + famiglia: intenti opposti (storia vs fiaba)"}
+      ]
+    },
+    {
+      "source": {"title": "Il gabinetto del dottor Caligari", "year": 1920, "type": "movie"},
+      "why": "cinema muto ed espressionismo: nicchia pura, dove il sistema deve sapere l'epoca",
+      "links": [
+        {"title": "Nosferatu il vampiro", "year": 1922, "type": "era", "w": 3, "why": "espressionismo tedesco, stesso immaginario"},
+        {"title": "Metropolis", "year": 1927, "type": "era", "w": 3, "why": "stessa stagione e stessa ambizione visiva"},
+        {"title": "Vampyr", "year": 1932, "type": "niche", "w": 2, "why": "Dreyer, atmosfera da incubo"},
+        {"title": "L'ultima risata", "year": 1924, "type": "era", "w": 1, "why": "muto tedesco, registro diverso"}
+      ],
+      "false_friends": [
+        {"title": "Frankenstein", "year": 1931, "why": "mostro + espressionismo visivo: produzione e intenti diversi"}
+      ]
+    },
+    {
+      "source": {"title": "La vita e' bella", "year": 1997, "type": "movie"},
+      "why": "dramma italiano mainstream: il caso in cui il tema unisce ma il tono divide",
+      "links": [
+        {"title": "Schindler's List", "year": 1993, "type": "mainstream", "w": 3, "why": "la Shoah raccontata al grande pubblico"},
+        {"title": "Il pianista", "year": 2002, "type": "mainstream", "w": 2, "why": "stessa materia, sguardo individuale"},
+        {"title": "Il bambino con il pigiama a righe", "year": 2008, "type": "mainstream", "w": 2, "why": "stesso pubblico, stessa semplificazione"},
+        {"title": "Train de vie - Un treno per vivere", "year": 1998, "type": "niche", "w": 2, "why": "la Shoah in forma di favola: il gemello europeo"},
+        {"title": "Jojo Rabbit", "year": 2019, "type": "niche", "w": 1, "why": "ironia e nazismo, operazione rischiosa"}
+      ],
+      "false_friends": [
+        {"title": "Ladri di biciclette", "year": 1948, "why": "Italia + famiglia + poverta': niente altro in comune"}
+      ]
+    },
+    {
+      "source": {"title": "Il cavaliere oscuro", "year": 2008, "type": "movie"},
+      "why": "fumetto mainstream: il caso in cui il franchise E' il consiglio",
+      "links": [
+        {"title": "Batman Begins", "year": 2005, "type": "franchise", "w": 3, "why": "inizio della trilogia"},
+        {"title": "Il cavaliere oscuro - Il ritorno", "year": 2012, "type": "franchise", "w": 3, "why": "fine della trilogia"},
+        {"title": "Joker", "year": 2019, "type": "mainstream", "w": 2, "why": "stesso universo, stesso antagonista"},
+        {"title": "Watchmen", "year": 2009, "type": "niche", "w": 2, "why": "fumetto 'serio', stesso autore di riferimento"},
+        {"title": "V per Vendetta", "year": 2005, "type": "niche", "w": 1, "why": "fumetto politico, stesso periodo"}
+      ],
+      "false_friends": [
+        {"title": "Avengers", "year": 2012, "why": "supereroi + azione: registro e ambizione opposti"}
+      ]
+    },
+    {
+      "source": {"title": "La citta' incantata", "year": 2001, "type": "movie"},
+      "why": "animazione d'autore: mainstream in Giappone, nicchia altrove",
+      "links": [
+        {"title": "Il mio vicino Totoro", "year": 1988, "type": "franchise", "w": 3, "why": "stesso studio, stesso mondo"},
+        {"title": "La principessa Mononoke", "year": 1997, "type": "franchise", "w": 3, "why": "stesso studio e stesso regista"},
+        {"title": "Il castello errante di Howl", "year": 2004, "type": "franchise", "w": 3, "why": "stesso regista, stesso immaginario"},
+        {"title": "Paprika - Sognando un sogno", "year": 2006, "type": "niche", "w": 2, "why": "animazione d'autore, sogno e identita'"},
+        {"title": "Mind Game", "year": 2004, "type": "niche", "w": 1, "why": "sperimentazione animata, pubblico di nicchia"}
+      ],
+      "false_friends": [
+        {"title": "Shrek", "year": 2001, "why": "animazione + fiaba: produzione e intento opposti"}
+      ]
+    },
+    {
+      "source": {"title": "Ghost in the Shell", "year": 1995, "type": "movie"},
+      "why": "anime cyberpunk: un ponte fra i due classificatori",
+      "links": [
+        {"title": "Akira", "year": 1988, "type": "mainstream", "w": 3, "why": "i due pilastri dell'anime cyberpunk"},
+        {"title": "Blade Runner", "year": 1982, "type": "mainstream", "w": 2, "why": "identita' artificiale, citta' notturna"},
+        {"title": "Patlabor 2 - The Movie", "year": 1993, "type": "niche", "w": 3, "why": "stesso regista (Oshii), stessa riflessione politica"},
+        {"title": "Neon Genesis Evangelion", "year": 1995, "type": "niche", "w": 2, "why": "anime di rottura, stesso anno, stessa generazione"},
+        {"title": "Cowboy Bebop", "year": 1998, "type": "medium", "w": 2, "why": "anime adulto di culto, stesso pubblico"}
+      ],
+      "false_friends": [
+        {"title": "Matrix", "year": 1999, "why": "cyberpunk + realta' simulata: il collegamento c'e' ma il pubblico e' altro"}
+      ]
+    },
+    {
+      "source": {"title": "Le fabuleux destin d'Amelie Poulain", "year": 2001, "type": "movie"},
+      "why": "cinema francese: dove la NICCHIA e' il mainstream nazionale",
+      "links": [
+        {"title": "Delicatessen", "year": 1991, "type": "auteur", "w": 3, "why": "stessi registi, stesso mondo visivo"},
+        {"title": "La citta' dei bambini perduti", "year": 1995, "type": "auteur", "w": 3, "why": "Jeunet, stesso immaginario"},
+        {"title": "Il favoloso mondo di Amelie", "year": 2001, "type": "franchise", "w": 3, "why": "stesso film, titolo alternativo nel catalogo"},
+        {"title": "Parigi, 13mo distretto", "year": 2021, "type": "niche", "w": 1, "why": "Parigi e leggerezza, generazione diversa"}
+      ],
+      "false_friends": [
+        {"title": "Il destino di un cavaliere", "year": 2001, "why": "Europa + romanticismo: niente altro"}
+      ]
+    },
+    {
+      "source": {"title": "The Room", "year": 2003, "type": "movie"},
+      "why": "cult/trash: un tipo di collegamento che nessun dato comportamentale cattura bene",
+      "links": [
+        {"title": "Troll 2", "year": 1990, "type": "cult", "w": 3, "why": "il compagno di culto: guardato per ridere"},
+        {"title": "Birdemic - Shock and Terror", "year": 2010, "type": "cult", "w": 3, "why": "stessa categoria 'cosi' sbagliato da essere giusto'"},
+        {"title": "Plan 9 from Outer Space", "year": 1959, "type": "cult", "w": 3, "why": "il capostipite del trash amato"},
+        {"title": "Sharknado", "year": 2013, "type": "cult", "w": 2, "why": "trash consapevole, pubblico sovrapposto"}
+      ],
+      "false_friends": [
+        {"title": "Interstellar", "year": 2014, "why": "nessun punto in comune: serve solo a verificare che il sistema non colleghi per popolarita'"}
+      ]
+    },
+    {
+      "source": {"title": "Breaking Bad", "year": 2008, "type": "tv"},
+      "why": "serie: il caso cross-medium e il piu' importante per il prodotto",
+      "links": [
+        {"title": "El Camino - Il film di Breaking Bad", "year": 2019, "type": "medium", "w": 3, "why": "prosecuzione diretta della serie"},
+        {"title": "Better Call Saul", "year": 2015, "type": "franchise", "w": 3, "why": "spin-off, stesso universo"},
+        {"title": "I Soprano", "year": 1999, "type": "mainstream", "w": 3, "why": "l'anti-eroe criminale: il modello della serie 'adulta'"},
+        {"title": "The Wire", "year": 2002, "type": "niche", "w": 3, "why": "l'altra vetta del dramma criminale, meno popolare"},
+        {"title": "Ozark", "year": 2017, "type": "mainstream", "w": 2, "why": "stessa premessa (uomo comune nel crimine)"},
+        {"title": "Fargo", "year": 2014, "type": "mainstream", "w": 2, "why": "crimine + ironia nera, antologia"}
+      ],
+      "false_friends": [
+        {"title": "Narcos", "year": 2015, "type": "tv", "why": "crimine + droga: struttura e tono diversi"}
+      ]
+    },
+    {
+      "source": {"title": "Stranger Things", "year": 2016, "type": "tv"},
+      "why": "serie mainstream con cuore di nicchia: gli anni '80 e il fantastico",
+      "links": [
+        {"title": "E.T. - L'extraterrestre", "year": 1982, "type": "medium", "w": 3, "why": "gruppo di ragazzi + creatura: la fonte dichiarata"},
+        {"title": "I Goonies", "year": 1985, "type": "medium", "w": 3, "why": "avventura di ragazzi anni '80"},
+        {"title": "La cosa", "year": 1982, "type": "niche", "w": 2, "why": "orrore anni '80 citato apertamente"},
+        {"title": "IT", "year": 2017, "type": "mainstream", "w": 2, "why": "ragazzi contro il mostro, nostalgia"},
+        {"title": "Super 8", "year": 2011, "type": "mainstream", "w": 2, "why": "omaggio allo stesso cinema"}
+      ],
+      "false_friends": [
+        {"title": "The Walking Dead", "year": 2010, "type": "tv", "why": "soprannaturale + gruppo: niente altro"}
+      ]
+    }
+  ]
+}
