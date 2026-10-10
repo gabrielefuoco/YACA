@@ -228,3 +228,28 @@ Degrado **monotono**. Sul curato il rapporto ottimo era spreading:teacher = 3,0:
 **Non confermato**: pensavo che il peso dovesse seguire la qualità misurata (o il contributo marginale). Sul test *curato* **non regge**: spreading e teacher hanno qualità quasi identica (10,5% e 10,7%) e contributo marginale quasi identico (+8,0 e +8,2 punti), eppure il peso ottimo è **6:1 a favore dello spreading**. Né la qualità né il marginale lo predicono.
 
 Quindi: **sul prodotto esiste una regola semplice (esperto sotto il caso → peso ~0), sul curato i pesi vanno tarati empiricamente.** Non ho una teoria per il 6:1 — l'ho scritto come quello che è, un dato senza spiegazione.
+
+
+---
+
+## 13. Grid search con calibrazione e verifica separate — e la scoperta che i parametri erano sovratarati
+
+**Perché serviva**: nella sessione avevo tarato i parametri *sullo stesso set su cui misuravo*. Cercare i parametri migliori sul set di misura è overfitting, e non l'avevo controllato.
+
+**Il disegno**: coordinate descent (un parametro per volta) su 7 parametri — k del contenuto, k dei temi, peso della curatela, restart, k dell'RRF, peso dello spreading, peso del teacher. **Calibrazione su metà delle sorgenti di test, verifica sull'altra metà.**
+
+**Il risultato, dopo un solo giro**:
+
+| | calibrazione | verifica |
+|---|---|---|
+| partenza `(15, 15, 0.88, 0.6, 3000, 3.0, 0.5)` | 19,37% | **18,35%** |
+| dopo `k temi 15→10` e `curatela 0.88→0.95` | **19,76%** ↑ | 17,34% ↓ |
+
+**La calibrazione migliora di +0,4 punti, la verifica peggiora di −1,0.** I due parametri scelti erano rumore: sul set di taratura sembravano meglio, sul set tenuto fuori valevano un punto in meno.
+
+**Conseguenze, dichiarate**:
+1. Il **18,9%** riportato nelle sezioni precedenti è la misura sull'intero set di test *dopo* aver tarato su di esso: **mildmente sovrastimato**. La stima non distorta è la **verifica: 18,35%** con i parametri di partenza. Il numero resta solido (8× la produzione), ma il decimale no.
+2. **I parametri "ottimi" trovati nella sessione non sono affidabili al decimale.** La differenza fra 18,35% e 18,9% è taratura, non segnale.
+3. Il disegno giusto per la prossima volta: **tarare sulla calibrazione, riportare solo la verifica** — e farlo *prima* di scrivere i numeri nel report, non dopo.
+
+**La lezione metodologica**, che è la stessa di tutta la giornata in una forma nuova: i tre errori di prima (contaminazione, aliasing, segno) erano **bug**, e si vedevano dal controllo. Questo è **overfitting**, non è un bug, e non si vede da nessun controllo se non separi taratura e verifica. **È l'errore più silenzioso dei quattro.**
