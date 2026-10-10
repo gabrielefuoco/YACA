@@ -85,11 +85,18 @@ L'OCEAN — come dice il suo stesso codice — **non è un'annotazione psicometr
 
 La prima versione dava **97,2% @10**. Era contaminazione: avevo costruito gli archi di curatela da **tutto** il dataset invece che dal solo train, quindi il grafo conteneva i legami di test e la random walk camminava dritta alla risposta. È lo stesso errore del teacher che "ripeteva i propri appunti" — l'ho rifatto a distanza di due ore. **Il 97,2% sarebbe stato il numero più bello della giornata ed era carta straccia.** Il controllo di decontaminazione (la parità) va fatto *prima* di credere a un numero.
 
+## 7-bis. Il test è già un cold-start (importante)
+
+Le sorgenti di test (le serie pari) **non hanno i propri archi di curatela nel grafo**: entrano solo attraverso contenuto e comportamento. Quindi il 18,9% è già il numero per una serie "nuova", mai scritta a mano. La generalizzazione passa per la spreading, che raggiunge i vicini della sorgente nelle prime iterazioni.
+
+**Verificato esplicitamente**: dare alla sorgente anche i vicini come seme (seed espanso) **peggiora** — 17,1-18,4% contro 18,9%. Il meccanismo era già dentro la camminata: il restart tiene vivi i vicini raggiunti, e aggiungerli a mano li diluisce.
+
 ## 8. Le cose che non funzionano, dichiarate
 
 - **Il pool + teacher** (recupero con uno, ordine con l'altro): 11,0-11,8% @10, **peggio** del RRF. Restringere il pool perde candidati che il teacher poi non può recuperare.
 - **Il gate per-query** (teacher più forte sulle sorgenti di nicchia): migliora la profondità (69,2% @2000) ma peggiora la testa (16,7% vs 18,7%). Coerente con quello che avevo visto sul set curato.
 - **Gli embedding delle keyword** (`film-emb.npz`, SVD del grafo delle keyword): 2,7% — **peggio** del one-hot. Non è semantica: i suoi archi vengono dall'adiacenza appresa da MovieLens, quindi è contenuto piegato dal comportamento, più grossolano.
+- **Il seed espanso** (sorgente + vicini di contenuto/comportamento come punto di partenza): 17,1-18,4% contro 18,9%. Il meccanismo è già nella spreading.
 - **Il plateau**: i colpi assoluti restano ~120 su 1.002 perché il **55% dei legami ha il bersaglio in nessuna lista del train** — irraggiungibile per costruzione. Nessun modello lo sposta: non c'è segnale.
 
 ## 9. Cosa significa per il prodotto
