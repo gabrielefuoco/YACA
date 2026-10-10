@@ -221,4 +221,10 @@ Sul *curato* la fusione aiuta (RRF 18,9% contro 10,4% e 10,7% dei singoli). Sul 
 
 Degrado **monotono**. Sul curato il rapporto ottimo era spreading:teacher = 3,0:0,5 (1:6); sul prodotto è 3,0:0,1 (1:30).
 
-**La regola che ne esce**: **i pesi della fusione devono seguire la qualità *misurata* degli esperti**, non essere fissi. La fusione per ranghi è robusta alla *scala* dei punteggi, non alla *differenza di qualità* tra gli esperti. Se un esperto è sotto il caso, il suo peso dev'essere vicino a zero — e va misurato, non assunto.
+**La regola che ne esce, nella forma corretta** — e la seconda metà è un'ipotesi *non* confermata:
+
+**Confermato**: se un esperto è sotto il caso, il suo peso dev'essere vicino a zero. La fusione per ranghi è robusta alla *scala* dei punteggi, **non** alla differenza di qualità. Va misurato, non assunto.
+
+**Non confermato**: pensavo che il peso dovesse seguire la qualità misurata (o il contributo marginale). Sul test *curato* **non regge**: spreading e teacher hanno qualità quasi identica (10,5% e 10,7%) e contributo marginale quasi identico (+8,0 e +8,2 punti), eppure il peso ottimo è **6:1 a favore dello spreading**. Né la qualità né il marginale lo predicono.
+
+Quindi: **sul prodotto esiste una regola semplice (esperto sotto il caso → peso ~0), sul curato i pesi vanno tarati empiricamente.** Non ho una teoria per il 6:1 — l'ho scritto come quello che è, un dato senza spiegazione.
