@@ -111,3 +111,32 @@ Le sorgenti di test (le serie pari) **non hanno i propri archi di curatela nel g
 Script in `.scratch/ml-collaborativo/`: `etero2.py` (grafo + griglia), `twostage.py` (due stadi + RRF), `terzo-esperto.py` (temi), `taratura.py`/`taratura2.py`/`taratura3.py` (taratura fine), `recall-curve.py` (la curva), `tetto-studente.py` (il tetto).
 Artefatti: `etero-final.npz`, `etero-final2.npz`, `etero-rrf-best.npz` (i ranghi migliori).
 Dataset: `cross-merged.json` — 499 sorgenti, 3.533 legami, tutti verificati contro catalogo e grafo.
+
+
+---
+
+## 11. Il test del prodotto (300 profili) — e l'instrumento sbagliato
+
+**Primo tentativo: split temporale** (profilo = 60% più vecchio, gold = 40% più recente). Numeri sotto il caso: contenuto 1,0% contro un caso atteso del 2,0%. **Diagnosi**: il contenuto raccomanda *l'era sbagliata*. Il profilo è fatto di classici anni '90 (*GoodFellas*, *Alien*, *Toy Story*), il gold di film successivi, e i 10 film più popolari non visti sono i blockbuster 2010 (*Interstellar*, *Inception*, *Avengers*, *Endgame*). **Lo split temporale trasforma il test in una predizione dell'era** — e la sessione precedente aveva già visto che i timestamp di MovieLens sono "rating bursts, non sessioni di visione". L'instrumento era sbagliato, non il metodo.
+
+**Secondo tentativo: split casuale** (profilo e gold mescolati e rispezzati 60/40, che è la domanda vera: "cosa guardo dopo"). 300 account, profilo medio 119 titoli, gold medio 80.
+
+| segnale | p3@10 | p2@20 | p1@50 | fondo | resto |
+|---|---|---|---|---|---|
+| caso atteso (uniforme) | ~1,6% | — | — | | |
+| popolarità (controllo) | 1,2% | 2,2% | 4,1% | 0,2% | 3,3% |
+| contenuto (somma profili) | 1,8% | 3,1% | 6,0% | 0,9% | 3,5% |
+| **spreading (4 tipi di arco)** | **2,0%** | 3,4% | 6,7% | 1,0% | 4,0% |
+| teacher (profilo medio) | 0,6% | 1,1% | 2,3% | 0,2% | 1,4% |
+| misto 0,7/0,3 | 1,2% | 2,1% | 4,1% | 0,4% | 2,6% |
+| RRF | **0,0%** ✗ | 0,0% | 0,0% | | |
+
+**Cosa dice, onestamente**: sul caso del prodotto (profilo → prossimo da guardare, gold = i positivi MovieLens) **il segnale è debole** — la spreading fa il 2,0% contro un caso atteso dell'1,6%. Appena sopra il caso. Il contenuto il 1,8%. Il teacher, addestrato sui *legami curati*, è il *peggiore* (0,6%): **è specializzato sul cross-medium curato, non sui positivi comportamentali**.
+
+**Le due misure non sono comparabili**, ed è il punto più importante di questa sezione:
+- il test **cross-medium curato** (18,9%) misura la *qualità*: i legami che un intenditore scriverebbe;
+- il test **prodotto** (2,0%) misura il *volume*: i film che gli utenti MovieLens hanno davvero valutato bene, un segnale molto più rumoroso e generico.
+
+**Bug dichiarato e non risolto**: nel test prodotto l'RRF dà 0,0% (contro 18,9% nel test cross-medium, dove funziona). È un secondo errore che non ho isolato: la `valuta()` mascherava l'array passato (aliasing, corretto) ma ne resta un altro. **Non presento il numero del prodotto come valido finché non è spiegato.**
+
+**Il tempo**: la sessione autonoma finisce qui (12:30). Il prossimo passo naturale è isolare quel bug, poi ri-misurare — perché il 2,0% del prodotto e il 18,9% del curato raccontano due cose diverse, ed entrambe servono.
