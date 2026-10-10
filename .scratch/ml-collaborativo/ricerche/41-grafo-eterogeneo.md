@@ -177,6 +177,18 @@ Il teacher è insensibile al segno perché i ranghi sono una permutazione; l'RRF
 
 **La popolarità è sotto il caso** (1,2% contro 1,6%): i positivi MovieLens sono i gusti degli utenti, non i blockbuster globali.
 
+### Recall@N nel caso prodotto: dove sta il segnale
+
+| segnale | @10 | @50 | @100 | @500 | @2000 | @10000 |
+|---|---|---|---|---|---|---|
+| spreading (curatela 0,6) | 2,3% | 7,2% | 11,4% | **27,4%** | 48,3% | 76,7% |
+| contenuto | 1,8% | 6,0% | 10,0% | 26,8% | 50,5% | **83,5%** |
+| popolarità | 1,2% | 4,1% | 6,9% | 18,3% | 33,9% | 65,6% |
+
+Il segnale c'è ma è in profondità: la spreading mette il **27,4%** del gold nel top-500 e solo il **2,3%** nel top-10. Il contenuto è il migliore in assoluto a 10.000 (83,5%) — trova il quartiere, non l'indirizzo.
+
+**Il pool+ranker però non aiuta**: pool 500 + contenuto 2,11%, pool 2000 + contenuto 2,14% — **contro il 2,26% della spreading sola**. Dentro il pool il contenuto ordina peggio della spreading stessa. Sul prodotto **la spreading sola resta la migliore**, e nessuna combinazione la migliora.
+
 ## 12. Cosa porto a casa
 
 **Le due domande sono diverse e vanno misurate separatamente.**
@@ -191,4 +203,6 @@ Il teacher è insensibile al segno perché i ranghi sono una permutazione; l'RRF
 
 **Tre errori miei, tutti intercettati**: la curatela presa da tutto il dataset (97,2% falso), l'aliasing nella funzione di misura, il segno rovesciato nell'RRF. **Nessuno dei tre si vedeva dal numero finale: si vedevano solo dal controllo.**
 
-**Negativi dichiarati**: pool+teacher (11%), gate per-query (testa peggio), embedding delle keyword (2,7% contro il one-hot), seed espanso (17-18%), split temporale (strumento sbagliato: faceva predire l'era).
+**Sei negativi dichiarati**: pool+teacher sul curato (11%), pool+contenuto sul prodotto (2,14% contro 2,26%), gate per-query (testa peggio), embedding delle keyword (2,7% contro il one-hot), seed espanso (17-18%), split temporale (strumento sbagliato: faceva predire l'era).
+
+**Una differenza che vale la pena isolare la prossima volta**: sul *curato* la fusione aiuta (RRF 18,9% contro 10,4% e 10,7% dei singoli), sul *prodotto* la fusione peggiora (RRF 1,4% contro 2,26% della spreading). Il motivo probabile: sul prodotto uno dei due esperti (il teacher, 0,6%) è **peggiore del caso**, e fondere un esperto cattivo con uno buono trascina giù il risultato. **La fusione per ranghi presume che gli esperti siano comparabili in qualità** — e sul prodotto non lo sono.

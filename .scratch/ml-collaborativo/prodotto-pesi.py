@@ -95,3 +95,68 @@ for wc in (0.0, 0.1, 0.2, 0.4, 0.6, 0.88):
     X = E0.copy()
     for _ in range(15): X = 0.6*(M.T @ X) + 0.4*E0
     valuta(X, f"curatela {wc:.2f}")
+
+
+print("")
+print("=== RECALL@N NEL CASO PRODOTTO: dove sta il segnale ===")
+NS = [10, 50, 100, 500, 2000, 10000]
+def recall(X, nome):
+    P_ = np.array(X, dtype=np.float64, copy=True); P_[MASCHERA] = -1e9
+    R = np.empty(P_.shape, np.int32)
+    for j in range(P_.shape[1]): R[np.argsort(-P_[:, j]), j] = np.arange(n)
+    tot_l = 0; cnt = {k: 0 for k in NS}
+    for j, (strato, sg, gd) in enumerate(TR):
+        rk = R[gd, j]; tot_l += len(gd)
+        for k in NS: cnt[k] += int((rk < k).sum())
+    print(f"  {nome:<30} " + " · ".join(f"@{k} {100*cnt[k]/tot_l:5.1f}%" for k in NS))
+    return cnt
+resto = 1.0 - 0.6
+M = normalizza(((resto/3)*Mk + (resto/3)*Mb + (resto/3)*Mt + 0.6*Mc).tocsr())
+X = E0.copy()
+for _ in range(15): X = 0.6*(M.T @ X) + 0.4*E0
+recall(X, "spreading (curatela 0.6)")
+recall(np.tile(votes.astype(float), (NACC, 1)).T, "popolarita'")
+# il contenuto: profilo = media dei seed
+prof = np.zeros((NACC, Pc2.shape[1]))
+for j, (_, sg, _) in enumerate(TR): prof[j] = Pc2[sg].mean(0)
+recall(Pc2 @ prof.T, "contenuto")
+print("")
+print("LETTURA: se il recall e' alto a N grande e basso a N piccolo, il segnale c'e' ma")
+print("non sa ordinare -> va usato come generatore di candidati (pool), non come ranker.")
+
+
+print("")
+print("=== POOL + RANKER nel caso prodotto ===")
+resto = 1.0 - 0.6
+M = normalizza(((resto/3)*Mk + (resto/3)*Mb + (resto/3)*Mt + 0.6*Mc).tocsr())
+X = E0.copy()
+for _ in range(15): X = 0.6*(M.T @ X) + 0.4*E0
+prof = np.zeros((NACC, Pc2.shape[1]))
+for j, (_, sg, _) in enumerate(TR): prof[j] = Pc2[sg].mean(0)
+Sc = Pc2 @ prof.T                      # contenuto: punteggio per (titolo, account)
+Sc = Sc / (np.linalg.norm(Sc, axis=0, keepdims=True) + 1e-9)
+def pool_ranker(N, w_pool, nome):
+    # punteggio finale: rank nel pool (spreading) + contenuto, dentro il pool
+    P_ = np.zeros((n, NACC), np.float64)
+    for j in range(NACC):
+        pool = np.argsort(-X[:, j])[:N]
+        rk_pool = np.empty(N, np.float64)
+        rk_pool[np.argsort(-X[pool, j])] = np.arange(N)
+        P_[pool, j] = w_pool/(60.0 + rk_pool) + Sc[pool, j]
+    P_[MASCHERA] = -1e9
+    R = np.empty(P_.shape, np.int32)
+    for j in range(P_.shape[1]): R[np.argsort(-P_[:, j]), j] = np.arange(n)
+    tot = {10: 0, 20: 0}; tl = 0; st = {}
+    for j, (strato, sg, gd) in enumerate(TR):
+        rk = R[gd, j]; tot[10] += int((rk < 10).sum()); tot[20] += int((rk < 20).sum()); tl += len(gd)
+        st.setdefault(strato, [0, 0]); st[strato][0] += int((rk < 10).sum()); st[strato][1] += len(gd)
+    ss = " · ".join(f"{k}:{100*a/b:.1f}%" for k, (a, b) in sorted(st.items()))
+    print(f"  {nome:<34} p3@10 {100*tot[10]/tl:5.2f}% · p2@20 {100*tot[20]/tl:5.2f}%   ({ss})")
+    return tot[10]/tl
+best = None
+for N in (100, 500, 2000):
+    for wp in (0.0, 0.05, 0.2):
+        r = pool_ranker(N, wp, f"pool {N} · peso pool {wp}")
+        if best is None or r > best[2]: best = (N, wp, r)
+print(f"  migliore: pool {best[0]} peso {best[1]} -> {100*best[2]:.2f}%")
+print("  (riferimento: spreading sola 2,26% · contenuto 1,8% · caso ~1,6%)")
