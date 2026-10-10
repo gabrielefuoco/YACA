@@ -137,6 +137,58 @@ Dataset: `cross-merged.json` — 499 sorgenti, 3.533 legami, tutti verificati co
 - il test **cross-medium curato** (18,9%) misura la *qualità*: i legami che un intenditore scriverebbe;
 - il test **prodotto** (2,0%) misura il *volume*: i film che gli utenti MovieLens hanno davvero valutato bene, un segnale molto più rumoroso e generico.
 
-**Bug dichiarato e non risolto**: nel test prodotto l'RRF dà 0,0% (contro 18,9% nel test cross-medium, dove funziona). È un secondo errore che non ho isolato: la `valuta()` mascherava l'array passato (aliasing, corretto) ma ne resta un altro. **Non presento il numero del prodotto come valido finché non è spiegato.**
+### Il bug trovato e corretto: il segno
 
-**Il tempo**: la sessione autonoma finisce qui (12:30). Il prossimo passo naturale è isolare quel bug, poi ri-misurare — perché il 2,0% del prodotto e il 18,9% del curato raccontano due cose diverse, ed entrambe servono.
+Il primo giro dava RRF 0,0%. **Causa**: avevo scritto i punteggi **negati** (`-(3/(3000+r)+…)`) e la funzione di misura nega di nuovo (`argsort(-P)`): il RRF veniva **rovesciato**, cioè messo nell'ordine peggiore possibile. Verificato direttamente sulla stessa matrice di ranghi:
+
+| variante | p3@10 |
+|---|---|
+| RRF positivo `3/(3000+r) + 0,5/(3000+r)` | **18,7%** |
+| RRF negato (il bug) | 0,0% |
+| teacher (indifferente al segno: è una permutazione) | 10,7% |
+
+Il teacher è insensibile al segno perché i ranghi sono una permutazione; l'RRF no, perché `1/(k+r)` non è lineare. Corretto: RRF 1,4% sul prodotto.
+
+### Il peso della curatela è diverso per le due domande
+
+| peso curatela | p3@10 (prodotto) |
+|---|---|
+| 0,00 | 2,21% |
+| 0,40 | 2,24% |
+| **0,60** | **2,26%** ← ottimo per il prodotto |
+| 0,88 | 2,02% ← ottimo per il test curato (18,9%) |
+
+**Il mix di archi ottimo dipende dalla domanda.** Il 0,88 tarato sul test curato *peggiora* il prodotto del 12%.
+
+### Il quadro completo del test prodotto
+
+| segnale | p3@10 | fondo (nicchia) | resto (mainstream) |
+|---|---|---|---|
+| caso atteso | ~1,6% | | |
+| **spreading (curatela 0,6)** | **2,26%** | 1,0% | 4,7% |
+| contenuto | 1,8% | 0,9% | 3,5% |
+| RRF (spreading+teacher) | 1,4% | 0,6% | 2,9% |
+| popolarità (controllo) | 1,2% | 0,2% | 3,3% |
+| teacher | 0,6% | 0,2% | 1,4% |
+
+**Il teacher è il componente *peggiore* sul prodotto** e la fusione *peggiora* la spreading. Il teacher è specializzato sui legami *curati* (dove fa 10,7%): sul gold comportamentale — i positivi MovieLens — non serve.
+
+**Il metodo migliore cambia con la domanda**: sul test *curato* vince l'RRF (18,9%); sul test *prodotto* vince la spreading sola (2,26%).
+
+**La popolarità è sotto il caso** (1,2% contro 1,6%): i positivi MovieLens sono i gusti degli utenti, non i blockbuster globali.
+
+## 12. Cosa porto a casa
+
+**Le due domande sono diverse e vanno misurate separatamente.**
+- **Qualità** (i legami che un intenditore scriverebbe): la combinazione strutturale vale **18,9%** contro il 2,2% della produzione — **8,6×** — e contro l'1,5% della somma pesata — **12,6×**.
+- **Volume** (i film che gli utenti hanno valutato bene): **2,26%** contro un caso dell'1,6%. Segnale debole, onesto.
+
+**Quattro cose solide**, tutte misurate:
+1. **La somma pesata di punteggi distrugge il segnale** (1,5% contro il 10,7% del suo componente migliore). La fusione per ranghi è immune alla scala.
+2. **La co-visione da sola fa zero sul cross-medium**: i related di Trakt sono mono-medium. L'unico arco che attraversa i medium è la curatela scritta a mano.
+3. **Il test è già un cold-start**: le sorgenti di test non hanno i propri archi nel grafo. La generalizzazione passa per la spreading.
+4. **I pesi ottimi dipendono dalla domanda**: curatela 0,88 per la qualità, 0,60 per il volume.
+
+**Tre errori miei, tutti intercettati**: la curatela presa da tutto il dataset (97,2% falso), l'aliasing nella funzione di misura, il segno rovesciato nell'RRF. **Nessuno dei tre si vedeva dal numero finale: si vedevano solo dal controllo.**
+
+**Negativi dichiarati**: pool+teacher (11%), gate per-query (testa peggio), embedding delle keyword (2,7% contro il one-hot), seed espanso (17-18%), split temporale (strumento sbagliato: faceva predire l'era).

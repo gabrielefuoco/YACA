@@ -135,7 +135,7 @@ for j in range(NACC):
     u = np.where(E0[:, j] > 0)[0]
     prof = E[u].mean(0)
     Rt[np.argsort(-(E @ prof)), j] = np.arange(n)
-valuta("teacher (profilo medio)", lambda: -Rt.astype(float))
-valuta("RRF spreading + teacher", lambda: -(3.0/(3000+Rs) + 0.5/(3000+Rt)))
-valuta("misto 0.7/0.3", lambda: -(0.7*Rs.astype(float)/n + 0.3*Rt.astype(float)/n))
-valuta("Borda puro", lambda: -(Rs.astype(float) + Rt.astype(float)))
+valuta("teacher (profilo medio)", lambda: (n - Rt).astype(float))
+valuta("RRF spreading + teacher", lambda: 3.0/(3000+Rs.astype(float)) + 0.5/(3000+Rt.astype(float)))
+valuta("misto 0.7/0.3", lambda: (0.7*(n-Rs) + 0.3*(n-Rt)).astype(float))
+valuta("Borda puro", lambda: (2*n - Rs - Rt).astype(float))
