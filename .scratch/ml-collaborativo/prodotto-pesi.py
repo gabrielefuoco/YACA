@@ -160,3 +160,45 @@ for N in (100, 500, 2000):
         if best is None or r > best[2]: best = (N, wp, r)
 print(f"  migliore: pool {best[0]} peso {best[1]} -> {100*best[2]:.2f}%")
 print("  (riferimento: spreading sola 2,26% · contenuto 1,8% · caso ~1,6%)")
+
+
+print("")
+print("=== L'IPOTESI: fondere un esperto CATTIVO trascina giu'. Peso del teacher a scalare ===")
+resto = 1.0 - 0.6
+M = normalizza(((resto/3)*Mk + (resto/3)*Mb + (resto/3)*Mt + 0.6*Mc).tocsr())
+X = E0.copy()
+for _ in range(15): X = 0.6*(M.T @ X) + 0.4*E0
+Rs = np.empty((n, NACC), np.int32)
+for j in range(NACC): Rs[np.argsort(-X[:, j]), j] = np.arange(n)
+A = Mc.copy(); A.data = np.ones_like(A.data)
+tot_ = A.sum(); rs_ = np.asarray(A.sum(1)).ravel(); cs_ = np.asarray(A.sum(0)).ravel()
+from scipy.sparse import coo_matrix as _co
+Co_ = A.tocoo()
+pmi_ = np.maximum(np.log((Co_.data*tot_)/(rs_[Co_.row]*cs_[Co_.col] + 1e-9) + 1e-9) - np.log(10.0), 0.0)
+Pm = _co((pmi_, (Co_.row, Co_.col)), shape=(n, n)).tocsr()
+from sklearn.decomposition import TruncatedSVD as _SVD
+Es = _SVD(n_components=256, random_state=0).fit_transform(Pm).astype(np.float32)
+Es = Es / (np.linalg.norm(Es, axis=1, keepdims=True) + 1e-9)
+Rt = np.empty((n, NACC), np.int32)
+for j, (_, sg, _) in enumerate(TR):
+    u = sg; prof = Es[u].mean(0)
+    Rt[np.argsort(-(Es @ prof)), j] = np.arange(n)
+def valuta_RRF(w_th, nome):
+    P_ = (3.0/(3000+Rs.astype(float)) + w_th/(3000+Rt.astype(float)))
+    P_ = np.array(P_, dtype=np.float64, copy=True); P_[MASCHERA] = -1e9
+    R = np.empty(P_.shape, np.int32)
+    for j in range(P_.shape[1]): R[np.argsort(-P_[:, j]), j] = np.arange(n)
+    tot = {10: 0, 20: 0}; tl = 0
+    for j, (strato, sg, gd) in enumerate(TR):
+        rk = R[gd, j]; tot[10] += int((rk < 10).sum()); tot[20] += int((rk < 20).sum()); tl += len(gd)
+    print(f"  {nome:<34} p3@10 {100*tot[10]/tl:5.2f}% · p2@20 {100*tot[20]/tl:5.2f}%")
+    return tot[10]/tl
+valuta_RRF(0.0, "peso teacher 0.0 (= spreading sola)")
+valuta_RRF(0.1, "peso teacher 0.1")
+valuta_RRF(0.5, "peso teacher 0.5")
+valuta_RRF(1.0, "peso teacher 1.0")
+valuta_RRF(3.0, "peso teacher 3.0")
+print("")
+print("CONFRONTO: sul test CURATO (dove entrambi gli esperti sono buoni) il peso ottimo era 3.0/0.5.")
+print("Se qui degrada con il peso del teacher, l'ipotesi e' confermata: la fusione per ranghi")
+print("presume esperti di qualita' comparabile.")

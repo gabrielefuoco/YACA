@@ -205,4 +205,20 @@ Il segnale c'è ma è in profondità: la spreading mette il **27,4%** del gold n
 
 **Sei negativi dichiarati**: pool+teacher sul curato (11%), pool+contenuto sul prodotto (2,14% contro 2,26%), gate per-query (testa peggio), embedding delle keyword (2,7% contro il one-hot), seed espanso (17-18%), split temporale (strumento sbagliato: faceva predire l'era).
 
-**Una differenza che vale la pena isolare la prossima volta**: sul *curato* la fusione aiuta (RRF 18,9% contro 10,4% e 10,7% dei singoli), sul *prodotto* la fusione peggiora (RRF 1,4% contro 2,26% della spreading). Il motivo probabile: sul prodotto uno dei due esperti (il teacher, 0,6%) è **peggiore del caso**, e fondere un esperto cattivo con uno buono trascina giù il risultato. **La fusione per ranghi presume che gli esperti siano comparabili in qualità** — e sul prodotto non lo sono.
+### L'ipotesi, e la sua conferma
+
+Sul *curato* la fusione aiuta (RRF 18,9% contro 10,4% e 10,7% dei singoli). Sul *prodotto* peggiora (RRF 1,4% contro 2,26% della spreading). Ipotesi: **uno dei due esperti è peggiore del caso** sul prodotto (il teacher, 0,6% contro un caso dell'1,6%), e fondere un esperto cattivo con uno buono trascina giù.
+
+**Verificata scalando il peso del teacher**:
+
+| peso teacher | p3@10 |
+|---|---|
+| 0,0 (= spreading sola) | 2,26% |
+| **0,1** | **2,28%** ← ottimo |
+| 0,5 | 1,86% |
+| 1,0 | 1,68% |
+| 3,0 | 1,35% |
+
+Degrado **monotono**. Sul curato il rapporto ottimo era spreading:teacher = 3,0:0,5 (1:6); sul prodotto è 3,0:0,1 (1:30).
+
+**La regola che ne esce**: **i pesi della fusione devono seguire la qualità *misurata* degli esperti**, non essere fissi. La fusione per ranghi è robusta alla *scala* dei punteggi, non alla *differenza di qualità* tra gli esperti. Se un esperto è sotto il caso, il suo peso dev'essere vicino a zero — e va misurato, non assunto.
