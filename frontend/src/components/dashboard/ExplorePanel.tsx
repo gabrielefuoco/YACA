@@ -4,7 +4,7 @@ import { Preset, Profile, Catalog } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { PosterRow } from '@/components/shared/PosterRow';
+import { CatalogItem } from '@/components/shared/CatalogItem';
 import { Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { isCatalogConformant, getIncompatibilityReason } from '@/lib/catalogKind';
 
@@ -72,15 +72,15 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
     <div className="space-y-4">
       {/* Search toggle */}
       <div className="flex items-center gap-1 sm:gap-2">
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex" onClick={() => scroll('left')}>
+        <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex touch-manipulation" onClick={() => scroll('left')}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div ref={scrollRef} className="flex-1 flex gap-2 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 hide-scrollbar scroll-smooth">
+        <div ref={scrollRef} className="flex-1 flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 hide-scrollbar scroll-smooth">
           {allCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 rounded-full px-4 sm:px-5 py-2 sm:py-2 text-xs sm:text-sm font-bold transition-all shadow-sm ${selectedCategory === cat
+              className={`shrink-0 rounded-full inline-flex items-center justify-center min-h-[44px] px-4 sm:px-5 py-3.5 sm:py-3 text-xs sm:text-sm font-bold transition-all shadow-sm touch-manipulation ${selectedCategory === cat
                 ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-105 ring-2 ring-primary/20 ring-offset-1'
                 : 'bg-white/80 text-marrow-deep hover:text-primary hover:bg-white transition-colors border border-marrow-light/10'
                 }`}
@@ -89,13 +89,13 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex" onClick={() => scroll('right')}>
+        <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex touch-manipulation" onClick={() => scroll('right')}>
           <ChevronRight className="h-5 w-5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 text-marrow-deep bg-white/60 hover:bg-white hover:text-primary ml-1 sm:ml-2 rounded-xl shadow-sm border border-marrow-light/10"
+          className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 text-marrow-deep bg-white/60 hover:bg-white hover:text-primary ml-1 sm:ml-2 rounded-xl shadow-sm border border-marrow-light/10 touch-manipulation"
           onClick={() => setShowSearch(!showSearch)}
         >
           <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -108,7 +108,7 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cerca cataloghi..."
           autoFocus
-          className="bg-white/60 border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-10 sm:h-9"
+          className="bg-white/60 border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]"
         />
       )}
 
@@ -128,53 +128,40 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
           const isConformant = isCatalogConformant(targetCatalog, profile.settings?.typeSelectors);
           const incompatibilityReason = isConformant ? null : getIncompatibilityReason(targetCatalog, profile.settings?.typeSelectors);
 
-          const filterCount = preset.queries?.[0] ? Object.keys(preset.queries[0]).length - 1 : 0; 
-
           return (
-            <div key={preset.id} className="group relative flex flex-col glass-card transition-all p-3 sm:p-5 shadow-sm border-2 border-marrow-light/10 bg-white/60 hover:bg-white/90 hover:border-primary/30">
-              
-              <div className="flex items-start justify-between mb-2 sm:mb-4 relative z-10">
-                <div className="flex gap-2 sm:gap-4 items-center min-w-0">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep">
-                      <span className="text-lg sm:text-2xl">{preset.emoji ?? '📋'}</span>
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-black text-marrow-deep text-sm sm:text-lg leading-tight truncate group-hover:text-primary transition-colors">{preset.name}</h3>
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
-                      {preset.category && (
-                        <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] px-1.5 py-0 shrink-0 bg-primary/10 text-primary hover:bg-primary/20 border-0">
-                          {preset.category}
-                        </Badge>
-                      )}
-                      {(preset.isAnime || (preset as any).originalCatalog?.isAnime) && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-black">
-                          🏮 Solo anime
-                        </Badge>
-                      )}
-                      {!isConformant && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-500/10 text-amber-700 border-amber-500/30 font-bold">
-                          {incompatibilityReason}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0 ml-4">
+            <CatalogItem
+              key={preset.id}
+              catalog={preset}
+              description={preset.description}
+              badges={
+                <>
+                  {preset.category && (
+                    <Badge variant="secondary" className="hidden sm:inline-flex text-xs px-1.5 py-0 shrink-0 bg-primary/10 text-primary hover:bg-primary/20 border-0">
+                      {preset.category}
+                    </Badge>
+                  )}
+                  {!isConformant && incompatibilityReason && (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0 shrink-0 bg-amber-500/10 text-amber-700 border-amber-500/30 font-bold">
+                      {incompatibilityReason}
+                    </Badge>
+                  )}
+                </>
+              }
+              actions={
+                <>
                   <Button
                     size="sm"
                     disabled={!isConformant && !isSelected}
                     title={incompatibilityReason ?? undefined}
-                    className={`rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md ${
+                    className={`min-h-[44px] rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-md max-w-[130px] truncate touch-manipulation ${
                       isSelected 
                         ? 'bg-success/20 text-success hover:bg-success/30 border border-success/20' 
                         : !isConformant
                         ? 'bg-marrow-light/10 text-marrow-light/50 border border-marrow-light/20 cursor-not-allowed shadow-none'
                         : 'bg-primary text-white hover:bg-marrow-deep hover:shadow-lg hover:-translate-y-0.5'
                     }`}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (!isConformant && !isSelected) return;
                       if (preset.isCustom && onAddCatalog) {
                         onAddCatalog(preset.originalCatalog);
@@ -183,45 +170,25 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
                       }
                     }}
                   >
-                    {isSelected ? <><Check className="w-3 h-3 mr-1" /> Aggiunto</> : (!isConformant ? (incompatibilityReason || 'Non compatibile') : 'Aggiungi')}
+                    {isSelected ? <><Check className="w-3 h-3 mr-1" /> Aggiunto</> : (!isConformant ? 'Non compatibile' : 'Aggiungi')}
                   </Button>
                   
                   {preset.isCustom && onEditCatalog && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 transition-all shadow-sm border border-primary/20 ml-2"
-                      onClick={() => onEditCatalog(preset.originalCatalog)}
+                      className="min-h-[44px] rounded-xl text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 transition-all shadow-sm border border-primary/20 ml-2 touch-manipulation"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditCatalog(preset.originalCatalog);
+                      }}
                     >
                       Modifica
                     </Button>
                   )}
-                </div>
-              </div>
-
-              <p className="text-xs sm:text-sm text-marrow-light/80 font-medium line-clamp-1 mb-2 sm:mb-4 relative z-10 px-1">
-                {preset.description || 'Catalogo tematico preconfigurato e costantemente aggiornato.'}
-              </p>
-
-              <div className="-mx-1 sm:-mx-2 mb-2 sm:mb-4 relative z-10 group/row">
-                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/poster:opacity-100 transition-opacity rounded-2xl -z-10" />
-                 <PosterRow presetId={`yaca_preset_${preset.id}`} type={preset.type} />
-              </div>
-
-              <div className="mt-auto pt-2 sm:pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-2 sm:gap-3">
-                   <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-black text-marrow-deep/70">
-                    <span className="material-symbols-outlined text-xs sm:text-sm">{preset.type === 'movie' ? 'movie' : 'tv'}</span>
-                    <span className="uppercase tracking-tight">{preset.type === 'movie' ? 'Film' : 'Serie'}</span>
-                  </div>
-                  <div className="w-1 h-1 rounded-full bg-marrow-light/20" />
-                  <div className="text-[10px] sm:text-xs font-bold text-marrow-light/60">
-                    {Math.max(1, filterCount)} Filtr{Math.max(1, filterCount) !== 1 ? 'i' : 'o'}
-                  </div>
-                </div>
-              </div>
-
-            </div>
+                </>
+              }
+            />
           );
         })}
       </div>

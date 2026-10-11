@@ -196,7 +196,7 @@ export function DashboardPage({
                 setActiveTab(tab.id);
               }}
               className={`
-                flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-black transition-all duration-300 sm:whitespace-nowrap min-h-[44px] sm:min-h-0 touch-manipulation
+                flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 sm:whitespace-nowrap min-h-[44px] sm:min-h-0 touch-manipulation last:col-span-2 min-[420px]:last:col-span-1
                 ${activeTab === tab.id
                   ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
                   : 'text-marrow-light hover:text-primary hover:bg-primary/5'
@@ -212,7 +212,7 @@ export function DashboardPage({
 
       {/* Main Content Area */}
       <div className="w-full">
-        <div className="glass-panel p-3 sm:p-8 min-h-[500px] relative overflow-hidden transition-all duration-500 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10">
+        <div className="glass-panel p-3 sm:p-8 min-h-[280px] sm:min-h-[500px] relative overflow-hidden transition-all duration-500 bg-white/40 shadow-xl shadow-primary/5 rounded-2xl border border-marrow-light/10">
           {/* Subtle decorative elements */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 blur-3xl rounded-full" />
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/5 blur-3xl rounded-full" />

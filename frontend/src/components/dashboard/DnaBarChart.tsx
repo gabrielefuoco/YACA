@@ -61,7 +61,7 @@ export function DnaBarChart({
             DNA del Profilo
           </span>
         </div>
-        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-marrow-light/60">
+        <span className="text-xs font-bold uppercase tracking-wider text-marrow-light/60">
           Peso
         </span>
       </div>
@@ -85,7 +85,7 @@ export function DnaBarChart({
                   <span className="text-base select-none" aria-hidden="true">{group.icon}</span>
                   <h2>{group.title}</h2>
                 </div>
-                <span className="text-[10px] text-marrow-light/50 font-mono font-semibold">
+                <span className="text-xs text-marrow-light/50 font-mono font-semibold">
                   {group.items.length} {group.items.length === 1 ? 'voce' : 'voci'}
                 </span>              </div>
 
@@ -98,7 +98,7 @@ export function DnaBarChart({
                   >
                     {/* Item Name (Truncated with native title tooltip) */}
                     <span
-                      className="w-20 sm:w-32 md:w-36 shrink-0 truncate text-[11px] sm:text-sm font-medium text-marrow-deep select-none cursor-default"
+                      className="w-24 sm:w-32 md:w-36 shrink-0 truncate text-xs sm:text-sm font-medium text-marrow-deep select-none cursor-default"
                       title={item.name}
                     >
                       {item.name}
@@ -127,7 +127,7 @@ export function DnaBarChart({
                 ))}
 
                 {group.hiddenCount > 0 && (
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-marrow-light/45 pt-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-marrow-light/45 pt-1">
                     + {group.hiddenCount} {group.hiddenCount === 1 ? 'voce minore' : 'voci minori'}
                   </p>
                 )}

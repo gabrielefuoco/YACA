@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Profile, TypeSelectors } from "@/types";
+import { CatalogCardData, Profile, TypeSelectors } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -194,4 +194,59 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       typeSelectors: sanitizeTypeSelectors(bSettings.typeSelectors),
     },
   };
+}
+
+/**
+ * Quanti filtri dichiara un catalogo (o un preset): serve alle card per dire "N Filtri".
+ *
+ * Sta qui e non nella card perché è lettura del modello dati (chiavi TMDB con i loro alias e i
+ * loro default neutri), non presentazione: vedi docs/FRONTEND.md sulla divisione dei ruoli.
+ */
+export function countCatalogFilters(cat: CatalogCardData): number {
+  const queryBlocks: Record<string, unknown>[] =
+    (cat.queries as Record<string, unknown>[] | undefined) ||
+    (cat.filters && Array.isArray((cat.filters as Record<string, unknown>).queries)
+      ? ((cat.filters as Record<string, unknown>).queries as Record<string, unknown>[])
+      : []) ||
+    (cat.filters ? [cat.filters] : []);
+
+  if (queryBlocks.length === 0) return 0;
+
+  let count = 0;
+  // Un filtro conta solo se NON è al suo valore di default: 0 di voto, 10 di voto massimo,
+  // array vuoto. Lo stesso filtro può arrivare con nomi diversi (alias TMDB o nomi UI).
+  const filterKeys = [
+    'similar_to', 'similarTo',
+    'text_search', 'textSearch',
+    'with_genres', 'genre_ids', 'genres',
+    'with_keywords', 'keyword', 'keywords',
+    'with_cast', 'cast',
+    'with_crew', 'crew',
+    'with_companies', 'company_name',
+    'watch_provider',
+    'with_original_language', 'original_language', 'language',
+    'year_from', 'year_to', 'primary_release_date.gte', 'primary_release_date.lte', 'first_air_date.gte', 'first_air_date.lte',
+    'runtime_lte', 'runtimeGte', 'runtimeLte', 'with_runtime.gte', 'with_runtime.lte',
+    'vote_average.gte', 'vote_average.lte', 'voteMin', 'voteMax',
+    'vote_count.gte',
+    'without_genres', 'withoutGenres',
+    'without_keywords', 'withoutKeywords',
+    'certification_country', 'certification.lte', 'certificationLte',
+  ];
+
+  for (const q of queryBlocks) {
+    if (!q) continue;
+    for (const key of filterKeys) {
+      const val = q[key];
+      if (val !== undefined && val !== null && val !== '') {
+        if (Array.isArray(val) && val.length === 0) continue;
+        if (key === 'voteMin' && val === 0) continue;
+        if (key === 'voteMax' && val === 10) continue;
+        if (key === 'vote_average.gte' && val === 0) continue;
+        if (key === 'vote_average.lte' && val === 10) continue;
+        count++;
+      }
+    }
+  }
+  return count;
 }

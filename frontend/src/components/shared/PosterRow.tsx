@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PosterItem } from '@/types';
 import { api } from '@/lib/api';
+import { PosterCard } from '@/components/shared/PosterCard';
 
 interface PosterRowProps {
   presetId?: string;
@@ -54,31 +55,20 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
       {loading && (
         <div className="flex max-w-full gap-2 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] shrink-0 animate-pulse rounded-lg bg-primary/10 border border-primary/5" />
+            <div key={i} className="h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] shrink-0 animate-pulse rounded-xl bg-primary/10 border border-primary/5" />
           ))}
         </div>
       )}
       {!loading && items.length > 0 && (
         <div className="flex max-w-full gap-2 overflow-x-auto pb-4 hide-scrollbar">
           {items.map((item) => (
-            <div key={item.id} className="group/poster relative shrink-0 cursor-pointer">
-              {item.poster ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.poster}
-                  alt={item.title}
-                  className="h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] rounded-lg object-cover transition-all duration-300 group-hover/poster:scale-105 group-hover/poster:shadow-2xl group-hover/poster:shadow-primary/30 shadow-md shadow-marrow-light/20"
-                />
-              ) : (
-                <div className="flex h-[180px] w-[120px] sm:h-[225px] sm:w-[150px] items-center justify-center rounded-lg bg-marrow-light/5 text-xs text-marrow-light/60 border border-marrow-light/20">
-                  {item.title.slice(0, 2)}
-                </div>
-              )}
-              <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-primary-dark/90 via-primary-dark/30 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100">
-                <p className="text-[12px] font-black text-white line-clamp-2 leading-tight drop-shadow-md uppercase tracking-tight">{item.title}</p>
-                {item.year && <p className="text-[10px] text-accent font-bold mt-0.5">{item.year}</p>}
-              </div>
-            </div>
+            <PosterCard
+              key={item.id}
+              poster={item.poster}
+              title={item.title}
+              year={item.year}
+              size="md"
+            />
           ))}
         </div>
       )}

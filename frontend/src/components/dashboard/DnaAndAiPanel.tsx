@@ -254,7 +254,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
             <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">DNA Tracker & Editor</h2>
           </div>
         </div>
-        <p className="text-[11px] text-marrow-light/40 -mt-2">
+        <p className="text-xs text-marrow-light/40 -mt-2">
           Il tuo DNA viene calcolato istantaneamente dai preset selezionati e si evolve man mano che guardi film e serie tv.
         </p>
 
@@ -316,13 +316,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
               >
                 <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{catalog.emoji}</span>
                       <span className="text-sm font-bold text-marrow-light">{catalog.label}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono text-marrow-light/60">
+                    <div className="flex items-center gap-3 shrink-0">
+                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
                         FILM
                         <Switch
                           id={movieSwitchId}
@@ -330,7 +330,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                           onCheckedChange={(checked: boolean) => toggleHeroCatalog(idMovies, checked)}
                         />
                       </label>
-                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono text-marrow-light/60">
+                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
                         SERIE
                         <Switch
                           id={seriesSwitchId}
@@ -346,12 +346,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 </div>
                 <div className="p-4 flex-grow flex flex-col gap-4">
                   {isCatalogDisabled ? (
-                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-6 min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
+                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
                       <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
                       <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
                         Catalogo disattivato
                       </p>
-                      <p className="text-[10px] text-marrow-light/40 mt-1">
+                      <p className="text-xs text-marrow-light/40 mt-1">
                         Attiva Film o Serie per visualizzare l'anteprima dal vivo.
                       </p>
                     </div>
@@ -359,22 +359,22 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                     <>
                       {/* Tolerance Meter */}
                       <div className="w-full bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-[10px] font-bold text-marrow-light/60 uppercase tracking-widest">Filtro Alien Ratio</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-white ${toleranceColor}`}>{toleranceLabel}</span>
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2">
+                          <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Filtro Alien Ratio</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded text-white shrink-0 ${toleranceColor}`}>{toleranceLabel}</span>
                         </div>
                         <div className="w-full h-1.5 bg-marrow-light/20 rounded-full overflow-hidden mb-2">
                           <div className={`h-full ${toleranceColor}`} style={{ width: catalog.idBase.includes('hidden_gems') ? '90%' : catalog.idBase.includes('true_blend') ? '50%' : '20%' }} />
                         </div>
-                        <p className="text-[10px] text-marrow-light/40">{toleranceDesc}</p>
+                        <p className="text-xs text-marrow-light/40">{toleranceDesc}</p>
                       </div>
 
                       {/* Live Preview */}
                       <div className="flex flex-col gap-2">
-                         <div className="flex items-center justify-between">
-                           <span className="text-[10px] font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
+                         <div className="flex flex-wrap items-center justify-between gap-1.5">
+                           <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
                            {isMoviesEnabled && isSeriesEnabled && (
-                             <span className="text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">Mostrando: {activeId.includes('movies') ? 'Film' : 'Serie'}</span>
+                             <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">Mostrando: {activeId.includes('movies') ? 'Film' : 'Serie'}</span>
                            )}
                          </div>
                          <CatalogLivePreview 

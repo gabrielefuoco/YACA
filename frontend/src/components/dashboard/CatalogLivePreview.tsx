@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { PosterCard } from '@/components/shared/PosterCard';
 
 interface CatalogLivePreviewProps {
   catalogId: string;
@@ -60,7 +61,7 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
     return (
       <div className="flex gap-4 overflow-x-hidden p-2 opacity-50">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="min-w-[150px] w-[150px] aspect-[2/3] bg-marrow-light/10 animate-pulse rounded-md" />
+          <div key={i} className="w-[120px] h-[180px] sm:w-[150px] sm:h-[225px] shrink-0 bg-marrow-light/10 animate-pulse rounded-xl" />
         ))}
       </div>
     );
@@ -81,34 +82,21 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
         const matchPercent = meta._yacaMatch; 
         
         return (
-          <div key={meta.id} className="min-w-[140px] w-[140px] snap-start relative group/poster cursor-pointer">
-            {meta.poster ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={meta.poster}
-                alt={meta.name || meta.title}
-                className="h-[210px] w-[140px] rounded-lg object-cover transition-all duration-300 group-hover/poster:scale-105 group-hover/poster:shadow-2xl group-hover/poster:shadow-primary/30 shadow-md shadow-marrow-light/20"
-              />
-            ) : (
-              <div className="flex h-[210px] w-[140px] items-center justify-center rounded-lg bg-marrow-light/5 text-xs text-marrow-light/60 border border-marrow-light/20">
-                {(meta.name || meta.title || 'Senza titolo').slice(0, 2)}
-              </div>
-            )}
-            
-            <div className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-primary-dark/90 via-primary-dark/30 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover/poster:opacity-100 pointer-events-none">
-              <p className="text-[12px] font-black text-white line-clamp-2 leading-tight drop-shadow-md uppercase tracking-tight">{meta.name || meta.title}</p>
-              {(meta.releaseInfo || meta.year) && <p className="text-[10px] text-accent font-bold mt-0.5">{meta.releaseInfo || meta.year}</p>}
-            </div>
-            
-            {/* YACA Match Badge */}
-            {matchPercent !== undefined && matchPercent !== null && (
-              <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                <div className="bg-primary/90 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-lg backdrop-blur-sm">
+          <PosterCard
+            key={meta.id}
+            poster={meta.poster}
+            title={meta.name || meta.title || 'Senza titolo'}
+            year={meta.releaseInfo || meta.year}
+            size="md"
+            className="snap-start"
+            badge={
+              matchPercent !== undefined && matchPercent !== null ? (
+                <div className="bg-primary/90 text-black text-xs font-bold px-2 py-0.5 rounded shadow-lg backdrop-blur-sm">
                   {matchPercent}% Match
                 </div>
-              </div>
-            )}
-          </div>
+              ) : null
+            }
+          />
         );
       })}
     </div>

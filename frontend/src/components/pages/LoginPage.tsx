@@ -119,7 +119,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-md mx-auto w-full space-y-6">
       {/* Step indicators */}
       <div className="flex items-center gap-2">
         {[1, 2].map((s) => (
@@ -169,7 +169,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="la.tua@email.com"
-                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-base sm:text-sm"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-11 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-base sm:text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
@@ -181,14 +181,16 @@ export function LoginPage({ onComplete }: LoginPageProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-10 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-base sm:text-sm"
+                className="mt-1.5 bg-white border-2 border-marrow-light/20 focus:border-primary shadow-sm h-11 sm:h-12 px-3 sm:px-4 rounded-xl font-medium text-base sm:text-sm"
                 onKeyDown={(e) => e.key === 'Enter' && handleStremioLogin()}
               />
             </div>
 
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5">
-                <p className="text-xs text-destructive">{error}</p>
-              </div>
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5">
+                  <p className="text-xs text-destructive">{error}</p>
+                </div>
+              )}
 
             <Button
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-wider h-12 transition-all shadow-xl shadow-primary/30 mt-2"
@@ -222,7 +224,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
 
           <button
             onClick={handleSkipTrakt}
-            className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+            className="w-full min-h-[44px] flex items-center justify-center text-xs text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
           >
             Salta
           </button>
@@ -231,7 +233,7 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <p className="text-sm text-emerald-400 font-medium">Trakt connesso!</p>
-              <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => handleComplete(traktToken, traktRefreshToken, traktExpiresAt)}>
+              <Button variant="ghost" size="sm" className="ml-auto min-h-[44px] h-11 touch-manipulation" onClick={() => handleComplete(traktToken, traktRefreshToken, traktExpiresAt)}>
                 Continua <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>

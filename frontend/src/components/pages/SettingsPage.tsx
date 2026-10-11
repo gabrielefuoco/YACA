@@ -130,7 +130,7 @@ export function SettingsPage({
     : '';
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO SECTION: Salva, Aggiorna, Installa & Backup                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -142,7 +142,7 @@ export function SettingsPage({
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-black text-marrow-deep">Salva & Installa</h3>
-            <p className="text-[10px] sm:text-xs text-marrow-light font-medium hidden sm:block">Salva la configurazione e installa l&apos;addon su Stremio</p>
+            <p className="text-xs text-marrow-light font-medium hidden sm:block">Salva la configurazione e installa l&apos;addon su Stremio</p>
           </div>
         </div>
 
@@ -181,7 +181,7 @@ export function SettingsPage({
                 variant="outline"
                 size="sm"
                 onClick={() => handleCopy(installUrl)}
-                className="flex-1 text-xs border-success/30 bg-marrow-light/10 hover:bg-success/20 text-success"
+                className="flex-1 text-xs border-success/30 bg-marrow-light/10 hover:bg-success/20 text-success min-h-[44px] h-11 touch-manipulation"
               >
                 {copied ? (
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-success" />
@@ -193,7 +193,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(installUrl, '_blank')}
-                className="flex-1 text-xs bg-success text-white hover:brightness-110 font-black"
+                className="flex-1 text-xs bg-success text-white hover:brightness-110 font-black min-h-[44px] h-11 touch-manipulation"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -217,7 +217,7 @@ export function SettingsPage({
                 variant="outline"
                 size="sm"
                 onClick={() => handleCopy(manifestUrl)}
-                className="flex-1 text-xs border-success/30 bg-marrow-light/10 hover:bg-success/20 text-success"
+                className="flex-1 text-xs border-success/30 bg-marrow-light/10 hover:bg-success/20 text-success min-h-[44px] h-11 touch-manipulation"
               >
                 {copied ? (
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-success" />
@@ -229,7 +229,7 @@ export function SettingsPage({
               <Button
                 size="sm"
                 onClick={() => window.open(manifestUrl, '_blank')}
-                className="flex-1 text-xs bg-primary hover:bg-primary-dark text-white transition-all font-black"
+                className="flex-1 text-xs bg-primary hover:bg-primary-dark text-white transition-all font-black min-h-[44px] h-11 touch-manipulation"
               >
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
                 Installa su Stremio
@@ -250,21 +250,21 @@ export function SettingsPage({
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-lg bg-white/60 px-3 sm:px-4 py-2 sm:py-3 border border-marrow-light/10">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light/60">Stremio</p>
-              <p className="text-sm font-bold text-marrow-deep">
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-white/60 px-3 sm:px-4 py-2 sm:py-3 border border-marrow-light/10">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-wider text-marrow-light/60">Stremio</p>
+              <p className="text-sm font-bold text-marrow-deep truncate">
                 {stremioEmail ?? 'Non connesso'}
               </p>
             </div>
             {stremioEmail && (
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 shrink-0" />
             )}
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-white/60 px-3 sm:px-4 py-2 sm:py-3 border border-marrow-light/10">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-marrow-light/60">Trakt</p>
+              <p className="text-xs font-black uppercase tracking-wider text-marrow-light/60">Trakt</p>
               <p className="text-sm font-bold text-marrow-deep">
                 {traktToken ? 'Connesso' : 'Non connesso'}
               </p>

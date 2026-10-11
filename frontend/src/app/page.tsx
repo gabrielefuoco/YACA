@@ -519,9 +519,9 @@ export default function Home() {
 
   if (!isLoaded || !authLoaded || !configDecoded || isInitializing) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Header />
-        <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl pb-32">
+        <main className="container mx-auto px-3 sm:px-6 md:px-10 py-4 sm:py-8 max-w-[1200px]">
           <DashboardSkeleton />
         </main>
       </div>
@@ -536,8 +536,8 @@ export default function Home() {
         )}
       </Header>
 
-      <main className="flex flex-1 justify-center py-4 sm:py-8">
-        <div className="layout-content-container flex flex-col w-full max-w-[1200px] px-3 sm:px-6 md:px-10 gap-4 sm:gap-8">
+      <main className="flex flex-1 justify-center py-4 sm:py-8 min-w-0">
+        <div className="layout-content-container flex flex-col w-full max-w-[1200px] px-3 sm:px-6 md:px-10 gap-4 sm:gap-8 min-w-0">
           {!isLoggedIn ? (
             <LoginPage onComplete={handleLoginComplete} />
           ) : (

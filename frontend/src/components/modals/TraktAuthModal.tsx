@@ -114,7 +114,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="w-[92vw] sm:max-w-md bg-white text-marrow-deep border-slate-200 rounded-2xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="w-[92vw] sm:max-w-md bg-white text-marrow-deep border-slate-200 rounded-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20 text-red-400">🎬</span>
@@ -144,9 +144,9 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
         {!loading && !success && userCode && (
           <div className="space-y-5">
-            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-slate-200 p-6 text-center overflow-hidden">
+            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-slate-200 p-4 sm:p-6 text-center overflow-hidden">
               <p className="text-xs text-marrow-light/70 mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
-              <p className="text-4xl font-mono font-bold tracking-[0.3em] text-primary">{userCode}</p>
+              <p className="text-2xl sm:text-4xl font-mono font-bold tracking-[0.3em] text-primary break-all">{userCode}</p>
               <div className="mt-4 flex items-center justify-center gap-2">
                 <div className="h-1.5 flex-1 max-w-[200px] rounded-full bg-muted overflow-hidden">
                   <div

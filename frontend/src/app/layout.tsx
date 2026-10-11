@@ -1,9 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "YACA - Yet Another Catalog Addon",
   description: "Configura il tuo addon Stremio personalizzato",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -16,8 +22,8 @@ export default function RootLayout({
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
       </head>
-      <body className="antialiased font-display bg-background text-foreground min-h-screen">
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+      <body className="antialiased font-display bg-background text-foreground min-h-dvh">
+        <div className="relative flex h-auto min-h-dvh w-full flex-col">
           <div className="layout-container flex h-full grow flex-col">
             {children}
           </div>

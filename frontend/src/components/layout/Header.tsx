@@ -10,14 +10,14 @@ export function Header({ children }: { children?: React.ReactNode }) {
         </div>
         <div className="flex flex-col">
           <h2 className="text-marrow-deep text-base sm:text-lg font-black leading-tight tracking-tighter">YACA</h2>
-          <span className="text-[10px] uppercase tracking-widest font-bold text-marrow-light hidden sm:block">Yet Another Catalog Addon</span>
+          <span className="text-xs uppercase tracking-widest font-bold text-marrow-light hidden sm:block">Yet Another Catalog Addon</span>
         </div>
       </div>
       <div className="flex flex-1 justify-end items-center gap-2 sm:gap-8 min-w-0">
         {children}
-        <button className="hidden md:flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-bold leading-normal border border-primary/20">
+        <span className="hidden md:flex min-w-[84px] select-none items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-bold leading-normal border border-primary/20">
           <span className="truncate">v2.4.0-beta</span>
-        </button>
+        </span>
       </div>
     </header>
   );

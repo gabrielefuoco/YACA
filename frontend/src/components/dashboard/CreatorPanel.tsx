@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { PosterRow } from '@/components/shared/PosterRow';
+import { PosterCard } from '@/components/shared/PosterCard';
 import { Catalog, QueryBlock } from '@/types';
 import { GENRE_NAMES, SORT_OPTIONS, LANGUAGES } from '@/lib/constants';
 import { Loader2, Wand2, Save, X, Eye, Plus, Layers, Info, Sparkles, Film, Tv, ChevronLeft, ChevronRight, Trash2, ListMusic } from 'lucide-react';
@@ -438,10 +439,15 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   const renderPills = (items: SelectedItem[], onRemove: (item: SelectedItem) => void) => (
     <div className="flex flex-wrap gap-1.5 mt-2">
       {items.map(item => (
-        <span key={item.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-bold border border-primary/20">
-          {item.name}
-          <button onClick={() => onRemove(item)} className="text-primary/70 hover:text-primary ml-0.5 transition-colors">
-            <X className="h-3 w-3" />
+        <span key={item.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary pl-3 pr-1 py-0.5 text-xs font-bold border border-primary/20">
+          <span>{item.name}</span>
+          <button
+            type="button"
+            onClick={() => onRemove(item)}
+            aria-label={`Rimuovi ${item.name}`}
+            className="text-primary/70 hover:text-primary transition-colors size-11 min-w-[44px] min-h-[44px] -my-2 -mr-1 flex items-center justify-center touch-manipulation"
+          >
+            <X className="h-3.5 w-3.5" />
           </button>
         </span>
       ))}
@@ -457,37 +463,36 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   // --- Render a single query block card ---
   const renderBlock = (block: BlockState, index: number) => (
     <div key={block.id} className="rounded-xl border border-marrow-light/20 bg-white/40 shadow-sm overflow-hidden ">
-      {/* Block header – clickable to collapse/expand */}
-      <button
-        type="button"
-        onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
-        className="w-full flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 bg-primary-dark/5 select-none hover:bg-primary-dark/10 transition-colors"
-      >
-        <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-black text-marrow-deep uppercase tracking-wider">
-          <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-          Query {index + 1}
-          <span className="text-[10px] sm:text-xs font-medium normal-case text-marrow-light/70 hidden sm:inline">
-            — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'manual_list' ? 'Lista Manuale' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
-          </span>
-        </span>
-        <span className="flex items-center gap-2">
-          {blocks.length > 1 && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); removeBlock(block.id); } }}
-              className="text-marrow-faded hover:text-destructive transition-colors p-0.5 rounded"
-              title="Rimuovi query"
-            >
-              <X className="h-4 w-4" />
+      {/* Block header – clickable to collapse/expand, with sibling remove button */}
+      <div className="flex items-center justify-between bg-primary-dark/5 hover:bg-primary-dark/10 transition-colors">
+        <button
+          type="button"
+          onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })}
+          className="flex-1 min-w-0 flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 select-none text-left min-h-[44px] touch-manipulation"
+        >
+          <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-black text-marrow-deep uppercase tracking-wider truncate">
+            <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+            Query {index + 1}
+            <span className="text-xs font-medium normal-case text-marrow-light/70 hidden sm:inline truncate">
+              — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'manual_list' ? 'Lista Manuale' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
             </span>
-          )}
-          <span className={`transition-transform ${block.collapsed ? '' : 'rotate-180'} text-marrow-light/40`}>
+          </span>
+          <span className={`transition-transform ${block.collapsed ? '' : 'rotate-180'} text-marrow-light/40 ml-2 shrink-0`}>
             <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
           </span>
-        </span>
-      </button>
+        </button>
+        {blocks.length > 1 && (
+          <button
+            type="button"
+            onClick={() => removeBlock(block.id)}
+            className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] text-marrow-faded hover:text-destructive transition-colors shrink-0 mr-1 sm:mr-3 touch-manipulation"
+            title="Rimuovi query"
+            aria-label="Rimuovi query"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       {/* Block body */}
       {!block.collapsed && (
@@ -495,12 +500,12 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           {/* Provider and Strategy selectors */}
           <div className="space-y-3 sm:space-y-4">
             <div>
-              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-1.5 sm:mb-2">Sorgente Dati</Label>
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs block mb-1.5 sm:mb-2">Sorgente Dati</Label>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { provider: 'tmdb' }); }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border bg-primary border-primary text-white shadow-md shadow-primary/20"
+                  className="inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all border bg-primary border-primary text-white shadow-md shadow-primary/20 touch-manipulation"
                 >
                   TMDB (Film & Serie)
                 </button>
@@ -508,12 +513,12 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             </div>
 
             <div>
-              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] block mb-1.5 sm:mb-2">Strategia</Label>
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs block mb-1.5 sm:mb-2">Strategia</Label>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'ai' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                  className={`inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all border touch-manipulation ${
                     block.strategy === 'ai'
                     ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
                     : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
@@ -525,7 +530,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'discovery' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                  className={`inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all border touch-manipulation ${
                     block.strategy === 'discovery'
                     ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
                     : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
@@ -537,7 +542,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'similar' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                  className={`inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all border touch-manipulation ${
                     block.strategy === 'similar'
                     ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
                     : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
@@ -549,7 +554,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); updateBlock(block.id, { strategy: 'manual_list' }); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                  className={`inline-flex items-center justify-center min-h-[44px] gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all border touch-manipulation ${
                     block.strategy === 'manual_list'
                     ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' 
                     : 'bg-white/60 border-marrow-light/10 text-marrow-light hover:text-primary hover:border-primary/30'
@@ -571,10 +576,10 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     value={block.aiPrompt || ''}
                     onChange={(e) => updateBlock(block.id, { aiPrompt: e.target.value })}
                     placeholder="es. Film horror italiani degli anni 80..."
-                    className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm"
+                    className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]"
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); } }}
                   />
-                  <Button onClick={(e) => { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110 min-h-[40px]">
+                  <Button onClick={(e) => { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110 min-h-[44px] touch-manipulation">
                     {block.aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
                     Genera
                   </Button>
@@ -584,22 +589,22 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
             {block.strategy === 'similar' && (
               <div>
-                <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo di Riferimento</Label>
-                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" />
+                <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs">Titolo di Riferimento</Label>
+                <Input value={block.similarTo || ''} onChange={(e) => updateBlock(block.id, { similarTo: e.target.value })} placeholder="es. Bridgerton" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]" />
               </div>
             )}
 
             {block.strategy === 'multi_search' && (
               <div>
-                <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Titolo da Cercare</Label>
-                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" />
+                <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs">Titolo da Cercare</Label>
+                <Input value={block.textSearch || ''} onChange={(e) => updateBlock(block.id, { textSearch: e.target.value })} placeholder="es. The Matrix" className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]" />
               </div>
             )}
 
             {block.strategy === 'manual_list' && (
               <div className="space-y-4">
                 <div>
-                  <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] mb-2 block">Cerca ed Aggiungi a TMDB</Label>
+                  <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs mb-2 block">Cerca ed Aggiungi a TMDB</Label>
                   <AutocompleteSearch
                     placeholder="Cerca film o serie TV su TMDB..."
                     searchFn={async (query) => {
@@ -637,69 +642,73 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
                 {(block.manualItems && block.manualItems.length > 0) ? (
                   <div className="mt-4">
-                    <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px] mb-3 block">
+                    <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs mb-3 block">
                       Elementi in Lista ({block.manualItems.length})
                     </Label>
-                    <div className="flex flex-wrap gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {block.manualItems.map((item, i) => (
-                        <div key={item.tmdbId} className="relative group w-[100px] sm:w-[120px] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
-                          {item.poster ? (
-                            <img src={item.poster} alt={item.title} className="w-full aspect-[2/3] object-cover" />
-                          ) : (
-                            <div className="w-full aspect-[2/3] bg-marrow-light/20 flex items-center justify-center text-center p-2">
-                              <span className="text-xs font-bold text-marrow-deep/50">{item.title}</span>
-                            </div>
-                          )}
-                          
-                          {/* Hover Overlay */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  if (i === 0) return;
-                                  const newItems = [...block.manualItems!];
-                                  const temp = newItems[i];
-                                  newItems[i] = newItems[i - 1];
-                                  newItems[i - 1] = temp;
-                                  updateBlock(block.id, { manualItems: newItems });
-                                }}
-                                disabled={i === 0}
-                                className="p-1.5 bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors"
-                              >
-                                <ChevronLeft className="h-4 w-4" />
-                              </button>
+                        <PosterCard
+                          key={item.tmdbId}
+                          poster={item.poster}
+                          title={item.title}
+                          size="fluid"
+                          showTitleOverlay={false}
+                          overlay={
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/poster:opacity-100 pointer-coarse:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (i === 0) return;
+                                    const newItems = [...block.manualItems!];
+                                    const temp = newItems[i];
+                                    newItems[i] = newItems[i - 1];
+                                    newItems[i - 1] = temp;
+                                    updateBlock(block.id, { manualItems: newItems });
+                                  }}
+                                  disabled={i === 0}
+                                  aria-label="Sposta a sinistra"
+                                  className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors touch-manipulation"
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </button>
+                                
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    if (i === block.manualItems!.length - 1) return;
+                                    const newItems = [...block.manualItems!];
+                                    const temp = newItems[i];
+                                    newItems[i] = newItems[i + 1];
+                                    newItems[i + 1] = temp;
+                                    updateBlock(block.id, { manualItems: newItems });
+                                  }}
+                                  disabled={i === block.manualItems!.length - 1}
+                                  aria-label="Sposta a destra"
+                                  className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors touch-manipulation"
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </button>
+                              </div>
                               
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  if (i === block.manualItems!.length - 1) return;
-                                  const newItems = [...block.manualItems!];
-                                  const temp = newItems[i];
-                                  newItems[i] = newItems[i + 1];
-                                  newItems[i + 1] = temp;
-                                  updateBlock(block.id, { manualItems: newItems });
+                                  updateBlock(block.id, {
+                                    manualItems: block.manualItems!.filter((_, idx) => idx !== i)
+                                  });
                                 }}
-                                disabled={i === block.manualItems!.length - 1}
-                                className="p-1.5 bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors"
+                                aria-label="Rimuovi elemento"
+                                className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors touch-manipulation"
                               >
-                                <ChevronRight className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
-                            
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                updateBlock(block.id, {
-                                  manualItems: block.manualItems!.filter((_, idx) => idx !== i)
-                                });
-                              }}
-                              className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
+                          }
+                        />
                       ))}
                     </div>
                   </div>
@@ -707,7 +716,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   <div className="flex flex-col items-center justify-center py-8 text-center text-marrow-faded glass-panel bg-white/20 border border-marrow-light/5 rounded-2xl">
                     <ListMusic className="h-8 w-8 text-marrow-light/20 mb-2" />
                     <p className="font-black text-sm">Lista Vuota</p>
-                    <p className="text-[10px] font-semibold max-w-[200px] mt-1">Cerca ed aggiungi elementi usando la barra qui sopra.</p>
+                    <p className="text-xs font-semibold max-w-[200px] mt-1">Cerca ed aggiungi elementi usando la barra qui sopra.</p>
                   </div>
                 )}
               </div>
@@ -718,14 +727,14 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             <>
           {/* Basic filters */}
           <details className="group [&_summary::-webkit-details-marker]:hidden" open>
-            <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
+            <summary className="flex cursor-pointer items-center justify-between font-black text-xs text-marrow-light select-none uppercase tracking-widest">
               Filtri di Base
               {chevronSvg}
             </summary>
             <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Ordina per</Label>
+                  <Label className="text-xs font-black uppercase tracking-tight text-marrow-light/70">Ordina per</Label>
                   <Select value={block.sortBy} onValueChange={(v) => updateBlock(block.id, { sortBy: v })}>
                     <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                       <SelectValue />
@@ -738,7 +747,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Lingua originale</Label>
+                  <Label className="text-xs font-black uppercase tracking-tight text-marrow-light/70">Lingua originale</Label>
                   <Select value={block.language || '__any'} onValueChange={(v) => updateBlock(block.id, { language: v === '__any' ? '' : v })}>
                     <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                       <SelectValue placeholder="Qualsiasi" />
@@ -752,7 +761,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="mb-2 block text-xs font-bold text-marrow-deep">Voto minimo: {block.voteMin > 0 ? block.voteMin.toFixed(1) : 'Qualsiasi'}</Label>
                   <div className="px-2">
@@ -769,28 +778,28 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno da</Label>
-                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="1900" max="2099" />
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-xs">Anno da</Label>
+                  <Input value={block.yearFrom} onChange={(e) => updateBlock(block.id, { yearFrom: e.target.value })} placeholder="es. 2000" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]" type="number" min="1900" max="2099" />
                 </div>
                 <div>
-                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Anno a</Label>
-                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="1900" max="2099" />
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-xs">Anno a</Label>
+                  <Input value={block.yearTo} onChange={(e) => updateBlock(block.id, { yearTo: e.target.value })} placeholder="es. 2024" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]" type="number" min="1900" max="2099" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata min (min)</Label>
-                  <Input value={block.runtimeGte} onChange={(e) => updateBlock(block.id, { runtimeGte: e.target.value })} placeholder="es. 90" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="0" max="400" />
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-xs">Durata min (min)</Label>
+                  <Input value={block.runtimeGte} onChange={(e) => updateBlock(block.id, { runtimeGte: e.target.value })} placeholder="es. 90" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]" type="number" min="0" max="400" />
                 </div>
                 <div>
-                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-[9px]">Durata max (min)</Label>
-                  <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm" type="number" min="0" max="400" />
+                  <Label className="text-marrow-deep/60 font-black uppercase tracking-wide text-xs">Durata max (min)</Label>
+                  <Input value={block.runtimeLte} onChange={(e) => updateBlock(block.id, { runtimeLte: e.target.value })} placeholder="es. 180" className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]" type="number" min="0" max="400" />
                 </div>
               </div>
 
               <div>
-                <Label className="text-[10px] font-black uppercase tracking-tight text-marrow-light/70">Censura (Fino a)</Label>
+                <Label className="text-xs font-black uppercase tracking-tight text-marrow-light/70">Censura (Fino a)</Label>
                 <Select value={block.certificationLte || '__any'} onValueChange={(v) => updateBlock(block.id, { certificationLte: v === '__any' ? '' : v })}>
                   <SelectTrigger className="mt-1 bg-white/60 border-marrow-light/10 text-marrow-deep font-bold text-base sm:text-xs">
                     <SelectValue placeholder="Qualsiasi" />
@@ -810,8 +819,8 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
           {/* Genres */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
-              Generi {block.genres.length > 0 && <span className="text-[10px] font-normal normal-case text-primary ml-2">({block.genres.length} selezionati)</span>}
+            <summary className="flex cursor-pointer items-center justify-between font-black text-xs text-marrow-light select-none uppercase tracking-widest">
+              Generi {block.genres.length > 0 && <span className="text-xs font-normal normal-case text-primary ml-2">({block.genres.length} selezionati)</span>}
               {chevronSvg}
             </summary>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -819,7 +828,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 <button
                   key={id}
                   onClick={() => toggleBlockGenre(block.id, id)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${block.genres.includes(id)
+                  className={`inline-flex items-center justify-center min-h-[44px] rounded-full px-3.5 py-2.5 text-xs font-bold transition-all shadow-sm touch-manipulation ${block.genres.includes(id)
                     ? 'bg-primary text-white shadow-primary/20'
                     : 'bg-white/40 text-marrow-light hover:text-primary hover:bg-primary/10 border border-marrow-light/20 shadow-sm'
                     }`}
@@ -830,13 +839,13 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             </div>
 
             <div className="mt-4 border-t border-marrow-light/10 pt-4">
-              <Label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-marrow-light/70">Escludi Generi {block.withoutGenres.length > 0 && <span className="text-[10px] font-normal normal-case text-red-500 ml-1">({block.withoutGenres.length} esclusi)</span>}</Label>
+              <Label className="mb-2 block text-xs font-black uppercase tracking-widest text-marrow-light/70">Escludi Generi {block.withoutGenres.length > 0 && <span className="text-xs font-normal normal-case text-red-500 ml-1">({block.withoutGenres.length} esclusi)</span>}</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {Object.entries(GENRE_NAMES).map(([id, genreName]) => (
                   <button
                     key={`without-${id}`}
                     onClick={() => toggleBlockWithoutGenre(block.id, id)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${block.withoutGenres.includes(id)
+                    className={`inline-flex items-center justify-center min-h-[44px] rounded-full px-3.5 py-2.5 text-xs font-bold transition-all shadow-sm touch-manipulation ${block.withoutGenres.includes(id)
                       ? 'bg-red-500 text-white shadow-red-500/20'
                       : 'bg-white/40 text-marrow-light hover:text-red-500 hover:bg-red-500/10 border border-marrow-light/20 shadow-sm'
                       }`}
@@ -850,8 +859,8 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
           {/* Keywords & Staff */}
           <details className="group [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer items-center justify-between font-black text-[10px] text-marrow-light select-none uppercase tracking-widest">
-              Parole Chiave & Staff {(block.keywords.length + block.cast.length + block.crew.length) > 0 && <span className="text-[10px] font-normal normal-case text-primary ml-2">({block.keywords.length + block.cast.length + block.crew.length} selezionati)</span>}
+            <summary className="flex cursor-pointer items-center justify-between font-black text-xs text-marrow-light select-none uppercase tracking-widest">
+              Parole Chiave & Staff {(block.keywords.length + block.cast.length + block.crew.length) > 0 && <span className="text-xs font-normal normal-case text-primary ml-2">({block.keywords.length + block.cast.length + block.crew.length} selezionati)</span>}
               {chevronSvg}
             </summary>
             <div className="mt-4 space-y-5">
@@ -902,7 +911,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           {/* Per-block inline preview */}
           {block.strategy !== 'ai' && block.strategy !== 'static_list' && (
             <div className="pt-3 border-t border-dashed border-marrow-light/15">
-              <p className="text-[9px] font-black uppercase tracking-widest text-marrow-light/50 mb-2">Anteprima Query {index + 1}</p>
+              <p className="text-xs font-black uppercase tracking-widest text-marrow-light/50 mb-2">Anteprima Query {index + 1}</p>
               <PosterRow filters={buildFiltersFromBlock(block)} type={type} />
             </div>
           )}
@@ -919,19 +928,14 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-2">
                 {((block.rawProps?.static_items as any[]) || []).map((item, idx) => (
                   <div key={item.id || idx} className="flex flex-col gap-1 items-center text-center">
-                    {item.poster ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.poster}
-                        alt={item.title}
-                        className="w-16 h-24 object-cover rounded shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-16 h-24 bg-marrow-light/10 border border-marrow-light/10 rounded flex items-center justify-center">
-                        {type === 'series' ? <Tv className="h-6 w-6 text-marrow-light/30" /> : <Film className="h-6 w-6 text-marrow-light/30" />}
-                      </div>
-                    )}
-                    <span className="text-[10px] font-bold text-marrow-deep line-clamp-2 leading-tight">{item.title}</span>
+                    <PosterCard
+                      poster={item.poster}
+                      title={item.title}
+                      size="fluid"
+                      className="max-w-[120px]"
+                      showTitleOverlay={false}
+                    />
+                    <span className="text-xs font-bold text-marrow-deep line-clamp-2 leading-tight">{item.title}</span>
                   </div>
                 ))}
               </div>
@@ -952,9 +956,9 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Nome catalogo</Label>
+              <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs">Nome catalogo</Label>
               {isAnime && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-[10px] font-black border border-amber-500/30">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-xs font-black border border-amber-500/30">
                   🏮 Solo anime
                 </span>
               )}
@@ -963,17 +967,17 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Il mio catalogo"
-              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-10 sm:h-10"
+              className="mt-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]"
             />
           </div>
           <div className="sm:w-56 shrink-0">
-            <Label className="text-marrow-deep font-black uppercase tracking-wide text-[10px]">Tipo</Label>
+            <Label className="text-marrow-deep font-black uppercase tracking-wide text-xs">Tipo</Label>
             <div className="flex gap-1.5 mt-1">
               {(['movie', 'series'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`flex-1 rounded-lg border py-2 text-xs sm:text-sm font-bold transition-all min-h-[40px] touch-manipulation ${type === t
+                  className={`flex-1 rounded-lg border py-2.5 text-xs sm:text-sm font-bold transition-all min-h-[44px] touch-manipulation ${type === t
                     ? 'border-primary bg-primary text-white shadow-md shadow-primary/20'
                     : 'border-marrow-light/20 bg-white/40 text-marrow-light hover:text-primary hover:border-primary/50'
                     }`}
@@ -989,7 +993,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
         <div className="flex flex-col sm:flex-row sm:items-center items-start justify-between gap-1 sm:gap-3 pt-2 border-t border-marrow-light/10 mt-2">
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span className="text-base select-none">🏮</span>
-            <span className="text-marrow-deep font-black uppercase tracking-wide text-[9px] sm:text-[10px] whitespace-nowrap">Filtro Anime</span>
+            <span className="text-marrow-deep font-black uppercase tracking-wide text-xs whitespace-nowrap">Filtro Anime</span>
             <span className="relative group">
               <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
               <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
@@ -997,9 +1001,9 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               </span>
             </span>
           </div>
-          <div className="flex items-center gap-2 mt-1 sm:mt-0">
+          <div className="flex items-center gap-2 mt-1 sm:mt-0 min-h-[44px]">
             {isAnime && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 text-[11px] font-black border border-amber-500/20">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 text-xs font-black border border-amber-500/20">
                 🏮 Solo anime
               </span>
             )}
@@ -1008,7 +1012,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               onCheckedChange={setIsAnime} 
               id="anime-toggle"
             />
-            <Label htmlFor="anime-toggle" className="text-xs text-marrow-deep cursor-pointer font-bold">
+            <Label htmlFor="anime-toggle" className="text-xs text-marrow-deep cursor-pointer font-bold py-2.5">
               Solo anime
             </Label>
           </div>
@@ -1019,7 +1023,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1 sm:gap-3 pt-1 border-t border-marrow-light/10 mt-2">
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-              <span className="text-marrow-deep font-black uppercase tracking-wide text-[9px] sm:text-[10px] whitespace-nowrap">Badge Episodi</span>
+              <span className="text-marrow-deep font-black uppercase tracking-wide text-xs whitespace-nowrap">Badge Episodi</span>
               <span className="relative group">
                 <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
                 <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
@@ -1027,13 +1031,13 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                 </span>
               </span>
             </div>
-            <div className="flex items-center gap-2 mt-1 sm:mt-0">
+            <div className="flex items-center gap-2 mt-1 sm:mt-0 min-h-[44px]">
               <Switch 
                 checked={showEpisodeBadge} 
                 onCheckedChange={setShowEpisodeBadge} 
                 id="badge-toggle"
               />
-              <Label htmlFor="badge-toggle" className="text-xs text-marrow-deep cursor-pointer">
+              <Label htmlFor="badge-toggle" className="text-xs text-marrow-deep cursor-pointer py-2.5">
                 Mostra Ultimo Episodio
               </Label>
             </div>
@@ -1043,10 +1047,10 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
 
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-marrow-deep">
+          <span className="text-xs font-black uppercase tracking-widest text-marrow-deep">
             Query Blocks ({blocks.length})
           </span>
-          <Button onClick={addBlock} variant="outline" size="sm" className="h-8 gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-bold text-marrow-deep bg-white/40 border-primary/20 hover:bg-primary/10">
+          <Button onClick={addBlock} variant="outline" size="sm" className="h-11 min-h-[44px] px-3 gap-1 sm:gap-1.5 text-xs font-bold text-marrow-deep bg-white/40 border-primary/20 hover:bg-primary/10 touch-manipulation">
             <Plus className="h-3.5 w-3.5" />
             Aggiungi Query
           </Button>

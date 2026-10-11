@@ -38,7 +38,7 @@ export function PosterImage({
       <div className={`w-full h-full bg-marrow-light/20 flex flex-col items-center justify-center gap-1 p-2 text-center ${fallbackClassName}`}>
         <ImageOff className="h-5 w-5 text-marrow-deep/30" aria-hidden="true" />
         {showFallbackTitle && (
-          <span className="text-[10px] font-bold leading-tight text-marrow-deep/60 line-clamp-3">{alt}</span>
+          <span className="text-xs font-bold leading-tight text-marrow-deep/60 line-clamp-3">{alt}</span>
         )}
       </div>
     );

@@ -89,18 +89,18 @@ export function ActiveCatalogsPanel({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4">
         <div className="flex flex-col">
           <h3 className="text-base sm:text-xl font-black text-marrow-deep tracking-tight">
             I tuoi Cataloghi <span className="text-primary/40 ml-1">({catalogs.length})</span>
           </h3>
-          <p className="text-[9px] sm:text-xs text-marrow-light/60 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Gestisci e ordina la tua esperienza</p>
+          <p className="text-xs text-marrow-light/60 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Gestisci e ordina la tua esperienza</p>
         </div>
         
         {catalogs.length > 1 && (
-           <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/40 rounded-xl sm:rounded-2xl border border-marrow-light/10 shadow-sm">
+           <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/40 rounded-xl sm:rounded-2xl border border-marrow-light/10 shadow-sm shrink-0">
              <span className="material-symbols-outlined text-primary text-xs sm:text-sm">info</span>
-             <p className="text-[9px] sm:text-[10px] text-marrow-light font-black uppercase tracking-wider">
+             <p className="text-xs text-marrow-light font-black uppercase tracking-wider">
                <span className="sm:hidden">Frecce per riordinare</span>
                <span className="hidden sm:inline">Trascina per riordinare</span>
              </p>
@@ -115,7 +115,7 @@ export function ActiveCatalogsPanel({
             <p className="text-xs sm:text-sm font-bold">
               {hiddenCatalogsCount} {hiddenCatalogsCount === 1 ? 'catalogo attivo è nascosto' : 'cataloghi attivi sono nascosti'} nel manifest di Stremio
             </p>
-            <p className="text-[10px] sm:text-xs text-amber-800/80 font-medium">
+            <p className="text-xs text-amber-800/80 font-medium">
               A causa dei selettori di tipo impostati sul profilo. I cataloghi restano salvati nel profilo e rimangono riordinabili e rimovibili.
             </p>
           </div>

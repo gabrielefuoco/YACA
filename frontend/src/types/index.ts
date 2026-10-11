@@ -72,6 +72,26 @@ export interface Catalog {
   isAnime?: boolean;
 }
 
+/**
+ * Dati minimi che una card catalogo deve saper mostrare.
+ *
+ * Li soddisfano strutturalmente sia `Catalog` sia `Preset` (il cui `type` può valere anche 'both'),
+ * così la stessa card serve i cataloghi attivi e i preset da esplorare senza duplicare il markup.
+ * Deliberatamente senza index signature: un campo non previsto qui deve dare errore, non passare.
+ */
+export interface CatalogCardData {
+  id: string;
+  name: string;
+  type: 'movie' | 'series' | 'both';
+  emoji?: string;
+  source?: string;
+  raw_prompt?: string;
+  description?: string;
+  filters?: Record<string, unknown>;
+  queries?: QueryBlock[];
+  isAnime?: boolean;
+}
+
 export interface Profile {
   id: string;
   name: string;

@@ -118,6 +118,7 @@ button, a, input, select {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-glass-border);
   box-shadow: 0 4px 20px rgba(94, 0, 6, 0.05);
+  border-radius: 1rem;
 }
 
 .glass-card {
@@ -127,6 +128,7 @@ button, a, input, select {
   border: 1px solid var(--color-border-subtle);
   transition: all 0.2s ease;
   box-shadow: 0 2px 10px rgba(94, 0, 6, 0.03);
+  border-radius: 1rem;
 }
 
 .glass-card:hover {

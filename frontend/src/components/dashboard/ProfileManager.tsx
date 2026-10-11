@@ -83,7 +83,7 @@ export function ProfileManager({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <h2 className="text-marrow-deep text-base sm:text-xl font-bold">I tuoi Profili</h2>
-          <span className="bg-primary/10 text-primary text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
+          <span className="bg-primary/10 text-primary text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
             {profiles.length} Profil{profiles.length !== 1 ? 'i' : 'o'}
           </span>
         </div>
@@ -94,7 +94,7 @@ export function ProfileManager({
               <button 
                 onClick={() => onUpdateProfile?.(editingProfile.id, { settings: { ...editingProfile.settings, kidsMode: !editingProfile.settings?.kidsMode } })}
                 title={editingProfile.settings?.kidsMode ? "Disabilita Modalità Bambini" : "Abilita Modalità Bambini"}
-                className={`flex items-center justify-center size-9 sm:size-8 rounded-full transition-colors border shadow-sm touch-manipulation ${
+                className={`flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full transition-colors border shadow-sm touch-manipulation ${
                   editingProfile.settings?.kidsMode 
                     ? 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600' 
                     : 'bg-white/50 text-marrow-deep hover:bg-white hover:text-blue-500 border-marrow-light/10'
@@ -107,14 +107,14 @@ export function ProfileManager({
               <button 
                 onClick={startRename}
                 title="Rinomina profilo selezionato"
-                className="flex items-center justify-center size-9 sm:size-8 rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm touch-manipulation"
+                className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm touch-manipulation"
               >
                 <span className="material-symbols-outlined text-[18px]">edit</span>
               </button>
               <button 
                 onClick={() => onRemove?.(editingProfile.id)}
                 title="Elimina profilo selezionato"
-                className="flex items-center justify-center size-9 sm:size-8 rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm touch-manipulation"
+                className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm touch-manipulation"
               >
                 <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
@@ -123,7 +123,7 @@ export function ProfileManager({
 
           <button
             onClick={() => setIsDialogOpen(true)}
-            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer justify-center rounded-lg h-9 sm:h-9 px-3.5 sm:px-4 bg-primary text-white text-xs sm:text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20 min-h-[36px] touch-manipulation"
+            className="flex items-center gap-1.5 sm:gap-2 cursor-pointer justify-center rounded-lg min-h-[44px] h-11 px-3.5 sm:px-4 bg-primary text-white text-xs sm:text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20 touch-manipulation"
           >
             <span className="material-symbols-outlined text-xs sm:text-sm">add</span>
             <span className="hidden sm:inline">Nuovo Profilo</span>
@@ -132,7 +132,7 @@ export function ProfileManager({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
         {profiles.map((profile) => {
           const isActive = activeProfileId === profile.id;
           const isEditing = editingProfileId === profile.id;
@@ -169,7 +169,7 @@ export function ProfileManager({
                   {profile.name}
                 </p>
                 {isActive ? (
-                  <p className="text-[10px] text-emerald-600 font-black uppercase mt-1 tracking-wider">
+                  <p className="text-xs text-emerald-600 font-black uppercase mt-1 tracking-wider">
                     Attivo
                   </p>
                 ) : isEditing ? (
@@ -179,9 +179,9 @@ export function ProfileManager({
                       onSetActive(profile.id);
                     }}
                     title="Imposta come Attivo"
-                    className="mt-1 flex items-center justify-center gap-1 w-full max-w-[100px] bg-emerald-500 text-white py-1 rounded-full text-[10px] font-bold uppercase hover:bg-emerald-600 transition-colors shadow-sm min-h-[28px] sm:min-h-[24px] touch-manipulation"
+                    className="mt-1 flex items-center justify-center gap-1 w-full max-w-[100px] bg-emerald-500 text-white py-1 rounded-full text-xs font-bold uppercase hover:bg-emerald-600 transition-colors shadow-sm min-h-[44px] h-11 touch-manipulation"
                   >
-                    <span className="material-symbols-outlined text-[12px]">check</span>
+                    <span className="material-symbols-outlined text-xs">check</span>
                     Attiva
                   </button>
                 ) : null}
@@ -200,7 +200,7 @@ export function ProfileManager({
               <p className="text-xs sm:text-sm font-bold text-marrow-deep">
                 Selettori di Tipo: <span className="text-primary font-black">{editingProfile.name}</span>
               </p>
-              <p className="text-[10px] sm:text-xs text-marrow-light/70 font-medium">
+              <p className="text-xs text-marrow-light/70 font-medium">
                 Filtra i cataloghi del profilo nel manifest di Stremio e nella dashboard
               </p>
             </div>
@@ -210,7 +210,7 @@ export function ProfileManager({
 
             {/* Gruppo 2: Anime (Solo Anime / No Anime) - Mutuamente esclusivi */}
             <div className="flex items-center gap-2 p-1 bg-white/80 rounded-lg border border-marrow-light/10 shadow-xs">
-              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
+              <label className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] h-11 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none touch-manipulation">
                 <input
                   type="checkbox"
                   checked={currentSelectors.anime === 'only'}
@@ -220,7 +220,7 @@ export function ProfileManager({
                 <span>Solo Anime</span>
               </label>
               <span className="text-marrow-light/20">|</span>
-              <label className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none">
+              <label className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] h-11 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none touch-manipulation">
                 <input
                   type="checkbox"
                   checked={currentSelectors.anime === 'exclude'}
@@ -260,9 +260,9 @@ export function ProfileManager({
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="Nome del nuovo profilo..."
                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    className="bg-white border-marrow-light/20 flex-1 text-base sm:text-sm h-10 sm:h-9"
+                    className="bg-white border-marrow-light/20 flex-1 text-base sm:text-sm h-11 sm:h-11 min-h-[44px]"
                   />
-                  <Button onClick={handleAdd} className="bg-primary hover:brightness-110 shrink-0 font-bold min-h-[40px] px-4 touch-manipulation">
+                  <Button onClick={handleAdd} className="bg-primary hover:brightness-110 shrink-0 font-bold min-h-[44px] h-11 px-4 touch-manipulation">
                     Crea
                   </Button>
                 </div>

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
-import { PosterImage } from '@/components/shared/PosterImage';
+import { PosterCard } from '@/components/shared/PosterCard';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
 import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw, EyeOff } from 'lucide-react';
@@ -286,7 +286,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
             variant="outline"
             size="sm"
             onClick={() => setIsSyncModalOpen(true)}
-            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20 min-h-[38px] touch-manipulation"
+            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20 min-h-[44px] h-11 touch-manipulation"
           >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> 
             Converti in YACA
@@ -296,7 +296,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
             size="sm"
             disabled={isRemovingWatched}
             onClick={handleRemoveWatched}
-            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[38px] touch-manipulation"
+            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[44px] h-11 touch-manipulation"
           >
             {isRemovingWatched
               ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -312,7 +312,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
               if (s === 'name_asc') return 'date_asc';
               return 'custom';
             })}
-            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[38px] touch-manipulation"
+            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[44px] h-11 touch-manipulation"
           >
             <ArrowUpDown className="h-4 w-4 mr-1" />
             Ordina: {sortMode === 'custom' ? 'Personalizzato' : sortMode === 'date_desc' ? 'Più Recenti' : sortMode === 'name_asc' ? 'A-Z' : 'Meno Recenti'}
@@ -324,7 +324,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
               setIsSelectionMode(!isSelectionMode);
               if (isSelectionMode) setSelectedIds(new Set());
             }}
-            className={`text-xs font-bold min-h-[38px] touch-manipulation ${isSelectionMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
+            className={`text-xs font-bold min-h-[44px] h-11 touch-manipulation ${isSelectionMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
           >
             {isSelectionMode ? 'Annulla Selezione' : 'Seleziona Elementi'}
           </Button>
@@ -366,12 +366,15 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
           {sortedItems.map((item, index) => {
             const isSelected = selectedIds.has(item._id);
             return (
-              <div
+              <PosterCard
                 key={item._id}
+                poster={resolvePosterSrc(item.poster)}
+                title={item.name}
+                size="fluid"
                 draggable={!isSelectionMode}
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => {
@@ -383,47 +386,49 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
                 }}
                 onClick={() => isSelectionMode && toggleSelection(item._id)}
                 className={`
-                  relative group aspect-[2/3] rounded-xl overflow-hidden cursor-pointer transition-all duration-300
                   ${!isSelectionMode ? 'cursor-grab active:cursor-grabbing hover:-translate-y-1 hover:shadow-xl' : ''}
                   ${isSelected ? 'ring-4 ring-primary shadow-lg shadow-primary/20 scale-[0.98]' : 'shadow-md'}
                 `}
-              >
-                <PosterImage src={resolvePosterSrc(item.poster)} alt={item.name} />
-                
-                {isSelectionMode ? (
-                  <div className="absolute inset-0 bg-black/20 flex p-2 items-start justify-end">
-                    {isSelected ? (
-                      <CheckSquare className="h-6 w-6 text-primary drop-shadow-md bg-white rounded-md" />
-                    ) : (
-                      <Square className="h-6 w-6 text-white drop-shadow-md" />
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => handleRemove(item._id, e)}
-                      aria-label={`Rimuovi ${item.name}`}
-                      className="sm:hidden absolute top-1.5 right-1.5 z-10 size-7 rounded-full bg-black/70 text-white/90 active:bg-destructive active:text-white flex items-center justify-center shadow-md touch-manipulation"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    <div className="hidden sm:flex absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center p-2">
-                      <div className="text-center w-full">
-                        <p className="text-white font-bold text-[10px] leading-tight mb-3 line-clamp-3 px-1">{item.name}</p>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-7 px-3 text-[10px] font-bold touch-manipulation"
-                          onClick={(e) => handleRemove(item._id, e)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
-                        </Button>
-                      </div>
+                overlay={
+                  isSelectionMode ? (
+                    <div className="absolute inset-0 bg-black/20 flex p-2 items-start justify-end pointer-events-none">
+                      {isSelected ? (
+                        <CheckSquare className="h-6 w-6 text-primary drop-shadow-md bg-white rounded-md" />
+                      ) : (
+                        <Square className="h-6 w-6 text-white drop-shadow-md" />
+                      )}
                     </div>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemove(item._id, e)}
+                        aria-label={`Rimuovi ${item.name}`}
+                        className="sm:hidden absolute top-0 right-0 z-10 size-11 flex items-center justify-center touch-manipulation"
+                      >
+                        <span className="size-7 rounded-full bg-black/70 text-white/90 active:bg-destructive active:text-white flex items-center justify-center shadow-md">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </span>
+                      </button>
+                      {/* Il velo scuro resta un'affordance da mouse: forzarlo visibile sui touch
+                          (pointer-coarse) coprirebbe ogni locandina di nero su tablet. Sui telefoni
+                          il cestino in alto a destra è già sempre raggiungibile. */}
+                      <div className="hidden sm:flex absolute inset-0 bg-black/60 opacity-0 group-hover/poster:opacity-100 transition-opacity items-center justify-center p-2">
+                        <div className="text-center w-full">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-11 min-h-[44px] px-3 text-xs font-bold touch-manipulation"
+                            onClick={(e) => handleRemove(item._id, e)}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )
+                }
+              />
             );
           })}
           
