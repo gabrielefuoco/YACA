@@ -1,6 +1,8 @@
 # 06 — Il giudice automatico delle bolle
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Blocked by**: nessuno
+**Status**: `resolved` · **Type**: `prototype` · **Blocked by**: nessuno · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/06-giudice.md) · lo strumento **funziona** (52,8% contro il 20% del caso, ~388 token e 1,7 s per bolla) e ordina le due partizioni nella direzione giusta (**E 52,8% > A 47,0%**). ⚠️ Ma (a) **la validazione contro la lettura umana è fallita**: 3 delle 5 minestrone stanno fra le bolle *più facili* — lo strumento misura la **separabilità**, non la **nominabilità**; (b) con 200 bolle **non distingue** due partizioni che distano 6 punti (p ≈ 0,25: servono ~1.090 bolle per lato); (c) il campo regia vale **13 punti** del test.
 
 ## What to build
 

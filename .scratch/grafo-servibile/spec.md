@@ -175,6 +175,13 @@ Quella è la definizione che il prodotto userà, e la mappa la rende visibile co
    attivi i componenti noti all'uscita (pubblico previsto, keyword, regia, cast, produzione); i titoli
    usciti dopo la fine della finestra di test sono esclusi dal cesto. *Livello 2, snapshot globale*: una
    sola data di taglio al 75° percentile dei timestamp, una sola ricostruzione del comportamento.
+   > **Esito misurato il 13/10/2026** (ticket 03, [report](ricerche/03-mascheramento.md)): **il segno
+   > della perdita è invertito.** La mascherata va *meglio* del non mascherato (@100 18,94% contro
+   > 18,21%, @500 47,78% contro 46,14%), e il placebo — la stessa quantità di archi tolta a caso — va
+   > *molto peggio* (15,98% e 42,03%): la differenza fra le due manovre è 3,0 punti al @100. La
+   > conoscenza del futuro non gonfia i numeri, li abbassa. La frase «il grafo conosce il futuro,
+   > quindi i numeri sono ottimistici» **non va più usata**: era la premessa con cui questa specifica
+   > è nata, ed è falsa nel verso in cui la dicevamo.
 4. **La definizione di "sorprendente" cambia**: non è una temperatura sui punteggi finali — alzare la
    temperatura produce scelte sub-ottimali, non sorprendenti. È **alta affinità comportamentale a fronte
    di alta distanza nei metadati**, ed è deterministica.

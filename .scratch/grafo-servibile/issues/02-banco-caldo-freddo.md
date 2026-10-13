@@ -1,6 +1,8 @@
 # 02 — Il banco curato diviso in caldo e freddo
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: nessuno
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: nessuno · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/02-banco.md) · divisione riprodotta (**83 calde / 163 fredde**, mediana 4 legami per entrambe). Il divario è **9,9× al @10** e solo **1,9× al @500**: la difficoltà delle sorgenti fredde è trovarle *in testa*, non trovarle. L'aggregato (11,88%) è la media pesata esatta delle due e non descrive nessuna delle due.
 
 ## What to build
 

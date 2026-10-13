@@ -113,6 +113,50 @@ Il motivo è nel verbale dei report 43-74, e vale la pena rileggerlo prima di og
   era la copertura);
 - la modularità scambiata per qualità, tre volte.
 
+## La prima ondata — cosa ha imparato (13/10/2026)
+
+Cinque ticket della frontiera, tutti chiusi: [01](issues/01-recall-stratificata.md),
+[02](issues/02-banco-caldo-freddo.md), [03](issues/03-mascheramento-temporale.md),
+[05](issues/05-diagnostiche-bolle.md), [06](issues/06-giudice-automatico-bolle.md).
+Report in [`ricerche/`](ricerche/).
+
+**Tre cose che cambiano il piano:**
+
+1. **Il segno della perdita temporale è invertito** ([03](ricerche/03-mascheramento.md)). Il grafo
+   che «conosce il futuro» non gonfia i numeri: li **abbassa**. Mascherando i titoli freschi la
+   camminata va meglio (@100 18,94% contro 18,21%), e il placebo con la stessa quantità di archi a
+   caso va molto peggio (15,98%). La premessa con cui questa mappa è nata era falsa nel verso in cui
+   la dicevamo. **Il collo di bottiglia non è il leakage: è lo split stesso, e resta il cesto.**
+2. **Lo split delle chimere non copre le minestrone** ([05](ricerche/05-diagnostiche.md)). Le bolle
+   che l'occhio giudica cattive hanno **15-35 titoli** e purezza **normale** (0,176 contro 0,168 di
+   mediana): la caccia alle chimere guarda le bolle con più di 35 titoli, quindi **il ticket 08
+   ripara una popolazione che non è quella malata**. Va riorientato o dichiarato fuori portata.
+3. **La regola dei testimoni non basta** ([05](ricerche/05-diagnostiche.md)): porta la mediana da
+   961 a **47** vicini, non a ~6, e lascia **177 bolle isolate**. Il ticket 09 ha ancora bisogno di
+   PMI+ e disparità, **e di un ripiego esplicito** per le bolle che restano senza vicini.
+
+**Due cose che reggono:**
+
+4. **I due assi sono indipendenti** (r = +0,070 sui 200.000 collegamenti comportamentali più forti;
+   PMI strutturale zero nel 75,4%): la tassonomia a tre tipi del ticket 10 ha una base misurata, e il
+   ponte *vibe* non è un caso raro — è la condizione normale dei collegamenti forti.
+5. **Il giudice automatico funziona** ([06](ricerche/06-giudice.md)): 52,8% contro il 20% del caso,
+   388 token per bolla. Ma misura la **separabilità**, non la **nominabilità** — e quella resta
+   compito dell'occhio. E con 200 bolle non distingue partizioni che distano 6 punti: serve ~1.090
+   bolle per lato.
+
+**Due controlli che erano scritti male, e vanno riscritti prima di riusarli** (li eredita il ticket 21):
+
+- **Il quinto controllo obbligatorio** — «un componente della parte serie non deve muovere i numeri
+  del catalogo film» — è **falso per il grafo canonico**: `boot-B.npz` (co-visione Trakt, serie→serie)
+  ha mosso i numeri film di 0,05 punti al @100, e la causa è dimostrata riproducendo il numero vecchio
+  con la B vecchia. In un grafo misto **non esiste** un componente «della parte serie». Vale solo per
+  la ricetta minima. Da riscrivere come: *«un componente che non tocca alcun titolo del catalogo
+  servito non deve muoverne i numeri»*.
+- **Il controllo no-op del ticket 03** confrontava due array lavorati diversamente e dava «DIVERSO»
+  su una macchina corretta. Un controllo sbagliato è più pericoloso di nessun controllo: produce una
+  certezza. **Terza volta in questa sessione che un artefatto nasce da uno strumento.**
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo

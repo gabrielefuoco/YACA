@@ -465,6 +465,7 @@ E **quattro volte un segno rovesciato** ha prodotto un risultato plausibile e fa
 4. **La navigazione**: bolle vicine nel grafo, e dentro la bolla la scelta popolare/nicchia. **Mai costruita — ed è l'ultimo pezzo del tuo piano.**
 5. **Il conflitto fra i banchi** sul catalogo film (Trakt vs MovieLens).
 6. **Ricostruire il grafo a tempo T** — il grafo conosce il futuro, quindi i numeri temporali sono ottimistici.
+   > **Corretto il 13/10/2026** (ticket 03 della mappa `grafo-servibile`): **il segno è invertito** — mascherando la propagazione dei titoli freschi la camminata va *meglio* (18,94% contro 18,21% al @100), e il placebo con la stessa quantità di archi a caso va molto peggio (15,98%). I numeri temporali non sono ottimistici. La ricostruzione a tempo T resta il test giusto, ma l'esito atteso è un miglioramento lieve, non un crollo. Dettagli in `.scratch/grafo-servibile/ricerche/03-mascheramento.md`.
 
 ---
 

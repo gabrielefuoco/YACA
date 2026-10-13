@@ -198,6 +198,52 @@ def banco_curato(row_of):
     return SOGG, BERS, US, COL
 
 
+def banco_curato_split(row_of):
+    """Il banco curato diviso nelle sue DUE popolazioni, che non vanno MAI mediate.
+
+    Il banco di giudizio esperto ha 1.002 legami cross-medium da 249 sorgenti a indice dispari.
+    Le sorgenti di test sono due popolazioni strutturalmente diverse, e la differenza non e' il
+    numero di legami (la mediana e' 4 per entrambe):
+
+      CALDE  (~83)  il titolo compare anche come BERSAGLIO di un legame di una sorgente di
+                    TRAINING -> ha archi di curatela in entrata nel grafo (che e' simmetrico),
+                    quindi NON e' cold start: e' un titolo che il mondo curato gia' tocca.
+      FREDDE (~163) nessun arco: e' cold start vero, ed e' la domanda «un titolo nuovo».
+
+    Mediare le due produce un numero che non descrive nessuna delle due — ed e' come il banco e'
+    stato usato finora. Torna anche il numero di legami per popolazione: serve a distinguere
+    «la popolazione e' difficile» da «la popolazione ha meno legami».
+    """
+    d = json.loads((GOLD / "cross-merged.json").read_text(encoding="utf-8"))
+    src = d["sources"]
+    train = [s for i, s in enumerate(src) if i % 2 == 0]
+    test = [s for i, s in enumerate(src) if i % 2 == 1]
+
+    SOGG, BERS = [], []
+    for s in test:
+        a = row_of.get(s["id"])
+        if a is None:
+            continue
+        for l in s["links"]:
+            b = row_of.get(l["id"])
+            if b is None or l["type"] == s["id"].split(":")[0]:
+                continue
+            SOGG.append(a)
+            BERS.append(b)
+    SOGG, BERS = np.array(SOGG), np.array(BERS)
+    US = np.unique(SOGG)
+    col_of = {int(u): i for i, u in enumerate(US)}
+    COL = np.array([col_of[int(x)] for x in SOGG])
+
+    tgt = np.zeros(len(row_of), bool)
+    for s in train:
+        for l in s["links"]:
+            b = row_of.get(l["id"])
+            if b is not None:
+                tgt[b] = True
+    return SOGG, BERS, US, COL, tgt[US]
+
+
 def _leggi_trakt(percorso, chiave):
     try:
         d = json.loads(pathlib.Path(percorso).read_text(encoding="utf-8"))
@@ -278,6 +324,123 @@ def recall_catalogo(R, gold_di, chiavi, filtro, NS=(10, 100, 500)):
             hit += sum(1 for x in scelti if int(x) in g)
         out[N] = 100 * hit / max(den, 1)
     return out
+
+
+# ==================================================================  LE METRICHE NUOVE
+# Ticket 01 della mappa `grafo-servibile`. Si AGGIUNGONO a quelle sopra, non le sostituiscono:
+# la recall globale resta come numero di sanita', queste sono lo strumento di decisione.
+
+def voti():
+    """La popolarita' del catalogo (vote_count TMDB), nella riga dei titoli."""
+    return np.load(ML / "spazi-trakt.npz")["votes"].astype(np.float64)
+
+
+def fasce(voti_catalogo, quantili=(0.05, 0.25)):
+    """Le tre fasce di popolarita' del catalogo SERVITO: 0 = testa (top 5%), 1 = mezzo, 2 = coda.
+
+    Il taglio e' su quantili del catalogo, non dell'oro: e' il catalogo che si serve, ed e' la
+    stessa partizione per tutti gli utenti (quindi confrontabile fra ricette).
+    """
+    v = np.asarray(voti_catalogo, np.float64)
+    t1, t2 = np.quantile(v, [1.0 - quantili[0], 1.0 - quantili[1]])
+    f = np.full(len(v), 2, np.int8)
+    f[v >= t2] = 1
+    f[v >= t1] = 0
+    return f
+
+
+def per_fascia(rk, fb, NS):
+    """Da coppie (rango, fascia) alle recall per fascia. `mezzo+coda` e' quella che decide."""
+    out = {}
+    for nome, m in (("testa", fb == 0), ("mezzo", fb == 1), ("coda", fb == 2),
+                    ("mezzo+coda", fb >= 1), ("tutto", np.ones(len(fb), bool))):
+        out[nome] = {N: (100 * float((rk[m] < N).mean()) if m.sum() else float("nan")) for N in NS}
+    return out
+
+
+def recall_stratificato(R, BERS, COL, fas, NS=(10, 100, 500, 2000)):
+    """Recall stratificata (BERS/COL) — per i banchi a legame esplicito."""
+    return per_fascia(R[BERS, COL], fas[BERS], NS)
+
+
+def recall_stratificato_oro(R, gold_di, chiavi, fas, NS=(10, 100, 500, 2000)):
+    """Recall stratificata per i banchi «un insieme d'oro per chiave» (cataloghi e prodotto).
+
+    `R` deve avere i ranghi GIA' ristretti al catalogo servito (altrimenti i ranghi non sono
+    confrontabili fra banchi diversi — e' la trappola che questa misura deve evitare).
+    """
+    rk, fb = [], []
+    for j, u in enumerate(chiavi):
+        g = gold_di.get(u)
+        if not g:
+            continue
+        gg = np.fromiter(g, np.int64, len(g))
+        rk.append(R[gg, j])
+        fb.append(fas[gg])
+    if not rk:
+        return {}
+    return per_fascia(np.concatenate(rk), np.concatenate(fb), NS)
+
+
+def auto_informazione(voti_catalogo):
+    """L'auto-informazione di ogni titolo: -log2 della sua probabilita' di popolarita' (lisciata).
+
+    +1 al numeratore e al denominatore: un titolo con zero voti non deve esplodere a infinito.
+    Indovinare un titolo raro vale molto piu' di indovinare uno famoso, ed e' la definizione
+    operativa di «azzeccato non banale».
+    """
+    v = np.asarray(voti_catalogo, np.float64) + 1.0
+    return -np.log2(v / v.sum())
+
+
+def recall_si(rk, si, gamma=1.0, NS=(10, 100, 500, 2000)):
+    """Recall pesata per auto-informazione: i successi rari pesano di piu'. Denominatore pesato."""
+    w = np.asarray(si, np.float64) ** gamma
+    den = w.sum()
+    if den <= 0:
+        return {N: float("nan") for N in NS}
+    return {N: 100 * float(w[rk < N].sum()) / den for N in NS}
+
+
+def recall_si_oro(R, gold_di, chiavi, si, gamma=1.0, NS=(10, 100, 500, 2000)):
+    rk, w = [], []
+    for j, u in enumerate(chiavi):
+        g = gold_di.get(u)
+        if not g:
+            continue
+        gg = np.fromiter(g, np.int64, len(g))
+        rk.append(R[gg, j])
+        w.append(si[gg] ** gamma)
+    if not rk:
+        return {}
+    rk, w = np.concatenate(rk), np.concatenate(w)
+    den = w.sum()
+    return {N: 100 * float(w[rk < N].sum()) / den for N in NS}
+
+
+def ranghi_popolare(voti_catalogo, quante, filtro=None):
+    """IL CONTROLLO DEL BANALE: un'unica classifica globale di popolarita', uguale per tutti.
+
+    Va stampato accanto a OGNI misura nuova (e' il predittore marginale imbattibile), e con la
+    recall stratificata deve fare ~100% dei suoi punti sulla testa e ~0% su mezzo+coda: e' la
+    prova che la stratificazione isola il segnale non banale invece di misurarlo.
+    """
+    v = np.asarray(voti_catalogo, np.float64).copy()
+    if filtro is not None:
+        v = np.where(filtro, v, -np.inf)
+    o = np.argsort(-v).astype(np.int32)
+    R = np.empty((len(v), quante), np.int32)
+    R[o, :] = np.arange(len(v), dtype=np.int32)[:, None]
+    return R
+
+
+def stampa_strati(nome, d, larghezza=46):
+    for fascia in ("tutto", "testa", "mezzo", "coda", "mezzo+coda"):
+        if fascia not in d or not d[fascia]:
+            continue
+        et = nome if fascia == "tutto" else ""
+        print(f"  {et:<{larghezza}} {fascia:>11}  "
+              + " · ".join(f"@{N} {v:6.2f}%" for N, v in d[fascia].items()), flush=True)
 
 
 def stampa(nome, d, larghezza=46):

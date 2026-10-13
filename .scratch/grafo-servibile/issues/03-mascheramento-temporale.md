@@ -1,6 +1,8 @@
 # 03 — Il test a tempo T: il mascheramento comportamentale
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Blocked by**: nessuno
+**Status**: `resolved` · **Type**: `prototype` · **Blocked by**: nessuno · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/03-mascheramento.md) · ⚠️ **il segno della perdita è invertito**: la mascherata va **meglio** del non mascherato (@100 18,94% contro 18,21%, @500 47,78% contro 46,14%) e il placebo con la stessa quantità di archi a caso va **molto peggio** (15,98% e 42,03%). La conoscenza del futuro non gonfia i numeri: li abbassa. Il controllo no-op è identico alla canonica ✓ — al primo giro era scritto male, ed è stato corretto.
 
 ## What to build
 

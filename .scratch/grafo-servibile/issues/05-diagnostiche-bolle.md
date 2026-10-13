@@ -1,6 +1,8 @@
 # 05 — Le tre diagnostiche sulle bolle di oggi
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Blocked by**: nessuno
+**Status**: `resolved` · **Type**: `research` · **Blocked by**: nessuno · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/05-diagnostiche.md) · tre risultati che cambiano il piano: (1) i testimoni disgiunti portano 961 → **47** vicini, non a ~6, e lasciano **177 bolle isolate**; (2) ⚠️ lo **split delle chimere non copre le minestrone** — quelle hanno 15-35 titoli e purezza normale, e la caccia ne guarda >35: il ticket 08 va riorientato; (3) ✅ i due assi sono **indipendenti** (r = +0,070), quindi la tassonomia del ticket 10 regge.
 
 ## What to build
 
