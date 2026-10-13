@@ -1,6 +1,6 @@
 # Mappa: il grafo collaborativo (teacher MovieLens → student sui metadati)
 
-**Aperta**: 08/10/2026 · **Tracker**: markdown locale, `.scratch/ml-collaborativo/issues/` · **Stato**: aperta
+**Aperta**: 08/10/2026 · **Tracker**: markdown locale, `.scratch/ml-collaborativo/issues/` · **Stato**: chiusa come ricerca (13/10/2026), 14 ticket aperti da passare in rassegna
 **Origine**: brainstorming dell'utente (PDF `blank.pdf`, dialogo con Gemini), sintetizzato qui in una scheda di lavoro.
 
 ## Destination
@@ -30,6 +30,11 @@ Il vantaggio del grafo sul pool di produzione è **3,1×** con **2,2 volte meno 
 
 1. **Il teacher è MovieLens, non EASE/ALS sulla matrice intera**: 32M voti, item-item con soglia ≥20 voti.
    Copre il **64%** dei film e **0%** delle serie. EASE su 84k item è fuori scala (~30 GB).
+   > **Superata il 13/10/2026** dal ticket 21 della mappa `grafo-servibile`: la fusione a due stadi è
+   > **ritirata** — era nata per rattoppare a valle i buchi del grafo, è neutra sul prodotto, e ha prodotto
+   > il falso positivo più costoso della sessione (l'ordine di indice su una matrice nulla). I segnali si
+   > fondono dentro la matrice di transizione, normalizzati per componente **prima** del mixing: è quella
+   > la variante canonica.
 2. **Il teacher si costruisce con SVD pesata anti-popolare** (`1/log1p(n_item)`): la prima componente spiega il
    42% della varianza e il vettore medio ha coseno **0,224** coi bersagli — è il controllo del banale, e va
    stampato accanto a ogni misura.
@@ -44,10 +49,17 @@ Il vantaggio del grafo sul pool di produzione è **3,1×** con **2,2 volte meno 
    somma** ad alpha: sono due risposte allo stesso problema.
 6. **La risoluzione di Leiden resta 16** (276 cluster, mediana 299 titoli): la manopola esiste (res 64 → 899
    cluster da 94, coerenza 0,618 → 0,676) ma il livello attuale è già micro-genere.
+   > **Superata il 13/10/2026** dal ticket 08 della mappa `grafo-servibile`: le bolle usano **risoluzione 100**
+   > (5.297 cluster) seguite da una **rifinitura adattiva** — split delle chimere, assorbimento delle
+   > briciole, multi-appartenenza per i film-portale. Una risoluzione unica su tutto il grafo non regge:
+   > la filmografia di un autore è di 15 titoli, un sottogenere di 80.
 7. **Il grafo si costruisce fuori da `src/`** (`offline_graph_builder/venv`, output in `.cache/movielens/`,
    gitignorato). Nessuna modifica irreversibile al prodotto.
 8. **La catena da tenere è `feature → coseno → selezione → liste`**: un miglioramento che non arriva in fondo
    alla catena non conta. Il coseno non è un risultato, è un passaggio.
+   > **Superata il 13/10/2026** dalla mappa `grafo-servibile`: il traguardo non è più la lista servita finale
+   > ma **la struttura** — bolle nominabili, mappa navigabile, misura onesta. Il principio resta (una misura
+   > che non arriva in fondo non conta), ma «il fondo» ora è la struttura, non la lista.
 
 ## Not yet specified
 
@@ -204,3 +216,28 @@ rappresentato dai suoi vicini, non dalle sue keyword** (64 dim battono 5.842, e 
 | 6 | **L'adiacenza appresa (livello cluster)** | il risultato 0,699 resta valido, ma il livello che conta è **film**, non cluster: priorità ridimensionata | bassa |
 | 7 | **Lo student** | se la propagazione batte i metadati, il suo ruolo si riduce a: posizioni per chi **non ha vicini** + embedding iniziali del grafo. Non si elimina, si ridimensiona | bassa |
 | 8 | **OCEAN** | resta respinto, e il principio che l'ha respinto («denso serve solo se porta informazione nuova») ora è **dimostrato**: la propagazione è densa e porta informazione nuova | — |
+
+## La fase di ricerca si chiude — 13/10/2026
+
+Questa mappa ha fatto il suo lavoro: la domanda «esiste una rappresentazione migliore dei candidati di
+quella che la produzione pesca oggi?» ha risposta **sì**, e i report 43-74 l'hanno dimostrata e poi
+depurata. Il lavoro prosegue in [`.scratch/grafo-servibile/`](../grafo-servibile/map.md), che non
+contraddice questa mappa: ne mette a terra le conclusioni.
+
+**Cosa passa alla mappa nuova**, e va letto lì:
+
+| | |
+|---|---|
+| il **modulo canonico** del grafo | l'unica implementazione valida, e ogni misura passa da lì |
+| i **componenti** | comportamento, pubblico previsto, co-visione, keyword, cast, regia, franchise, liste |
+| i **banchi** | comportamento, cronologie, giudizio esperto — quest'ultimo **da riparare** (due popolazioni) |
+| i **controlli obbligatori** | popolarità, ordine di indice, teacher nullo, permutazione casuale |
+| le **bolle** | 5.297 cluster, ~88 su 100 con un filo nominabile |
+
+**Cosa non passa**: la catena teacher → student → RRF come struttura portante, lo spazio denso dei
+metadati (`Pc`, che si è rivelato comportamento travestito), la vecchia gerarchia ad albero, la
+modularità come criterio di qualità, e ogni numero preso con lo split casuale — che resta come prova di
+fumo, mai come evidenza.
+
+**I 14 ticket ancora aperti** di questa mappa vanno passati in rassegna: alcuni sono superati (il
+trasferimento alle serie, le liste servite), altri restano validi e vanno ripresi dalla mappa nuova.
