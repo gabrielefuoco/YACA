@@ -186,3 +186,10 @@ gdrive-sa.json
 
 # pi-artifacts: i commenti della vista web (casella di posta, non memoria del progetto)
 *.comments.jsonl
+
+# bytecode Python (qualunque directory)
+__pycache__/
+*.py[cod]
+
+# crash dump di git-bash su Windows
+*.stackdump
