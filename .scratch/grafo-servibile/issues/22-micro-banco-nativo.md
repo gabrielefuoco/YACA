@@ -1,31 +1,28 @@
 # 22 — Il micro-banco nativo di YACA
 
-**Status**: `needs-info` · **Type**: `research` · **Blocked by**: nessuno (ma serve una decisione prima di partire)
+**Status**: `wontfix` · **Type**: `research` · **Blocked by**: nessuno · **Chiuso**: 13/10/2026
 
-## What to build
+## Deciso: non si fa
 
-Nessuno dei due banchi è YACA. Uno snapshot **anonimo** delle librerie e delle cronologie reali di
-produzione, con uno split temporale, direbbe se il pubblico di YACA somiglia di più a quello delle
-cronologie Trakt o a quello del banco MovieLens — cioè **quale dei due banchi ha il diritto di decidere**
-la ricetta (ticket 21).
+Nessuno dei due banchi è YACA, e uno snapshot anonimo delle librerie reali direbbe quale dei due ha il
+diritto di decidere la ricetta. Ma l'utente ha dichiarato che **gli utenti attuali di YACA «sono test
+casuali miei»**: un banco costruito su di loro non misurerebbe YACA, misurerebbe le prove di chi l'ha
+costruita — sarebbe **il terzo banco rotto** di questa sessione, dopo quello curato (due popolazioni) e
+quello con lo split casuale (gonfiato di 2-3×).
 
-## Perché è `needs-info` e non `ready-for-agent`
+La decisione, presa il 13/10/2026: **non si costruisce**. Le conseguenze sono registrate qui sotto e nel
+[ticket 21](21-decisione-ricetta.md).
 
-L'utente ha già dichiarato una cosa che va in direzione opposta: **gli utenti attuali di YACA «sono test
-casuali miei»**. Se è così, un banco costruito su di loro non misura YACA, misura le prove di chi l'ha
-costruita — e sarebbe il **terzo banco rotto** di questa sessione.
+## Le conseguenze
 
-Quindi la prima cosa da fare non è esportare: è **rispondere alla domanda**.
+- Il [ticket 21](21-decisione-ricetta.md) decide **senza** un banco nativo, e lo **dichiara** nel suo esito.
+- La specifica (`spec.md`, Out of Scope) porta la decisione come esclusione netta, non come «salvo decisione».
+- La mappa non tiene più questa voce fra le cose non specificate.
 
-## Acceptance criteria
+## Cosa servirebbe perché la decisione si riapra
 
-- [ ] la domanda sulla privacy è risposta **prima**: cosa si esporta, come si anonimizza, dove vive il file (fuori dal repo), chi lo vede
-- [ ] l'obiezione è messa agli atti, con la soglia dichiarata: **quanti profili reali servono** perché il banco valga qualcosa (e qual è il numero attuale: se sono tre, non vale)
-- [ ] **se si costruisce**: la sovrapposizione della popolazione con i due banchi esistenti è misurata e dichiarata, e la demografia dice a quale dei due assomiglia
-- [ ] **se non si costruisce**: il ticket si chiude con la ragione scritta, e il ticket 21 dichiara di aver deciso **senza** un banco nativo
-- [ ] in nessun caso dati di utenti reali entrano nel repo o in `.scratch/`
-
-## Da dove nasce
-
-Suggerimento dell'esperto (buco 6 / domanda 4), in **conflitto diretto** con un'istruzione dell'utente. Il
-conflitto è il motivo per cui questo ticket esiste come decisione e non come lavoro.
+Una soglia, dichiarata adesso: **un numero di profili reali con storia sufficiente a fare uno split
+temporale** (non tre). Se un giorno in produzione ci saranno abbastanza utenti reali, il banco si riapre —
+e a quel punto la domanda sulla privacy va posta **prima** di esportare, non dopo: cosa si esporta, come si
+anonimizza, dove vive il file (fuori dal repo), chi lo vede. In nessun caso dati di utenti reali entrano
+nel repo o in `.scratch/`.

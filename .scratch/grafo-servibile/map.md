@@ -66,16 +66,17 @@ un'altra, senza sapere in partenza quale vincerà.
     split casuale, e la modularità come criterio di qualità (misurata tre volte e mai correlata).
 12. **La decisione fra ricette si prende con una regola scritta prima**: invarianza cross-dominio +
     minimax normalizzato. Un negativo dichiarato è un risultato ammesso.
+13. **Le quattro cuciture sono confermate** (13/10/2026): il modulo canonico, il modulo delle misure, il
+    costruttore delle bolle, il costruttore dei componenti. Bolle e componenti vivono **accanto** al modulo
+    canonico, non dentro.
+14. **Il micro-banco nativo non si fa** (13/10/2026, ticket 22 `wontfix`): gli utenti attuali di YACA «sono
+    test casuali» dell'autore, quindi un banco su di loro sarebbe **il terzo banco rotto** della sessione,
+    dopo quello curato e quello a split casuale. La decisione di ricetta dichiara di decidere senza.
 
 ## Not yet specified
 
-- **Le quattro cuciture**: il modulo canonico, il modulo delle misure, il costruttore delle bolle, il
-  costruttore dei componenti. La specifica chiede di **confermarle** prima di partire: se le bolle e i
-  componenti debbano vivere dentro il modulo canonico invece che accanto è una scelta non presa.
 - **Quanti macro-mondi** vengono davvero in L1 (l'ipotesi è 25-35) e se sono mondi o bolle un po' più
   grandi: lo dirà la lettura, non la risoluzione.
-- **Se il micro-banco nativo si fa**: dipende da una risposta dell'utente (ticket 22), in conflitto con
-  una sua istruzione precedente.
 - **Il peso della curatela proiettata sulle bolle**: quanti degli otto slot reclamerebbe. Da decidere
   leggendo, non applicando in silenzio.
 - **Il numero di parametri liberi alla fine**: oggi quattro. I pesi appresi dai legami curati devono

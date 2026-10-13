@@ -25,7 +25,7 @@ Due regole, per decidere senza scegliere il banco che ci dà ragione.
 - [ ] la ricetta scelta è riportata col **guadagno minimo** e col **banco perdente dichiarato**
 - [ ] la ricetta non ha più parametri liberi di quella di oggi (quattro)
 - [ ] **un negativo dichiarato è un risultato ammesso**: se nessuna ricetta vince sul minimo, il documento lo dice invece di eleggere un vincitore
-- [ ] il micro-banco (ticket 22), se esiste, entra come **terza opinione** e non come arbitro
+- [ ] il micro-banco (ticket 22) **non esiste**, per decisione del 13/10/2026 (`wontfix`): la decisione lo **dichiara** nel suo esito, e non si inventa una terza opinione che non c'è
 
 ## Da dove nasce
 

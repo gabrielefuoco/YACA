@@ -298,7 +298,7 @@ pesi», si testa «cambiando il seme la partizione cambia in modo misurabile», 
 la misura si muove nella direzione dichiarata prima», «una ricetta identica dà numeri identici al
 decimale».
 
-**Le cuciture (seams).** Le cuciture esistenti sono poche e vanno usate, non moltiplicate:
+**Le cuciture (seams) — confermate il 13/10/2026.** Quattro, e sono queste:
 
 - **Il modulo canonico** — è l'unica implementazione valida del grafo. **Ogni** misura passa da lì: è la
   cucitura più alta, e l'unica garanzia contro la trappola già pagata delle due varianti di grafo.
@@ -307,9 +307,8 @@ decimale».
 - **Il costruttore di bolle** — nuova cucitura, perché il lavoro sulle bolle è nuovo. Una sola.
 - **Il costruttore dei componenti** — già esistente, si estende.
 
-**Questa è l'unica cosa che chiedo di confermare prima di partire**: se queste quattro cuciture
-corrispondono a dove ti aspetti che il lavoro si agganci, o se preferisci che le bolle e i componenti
-vivano dentro il modulo canonico invece che accanto.
+Bolle e componenti vivono **accanto** al modulo canonico, non dentro: il modulo canonico resta il grafo,
+non diventa anche il contenitore di tutto.
 
 **I controlli sono obbligatori, non opzionali.** Ogni misura porta accanto, sempre, i suoi quattro
 controlli: **la popolarità** (il predittore marginale imbattibile), **l'ordine di indice** (il controllo
@@ -339,8 +338,9 @@ lui a essere sbagliato.
 - **L'embedding a due dimensioni per la mappa**: escluso per struttura, non per gusto.
 - **La modularità come criterio di qualità**: esclusa dopo tre misure concordanti.
 - **Lo Space HuggingFace**: è morto; il deploy è sul server `mate`.
-- **Usare gli utenti reali di YACA come banco**, salvo la decisione esplicita del ticket 22 (l'utente ha
-  già dichiarato che i suoi utenti attuali sono «test casuali», quindi il banco potrebbe non valere).
+- **Usare gli utenti reali di YACA come banco.** Deciso il 13/10/2026 (ticket 22, `wontfix`): gli utenti
+  attuali «sono test casuali miei», quindi un banco su di loro sarebbe **il terzo banco rotto** della
+  sessione. La decisione di ricetta (ticket 21) dichiara di aver deciso **senza** un banco nativo.
 
 ## Further Notes
 
