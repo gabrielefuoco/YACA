@@ -124,13 +124,183 @@ def rwr(M, E, alpha, iters=20):
     return X
 
 
-def ranghi(S, filtro=None):
+def ranghi(S, filtro=None, controlla=True, pareggi_max=0.5):
+    """I ranghi per colonna. `S` e' (titoli x candidati), ogni colonna e' una classifica.
+
+    CONTROLLA=True attiva il contratto anti-pareggio (ticket 03 di `todo-grafo`): `argsort` su una
+    colonna COSTANTE non ordina a caso, ordina **per indice di catalogo**, e restituisce una tabella
+    di percentuali che sembra un risultato. Cinque dei sei artefatti del progetto sono nati cosi'.
+    Si puo' spegnere con `controlla=False` per rigiocare le misure vecchie.
+    """
     if filtro is not None:
         S = np.where(filtro[:, None], S, -1e30)
+    if controlla and S.shape[0] >= 50:
+        # `-inf` sui morti: se una colonna ha meno di 50 candidati vivi il suo top-50 contiene un
+        # `-inf`, lo span e' infinito e il contratto la salta — correttamente, non e' un artefatto.
+        vivi = S > -1e29
+        top = np.partition(np.where(vivi, S, -np.inf), -50, axis=0)[-50:]
+        span = np.ptp(top, axis=0)
+        cattive = np.where(span <= 1e-7)[0]
+        # e il criterio dei PAREGGI IN TESTA: se oltre `pareggi_max` dei primi 50 sono tutti uguali
+        # al massimo, il rango e' deciso dall'indice di catalogo anche se lo span non e' zero.
+        # E' il caso del report 58 (`Cf` con 16.550 serie a zero): il top-50 e' tutto zero.
+        # Falso allarme possibile su classifiche a valori interi (i voti): chi ordina per `vote_count`
+        # alzi `pareggi_max` o spenga il controllo, ma lo DICHIARI.
+        at = (top >= top.max(axis=0) - 1e-9).sum(axis=0) if pareggi_max is not None else np.zeros(0)
+        cattive_ties = np.where(at > pareggi_max * 50)[0] if pareggi_max is not None else []
+        assert len(cattive_ties) == 0, (
+            f"ERRORE: {len(cattive_ties)} colonne con oltre il {100*pareggi_max:.0f}% dei primi 50 "
+            f"tutti uguali al massimo (la prima e' la {cattive_ties[0]}). Il rango di quella colonna "
+            f"e' una permutazione fissa degli indici, non una classifica."
+        )
+        assert len(cattive) == 0, (
+            f"ERRORE: colonna con top-50 costante (artefatto di argsort): {len(cattive)} colonne, "
+            f"la prima e' la {cattive[0]}, valore {S[np.argmax(S[:, cattive[0]]), cattive[0]]:.6g}. "
+            f"Se e' una colonna mascherata, il filtro sta azzerando righe intere; se e' una classifica "
+            f"vera, i punteggi non distinguono nulla e `argsort` ordina per indice di catalogo."
+        )
+        # E anche per RIGA, perche' l'artefatto delle serie in `inserimento` era una riga costante:
+        # lo scoring si fa riga per riga (una sorgente contro tutti i candidati), il rango per colonna
+        # e' l'altra convenzione, e un contratto che guarda un asse solo ne manca meta'.
+        if S.shape[1] >= 50:
+            vivi_r = S > -1e29
+            top_r = np.partition(np.where(vivi_r, S, -np.inf), -50, axis=1)[:, -50:]
+            span_r = np.ptp(top_r, axis=1)
+            cattive_r = np.where(span_r <= 1e-7)[0]
+            assert len(cattive_r) == 0, (
+                f"ERRORE: riga con top-50 costante (artefatto di argsort): {len(cattive_r)} righe, "
+                f"la prima e' la {cattive_r[0]}, valore {S[cattive_r[0], np.argmax(S[cattive_r[0]]):][0]:.6g}. "
+                f"E' il caso della maschera che azzera una fetta di sorgenti (le serie): il rango di "
+                f"quelle righe cade sui pareggi, cioe' sull'ordine degli indici di catalogo."
+            )
     R = np.empty(S.shape, np.int32)
     for j in range(S.shape[1]):
         R[np.argsort(-S[:, j]), j] = np.arange(S.shape[0])
     return R
+
+
+def tasso_base(pred, vero=None, rng=None, n_perm=200):
+    """(H_oss, H_caso, lift, kappa) — il contratto di tasso base (ticket 03 di `todo-grafo`).
+
+    Ogni percentuale di successo va stampata **con quella che si otterrebbe a caso**. Il 79,4% di
+    adiacenza fra bolle sembrava un risultato: era 1,2 volte il caso.
+
+    `pred` e `vero`: l'accordo e' `pred == vero`, e `H_caso` viene dalla permutazione di `vero`.
+    Solo `pred` (esiti booleani gia' calcolati): `H_caso` e' la prevalenza, il caso peggiore noto.
+    """
+    pred = np.asarray(pred)
+    if rng is None:
+        rng = np.random.default_rng(7)
+    if vero is not None:
+        vero = np.asarray(vero)
+        h_oss = float((pred == vero).mean())
+        h_caso = float(np.mean([(pred == rng.permutation(vero)).mean() for _ in range(n_perm)]))
+    else:
+        h_oss = float(np.asarray(pred, bool).mean())
+        h_caso = h_oss * h_oss + (1 - h_oss) * (1 - h_oss)
+    lift = h_oss / h_caso if h_caso > 0 else float("inf")
+    kappa = (h_oss - h_caso) / (1 - h_caso) if h_caso < 1 else 0.0
+    return h_oss, h_caso, lift, kappa
+
+
+def stampa_tasso(nome, pred, vero=None, n_perm=200, larghezza=46):
+    """La riga che ogni misura di successo deve stampare."""
+    h, hc, lift, kap = tasso_base(pred, vero, n_perm=n_perm)
+    print(f"  {nome:<{larghezza}} {100*h:6.2f}% · caso {100*hc:5.2f}% · lift {lift:5.1f}x · "
+          f"kappa {kap:+.3f}")
+    return h, hc, lift, kap
+
+
+# ---------------------------------------------------------------- i contratti nati dal retro-test
+def assert_simmetrica(M, nome="M", tolleranza=0.0, controlla=True):
+    """CONTRATTO DI SIMMETRIA. Chiamare prima di `msk = row < col`.
+
+    Nasce dal difetto D2 di `07-componenti.py:309`: `Mc.row < Mc.col` su una matrice ASIMMETRICA
+    butta via tutti gli archi che scendono, e tiene quelli che salgono, con il peso sbagliato.
+    L'esito e' che i pesi dipendono dall'indice numerico dei titoli, e nessuno dei tre contratti
+    di §4 se ne accorge: le classifiche restano distinte e ordinate, sono solo SBAGLIATE.
+    """
+    if not controlla:
+        return 0.0
+    a = abs(M - M.T)
+    scarto = float(a.max()) if a.nnz else 0.0
+    assert scarto <= tolleranza, (
+        f"ERRORE: {nome} non e' simmetrica (scarto massimo {scarto:.6g}). Prima di prendere il "
+        f"triangolo superiore con `row < col` va simmetrizzata: altrimenti il peso di un arco "
+        f"dipende da quale dei due titoli ha l'indice piu' basso, e la misura diventa rumore "
+        f"travestito da risultato."
+    )
+    return scarto
+
+
+def assert_ordine(ordine, segnale, nome, atteso_positivo=False, controlla=True, min_r=0.2):
+    """CONTRATTO DI VERSO. `np.argsort(np.argsort(v))` e' ASCENDENTE.
+
+    Nasce da `verifica-popolare.py`: la baseline archiviata come «popolarita'» era
+    `np.argsort(np.argsort(voti))`, cioe' il rango crescente — i titoli MENO votati per primi. Non e'
+    un errore di teoria: e' un `argsort` in piu'. Le classifiche restano perfette e ordinate, solo al
+    contrario, quindi nessun anti-pareggio le ferma.
+
+    `ordine` e' la SEQUENZA degli indici nell'ordine in cui verranno presentati, `segnale` il valore
+    vero (i voti). Con `atteso_positivo=False` si pretende che il segnale DECRESCA lungo la sequenza:
+    e' il caso di «prima i piu' votati».
+
+    Attento al primo tentativo, che era sbagliato: misurare la correlazione fra il VETTORE DEI RANGHI
+    e il segnale la da' POSITIVA anche col bug, perche' il rango crescente e' una funzione crescente
+    dei voti. Il verso va misurato sull'ordine di presentazione, non sul rango.
+    """
+    if not controlla or len(ordine) < 3:
+        return 0.0
+    o = np.asarray(ordine)
+    s = np.asarray(segnale, float)[o]
+    r = float(np.corrcoef(s, np.arange(len(s), dtype=float))[0, 1])
+    ok = (r > min_r) if atteso_positivo else (r < -min_r)
+    assert ok, (
+        f"ERRORE: {nome} e' ordinata al contrario (correlazione {r:+.3f} fra segnale e posizione, "
+        f"attesa {'>' if atteso_positivo else '<'} {'+' if atteso_positivo else '-'}{min_r}). "
+        f"E' il caso di `argsort(argsort(v))`: il rango crescente mette per primo il valore piu' "
+        f"piccolo, e nessun anti-pareggio se ne accorge perche' i valori sono tutti distinti."
+    )
+    return r
+
+
+def assert_modello(target, previsione, nome="modello", coef_norma=None, controlla=True,
+                   min_r=0.2):
+    """CONTRATTO DI SCALA E DI SEGNALE. Una previsione che non correla col target non e' un modello.
+
+    Nasce dal report 41: una correlazione di 0,24 fra due modelli e' stata letta come «lo spazio
+    CFst e' rumore». Ma un modello con ||coef|| = 11,39 su ingressi in [0, 1] non puo' trasformare
+    un errore di 1e-7 in 0,58: era addestrato sulla matrice sbagliata.
+
+    Il primo tentativo di questo contratto chiedeva solo `|r| > 1e-6`, che non ferma niente: un
+    modello che restituisce rumore ha r = 0,02 e passava. La soglia ora e' dichiarata, e una
+    previsione circa costante viene segnalata a parte perche' e' il sintomo della matrice nulla.
+    """
+    if not controlla:
+        return 0.0
+    t = np.asarray(target, float).ravel()
+    p = np.asarray(previsione, float).ravel()
+    st, sp_ = float(np.std(t)), float(np.std(p))
+    assert st > 1e-12, f"ERRORE {nome}: il target e' costante, non c'e' niente da prevedere."
+    if sp_ < 1e-9:
+        raise AssertionError(
+            f"ERRORE {nome}: la previsione e' COSTANTE (std {sp_:.2e}) — e' il caso della matrice "
+            f"nulla del report 58: `argsort` su valori tutti pari restituisce l'ordine degli indici."
+        )
+    r = float(np.corrcoef(t, p)[0, 1])
+    amplificazione = sp_ / st
+    if coef_norma is not None:
+        assert amplificazione < 100 * max(coef_norma, 1.0), (
+            f"ERRORE {nome}: la previsione ha scala {sp_:.4g} contro un target di {st:.4g} "
+            f"(amplificazione {amplificazione:.1f}x) con ||coef|| = {coef_norma:.2f}. Un modello cosi' "
+            f"non puo' essere quello che si crede di aver addestrato."
+        )
+    assert abs(r) >= min_r, (
+        f"ERRORE {nome}: previsione senza relazione col target (r = {r:+.4f}, soglia {min_r}). "
+        f"Se la matrice di addestramento era quella sbagliata, la correlazione e' vicina a zero e la "
+        f"conclusione «questo spazio e' rumore» riguarda il modello, non lo spazio. E' il report 41."
+    )
+    return r
 
 
 def centra(P, is_tv):

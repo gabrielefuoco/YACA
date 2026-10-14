@@ -338,7 +338,12 @@ def potatura_nucleo(mem, M, quanti_nucleo=4, etichetta=""):
         nuclei[b] = [membri[k] for k in ordine[:min(quanti_nucleo, len(membri))]]
     nuova = mem.copy()
     espulsi = riassegnati = 0
-    fuori = peso.tocsr()
+    # `(peso + peso.T)` e non `peso`: `M` e' il solo triangolo superiore, e `getrow(r)` leggeva solo
+    # i `j > r`, perdendo tutti i vicini con indice minore. Misurato su V7 (ticket 01): su 6.132
+    # membri espulsi, 3.042 (49,6%) finivano in una bolla DIVERSA secondo che si leggesse meta' degli
+    # archi o tutti. Un titolo leggeva 0 vicini invece di 51. `versus` invece usa `peso` apposta:
+    # somma gia' le due direzioni, e raddoppiare la matrice le conterebbe due volte.
+    fuori = (peso + peso.T).tocsr()
     for b, membri in bolle.items():
         if len(membri) <= quanti_nucleo:
             continue
@@ -470,13 +475,53 @@ def carica_componenti(con_shrinkage=True, min_sim_kw=0.02, min_sim_cast=0.02, ri
     return C
 
 
+def assert_componente(insiemi, nome, min_copertura=0.05, min_mediana=3, matrice=None):
+    """CONTRATTO DI NON-VUOTEZZA (ticket 03 di `todo-grafo`).
+
+    Un componente che si azzera non si annuncia: produce una tabella di numeri plausibili e
+    sbagliati. E' successo due volte in questo progetto — `genres` mai letto (`GEN` vuoto per tutti
+    i 66.259 titoli) e `CAST` azzerato dalla soglia 0,12 sullo spazio shrinkato (grado mediano 0) —
+    e in tutte e due i casi l'ha scoperto una lettura a mano, giorni dopo.
+
+    Con `matrice`: controlla copertura e grado mediano dei titoli con almeno un arco.
+    Senza: controlla gli insiemi di feature (quanti titoli ne hanno almeno una).
+    """
+    if matrice is not None:
+        g = np.asarray((matrice > 0).sum(1)).ravel()
+        cop = float((g > 0).mean())
+        med = float(np.median(g[g > 0])) if (g > 0).any() else 0.0
+        fonte = "archi"
+    else:
+        pieni = [len(s) for s in insiemi if s]
+        cop = len(pieni) / max(len(insiemi), 1)
+        med = float(np.median(pieni)) if pieni else 0.0
+        fonte = "elementi"
+    assert cop >= min_copertura, (
+        f"ERRORE componente {nome}: copre il {100*cop:.1f}% dei titoli, sotto la soglia "
+        f"{100*min_copertura:.0f}%. Il componente e' quasi vuoto: controlla che i metadati siano "
+        f"letti (una colonna assente da COLS_M/COLS_T non si annuncia) e che le soglie non siano "
+        f"tarate su un'altra normalizzazione."
+    )
+    assert med >= min_mediana, (
+        f"ERRORE componente {nome}: {fonte} mediani per titolo {med:.1f}, sotto la soglia "
+        f"{min_mediana}. Un componente con mediana cosi' bassa non collega niente, ma entra nella "
+        f"miscela con lo stesso peso degli altri. E' il caso di CAST con min_sim 0,12 su uno spazio "
+        f"shrinkato: i coseni vivono in [0, 0.25] e la soglia taglia il 94% degli archi."
+    )
+    return cop, med
+
+
 def costruisci_insiemi():
     """KW, CAST, DIR, PROD dai metadati TMDB. Copiata da `componenti-nuovi.py` + `07-componenti.py`."""
     PQ = K.ROOT / ".cache" / "tmdb"
-    COLS_M = ["id", "keywords", "cast", "directors", "runtime", "release_date",
+    COLS_M = ["id", "genres", "keywords", "cast", "directors", "runtime", "release_date",
               "production_companies", "production_countries", "collection_id"]
-    COLS_T = ["id", "keywords", "cast", "created_by", "runtime", "first_air_date",
+    COLS_T = ["id", "genres", "keywords", "cast", "created_by", "runtime", "first_air_date",
               "production_companies", "production_countries", "networks"]
+    # `genres` mancava da tutte e due le liste (ticket 01 di todo-grafo): la riga 513 lo leggeva da
+    # `dd`, che si costruisce da queste colonne, quindi `GEN` era l'insieme vuoto per tutti i 66.259
+    # titoli. Effetti misurati: la maschera teneva solo gli archi con una keyword in comune (23,7%
+    # di DIR invece del 76,4%), e le firme `pg:paese|decennio|genere` non nascevano mai (0 su 41.268).
     KW = [set() for _ in range(N)]
     CA = [set() for _ in range(N)]
     DI = [set() for _ in range(N)]
@@ -488,9 +533,19 @@ def costruisci_insiemi():
     CO = [set() for _ in range(N)]
 
     def leggi(s):
+        """JSON -> lista. Tiene i DIZIONARI **e le STRINGHE**.
+
+        Il quinto bug (ticket 01 di `todo-grafo`): `production_countries` nel parquet non e' una
+        lista di dizionari come `genres`, `cast` o `production_companies` — e' `["US"]`, una lista
+        di stringhe. La versione precedente filtrava `isinstance(x, dict)` e restituiva quindi
+        **sempre** la lista vuota: `PAE` era vuoto per tutti i 66.259 titoli, e le 44.279 firme
+        `pg:paese|decennio|genere` che il paese rende possibili non nascevano mai. Stesso modo di
+        fallire di `genres`, ma per una ragione diversa: li' mancava la colonna, qui la colonna
+        c'e' ed e' piena — e' la FORMA del valore a non essere quella attesa.
+        """
         try:
             v = json.loads(s) if isinstance(s, str) else (s or [])
-            return [x for x in v if isinstance(x, dict)]
+            return [x for x in v if isinstance(x, (dict, str))]
         except Exception:
             return []
 
@@ -513,7 +568,9 @@ def costruisci_insiemi():
             for x in leggi(dd.get("genres")):
                 GEN[r].add(str(x.get("name", "")).lower())
             for x in leggi(dd.get("production_countries")):
-                PAE[r].add(str(x.get("iso_3166_1") or x.get("name") or "").upper())
+                # stringa (["US"]) o dizionario ({"iso_3166_1": "US"}): il parquet usa la prima.
+                iso = x if isinstance(x, str) else (x.get("iso_3166_1") or x.get("name") or "")
+                PAE[r].add(str(iso).upper())
             for x in leggi(dd.get("production_companies")):
                 nm = str(x.get("name", "")).strip()
                 if len(nm) > 2:
@@ -557,7 +614,19 @@ def costruisci_insiemi():
                         SIG[r].add(f"pg:{p}|{DEC[r]}|{g}")
     print(f"  PROD: firme distinte {len({x for s in SIG for x in s}):,} · titoli con firma "
           f"{sum(1 for s in SIG if s):,}", flush=True)
-    return {"KW": KW, "CA": CA, "DI": DI, "SIG": SIG, "CO": CO, "GEN": GEN}
+    # CONTRATTO DI NON-VUOTEZZA (ticket 03 di todo-grafo). Soglie basse apposta: qui si vuole
+    # intercettare il componente AZZERATO, non giudicare la qualita'.
+    for nome, ins in (("KW", KW), ("CA", CA), ("DI", DI), ("GEN", GEN),
+                      ("PAE", PAE), ("RETE", RETE), ("COMP", COMP), ("CO", CO)):
+        cop, med = assert_componente(ins, nome, min_copertura=0.02, min_mediana=1)
+        if nome in ("GEN", "KW"):
+            print(f"    contratto {nome}: copertura {100*cop:.1f}% · mediana {med:.0f} elementi",
+                  flush=True)
+    # `RETE` e `PAE` esistono solo per le serie: la copertura sull'intero canone e' bassa a ragione,
+    # quindi il contratto non si applica a loro con la soglia degli altri. Ma il componente vuoto
+    # deve far fallire lo stesso, e lo fa.
+    return {"KW": KW, "CA": CA, "DI": DI, "SIG": SIG, "CO": CO, "GEN": GEN,
+            "RETE": RETE, "PAE": PAE, "COMP": COMP}
 
 
 T0 = time.time()
