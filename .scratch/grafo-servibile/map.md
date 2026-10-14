@@ -256,6 +256,9 @@ Il ticket 12 (gli 8 vicini tipizzati) e' **sbloccato**, e la scelta consigliata 
 
 ⚠️ **Ma il ponte cross-medium non si può garantire per tutte**: solo il **19,4%** delle bolle ha ≥2 slot cross-medium e il **59,8%** ne ha zero, perché ci sono **4.385 bolle film contro 912 serie**. Il ponte va garantito **nel catalogo servito**, non nel grafo. Il ticket 13 (la direzionalità) lo eredita.
 
+**LA DIREZIONALITA' FUNZIONA, E SI LEGGE NEI DUE VERSI** (13). L'accessibilita' si calcola sui **membri core** (il 55% dei membri per bolla) e il controllo la giustifica: **su 907 bolle** usare tutti i membri avrebbe spostato l'accessibilita' di **un fattore 2 o piu'**. I segni sono quasi bilanciati (14.707 approfondimenti contro 13.906 allargamenti), l'85,7% delle bolle li ha entrambi, e la lettura conferma: un mondo di **nordic noir da 32 voti** ha un arco verso il **noir mainstream da 25.061** (allargamento), un mondo di **supereroi di nicchia da 21 voti** verso i **teen superhero da 14.798**.
+⚠️ **757 bolle (14,3%) hanno un segno solo** e non sono state verificate. ❌ E il segno **non e' ancora disponibile al recupero**: si calcola sulle bolle, la ricetta lavora sui titoli.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo
