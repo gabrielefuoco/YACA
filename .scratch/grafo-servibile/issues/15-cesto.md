@@ -1,6 +1,8 @@
 # 15 — Il cesto: semi con decadimento e allocazione multi-bolla
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 01, 03
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 01, 03 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/15-cesto.md) · il **decadimento temporale aiuta ma di pochissimo** (+0,13 al @100, +0,44 al @500, **niente al @10**): l'attesa di «recuperare una quota consistente del crollo» non è confermata. Le **quote multi-bolla sono dannose** (−3,92 al @500) e il motivo è che la premessa non regge: con 5.297 bolle il filone dominante di un utente pesa il **2,6%**, non «3-5 filoni» — il nemico che le quote combattevano non esiste a questa granularità. Controlli corretti: popolarità 1,47/9,23/27,70 (la camminata la batte 2,0×/2,1×/1,7×), e il valore senza esclusione del profilo riproduce **esattamente** l'archiviato 0,94/7,36/25,03.
 
 ## What to build
 

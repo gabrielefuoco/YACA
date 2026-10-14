@@ -23,6 +23,9 @@ Da qui tre difetti visibili a chi usa il prodotto:
 2. **I titoli nuovi e di nicchia non esistono.** Un titolo appena uscito si collega **dodici volte
    peggio** di uno già noto: non ha comportamento, e il comportamento è quasi tutto ciò che il grafo
    sa usare.
+   > **In dubbio dal 13/10/2026** (ticket 15): il numero «2,07% contro 2,13%» del report 69 **non è
+   > riproducibile** sul banco che si riesce a ricostruire, dove il grafo vincerebbe di 40×. Vedi la
+   > cautela nella [mappa](map.md). Il claim non va usato finché il banco serie non è ricostruito.
 3. **Non c'è modo di esplorare.** Non si può chiedere «più cose come questa, ma meno ovvie», perché
    non esiste una struttura da attraversare — esistono 5.297 gruppi di titoli che nessuno ha ancora
    collegato in modo navigabile.

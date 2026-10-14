@@ -157,6 +157,36 @@ Report in [`ricerche/`](ricerche/).
   su una macchina corretta. Un controllo sbagliato è più pericoloso di nessun controllo: produce una
   certezza. **Terza volta in questa sessione che un artefatto nasce da uno strumento.**
 
+## ⚠️ Un claim della specifica è in dubbio (13/10/2026, ticket 15)
+
+La specifica dice, nel Problem Statement, che **sul catalogo serie il grafo non batte la popolarità al
+@10** (2,07% contro 2,13%). Quel numero viene dal report 69 e **non l'ho potuto riprodurre**.
+
+Ricostruendo il banco temporale Trakt (1.534 utenti) e applicando il **metodo archiviato**, la
+popolarità dà **0,05 / 1,28 / 9,98** dove il report 69 riporta **2,13 / 12,51 / 33,27**. Le due cose
+non coincidono, quindi i due banchi non sono lo stesso banco — e **non ho stabilito quale sia
+giusto**. Sul banco che riesco a ricostruire, il grafo vincerebbe di **40×**, non perderebbe.
+
+Vale la pena notare che la stessa verifica **sul catalogo film è andata bene**: la popolarità
+archiviata (0,94 / 7,36 / 25,04) si riproduce **al centesimo** con il metodo archiviato, quindi il
+metodo è corretto e il problema è nel **banco serie** (soglia di storia? definizione dell'oro?
+versione delle cronologie?).
+
+**Finché qualcuno non ricostruisce il banco di `ordine-serie-temporale.py`, quel claim va letto come
+dubbio.** E' la seconda volta in questa sessione che un numero sul lato serie non regge alla
+riproduzione.
+
+**La seconda ondata — cosa ha imparato (13/10/2026)**
+
+Due ticket della nuova frontiera: [15](issues/15-cesto.md) (il cesto) e [07](issues/07-componenti-specificita.md) (i componenti).
+Report: [`15-cesto.md`](ricerche/15-cesto.md), [`07-componenti.md`](ricerche/07-componenti.md).
+
+1. **Il decadimento sui semi aiuta ma di pochissimo** ([15](ricerche/15-cesto.md)): **+0,13 punti al @100**, +0,44 al @500, **zero al @10**. L'attesa di «recuperare una quota consistente del crollo temporale» non è confermata: il crollo è di 50-64 punti al @10, il rimedio ne recupera un decimo al @100. Il segno è coerente e la memoria lunga batte quella corta (365 meglio di 180), quindi il segnale c'è — ma è piccolo.
+2. **Le quote multi-bolla sono dannose** (−3,92 al @500) **e la premessa non regge**: con 5.297 bolle il filone dominante di un utente pesa il **2,6%**, non «3-5 filoni». Il rimedio combatte un nemico che a questa granularità non esiste. Se un giorno servisse, andrebbe fatto sui **macro-mondi L1** (ticket 11), non sulle bolle atomiche.
+3. **I quattro interventi sui componenti non sono dimostrati** ([07](ricerche/07-componenti.md)): le bolle utilizzabili salgono del **19,9%** (1.293 → 1.550) ma il giudice automatico non vede niente (53,3% → 51,0%, p ≈ 0,65). **Due indicatori, due storie opposte**: e il ticket 05 ha già stabilito che il conteggio è un proxy che sbaglia. L'unico giudice che resta è **la lettura**, e va fatta nel ticket 08.
+4. **Tre negativi dichiarati dentro il 07**: il controllo di ubiquità del cast **fallisce** (i 16 attori più prolifici pesano solo 1,2× meno del tipico — l'IDF schiaccia tutto); il filtro KW2 tiene **esattamente il 50%** perché la soglia *è* la mediana (una tautologia, non un risultato) e pota anche **wuxia**; l'ablation non è stata rifatta.
+5. **Una trappola di strumento, per la terza volta**: i controlli di popolarità del ticket 15 passavano un **rango** a una funzione che applica `K.ranghi` (che vuole un **punteggio**), invertendola. Il bug l'ho trovato perché **due strade indipendenti davano numeri diversi** e il valore archiviato ne indicava un terzo. Il numero archiviato (0,94/7,36/25,04) era **corretto** e si riproduce al centesimo. Con un solo strumento avrei archiviato 0,00% come un fatto.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo
