@@ -102,11 +102,15 @@ def carica(v3=True):
     # CONTRATTO DI ALLINEAMENTO (§4.3 del senior), verificato all'avvio. Se gli idf e il vocabolario
     # si disallineano — si rigenera uno senza l'altro, o si cambiano i pesi per tipo senza rifare i
     # centroidi — il prodotto scalare torna numeri FINITI e privi di senso. Nessun crash lo direbbe.
-    _imp = ML / "05-impronte.json"
+    # le impronte giuste PER VARIANTE: V1 e V3 hanno vocabolari e idf diversi, e confrontare l'uno
+    # con l'impronta dell'altro fa scattare il contratto a vuoto. E' successo, ed e' il contratto a
+    # essere giusto: sono io a dovergli dare il riferimento corretto.
+    _imp = ML / f"{prefisso}-impronte.json"
     if _imp.exists():
         import canone as _K
-        _K.assert_allineamento_spazi(np.load(ML / "05-idf.npy").astype(np.float32), vocab,
-                                     json.load(open(_imp, encoding="utf-8")), nome="colloca_finale")
+        _idf_att = np.load(ML / "05-idf.npy").astype(np.float32) if v3 else idf
+        _K.assert_allineamento_spazi(_idf_att, vocab, json.load(open(_imp, encoding="utf-8")),
+                                     nome=f"colloca_finale/{prefisso}")
     return dict(vocab=vocab, idf=idf, TFIDF=TFIDF, SUM=SUM, NORMA=NORMA, TUTTE=TUTTE,
                 bolle_serie=set(int(x) for x in bolle_serie),
                 bolle_film=set(int(x) for x in bolle_film),
@@ -173,25 +177,34 @@ def vicini_titoli(v, S, quanti=10):
     return [(int(x), float(cos[x])) for x in top if cos[x] > 0]
 
 
-def colloca(dd, tipo, S, margine=MARGINE):
-    """Il collocatore. Restituisce (bolla, confidenza, quante candidate, fuori vocabolario)."""
+def colloca(dd, tipo, S, margine=MARGINE, S_macro=None):
+    """Il collocatore. Restituisce (bolla, confidenza, quante candidate, fuori vocabolario).
+
+    DUE PESATURE, e non e' un compromesso: sono due domande con due risposte misurate.
+      · **macro** — la bolla, per navigare il grafo. Si usa `S_macro` (di norma V1, pesi grezzi):
+        misurato 63,0% nella propria bolla contro il 35,3% di V3 (ticket 05 di `coerenza`).
+      · **micro** — i dieci titoli da mostrare, via `vicini_titoli`, con `S` (V3): V3 legge thriller
+        dove V1 legge «Cinquanta sfumature di grigio». E' l'obiezione su Verity, e vale a quel livello.
+    Se `S_macro` non e' dato si usa `S`, come prima.
+    """
+    Sm = S_macro if S_macro is not None else S
     tok = tokenizza(dd, tipo)
-    v, n_dentro = vettore(tok, S)
+    v, n_dentro = vettore(tok, Sm)
     if v is None:
         return None, 0.0, 0, len(tok)
-    cos = np.asarray((v @ S["SUM"].T).todense()).ravel() / S["NORMA"]
+    cos = np.asarray((v @ Sm["SUM"].T).todense()).ravel() / Sm["NORMA"]
     j = int(np.argmax(cos))
-    b = int(S["TUTTE"][j])
+    b = int(Sm["TUTTE"][j])
     # la regola di medium (ticket 03), SIMMETRICA: una serie preferisce le bolle-serie, un film le
     # bolle-film. La prima versione la applicava solo alle serie, e un film poteva atterrare in una
     # bolla di serie (Renegade Immortal -> bolla 479, 46 titoli di anime): meta' regola e' peggio di
     # nessuna regola, perche' nel prodotto i due cataloghi sono separati in tutte e due le direzioni.
-    preferito = S["bolle_serie"] if str(tipo) == "tv" else S["bolle_film"]
+    preferito = Sm["bolle_serie"] if str(tipo) == "tv" else Sm["bolle_film"]
     if b not in preferito:
-        solo_del_suo = np.array([b2 in preferito for b2 in S["TUTTE"]])
+        solo_del_suo = np.array([b2 in preferito for b2 in Sm["TUTTE"]])
         js = int(np.argmax(np.where(solo_del_suo, cos, -np.inf)))
         if cos[j] <= cos[js] * (1 + margine):
-            j, b = js, int(S["TUTTE"][js])
+            j, b = js, int(Sm["TUTTE"][js])
     return b, float(cos[j]), len(tok), len(tok) - n_dentro
 
 
@@ -200,7 +213,8 @@ if __name__ == "__main__":
     print("=" * 100)
     print("TICKET 04A — IL COLLOCATORE, E QUANTO COSTA")
     print("=" * 100, flush=True)
-    S = carica()
+    S = carica(v3=True)          # micro
+    S_v1 = carica(v3=False)      # macro
     print(f"  artefatti caricati: vocabolario {len(S['vocab']):,} termini · candidate "
           f"{len(S['TUTTE']):,} bolle ({len(S['bolle_serie']):,} serie + "
           f"{len(S['TUTTE'])-len(S['bolle_serie']):,} film) ({time.time()-T0:.0f}s)", flush=True)
@@ -213,7 +227,7 @@ if __name__ == "__main__":
             [(mv.iloc[k].to_dict(), "movie") for k in range(50)]
     t = time.time()
     for dd, tipo in righe:
-        colloca(dd, tipo, S)
+        colloca(dd, tipo, S, S_macro=S_v1)
     dt = (time.time() - t) / len(righe)
     print(f"  costo: {1000*dt:.1f} ms per titolo su {len(righe)} titoli "
           f"({time.time()-T0:.0f}s)", flush=True)
@@ -229,7 +243,7 @@ if __name__ == "__main__":
                 TIT[r] = str(tt)
 
     def mostra(dd, tipo, perche):
-        b, conf, ntok, fuori = colloca(dd, tipo, S)
+        b, conf, ntok, fuori = colloca(dd, tipo, S, S_macro=S_v1)
         nome = str(dd.get("title") or dd.get("name"))[:40]
         if b is None:
             print(f"    {nome:<42} [{perche}] NIENTE: nessun termine nel vocabolario")

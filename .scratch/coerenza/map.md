@@ -74,6 +74,25 @@ tetto `len/3` era largo. V8sub salvata come **esperimento, non come candidata**.
 ## Restano: 04 (la coerenza sulla trama), 05 (le promozioni), 08 (V9), 10 (consolidamento), e le
 ## parti 1-3 del 09 (maschera estesa, severita', quarantena) che richiedono la ricostruzione.
 
+## Chiuso il 14/10/2026 — 9 ticket su 10, il 04 rinviato a domani
+
+**IL NUMERO DA CORREGGERE OVUNQUE: la collocazione delle serie non e' 35,3%, e' 63,0%.** Il 35,3% era
+con la pesatura V3; con V1 (sui generi e le keyword, che la metrica delle promozioni favorisce) il
+conto e' 63,0% nella propria bolla + 24,3% promosse = **87,3%** di «non e' colpa del collocatore».
+
+**Due livelli, due pesature**: V1 per la bolla (macro, per navigare il grafo), V3 per i dieci titoli
+(micro, da mostrare). Misurate, non scelte.
+
+**Le cinque correzioni del senior**: una confermata (il sub-clustering, con tre correzioni), una a
+meta' (l'ibrido coi top-5: +1,2 in tutto ma +7,7 sulle bolle grandi), due misurate false (il top-M
+peggiora; il coseno fra centroidi non discrimina, ed e' positivo nel 99,7% delle coppie), e una
+**ritirata** (V3 dentro `matrice_idf`: costruirebbe la partizione con un metro che ha appena perso 18
+punti). La diagnosi del senior era migliore della sua terapia.
+
+**Quattro leak in una sessione** (63,7 · 58,27 · 55,8 · 69,2), e l'ultimo commesso DOPO aver scritto
+il contratto che lo ferma. E **due volte il giudizio dell'utente** ha corretto una conclusione presa
+dalle metriche, in tutti e due i casi con i dati per non sbagliare gia' su disco.
+
 ## Not yet specified
 
 - Se il sub-clustering ricorsivo sulle bolle >60 titoli (senza toccare RB 100) sia praticabile nei
