@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 05 — Il voto diretto: di quanto sale il 2,2% delle serie
@@ -16,3 +16,7 @@ piu' il confronto fra le due strade (voto diretto, ponte) bolla per bolla: su qu
 voti sono d'accordo, su quante il diretto vince dove il ponte fallisce e viceversa. Il disaccordo
 e' l'informazione: dice quale strada serve davvero a chi.
 Esito: `ricerche/05-voto-diretto.md`.
+
+## Esito
+
+DA 2,2% A 35,3%. Voto diretto (coseno, leave-one-out esatto) sulle 336 bolle-serie: 212/600, lift 85x per permutazione, kappa +0,351, scollegate 0,3%. Sui 506 casi con la bolla in gara: 41,9%. IL TETTO E' 84,3% e le 94 serie escluse sono 94/94 in bolle a MAGGIORANZA FILM: i casi cross-medium, che il vincolo di medium esclude e che §1.B.2 voleva recuperare. La pesatura per grado interno NON aiuta (28,7% contro 29,7%): si usa quella uniforme. E il report racconta i TRE numeri: 29,7% (senza normalizzare il centroide), 63,7% (leave-one-out incompleto, gonfiato), 35,3% (giusto).

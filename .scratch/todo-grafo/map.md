@@ -35,6 +35,33 @@ onesto, la mappa finale, e i contratti che rendono impossibile il settimo artefa
 - V7 va **congelato** solo se V8 non lo batte. L'esperto dice RB 100 definitivo (Ticket 09):
   RB 200 frantuma, RB 60 cola.
 
+## Esito, 14/10/2026 — effort chiuso, 8 ticket su 8
+
+**Le tre cose che restano da fare, in ordine di rapporto fra valore e costo:**
+
+1. **La mappa pesata.** I 6+2 vanno costruiti sul grafo con una soglia di PESO, non sull'adiacenza
+   binaria: l'adiacenza e' satura (95,7% delle coppie, grado mediano 798, rapporto 6°/7° = 1,074)
+   ma il peso mediano degli archi e' 0,0 e le relazioni vere sono poche e pesanti.
+2. **I 94 casi cross-medium.** 94 serie su 600 vivono in una bolla a maggioranza film e valgono 0%
+   con ogni metodo, perche' il vincolo di medium le esclude. Il tetto del voto diretto e' 84,3%:
+   c'e' spazio.
+3. **`src/`**: i candidati sono il voto diretto sui centroidi (un coseno, nessun modello da
+   riaddestrare) e i contratti. Nessuna riga di prodotto e' stata toccata.
+
+**Il numero dell'effort: le serie passano da 2,2% a 35,3%** (212/600, lift 85x, kappa +0,351,
+scollegate 0,3%). I film restano al 27,7% del ticket 04 di `inserimento`.
+
+**Il ponte film->serie dell'esperto NON funziona**: 0,8% con la sua ricetta esatta, 2,5% con la mia,
+contro il 35,3% del diretto. La fusione peggiora sempre, lambda migliore 0.
+
+## Cosa ha trovato la verifica dei bug
+
+Cinque, non tre. I tre dell'esperto sono tutti reali e il suo 76,3% era esatto al decimale; il quarto
+e' che `costruisci_insiemi` calcola `networks`, paesi e studi e non li restituisce; il quinto — il piu'
+grosso — e' che `production_countries` e' una lista di STRINGHE e `leggi()` scarta in silenzio tutto
+cio' che non e' un dizionario, perdendo 34.331 titoli con un paese non angloamericano e 44.279 firme
+`pg:`. E' esattamente il segnale che serve alle serie, e adesso c'e'.
+
 ## Not yet specified
 
 - Se correggere i tre bug migliori o peggiori la partizione: si misura.

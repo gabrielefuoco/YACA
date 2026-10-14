@@ -196,7 +196,16 @@ def tasso_base(pred, vero=None, rng=None, n_perm=200):
         h_oss = float((pred == vero).mean())
         h_caso = float(np.mean([(pred == rng.permutation(vero)).mean() for _ in range(n_perm)]))
     else:
-        h_oss = float(np.asarray(pred, bool).mean())
+        v = np.asarray(pred)
+        # GUARDIA D'USO (imparata al ticket 05 di `todo-grafo`): la prevalenza `p²+(1-p)²` vale per
+        # un ESITO BINARIO. Con delle etichette (le bolle) non e' il caso, e' solo un numero che
+        # sembra un caso: su una misura col caso vero di 0,062% ha stampato 58,27%, con kappa -0,685.
+        assert v.dtype == bool or len(np.unique(v)) <= 2, (
+            f"ERRORE d'uso di tasso_base: {len(np.unique(v))} valori distinti e nessun riferimento. "
+            f"Senza `vero` la formula della prevalenza vale solo per esiti binari: con le etichette "
+            f"si passi il riferimento (le etichette vere) e il caso lo calcola la permutazione."
+        )
+        h_oss = float(v.astype(bool).mean())
         h_caso = h_oss * h_oss + (1 - h_oss) * (1 - h_oss)
     lift = h_oss / h_caso if h_caso > 0 else float("inf")
     kappa = (h_oss - h_caso) / (1 - h_caso) if h_caso < 1 else 0.0

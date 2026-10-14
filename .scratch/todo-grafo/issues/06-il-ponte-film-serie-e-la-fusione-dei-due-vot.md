@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 06 — Il ponte film-serie e la fusione dei due voti
@@ -18,3 +18,7 @@ Riportare anche le due popolazioni separate: dove il ponte esiste (il 58,7%) e d
 solo-serie (il 41,3%). Se il diretto risolve i solo-serie e il ponte porta il resto, l'esperto ha
 ragione; se no, dire dove sbaglia.
 Esito: `ricerche/06-ponte-fusione.md`.
+
+## Esito
+
+IL PONTE NON FUNZIONA, in nessuna delle due forme: 0,8% con lo studente dei film vero (la ricetta dell'esperto) e 2,5% con la mia versione, contro il 35,3% del diretto. La fusione peggiora sempre: lambda migliore 0. I due voti concordano su 6 serie su 600, e il ponte ha ragione dove il diretto sbaglia 3 volte su 600. Meccanismo: lo studente dei film predice lo spazio CF, e la proiezione recupera la struttura dei METADATI, non il comportamento (0,0% di vicini in comune con CF, ticket 02 di inserimento). Il ponte non porta un'informazione che il diretto non abbia.
