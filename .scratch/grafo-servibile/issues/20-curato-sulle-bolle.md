@@ -1,6 +1,8 @@
 # 20 — I legami curati proiettati sulle bolle
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 09
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 09 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/20-curato-sulle-bolle.md) · ✅ la proiezione è costruita: **973 legami fra bolle (96,9%) e 31 dentro la stessa bolla (3,1%)**. Il controllo con bersagli casuali dà **0 legami interni** (contro 31) e 996 coppie distinte (contro 882): la curatela concentra, ma **solo del 12%**. ✅ L'input alla mappa è dichiarato prima di applicarlo: **2 slot di 8** dove arriva, e tocca solo il **12,2%** delle bolle. ⚠️ **Il 98,4% delle coppie curate non è un arco del grafo** — e leggendole, le prime non sono «mondi che il grafo non collega»: sono **lo stesso mondo che la partizione ha diviso in due** (MCU ↔ MCU, anime ↔ anime). È la terza conferma che la struttura è troppo frammentata (con 11 e 05). ⚠️ E il «3.417 legami» di handoff, specifica e ticket 18-19-20 **non è riproducibile**: i legami sono **1.004 di training + 1.002 di test**.
 
 ## What to build
 

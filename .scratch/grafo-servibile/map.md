@@ -237,6 +237,16 @@ rompendo i mondi, e finché nessuno legge le bolle di F non si sa da quale delle
 
 **Ma il guadagno del 19 va letto con cautela**: i pesi appresi sono **uniformi** (1/9 ciascuno), quindi non viene dal *pesare* — viene dall'**usare quattro componenti che a mano valevano zero** (TV, KW, DIR, CAST) e dal **dimezzare CF**. La controprova è banale e non è stata fatta: **pesi uniformi senza apprendere niente**. Se danno lo stesso risultato, il metric learning ha aggiunto poco rispetto a «usa tutto a peso uguale». **È la prima cosa da fare se questo filone riprende.**
 
+**TRE MISURE INDIPENDENTI DICONO CHE LA STRUTTURA E' TROPPO FRAMMENTATA** (05, 11, 20). E' il risultato con cui la fase si chiude, ed e' piu' utile dei guadagni: dice DOVE intervenire.
+
+- **05**: le bolle giudicate cattive sono **piccole** (15-35 titoli), e la caccia alle chimere ne guarda >35.
+- **11**: il grafo sparsificato ha **117 componenti connesse**, quindi la gerarchia a 25-35 macro-mondi e' **impossibile** (L1 esce a 133 gruppi con mediana 1 bolla).
+- **20**: la curatela collega bolle che sono **lo stesso mondo diviso in due** — MCU ↔ MCU, anime ↔ anime, con il 98,4% delle coppie curate fuori dal grafo.
+
+**Il ticket 23 nasce da qui**: una sparsificazione che non frammenti, prima di costruire la mappa (ticket 12 e 13). Tre strade (albero di copertura sui ponti, k piu' alto, k-NN non mutuo), da provare e leggere.
+
+**E un numero da correggere ovunque**: i «3.417 legami curati» di handoff, specifica e ticket 18-19-20 **non sono riproducibili**. Sono **1.004 di training + 1.002 di test = 2.006**. Non cambia le conclusioni (anzi rende il ticket 19 piu' forte: 111 vincoli per incognita) ma e' il numero che giustifica «non puo' andare in overfitting», e va corretto.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo

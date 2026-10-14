@@ -1,6 +1,6 @@
 # 12 — La mappa: otto vicini tipizzati per bolla
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 10, 11
+**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 10, 11, 23
 
 ## What to build
 
