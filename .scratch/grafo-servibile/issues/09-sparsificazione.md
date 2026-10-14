@@ -1,6 +1,8 @@
 # 09 — La sparsificazione del grafo delle bolle
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 05, 08
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 05, 08 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/09-sparsificazione.md) · la mediana dei vicini scende da **1.103 a 5** (k=8) o **7** (k=10, dentro l'intervallo 6-8 che il ticket indicava), **nessuna bolla resta isolata** (il ripiego le porta da 121 a 4), e ⚠️ **il criterio di conservazione era sbagliato**: i «vicini forti per peso» sono conservati solo all'**11,7%**, ma il peso e il significato non sono la stessa cosa — e la lettura lo dimostra: Fassbinder → *Il tamburo di latta* (il Nuovo Cinema Tedesco), Star Wars TV → i film di Star Wars, i mostri anni '50 → *I Was a Teenage Werewolf*, polacche → polacche, argentine → argentine. **8 adjacency su 9 lette sono conservate**. Il lavoro grosso lo fa il **k-NN mutuo**, non i testimoni (che portano a 70).
 
 ## What to build
 

@@ -1,6 +1,8 @@
 # 14 — La leva Popolare / Nicchia, dentro la bolla
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 08
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 08 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/14-popolare-nicchia.md) · la leva funziona e i controlli sono i più forti della sessione. ✅ **Mai vuota: 0 su 1.237** bolle piccole — mentre con un parametro **globale** (top 25% del catalogo) **259 bolle su 1.237 (20,9%) darebbero ZERO titoli**: è la modalità di fallimento che il ticket prevedeva, misurata. ✅ La porta **non** è il membro più votato nel **78%** dei casi: restituisce il più archetipico fra gli accessibili (*Guardiani della Galassia* e non *Endgame*). ✅ Verificata su una bolla di nicchia dove il massimo sono **25 voti** e la leva restituisce comunque titoli di quel mondo. ⚠️ Un difetto che non è della leva: nella bolla Star Wars il deep cut include *Star Trek Into Darkness* — un intruso nella bolla, che la leva eredita.
 
 ## What to build
 
