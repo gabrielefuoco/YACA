@@ -1,6 +1,8 @@
 # 17 — La co-visione nel grafo di recupero
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 01, 03
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 01, 03 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/17-covisione.md) · ✅ **il guadagno più grande e più solido della sessione, e non è contaminazione**: con 5 fold in cui TV è costruito sui 4/5 degli utenti e valutato sull'1/5 mai visto, il catalogo **serie** passa da 2,86% a **5,04%** al @10 (**+77%**), da 16,52% a 24,40% al @100, da 43,82% a 54,08% al @500 — **5 fold su 5**, con delta di deviazione standard ±0,05-0,21. E anche il catalogo **film** migliora (+1,09 al @10). ❌ **Ma il ponte cross-medium NON funziona**: il caso serie→film **peggiora** (−0,15 al @100, −1,43 al @500, 5 fold su 5). Il dato attraversa il confine, l'uso no: mettere TV nel grafo di partenza infittisce quel lato e la camminata resta lì. Il ponte va costruito esplicito. ⚠️ E c'è una discrepanza di banco non risolta: questo script trova **1.535** utenti dove `canone.banco_trakt` ne trova 1.063 — uno dei due conteggi è sbagliato.
 
 ## What to build
 
