@@ -204,6 +204,27 @@ Report: [`16-gating.md`](ricerche/16-gating.md), [`18-liste.md`](ricerche/18-lis
 
 **MA IL PONTE CROSS-MEDIUM NON FUNZIONA** (17): il caso serie→film **peggiora** (−0,15 al @100, −1,43 al @500, 5 fold su 5). La frase «TV è l'unico segnale che attraversa il confine» è vera del **dato** e falsa dell'**uso**: metterlo nel grafo del catalogo di partenza infittisce quel lato e la camminata resta lì. **Il ponte va costruito esplicito** — per esempio la co-occorrenza *nella stessa cronologia* fra un film e una serie, che è un dato che abbiamo e non è stato usato in questa forma.
 
+**LA LETTURA SMONTA LA RIFINITURA** (08). La risoluzione adattiva — il ticket con i criteri più
+concreti — ha i numeri tutti a favore: bolle utilizzabili **+12,6%**, micro-bolle **dimezzate**,
+145 chimere su 215 divise, i film-portale presenti (*Ant-Man*, *La sirenetta*, *Halloween*). E la
+lettura di 14 bolle toccate dice: **4 divisioni su 4 spezzano un mondo coerente** (true crime in
+due true crime, telenovelas in due telenovelas, corti Disney in due corti Disney) e **6
+dissoluzioni su 6 distruggono mondi nominabili** (seinen anime, slice-of-life giapponese, romance
+asiatico, iyashikei).
+
+**Verdetto: tenere C (assorbimento delle briciole) e D (film-portale), buttare A (split delle
+chimere) e B (dissoluzione delle pattumiere).** Il criterio della densità non distingue «due mondi
+fusi» da «un mondo grande», e la purezza non misura la coerenza: un anime ha legami con altri
+anime per studio, attori e autore anche quando il mondo è strettissimo.
+
+**È la quarta volta che un indicatore strutturale premia ciò che l'occhio condanna**: la
+modularità (tre volte), λ₂ e la purezza (05), il conteggio delle bolle (07), e ora il conteggio di
+nuovo (08) — e stavolta il meccanismo è **visibile**: il +12,6% viene dall'aver rotto bolle buone.
+
+**Conseguenza diretta per il ticket 07**: il suo +19,9% di bolle utilizzabili, che la lettura non
+ha verificato, va guardato con **sospetto attivo** — un aumento di quella taglia si ottiene anche
+rompendo i mondi, e finché nessuno legge le bolle di F non si sa da quale delle due cause viene.
+
 **Il filo che unisce la terza ondata**: i due ticket dicono la stessa cosa da due lati — **il grafo è omogeneo**. Troppo connesso per avere titoli freddi (16), e le aggiunte migliorano la testa a spese della coda (18). La prossima domanda da farsi, prima di aggiungere altri componenti, è se **la coda vada cercata dentro la struttura che già c'è** invece che in un componente nuovo.
 
 **Ma il guadagno del 19 va letto con cautela**: i pesi appresi sono **uniformi** (1/9 ciascuno), quindi non viene dal *pesare* — viene dall'**usare quattro componenti che a mano valevano zero** (TV, KW, DIR, CAST) e dal **dimezzare CF**. La controprova è banale e non è stata fatta: **pesi uniformi senza apprendere niente**. Se danno lo stesso risultato, il metric learning ha aggiunto poco rispetto a «usa tutto a peso uguale». **È la prima cosa da fare se questo filone riprende.**

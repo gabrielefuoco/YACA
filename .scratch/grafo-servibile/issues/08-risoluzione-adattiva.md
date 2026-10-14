@@ -1,6 +1,8 @@
 # 08 — La risoluzione adattiva: chimere, briciole, film-portale
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 06
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 06 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/08-rifinitura.md) · ⚠️ **tutti gli indicatori migliorano e la lettura dice che le bolle sono peggiori.** I numeri: bolle utilizzabili **+12,6%** (1.293 → 1.456), micro-bolle dimezzate (215 → 121), 145 chimere su 215 divise, 487 pattumiere dissolte, i film-portale ci sono (*Ant-Man*, *La sirenetta*, *Halloween*). La lettura delle 14 bolle toccate: **4 divisioni su 4 spezzano un mondo coerente** (true crime in due true crime, telenovelas in due telenovelas, corti Disney in due corti Disney) e **6 dissoluzioni su 6 distruggono mondi nominabili** (seinen anime, slice-of-life giapponese, romance asiatico, iyashikei). **Verdetto: tenere C (briciole) e D (portale), buttare A (chimere) e B (pattumiere).** È la **quarta volta** che un indicatore strutturale premia ciò che l'occhio condanna — e questa volta il meccanismo è visibile: il +12,6% viene dall'aver rotto bolle buone.
 
 ## What to build
 
