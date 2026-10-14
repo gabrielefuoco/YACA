@@ -56,8 +56,23 @@ misura eredita le debolezze dei pesi V3 — probabilmente il cast.
 La mappa coerente **resta navigabile** (una componente) ma ha ginocchio **1,16** contro 1,24: due
 mappe per due scopi, come i due livelli del collocatore.
 
-## Restano: 04 (la coerenza sulla trama), 05 (le promozioni), 08 (V9), 09 (bolle-continente e
-## chimere, che adotta la coerenza per esemplari coi soli token tematici), 10 (consolidamento).
+## Eseguito anche il 09 (parte 4) — il sub-clustering
+
+**Funziona all'occhio, e l'arbitro non lo sa giudicare.** Il true crime da 205 titoli diventa otto
+mondi leggibili (documentari-caso, serial killer, politica americana, inchieste economiche); la 594
+separa i western dagli horror. Ma **N_eff peggiora ovunque** (true crime 8,32 -> 26,73): conta bolle,
+e uno split sensato ne crea di piu' — **non puo' arbitrare questo intervento**.
+
+**E la 820 non si divide** perche' non e' una chimera (PMI +0,880): i suoi token sono d'accordo. Due
+difetti diversi che avevamo chiamato con lo stesso nome: la CHIMERA (594, l'indice la trova) e il
+CANONE (820, nessun indice di token lo vede).
+
+Tre correzioni alla ricetta: la soglia di 60 titoli esclude proprio la 820 (46) e la 594 (51); la
+risoluzione RB non si trasferisce ai sottografi (RB 100 li frantuma: 31.908 bolle, mediana 1); il
+tetto `len/3` era largo. V8sub salvata come **esperimento, non come candidata**.
+
+## Restano: 04 (la coerenza sulla trama), 05 (le promozioni), 08 (V9), 10 (consolidamento), e le
+## parti 1-3 del 09 (maschera estesa, severita', quarantena) che richiedono la ricostruzione.
 
 ## Not yet specified
 
