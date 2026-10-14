@@ -247,6 +247,11 @@ rompendo i mondi, e finché nessuno legge le bolle di F non si sa da quale delle
 
 **E un numero da correggere ovunque**: i «3.417 legami curati» di handoff, specifica e ticket 18-19-20 **non sono riproducibili**. Sono **1.004 di training + 1.002 di test = 2.006**. Non cambia le conclusioni (anzi rende il ticket 19 piu' forte: 111 vincoli per incognita) ma e' il numero che giustifica «non puo' andare in overfitting», e va corretto.
 
+**LA MAPPA E' RICONNESSA, E LA COLPA ERA DELLA RECIPROCITA'** (23). Quattro varianti, misurate e lette:
+- **k-NN DIRETTO (non mutuo), simmetrizzato**: **5 componenti** invece di 143, mediana grado **8**, zero bolle ≥15 isolate, **6 coppie verificate su 6** (l'unica che le conserva tutte). La reciprocita' era la causa della frammentazione: un mondo piccolo con un legame forte verso uno grande raramente riceve il ritorno, quindi il filtro mutuo taglia **i ponti asimmetrici fra grappoli**, che sono i ponti per definizione.
+- **mutual k=8 + albero di copertura**: 5 componenti con **+138 archi (+0,59%)**, e le 12 ricuciture lette sono tutte relazioni reali.
+Il ticket 12 (gli 8 vicini tipizzati) e' **sbloccato**, e la scelta consigliata e' il k-NN diretto (mediana 8 = il bersaglio del ticket). ⚠️ Il ticket 11 va riprovato su `bolle-archi-23.npz`: era il primo consumatore del risultato.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo

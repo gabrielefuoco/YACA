@@ -1,6 +1,8 @@
 # 23 — La connettività della mappa: i ponti fra i grappoli
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 09, 11 · **Aperto**: 13/10/2026
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 09, 11 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/23-connettivita.md) · ✅ **il k-NN DIRETTO (non mutuo, simmetrizzato) vince su ogni asse**: **5 componenti** invece di 143, mediana grado **8**, **zero** bolle ≥15 isolate (erano 81), e **6 coppie verificate su 6** — l'unica variante che le conserva tutte. La **reciprocità** era la causa della frammentazione: un mondo piccolo con un legame forte verso uno grande raramente riceve il ritorno, quindi il mutuo taglia i ponti asimmetrici fra grappoli, che sono i ponti per definizione. ✅ E l'**albero di copertura** funziona a costo quasi zero: **+138 archi (+0,59%)** porta le componenti da 143 a 5, e le **12 ricuciture lette sono tutte relazioni reali** (religione+woman director, horror, indie americano) — la cautela «i ponti più forti sono il legame generico» non si materializza. Il grafo connesso è in `bolle-archi-23.npz`; ⚠️ il **ticket 11 va riprovato** sopra. · **Aperto**: 13/10/2026
 
 ## Da dove nasce
 
