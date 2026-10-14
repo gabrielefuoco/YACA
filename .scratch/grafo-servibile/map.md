@@ -198,7 +198,11 @@ Report: [`16-gating.md`](ricerche/16-gating.md), [`18-liste.md`](ricerche/18-lis
 4. **E migliorano il recupero di +0,52 al @100** a peso 0,5 — il guadagno più grande visto finora. **Ma peggiorano mezzo+coda di −1,34 al @500**: le liste sono fatte di titoli noti, spingono sulla testa del catalogo, e la metrica che conta per il prodotto è la coda. **Il componente migliora il numero che non conta e peggiora quello che conta**: non è un rifiuto, è una condizione (va riequilibrato in uscita).
 5. **Il «megadump da 1.500 titoli» non esiste**: le liste sono cappate a 100 item, il rapporto di peso è **4,20×** e il peso per lunghezza fa poco. Il disegno dell'esperto poggiava su un dato che il raccoglitore non produce.
 
+**LA CURATELA COME SUPERVISIONE PAGA** (19). Nove pesi appresi dai legami curati delle sorgenti a indice pari, valutati sui 1.002 legami delle sorgenti dispari (mai visti). Guadagno sulla ricetta canonica: **+2,59 al @10, +6,99 al @100, +8,38 al @500** (+18% al @500, oltre 5 errori standard). E il controllo con negativi CASUALI perde di 8,68 mettendo tutto il peso su `Kc` (un artefatto): il protocollo dei negativi **e' la differenza fra imparare e non imparare**.
+
 **Il filo che unisce la terza ondata**: i due ticket dicono la stessa cosa da due lati — **il grafo è omogeneo**. Troppo connesso per avere titoli freddi (16), e le aggiunte migliorano la testa a spese della coda (18). La prossima domanda da farsi, prima di aggiungere altri componenti, è se **la coda vada cercata dentro la struttura che già c'è** invece che in un componente nuovo.
+
+**Ma il guadagno del 19 va letto con cautela**: i pesi appresi sono **uniformi** (1/9 ciascuno), quindi non viene dal *pesare* — viene dall'**usare quattro componenti che a mano valevano zero** (TV, KW, DIR, CAST) e dal **dimezzare CF**. La controprova è banale e non è stata fatta: **pesi uniformi senza apprendere niente**. Se danno lo stesso risultato, il metric learning ha aggiunto poco rispetto a «usa tutto a peso uguale». **È la prima cosa da fare se questo filone riprende.**
 
 ## Effort collegati
 

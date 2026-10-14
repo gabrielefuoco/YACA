@@ -1,6 +1,8 @@
 # 19 — I pesi appresi dai legami curati
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Blocked by**: 01, 07
+**Status**: `resolved` · **Type**: `research` · **Blocked by**: 01, 07 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/19-pesi.md) · ✅ **la curatela come supervisione PAGA**: i pesi appresi battono quelli a mano di **+2,59 al @10, +6,99 al @100, +8,38 al @500** sui 1.002 legami di test **mai visti** dall'apprendimento. 1.004 vincoli su 9 incognite (111 per incognita). I pesi appresi sono quasi **uniformi** (1/9 ciascuno): il guadagno non viene dal pesare, viene dall'**usare quattro componenti che a mano valevano zero** (TV, KW, DIR, CAST) e dal **dimezzare CF** (0,222 → 0,111). ✅ Il controllo con negativi **casuali** conferma che il protocollo conta: perde di 8,68 al @500 e mette tutto il peso su `Kc` (un artefatto). ⚠️ Da fare: la controprova dei **pesi uniformi senza apprendere**, che spiegherebbe quasi tutto il guadagno.
 
 ## What to build
 
