@@ -34,6 +34,7 @@ import bolle as B
 import canone as K
 
 ML = K.ML
+PESI_TIPO = {"ge:": 1.5, "rt:": 1.5, "co:": 0.4, "ca:": 0.4, "di:": 0.8}   # V3, ticket 05
 MARGINE = 1.0          # il film deve battere il migliore serie di questo fattore (ticket 03)
 PREFISSO = {"keywords": "kw:", "genres": "ge:", "networks": "rt:", "production_companies": "co:",
             "production_countries": "pa:", "original_language": "lg:",
@@ -46,34 +47,62 @@ COLS = {
 }
 
 
-def carica():
-    """Gli artefatti congelati: vocabolario, idf, centroidi, partizione."""
-    TFIDF = sp.load_npz(ML / "04-tfidf.npz").tocsr()
-    vocab = json.load(open(ML / "04-vocab.json", encoding="utf-8"))
-    C4 = np.load(ML / "04-centroidi.npz")
-    P = np.load(ML / "mappa-pesata-6-2.npz", allow_pickle=True)
-    bolle_serie, bolle_film = C4["bolle_serie"], C4["bolle_film"]
-    # l'idf ricalcolato: df dai non-zero per colonna
-    df = np.asarray((TFIDF > 0).sum(0)).ravel()
-    idf = np.log(TFIDF.shape[0] / (1 + df))
-    # le somme per bolla (sparse), e le norme
-    ordine = np.argsort(P["mem"], kind="stable")
-    confini = np.searchsorted(P["mem"][ordine], np.arange(len(P["sz"]) + 1))
-    MEMBRI = [ordine[confini[b]:confini[b + 1]] for b in range(len(P["sz"]))]
+def carica(v3=True):
+    """Gli artefatti congelati: vocabolario, idf, centroidi, partizione.
+
+    `v3=True` carica la variante del ticket 05 (`05-*.npz`): df >= 3, idf con tetto, generi e reti
+    x1,5, cast e case x0,4. E' quella di produzione, perche' e' quella che legge bene i vicini —
+    anche se sul banco fa 32,0% contro 35,3%, e la ragione e' scritta nel report: il banco chiede
+    una cosa («atterra dove la co-visione l'aveva messo?») che per un titolo fuori dal grafo non
+    esiste.
+    """
+    prefisso = "05" if v3 else "04"
+    TFIDF = sp.load_npz(ML / f"{prefisso}-tfidf.npz").tocsr()
+    vocab = json.load(open(ML / f"{prefisso}-vocab.json", encoding="utf-8"))
+    if v3:
+        # ATTENZIONE, e questa riga e' la lezione del ticket 04 scritta in codice.
+        # `05-idf.npy` contiene gli idf GREZZI. Il corpus e' stato costruito con
+        # `idf * PESI_TIPO`, quindi la query deve usare lo stesso prodotto: se usasse gli idf
+        # grezzi, i due lati del coseno non parlerebbero la stessa lingua e **nessun crash** lo
+        # direbbe — solo punteggi che scivolano. Ci sono caduto scrivendo questa funzione.
+        _idf_grezzo = np.load(ML / "05-idf.npy")
+        _peso = np.zeros(len(vocab), np.float32)
+        for _t, _j in vocab.items():
+            _peso[_j] = _idf_grezzo[_j] * PESI_TIPO.get(_t[:3], 1.0)
+        SUM = sp.load_npz(ML / "05-centroidi.npz").tocsr()
+        META = np.load(ML / "05-centroidi-meta.npz")
+        NORMA = META["norme"]
+        bolle_serie = META["bolle_serie"]
+        bolle_film = META["bolle_film"]
+        quota_tv = META["quota_tv"]
+        mem = np.load(ML / "bolle-nitrile-V8.npy")
+        sz = np.bincount(mem)
+        idf = _peso
+    else:
+        df = np.asarray((TFIDF > 0).sum(0)).ravel()
+        idf = np.log(TFIDF.shape[0] / (1 + df))
+        C4 = np.load(ML / "04-centroidi.npz")
+        P = np.load(ML / "mappa-pesata-6-2.npz", allow_pickle=True)
+        bolle_serie, bolle_film = C4["bolle_serie"], C4["bolle_film"]
+        quota_tv, mem, sz = P["quota_tv"], P["mem"], P["sz"]
+        ordine = np.argsort(mem, kind="stable")
+        confini = np.searchsorted(mem[ordine], np.arange(len(sz) + 1))
+        MEMBRI = [ordine[confini[b]:confini[b + 1]] for b in range(len(sz))]
+        TUTTE0 = np.concatenate([bolle_serie, bolle_film])
+        r_, c_, v_ = [], [], []
+        for k, b in enumerate(TUTTE0):
+            s = np.asarray(TFIDF[MEMBRI[b]].sum(0)).ravel()
+            nz = np.nonzero(s)[0]
+            r_.extend([k] * len(nz))
+            c_.extend(nz.tolist())
+            v_.extend(s[nz].tolist())
+        SUM = sp.csr_matrix((v_, (r_, c_)), shape=(len(TUTTE0), TFIDF.shape[1]), dtype=np.float32)
+        NORMA = np.sqrt(np.asarray(SUM.multiply(SUM).sum(1)).ravel()) + 1e-9
     TUTTE = np.concatenate([bolle_serie, bolle_film])
-    r_, c_, v_ = [], [], []
-    for k, b in enumerate(TUTTE):
-        s = np.asarray(TFIDF[MEMBRI[b]].sum(0)).ravel()
-        nz = np.nonzero(s)[0]
-        r_.extend([k] * len(nz))
-        c_.extend(nz.tolist())
-        v_.extend(s[nz].tolist())
-    SUM = sp.csr_matrix((v_, (r_, c_)), shape=(len(TUTTE), TFIDF.shape[1]), dtype=np.float32)
-    NORMA = np.sqrt(np.asarray(SUM.multiply(SUM).sum(1)).ravel()) + 1e-9
-    return dict(vocab=vocab, idf=idf, SUM=SUM, NORMA=NORMA, TUTTE=TUTTE,
+    return dict(vocab=vocab, idf=idf, TFIDF=TFIDF, SUM=SUM, NORMA=NORMA, TUTTE=TUTTE,
                 bolle_serie=set(int(x) for x in bolle_serie),
                 bolle_film=set(int(x) for x in bolle_film),
-                quota_tv=P["quota_tv"], mem=P["mem"], sz=P["sz"])
+                quota_tv=quota_tv, mem=mem, sz=sz)
 
 
 def tokenizza(dd, tipo="tv"):
@@ -104,19 +133,36 @@ def tokenizza(dd, tipo="tv"):
 
 
 def vettore(token, S):
-    """Token -> vettore TF-IDF L2-normalizzato. I termini fuori vocabolario si buttano: e' il
-    prezzo di un vocabolario congelato, ed e' dichiarato."""
+    """Token -> vettore TF-IDF L2-normalizzato.
+
+    I termini fuori vocabolario si buttano: e' il prezzo di un vocabolario congelato, ed e' dichiarato.
+    I pesi per tipo sono dentro gli idf salvati (V3): il vettore non li riapplica.
+    """
     idx, val = [], []
     for t in token:
         j = S["vocab"].get(t)
         if j is not None:
             idx.append(j)
-            val.append(S["idf"][j])
+            val.append(float(S["idf"][j]))
     if not idx:
         return None, 0
     v = sp.csr_matrix((val, ([0] * len(idx), idx)), shape=(1, S["SUM"].shape[1]), dtype=np.float32)
     n = float(np.sqrt(v.multiply(v).sum()))
     return v.multiply(1.0 / (n + 1e-9)), len(idx)
+
+
+def vicini_titoli(v, S, quanti=10):
+    """IL LIVELLO MICRO: i titoli piu' simili, non le bolle.
+
+    Serve al ticket 05 di `mappa-pesata`. La bolla giusta per NAVIGARE non e' la stessa cosa del
+    mondo giusto da MOSTRARE: per Verity la bolla e' un minestrone (Inception, Fight Club, Eiffel)
+    mentre i suoi dieci titoli piu' vicini sono thriller veri. Si restituiscono tutti e due.
+    """
+    if v is None:
+        return []
+    cos = np.asarray((v @ S["TFIDF"].T).todense()).ravel()
+    top = np.argsort(-cos)[:quanti]
+    return [(int(x), float(cos[x])) for x in top if cos[x] > 0]
 
 
 def colloca(dd, tipo, S, margine=MARGINE):

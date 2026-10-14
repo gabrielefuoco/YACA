@@ -30,6 +30,7 @@ import time
 
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 
 QUI = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(QUI))
@@ -42,6 +43,18 @@ PO = QUI / "bolle-nuovi.json"
 PQ = pathlib.Path(".cache/tmdb")
 SOGLIA_VOTI = 5
 SOGLIA_CONF = 0.08
+
+
+def CF_anno(dd):
+    """L'anno, senza crashare su `nan`. La prima versione del job e' morta qui: una `release_date`
+    che e' la STRINGA "nan" (pandas), e `int("nan")` solleva. Undici righe di controlli e il crash
+    era in una riga di formattazione."""
+    v = dd.get("release_date") or dd.get("first_air_date")
+    try:
+        a = int(str(v)[:4])
+        return a if 1800 < a < 2100 else 0
+    except Exception:
+        return 0
 print("=" * 100)
 print("JOB NOTTURNO — COLLOCARE I TITOLI CHE NON SONO NEL GRAFO")
 print("=" * 100, flush=True)
@@ -81,11 +94,20 @@ ris = []
 for n, (tipo, dd) in enumerate(fuori):
     b, conf, ntok, fuori_voc = CF.colloca(dd, tipo, S)
     nome = str(dd.get("title") or dd.get("name") or "")[:70]
+    # il livello MICRO: i dieci titoli piu' vicini (ticket 05 di mappa-pesata)
+    idx = [S["vocab"][t] for t in CF.tokenizza(dd, tipo) if t in S["vocab"]]
+    vic = []
+    if idx:
+        vv = sp.csr_matrix(([float(S["idf"][i]) for i in idx], ([0] * len(idx), idx)),
+                           shape=(1, S["TFIDF"].shape[1]), dtype=np.float32)
+        vv = vv.multiply(1.0 / (float(np.sqrt(vv.multiply(vv).sum())) + 1e-9))
+        vic = CF.vicini_titoli(vv, S, 10)
     ris.append(dict(id=int(dd["id"]), tipo=tipo, nome=nome,
                     bolla=None if b is None else int(b),
+                    vicini=[{"i": i, "cos": round(c, 4)} for i, c in vic],
                     confidenza=round(float(conf), 4), termini=int(ntok), fuori_vocabolario=int(fuori_voc),
                     voti=int(dd.get("vote_count") or 0),
-                    anno=int(str(dd.get("release_date") or dd.get("first_air_date") or "0")[:4] or 0)))
+                    anno=CF_anno(dd))))
     if (n + 1) % 5000 == 0:
         print(f"     {n+1:,}/{len(fuori):,} ({time.time()-T0:.0f}s)", flush=True)
 
