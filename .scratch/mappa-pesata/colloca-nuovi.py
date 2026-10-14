@@ -108,10 +108,19 @@ for n, (tipo, dd) in enumerate(fuori):
                     confidenza=round(float(conf), 4), termini=int(ntok), fuori_vocabolario=int(fuori_voc),
                     voti=int(dd.get("vote_count") or 0),
                     anno=CF_anno(dd)))
-    if (n + 1) % 5000 == 0:
-        print(f"     {n+1:,}/{len(fuori):,} ({time.time()-T0:.0f}s)", flush=True)
+    fjl.write(json.dumps(ris[-1], ensure_ascii=False) + "\n")
+    if (n + 1) % 2000 == 0:
+        fjl.flush()
+        print(f"     {n+1:,}/{len(fuori):,} ({time.time()-T0:.0f}s) · scritti", flush=True)
 
 # ---------------------------------------------------------------- il file
+# il riassunto si fa su TUTTO (anche le righe riprese), non solo su questo giro
+ris = []
+for riga in open(JL, encoding="utf-8"):
+    try:
+        ris.append(json.loads(riga))
+    except Exception:
+        pass
 ok = [r for r in ris if r["bolla"] is not None]
 conf = np.array([r["confidenza"] for r in ok])
 forti = [r for r in ok if r["confidenza"] >= SOGLIA_CONF]
