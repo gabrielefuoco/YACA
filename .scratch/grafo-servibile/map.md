@@ -288,6 +288,24 @@ E il ticket 04 ha riportato la divergenza che il 03 aveva aperto: il grafo ricos
 
 **I quattro indicatori strutturali che hanno premiato cio' che l'occhio condanna**: modularita' (3 volte), lambda2 e purezza, il conteggio delle bolle (07), e il conteggio di nuovo (08) -- dove il meccanismo e' visibile: il +12,6% veniva dall'aver rotto bolle buone.
 
+## LA RICETTA FINALE — ridecisa sulla coda (ticket 24, 13/10/2026)
+
+```
+catalogo FILM    CF + decadimento (tau 365)            SENZA TV
+catalogo SERIE   CFst + B + TV + decadimento           CON TV
+                 k = 30 · beta = 0,25 · alfa = 0,30 · tau = 365      <- QUATTRO parametri liberi
+```
+
+**I due cataloghi non la vogliono uguale**, e la ragione e' la stessa asimmetria del ticket 66:
+- sul **film** la co-visione e' una sorgente **estranea** e peggiora la coda (**-1,83 al @500**);
+- sul **serie** e' la sorgente **propria** e la migliora di **+10,01 al @500** (il 97% del guadagno globale).
+
+**Il decadimento e' l'unica aggiunta che non peggiora la coda** (+0,02/+0,17/+0,43). Le liste (-1,34), il gating (-0,94) e TV (-1,83) la peggiorano tutti.
+
+**E il numero che vale piu' di tutti**: la ricetta «tutto» (F) **massimizza la recall globale (+1,913 al @500) ed e' la PEGGIORE sulla coda (-2,341)**. La metrica che il prodotto dichiara di volere e' quella che ogni aggiunta di comportamento peggiora, perche' **il comportamento porta con se' il gusto della maggioranza**.
+
+**La regola che ne esce**: ogni decisione va presa con le **tre metriche affiancate**, e **l'invarianza cross-dominio va dichiarata PER METRICA, non per componente** -- il verdetto del 21 su TV era vero sulla testa e falso sulla coda.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo

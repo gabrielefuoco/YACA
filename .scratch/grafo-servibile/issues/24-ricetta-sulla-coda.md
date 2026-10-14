@@ -1,6 +1,14 @@
 # 24 — La ricetta va ridecisa sulla coda
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Blocked by**: nessuno (era bloccata da una decisione sbagliata) · **Aperto**: 13/10/2026
+**Status**: `resolved` · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/24-ricetta-sulla-coda.md) · **la ricetta e' ridecisa sulla coda**, e i due cataloghi NON la vogliono uguale.
+- **FILM: CF + decadimento (tau 365), SENZA TV.** Il decadimento e' **l'unica candidata che non peggiora la coda** (+0,02/+0,17/+0,43); TV la peggiora di **-1,83 al @500**, le liste di -1,34, il gating di -0,94.
+- **SERIE: CFst + B + TV + decadimento.** Sul banco Trakt la co-visione migliora **anche la coda**: **+1,44 al @10, +6,82 al @100, +10,01 al @500** (e il guadagno della coda e' il 97% di quello globale al @500).
+- **E la scoperta che vale piu' della ricetta**: TV sul banco **MovieLens** (sorgente estranea) peggiora la coda di -1,83, sul banco **Trakt** (sorgente propria) la migliora di +1,78. **L'invarianza cross-dominio va dichiarata PER METRICA, non per componente** -- il verdetto del ticket 21 era vero sulla testa e falso sulla coda.
+- **E il numero che fa riflettere**: la ricetta «tutto» (F) **massimizza la recall globale (+1,913 al @500) ed e' la PEGGIORE sulla coda (-2,341)**. La metrica che il prodotto dichiara di volere e' quella che le aggiunte peggiorano.
+
+**Status originale**: `ready-for-agent` · **Type**: `research` · **Blocked by**: nessuno (era bloccata da una decisione sbagliata) · **Aperto**: 13/10/2026
 
 ## Da dove nasce: il ticket 21 ha deciso sulla metrica sbagliata
 
