@@ -124,6 +124,87 @@ def rwr(M, E, alpha, iters=20):
     return X
 
 
+# ---------------------------------------------------------------- i contratti RELAZIONALI
+# §4 del senior. I contratti di non-degenerazione (sopra) guardano UN array e verificano che non sia
+# piatto o vuoto. I due incidenti di questa sessione — il 63,7% del LOO incompleto e il 58,27% di
+# tasso base sbagliato — erano errori RELAZIONALI: l'array di output aveva una distribuzione
+# bellissima e non degenere, ma violava un'identita' rispetto agli input.
+
+def assert_loo_esatto(X, membri_di, i, b, punteggio_veloce, tolleranza=1e-5, pesi=None, nome=""):
+    """CONTRATTO DI INVARIANZA — il brute-force spot check contro il data leakage nel LOO.
+
+    Quando si scrive un leave-one-out vettorizzato su matrici sparse e' facilissimo dimenticare di
+    sottrarre il contributo di `i` da una normalizzazione, da un idf o da un denominatore. E' successo
+    tre volte in questa sessione, e due volte il numero era **gonfiato e bellissimo**:
+      · 63,7% invece di 35,3%, per un LOO incompleto sul centroide;
+      · 55,8% invece di 33,2%, perche' l'auto-similarita' di una serie col proprio esemplare (1,0)
+        entrava nei top-5 della sua bolla.
+
+    Qui si cancella davvero: si ricalcola il centroide della bolla di `i` SENZA `i`, si normalizza, e
+    si confronta col punteggio che il metodo veloce ha prodotto. Costa millisecondi e rende
+    impossibile per costruzione qualsiasi LOO parziale.
+
+    `X` matrice densa (titoli x feature) · `membri_di` lista degli indici per bolla ·
+    `punteggio_veloce` quello che il metodo rapido ha assegnato a (i, b).
+    """
+    m_ = np.array([x for x in membri_di[b] if x != i], dtype=int)
+    assert len(m_) > 0, f"bolla {b} vuota senza {i}: non c'e' niente da verificare"
+    if pesi is None:
+        mu = X[m_].mean(axis=0)
+    else:
+        w = np.asarray(pesi[m_], float)
+        mu = (X[m_] * w[:, None]).sum(axis=0) / max(w.sum(), 1e-9)
+    mu = mu / (np.linalg.norm(mu) + 1e-9)
+    puro = float(np.asarray(X[i] @ mu).ravel()[0])
+    assert abs(float(punteggio_veloce) - puro) <= tolleranza, (
+        f"LEAKAGE LOO{f' in {nome}' if nome else ''} sulla riga {i}, bolla {b}: "
+        f"veloce={float(punteggio_veloce):.5f} vs puro={puro:.5f} "
+        f"(differenza {abs(float(punteggio_veloce)-puro):.5f}, tolleranza {tolleranza}). "
+        f"Il metodo veloce sta contando qualcosa che dovrebbe aver tolto."
+    )
+    return puro
+
+
+def assert_universo(vero, candidati, etichetta="", stampa=True):
+    """CONTRATTO DI COPERTURA — il tetto va dichiarato insieme al risultato.
+
+    L'equivoco delle 94 serie nacque qui: `vero` conteneva bolle che `candidati` non conteneva, e
+    nessuno stampava il tetto. Un 35,3% su un tetto dell'84,3% e' un'altra cosa da un 35,3% su un
+    tetto del 100%.
+    """
+    vero = np.asarray(vero)
+    dentro = np.isin(vero, np.asarray(candidati))
+    tetto = float(dentro.mean()) if len(vero) else 0.0
+    if stampa:
+        print(f"  TETTO{' ' + etichetta if etichetta else ''}: {100*tetto:.1f}% dei bersagli e' fra i "
+              f"{len(np.unique(candidati)):,} candidati ({int(dentro.sum())}/{len(vero)}). "
+              f"Nessun metodo puo' superarlo.")
+    return tetto, dentro
+
+
+def assert_allineamento_spazi(idf, vocab, impronte, nome="artefatti"):
+    """CONTRATTO DI ALLINEAMENTO — l'idf e il vocabolario vanno congelati INSIEME.
+
+    Se `idf` e `vocab` si disallineano (si rigenera uno senza l'altro, o si cambiano i pesi per tipo
+    senza rigenerare i centroidi), il prodotto scalare restituisce numeri **finiti e privi di senso**.
+    E' successo all'autore di questi contratti mentre scriveva `colloca_finale.carica()`: il file degli
+    idf conteneva i valori GREZZI mentre il corpus era pesato per tipo.
+
+    `impronte` = dict con gli sha256 attesi: {'idf': ..., 'vocab': ...}.
+    """
+    import hashlib
+    h_i = hashlib.sha256(np.asarray(idf, np.float32).tobytes()).hexdigest()[:16]
+    h_v = hashlib.sha256(repr(sorted(vocab.items())).encode()).hexdigest()[:16]
+    for chiave, valore in (("idf", h_i), ("vocab", h_v)):
+        atteso = impronte.get(chiave)
+        assert atteso is None or atteso == valore, (
+            f"DISALLINEAMENTO di {chiave} in {nome}: impronta {valore}, attesa {atteso}. "
+            f"Gli artefatti sono stati rigenerati in disordine: i punteggi sarebbero finiti ma "
+            f"insensati, senza nessun crash a segnalarlo."
+        )
+    return {"idf": h_i, "vocab": h_v}
+
+
 def ranghi(S, filtro=None, controlla=True, pareggi_max=0.5):
     """I ranghi per colonna. `S` e' (titoli x candidati), ogni colonna e' una classifica.
 

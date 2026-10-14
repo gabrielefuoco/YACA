@@ -99,6 +99,14 @@ def carica(v3=True):
         SUM = sp.csr_matrix((v_, (r_, c_)), shape=(len(TUTTE0), TFIDF.shape[1]), dtype=np.float32)
         NORMA = np.sqrt(np.asarray(SUM.multiply(SUM).sum(1)).ravel()) + 1e-9
     TUTTE = np.concatenate([bolle_serie, bolle_film])
+    # CONTRATTO DI ALLINEAMENTO (§4.3 del senior), verificato all'avvio. Se gli idf e il vocabolario
+    # si disallineano — si rigenera uno senza l'altro, o si cambiano i pesi per tipo senza rifare i
+    # centroidi — il prodotto scalare torna numeri FINITI e privi di senso. Nessun crash lo direbbe.
+    _imp = ML / "05-impronte.json"
+    if _imp.exists():
+        import canone as _K
+        _K.assert_allineamento_spazi(np.load(ML / "05-idf.npy").astype(np.float32), vocab,
+                                     json.load(open(_imp, encoding="utf-8")), nome="colloca_finale")
     return dict(vocab=vocab, idf=idf, TFIDF=TFIDF, SUM=SUM, NORMA=NORMA, TUTTE=TUTTE,
                 bolle_serie=set(int(x) for x in bolle_serie),
                 bolle_film=set(int(x) for x in bolle_film),

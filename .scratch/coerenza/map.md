@@ -24,6 +24,29 @@ collocatore (perché altrimenti si autoconferma).
   **51,5%** delle serie; e le trame presenti sono **in italiano** mentre `bge-small-en-v1.5` è un
   modello **inglese**. La metrica va costruita tenendone conto, e il campione va dichiarato.
 
+## Eseguito, 14/10/2026 — 4 ticket su 10
+
+**Le due metriche di coerenza ci sono e funzionano**, e la prima corregge il senior:
+
+- **N_eff** misura quanto un **tag** coincide con un **mondo**, non quanto un mondo è coeso. In cima
+  i franchise (super sentai 1,17 · Bond 1,23 · Ultraman 1,41), in fondo i modi che tagliano il
+  catalogo (revenge 418 · love 354). Le previsioni del senior — noir 2,1, thriller 18,5 — sono
+  sbagliate di un ordine di grandezza: misurano **35,35** e **101,78**. La banda utile è **5-25**.
+- **L'indice di chimera** funziona (col filtro di supporto `df ≥ 30`, che mancava) e **conferma
+  §5.2**: le più chimeriche sono tutte bolle grandi con generi incompatibili
+  (`documentary + action + thriller`). Non conferma la bolla 594: serve una misura per membro.
+
+**Il §5.1 va corretto**: il **top-M peggiora** (32,0% → 28,5%) e **non esiste** una distorsione
+geometrica (con V3 la correlazione dimensione/successo è **+0,003**). L'**ibrido coi top-5 esemplari
+funziona**: **33,2%** (+1,2), con **+7,7 punti** sulle bolle oltre i 120 titoli. E la prima misura
+dava **55,8%**: era data leakage, il terzo della sessione.
+
+**I tre contratti relazionali** di §4 fermano 4 casi su 4, zero falsi allarmi — e uno di loro ha
+fermato il 55,8% la prima volta che è stato applicato.
+
+## Restano: 04 (la coerenza sulla trama), 05 (le promozioni), 07 (i falsi vicini sulla mappa),
+## 08 (V9), 09 (bolle-continente e chimere), 10 (consolidamento).
+
 ## Not yet specified
 
 - Se il sub-clustering ricorsivo sulle bolle >60 titoli (senza toccare RB 100) sia praticabile nei
