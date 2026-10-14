@@ -1,6 +1,6 @@
 # Ticket 04 — Il collocatore in una funzione, e la proposta per `src/`
 
-`Status: resolved` · 14/10/2026 · `colloca-finale.py` + questo documento. **Nessuna riga di `src/`.**
+`Status: resolved` · 14/10/2026 · `colloca_finale.py` + questo documento. **Nessuna riga di `src/`.**
 
 ---
 
@@ -13,7 +13,7 @@ metadati TMDB -> token -> vettore TF-IDF (vocabolario congelato) -> coseno contr
              -> regola di medium -> (bolla, confidenza)
 ```
 
-In `colloca-finale.py`: `carica()`, `tokenizza(dd, tipo)`, `vettore(token, S)`, `colloca(dd, tipo, S)`.
+In `colloca_finale.py`: `carica()`, `tokenizza(dd, tipo)`, `vettore(token, S)`, `colloca(dd, tipo, S)`.
 
 **Costo misurato: 8,7 ms per titolo** (100 titoli, partizione e centroidi in memoria). È un prodotto
 sparse-matrice per vettore: nessuna Ridge, nessun riaddestramento, nessuna dipendenza da sklearn in

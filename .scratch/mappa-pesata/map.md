@@ -48,6 +48,23 @@ proposta per `src/`:
 o un **job notturno**? La raccomandazione in linea non ha bisogno di questo modulo — ha bisogno della
 partizione, che e' gia' precalcolata.
 
+## Correzione di rotta, 14/10/2026 — il ticket 05
+
+Un'obiezione dell'utente su *Verity* ha aperto un ticket che non era in elenco, e ha cambiato le
+conclusioni in tre punti:
+
+1. **Il vettore sbagliava**, e non per colpa del centroide: dominavano il **cast** (Dakota Johnson,
+   Anne Hathaway) e le **keyword rare** (`baffled`, `dreary`) con idf quasi massimo. La variante V3
+   (df≥3, tetto idf, generi ×1,5, cast ×0,4) è **salvata** in `05-*.npz` e va in produzione.
+2. **Il banco non è l'arbitro.** V3 peggiora il banco (32,0% contro 35,3%) e migliora l'occhio: le due
+   misure rispondono a domande diverse, e per un titolo **fuori dal grafo** esiste solo la seconda.
+3. **La partizione è il limite.** *Verity* resta in bolla 820 anche con V3: i thriller psicologici
+   sono **sparsi** in venti bolle. **Quella bolla non esiste**, e RB 200 «frantuma» parlava del numero
+   di bolle, non della coerenza dei mondi.
+
+**Il collocatore deve restituire due livelli**: la bolla (macro, per navigare nel grafo) e i 10 titoli
+più vicini (micro, per mostrare). Il micro con V3 è già giusto.
+
 ## Not yet specified
 
 - Se il grafo pesato vada reso sparso con una **soglia** o con un **top-k per bolla**, e con quale k.
