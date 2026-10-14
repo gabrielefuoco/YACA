@@ -94,6 +94,16 @@ scoperto che misurava un'altra cosa.
 - E il banco **non sparisce**: continua a servire per i titoli che nel grafo ci sono, ed è l'unico
   controllo automatico che abbiamo. Ma non è più l'arbitro.
 
+## ⚠️ RITRATTATO IL 14/10/2026 — vedi `coerenza/ricerche/820-la-bolla-che-non-era-un-minestrone.md`
+
+La sezione qui sotto conclude che «quella bolla non esiste» e che il difetto è nella partizione.
+**E' sbagliata.** La bolla 820 è coerente: 35 titoli su 46 sono Thriller, i registi sono Fincher (7),
+Nolan (4), Shyamalan (3), i voti mediani sono 7.037 contro 51 del catalogo, e i termini del suo
+centroide dicono `ge:thriller · ge:mystery · kw:psychological thriller · di:david fincher`. È **il
+canone del thriller psicologico**, e Verity ci appartiene. L'obiezione dell'utente sulla bolla era
+giusta quanto la sua obiezione su Verity: avevo giudicato dalla superficie (*Inception*, *The Truman
+Show*) invece che dal baricentro, e i termini del centroide erano su disco da ore.
+
 ## E Verity resta con Fight Club
 
 V3 migliora i **vicini titolo per titolo** ma **non** la collocazione: rieseguito il `colloca()` con

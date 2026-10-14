@@ -72,11 +72,22 @@ banco chiede «atterra dove la **co-visione** l'aveva messo?» — domanda che p
 grafo** non esiste; l'occhio chiede «sono lo stesso genere di film?», ed è l'unica che si possa fare su
 un film del 2026.
 
-**E Verity resta nella bolla sbagliata anche dopo la correzione**, perché **quella bolla non esiste**:
-i thriller psicologici sono sparsi in venti bolle (*Body of Evidence* in 551, *Due tombe* in 930,
-*Disappearance* in 776, *Il collezionista* in 505), e la 820 — dove abitano *Gone Girl* e *Shutter
-Island* — è un «prestigio contorto» con *Inception*, *The Truman Show* e *Eiffel*. **Il difetto è
-nella partizione**, non nel vettore e non nel centroide.
+**⚠️ QUESTA CONCLUSIONE E' STATA RITRATTATA** (14/10/2026, vedi
+`coerenza/ricerche/820-la-bolla-che-non-era-un-minestrone.md`). Avevo scritto che *Verity* «resta
+nella bolla sbagliata perché quella bolla non esiste»: **sbagliato, e l'obiezione dell'utente era
+giusta**. La bolla 820 — 46 titoli, **35 Thriller**, registi Fincher (7), Nolan (4), Shyamalan (3),
+**voti mediani 7.037 contro 51 del catalogo** — è **il canone del thriller psicologico**, e i termini
+del suo centroide lo dicono: `ge:thriller · ge:mystery · kw:psychological thriller · di:david
+fincher`. *Verity* appartiene a quel mondo, e la collocazione era corretta.
+
+Avevo giudicato dalla **superficie** (*Inception*, *The Truman Show*, *Eiffel*: tre titoli su
+quarantasei) invece che dal **baricentro**, e i dati per farlo bene erano su disco da ore — i termini
+del centroide, la mediana dei voti, i registi. Due volte in questa sessione il giudizio dell'utente ha
+corretto una mia conclusione presa dalle metriche, e in tutte e due i casi sbagliavo io.
+
+Quello che resta vero: `N_eff(psychological thriller) = 101,78`, cioè il tag non coincide con un mondo.
+Ma la conclusione che ne avevo tratto («il mondo è rotto») non seguiva: i titoli con migliaia di voti
+sono nel canone, gli altri sono altrove, divisi per epoca e paese — **una partizione ragionevole**.
 
 ---
 

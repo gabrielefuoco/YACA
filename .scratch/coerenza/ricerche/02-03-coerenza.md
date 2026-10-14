@@ -59,6 +59,14 @@ del thriller psicologico: 35 contro 102). La causa della differenza: il noir è 
 situato** — 544 titoli dagli anni '40 agli anni '90, su tre continenti — e la partizione lo spezza per
 **decennio e per paese**, che è esattamente ciò che deve fare con dei modificatori.
 
+⚠️ **RITRATTATO IL 14/10/2026** — `coerenza/ricerche/820-la-bolla-che-non-era-un-minestrone.md`.
+Da `N_eff(psychological thriller) = 101,78` avevo concluso «il mondo non esiste, è sparso in venti
+bolle». **Non segue.** Il tag porta 306 titoli: quelli con migliaia di voti stanno nella bolla 820 (il
+canone), gli altri sono altrove, divisi per epoca, paese e sottotema. **Non è una partizione rotta: è
+una partizione che tiene insieme i film resi canonici dal pubblico e tratta il resto con altri
+criteri** — che per il prodotto è persino ragionevole. `N_eff` misurava una cosa vera (il tag non
+coincide con un mondo), la conclusione che ne avevo tratta no.
+
 **La banda utile è un'altra**: `N_eff` fra **5 e 25**. Lì c'è un mondo che esiste ma è imperfetto, ed è
 lì che si ripara: **`kw:iyashikei` 7,81** (la nicchia che il ticket 02 di `todo-grafo` ha visto
 sciogliersi), **`kw:true crime` 8,32**, **`kw:spaghetti western` 11,39** (la bolla-chimera 594). Sopra
