@@ -259,6 +259,20 @@ Il ticket 12 (gli 8 vicini tipizzati) e' **sbloccato**, e la scelta consigliata 
 **LA DIREZIONALITA' FUNZIONA, E SI LEGGE NEI DUE VERSI** (13). L'accessibilita' si calcola sui **membri core** (il 55% dei membri per bolla) e il controllo la giustifica: **su 907 bolle** usare tutti i membri avrebbe spostato l'accessibilita' di **un fattore 2 o piu'**. I segni sono quasi bilanciati (14.707 approfondimenti contro 13.906 allargamenti), l'85,7% delle bolle li ha entrambi, e la lettura conferma: un mondo di **nordic noir da 32 voti** ha un arco verso il **noir mainstream da 25.061** (allargamento), un mondo di **supereroi di nicchia da 21 voti** verso i **teen superhero da 14.798**.
 ⚠️ **757 bolle (14,3%) hanno un segno solo** e non sono state verificate. ❌ E il segno **non e' ancora disponibile al recupero**: si calcola sulle bolle, la ricetta lavora sui titoli.
 
+## LA FASE SI CHIUDE — 23 ticket su 23 (13/10/2026)
+
+**La ricetta (ticket 21): film = CF + TV(0,5), serie = CFst + B + TV(0,5). k=30 · beta=0,25 · alfa=0,30. Quattro parametri liberi, senza curatela.**
+
+L'INVARIANZA CROSS-DOMINIO E' SODDISFATTA, e verificata per la prima volta: **TV, estratta dalle cronologie Trakt, migliora il banco MovieLens di +0,39 al @10 e +1,21 al @100** -- ed e' il primo componente della sessione che migliora ENTRAMBI i banchi. Sul banco Trakt (5 fold, utenti mai visti) da +1,09 al film e **+2,19 alla serie**.
+
+Restano fuori, con la ragione scritta: **le liste** (+0,20 al @100 non paga -1,34 su mezzo+coda), il **decadimento** (+0,13, zero al @10), il **gating** (+0,25 ma -0,50 al @500), i **pesi appresi** (misurati su un banco solo).
+
+E il ticket 04 ha riportato la divergenza che il 03 aveva aperto: il grafo ricostruito sul solo passato va **peggio** del completo (-1,59 al @100, -5,42 al @2000), quindi **la conoscenza del futuro aiuta e i numeri temporali sono ottimistici** -- con un confondente dichiarato (la copertura: 29.854 film contro 49.041).
+
+**I tre guadagni verificati della fase**: la co-visione nel recupero (+77% sul catalogo serie, 5 fold su 5), la curatela come supervisione (+8,38 al @500 sui legami di test), e la leva popolare/nicchia (mai vuota su 1.237 bolle dove un parametro globale ne romperebbe 259).
+
+**I quattro indicatori strutturali che hanno premiato cio' che l'occhio condanna**: modularita' (3 volte), lambda2 e purezza, il conteggio delle bolle (07), e il conteggio di nuovo (08) -- dove il meccanismo e' visibile: il +12,6% veniva dall'aver rotto bolle buone.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo

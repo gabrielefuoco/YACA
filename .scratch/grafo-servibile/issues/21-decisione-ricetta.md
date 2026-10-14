@@ -1,6 +1,8 @@
 # 21 — La decisione di ricetta: invarianza cross-dominio e minimax
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Blocked by**: 04, 15, 16, 17, 18, 19
+**Status**: `resolved` · **Type**: `research` · **Blocked by**: 04, 15, 16, 17, 18, 19 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/21-decisione.md) · **la ricetta è R1: film = CF + TV(0,5), serie = CFst + B + TV(0,5), k=30 · β=0,25 · α=0,30 — QUATTRO parametri liberi, senza curatela.** ✅ **L'invarianza cross-dominio è soddisfatta e verificata ora per la prima volta**: TV, estratta dalle cronologie **Trakt**, migliora il banco **MovieLens** di **+0,39 al @10 e +1,21 al @100** — ed è il primo componente della sessione che migliora **entrambi** i banchi. ✅ Le liste (R2) **non entrano**: +0,20 al @100 non paga una regressione di **−1,34 su mezzo+coda** e l'effetto sul banco Trakt non è mai stato misurato. Il decadimento (+0,13) e il gating (+0,25) restano fuori: sotto il rumore e con un parametro in più ciascuno. I pesi appresi restano fuori: misurati su **un** banco solo. ⚠️ **Il minimax rigoroso non è applicabile**: i tre banchi usano protocolli diversi, quindi la regola 2 è stata applicata dentro ciascun banco e la scelta è ricaduta sulla regola 1, che è l'unica che attraversa i banchi in modo sensato.
 
 ## What to build
 

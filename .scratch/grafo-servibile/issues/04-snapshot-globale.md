@@ -1,6 +1,8 @@
 # 04 — Lo snapshot globale a T_cut
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Blocked by**: 03
+**Status**: `resolved` · **Type**: `prototype` · **Blocked by**: 03 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/04-snapshot.md) · ⚠️ **i due livelli DIVERGONO, e la divergenza ribalta il ticket 03**: il grafo ricostruito sul solo passato (T_cut = 75° percentile = **2019-02-23**) va **peggio** del grafo completo mascherato — **−0,16 / −1,59 / −3,34 / −5,42** su 230 utenti con oro dopo il taglio. Quindi **la conoscenza del futuro AIUTA e i numeri temporali sono ottimistici**: la premessa con cui la fase è nata regge. Non è una contraddizione col 03: il livello 1 toglie la capacità dei titoli freschi di *fare da ponte* (e aiuta), il livello 2 toglie **un terzo degli archi** (e peggiora). ⚠️ **Il confondente che impedisce la conclusione netta**: il grafo a T_cut copre **29.854 film contro 49.041**, e il −5,42 al @2000 è in parte copertura e in parte futuro, e questo esperimento non li separa.
 
 ## What to build
 
