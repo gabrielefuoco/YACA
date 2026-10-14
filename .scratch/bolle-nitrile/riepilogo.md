@@ -220,7 +220,17 @@ le due bolle sono ciascuna coerente, e separate. È lo stesso problema del ticke
 
 ### Ticket 09 — CPM e risoluzione
 
-In corso. ⚠️ **Deviazione dal ticket, dichiarata**: il ticket proponeva risoluzioni **più basse** (CPM
+**La risoluzione di V7 (RB 100) e' la migliore delle cinque provate.** Provate CPM 0,02, RB 60,
+RB 100 (= V7), RB 200 piu' CPM a densita' piu' bassa: alle due estremita' si perde in due modi
+opposti e leggibili. **Piu' fine (RB 200)**: la commedia sexy all'italiana scende da 162 titoli a
+**4** (Gidget, Gidget Goes Hawaiian e due film di guerra) — il mondo si frantuma. **Piu' grossa
+(RB 60)**: la stessa bolla va a 191 ma dentro ci finiscono *Ski School*, *Safari*, *Sognando l'Africa*
+— il mondo cola. **CPM 0,02 e' degenere**: mediana 3 con pochi giganti da 300-660.
+
+**La risoluzione non era il problema: la linea di base era gia' quella giusta.** La deviazione dal
+ticket — provare una risoluzione piu' alta invece che piu' bassa — e' servita a dimostrarlo.
+
+⚠️ **Deviazione dal ticket, dichiarata**: il ticket proponeva risoluzioni **più basse** (CPM
 0,005-0,02 e RB 30-60), perché dava per scontato che il grafo fosse troppo fine. **La misura dice il
 contrario**: gli interventi lo hanno reso molto più grosso (5.297 bolle con mediana 9 → 1.430 con
 mediana 39). Provo quindi le due risoluzioni del ticket (CPM 0,02, RB 60) **più una più alta**
