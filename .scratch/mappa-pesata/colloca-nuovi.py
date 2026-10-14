@@ -90,6 +90,22 @@ print(f"  totale da collocare: {len(fuori):,} ({time.time()-T0:.0f}s)", flush=Tr
 
 # ---------------------------------------------------------------- la collocazione
 print(f"\n  2. colloco", flush=True)
+# SCRITTURA INCREMENTALE. Il 14/10/2026 questo job e' morto al 40% (20.000 su 50.922) **senza
+# traceback**: un kill duro, come quello che `bolle.mem()` documenta per la ricostruzione di V8. Il
+# lavoro fatto andava perso perche' il file si scriveva solo alla fine. Ora ogni titolo si appende a
+# un `.jsonl` e alla ripartenza si saltano quelli gia' fatti.
+JL = QUI / "bolle-nuovi.jsonl"
+fatti = set()
+if JL.exists():
+    for riga_ in open(JL, encoding="utf-8"):
+        try:
+            fatti.add(json.loads(riga_)["id"])
+        except Exception:
+            pass
+    print(f"     ripresa: {len(fatti):,} titoli gia' collocati in `bolle-nuovi.jsonl`", flush=True)
+fuori = [(tp, dd) for tp, dd in fuori if int(dd["id"]) not in fatti]
+print(f"     da fare: {len(fuori):,}", flush=True)
+fjl = open(JL, "a", encoding="utf-8")
 ris = []
 for n, (tipo, dd) in enumerate(fuori):
     b, conf, ntok, fuori_voc = CF.colloca(dd, tipo, S)
@@ -112,6 +128,7 @@ for n, (tipo, dd) in enumerate(fuori):
     if (n + 1) % 2000 == 0:
         fjl.flush()
         print(f"     {n+1:,}/{len(fuori):,} ({time.time()-T0:.0f}s) · scritti", flush=True)
+fjl.close()
 
 # ---------------------------------------------------------------- il file
 # il riassunto si fa su TUTTO (anche le righe riprese), non solo su questo giro
