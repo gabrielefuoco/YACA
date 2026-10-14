@@ -225,6 +225,14 @@ nuovo (08) — e stavolta il meccanismo è **visibile**: il +12,6% viene dall'av
 ha verificato, va guardato con **sospetto attivo** — un aumento di quella taglia si ottiene anche
 rompendo i mondi, e finché nessuno legge le bolle di F non si sa da quale delle due cause viene.
 
+**I DUE TICKET DELLA MAPPA SONO IN CONFLITTO** (09 e 11). La sparsificazione (09) fa il suo lavoro — mediana dei vicini da 1.103 a 5, nessuna bolla isolata dopo il ripiego — e le adjacency vere sono conservate (Fassbinder → *Il tamburo di latta*, Star Wars TV → i film, i mostri anni '50 → *I Was a Teenage Werewolf*). Ma **il k-NN MUTUO frammenta la mappa in 117 componenti connesse**, e la gerarchia (11) su quella base **non può avere 25-35 macro-mondi**: qualunque partizione di un grafo con 117 componenti ne ha almeno 117. L1 esce a 133 gruppi con mediana **1 bolla**.
+
+**Il conflitto è misurato, non ipotizzato**: 5.297 nodi con grado massimo 8 possono avere al più 21.188 archi in un grafo connesso, e ne abbiamo 19.264 (il 91%) — ma la struttura è a grappoli, e **i ponti fra i grappoli sono esattamente ciò che il filtro mutuo taglia**.
+
+**Prima dei ticket 12-13 serve una garanzia di connettività**: un albero di copertura sui ponti (un centinaio di archi in più), o un k più alto accettando 7-10 vicini, o il k-NN non mutuo (che però è asimmetrico, e una mappa asimmetrica non si naviga). **Costruire la mappa su una base frammentata sarebbe costruire su un difetto noto.**
+
+**LA LEVA POPOLARE/NICCHIA FUNZIONA E NON SBAGLIA MAI** (14). Due coordinate dentro la bolla, un solo parametro globale. **Mai vuota su 1.237 bolle piccole**, dove un parametro globale ne romperebbe **259 (20,9%)**; e la porta non è il membro più votato nel **78%** dei casi. Verificata su una bolla dove il massimo sono 25 voti. ⚠️ Eredita però la qualità delle bolle: nella bolla Star Wars il deep cut include *Star Trek Into Darkness*.
+
 **Il filo che unisce la terza ondata**: i due ticket dicono la stessa cosa da due lati — **il grafo è omogeneo**. Troppo connesso per avere titoli freddi (16), e le aggiunte migliorano la testa a spese della coda (18). La prossima domanda da farsi, prima di aggiungere altri componenti, è se **la coda vada cercata dentro la struttura che già c'è** invece che in un componente nuovo.
 
 **Ma il guadagno del 19 va letto con cautela**: i pesi appresi sono **uniformi** (1/9 ciascuno), quindi non viene dal *pesare* — viene dall'**usare quattro componenti che a mano valevano zero** (TV, KW, DIR, CAST) e dal **dimezzare CF**. La controprova è banale e non è stata fatta: **pesi uniformi senza apprendere niente**. Se danno lo stesso risultato, il metric learning ha aggiunto poco rispetto a «usa tutto a peso uguale». **È la prima cosa da fare se questo filone riprende.**

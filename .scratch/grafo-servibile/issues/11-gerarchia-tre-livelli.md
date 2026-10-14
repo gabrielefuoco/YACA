@@ -1,6 +1,8 @@
 # 11 — La gerarchia a tre livelli
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Blocked by**: 09
+**Status**: `resolved` · **Type**: `prototype` · **Blocked by**: 09 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/11-gerarchia.md) · ❌ **L1 a 25-35 macro-mondi è IMPOSSIBILE, e la causa è il ticket 09**: il grafo sparsificato ha **117 componenti connesse**, quindi qualunque partizione ha almeno 117 gruppi — non è una questione di risoluzione. L1 esce a 133 gruppi con mediana **1 bolla**. ✅ L2 esce a **261 costellazioni** con una mediana di 25 bolle (leggermente sotto l'intervallo 300-400, dichiarato). **I due ticket sono in conflitto e il conflitto è misurato**: la sparsificazione (09) frammenta la mappa, la gerarchia (11) la richiede connessa. Il k-NN **mutuo** con k=8 taglia proprio i ponti fra i grappoli. Serve una **garanzia di connettività** (albero di copertura sui ponti) prima di costruire la mappa (ticket 12-13).
 
 ## What to build
 

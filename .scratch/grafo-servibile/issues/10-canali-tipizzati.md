@@ -1,6 +1,8 @@
 # 10 — I canali tipizzati e la tassonomia dei ponti
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 09
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 09 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/10-canali-tipizzati.md) · i tre tipi esistono e si contano: **canonico 38,1% · vibe 27,4% · collisione 11,9%** (+22,6% debole). Il ponte *vibe* **non è raro, è oltre un quarto** dei collegamenti. La lettura: **5 ponti vibe su 10 plausibili** (cinema di genere italiano, anime OVA anni '90, romantico internazionale) ma 2 incoerenti; e le **collisioni lessicali 8 su 8 riconoscibili come rumore** ✓. ⚠️ **Il controllo di confondimento FALLISCE**: la fascia di popolarità non è appaiata — i vibe uniscono bolle con mediana **79** voti contro **53** dei canonici, quindi parte del «vibe» è popolarità condivisa travestita da pubblico condiviso, e il 27,4% è gonfiato.
 
 ## What to build
 
