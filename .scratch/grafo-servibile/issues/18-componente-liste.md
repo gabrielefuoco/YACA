@@ -1,6 +1,8 @@
 # 18 — Il componente LIST dalle liste curate
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 01, 03
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 01, 03 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/18-liste.md) · ✅ **le liste portano segnale comportamentale vero**: le coppie che stanno in una lista si somigliano **6,9×** più del caso (+0,160 contro +0,023). ✅ A peso **0,5** migliorano il recupero di **+0,52 al @100** — il guadagno più grande della sessione. ⚠️ **Ma peggiorano mezzo+coda (−1,34 al @500)**: le liste curate sono fatte di titoli noti, quindi spingono sulla testa del catalogo — e la metrica che conta per il prodotto è la coda. ⚠️ E il «megadump da 1.500 titoli» che il peso per lunghezza doveva abbattere **non esiste**: le liste sono cappate a 100 item, il rapporto è **4,20×**.
 
 ## What to build
 

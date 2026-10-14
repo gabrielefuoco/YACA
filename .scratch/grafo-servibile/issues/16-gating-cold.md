@@ -1,6 +1,8 @@
 # 16 — Il gating condizionato al grado per i titoli nuovi
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 01, 03, 07
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 01, 03, 07 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/16-gating.md) · ✅ **la spiegazione è confermata e verificata**: «metadati ovunque» (τ0=∞) costa **−4,12 al @100 e −7,34 al @500**, e il gating lo rimuove. Il plateau è τ0 ∈ [1, 20], il valore da tenere è **5** (+0,25 al @100, +0,08 al @10). ❌ **Ma i titoli freddi non migliorano** (1,03% → 1,17% al meglio) e il motivo è nel dato: `d_behav = 0` su **654 film su 49.709** — il grafo del comportamento copre il 96,3% del catalogo, quindi **la popolazione che il gating doveva servire è quasi vuota**. Il criterio «sale ben sopra il 2,4% @10» non è soddisfatto.
 
 ## What to build
 

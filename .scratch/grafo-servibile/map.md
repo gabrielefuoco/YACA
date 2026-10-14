@@ -187,6 +187,19 @@ Report: [`15-cesto.md`](ricerche/15-cesto.md), [`07-componenti.md`](ricerche/07-
 4. **Tre negativi dichiarati dentro il 07**: il controllo di ubiquità del cast **fallisce** (i 16 attori più prolifici pesano solo 1,2× meno del tipico — l'IDF schiaccia tutto); il filtro KW2 tiene **esattamente il 50%** perché la soglia *è* la mediana (una tautologia, non un risultato) e pota anche **wuxia**; l'ablation non è stata rifatta.
 5. **Una trappola di strumento, per la terza volta**: i controlli di popolarità del ticket 15 passavano un **rango** a una funzione che applica `K.ranghi` (che vuole un **punteggio**), invertendola. Il bug l'ho trovato perché **due strade indipendenti davano numeri diversi** e il valore archiviato ne indicava un terzo. Il numero archiviato (0,94/7,36/25,04) era **corretto** e si riproduce al centesimo. Con un solo strumento avrei archiviato 0,00% come un fatto.
 
+**La terza ondata — cosa ha imparato (13/10/2026)**
+
+Altri due ticket: [16](issues/16-gating-cold.md) (il gating λ_cold) e [18](issues/18-componente-liste.md) (le liste curate).
+Report: [`16-gating.md`](ricerche/16-gating.md), [`18-liste.md`](ricerche/18-liste.md).
+
+1. **✅ La spiegazione del gating è verificata** ([16](ricerche/16-gating.md)): «metadati ovunque» costa **−4,12 al @100 e −7,34 al @500**, e il gating lo rimuove. Il plateau è τ0 ∈ [1, 20], e il guadagno migliore è **+0,25 al @100**. È il risultato più solido della terza ondata: la ragione per cui la struttura faceva male era giusta.
+2. **❌ Ma i titoli freddi non esistono** ([16](ricerche/16-gating.md)): `d_behav = 0` su **654 film su 49.709** — il grafo del comportamento copre il 96,3% del catalogo, quindi la popolazione che il gating doveva servire **è quasi vuota**. Il ticket 15 aveva visto lo stesso fatto da un altro lato (il filone dominante pesa il 2,6%): **il grafo è troppo connesso per avere popolazioni separate.**
+3. **✅ Le liste curate portano segnale vero** ([18](ricerche/18-liste.md)): le coppie della stessa lista si somigliano **6,9×** più del caso. È la prima volta in questa sessione che un dato di **curatela pura** supera una verifica comportamentale invece di fallirla.
+4. **E migliorano il recupero di +0,52 al @100** a peso 0,5 — il guadagno più grande visto finora. **Ma peggiorano mezzo+coda di −1,34 al @500**: le liste sono fatte di titoli noti, spingono sulla testa del catalogo, e la metrica che conta per il prodotto è la coda. **Il componente migliora il numero che non conta e peggiora quello che conta**: non è un rifiuto, è una condizione (va riequilibrato in uscita).
+5. **Il «megadump da 1.500 titoli» non esiste**: le liste sono cappate a 100 item, il rapporto di peso è **4,20×** e il peso per lunghezza fa poco. Il disegno dell'esperto poggiava su un dato che il raccoglitore non produce.
+
+**Il filo che unisce la terza ondata**: i due ticket dicono la stessa cosa da due lati — **il grafo è omogeneo**. Troppo connesso per avere titoli freddi (16), e le aggiunte migliorano la testa a spese della coda (18). La prossima domanda da farsi, prima di aggiungere altri componenti, è se **la coda vada cercata dentro la struttura che già c'è** invece che in un componente nuovo.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo
