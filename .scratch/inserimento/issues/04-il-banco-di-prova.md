@@ -47,3 +47,27 @@ predice il vettore medio. **Il comportamento delle serie esiste ma altrove**: 14
 
 **Cosa serve**: un secondo studente `metadati -> B` per le serie. Finchè non c'e', il cold start
 vale per i film e non per le serie.
+
+
+---
+
+## CORREZIONE (dal ticket 06)
+
+**Due numeri di questo ticket erano sbagliati, e il secondo per colpa mia.**
+
+**1. Il criterio adiacente non discrimina.** La mappa delle bolle ha **1.037.438 adiacenze su
+1.306.536 coppie possibili: il 79,4%**. Quindi cade-in-una-bolla-adiacente accade per caso quattro
+volte su cinque, e il **100% nel quartiere giusto** riportato sopra era gonfiato dal grafo denso:
+il valore giusto e' 1,2 volte il caso. I criteri forti sono **la propria bolla** (27,7% per i film,
+contro 0,062% di caso) e **la bolla non collegata** (0% contro 20,6% di caso).
+
+**2. Il fallimento delle serie era un artefatto mio.** Nella Parte B la matrice dei vicini era
+mascherata con `Pn = np.where(ha[:, None], Pn, 0.0)`: le righe delle serie diventavano **zero**, il
+ranking cadeva sui pareggi a -9, cioe' sull'ordine degli indici di catalogo. Per questo le tre serie
+ricevevano gli stessi vicini. La misura vera (ticket 06): lo studente dei film applicato alle serie
+da' **2,2%** di bolle esatte, 35 volte il caso. **Debole, non rotto.**
+
+**Cosa resta di questo ticket**: la collocazione dei film e' **27,7%** di bolle esatte (450 volte il
+caso) e **0%** di bolle non collegate (contro il 20,6%). Quel risultato tiene. La parte sulle serie
+va letta nel ticket 06, che mostra che sono deboli con entrambi gli studenti — e che la strada e'
+l'appoggio film del ticket 03-bis.
