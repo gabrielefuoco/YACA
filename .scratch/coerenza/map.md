@@ -44,8 +44,20 @@ dava **55,8%**: era data leakage, il terzo della sessione.
 **I tre contratti relazionali** di §4 fermano 4 casi su 4, zero falsi allarmi — e uno di loro ha
 fermato il 55,8% la prima volta che è stato applicato.
 
-## Restano: 04 (la coerenza sulla trama), 05 (le promozioni), 07 (i falsi vicini sulla mappa),
-## 08 (V9), 09 (bolle-continente e chimere), 10 (consolidamento).
+## Eseguito anche il 07 — i falsi vicini sulla mappa
+
+**La divisione per taglia funziona** (i falsi giganti cadono di tre ordini di grandezza), **il coseno
+fra centroidi no**: positivo nel 99,7% delle coppie, e sulla bolla 525 mette *Miss Bala* al primo
+posto con 0,755 mentre i vicini veri stanno a 0,65-0,70. La coerenza va misurata **fra esemplari**
+(`max cos` fra i membri): con quella *Miss Bala* va a 0,130 e il talk show recupera *Letterman* e
+*Jeopardy!*. Due casi su tre si separano; il terzo (i *Flintstones* col true crime) no, perche' la
+misura eredita le debolezze dei pesi V3 — probabilmente il cast.
+
+La mappa coerente **resta navigabile** (una componente) ma ha ginocchio **1,16** contro 1,24: due
+mappe per due scopi, come i due livelli del collocatore.
+
+## Restano: 04 (la coerenza sulla trama), 05 (le promozioni), 08 (V9), 09 (bolle-continente e
+## chimere, che adotta la coerenza per esemplari coi soli token tematici), 10 (consolidamento).
 
 ## Not yet specified
 
