@@ -261,7 +261,22 @@ Il ticket 12 (gli 8 vicini tipizzati) e' **sbloccato**, e la scelta consigliata 
 
 ## LA FASE SI CHIUDE — 23 ticket su 23 (13/10/2026)
 
-**La ricetta (ticket 21): film = CF + TV(0,5), serie = CFst + B + TV(0,5). k=30 · beta=0,25 · alfa=0,30. Quattro parametri liberi, senza curatela.**
+**LA RICETTA DEL TICKET 21 E' SUPERATA — il ticket 24 la ridecide (13/10/2026).**
+
+Il 21 aveva scelto film = CF + TV(0,5) misurando la recall GLOBALE (+0,385 al @10, +1,210 al @100). Poi `21-bis-coda.py` ha misurato le tre metriche insieme:
+
+| R1 - R0 | @10 | @100 | @500 |
+|---|---|---|---|
+| GLOBALE | +0,385 | +1,210 | +1,173 |
+| **MEZZO+CODA** | **-0,151** | **-0,994** | **-1,834** |
+
+**TV migliora la testa e peggiora la coda. La ricetta e' stata scelta sulla metrica che il prodotto ha dichiarato di NON volere**, e la decisione non vale: ticket 24.
+
+**E non e' un caso isolato: e' il QUARTO parametro di fila che migliora la testa e peggiora la coda** — LIST +0,52 globale / -1,34 coda; TV +1,21 / -0,99; gating +0,25 / -0,57. **L'unica eccezione e' il decadimento** (+0,13 / +0,17).
+
+La spiegazione: ogni componente che porta **comportamento** porta con se' il gusto della **maggioranza**, che e' il gusto popolare. Aggiungerlo alza la recall globale (dominata dalla testa) e abbassa quella della coda.
+
+**La regola che ne esce, e vale piu' della ricetta: in questa fase ogni decisione va presa con le TRE metriche affiancate.** Una sola metrica, qualunque sia, ha gia' premiato quattro volte la cosa sbagliata.
 
 L'INVARIANZA CROSS-DOMINIO E' SODDISFATTA, e verificata per la prima volta: **TV, estratta dalle cronologie Trakt, migliora il banco MovieLens di +0,39 al @10 e +1,21 al @100** -- ed e' il primo componente della sessione che migliora ENTRAMBI i banchi. Sul banco Trakt (5 fold, utenti mai visti) da +1,09 al film e **+2,19 alla serie**.
 
