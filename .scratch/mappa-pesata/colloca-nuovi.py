@@ -107,7 +107,7 @@ for n, (tipo, dd) in enumerate(fuori):
                     vicini=[{"i": i, "cos": round(c, 4)} for i, c in vic],
                     confidenza=round(float(conf), 4), termini=int(ntok), fuori_vocabolario=int(fuori_voc),
                     voti=int(dd.get("vote_count") or 0),
-                    anno=CF_anno(dd))))
+                    anno=CF_anno(dd)))
     if (n + 1) % 5000 == 0:
         print(f"     {n+1:,}/{len(fuori):,} ({time.time()-T0:.0f}s)", flush=True)
 
