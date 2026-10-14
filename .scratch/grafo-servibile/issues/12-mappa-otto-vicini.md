@@ -1,6 +1,8 @@
 # 12 — La mappa: otto vicini tipizzati per bolla
 
-**Status**: `ready-for-agent` · **Type**: `task` · **Blocked by**: 10, 11, 23
+**Status**: `resolved` · **Type**: `task` · **Blocked by**: 10, 11, 23 · **Chiuso**: 13/10/2026
+
+**Esito**: [report](../ricerche/12-mappa.md) · ✅ la base è **1 sola componente connessa** (62.214 archi) e **tutte le 5.297 bolle hanno 8 slot tipizzati** (min 8, max 8), zero isolate. ✅ Le sei adjacency verificate del ticket 09 sono **tutte nella mappa** con il tipo giusto. ✅ **La lettura è ottima**: Fassbinder ha **7 slot su 8** di cinema tedesco/europeo d'autore (il tamburo di latta, la satira di Berlino, *Possession* come salto vibe), i mostri anni '50 **8 su 8** (fino a *Il mostro della laguna nera*), e la bolla di commedie polacche riceve come slot cross-medium **una serie polacca** ✓✓ — la promessa del prodotto realizzata dentro il grafo. ⚠️ **Ma il ponte cross-medium non si può garantire per tutte**: solo il **19,4%** delle bolle ha ≥2 slot cross-medium e il **59,8%** ne ha zero, perché ci sono 4.385 bolle film contro 912 serie. Il ponte va garantito nel catalogo servito, non nel grafo.
 
 ## What to build
 

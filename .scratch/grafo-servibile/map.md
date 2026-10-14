@@ -252,6 +252,10 @@ rompendo i mondi, e finché nessuno legge le bolle di F non si sa da quale delle
 - **mutual k=8 + albero di copertura**: 5 componenti con **+138 archi (+0,59%)**, e le 12 ricuciture lette sono tutte relazioni reali.
 Il ticket 12 (gli 8 vicini tipizzati) e' **sbloccato**, e la scelta consigliata e' il k-NN diretto (mediana 8 = il bersaglio del ticket). ⚠️ Il ticket 11 va riprovato su `bolle-archi-23.npz`: era il primo consumatore del risultato.
 
+**LA MAPPA ESISTE** (12). Sul k-NN diretto del ticket 23 la base è **1 sola componente connessa** e **tutte le 5.297 bolle hanno 8 slot tipizzati**, zero isolate. Le sei adjacency verificate sono tutte nella mappa col tipo giusto. E la lettura: Fassbinder ha **7 slot su 8** di cinema tedesco/europeo d'autore, i mostri anni '50 **8 su 8** (fino a *Il mostro della laguna nera*), e la bolla di commedie polacche riceve come slot cross-medium **una serie polacca** — la promessa del prodotto realizzata dentro il grafo.
+
+⚠️ **Ma il ponte cross-medium non si può garantire per tutte**: solo il **19,4%** delle bolle ha ≥2 slot cross-medium e il **59,8%** ne ha zero, perché ci sono **4.385 bolle film contro 912 serie**. Il ponte va garantito **nel catalogo servito**, non nel grafo. Il ticket 13 (la direzionalità) lo eredita.
+
 ## Effort collegati
 
 - [`.scratch/ml-collaborativo/`](../ml-collaborativo/map.md) — la fase di ricerca. Da lì vengono il modulo
