@@ -255,8 +255,8 @@ Pc = Ridge(alpha=ALPHA, solver="lsqr", max_iter=800).fit(FX[trs], Yc[trs]).predi
 Pb = Ridge(alpha=ALPHA, solver="lsqr", max_iter=800).fit(FX[trp], Yb[trp]).predict(FX).astype(np.float32)
 Pb[is_tv] = 0.0
 log(f"  studenti: film col teacher SVD {len(trs):,} · col PPMI {len(trp):,}")
-np.savez_compressed(ML / "spazi-trakt.npz", Pc=Pc, Pb=Pb, tmdb=cat["id"].to_numpy(), tipo=cat["type"].to_numpy(),
+np.savez_compressed(K.DATA / "spazi-trakt.npz", Pc=Pc, Pb=Pb, tmdb=cat["id"].to_numpy(), tipo=cat["type"].to_numpy(),
                     coll=cat["collection_id"].to_numpy(), year=cat["year"].to_numpy(), votes=cat["vote_count"].to_numpy())
 Sf = normalize(TfidfTransformer().fit_transform(FX)).astype(np.float32)
-sp.save_npz(ML / "spazi-trakt-tfidf.npz", Sf)
+sp.save_npz(K.DATA / "spazi-trakt-tfidf.npz", Sf)
 log(f"  salvati spazi2.npz · spazi2-tfidf.npz")

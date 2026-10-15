@@ -13,7 +13,7 @@ import json, pathlib, sys, time, urllib.request
 import numpy as np, pandas as pd
 
 QUI = pathlib.Path(__file__).resolve().parent
-import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
 

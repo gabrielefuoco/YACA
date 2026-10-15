@@ -17,7 +17,7 @@ import pandas as pd
 import scipy.sparse as sp
 from scipy.sparse.linalg import svds
 
-sys.path.insert(0, str(pathlib.Path(__file__).parent))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import canon as K
 
 t0 = time.time()
@@ -30,7 +30,7 @@ def salva(nome, M):
     M = ((M + M.T) * 0.5).tocsr()
     M.setdiag(0)
     M.eliminate_zeros()
-    np.savez_compressed(K.ML / f"nuovo-{nome}.npz", data=M.data, indices=M.indices, indptr=M.indptr)
+    np.savez_compressed(K.DATA / f"nuovo-{nome}.npz", data=M.data, indices=M.indices, indptr=M.indptr)
     g = np.asarray((M > 0).sum(1)).ravel()
     print(f"  -> {nome}: {M.nnz:,} archi · titoli con archi {int((g>0).sum()):,} "
           f"· mediana {int(np.median(g))} ({time.time()-t0:.0f}s)", flush=True)

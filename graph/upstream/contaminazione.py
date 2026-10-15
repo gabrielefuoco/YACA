@@ -25,7 +25,7 @@ ROOT = pathlib.Path(".").resolve()
 ML = ROOT / ".cache" / "movielens"
 N_UTENTI = 1000
 
-z = np.load(ML / "spazi-trakt.npz", allow_pickle=True)
+z = np.load(K.A("spazi-trakt.npz"), allow_pickle=True)
 Pc, tmdb, tipo = z["Pc"], z["tmdb"], z["tipo"]
 keys = [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)]
 row_of = {k: r for r, k in enumerate(keys)}
@@ -71,13 +71,13 @@ def topk_edges(V, k, min_sim=0.05, B=1000):
 
 
 # ---------- lo spazio contenuto PULITO ----------
-CACHE = ML / "spazio-pulito.npz"
+CACHE = K.DATA / "spazio-pulito.npz"
 if CACHE.exists():
     q = np.load(CACHE)
     Pclean = q["P"]
     print(f"spazio pulito da cache: {Pclean.shape} ({time.time()-t0:.0f}s)")
 else:
-    F = load_npz(ML / "spazi-trakt-tfidf.npz").tocsr()
+    F = load_npz(K.A("spazi-trakt-tfidf.npz")).tocsr()
     print(f"TF-IDF delle keyword: {F.shape} · nnz {F.nnz:,} ({time.time()-t0:.0f}s)")
     sv = TruncatedSVD(n_components=128, random_state=0)
     E = sv.fit_transform(F).astype(np.float64)

@@ -114,9 +114,17 @@ prova("vocabolario cambiato", "un termine aggiunto a mano al vocabolario",
       lambda: K.assert_allineamento_spazi(idf, {**vocab, "kw:nuovo": len(vocab)}, impronte,
                                           nome="05-*"))
 
-# salvo le impronte, cosi' il collocatore puo' verificarle all'avvio
-json.dump(impronte, open(K.A("05-impronte.json"), "w", encoding="utf-8"))
-print(f"\n  impronte salvate in `05-impronte.json`: il collocatore le verifichera' all'avvio.")
+# salvo le impronte, cosi' il collocatore puo' verificarle all'avvio.
+# SI FONDE con quello che c'e' gia', non si sovrascrive: `04/05_centroidi*.py` ci hanno scritto dentro
+# la partizione e il suo hash (il contratto della Trappola 3b), e un `json.dump` secco la cancellerebbe
+# in silenzio — cioe' esattamente il tipo di guasto che questi contratti esistono per impedire.
+_percorso = K.A("05-impronte.json")
+_precedenti = json.load(open(_percorso, encoding="utf-8")) if _percorso.exists() else {}
+_precedenti.update(impronte)
+json.dump(_precedenti, open(_percorso, "w", encoding="utf-8"), indent=1)
+print(f"\n  impronte salvate in `05-impronte.json` (con la partizione, se i centroidi l'hanno "
+      f"registrata): il collocatore le verifichera' all'avvio.")
+print(f"    {_precedenti}")
 
 # ============================================================ verdetto
 print("\n" + "=" * 100)

@@ -34,14 +34,50 @@ from . import canon as K
 ML = K.ML
 PESI_TIPO = {"ge:": 1.5, "rt:": 1.5, "co:": 0.4, "ca:": 0.4, "di:": 0.8}   # V3, ticket 05
 MARGINE = 1.0          # il film deve battere il migliore serie di questo fattore (ticket 03)
+FATTORE_VOTI = 10.0    # la regola dei voti: [V/10, V*10] — il ticket 09 di `eterogeneo`
+PARTIZIONE = "bolle-eterogeneo-subvoti.npy"   # LE 3.497 BOLLE FINALI. Una sola, per tutti.
+
+_VOTI_CACHE = {}
+
+
+def _mediane_voti(mem):
+    """La mediana dei voti TMDB di ogni bolla: e' il PIANO dell'edificio.
+
+    Serve alla regola dei voti. Il voto non e' un voto nostro: e' `vote_count` TMDB, cioe' quante
+    persone hanno votato quel titolo sul sito. E' l'unico proxy disponibile del comportamento per un
+    titolo che il comportamento non ce l'ha ancora — un'uscita del 2026 non ha co-visione per
+    definizione. Il senior, §4: il voto sceglie il PIANO (il canone da migliaia di voti, non la bolla
+    oscura da 89), i metadati scelgono la STANZA su quel piano.
+
+    Sta qui e non in un artefatto perche' deve restare allineata alla partizione: se i due si
+    separano, la collocazione va su un piano che non e' piu' quello giusto, e **niente va in errore**.
+    """
+    k = (id(mem), len(mem))
+    if k in _VOTI_CACHE:
+        return _VOTI_CACHE[k]
+    v = np.full(len(mem), np.nan, np.float32)
+    for typ, f in (("movie", "movies.parquet"), ("tv", "tv.parquet")):
+        p = K.ROOT / ".cache" / "tmdb" / f
+        if not p.exists():
+            continue
+        d = pd.read_parquet(p, columns=["id", "vote_count"])
+        for i, vc in zip(d["id"], d["vote_count"]):
+            r = B.ROW_OF.get(f"{typ}:{int(i)}")
+            if r is not None and not pd.isna(vc):
+                v[r] = float(vc)
+    NB = int(mem.max()) + 1
+    med = pd.DataFrame({"b": mem, "v": v}).groupby("b")["v"].median()
+    out = med.reindex(range(NB)).to_numpy(np.float32)
+    _VOTI_CACHE[k] = out
+    return out
 PREFISSO = {"keywords": "kw:", "genres": "ge:", "networks": "rt:", "production_companies": "co:",
             "production_countries": "pa:", "original_language": "lg:",
             "cast": "ca:", "directors": "di:", "created_by": "di:"}
 COLS = {
     "movie": ["id", "keywords", "genres", "production_companies", "production_countries",
-              "original_language", "cast", "directors"],
+              "original_language", "cast", "directors", "vote_count"],
     "tv": ["id", "keywords", "genres", "networks", "production_companies", "production_countries",
-           "original_language", "cast", "created_by"],
+           "original_language", "cast", "created_by", "vote_count"],
 }
 
 
@@ -73,16 +109,26 @@ def carica(v3=True):
         bolle_serie = META["bolle_serie"]
         bolle_film = META["bolle_film"]
         quota_tv = META["quota_tv"]
-        mem = np.load(K.A("bolle-nitrile-V8.npy"))
+        # LA PARTIZIONE E' QUELLA FINALE, non V8. Fino al 15/10/2026 qui c'era `bolle-nitrile-V8.npy`:
+        # i centroidi erano costruiti sulle 1.625 bolle di V8 e la collocazione avveniva su quelle,
+        # mentre il resto del sistema lavorava sulle 3.497 di `subvoti`. E' la Trappola 3b, e il
+        # codice la conteneva mentre il README la descriveva.
+        mem = np.load(K.A(PARTIZIONE))
         sz = np.bincount(mem)
         idf = _peso
     else:
         df = np.asarray((TFIDF > 0).sum(0)).ravel()
         idf = np.log(TFIDF.shape[0] / (1 + df))
         C4 = np.load(K.A("04-centroidi.npz"))
-        P = np.load(K.A("mappa-pesata-6-2.npz"), allow_pickle=True)
         bolle_serie, bolle_film = C4["bolle_serie"], C4["bolle_film"]
-        quota_tv, mem, sz = P["quota_tv"], P["mem"], P["sz"]
+        # anche qui: la partizione finale, e la quota TV RICALCOLATA invece che letta dalla mappa
+        # (la mappa era su V8, e `quota_tv` e' per bolla: leggerla da una partizione diversa e'
+        # esattamente il tipo di errore silenzioso che questo modulo combatte)
+        mem = np.load(K.A(PARTIZIONE))
+        sz = np.bincount(mem)
+        q_tv = np.zeros(len(sz))
+        np.add.at(q_tv, mem, B.IS_TV.astype(float))
+        quota_tv = q_tv / np.maximum(sz, 1)
         ordine = np.argsort(mem, kind="stable")
         confini = np.searchsorted(mem[ordine], np.arange(len(sz) + 1))
         MEMBRI = [ordine[confini[b]:confini[b + 1]] for b in range(len(sz))]
@@ -103,6 +149,10 @@ def carica(v3=True):
     # le impronte giuste PER VARIANTE: V1 e V3 hanno vocabolari e idf diversi, e confrontare l'uno
     # con l'impronta dell'altro fa scattare il contratto a vuoto. E' successo, ed e' il contratto a
     # essere giusto: sono io a dovergli dare il riferimento corretto.
+    # IL CONTRATTO DELLA PARTIZIONE, e non e' un doppione di quello di sopra: quello confronta idf e
+    # vocabolario fra loro, questo confronta gli artefatti con la PARTIZIONE su cui sono costruiti.
+    _impr = json.load(open(K.A(f"{prefisso}-impronte.json"), encoding="utf-8"))         if K.A(f"{prefisso}-impronte.json").exists() else {}
+    K.assert_partizione(PARTIZIONE, _impr, nome_artefatto=f"{prefisso}-*")
     _imp = K.A(f"{prefisso}-impronte.json")
     if _imp.exists():
         from . import canon as _K
@@ -112,7 +162,7 @@ def carica(v3=True):
     return dict(vocab=vocab, idf=idf, TFIDF=TFIDF, SUM=SUM, NORMA=NORMA, TUTTE=TUTTE,
                 bolle_serie=set(int(x) for x in bolle_serie),
                 bolle_film=set(int(x) for x in bolle_film),
-                quota_tv=quota_tv, mem=mem, sz=sz)
+                quota_tv=quota_tv, mem=mem, sz=sz, med_voti=_mediane_voti(mem))
 
 
 def tokenizza(dd, tipo="tv"):
@@ -197,7 +247,32 @@ def colloca(dd, tipo, S, margine=MARGINE, S_macro=None):
     if v is None:
         return None, 0.0, 0, len(tok)
     cos = np.asarray((v @ Sm["SUM"].T).todense()).ravel() / Sm["NORMA"]
-    j = int(np.argmax(cos))
+
+    # ---- LA REGOLA DEI VOTI, PRIMA DEL MEDIUM. Il voto sceglie il PIANO, i metadati la STANZA.
+    # Il ticket 09 di `eterogeneo` l'ha misurata: senza, *Il gladiatore II* (4.785 voti) atterrava
+    # nella bolla 737 (mediana 89) — un piano che non e' il suo, con compagni che non ha mai avuto.
+    # Con il filtro va nella 1.668 (mediana 3.018), che e' il pubblico che lo sta effettivamente
+    # guardando. `structura` viene dal comportamento (CF, Trakt), il voto dice a che altezza della
+    # struttura appartiene un titolo che il comportamento non ce l'ha ancora.
+    #
+    # SE NESSUNA BOLLA E' IN FASCIA si ripiega su tutte: meglio un titolo collocato un piano piu' in
+    # la' che un titolo non collocato. Ma il ripiego e' silenzioso solo per chi non legge il codice:
+    # la confidenza restituita e' il coseno VERO, mai `-inf`.
+    voti_filtrati = False
+    vc = dd.get("vote_count")
+    med = Sm.get("med_voti")
+    cos_f = cos
+    if med is not None and vc is not None and not pd.isna(vc) and float(vc) > 0:
+        V = float(vc)
+        # `med` e' per TUTTE le bolle (3.497), `cos` e' per le CANDIDATE (2.922: le bolle con almeno
+        # 5 membri). L'allineamento e' `Sm["TUTTE"]`, che e' l'elenco degli id-bolla dei candidati.
+        med_c = med[Sm["TUTTE"]]
+        ok = np.isfinite(med_c) & (med_c >= V / FATTORE_VOTI) & (med_c <= V * FATTORE_VOTI)
+        if ok.any():
+            cos_f = np.where(ok, cos, -np.inf)
+            voti_filtrati = True
+
+    j = int(np.argmax(cos_f))
     b = int(Sm["TUTTE"][j])
     # la regola di medium (ticket 03), SIMMETRICA: una serie preferisce le bolle-serie, un film le
     # bolle-film. La prima versione la applicava solo alle serie, e un film poteva atterrare in una
@@ -206,9 +281,11 @@ def colloca(dd, tipo, S, margine=MARGINE, S_macro=None):
     preferito = Sm["bolle_serie"] if str(tipo) == "tv" else Sm["bolle_film"]
     if b not in preferito:
         solo_del_suo = np.array([b2 in preferito for b2 in Sm["TUTTE"]])
-        js = int(np.argmax(np.where(solo_del_suo, cos, -np.inf)))
-        if cos[j] <= cos[js] * (1 + margine):
-            j, b = js, int(Sm["TUTTE"][js])
+        candidati = solo_del_suo & np.isfinite(cos_f)
+        if candidati.any():
+            js = int(np.argmax(np.where(candidati, cos, -np.inf)))
+            if cos_f[j] <= cos_f[js] * (1 + margine):
+                j, b = js, int(Sm["TUTTE"][js])
     return b, float(cos[j]), len(tok), len(tok) - n_dentro
 
 

@@ -23,7 +23,7 @@ ML = ROOT / ".cache" / "movielens"
 G = ROOT / ".scratch" / "ml-collaborativo" / "gold"
 
 d = json.loads((G / "cross-merged.json").read_text(encoding="utf-8"))
-z = np.load(ML / "spazi-trakt.npz", allow_pickle=True)
+z = np.load(K.A("spazi-trakt.npz"), allow_pickle=True)
 Pc, tmdb, tipo = z["Pc"], z["tmdb"], z["tipo"]
 keys = [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)]
 row_of = {k: r for r, k in enumerate(keys)}

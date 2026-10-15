@@ -442,7 +442,7 @@ def carica_componenti(con_shrinkage=True, min_sim_kw=0.02, min_sim_cast=0.02, ri
     for nome in ("CF", "CFst", "B", "T", "K"):
         C[nome] = base[nome]
     for nome in ("TV", "LIST", "COLL"):
-        f = K.ML / f"nuovo-{nome}.npz"
+        f = K.A(f"nuovo-{nome}.npz")
         if f.exists():
             C[nome] = K.carica_csr(f"nuovo-{nome}.npz", N)
     if not ricostruisci:

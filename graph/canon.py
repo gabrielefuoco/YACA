@@ -35,17 +35,34 @@ TK = ROOT / ".cache" / "trakt" / "users"
 
 # ---------------------------------------------------------------- i titoli
 def A(nome):
-    """Un artefatto del modulo: si cerca in `graph/data/`, e solo se manca in `.cache/movielens`.
+    """Un artefatto del modulo: si cerca in `graph/data/`, e SE NON C'E' E' UN ERRORE.
 
-    Il ripiego serve alla migrazione — e sparita la migrazione va tolto, altrimenti si torna ad avere
-    due posti dove guardare, che e' esattamente il problema che questa cartella risolve.
+    Fino al 15/10/2026 qui c'era `return p if p.exists() else ML / nome`: un ripiego silenzioso in
+    `.cache/movielens/`. Il guasto che produceva non era la lettura del file sbagliato, era **non
+    sapere quale file si stava leggendo** — e quindi non sapere piu' se un artefatto era il prodotto
+    del nostro lavoro o un residuo di dieci giorni prima che nessuno avrebbe mai rigenerato.
+
+    Il senior (§3.1) ha chiesto di chiudere il ripiego con un `FileNotFoundError` esplicito. E'
+    giusto: la regola e' che `graph/data/` e' il prodotto del modulo e `.cache/` e' l'input grezzo
+    riscaricabile, e una regola con un'eccezione silenziosa non e' una regola.
+
+    Se questo errore scatta, la domanda giusta non e' «dove lo trovo» ma «chi lo produce»: se lo
+    produce un file di `upstream/`, va scritto in `graph/data/`; se non lo produce nessuno, e'
+    un artefatto orfano e va dichiarato, non ripescato.
     """
     p = DATA / nome
-    return p if p.exists() else ML / nome
+    if not p.exists():
+        raise FileNotFoundError(
+            f"artefatto mancante: {p}\n"
+            f"  `graph/data/` e' il prodotto del modulo, `.cache/` sono gli input scaricati e non "
+            f"c'e' piu' un ripiego fra i due.\n"
+            f"  Chi produce {nome}? Se e' un file di `graph/upstream/`, deve scrivere in "
+            f"`graph/data/`; se non lo produce nessuno, va dichiarato nel README.")
+    return p
 
 
 def titoli():
-    z = np.load(ML / "spazi-trakt.npz", allow_pickle=True)
+    z = np.load(A("spazi-trakt.npz"), allow_pickle=True)
     tmdb, tipo = z["tmdb"], z["tipo"]
     keys = [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)]
     row_of = {k: r for r, k in enumerate(keys)}
@@ -97,9 +114,9 @@ class Componenti:
 
     def __init__(self, n):
         self.n = n
-        self.CF_v = np.load(ML / "cf-spazio.npz")["Cf"]
-        self.CFst_v = np.load(ML / "cf-studente.npz")["P"]
-        self.Kc_v = np.load(ML / "spazio-pulito.npz")["P"]
+        self.CF_v = np.load(A("cf-spazio.npz"))["Cf"]
+        self.CFst_v = np.load(A("cf-studente.npz"))["P"]
+        self.Kc_v = np.load(A("spazio-pulito.npz"))["P"]
         self._cache = {}
         self._fissi = None
 
@@ -223,6 +240,71 @@ def assert_allineamento_spazi(idf, vocab, impronte, nome="artefatti"):
             f"insensati, senza nessun crash a segnalarlo."
         )
     return {"idf": h_i, "vocab": h_v}
+
+
+def sha_file(nome):
+    """Lo sha256 (primi 16 hex) di un artefatto in `graph/data/`."""
+    import hashlib
+    p = A(nome)
+    if not p.exists():
+        return None
+    return hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+
+
+def segna_partizione(nome, percorso_impronte, extra=None):
+    """Scrive nelle impronte QUALE partizione hanno usato i centroidi, col suo hash.
+
+    E' la seconda meta' del contratto: chi genera un artefatto registra su cosa l'ha costruito,
+    chi lo consuma lo verifica. Senza la prima, la seconda non ha niente da confrontare.
+    """
+    import json
+    d = {}
+    p = pathlib.Path(percorso_impronte)
+    if p.exists():
+        try:
+            d = json.load(open(p, encoding="utf-8"))
+        except Exception:
+            d = {}
+    d["partizione"] = nome
+    d["partizione_sha256"] = sha_file(nome)
+    if extra:
+        d.update(extra)
+    json.dump(d, open(p, "w", encoding="utf-8"), indent=1)
+    return d
+
+
+def assert_partizione(nome, impronte, nome_artefatto="artefatti"):
+    """CONTRATTO DELLA PARTIZIONE — la Trappola 3b, resa un errore invece di un risultato sbagliato.
+
+    I centroidi del collocatore sono indicizzati per bolla, e le bolle **non hanno identita' stabile
+    fra partizioni**: la stessa bolla 820 e' un insieme di titoli in V8 e un altro insieme in V10.
+    Se la partizione viene rigenerata e i centroidi no (o viceversa), un titolo atterra in una bolla
+    il cui centroide descrive un ALTRO insieme di titoli. Non va in errore niente: i numeri sono
+    finiti, il coseno e' plausibile, e i consigli sono sbagliati. E' successo davvero — *Deadpool &
+    Wolverine* collocato fra *Bayside School* e *Kenan & Kel*, senza un solo avviso.
+
+    Qui l'hash secco del file `.npy` della partizione rende quel silenzio impossibile.
+    """
+    p = A(nome)
+    assert p.exists(), f"{nome_artefatto}: manca la partizione {nome} in graph/data/"
+    atteso = (impronte or {}).get("partizione_sha256")
+    dichiarata = (impronte or {}).get("partizione")
+    if atteso is None:
+        print(f"  contratto partizione: {nome} NON e' imprigionata nelle impronte "
+              f"({nome_artefatto}) — rigenera i centroidi per registrarla")
+        return
+    if dichiarata is not None and dichiarata != nome:
+        raise AssertionError(
+            f"PARTIZIONE DIVERSA in {nome_artefatto}: i centroidi sono costruiti su '{dichiarata}', "
+            f"il collocatore sta leggendo '{nome}'. Le bolle non hanno id stabili fra partizioni: "
+            f"i consigli sarebbero sbagliati e plausibili insieme.")
+    ora = sha_file(nome)
+    raise_ = (f"LA PARTIZIONE E' CAMBIATA sotto {nome_artefatto}: '{nome}' ha ora l'hash {ora}, "
+              f"ma i centroidi sono stati costruiti su {atteso}. Rigenera i centroidi "
+              f"(steps/04_centroidi.py) oppure torna alla partizione di prima.")
+    if ora != atteso:
+        raise AssertionError(raise_)
+    print(f"  contratto partizione: {nome} {ora} · coerente con {nome_artefatto}")
 
 
 def ranghi(S, filtro=None, controlla=True, pareggi_max=0.5):
@@ -612,7 +694,7 @@ def recall_catalogo(R, gold_di, chiavi, filtro, NS=(10, 100, 500)):
 
 def voti():
     """La popolarita' del catalogo (vote_count TMDB), nella riga dei titoli."""
-    return np.load(ML / "spazi-trakt.npz")["votes"].astype(np.float64)
+    return np.load(A("spazi-trakt.npz"))["votes"].astype(np.float64)
 
 
 def fasce(voti_catalogo, quantili=(0.05, 0.25)):

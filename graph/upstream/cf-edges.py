@@ -26,7 +26,7 @@ ROOT = pathlib.Path(".").resolve()
 ML = ROOT / ".cache" / "movielens"
 DIM = 128
 
-z = np.load(ML / "spazi-trakt.npz", allow_pickle=True)
+z = np.load(K.A("spazi-trakt.npz"), allow_pickle=True)
 tmdb, tipo = z["tmdb"], z["tipo"]
 keys = [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)]
 row_of = {k: r for r, k in enumerate(keys)}
@@ -59,7 +59,7 @@ re = rr[maschera_edge]
 print(f"utenti per gli ARCHI: {re.userId.nunique():,} · interazioni {len(re):,} ({time.time()-t0:.0f}s)")
 
 # --- CF: svds della co-occorrenza degli utenti disgiunti ---
-CACHE = ML / f"cf-spazio.npz"
+CACHE = K.DATA / "cf-spazio.npz"
 if CACHE.exists():
     q = np.load(CACHE)
     Cf = q["Cf"]
@@ -83,13 +83,13 @@ else:
     print(f"  CF: {Cf.shape} · film con vettore {len(film):,} · varianza {float((S**2).sum()):.1f} ({time.time()-t0:.0f}s)")
 
 # --- CFst: lo studente, keyword -> CF, per dare un pubblico alle serie ---
-CACHE2 = ML / "cf-studente.npz"
+CACHE2 = K.DATA / "cf-studente.npz"
 if CACHE2.exists():
     q = np.load(CACHE2)
     Pcf = q["P"]
     print(f"studente CF da cache: {Pcf.shape}")
 else:
-    F = load_npz(ML / "spazi-trakt-tfidf.npz").tocsr()
+    F = load_npz(K.A("spazi-trakt-tfidf.npz")).tocsr()
     ha = np.linalg.norm(Cf, axis=1) > 1e-6
     print(f"  addestro keyword -> CF sui {int(ha.sum()):,} film con pubblico ({time.time()-t0:.0f}s)")
     Pcf = Ridge(alpha=10.0, solver="lsqr", max_iter=600).fit(F[ha], Cf[ha]).predict(F).astype(np.float32)

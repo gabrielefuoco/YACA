@@ -13,6 +13,7 @@ con una divisione nei voti? Se no, l'eterogeneita' dei voti non ha una frontiera
 strada non esiste.
 """
 import json
+import os
 import pathlib
 import sys
 import time
@@ -22,7 +23,7 @@ import pandas as pd
 import scipy.sparse as sp
 
 QUI = pathlib.Path(__file__).resolve().parent
-import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
 
@@ -38,7 +39,18 @@ mem = np.load(ML / "bolle-eterogeneo-V10-p1.0-r200.npy")
 N = len(mem)
 NB = int(mem.max()) + 1
 sz = np.bincount(mem)
-q = np.load(ML / "bolle-eterogeneo-V10-p1.0-triangolo.npz")
+# IL NOME DEL TRIANGOLO: `02_partizione.py` lo salva come `...-p{peso}-r{RES}-triangolo.npz`, e
+# cercare il nome senza `-r{RES}` funzionava solo perche' in `graph/data/` era rimasta una copia
+# col nome vecchio — che e' la Trappola 3b in azione: uno script che legge un file stantio e non lo
+# sa. Si prova il nome giusto e si dice quale si e' usato.
+TRI = next((p for p in (f"bolle-eterogeneo-V10-p1.0-r{os.environ.get('RES', '200')}-triangolo.npz",
+                        "bolle-eterogeneo-V10-p1.0-r200-triangolo.npz",
+                        "bolle-eterogeneo-V10-p1.0-triangolo.npz")
+            if K.A(p).exists()), None)
+if TRI is None:
+    raise SystemExit("nessun triangolo di V10 in graph/data/ — rigenera con steps/02_partizione.py")
+print(f"  triangolo: {TRI}", flush=True)
+q = np.load(K.A(TRI))
 W = sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(N, N)).tocsr()
 
 VOT = np.zeros(N, np.float32)
@@ -125,7 +137,11 @@ print("IL VERDETTO — lo spread nei pezzi e' minore di quello nel genitore?")
 print("=" * 100)
 prima, dopo = [], []
 for b, s, res, quanti, sp0 in sorted(dettagli, key=lambda z: -z[4]):
-    pezzi = [SP2[p] for p in np.setdiff1d(np.unique(NUOVA[MEMBRI[b]]), [b])]
+    # SENZA `setdiff1d(..., [b])`. Il pezzo `part == 0` tiene l'ID `b` del genitore (riga sopra:
+    # `NUOVA[m_[part == 0]] = b`), quindi togliere `[b]` dall'insieme scartava dal verdetto proprio
+    # il pezzo piu' grosso — quello che di solito NON si divide. La mediana risultava piu' bassa di
+    # quanto sia, e il verdetto «lo spread scende» era compiacente. Vedi il commento in testa.
+    pezzi = [SP2[p] for p in np.unique(NUOVA[MEMBRI[b]])]
     pezzi = [p for p in pezzi if not np.isnan(p)]
     med = float(np.median(pezzi)) if pezzi else float('nan')
     prima.append(sp0)
