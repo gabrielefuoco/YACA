@@ -78,6 +78,36 @@ costa, ma **non è la causa principale** dell'instabilità: ordinare nella coda 
 chiunque. Un utente pesante ha **~7 mondi sopra il 2%** della storia, **26 sopra lo 0,5%**, e ne tocca
 **90**. Il numero di liste e la loro distanza li decide il tipo del profilo, non un top-k fisso.
 
+### 3b. Il peso dei semi: **`plays`, storia intera, nessun decadimento**
+
+`graph/measure/pesi.py`, 100 utenti, **taglio temporale** (seme = il 70% più vecchio, oro = il 30% più
+recente: la situazione del prodotto). Il nullo sono 276 titoli a caso.
+
+| schema | lift titoli | lift bolle | primi 10 mondi |
+|---|---|---|---|
+| uniforme (276 semi) | 10,4× | 5,87× | **30%** |
+| recenza | 11,8× | 5,61× | 20% |
+| **ri-visioni (`plays`)** | **18,2×** | **7,67×** | **30%** |
+| recenza × ri-visioni | 18,1× | 6,41× | 30% |
+| rango inverso `1/i` | 15,9× | 6,58× | 20% |
+| rango logaritmico | 11,2× | 5,97× | 30% |
+| ultimi 30 | 38,7× | 6,99× | 20% |
+| **ultimi 15 (il prodotto)** | **47,5×** | **7,78×** | 20% |
+| **15 a caso, peso pieno** | 34,1× | 4,44× | 10% |
+| 30 a caso, peso pieno | 32,0× | 6,38× | 20% |
+| **semi a caso (nullo)** | **1,65×** | — | 0% |
+
+**Decisione: il peso è `plays` — le ri-visioni — su tutta la storia, e nient'altro.** Il +75% rispetto
+all'uniforme è l'unico guadagno su *tutte* le metriche (lift **e** copertura). Recenza e rango **non
+comprano niente**: `recenza × ri-visioni` fa esattamente come `plays` da solo, e il decadimento di rango
+proposto in `todo/8` (inverso 15,9×, logaritmico 11,2×) è **peggio** dell'usare tutta la storia con
+`plays`. Semplificazione, non complicazione.
+
+**Il tetto dei 15, misurato sul meccanismo nuovo**: +162% di lift ma copertura dal **30% al 20%**. Non è
+un bug — è uno scambio. E la lezione metodologica tenuta a verbale: i «15 a caso» fanno **34×**, cioè la
+concentrazione spiega i tre quarti del vantaggio apparente della recenza; solo il resto (+39%) è
+recenza vera.
+
 ### 4. Il tipo del profilo: cinque assi, da dichiarato + dedotto
 
 `.scratch/../todo/9_assi_del_profilo.md` — onboarding con **due slider** (informazione nuova) più la
@@ -180,9 +210,8 @@ Con la mia raccomandazione, da confermare o ribattere:
    dei voti · vicini sulla mappa. «Per membro» misurato e **scartato** (§2b).
 2. ~~La soglia del portafoglio~~ — **DISSOLTA**: non esiste una soglia onesta, il numero di liste lo
    decide chi invoca (§2c).
-3. **Il peso dei semi.** Cosa pesa un titolo della storia: recenza (`last_watched_at`), ri-visioni
-   (`plays`), il tipo di segnale (loved/liked/watched/library)? *Raccomando: recenza × ri-visioni, e il
-   decadimento di `todo/8` — ma il peso va misurato.*
+3. ~~Il peso dei semi~~ — **CHIUSA**: `plays` (le ri-visioni) su tutta la storia, nient'altro (§3b).
+   Recenza e decadimento di rango misurati e **scartati**.
 4. **Il freddo** (0-3 semi). *Raccomando: il grafo non risponde, e lo dice; il prodotto ricade sulle
    regole attuali, e va detto che sono imbarazzanti (report 04: voto B 68).*
 5. **I tipi di lista.** Il portafoglio li rende possibili quasi gratis (il mondo, il quartiere, la
