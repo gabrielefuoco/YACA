@@ -68,6 +68,13 @@ dei film e il **51,5%** delle serie, e le trame presenti sono **in italiano** me
 da *Toy Story* e a **+0,487** da *Fight Club*. Domani: embeddare tutto con la GPU, e **vedere se serve**
 — perché il ticket 05 ha già risposto alla stessa domanda **gratis**, coi generi e le keyword.
 
+**Chiuso il 15/10/2026**: il ticket 04 è fatto. Gli embedding delle trame ci sono (35.529, 16,5
+minuti, in cache) ma **la metrica non discrimina** (V1 0,7437 · V3 0,7480, testa a testa 107 a 100) e
+il **reranker è inutilizzabile** su coppie simmetriche. Verdetto su V3: **non batte V1 su nessuna
+misura che generalizzi** — 63,0% contro 35,3% sul banco, 87,3% contro 69,3% sulle promozioni, pari
+sulla trama. Il miglioramento visto su *Verity* è un **selection effect**, l'errore più istruttivo
+della sessione. V1 per la bolla; V3 resta per i dieci titoli **per scelta dichiarata, non per misura**.
+
 **Aperto:**
 1. **I 94 cross-medium**: il vincolo di medium **non costa niente** (35,3% con e senza), quindi non è
    un problema di vincolo — sono serie in minestroni generici di film, e il tetto del metodo è 84,3%.

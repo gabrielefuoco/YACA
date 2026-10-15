@@ -185,6 +185,12 @@ def colloca(dd, tipo, S, margine=MARGINE, S_macro=None):
         misurato 63,0% nella propria bolla contro il 35,3% di V3 (ticket 05 di `coerenza`).
       · **micro** — i dieci titoli da mostrare, via `vicini_titoli`, con `S` (V3): V3 legge thriller
         dove V1 legge «Cinquanta sfumature di grigio». E' l'obiezione su Verity, e vale a quel livello.
+
+        ATTENZIONE, e questo e' l'unico punto del progetto senza un numero dietro: V3 **non batte V1
+        su nessuna misura che generalizzi** — banco 35,3% contro 63,0%, promozioni 69,3% contro 87,3%,
+        similarita' di trama pari (0,7480 contro 0,7437, testa a testa 100 a 107). Il miglioramento
+        che si vede sui vicini di Verity e' reale ma **locale**: un selection effect. V3 resta qui solo
+        perche' l'occhio di chi ha guardato quel caso lo preferisce, ed e' dichiarato.
     Se `S_macro` non e' dato si usa `S`, come prima.
     """
     Sm = S_macro if S_macro is not None else S
