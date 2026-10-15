@@ -26,6 +26,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from . import canon as K
+from . import parametri as P
 
 # ============================================================ LA RICETTA
 # I parametri con cui e' costruito tutto quello che c'e' in `.cache/movielens`. Prima vivevano solo
@@ -247,6 +248,57 @@ def lista(args) -> int:
     return 0
 
 
+def lettura(args) -> int:
+    """Una LETTURA stratificata: N utenti lungo tutta la scala del canone, in un documento da leggere.
+
+    La selezione NON e' a caso e NON e' a occhio: si ordina un campione di candidati per il **canone
+    dedotto** (la mediana dei voti della storia) e si prendono N utenti equidistanti su quella scala —
+    cosi' il documento copre i nicchia, i medi e i mainstream.
+    """
+    import numpy as np
+    from graph import bubbles as B
+    from graph import motore as MO
+    M = MO.Motore()
+    MO.carica_titoli()
+    pool = [f.stem[6:] for f in sorted(K.TK.glob("movie-*.json"))
+            if (K.TK / f"show-{f.stem[6:]}.json").exists()]
+    rng = np.random.default_rng(9)
+    cand = rng.choice(pool, size=min(240, len(pool)), replace=False)
+    righe = []
+    for u in cand:
+        rr = np.array([B.ROW_OF[k] for k, _ in MO.da_trakt(u) if k in B.ROW_OF], np.int64)
+        if len(rr) < P.BANCO_MIN_TITOLI:
+            continue
+        righe.append((M.deduci(rr)["canone"], u, len(rr)))
+    righe.sort()
+    quanti = min(args.quanti, len(righe))
+    scelti = [righe[int(i * (len(righe) - 1) / max(quanti - 1, 1))] for i in range(quanti)]
+    out = [f"# Dieci portafogli, lungo la scala del canone\n",
+           f"Campione di {len(righe)} utenti Trakt ordinati per **canone dedotto** (mediana dei voti della",
+           "storia). Gli utenti sono presi equidistanti su quella scala: i piu' di nicchia, i medi, i piu'",
+           "popolari. Ogni blocco: il profilo, i mondi accesi, e le liste coi primi titoli.",
+           f"\nVersione artefatto {M.artefatto} · impronta della ricetta {P.impronta()}\n"]
+    for k, (canone, u, n) in enumerate(scelti, 1):
+        esito = M.lista(MO.da_trakt(u))
+        pr = esito["profilo"]
+        out.append(f"\n---\n\n## {k}. `{u}` — {n} titoli · canone {canone:,.0f} voti · "
+                   f"forma {pr['forma']} mondi\n")
+        out.append("**Mondi accesi:** " + " · ".join(
+            f"`{m['bolla']}` ({m['titoli']} tit., {m['voti_mediani']:,.0f} voti, "
+            f"{100*m['attivazione']:.1f}%)" for m in esito["mondi"]) + "\n")
+        for li in esito["liste"]:
+            if not li["titoli"]:
+                continue
+            tt = " · ".join(MO.TITOLI.get(kk, kk)[:30] for kk, _ in li["titoli"][:7])
+            out.append(f"- **{li['tipo']}** — {tt}")
+    testo = "\n".join(out)
+    dove = pathlib.Path(args.fuori)
+    dove.parent.mkdir(parents=True, exist_ok=True)
+    dove.write_text(testo, encoding="utf-8")
+    print(f"  scritto: {dove} ({len(scelti)} utenti)")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="python -m graph.pipeline", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -272,6 +324,10 @@ def main(argv=None) -> int:
     pl.add_argument("--cozy", type=float, default=None, help="-1=impegnativo · +1=cozy")
     pl.add_argument("--canone", type=float, default=None, help="-1=nicchia · +1=popolare")
     pl.set_defaults(fn=lista)
+    plet = sub.add_parser("lettura", help="N portafogli lungo la scala del canone, in un documento")
+    plet.add_argument("--quanti", type=int, default=10)
+    plet.add_argument("--fuori", default=".scratch/suggerimenti/lettura.md")
+    plet.set_defaults(fn=lettura)
     a = p.parse_args(argv)
     return a.fn(a)
 

@@ -203,11 +203,20 @@ class Motore:
         return scelti
 
     def titoli_di(self, bolle, r, visti, quanti_per_mondo=10):
-        fuori = []
+        """I titoli non visti di queste bolle, ordinati per attivazione — SENZA RIPETIZIONI.
+
+        Il dedup non e' un dettaglio: due mondi vicini hanno membri in comune, e concatenando le loro
+        liste lo stesso titolo compariva due volte (e lo stesso mondo pure: 733 e 1519 davano le stesse
+        voci). Trovato leggendo il documento della lettura, non da un test.
+        """
+        fuori, gia = [], set()
         for b in bolle:
             m = np.setdiff1d(self.MEMBRI[b], list(visti))
             if len(m):
-                fuori.extend(m[np.argsort(-r[m])][:quanti_per_mondo].tolist())
+                for x in m[np.argsort(-r[m])][:quanti_per_mondo].tolist():
+                    if x not in gia:
+                        gia.add(x)
+                        fuori.append(x)
         return fuori
 
     # ------------------------------------------------------------------ IL METODO
