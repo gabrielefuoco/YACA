@@ -96,6 +96,41 @@ trama** contro il 54% del canone — sono i **contenitori dei titoli senza trama
 sottili e il comportamento non arriva. **Il rimedio non è una risoluzione più fine** (RB 400 romperebbe
 le bolle buone): è **più segnale** per quei ~600 titoli, che oggi non esiste.
 
+## Le tre domande del 15/10, seconda parte
+
+**1. QUANTO SONO COLLEGATE ALL'ESTERNO LE BOLLE GRANDI.** Il mio commento nello script diceva «le
+bolle grandi hanno meno peso interno»: **i dati dicono il contrario** e correggo.
+
+| fascia | bolle | peso DENTRO | vicini esterni | voti mediani |
+|---|---|---|---|---|
+| 200+ | 2 | 52,8% | 2.238 | **15** |
+| 100-200 | 29 | **62,8%** | 1.832 | 23 |
+| 60-100 | 180 | 60,6% | 1.640 | 34 |
+| 30-60 | 551 | 52,1% | 1.299 | 49 |
+| **15-30** | 782 | **41,5%** ✗ | 1.003 | 83 |
+| 0-5 | 341 | 53,3% | 299 | **373** |
+
+Le bolle grandi tengono il 53-63% del peso **dentro** — più delle medie. Non sono incroci: sono i
+**contenitori dei titoli oscuri** (mediane di 15-34 voti contro 373 delle bolle piccole). Le 60-78
+titoli sbilanciate (25-36% dentro) sono le vere incroci.
+
+**2. SPEZZARE SOLO LE 80+.** Delle **81** bolle con 80+ titoli, **solo 16 si dividono** — le altre 65
+resistono a ogni risoluzione, cioè sono già coese. E delle 16 divise i pezzi incoerenti scendono dal
+**37,5% al 26,2%**, con le peggiori che migliorano molto (bolla 7: −0,231 → **+0,307**; 67: → **+0,477**),
+ma tre peggiorano. **Conclusione: sì, ma il criterio è l'incoerenza, non la taglia.**
+
+**3. LA REGOLA DEI VOTI — funziona.** Nella collocazione, i candidati si filtrano per compatibilità di
+voti (un titolo con V voti non va dove la mediana è fuori da [V/10, V×10]).
+
+| titolo | voti | senza | con la regola |
+|---|---|---|---|
+| Il gladiatore II | 4.785 | b737 (30 tit., **mediana 89** ✗) | **b1668 (15 tit., 3.018)** |
+| Project Hail Mary | 8.150 | b908 (28 tit., **227** ✗) | **b2398 (5 tit., 1.124)** |
+| I peccatori | 5.273 | b787 (30 tit., **488** ✗) | **b2400 (5 tit., 5.929)** |
+| Deadpool & Wolverine | 9.570 | b2528 (5 tit., 869) | **b2273 (9 tit., 9.442)** |
+
+È esattamente il caso de *Il conte di Montecristo* con *Les Tuche*. **Da adottare.**
+
 ## Not yet specified
 
 - Il **peso del componente**: provato solo a 1,0. 0,5 e 2,0 cambierebbero la coerenza, e vanno misurati

@@ -74,7 +74,12 @@ for peso in PESI:
     M = B.consenso_multivista(M, CD, BASE)
     W = B.archi_leiden(M, etichetta=f"V10p{peso}")
     del M
-    print(f"  triangolo: {W.nnz:,} archi ({time.time()-T0:.0f}s)", flush=True)
+    # IL TRIANGOLO VA SALVATO: e' il grafo di Leiden, e senza di lui non si possono fare la
+    # connettivita' esterna ne' il sub-clustering senza ricostruire tutto (600 s). Per V8 esisteva,
+    # per V10 l'avevo perso — lezione imparata.
+    np.savez_compressed(ML / f"bolle-eterogeneo-V10-p{peso}-r{RES}-triangolo.npz",
+                        data=W.data, indices=W.indices, indptr=W.indptr)
+    print(f"  triangolo: {W.nnz:,} archi · salvato ({time.time()-T0:.0f}s)", flush=True)
     mem = B.partizione(W, RES, "RB", n_iterations=6, etichetta=f"V10p{peso}r{RES}")
     mem = B.potatura_nucleo(mem, W, quanti_nucleo=4, etichetta=f"V10p{peso}")
     np.save(ML / f"bolle-eterogeneo-V10-p{peso}-r{RES}.npy", mem)
