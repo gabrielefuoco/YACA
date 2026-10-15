@@ -304,19 +304,23 @@ def lettura(args) -> int:
 def esporta(args) -> int:
     """L'ARTEFATTO PER IL PRODOTTO — l'unica cosa che attraversa il confine fra modulo e `src/`.
 
+    E' ANCHE IL JOB NOTTURNO, con `--colloca`: prima assegna una bolla ai titoli che l'artefatto ancora
+    non conosce (quelli usciti dopo l'ultima costruzione, ~11 ms l'uno), poi scrive tutto.
+
+    PERCHE' LA COLLOCAZIONE BASTA, e non serve toccare il grafo: l'engine del prodotto cammina sulle
+    BOLLE, non sui titoli. Un titolo nuovo che riceve una bolla **compare fra i membri di quella bolla**,
+    e quindi eredita la sua attivazione. La decisione presa in mappa («i titoli nuovi ereditano la loro
+    bolla, nei due versi») e' **automatica** in questa architettura: nessun arco sintetico, nessuna
+    perturbazione del grafo.
+
     Cosa contiene, e nient'altro (sta sotto i 2 MB):
       titoli:   {chiave: bolla}            per ogni titolo del canone
       bolle:    {bolla: {n, voti, vicini}} taglia, mediana dei voti, i vicini sulla mappa 6+2
       episodi:  {chiave: n}                solo per le SERIE: serve al loro peso (frazione di episodi)
       versione: impronte E PARAMETRI       artefatto + ricetta, e i valori che l'engine JS deve usare
 
-    I PARAMETRI VIAGGIANO CON L'ARTEFATTO, e non e' un vezzo: l'engine del prodotto non deve avere
-    numeri cablati, altrimenti la fonte dei valori diventa due. Chi cambia un iperparametro in
-    `graph/parametri.py` lo trova nell'artefatto appena lo riesporta — e l'impronta della ricetta lo
-    registra.
-
-    Cosa NON contiene: i membri per bolla (si ricavano da `titoli`), i titoli e le trame (il prodotto
-    li ha già nel suo database), la partizione o i centroidi (servono solo al modulo).
+    I PARAMETRI VIAGGIANO CON L'ARTEFATTO: l'engine del prodotto non deve avere numeri cablati,
+    altrimenti la fonte dei valori diventa due.
     """
     import numpy as np
     from graph import bubbles as B
@@ -343,6 +347,30 @@ def esporta(args) -> int:
             "voti": int(np.median(VOT[m])) if len(m) else 0,
             "vicini": sorted({int(x) for x in INTRA[b] if x >= 0}),
         }
+    nuovi = 0
+    if getattr(args, "colloca", False):
+        # I TITOLI CHE L'ARTEFATTO NON CONOSCE: quelli usciti dopo l'ultima costruzione. Vanno collocati
+        # qui, perche' e' l'unico posto che ha i centroidi (50 MB che servono solo a questo).
+        from graph import collocator as CO
+        S = CO.carica(v3=True)
+        candidati = []
+        for tipo, f in (("movie", "movies.parquet"), ("tv", "tv.parquet")):
+            d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f)
+            for k in range(len(d)):
+                riga = d.iloc[k]
+                ch = f"{tipo}:{int(riga['id'])}"
+                if ch not in titoli:
+                    candidati.append((riga.to_dict(), tipo if tipo == "tv" else "movie", ch))
+        if getattr(args, "max", 0):
+            candidati = candidati[:args.max]
+        for dd, tipo, ch in candidati:
+            bolla, _conf, _n, _f = CO.colloca(dd, tipo, S)
+            if bolla is not None:
+                titoli[ch] = int(bolla)
+                bolle[str(int(bolla))]["n"] += 1
+                nuovi += 1
+        print(f"  collocati {nuovi:,} titoli nuovi (su {len(candidati):,} candidati conosciuti dal "
+              f"catalogo e non dal grafo)")
     # gli episodi, SOLO per le serie: e' il denominatore del loro peso
     episodi = {}
     import pandas as pd
@@ -406,6 +434,9 @@ def main(argv=None) -> int:
     plet.set_defaults(fn=lettura)
     pex = sub.add_parser("esporta", help="l'artefatto per il prodotto (src/data/bolle.json)")
     pex.add_argument("--fuori", default="src/data/bolle.json")
+    pex.add_argument("--colloca", action="store_true",
+                     help="assegna una bolla ai titoli che l'artefatto non conosce (il job notturno)")
+    pex.add_argument("--max", type=int, default=0, help="fermati dopo N collocazioni (prove)")
     pex.set_defaults(fn=esporta)
     a = p.parse_args(argv)
     return a.fn(a)
