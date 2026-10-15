@@ -130,6 +130,47 @@ niente (17,85 → 17,9-18,1). **La recenza conta come SELEZIONE, non come peso**
 - il confronto col banco resta un **probe di leakage**, non un verdetto: per le decisioni di prodotto
   («una serie da 100 episodi non deve valere 100 film») il metro è l'**equilibrio**, non il lift.
 
+### 3c. Il freddo: **il grafo si accende da un titolo, e i cataloghi attivi coprono lo zero**
+
+**Il caso freddo vero è ZERO titoli, non uno-tre** — e la misura ha spostato il confine:
+
+| semi | lift | **a caso** | copertura | **a caso** |
+|---|---|---|---|---|
+| **1** | **36,9×** | **0,6×** | 20% | 0% |
+| 2 | 38,7× | 1,4× | 30% | 0% |
+| 3 | 38,8× | 0,0× | 30% | 0% |
+| 10 | 28,9× | 1,6× | 35% | 0% |
+| 50 | 22,5× | 1,3× | 50% | 0% |
+
+**Con un solo titolo la luce cade 37 volte più sul futuro dell'utente che con un titolo a caso**
+(0,6×). Il grafo non ha bisogno di una storia: ha bisogno di *un titolo*. E già da 2-3 titoli la
+copertura è al 30%, come con dieci.
+
+Due avvertenze tenute a verbale: il «mondo di testa» al 77,6% **non è un merito** (anche un titolo a
+caso concentra il 65% nel suo mondo — quello che conta è *quale*), e il lift che cala con più semi è in
+parte meccanico (più semi = più luce ferma sui titoli già visti, che nell'oro non ci sono).
+
+**Il disegno per lo zero** (del proprietario, 15/10/2026), e usa qualcosa che il prodotto ha già:
+
+1. si prendono i **cataloghi attivi di quel profilo** (`UserConfig.catalogs` — **verificato che ci sono**);
+2. si usano come seme i titoli **presenti in più di un catalogo** (indicativamente 10);
+3. se non ce ne sono, si prendono i **top 2-3 di ogni catalogo**;
+4. **quei titoli non vanno mai restituiti** fra i suggerimenti: non sono «visti», sono il seme;
+5. e per chi **ha** una storia, gli stessi titoli possono entrare come **segnale in più** — ma in quel
+   caso **solo quelli ripetuti**, perché *«potrebbe portare più rumore che segnale»*. È una cautela del
+   proprietario e va **misurata**, non assunta.
+
+**Fatti verificati sui cataloghi**: sono **179**, e sono **regole** sui filtri TMDB (generi, case,
+collezioni, keyword, registi, network) — non liste di titoli. Quindi i loro titoli si ottengono
+**valutandoli**, e replicarli offline è un lavoro a sé (i filtri usano gli **id** TMDB delle persone,
+mentre nei nostri parquet i nomi sono stringhe).
+
+**Cosa resta da fare, e sono due misure** (dopo aver valutato i cataloghi offline):
+- **quanto si sovrappongono**: la regola «presenti in più di un catalogo» ha materiale o è vuota?
+- **rumore o segnale**: i titoli dei cataloghi **predicono la storia** di chi la storia ce l'ha?
+  È la cautela del proprietario, e si misura come tutto il resto: seme = i titoli dei cataloghi,
+  oro = la sua storia vera.
+
 ### 4. Il tipo del profilo: cinque assi, da dichiarato + dedotto
 
 `.scratch/../todo/9_assi_del_profilo.md` — onboarding con **due slider** (informazione nuova) più la
@@ -234,8 +275,10 @@ Con la mia raccomandazione, da confermare o ribattere:
    decide chi invoca (§2c).
 3. ~~Il peso dei semi~~ — **CHIUSA**: film `min(plays,3)`, serie `1 + 2 × frazione di episodi` — le
    puntate non contano come play (§3b). Recenza, decadimento di rango e boost misurati e **scartati**.
-4. **Il freddo** (0-3 semi). *Raccomando: il grafo non risponde, e lo dice; il prodotto ricade sulle
-   regole attuali, e va detto che sono imbarazzanti (report 04: voto B 68).*
+4. ~~Il freddo~~ — **CHIUSA**: il grafo si accende da **un titolo** (misurato, §3c); per **zero** titoli
+   si seminano i **cataloghi attivi** del profilo (titoli in più di un catalogo, o i top 2-3 di ognuno),
+   mai restituiti fra i suggerimenti. Restano da valutare i 179 cataloghi offline e da misurare la
+   sovrapposizione e il rapporto rumore/segnale (§3c).
 5. **I tipi di lista.** Il portafoglio li rende possibili quasi gratis (il mondo, il quartiere, la
    fascia alta di voti, la fascia bassa, i ponti cross-medium). *Quali* mostrare è decisione di prodotto.
 6. **La cache a 12 ore: su cosa si invalida.** Una visione nuova cambia il portafoglio — ma non sempre
