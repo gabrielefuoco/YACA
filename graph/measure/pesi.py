@@ -31,14 +31,15 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
-ALPHA = float(os.environ.get("ALPHA", 0.60))
+ALPHA = float(os.environ.get("ALPHA", P.ALPHA))
 QUANTI_UTENTI = int(os.environ.get("UTENTI", 100))
-ITER = int(os.environ.get("ITER", 18))
-FRAZIONE = 0.70            # il 70% piu' VECCHIO semina, il 30% piu' NUOVO e' l'oro
-K_POTA = 16
-MIN_TITOLI = 40
+ITER = int(os.environ.get("ITER", P.ITER))
+FRAZIONE = P.TAGLIO_TEMPORALE      # il 70% piu' VECCHIO semina, il 30% piu' NUOVO e' l'oro
+K_POTA = P.POTA_PER_RIGA
+MIN_TITOLI = P.BANCO_MIN_TITOLI
 EMIVITA = 365.0
 
 
@@ -131,11 +132,12 @@ def pesi_per(nome, eta, plays, quante, righe=None):
         intero = np.minimum(plays[:quante].astype(float) / nep, 2.0)
         return intero * np.log1p(np.minimum(plays[:quante], 50).astype(float))
     if nome == "SPEC utente (film 1-3, serie 1-3)":
-        # LA SPECIFICHE DEL PROPRIETARIO: una serie di 100 episodi deve valere come 2/3 film, non 100.
-        # Le puntate non contano mai come play: contano come QUANTO della serie hai visto.
+        # LA SPECIFICHE DEL PROPRIETARIO, coi valori in `graph/parametri.py`: una serie di 100 episodi
+        # deve valere come 2/3 film, non 100. Le puntate non contano mai come play.
         nep = NEP[righe[:quante]] if righe is not None else np.ones(quante)
         pl = plays[:quante].astype(float)
-        return np.where(nep > 1.0, 1.0 + 2.0 * np.minimum(pl / nep, 1.0), np.minimum(pl, 3.0))
+        return np.where(nep > 1.0, P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * np.minimum(pl / nep, 1.0),
+                        np.minimum(pl, P.PESO_FILM_MAX))
     if nome == "intero secco (no log)":
         nep = NEP[righe[:quante]] if righe is not None else np.ones(quante)
         return np.minimum(plays[:quante].astype(float) / nep, 2.0)

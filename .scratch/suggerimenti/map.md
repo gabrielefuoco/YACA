@@ -132,7 +132,7 @@ niente (17,85 → 17,9-18,1). **La recenza conta come SELEZIONE, non come peso**
 
 ### 3c. Il freddo: **il grafo si accende da un titolo, e i cataloghi attivi coprono lo zero**
 
-**Il caso freddo vero è ZERO titoli, non uno-tre** — e la misura ha spostato il confine:
+**Il caso freddo è ZERO titoli, non uno-tre** — e la misura ha spostato il confine:
 
 | semi | lift | **a caso** | copertura | **a caso** |
 |---|---|---|---|---|
@@ -150,7 +150,16 @@ Due avvertenze tenute a verbale: il «mondo di testa» al 77,6% **non è un meri
 caso concentra il 65% nel suo mondo — quello che conta è *quale*), e il lift che cala con più semi è in
 parte meccanico (più semi = più luce ferma sui titoli già visti, che nell'oro non ci sono).
 
-**Il disegno per lo zero** (del proprietario, 15/10/2026), e usa qualcosa che il prodotto ha già:
+**Il confine, deciso dal proprietario (15/10/2026): freddo = sotto i 3 titoli.** La misura dice che
+il segnale c'è già da un titolo (37× contro 0,6×); il proprietario sceglie più prudenza, ed è una
+scelta di prodotto legittima — costa poco e non contraddice niente. Quindi:
+
+| storia | seme |
+|---|---|
+| **< 3 titoli (freddo)** | cataloghi attivi **+** gli 1-2 titoli visti (pesati come sempre) |
+| **≥ 3 titoli** | la storia; i cataloghi entrano solo se **ripetuti** (cautela da misurare) |
+
+**Il disegno per il freddo** (del proprietario), e usa qualcosa che il prodotto ha già:
 
 1. si prendono i **cataloghi attivi di quel profilo** (`UserConfig.catalogs` — **verificato che ci sono**);
 2. si usano come seme i titoli **presenti in più di un catalogo** (indicativamente 10);
@@ -170,6 +179,41 @@ mentre nei nostri parquet i nomi sono stringhe).
 - **rumore o segnale**: i titoli dei cataloghi **predicono la storia** di chi la storia ce l'ha?
   È la cautela del proprietario, e si misura come tutto il resto: seme = i titoli dei cataloghi,
   oro = la sua storia vera.
+
+### 3d. Le liste: **quattro, più un catalogo per ogni mondo diverso**
+
+Scelte dal proprietario (15/10/2026) guardando `graph/measure/liste.py`, che stampa il contenuto reale
+di ogni candidata su utenti veri.
+
+| lista | cos'è | cosa conteneva, su un utente vero |
+|---|---|---|
+| **Il tuo mondo** | i membri della bolla più accesa, non visti, per attivazione | *Star Trek: Voyager · Short Treks · Prodigy · Stargate SG-1 · Andromeda* |
+| **Un passo fuori** | i membri dei mondi vicini sulla mappa 6+2 | *Battlestar Galactica* (2004 **e** 1978) · *Caprica* · *Nightflyers* · *Defying Gravity* |
+| **Le uscite nuove** | le uscite dal 2025 collocate nei mondi accesi | *Star Wars: Maul - Shadow Lord (2026) · Visions (2026) · Tales (2025)* |
+| **La nicchia di qualità** | popolarità ≤ 20 (soglia del prodotto) × voto ≥ 7 × (+liste) | *Battlestar Galactica (8,2) · Star Wars Tales (8,0) · Constellation (7,0)* |
+
+**La quarta è un'aggiunta del proprietario** («non iper-popolari ma con voti alti, meglio se con un buon
+punteggio dagli altri utenti»), e non è lo stesso taglio della fascia di voti: quella premia chi ha
+**molti** voti, questa chi ha **buona media e poca popolarità**. La soglia di popolarità è quella del
+prodotto (`HIDDEN_GEMS_MAX_POPULARITY`), così non se ne inventa una seconda.
+
+**E un catalogo per ogni mondo diverso** (seconda aggiunta del proprietario):
+
+- **la distanza in hop sulla mappa NON serve**: mediana **3**, massimo **5**, su 3.497 bolle con 1
+  componente — ogni bolla raggiunge ogni altra in pochi passi;
+- la diversità si prende dove c'è davvero: **fascia di voti del mondo × medium**;
+- misurato sullo stesso utente: *space-opera serie* (mediana 636 voti) · *Marvel/Disney+ serie* (1.479) ·
+  *film anni '80* (61);
+- **e serve un guardiano della coerenza**: senza, il terzo è risultato **un contenitore, non un mondo**
+  — *Star Crystal · 2016: Obama's America · Destructors · Fair Game · New York Doll*, tutti nello stesso
+  mondo: lontano, ma eterogeneo. Prima di scegliere i mondi da mostrare va filtrata la **coerenza**
+  (l'indice di chimera di `measure/coerenza.py`) o la taglia minima. Su un altro utente i tre mondi
+  erano invece tutti coerenti — quindi il difetto c'è **a volte**, ed è il caso peggiore.
+
+**Trappole già misurate, dichiarate qui perché riguardano queste liste**: **le saghe sono rotte sulle
+serie** (le collezioni TMDB esistono solo per i film: lista **vuota** su due utenti su due) · **le
+Trakt-liste coprono il 15% del catalogo** (grado mediano 0: corroborazione, e la sua assenza non è un
+difetto) · **`vote_count` e `vote_average` sono due cose diverse** e vanno tenute separate.
 
 ### 4. Il tipo del profilo: cinque assi, da dichiarato + dedotto
 
@@ -265,6 +309,32 @@ scegliere fra varianti, dove l'occhio non scala.
   e il contratto (`canon.assert_partizione`, sha256 nelle impronte) lo rende un errore invece di un
   risultato sbagliato. La mappa dichiara dentro di sé partizione e triangolo.
 
+### 10. Gli iperparametri: **uno posto solo, e tre stati**
+
+Tutti i numeri di questo meccanismo stanno in **`graph/parametri.py`** (`python graph/parametri.py`
+stampa la tabella), ognuno con valore, **stato** e motivo. Gli stati sono la cosa che conta:
+
+| stato | cosa significa |
+|---|---|
+| **MISURATO** | c'è un arbitro che l'ha deciso. **Non si tocca senza rifare la misura.** |
+| **DICHIARATO** | scelta di prodotto. Si cambia con una decisione, non con un test. |
+| **INVENTATO** | messo a mano senza misura. **È la prima cosa da rivedere.** |
+
+I **cinque INVENTATI** che la tabella dichiara da sola (`da_rivedere()`):
+
+| parametro | valore | perché è sospetto |
+|---|---|---|
+| `CATALOGHI_MIN_RIPETIZIONI` | 2 | i 179 cataloghi **non sono ancora valutati offline**: non sappiamo nemmeno se la sovrapposizione ha materiale |
+| `CATALOGHI_QUANTI` | 10 | quanto seme sintetico prendere dai cataloghi |
+| `CATALOGHI_TOP_PER_CATALOGO` | 3 | la ricaduta quando non ci sono titoli ripetuti |
+| `NICCHIA_BONUS_LISTE` | 0,3 | nudge a mano: avvantaggia **sistematicamente** il 15% del catalogo coperto dalle Trakt-liste |
+| `MONDI_DIVERSI_SOGLIA_FASCIA` | 0,5 | la soglia di «quanto diversi» due mondi devono essere |
+
+**Fatto**: `measure/liste.py` e `measure/pesi.py` **leggono dalla tabella** (nessuna copia locale).
+**Da fare**: `alfa.py`, `freddo.py`, `lettura.py`, `diffusione.py`, `soglia.py`, `equilibrio.py` hanno
+ancora i propri valori locali (`ALPHA`, `K_POTA`, `ITER`) — vanno collegati anche loro, altrimenti i
+posti dove guardare restano due.
+
 ## Not yet specified
 
 Con la mia raccomandazione, da confermare o ribattere:
@@ -275,12 +345,14 @@ Con la mia raccomandazione, da confermare o ribattere:
    decide chi invoca (§2c).
 3. ~~Il peso dei semi~~ — **CHIUSA**: film `min(plays,3)`, serie `1 + 2 × frazione di episodi` — le
    puntate non contano come play (§3b). Recenza, decadimento di rango e boost misurati e **scartati**.
-4. ~~Il freddo~~ — **CHIUSA**: il grafo si accende da **un titolo** (misurato, §3c); per **zero** titoli
-   si seminano i **cataloghi attivi** del profilo (titoli in più di un catalogo, o i top 2-3 di ognuno),
-   mai restituiti fra i suggerimenti. Restano da valutare i 179 cataloghi offline e da misurare la
-   sovrapposizione e il rapporto rumore/segnale (§3c).
-5. **I tipi di lista.** Il portafoglio li rende possibili quasi gratis (il mondo, il quartiere, la
-   fascia alta di voti, la fascia bassa, i ponti cross-medium). *Quali* mostrare è decisione di prodotto.
+4. ~~Il freddo~~ — **CHIUSA**: **freddo = sotto i 3 titoli** (decisione del proprietario). Per il freddo si
+   seminano i **cataloghi attivi** del profilo (titoli in più di un catalogo, o i top 2-3 di ognuno) più
+   gli 1-2 titoli visti; **mai restituiti** fra i suggerimenti. Da 3 titoli in su la storia basta
+   (misurato: un titolo da solo vale 37× contro 0,6× di un titolo a caso, §3c). Restano da valutare i
+   179 cataloghi offline e da misurare sovrapposizione e rapporto rumore/segnale.
+5. ~~I tipi di lista~~ — **CHIUSA**: quattro liste — *il tuo mondo*, *un passo fuori*, *le uscite nuove*,
+   *la nicchia di qualità* — più **un catalogo per ogni mondo diverso** (§3d). Le saghe restano fuori:
+   misurate **rotte sulle serie**.
 6. **La cache a 12 ore: su cosa si invalida.** Una visione nuova cambia il portafoglio — ma non sempre
    in modo visibile (misurato: 0 cambi su 20 col decadimento di `todo/8`).
 7. **Il contenuto dei due slider** (`todo/9`): scelti per **instradare**, non per descrivere.
