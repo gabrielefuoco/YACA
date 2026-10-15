@@ -480,6 +480,37 @@ non la PERSONA** — «Resta nel tuo mondo / Esci dal tuo mondo» dice cosa otti
 esploratore» descrive chi sei, e il carattere il profilo ce l'ha già dedotto (canone 0,87, forma 0,82).
 Etichettare la persona rischia di contraddire la deduzione.
 
+### 15. Il motore intero, misurato — e per la prima volta l'occhio e il numero dicono lo stesso
+
+`graph/measure/intero.py`, 100 utenti, taglio temporale (il 70% più vecchio semina, il 30% più nuovo è
+l'oro). Era il buco dichiarato: erano stati misurati i **pezzi**, e l'output era stato **letto** su dieci
+utenti, ma il prodotto finito — le liste, nell'ordine in cui escono — non era mai stato pesato.
+
+| | |
+|---|---|
+| **precisione** (titoli mostrati che sono nel futuro) | **5,0%** |
+| copertura (quanto del futuro sta nelle liste) | 1,8% |
+| **pavimento** (40 titoli a caso) | 0,08% |
+| **lift sulla precisione** | **63×** |
+| **tempo per chiamata** (era STIMATO 50-150 ms) | **115 ms** · p90 128 ms |
+
+**E due cose che non si sapevano:**
+
+1. **Il quartiere vale più del mondo.** Dove sta il futuro trovato: `un_passo_fuori` **38%**,
+   `il_tuo_mondo` **21%**, `nicchia_di_qualità` 8%, poi i cataloghi dei singoli mondi. Mostrare i vicini
+   rende quasi il doppio che mostrare il mondo che l'utente **già conosce** — e ha una logica: il mondo
+   è ciò che ha già visto, il quartiere è ciò che non ha ancora. **Conseguenza pratica: il carosello
+   più utile non è «il tuo mondo», è «un passo fuori».**
+2. **L'ordine regge.** Rango mediano dell'oro: **3** (p25 1, p75 7) · **55%** dentro le prime 4
+   posizioni. L'ipotesi «oltre il quarto titolo è rumore» era **troppo pessimista**: il segnale decade
+   con la posizione ma non muore — quindi **accorciare le liste non è necessario**, e 10-25 titoli
+   vanno bene.
+
+**Una cosa che invece va saputa**: la precisione qui è **5,0%** mentre il portafoglio semplice da 40
+titoli di `ricetta.py` faceva **13%**. La differenza sono i **cataloghi per mondo diverso**: aggiungono
+varietà (che il feed vuole) e **diluiscono** la precisione. È uno scambio, ed è deliberato — ma da ora è
+misurato, non ipotizzato.
+
 ## Not yet specified
 
 Con la mia raccomandazione, da confermare o ribattere:
@@ -509,6 +540,9 @@ Con la mia raccomandazione, da confermare o ribattere:
    preciso** (slider o
    profili di serata) e la domanda del proprietario — *i due portafogli sono migliori per quell'utente?*
 8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
+9. ~~Il motore intero~~ — **CHIUSA**: precisione **5,0%** contro un pavimento di 0,08% (**63×**),
+   tempo **115 ms** misurato (§15). E la cosa più utile che ne esce: **il quartiere porta il 38% del
+   futuro trovato, il mondo solo il 21%** — si mostra prima «un passo fuori».
 
 ## Out of scope
 
