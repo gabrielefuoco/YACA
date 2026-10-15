@@ -19,7 +19,28 @@ graph/
   upstream/                  i 5 script che PRODUCONO gli input della fase 1:
                              spazi-trakt.py · componenti-nuovi.py · cf-edges.py ·
                              boot-comp.py · contaminazione.py
+  measure/                   i 10 ARBITRI: misurano la qualita' del sistema. Sono il modo in cui
+                             si sa se funziona — e il 15/10 hanno corretto le metriche SEI volte.
 ```
+
+## Gli arbitri (`graph/measure/`)
+
+| script | cosa misura |
+|---|---|
+| `coerenza.py` | l'indice di chimera (la coerenza dentro una bolla) e `N_eff` per tropo |
+| `sim_trama.py` | la **Sim_trama**: l'unico arbitro che non usa le feature del collocatore |
+| `saghe.py` | le 1.994 collezioni TMDB: sono intere, adiacenti o spezzate sulla mappa |
+| `verifica_voti.py` | lo spread dei voti, le saghe, la coerenza dopo la divisione per voti |
+| `banco.py` | il banco caldo/freddo: 600 titoli tolti e ricollocati dai soli metadati |
+| `loo_esatto.py` | il leave-one-out esatto sul banco |
+| `voto_diretto.py` | il voto sui centroidi, con l'accordo fra le strade |
+| `contratti.py` | il retro-test dei tre contratti sugli artefatti storici del progetto |
+| `geometria.py` | il top-M sui centroidi e lo scoring ibrido |
+| `sonda.py` | le 20 sentinelle: leggono un mondo nominabile? |
+
+**Il README diceva «il modulo esegue, non ri-misura», e era una scusa**: senza gli arbitri non c'e'
+modo di sapere se una modifica migliora o peggiora, ed e' esattamente quello che e' successo sei volte
+il 15/10 — una metrica che diceva una cosa e l'occhio un'altra.
 
 **La regola, ed è quella che rende possibile la manutenzione**: `graph/data/` è il risultato del
 nostro lavoro, `.cache/` è ciò che si può riscaricare. Il modulo distingue i due con `canon.A(nome)`:
