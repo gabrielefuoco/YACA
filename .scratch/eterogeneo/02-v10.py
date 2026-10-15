@@ -35,6 +35,10 @@ import canone as K
 T0 = time.time()
 ML = K.ML
 PESI = [float(x) for x in (sys.argv[1:] or ["1.0"])]
+# LA RISOLUZIONE si puo' cambiare da riga di comando: RES=200 e' la prova «bolle piu' piccole» chiesta
+# dall'utente. Il ticket 09 di `bolle-nitrile` diceva «RB 200 frantuma», ma lo diceva su un'altra
+# partizione e con le metriche vecchie: qui si rimisura, e si GUARDA.
+RES = int(__import__("os").environ.get("RES", "100"))
 print("=" * 104)
 print("LA PARTIZIONE COL COMPONENTE DI TRAMA — V10")
 print("=" * 104, flush=True)
@@ -71,9 +75,9 @@ for peso in PESI:
     W = B.archi_leiden(M, etichetta=f"V10p{peso}")
     del M
     print(f"  triangolo: {W.nnz:,} archi ({time.time()-T0:.0f}s)", flush=True)
-    mem = B.partizione(W, 100, "RB", n_iterations=6, etichetta=f"V10p{peso}")
+    mem = B.partizione(W, RES, "RB", n_iterations=6, etichetta=f"V10p{peso}r{RES}")
     mem = B.potatura_nucleo(mem, W, quanti_nucleo=4, etichetta=f"V10p{peso}")
-    np.save(ML / f"bolle-eterogeneo-V10-p{peso}.npy", mem)
+    np.save(ML / f"bolle-eterogeneo-V10-p{peso}-r{RES}.npy", mem)
     sz = np.bincount(mem)
     print(f"\n  V10 (peso {peso}): {len(sz):,} bolle · mediana {int(np.median(sz))} · "
           f"la piu' grossa {int(sz.max())} · >=15 {int((sz>=15).sum()):,}", flush=True)
@@ -131,7 +135,7 @@ for peso in PESI:
         ve = MU[b].toarray().ravel()
         tt = [inv[int(x)] for x in np.argsort(-ve)[:5] if ve[x] > 0][:5]
         print(f"       bolla {b:>4} ({s:>3} tit.) PMI {p:+.3f} · {' · '.join(tt)}", flush=True)
-    np.savez_compressed(ML / f"eterogeneo-chimere-p{peso}.npz",
+    np.savez_compressed(ML / f"eterogeneo-chimere-p{peso}-r{RES}.npz",
                         bolle=np.array([c[0] for c in chim]),
                         sz=np.array([c[1] for c in chim]),
                         pmi=np.array([c[2] for c in chim]))

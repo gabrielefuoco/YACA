@@ -1,0 +1,103 @@
+=== bolle-eterogeneo-V10-p1.0.npy · 1,783 bolle · mediana 29 ===
+=== campione stratificato: 100 bolle, dalla piu' grossa alla piu' piccola ===
+
+  1. [    0] 543 tit. (5 serie) · Il padre d'Italia | 7 minuti | Rojo amanecer | Gloria | Du vent dans mes mollets
+  2. [   30] 144 tit. (139 serie) · 特工皇妃楚乔传 | L'indomito | 庆余年 | Empresses In The Palace | 三生三世十里桃花
+  3. [   48] 124 tit. (49 serie) · Youth – La giovinezza | Chloe - Tra seduzione e inganno | Perfect Sense | Mare dentro | Toy Boy - Un ragazzo in vendita
+  4. [   54] 109 tit. (0 serie) · La leggenda di Al, John e Jack | Entergalactic | Vicino all'orizzonte | HOMECOMING: A film by Beyoncé | Black Site – La tana del lupo
+  5. [   52] 105 tit. (0 serie) · Un bacio | I Am Michael | From Beginning to End - Per sempre | La partita | Caravaggio
+  6. [   77] 101 tit. (41 serie) · El juego de las llaves | El barco | Millennium - Quello che non uccide | Padri e figlie | Il paradiso per davvero
+  7. [  175]  95 tit. (90 serie) · Hell's Kitchen - Il diavolo in cuc | MasterChef | Cucine da incubo USA | Il fuoco di spade | Queer Eye
+  8. [  104]  92 tit. (4 serie) · Scusa ma ti chiamo amore | Cargo 200 | The Dawns Here are Quiet | War | Il quinto sigillo
+  9. [  120]  86 tit. (40 serie) · La conseguenza | Proxima | Convoy - Trincea d'asfalto | Scomodi omicidi | L'angelo
+ 10. [  229]  83 tit. (83 serie) · Che fine ha fatto Sara? | Dietro i suoi occhi | The Stranger | Un inganno di troppo | Ovunque tu sia
+ 11. [  176]  79 tit. (3 serie) · Tre metri sopra il cielo | Un posto nel mio cuore | Ma première fois | Love Is in the Air - Turbolenze d' | Il principe dimenticato
+ 12. [  299]  76 tit. (0 serie) · Talento de Barrio | 夜宴 | Bordertown: Mural Murders | Double Vision | Puhdistus
+ 13. [  242]  73 tit. (20 serie) · Le fate ignoranti | L'uomo senza passato | Ombre nel paradiso | Saturno contro | Ariel
+ 14. [  245]  71 tit. (14 serie) · Frida | Suburbicon | La ragazza nella nebbia | Tutti lo sanno | Oltre la notte
+ 15. [  274]  69 tit. (0 serie) · Gli occhi del delitto | Blood and Chocolate - La caccia al | Blood Creek | Bad Moon - Luna mortale | Fredda è la notte
+ 16. [  289]  67 tit. (0 serie) · La carovana dei mormoni | Il generale Della Rovere | Pandora | Il trapezio della vita | Arditi dell'aria
+ 17. [  294]  65 tit. (27 serie) · Black Death - ...un viaggio all'in | Riscatto d'amore | Flavors of Youth | Outcast - L'ultimo templare | Creation of the Gods I - Kingdom o
+ 18. [  360]  63 tit. (0 serie) · Shottas - Una vita al massimo | Jackie & Ryan | 100 gradi sotto zero | Il Massacro di Haditha | Scorched Earth - Cacciatrice di ta
+ 19. [  191]  61 tit. (0 serie) · La verità | Pollo alle prugne | Nostalgia della luce | Puppet Master: The Littlest Reich | Sognare è vivere
+ 20. [  354]  60 tit. (0 serie) · 人再囧途之泰囧 | 어린 의뢰인 | A Man | Un tuffo nel passato | Krasue: Inhuman Kiss
+ 21. [  322]  59 tit. (0 serie) · Natale in California: Luci della c | Love Is in the Air | La luna di settembre | Consigli di San Valentino | Mozart, un cane per due
+ 22. [  375]  57 tit. (0 serie) · Cold Eyes | Cate McCall - Il confine della ver | Pressure | Boston Streets | Tower Block
+ 23. [  411]  56 tit. (52 serie) · Your Name Engraved Herein | บังเอิญรัก | รักโคตรร้าย สุดท้ายโคตรรัก | 1 Litre of Tears | เพราะเราคู่กัน
+ 24. [  292]  55 tit. (0 serie) · Il ponte di Waterloo | Il Jolly è impazzito | Joe Bass l'implacabile | Furia bianca | Il grande campione
+ 25. [  404]  52 tit. (47 serie) · Alan Partridge: Radio sotto assedi | Scuola di eroi | Where the Buffalo Roam | The Corner | Dirty Sanchez: The Movie
+ 26. [  390]  51 tit. (40 serie) · Timon e Pumbaa | Queer as Folk USA | Jumpin' Jack Flash | Ricreazione - La scuola è finita | Bolle di sapone
+ 27. [  485]  50 tit. (2 serie) · The Great Gilly Hopkins | The Priests | PMC: 더 벙커 | Memories of the Sword | 黃金兄弟
+ 28. [  523]  48 tit. (6 serie) · Una lunga domenica di passioni | Le armi del cuore | Gli anni spezzati | 2 Filhos de Francisco | Prigionieri del ghiaccio
+ 29. [  460]  47 tit. (0 serie) · African Cats - Il regno del coragg | LA 92 | Pallino e le meraviglie della barr | Sour Grapes | Terra
+ 30. [  651]  46 tit. (46 serie) · Kamisama Kiss | xxxHOLiC | Toilet-bound Hanako-kun | Monogatari | Mushishi
+ 31. [  645]  45 tit. (0 serie) · Session 9 | L'insaziabile | Il giorno della bestia | Santa Sangre | The Stepfather - Il patrigno
+ 32. [  491]  43 tit. (0 serie) · Año bisiesto | La bestia | Dans ma peau | Tokyo Decadence | Un perfetto gentiluomo
+ 33. [  559]  43 tit. (42 serie) · I segugi | La casa di carta: Corea | Mouse | A Killer Paradox | Signal
+ 34. [  686]  42 tit. (0 serie) · Godzilla | Il trionfo di King Kong | Watang! Nel favoloso impero dei mo | Godzilla - Il Re Dei Mostri | Godzilla contro i robot
+ 35. [  631]  41 tit. (4 serie) · Lo chiamavano Jeeg Robot | Un poliziotto a 4 zampe | Freaks Out | La strana coppia | Qualcosa di straordinario
+ 36. [  388]  40 tit. (0 serie) · Quel che resta del giorno | Priscilla - La regina del deserto | Camera con vista | Maurice | Casa Howard
+ 37. [  638]  40 tit. (1 serie) · The Danish Girl | BoyGirl - Questione di... sesso | Passion | The Escort | Red Rock West
+ 38. [  799]  39 tit. (0 serie) · Tutti insieme appassionatamente | West Side Story | My Fair Lady | Cabaret | Romeo e Giulietta
+ 39. [  648]  38 tit. (37 serie) · Desperate Housewives - I segreti d | Dynasty | Why Women Kill | Beauty in Black | Nashville
+ 40. [  682]  37 tit. (2 serie) · 國產凌凌漆 | 喜劇之王 | Azzardo mortale | 賭神 | Fight Back to School
+ 41. [  779]  36 tit. (0 serie) · La tigre e il dragone | La tigre e il dragone - La spada d | Master Z - Ip Man Legacy | Kung Fu Yoga | Shaolin - La leggenda dei monaci g
+ 42. [  748]  35 tit. (35 serie) · Insatiable | La casa de las flores | Falsa identidad | Le ragazze del centralino | Lezioni di chimica
+ 43. [  601]  35 tit. (0 serie) · Il viaggio di Yao | Adolescentes | Il quaderno di Tomy | Padre soldato figlio | Trixie Mattel: Moving Parts
+ 44. [  789]  34 tit. (2 serie) · Ichi the Killer | L'immortale | Visitor Q | Yakuza | Dead or Alive
+ 45. [  421]  34 tit. (17 serie) · Ölümlü Dünya | Recep İvedik | Recep İvedik 2 | Hababam Sınıfı Sınıfta Kaldı | Tosun Paşa
+ 46. [  544]  33 tit. (12 serie) · Il tenente ottomano | Joe Bell | I segreti di Marilyn Monroe: i nas | L'infinito esiste? | One-Minute Time Machine
+ 47. [  564]  32 tit. (0 serie) · Mi chiamo Giulia Ross | Love, Marilyn | Le jene del quarto potere | Cerimonia per un delitto | La poltrona vuota
+ 48. [  757]  31 tit. (0 serie) · A cambio de nada | Fallo da Uomo | Black Site | El Rey de La Habana | Jackie
+ 49. [  893]  31 tit. (1 serie) · Il sospetto | Storie pazzesche | La donna che canta | Il segreto dei suoi occhi | Una separazione
+ 50. [  848]  30 tit. (1 serie) · Cocoon - L'energia dell'universo | La piccola principessa | Cocoon 2 - Il ritorno | The Majestic | Ovunque nel tempo
+ 51. [  966]  29 tit. (29 serie) · Kakegurui | BEASTARS | Classroom of the Elite | Junji Ito Collection | Platinum End
+ 52. [ 1086]  28 tit. (2 serie) · Il pollo si mangia con le mani | Ecco a voi i Chippendales | L'Autre Dumas | Frankenstein: The True Story | Le avventure del giovane Indiana J
+ 53. [  907]  27 tit. (0 serie) · Forbidden World | Le tombe dei resuscitati ciechi | Darkly Noon - Passeggiata nel buio | La cavalcata dei resuscitati ciech | La nave maledetta
+ 54. [  950]  26 tit. (0 serie) · L'era glaciale presenta: l'era Nat | Natale in affitto | I Pinguini di Madagascar in Missio | La festività di Kung Fu Panda | A casa per Natale
+ 55. [ 1131]  26 tit. (0 serie) · Hostel | Le colline hanno gli occhi | La maschera di cera | Non aprite quella porta | Nightmare
+ 56. [  725]  25 tit. (1 serie) · Non conosci Papicha | Dio è donna e si chiama Petrunya | Marighella | Getúlio | Bella del Signore
+ 57. [ 1040]  24 tit. (0 serie) · Organize İşler: Sazan Sarmalı | Perdonaci i nostri peccati | Lezioni private | Cep Herkülü: Naim Süleymanoğlu | L'uomo dalla maschera di ferro
+ 58. [ 1072]  24 tit. (23 serie) · La casa di carta | Lupin | Vis a vis - Il prezzo del riscatto | Vis a vis: El oasis | Berlino e i gioielli di Parigi
+ 59. [ 1036]  23 tit. (2 serie) · Josee, the Tiger and the Fish | A Taxing Woman's Return | Bungee Jumping of Their Own | Moving | Nackt
+ 60. [ 1136]  23 tit. (0 serie) · Paradise Beach - Dentro l'incubo | Crawl - Intrappolati | 47 metri | Jungle | 47 Metri: Uncaged
+ 61. [ 1094]  22 tit. (2 serie) · Sharknado 3: Attacco alla Casa bia | La camera dei misteri | Sharknado 4 | Sharknado 5: Global Swarming | L'ultimo Sharknado - Era ora!
+ 62. [ 1120]  21 tit. (21 serie) · ORESUKI Are you the only one who l | Alya Sometimes Hides Her Feelings  | Scum's Wish | The Angel Next Door Spoils Me Rott | Hokkaido Gals Are Super Adorable!
+ 63. [ 1134]  20 tit. (0 serie) · Il mostro di Cleveland | Flowers in the Attic | La lista dei clienti | Petals on the Wind | Homecoming - Vendetta e seduzione
+ 64. [ 1042]  20 tit. (20 serie) · Resident Alien | Misfits | The Last Man on Earth | Dirk Gently - Agenzia di investiga | Future Man
+ 65. [ 1295]  19 tit. (1 serie) · One Piece Film - Red | One Piece Stampede - Il film | One Piece Film: Z | One Piece Gold - Il film | One Piece - Avventura sulle isole 
+ 66. [ 1198]  18 tit. (0 serie) · Come ti ammazzo il bodyguard | El Camino: Il film di Breaking Bad | Fuori in 60 secondi | Need for Speed | Le strade del male
+ 67. [ 1220]  17 tit. (10 serie) · Patlabor 2 - The Movie | Macross - Il film | Fortezza superdimensionale Macross | Macross Plus | WXIII: Patlabor the Movie 3
+ 68. [ 1257]  17 tit. (17 serie) · Oregairu | Citrus | Bloom into You | I Made Friends with the Second Pre | Adachi and Shimamura
+ 69. [ 1294]  16 tit. (0 serie) · Amityville Horror | Amityville : Il risveglio | Amityville Horror | Amityville Possession | Amityville 3D
+ 70. [ 1166]  16 tit. (12 serie) · Riverdale | Le terrificanti avventure di Sabri | Siren | Vita da strega | Sabrina, vita da strega
+ 71. [  988]  15 tit. (0 serie) · The Bunker | Sacro e profano | Alla ricerca del principe azzurro | The Infinite Man | Cinque per la gloria
+ 72. [ 1315]  15 tit. (7 serie) · This Is England | Cinque giorni di vendetta | This Is England '86 | This Is England '88 | In My Father's Den
+ 73. [ 1253]  14 tit. (2 serie) · Quando un padre | Quando chiama uno sconosciuto | Cassandra Crossing | Affittasi ladra | Una estranea fra noi
+ 74. [ 1333]  13 tit. (0 serie) · Pitch Black | The Chronicles of Riddick | Riddick | Evolution | Il 6° giorno
+ 75. [ 1368]  13 tit. (0 serie) · Dèmoni | Stuff - Il gelato che uccide | Q - Il serpente alato | Frankenhooker | Dèmoni 2… L'incubo ritorna
+ 76. [ 1359]  12 tit. (0 serie) · Bad Boys for Life | Bad Boys | Tyler Rake | Bad Boys II | 6 Underground
+ 77. [ 1386]  11 tit. (5 serie) · Black Bullet | Absolute Duo | 毒舌大狀 | Fruits Basket: Prelude | I Moomins al mare
+ 78. [ 1429]  11 tit. (10 serie) · Tokyo Vice | The Devil's Hour | Criminal: Regno Unito | Giri / Haji - Dovere / Vergogna | Criminal Record
+ 79. [ 1379]  11 tit. (0 serie) · Galline da salvare | Die Wilden Hühner und die Liebe | Horst Schlämmer - Isch kandidiere! | Das Sams | Terror - Ihr Urteil
+ 80. [ 1383]  10 tit. (0 serie) · Dottor Strange: Il mago supremo | Ultimate Avengers 2 - L'ascesa del | Next Avengers - Gli eroi di domani | Iron Man & Hulk: Heroes United | Iron Man & Captain America: Heroes
+ 81. [ 1416]  10 tit. (0 serie) · Caccia a Ottobre Rosso | Allarme rosso | Al vertice della tensione | Giochi di potere | Sotto il segno del pericolo
+ 82. [ 1447]   9 tit. (0 serie) · Resident Evil | Resident Evil: Apocalypse | Resident Evil: Extinction | Resident Evil: Retribution | Resident Evil: Afterlife
+ 83. [ 1476]   8 tit. (0 serie) · Il racconto dei racconti - Tale of | The Princess | La favolosa storia di pelle d'asin | Tigers Are Not Afraid | Il cigno
+ 84. [ 1509]   8 tit. (0 serie) · Congratulations | When I Get Home, My Wife Always Pr | 72家租客 | Hair Wolf | Kamen Rider Ryuki: Episode Final
+ 85. [ 1495]   8 tit. (1 serie) · Predator | Prey | The Predator | Alien vs. Predator | Predators
+ 86. [ 1528]   7 tit. (7 serie) · Diabolik Lovers | Brothers Conflict | Uta Pri | La Storia della Arcana Famiglia | Dance with Devils
+ 87. [ 1555]   7 tit. (0 serie) · Shrek | Shrek 2 | Shrek terzo | Shrek e vissero felici e contenti | Shrekkato da morire
+ 88. [ 1601]   7 tit. (0 serie) · Tremors | Tremors 2 - Aftershocks | Tremors 3 - Ritorno a Perfection | Tremors 5 - Bloodlines | Tremors: A Cold Day in Hell
+ 89. [ 1596]   6 tit. (0 serie) · Terminator | Terminator 2 - Il giorno del giudi | Terminator Genisys | Terminator 3 - Le macchine ribelli | Terminator Salvation
+ 90. [ 1581]   6 tit. (0 serie) · Ong-Bak - Nato per combattere | The Protector - La legge del Muay  | Ong-Bak 2 - La nascita del dragone | Chocolate - La furia | Ong-Bak 3 - La battaglia finale
+ 91. [ 1642]   5 tit. (0 serie) · Tarzan | Koda, fratello orso | Koda, fratello orso 2 | Tarzan 2 | Tarzan & Jane
+ 92. [ 1619]   5 tit. (0 serie) · Il cavaliere oscuro | Il cavaliere oscuro - Il ritorno | Batman Begins | V per Vendetta | Watchmen
+ 93. [ 1669]   4 tit. (0 serie) · 365 giorni | 365 giorni - Adesso | Altri 365 giorni | Il primo giorno della mia vita
+ 94. [ 1664]   4 tit. (0 serie) · Kung Fu Panda | Kung Fu Panda 2 | Kung Fu Panda 3 | Kung Fu Panda - I segreti della pe
+ 95. [ 1655]   4 tit. (0 serie) · Oss 117 furia a Bahia | OSS 117 minaccia Bangkok | OSS 117 segretissimo | Niente rose per OSS 117
+ 96. [ 1739]   3 tit. (0 serie) · Cars - Motori ruggenti | Cars 2 | Cars 3
+ 97. [ 1720]   3 tit. (0 serie) · Attraction | Invasion | The Blackout
+ 98. [ 1756]   2 tit. (0 serie) · Smetto quando voglio - Masterclass | Smetto quando voglio - Ad honorem
+ 99. [ 1768]   2 tit. (0 serie) · Il Gruffalò | Il Gruffalò e la sua piccolina
+100. [ 1782]   1 tit. (0 serie) · La culla vuota

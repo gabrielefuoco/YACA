@@ -1,0 +1,215 @@
+====================================================================================================
+LA COLLOCAZIONE SU bolle-eterogeneo-V10-p1.0-r200.npy
+====================================================================================================
+  2,838 bolle · mediana 16 · la piu' grossa 341 · >=15 1,544
+  centroidi della partizione nuova: (2497, 122314) · 915,764 valori · candidate 2,497 (696 serie + 1,801 film) (2s)
+  da collocare: 5,082 uscite 2024+ con >= 20 voti (4s)
+
+=== dove finiscono, su bolle da mediana 16 ===
+
+  1. Deadpool & Wolverine (2024) -> bolla 2528 (5 tit.) conf 0.28
+        dentro: Deadpool | Deadpool 2 | C'era una volta Deadpool | Deadpool: No Good Deed
+  2. Dune - Parte due (2024) -> bolla 1880 (12 tit.) conf 0.16
+        dentro: Avatar | Dune | Avatar: La via dell'acqua | Top Gun: Maverick
+  3. L'ultima missione: Project Hail Mary (2026) -> bolla 908 (28 tit.) conf 0.13
+        dentro: Iron Sky | Europa Report | High Life | Cosmic Sin
+  4. Inside Out 2 (2024) -> bolla 1888 (13 tit.) conf 0.34
+        dentro: Inside Out | Up | Alla ricerca di Nemo | WALL•E
+  5. Il robot selvaggio (2024) -> bolla 1912 (11 tit.) conf 0.19
+        dentro: Shark Tale | Bolt - Un eroe a quattro zam | Bee Movie | Mostri contro alieni
+  6. The Substance (2024) -> bolla 897 (31 tit.) conf 0.06
+        dentro: The Menu | Black Phone | Nope | Old
+  7. Obsession (2026) -> bolla 2101 (9 tit.) conf 0.14
+        dentro: Paranormal Activity | Paranormal Activity 2 | Paranormal Activity 3 | Paranormal Activity 4
+  8. Superman (2025) -> bolla 1804 (15 tit.) conf 0.16
+        dentro: Shazam! | Black Adam | The Flash | Morbius
+  9. I peccatori (2025) -> bolla 787 (30 tit.) conf 0.10
+        dentro: 30 giorni di buio | Legion | Priest | Blood Story
+ 10. Furiosa: A Mad Max Saga (2024) -> bolla 2576 (5 tit.) conf 0.17
+        dentro: Mad Max: Fury Road | Interceptor | Interceptor - Il guerriero d | Mad Max - Oltre la sfera del
+ 11. Alien: Romulus (2024) -> bolla 2192 (7 tit.) conf 0.14
+        dentro: Passengers | Prometheus | Alien: Covenant | Life - Non oltrepassare il l
+ 12. Godzilla e Kong - Il nuovo impero (2024) -> bolla 2037 (9 tit.) conf 0.46
+        dentro: Kong: Skull Island | Godzilla vs. Kong | Godzilla | King Kong
+ 13. Il gladiatore II (2024) -> bolla 737 (30 tit.) conf 0.22
+        dentro: Il gladiatore | Centurion | The Eagle | Caligola
+ 14. F1: Il film (2025) -> bolla 1133 (16 tit.) conf 0.14
+        dentro: Speed Racer | Veloce come il vento | Summer | Le 24 ore di Le Mans
+ 15. Civil War (2024) -> bolla 917 (27 tit.) conf 0.11
+        dentro: Sesso & potere | In & Out | W. | All'ultimo voto
+ 16. The Beekeeper (2024) -> bolla 630 (35 tit.) conf 0.08
+        dentro: Cani sciolti | Safe House - Nessuno è al si | Homefront | Parker
+ 17. Venom: The Last Dance (2024) -> bolla 2474 (5 tit.) conf 0.18
+        dentro: Spider-Man | The Amazing Spider-Man | Spider-Man 2 | Spider-Man 3
+ 18. Il regno del pianeta delle scimmie (2024) -> bolla 2317 (7 tit.) conf 0.16
+        dentro: Il pianeta delle scimmie | L'altra faccia del pianeta d | Fuga dal pianeta delle scimm | 1999 - Conquista della Terra
+ 19. Michael (2026) -> bolla 1579 (14 tit.) conf 0.13
+        dentro: Bohemian Rhapsody | A Star Is Born | The Greatest Showman | 8 Mile
+ 20. Avatar: Fuoco e cenere (2025) -> bolla 1880 (12 tit.) conf 0.24
+        dentro: Avatar | Dune | Avatar: La via dell'acqua | Top Gun: Maverick
+ 21. Una battaglia dopo l’altra (2025) -> bolla 2030 (9 tit.) conf 0.06
+        dentro: Baby Driver - Il genio della | The Departed - Il bene e il  | Drive | Non è un paese per vecchi
+ 22. Misteri dal profondo (2025) -> bolla 897 (31 tit.) conf 0.06
+        dentro: The Menu | Black Phone | Nope | Old
+ 23. Thunderbolts* (2025) -> bolla 2273 (9 tit.) conf 0.28
+        dentro: Doctor Strange | Black Widow | Doctor Strange nel Multivers | Shang-Chi e la leggenda dei 
+ 24. The Fall Guy (2024) -> bolla 2528 (5 tit.) conf 0.11
+        dentro: Deadpool | Deadpool 2 | C'era una volta Deadpool | Deadpool: No Good Deed
+ 25. Weapons (2025) -> bolla 607 (37 tit.) conf 0.10
+        dentro: Run | Ma | Marrowbone | I See You
+
+ 26. Odissea (2026) -> bolla 1689 (13 tit.) conf 0.12
+        dentro: Medea | Feed | Medea | Ifigenia
+ 27. Nosferatu (2024) -> bolla 962 (25 tit.) conf 0.19
+        dentro: Dracula Untold | Dracula di Bram Stoker | Renfield | Demeter - Il risveglio di Dr
+ 28. Mickey 17 (2025) -> bolla 912 (28 tit.) conf 0.09
+        dentro: Ad astra | Greenland | Love and Monsters | La guerra di domani
+ 29. I Fantastici 4 - Gli inizi (2025) -> bolla 2273 (9 tit.) conf 0.26
+        dentro: Doctor Strange | Black Widow | Doctor Strange nel Multivers | Shang-Chi e la leggenda dei 
+ 30. Frankenstein (2025) -> bolla 1849 (13 tit.) conf 0.22
+        dentro: Victor: La storia segreta de | Frankenstein di Mary Shelley | La maschera di Frankenstein | L'implacabile condanna
+ 31. Jurassic World - La rinascita (2025) -> bolla 2448 (5 tit.) conf 0.23
+        dentro: Jurassic World | Jurassic Park | Jurassic World – Il regno di | Il mondo perduto - Jurassic 
+ 32. Super Mario Galaxy - Il film (2026) -> bolla 1108 (33 tit.) conf 0.21
+        dentro: Soul | Super Mario Bros. - Il film | Encanto | Crudelia
+ 33. Predator: Badlands (2025) -> bolla 2214 (7 tit.) conf 0.21
+        dentro: Predator | Prey | The Predator | Alien vs. Predator
+ 34. Kung Fu Panda 4 (2024) -> bolla 1943 (9 tit.) conf 0.19
+        dentro: L'era glaciale presenta: l'e | I Pinguini di Madagascar in  | La festività di Kung Fu Pand | Robinson Crusoe
+ 35. Conclave (2024) -> bolla 1959 (10 tit.) conf 0.09
+        dentro: L'esorcista | L'esorcista del Papa | L'esorcista - Il credente | The Exorcism of God
+ 36. Spider-Man: Brand New Day (2026) -> bolla 2273 (9 tit.) conf 0.22
+        dentro: Doctor Strange | Black Widow | Doctor Strange nel Multivers | Shang-Chi e la leggenda dei 
+ 37. Backrooms (2026) -> bolla 897 (31 tit.) conf 0.14
+        dentro: The Menu | Black Phone | Nope | Old
+ 38. A Quiet Place - Giorno 1 (2024) -> bolla 2417 (5 tit.) conf 0.14
+        dentro: La notte del giudizio | Anarchia - La notte del giud | La notte del giudizio - Elec | La prima notte del giudizio
+ 39. Disclosure Day (2026) -> bolla 1474 (18 tit.) conf 0.14
+        dentro: The Terminal | Il libro della giungla | Le avventure di Tintin - Il  | Hook - Capitan Uncino
+ 40. Anora (2024) -> bolla 2028 (9 tit.) conf 0.06
+        dentro: Starlet | Destricted | Picture of Beauty | Now & Later
+ 41. Zootropolis 2 (2025) -> bolla 2140 (8 tit.) conf 0.16
+        dentro: Coco | Zootropolis | Big Hero 6 | Oceania
+ 42. Sonic 3: Il film (2024) -> bolla 2552 (5 tit.) conf 0.10
+        dentro: Thor | Thor: Ragnarok | Thor: The Dark World | Thor: Love and Thunder
+ 43. Bad Boys: Ride or Die (2024) -> bolla 2113 (8 tit.) conf 0.11
+        dentro: Beverly Hills Cop - Un piedi | Beverly Hills Cop II - Un pi | Tango & Cash | Beverly Hills Cop III - Un p
+ 44. Captain America: Brave New World (2025) -> bolla 2273 (9 tit.) conf 0.22
+        dentro: Doctor Strange | Black Widow | Doctor Strange nel Multivers | Shang-Chi e la leggenda dei 
+ 45. Cattivissimo me 4 (2024) -> bolla 2454 (5 tit.) conf 0.52
+        dentro: Cattivissimo me | Cattivissimo me 2 | Minions | Cattivissimo me 3
+ 46. Un film Minecraft (2025) -> bolla 1108 (33 tit.) conf 0.09
+        dentro: Soul | Super Mario Bros. - Il film | Encanto | Crudelia
+ 47. Beetlejuice Beetlejuice (2024) -> bolla 2473 (6 tit.) conf 0.18
+        dentro: Ghostbusters (Acchiappafanta | Beetlejuice - Spiritello por | Ghostbusters | Ghostbusters - Legacy
+ 48. Oceania 2 (2024) -> bolla 2140 (8 tit.) conf 0.31
+        dentro: Coco | Zootropolis | Big Hero 6 | Oceania
+ 49. Road House (2024) -> bolla 2154 (7 tit.) conf 0.10
+        dentro: Senza esclusione di colpi | Colpi proibiti 2 | Colpi proibiti 3 | Bloodsport: The Dark Kumite
+ 50. Wicked (2024) -> bolla 1767 (11 tit.)
+        dentro: Il grande e potente Oz | Il mago di Oz | Wicked | Nel fantastico mondo di Oz
+
+ 51. KPop Demon Hunters (2025) -> bolla 2402 (5 tit.) conf 0.11
+        dentro: I Puffi | I Puffi 2 | I Puffi - Viaggio nella fore | Strange Magic
+ 52. Mission Impossible - The Final Reckoning (2025) -> bolla 2176 (8 tit.) conf 0.61
+        dentro: Mission: Impossible - Protoc | Mission: Impossible | Mission: Impossible - Rogue  | Mission: Impossible - Fallou
+ 53. Uno Rosso (2024) -> bolla 880 (33 tit.) conf 0.19
+        dentro: Nightmare Before Christmas | Il Grinch | Polar Express | A Christmas Carol
+ 54. Twisters (2024) -> bolla 771 (34 tit.) conf 0.14
+        dentro: San Andreas | La tempesta perfetta | Poseidon | The Core
+ 55. Dragon Trainer (2025) -> bolla 1743 (12 tit.) conf 0.20
+        dentro: Dragon Trainer - Rimpatriata | Dragons | Cacciatori di draghi | Dragons: Oltre i confini di 
+ 56. Final Destination - Bloodlines (2025) -> bolla 2471 (5 tit.) conf 0.35
+        dentro: Final Destination | Final Destination 2 | Final Destination 3 | Final Destination 5
+ 57. Una di famiglia - The Housemaid (2025) -> bolla 1078 (27 tit.) conf 0.09
+        dentro: Fight Club | Shutter Island | Seven | L'amore bugiardo - Gone Girl
+ 58. Fallout (2024) -> bolla 1111 (22 tit.)
+        dentro: The Last of Us | Mr. Robot | The Purge | Fallout
+ 59. Flow - Un mondo da salvare (2024) -> bolla 803 (29 tit.) conf 0.12
+        dentro: A-X-L - Un'amicizia extraord | LEGO Ninjago: Il film | Vi presento Christopher Robi | I primitivi
+ 60. Joker: Folie à Deux (2024) -> bolla 1174 (21 tit.) conf 0.08
+        dentro: Lanterna verde | Superman Returns | Superman | Catwoman
+ 61. Trap (2024) -> bolla 2131 (9 tit.) conf 0.19
+        dentro: Split | The Sixth Sense - Il sesto s | Unbreakable - Il predestinat | Glass
+ 62. 28 anni dopo (2025) -> bolla 1621 (11 tit.) conf 0.14
+        dentro: Little Monsters | Road of the Dead - Wyrmwood | Anna and the Apocalypse | Dead Rising: Watchtower
+ 63. Ballerina (2025) -> bolla 2449 (5 tit.) conf 0.25
+        dentro: John Wick | John Wick - Capitolo 2 | John Wick 3 - Parabellum | John Wick 4
+ 64. Damsel (2024) -> bolla 2248 (7 tit.) conf 0.17
+        dentro: DragonHeart | Dragonheart 2 - Una nuova av | DragonHeart 3 - La maledizio | Dragonheart 4 - L'eredità de
+ 65. Heretic (2024) -> bolla 653 (33 tit.) conf 0.09
+        dentro: Under the Silver Lake | Macbeth | Waves - Le onde della vita | Hot Summer Nights
+ 66. Carry-On (2024) -> bolla 1531 (15 tit.) conf 0.05
+        dentro: Non-Stop | Giustizia privata | The Judge | Il caso Thomas Crawford
+ 67. Wake Up Dead Man - Knives Out (2025) -> bolla 891 (33 tit.) conf 0.13
+        dentro: Assassinio sull'Orient Expre | Assassinio sul Nilo | Il nome della rosa | Assassinio a Venezia
+ 68. Longlegs (2024) -> bolla 2034 (9 tit.) conf 0.11
+        dentro: The Stepfather - Il patrigno | The Devil Rides Out | Spider Baby or, The Maddest  | La città dei morti
+ 69. Challengers (2024) -> bolla 1245 (14 tit.) conf 0.08
+        dentro: La battaglia dei sessi | Borg McEnroe | Patti Cake$ | Dream Horse
+ 70. Mufasa - Il re leone (2024) -> bolla 1687 (13 tit.) conf 0.13
+        dentro: Il re leone | Aladdin | Mulan | Onward - Oltre la magia
+ 71. Lee Cronin - La Mummia (2026) -> bolla 1125 (14 tit.) conf 0.18
+        dentro: La mummia | Guardians of the tomb | Exorcismus - Cleo, la dea de | Il mistero della mummia
+ 72. Madame Web (2024) -> bolla 1174 (21 tit.) conf 0.10
+        dentro: Lanterna verde | Superman Returns | Superman | Catwoman
+ 73. Companion (2025) -> bolla 897 (31 tit.) conf 0.09
+        dentro: The Menu | Black Phone | Nope | Old
+ 74. Giurato numero 2 (2024) -> bolla 1055 (24 tit.) conf 0.26
+        dentro: Il corriere - The Mule | Changeling | Invictus - L'invincibile | Richard Jewell
+ 75. Mortal Kombat II (2026) -> bolla 2166 (7 tit.) conf 0.39
+        dentro: Mortal Kombat | Mortal Kombat | Mortal Kombat Legends: Scorp | Mortal Kombat - Distruzione 
+
+ 76. Kraven - Il cacciatore (2024) -> bolla 2474 (5 tit.) conf 0.15
+        dentro: Spider-Man | The Amazing Spider-Man | Spider-Man 2 | Spider-Man 3
+ 77. Supergirl (2026) -> bolla 1174 (21 tit.) conf 0.16
+        dentro: Lanterna verde | Superman Returns | Superman | Catwoman
+ 78. Toy Story 5 (2026) -> bolla 2329 (6 tit.) conf 0.33
+        dentro: Toy Story - Il mondo dei gio | Toy Story 3 - La grande fuga | Toy Story 2 - Woody & Buzz a | Toy Story 4
+ 79. War Machine (2026) -> bolla 2441 (5 tit.) conf 0.07
+        dentro: I mercenari - The Expendable | I mercenari 2 | I mercenari 3 | I mercen4ri - Expendables
+ 80. Bugonia (2025) -> bolla 2054 (9 tit.) conf 0.08
+        dentro: Attack the Block - Invasione | Awake | Revolt | The Recall - L'invasione
+ 81. Il diavolo veste Prada 2 (2026) -> bolla 1746 (12 tit.) conf 0.12
+        dentro: Il diavolo veste Prada | 50 volte il primo bacio | 30 anni in un secondo | 17 Again - Ritorno al liceo
+ 82. Jumpers - Un salto tra gli animali (2026) -> bolla 1888 (13 tit.) conf 0.24
+        dentro: Inside Out | Up | Alla ricerca di Nemo | WALL•E
+ 83. Smile 2 (2024) -> bolla 897 (31 tit.) conf 0.12
+        dentro: The Menu | Black Phone | Nope | Old
+ 84. Speak No Evil - Non parlare con gli sconosci (2024) -> bolla 1320 (17 tit.) conf 0.09
+        dentro: L'esorcismo di Hannah Grace | Polaroid | The Turning - La casa del ma | Look Away - Lo sguardo del m
+ 85. Send Help (2026) -> bolla 1075 (23 tit.) conf 0.10
+        dentro: The Impossible | The Grey | Alpha - Un'amicizia forte co | Resta con me
+ 86. Ghostbusters - Minaccia glaciale (2024) -> bolla 2473 (6 tit.) conf 0.33
+        dentro: Ghostbusters (Acchiappafanta | Beetlejuice - Spiritello por | Ghostbusters | Ghostbusters - Legacy
+ 87. Lilo & Stitch (2025) -> bolla 2416 (5 tit.) conf 0.22
+        dentro: Lilo & Stitch | Lilo & Stitch 2 - Che disast | Provaci ancora Stitch! | Lilo & Stitch
+ 88. The Punisher: One Last Kill (2026) -> bolla 1983 (9 tit.) conf 0.20
+        dentro: Irripetibili Marvel: Agente  | Irripetibili Marvel: Il Cons | Irripetibili Marvel: Viva il | Irripetibili Marvel: Item 47
+ 89. Late Night with the Devil - In onda con il d (2024) -> bolla 956 (26 tit.) conf 0.12
+        dentro: Necropolis - La città dei mo | Monsters | Troll Hunter | Creep
+ 90. Marty Supreme (2025) -> bolla 653 (33 tit.) conf 0.13
+        dentro: Under the Silver Lake | Macbeth | Waves - Le onde della vita | Hot Summer Nights
+ 91. Abigail (2024) -> bolla 962 (25 tit.) conf 0.20
+        dentro: Dracula Untold | Dracula di Bram Stoker | Renfield | Demeter - Il risveglio di Dr
+ 92. Demon Slayer: Il Castello dell'Infinito - Pa (2025) -> bolla 2050 (10 tit.) conf 0.22
+        dentro: The Garden of Sinners - Chap | The Garden of Sinners - Chap | The Garden of Sinners Chapte | The Garden of Sinners Chapte
+ 93. Swapped - Al tuo posto (2026) -> bolla 1253 (19 tit.) conf 0.10
+        dentro: Mowgli - Il figlio della giu | Lo schiaccianoci e i quattro | Ron - Un amico fuori program | Smallfoot - Il mio amico del
+ 94. Masters of the Universe (2026) -> bolla 2552 (5 tit.) conf 0.14
+        dentro: Thor | Thor: Ragnarok | Thor: The Dark World | Thor: Love and Thunder
+ 95. Il conte di Montecristo (2024) -> bolla 428 (46 tit.) conf 0.08
+        dentro: Le Jeu | Bac Nord | Quasi nemici - L'importante  | Tutti in piedi
+ 96. The Conjuring: Il rito finale (2025) -> bolla 2372 (5 tit.) conf 0.43
+        dentro: L'evocazione - The Conjuring | The Conjuring - Il caso Enfi | The Conjuring - Per ordine d | Sinister
+ 97. A Working Man (2025) -> bolla 630 (35 tit.) conf 0.12
+        dentro: Cani sciolti | Safe House - Nessuno è al si | Homefront | Parker
+ 98. Il ministero della guerra sporca (2024) -> bolla 888 (36 tit.) conf 0.14
+        dentro: La sottile linea rossa | U-Boot 96 | Quella sporca dozzina | Patton, generale d'acciaio
+ 99. Blink Twice (2024) -> bolla 713 (31 tit.) conf 0.05
+        dentro: Hotel Rwanda | Monster | Mysterious Skin | Festen - Festa in famiglia
+100. It Ends with Us - Siamo noi a dire basta (2024) -> bolla 1068 (20 tit.) conf 0.09
+        dentro: Breaking Surface - Trattieni | Il mio profilo migliore | The Tunnel - Trappola nel bu | Os Farofeiros
+
+
+FINE (6s)
