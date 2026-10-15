@@ -142,7 +142,21 @@ def stato_di(nome):
 
 def da_rivedere():
     """Gli iperparametri INVENTATI: la lista delle cose da sistemare per prime."""
-    return [(n, v, d) for n, v, s, p, d in SCHEDA if s.startswith("INVENTATO")]
+    return [(n, v, d) for n, v, s, _p, d in SCHEDA if s.startswith("INVENTATO")]
+
+
+def impronta():
+    """L'IMPRONTA DELLA RICETTA: cambia se cambia qualunque iperparametro di questa tabella.
+
+    Serve nella chiave della cache delle liste. Senza, cambiare un valore (per esempio
+    `MONDI_DIVERSI_SOGLIA_FASCIA`) continuerebbe a servire liste costruite coi valori vecchi — **in
+    silenzio**, e senza che niente vada in errore. E' **la stessa trappola della partizione** (l'artefatto
+    e il parametro che si disallineano), e si chiude allo stesso modo: con un'impronta.
+    """
+    import hashlib
+    import json
+    grezzo = json.dumps([[n, str(v), s] for n, v, s, _p, _d in SCHEDA], sort_keys=True)
+    return hashlib.sha256(grezzo.encode()).hexdigest()[:16]
 
 
 if __name__ == "__main__":

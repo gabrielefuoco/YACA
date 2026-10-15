@@ -335,6 +335,58 @@ I **cinque INVENTATI** che la tabella dichiara da sola (`da_rivedere()`):
 ancora i propri valori locali (`ALPHA`, `K_POTA`, `ITER`) — vanno collegati anche loro, altrimenti i
 posti dove guardare restano due.
 
+### 5b. La cache: **chiave = hash della storia + versione dell'artefatto**
+
+`graph/measure/cache.py`, 100 utenti, semi base ~283. Aggiungendo visioni nuove al seme:
+
+| visioni nuove | Jaccard dei 10 mondi | ordine (Spearman) | mondo di testa |
+|---|---|---|---|
+| 1 · 2 · 5 · 10 | **1,00** | **1,00** | **100%** |
+
+Cioè: **per un profilo maturo la storia non muove il portafoglio**. La decisione è comunque la chiave
+completa — `hash(storia) + versione dell'artefatto` — perché:
+
+- è **esatta per costruzione**, e copre anche il caso che la misura **non** ha guardato (i titoli
+  *dentro* i mondi, che possono muoversi più dei mondi);
+- **il profilo freddo si comporta come gli altri**: sotto i 3 titoli ogni visione muove tutto, e con la
+  chiave sull'hash viene ricalcolato senza casi speciali;
+- **la versione dell'artefatto è obbligatoria in ogni caso**: il grafo si ricostruisce ogni notte e le
+  bolle **non hanno id stabili** fra partizioni — un portafoglio di ieri punta a mondi diversi, in
+  silenzio. La chiave si lega all'hash della partizione, che le impronte già contengono.
+
+Il costo dichiarato: ~50-150 ms per visione anche quando comprerebbe 1,00 di Jaccard, cioè zero. È una
+scelta di correttezza, non di efficienza.
+
+### 5c. Cosa si salva: **la ricetta a priori, la lista per profilo**
+
+Distinzione del proprietario (15/10/2026), ed è più pulita di quella dell'autore:
+
+- **LA RICETTA** è il *come*: il codice più `graph/parametri.py`. Si salva **a priori**, è uguale per
+tutti, e **non è un dato di profilo**. Non cambia mai se non quando la si cambia — e allora cambia per
+tutti insieme.
+- **LA LISTA** è il risultato **processato e completo** — i mondi, i loro membri, l'ordine — ed è
+salvata **per profilo**, ricalcolata a ogni cambio della cronologia.
+
+**La chiave della cache, completa**:
+
+```
+hash(storia) · versione dell'artefatto · impronta della ricetta · slider
+```
+
+Le prime due erano decise (§5b). La terza **la aggiunge l'autore, ed è necessaria**: senza l'impronta
+della ricetta, cambiare un iperparametro (per esempio `MONDI_DIVERSI_SOGLIA_FASCIA`) continuerebbe a
+servire liste costruite coi valori vecchi — **in silenzio**. È **la stessa trappola della partizione**
+(§9): un artefatto e un parametro che si disallineano e non lo dicono a nessuno. E si chiude con lo
+stesso rimedio: **una impronta**, e la si calcola dalla tabella stessa (un hash di `parametri.SCHEDA`).
+
+**Cosa contiene la lista salvata**: **gli id, non i testi.** I titoli, le trame e le immagini il
+prodotto li ha già nel suo database: salvare quelli sarebbe duplicare. Con i soli id, una lista
+completa (4-8 liste · 20-40 titoli · l'ordine) sta in **pochi KB per profilo**.
+
+**E il TTL**: con la chiave completa, le 12 ore **non servono più per la correttezza** — restano come
+**limite di spazio** (si tengono le liste recenti, si buttano le vecchie). Non e' piu' una scadenza: e'
+una politica di sgombero.
+
 ## Not yet specified
 
 Con la mia raccomandazione, da confermare o ribattere:
@@ -353,9 +405,16 @@ Con la mia raccomandazione, da confermare o ribattere:
 5. ~~I tipi di lista~~ — **CHIUSA**: quattro liste — *il tuo mondo*, *un passo fuori*, *le uscite nuove*,
    *la nicchia di qualità* — più **un catalogo per ogni mondo diverso** (§3d). Le saghe restano fuori:
    misurate **rotte sulle serie**.
-6. **La cache a 12 ore: su cosa si invalida.** Una visione nuova cambia il portafoglio — ma non sempre
-   in modo visibile (misurato: 0 cambi su 20 col decadimento di `todo/8`).
-7. **Il contenuto dei due slider** (`todo/9`): scelti per **instradare**, non per descrivere.
+6. ~~La cache~~ — **CHIUSA**: chiave = **hash della storia + versione dell'artefatto** (§5b). Misurato:
+   per un profilo maturo la storia non muove il portafoglio (Jaccard 1,00 con 10 visioni nuove); la
+   chiave completa si sceglie per esattezza, per coprire il caso non misurato e per non avere casi
+   speciali sui profili freddi.
+7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri: larghezza · distanza ·
+   fascia), non una lista di titoli — e la lista è il loro *risultato* (§5c). Resta aperto **il
+   contenuto preciso** (gli "slider" o i "profili di serata" che nominano le stesse tre manopole) e
+   soprattutto **la verifica che la ricetta serva**: due profili con la stessa storia e tipo diverso
+   ricevono portafogli diversi **e migliori per loro**? Finché non e' dimostrato, gli slider sono
+   decorativi e la lista resta l'alternativa onesta.
 8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
 
 ## Out of scope
