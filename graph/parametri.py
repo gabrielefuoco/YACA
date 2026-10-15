@@ -121,6 +121,15 @@ SCHEDA = [
     ("BANCO_UTENTI", int(os.environ.get("UTENTI", 100)), "BANCO",
      "Quanti utenti Trakt. Usati finora: 60 (freddo), 100 (pesi), 120 (alfa, soglia), 253 (equilibrio).",
      "tutti gli arbitri"),
+    ("EQUILIBRIO_UTENTI", 300, "ANALISI",
+     "Utenti per la misura dell'EQUILIBRIO (la quota di peso delle serie). E' piu' alta degli altri "
+     "banchi perche' il sottogruppo «utenti di soli film» e' minoritario: con 100 utenti ne restano 3, "
+     "e la mediana non dice piu' niente.",
+     "measure/equilibrio.py"),
+    ("EQUILIBRIO_MIN_TITOLI", 20, "ANALISI",
+     "Titoli minimi per entrare nella misura dell'equilibrio: piu' basso del banco (40) perche' qui "
+     "interessa anche chi ha una storia sottile — ed e' proprio il caso sbilanciato.",
+     "measure/equilibrio.py"),
     ("FILM_HEAVY_SOTTO", 0.30, "ANALISI",
      "«Utente di soli film» = meno del 30% di serie nella storia. Taglio di analisi, non regola.",
      "measure/equilibrio.py"),

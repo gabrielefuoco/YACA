@@ -33,13 +33,14 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
-ALPHA = tuple(float(x) for x in os.environ.get("ALPHAS", "0.15,0.30,0.45,0.60").split(","))
-QUANTI_UTENTI = int(os.environ.get("UTENTI", 60))
-ITER = int(os.environ.get("ITER", 20))
-MIN_TITOLI = 30
-K_POTA = 16
+ALPHA = tuple(float(x) for x in os.environ.get("ALPHAS", f"0.15,0.30,0.45,{P.ALPHA}").split(","))
+QUANTI_UTENTI = P.BANCO_UTENTI
+ITER = P.ITER
+MIN_TITOLI = P.BANCO_MIN_TITOLI
+K_POTA = P.POTA_PER_RIGA
 EMIVITA = 365.0
 
 

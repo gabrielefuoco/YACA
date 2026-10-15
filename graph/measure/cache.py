@@ -32,7 +32,7 @@ from graph import canon as K
 from graph import parametri as P
 
 T0 = time.time()
-QUANTI_UTENTI = int(os.environ.get("UTENTI", 100))
+QUANTI_UTENTI = P.BANCO_UTENTI
 AGGIUNTE = (1, 2, 5, 10)
 
 

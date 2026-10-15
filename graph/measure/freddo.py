@@ -28,13 +28,14 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
-ALPHA = float(os.environ.get("ALPHA", 0.60))
-QUANTI_UTENTI = int(os.environ.get("UTENTI", 60))
-ITER = int(os.environ.get("ITER", 20))
-K_POTA = 16
-MIN_TITOLI = 40
+ALPHA = float(os.environ.get("ALPHA", P.ALPHA))
+QUANTI_UTENTI = P.BANCO_UTENTI
+ITER = P.ITER
+K_POTA = P.POTA_PER_RIGA
+MIN_TITOLI = P.BANCO_MIN_TITOLI
 K_SEMI = (1, 2, 3, 5, 10, 20, 50)
 EMIVITA = 365.0
 
@@ -85,7 +86,8 @@ def storia(u):
 def pesi_spec(righe, plays, NEP):
     nep = NEP[righe]
     pl = plays.astype(float)
-    return np.where(nep > 1.0, 1.0 + 2.0 * np.minimum(pl / nep, 1.0), np.minimum(pl, 3.0))
+    return np.where(nep > 1.0, P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * np.minimum(pl / nep, 1.0),
+                        np.minimum(pl, P.PESO_FILM_MAX))
 
 
 def ppr(P, seme, pesi, iters=ITER):

@@ -28,10 +28,11 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
-QUANTI_UTENTI = 300
-MIN_TITOLI = 20
+QUANTI_UTENTI = P.EQUILIBRIO_UTENTI
+MIN_TITOLI = P.EQUILIBRIO_MIN_TITOLI
 
 
 def storia(u):
@@ -62,10 +63,10 @@ def pesi_schema(nome, righe, plays):
     if nome == "min(plays, 20)":
         return np.minimum(pl, 20.0)
     if nome == "min(plays, 3)  [film]":
-        return np.minimum(pl, 3.0)
+        return np.minimum(pl, P.PESO_FILM_MAX)
     if nome == "SPEC utente":
-        film = np.minimum(pl, 3.0)
-        serie = 1.0 + 2.0 * np.minimum(pl / nep, 1.0)
+        film = np.minimum(pl, P.PESO_FILM_MAX)
+        serie = P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * np.minimum(pl / nep, 1.0)
         return np.where(nep > 1.0, serie, film)
     raise ValueError(nome)
 

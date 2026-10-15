@@ -29,10 +29,11 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
-ALPHA = 0.15          # il restart: la quota di massa che torna ai semi ad ogni giro
-ITER = 30
+ALPHA = P.ALPHA        # il restart: la quota di massa che torna ai semi ad ogni giro
+ITER = P.ITER
 TOP = 100
 
 

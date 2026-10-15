@@ -29,10 +29,11 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
-ALPHA = (0.05, 0.15, 0.30)
-K_POTA = 16
+ALPHA = (0.15, P.ALPHA, 0.90)   # dai piu' bassi al tetto: per VEDERE la differenza
+K_POTA = P.POTA_PER_RIGA
 SOGLIA = 0.005          # 0,5% di attivazione grezza: la soglia del portafoglio
 QUANTI_MONDI = 6        # quanti mondi stampare per ogni α
 EMIVITA_ANNI = 1.0      # il peso di un titolo dimezza ogni anno che passa

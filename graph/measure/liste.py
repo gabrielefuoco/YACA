@@ -30,8 +30,8 @@ from graph import canon as K
 from graph import parametri as P
 
 T0 = time.time()
-ALPHA = 0.60
-K_POTA = 16
+ALPHA = P.ALPHA
+K_POTA = P.POTA_PER_RIGA
 EMIVITA = 365.0
 QUANTI = 6
 

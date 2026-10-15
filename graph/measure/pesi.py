@@ -35,7 +35,7 @@ from graph import parametri as P
 
 T0 = time.time()
 ALPHA = float(os.environ.get("ALPHA", P.ALPHA))
-QUANTI_UTENTI = int(os.environ.get("UTENTI", 100))
+QUANTI_UTENTI = P.BANCO_UTENTI
 ITER = int(os.environ.get("ITER", P.ITER))
 FRAZIONE = P.TAGLIO_TEMPORALE      # il 70% piu' VECCHIO semina, il 30% piu' NUOVO e' l'oro
 K_POTA = P.POTA_PER_RIGA
