@@ -33,6 +33,43 @@ coppie possibili contro lo **0,151%** del grafo intero. Il sottografo che torna 
 | ~~Rilevatore: "ha un mondo o no"~~ | **RITIRATO**: la quota del mondo di testa prende il 24,7% con 10 semi coerenti e il 5,0% con 10 casuali, ma **2,9% con uno storico vero da 100 titoli**. Il numero dipende da *quanti* semi ci sono, non da quanto sono coerenti. Non è un rilevatore |
 | ~~Vincolare la camminata (gate)~~ | scartato: il segnale c'è già senza (170× di densità interna contro il caso) e il gate toglierebbe la proprietà più utile — i mondi vicini si accendono da soli |
 
+### 2b. IL CONTRATTO DI RITORNO — misurato, non discusso
+
+`graph/measure/soglia.py`, 120 utenti, α = 0,60. Il pacchetto che un mondo acceso deve portare:
+
+| campo | perché |
+|---|---|
+| **la bolla** | l'identità del mondo |
+| **attivazione grezza** | quanto è acceso. È questo che ordina |
+| **i membri ordinati per la loro attivazione** | il dentro del mondo, e l'ordine esce dallo stesso giro |
+| **la mediana dei voti del mondo** | la fascia di canone (mainstream ↔ nicchia): è la stratificazione già validata (p90/p10) |
+| **i vicini sulla mappa** | il quartiere, per le liste "un passo fuori" |
+
+**Non** `attivazione per membro` — misurato e **scartato**: il grezzo trova più titoli nascosti (7% contro
+4%) e colpisce più spesso (50% contro 40% dei primi 10 mondi). Il timore che l'aveva giustificata — i
+mondi grossi che vincono per dimensione (250× misurato con semi casuali) — **con un utente vero non si
+materializza**: i primi 10 mondi per grezzo hanno taglia mediana **12**, non 123.
+
+### 2c. LA SOGLIA NON ESISTE — e il numero che lo dimostra
+
+| soglia | mondi accesi dall'**utente** | da una storia **casuale** di pari dimensione | rapporto |
+|---|---|---|---|
+| 0,50% | 44 | **48** | 0,9× |
+| 0,20% | 82 | 94 | 0,9× |
+| 0,10% | 125 | 138 | 0,9× |
+| 0,01% | 464 | **525** | 0,9× |
+
+**Una storia finta accende più mondi di una vera, a ogni soglia.** Non è un errore: 168 titoli a caso
+spargono la luce, 168 titoli *tuoi* la concentrano. Quindi «quanti mondi si accendono» **non misura il
+gusto, misura quanto è lunga la storia** — ed è per questo che il tetto dei 15 titoli (`todo/8`) cambia
+la *dimensione* del portafoglio, non solo l'ordine.
+
+Conseguenza: **non esiste una soglia assoluta onesta**, e *il numero di liste lo decide chi invoca* —
+la decisione del proprietario era giusta dal principio.
+
+**Quello che discrimina davvero** (e va usato come criterio, non la soglia): i primi 10 mondi contengono
+un titolo che l'utente guarderà davvero nel **50%** dei casi, contro lo **0%** di una storia casuale.
+
 ### 3. Il portafoglio lo decide il modello del profilo
 
 Il vertice della classifica dei mondi è **piatto e instabile**: due metà della stessa storia si
@@ -139,25 +176,21 @@ scegliere fra varianti, dove l'occhio non scala.
 
 Con la mia raccomandazione, da confermare o ribattere:
 
-1. **Il peso dei semi.** Cosa pesa un titolo della storia: recenza (`last_watched_at`), ri-visioni
+1. ~~Il contratto di ritorno~~ — **CHIUSA**: bolla · attivazione grezza · membri ordinati · mediana
+   dei voti · vicini sulla mappa. «Per membro» misurato e **scartato** (§2b).
+2. ~~La soglia del portafoglio~~ — **DISSOLTA**: non esiste una soglia onesta, il numero di liste lo
+   decide chi invoca (§2c).
+3. **Il peso dei semi.** Cosa pesa un titolo della storia: recenza (`last_watched_at`), ri-visioni
    (`plays`), il tipo di segnale (loved/liked/watched/library)? *Raccomando: recenza × ri-visioni, e il
-   decadimento di `todo/8` — ma il peso va misurato contro il banco, non scelto.*
-2. **Il freddo (0-3 semi).** *Raccomando: il grafo non risponde, e lo dice. Il prodotto ricade sulle
-   regole attuali (preset, top-rated) — che il report 04 ha già misurato come imbarazzanti (voto B 68,
-   Jaccard 56,9% col preset Popolare), e va detto invece di nasconderlo.*
-3. **Il contratto di ritorno.** Cosa porta un mondo acceso. *Raccomando: bolla · attivazione grezza ·
-   **attivazione per membro** · i membri con la loro attivazione · mediana dei voti · i vicini sulla
-   mappa. L'attivazione per membro non è un dettaglio: la bolla 15 (123 titoli) prende 1,03% grezzo ma
-   **8,4e-5 per membro** contro **2.071e-5** della bolla del seme — 250× di differenza, ed è la
-   differenza fra un portafoglio utile e uno che premia i contenitori.*
-4. **Le liste: quali tipi.** Il portafoglio li rende possibili quasi gratis (il mondo, il quartiere, la
-   fascia alta di voti, la fascia bassa, i ponti cross-medium). Ma *quali* mostrare, e con che titolo, è
-   una decisione di prodotto — e non è stata presa.
-5. **La cache a 12 ore: su cosa si invalida.** Una visione nuova cambia il portafoglio — ma non sempre
-   in modo visibile (misurato: 0 cambi su 20 col decadimento proposto in `todo/8`). Va deciso se
-   invalidare sull'hash della storia o a tempo.
-6. **Il contenuto dei due slider** (`todo/9`): scelti per **instradare**, non per descrivere.
-7. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
+   decadimento di `todo/8` — ma il peso va misurato.*
+4. **Il freddo** (0-3 semi). *Raccomando: il grafo non risponde, e lo dice; il prodotto ricade sulle
+   regole attuali, e va detto che sono imbarazzanti (report 04: voto B 68).*
+5. **I tipi di lista.** Il portafoglio li rende possibili quasi gratis (il mondo, il quartiere, la
+   fascia alta di voti, la fascia bassa, i ponti cross-medium). *Quali* mostrare è decisione di prodotto.
+6. **La cache a 12 ore: su cosa si invalida.** Una visione nuova cambia il portafoglio — ma non sempre
+   in modo visibile (misurato: 0 cambi su 20 col decadimento di `todo/8`).
+7. **Il contenuto dei due slider** (`todo/9`): scelti per **instradare**, non per descrivere.
+8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
 
 ## Out of scope
 
