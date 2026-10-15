@@ -40,10 +40,13 @@ N = len(mem)
 IS_TV = B.IS_TV
 
 # gli embedding, indicizzati per riga del canone
-IDX = np.load(ML / "04-trama-idx.npy")
-E = np.load(ML / "04-trama-emb.npy")
+# GLI EMBEDDING NUOVI: qwen3-embedding:0.6b, payload "titolo. trama", 1024 dimensioni.
+# I vecchi (bge-small-en, 384 dim, solo trama) restano in `04-trama-emb.npy` per il confronto:
+# erano loro a comprimere tutto in 0,74 ± 0,01, non l'idea della metrica.
+IDX = np.load(ML / "04-trama-qwen3b-idx.npy")
+E = np.load(ML / "04-trama-qwen3b.npy")
 POS = {int(r): k for k, r in enumerate(IDX)}
-print(f"  embedding: {E.shape} · trame indicizzate {len(IDX):,} ({time.time()-T0:.0f}s)", flush=True)
+print(f"  embedding: {E.shape} (qwen3, payload titolo+trama) · trame {len(IDX):,} ({time.time()-T0:.0f}s)", flush=True)
 
 # il banco
 Bcsr = K.carica_csr("boot-B.npz", N)

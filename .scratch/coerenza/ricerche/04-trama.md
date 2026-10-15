@@ -1,6 +1,37 @@
-# Ticket 04 — La coerenza sulla trama: l'arbitro che non arbitra
+# Ticket 04 — La coerenza sulla trama: l'arbitro c'è, e assolve V3
 
-`Status: resolved (con esito negativo)` · 14/10/2026 · `04c-set-piccolo.py`, `04d-metrica.py`
+`Status: resolved` · 14/10/2026, **aggiornato il 15/10** · `04c` → `04i`
+
+## ⚠️ RISCRITTO IL 15/10/2026 — l'esito negativo era colpa del modello sbagliato
+
+La prima versione di questo report concludeva che la metrica «non discrimina» e che il ticket andava
+chiuso con esito negativo. **Era misurato con `bge-small-en`**, che comprime tutte le trame italiane in
+**0,74 ± 0,01** — non e' italiano, e su una fascia cosi' stretta nessun confronto separa.
+
+Con **`qwen3-embedding:0.6b` via Ollama**, payload **«titolo. trama»**, la metrica **funziona**:
+
+| | Sim_trama media | sui casi che il banco da' GIUSTI | sugli SBAGLIATI | scarto |
+|---|---|---|---|---|
+| V1 | 0,5165 | 0,5172 | 0,5152 | **+0,002** |
+| **V3** | **0,5223** | **0,5337** | 0,5162 | **+0,018** |
+
+**La metrica discrimina la correttezza di V3 (+0,018) e quasi non vede quella di V1 (+0,002)**, e nel
+testa a testa V3 e' avanti 142 a 133. Cioe': **la misura non circolare — l'unica che non usa le
+feature del collocatore — da' ragione a V3**, mentre il banco lo punisce di 28 punti.
+
+E il terreno di verita' del mio primo test era sbagliato: chiedevo di trovare simili due film della
+**stessa saga**, ma *Toy Story 2* e *Toy Story 5* raccontano storie **diverse** — e' il mestiere del
+sequel. Coi **film gemelli** (*Armageddon/Deep Impact*, *Capote/Infamous*) il modello separa 0,641
+contro 0,327.
+
+**Il verdetto finale e' quindi doppio, e regge su misure diverse:** V1 per la **bolla** (il banco, 63,0%
+contro 35,3% — la differenza e' enorme e comportamentale), V3 per i **dieci titoli** (la trama, +0,018
+— la differenza e' piccola ma semantica). Il disegno a due livelli non e' un compromesso: **e' quello
+che due arbitri indipendenti prescrivono.**
+
+---
+
+## La versione originale (esito negativo), conservata perche' la storia conta
 
 **Il processo è valido, la metrica no.** Gli embedding delle trame si fanno, si conservano e si
 riprendono — **35.529 trame in 16,5 minuti** a 28 ms l'una, 52 MB, cache ripartibile. Ma la metrica

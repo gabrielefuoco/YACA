@@ -21,7 +21,20 @@ misura e non un sospetto.
 
 Esito: `04-trama.py` (con l'embedding salvato) + `ricerche/04-trama.md`.
 
-## Esito — il processo e' valido, la metrica no
+## Esito (riscritto il 15/10/2026) — la metrica FUNZIONA, e assolve V3 sul livello micro
+
+**L'esito negativo di ieri era colpa del modello.** Con `qwen3-embedding:0.6b` (Ollama, payload
+«titolo. trama»), la Sim_trama discrimina: **V3 +0,018** fra i casi che il banco da' giusti e quelli
+sbagliati, **V1 +0,002**. Testa a testa 142 a 133 per V3.
+
+E il mio terreno di verita' era sbagliato: chiedevo di trovare simili due film della stessa SAGA, ma un
+sequel racconta una storia diversa. Coi FILM GEMELLI il modello separa 0,641 contro 0,327.
+
+Verdetto doppio, su due arbitri indipendenti: **V1 per la bolla** (banco, 28 punti di differenza,
+comportamentale) e **V3 per i dieci titoli** (trama, piccola ma semantica). Il disegno a due livelli non
+e' un compromesso: e' quello che i due arbitri prescrivono.
+
+## Storia — il primo esito, negativo
 
 FATTO (15/10/2026, con la GPU accesa ma inutile: torch e' la build +cpu). Gli embedding delle trame
 si fanno con **lo stesso embedder delle keyword** (`BAAI/bge-small-en-v1.5`), si **conservano** e si
