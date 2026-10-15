@@ -427,7 +427,29 @@ composizione.
 *riordina* i mondi verso l'estremo, invece di *filtrare* attorno alla fascia che la storia ha già
 dedotto. Ordinando per «il più oscuro» si pescano i contenitori eterogenei — lo stesso difetto visto
 nei mondi lontani (§3d). **Lezione per la UI: la fascia non deve ordinare, deve filtrare** — e vuole il
-**guardiano della coerenza**.
+**guardiano della coerenza**, che però è stato **scartato per ora** (vedi §14).
+
+### 14. Il guardiano della coerenza: **SCARTATO per ora**
+
+Decisione del proprietario (15/10/2026): «la scarto per ora». Le tre ragioni, scritte perché non si
+riapra senza saperle:
+
+1. **È parziale.** L'indice di chimera (`measure/coerenza.py`) ha un filtro di supporto incorporato:
+   usa i token tematici di testa con **df ≥ 30**, e se ne restano meno di 3 **salta la bolla**. Non può
+   dire niente su tutte le bolle senza token solidi — che sono probabilmente le più oscure, cioè proprio
+   dove stanno i contenitori. **Una rete con dei buchi.**
+2. **Ha un falso negativo documentato.** La bolla 820 — il canone del thriller psicologico, mediana
+   **7.037 voti**, un mondo verissimo — su quell'indice prende **un punteggio basso**. Il guardiano
+   butterebbe via mondi veri, non solo cestini.
+3. **La prevalenza non è misurata.** Un solo dato: su `coldlocals`, dei 4 mondi mostrati **uno** era un
+   contenitore (`mondo_462`); su `keguhman`, dei 3 mostrati, **nessuno**. Un quarto in un caso, zero
+   nell'altro: un aneddoto, non una prevalenza.
+
+**Conseguenza dichiarata, e si accetta**: ogni tanto un catalogo mostrato sarà **un contenitore**, e si
+vedrà (il `mondo_462` del motore è la prova). Se un giorno darà fastidio, le strade sono due —
+l'**esclusione automatica** (col suo falso negativo) oppure una **lista nera curata** (il motore segnala
+i sospetti e l'umano conferma: costa un'ora e non sbaglia, perché i mondi che contano sono solo quelli
+**mostrati**, non tutti i 3.497).
 
 **Le due letture, e una dice l'opposto dell'altra**: per un utente la «nicchia» ha prodotto
 *Little Dorrit · Nord e sud · Daniel Deronda · The Way We Live Now* — **un mondo vittoriano coerente e
@@ -483,7 +505,8 @@ Con la mia raccomandazione, da confermare o ribattere:
 7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri), la ricetta **cambia
    cosa si vede**, e i tre parametri **non pesano uguale** (§13): la **larghezza** aiuta, la **distanza**
    è la più debole, la **fascia** è la più potente ma va *filtrata*, non *ordinata* — ordinandola crolla
-   la copertura, e serve il guardiano della coerenza. Restano aperti: il **contenuto preciso** (slider o
+   la copertura, e il guardiano della coerenza — **scartato** (§14). Restano aperti: il **contenuto
+   preciso** (slider o
    profili di serata) e la domanda del proprietario — *i due portafogli sono migliori per quell'utente?*
 8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
 
