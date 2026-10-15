@@ -174,6 +174,12 @@ collezioni, keyword, registi, network) — non liste di titoli. Quindi i loro ti
 **valutandoli**, e replicarli offline è un lavoro a sé (i filtri usano gli **id** TMDB delle persone,
 mentre nei nostri parquet i nomi sono stringhe).
 
+**Nota del proprietario (15/10/2026), e cambia il senso del numero**: la poca sovrapposizione fra i
+cataloghi **è il risultato di un suo lavoro di curatela** — i cataloghi sono disgiunti *apposta*. Quindi
+la prima strada del freddo è vuota **per progetto**, non per un difetto; e i «top 2-3 di ogni catalogo»
+non sono un ripiego qualunque: sono semi **curati**, scelti da una persona, non pescati a caso. Le
+altre famiglie di cataloghi (genere, marca) **non si valutano**: deciso di lasciarle stare.
+
 **Cosa resta da fare, e sono due misure** (dopo aver valutato i cataloghi offline):
 - **quanto si sovrappongono**: la regola «presenti in più di un catalogo» ha materiale o è vuota?
 - **rumore o segnale**: i titoli dei cataloghi **predicono la storia** di chi la storia ce l'ha?

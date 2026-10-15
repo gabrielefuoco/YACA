@@ -80,13 +80,13 @@ SCHEDA = [
      "sceglie piu' prudenza.", "measure/freddo.py"),
 
     # ---------------------------------------------------------------- semi dai cataloghi (i piu' deboli)
-    ("CATALOGHI_MIN_RIPETIZIONI", 2, "MISURATO VUOTO (1 famiglia su 179)",
+    ("CATALOGHI_MIN_RIPETIZIONI", 2, "MISURATO VUOTO, PER PROGETTO",
      "«Titoli presenti in piu' di un catalogo». Misurato sulla famiglia «Registi» (11 cataloghi, "
-     "`measure/cataloghi.py`): 0 titoli su 220 stanno in piu' di uno, e la sovrapposizione mediana "
-     "fra coppie e' 0. Per quella famiglia la prima strada e' VUOTA e parte sempre la seconda (i top "
-     "2-3 di ogni catalogo). ATTENZIONE: quella famiglia e' disgiunta PER COSTRUZIONE (i film di un "
-     "regista non stanno nel catalogo di un altro). L'overlap vero va cercato nelle famiglie per "
-     "GENERE e per MARCA (Pixar vs Animazione, Marvel vs Supereroi): non ancora misurate.",
+     "measure/cataloghi.py): 0 titoli su 220 in piu' di uno, sovrapposizione mediana fra coppie 0. "
+     "NOTA DEL PROPRIETARIO: la disgiunzione e' il risultato di un suo lavoro di CURATELA — i cataloghi "
+     "sono disgiunti apposta. Quindi la prima strada e' vuota PER PROGETTO, e i top 2-3 di ogni catalogo "
+     "non sono un ripiego qualunque: sono semi CURATI, scelti da una persona. Le altre famiglie "
+     "(genere, marca) non si valutano: deciso cosi'.",
      "measure/cataloghi.py"),
     ("CATALOGHI_QUANTI", 10, "INVENTATO",
      "Quanti titoli prendere dai cataloghi attivi come seme sintetico.", "da costruire"),
