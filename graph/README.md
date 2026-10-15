@@ -11,7 +11,17 @@ graph/
   bubbles.py     631 righe   il costruttore delle bolle: la miscela, Leiden, la potatura
   collocator.py  267 righe   la collocazione: V1 per la bolla, V3 per i vicini, la regola dei voti
   pipeline.py                IL COMANDO UNICO
+  steps/                     gli script che COSTRUISCONO: embedding, componente, partizione,
+                             divisione voti, centroidi. Si lanciano da qui, non da `.scratch/`.
+  data/                      55 file, 422 MB — GLI ARTEFATTI: le partizioni, il triangolo, i centroidi,
+                             gli embedding, i componenti. Sono il risultato del lavoro, non una cache.
+  fetch/                     chi scarica cosa (TMDB, MovieLens, Trakt) — vedi `fetch/README.md`
 ```
+
+**La regola, ed è quella che rende possibile la manutenzione**: `graph/data/` è il risultato del
+nostro lavoro, `.cache/` è ciò che si può riscaricare. Il modulo distingue i due con `canon.A(nome)`:
+cerca in `graph/data/`, e solo se manca ripiega su `.cache/movielens/`. **Il ripiego serve alla
+migrazione e va tolto quando è finita**, altrimenti si torna ad avere due posti dove guardare.
 
 ---
 

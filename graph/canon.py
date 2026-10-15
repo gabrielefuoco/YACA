@@ -22,12 +22,28 @@ import scipy.sparse as sp
 # La radice si ricava dal FILE, non dalla cartella corrente: prima `pathlib.Path(".")`
 # significava che il modulo funzionava solo se lanciato dalla radice del repo.
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+# GLI INPUT: i dati SCARICATI (TMDB, MovieLens, Trakt). Restano in `.cache`, sono una cache: si
+# possono riscaricare e non sono il prodotto del nostro lavoro.
 ML = ROOT / ".cache" / "movielens"
+# I DATI DEL MODULO: le partizioni, i centroidi, gli embedding, i componenti. Vivono in `graph/data/`
+# perche' sono il risultato del nostro lavoro: se stanno in una cache, la pulizia della cache li
+# cancella, e la manutenzione non sa piu' cosa e' prodotto e cosa e' scaricato.
+DATA = ROOT / "graph" / "data"
 GOLD = ROOT / ".scratch" / "ml-collaborativo" / "gold"
 TK = ROOT / ".cache" / "trakt" / "users"
 
 
 # ---------------------------------------------------------------- i titoli
+def A(nome):
+    """Un artefatto del modulo: si cerca in `graph/data/`, e solo se manca in `.cache/movielens`.
+
+    Il ripiego serve alla migrazione — e sparita la migrazione va tolto, altrimenti si torna ad avere
+    due posti dove guardare, che e' esattamente il problema che questa cartella risolve.
+    """
+    p = DATA / nome
+    return p if p.exists() else ML / nome
+
+
 def titoli():
     z = np.load(ML / "spazi-trakt.npz", allow_pickle=True)
     tmdb, tipo = z["tmdb"], z["tipo"]
@@ -70,7 +86,9 @@ def topk_edges(V, k, min_sim=0.05, B=2048):
 
 
 def carica_csr(nome, n):
-    q = np.load(ML / nome)
+    """Carica un `.npz` (o un `.npy`) come CSR. Il percorso lo risolve `A()`: gli artefatti del modulo
+    stanno in `graph/data/`, gli input scaricati in `.cache/`. Un solo punto di verita'."""
+    q = np.load(A(nome))
     return sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(n, n))
 
 

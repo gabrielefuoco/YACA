@@ -454,7 +454,7 @@ def carica_componenti(con_shrinkage=True, min_sim_kw=0.02, min_sim_cast=0.02, ri
         insiemi = costruisci_insiemi()
     for nome, chiave, ms in (("KW", "KW", min_sim_kw), ("CAST", "CA", min_sim_cast),
                              ("DIR", "DI", 0.02), ("PROD", "SIG", 0.02)):
-        cache = ML / f"bolle-nitrile-{nome}.npz"
+        cache = K.A(f"bolle-nitrile-{nome}.npz")
         if cache.exists() and ricostruisci == "cache":
             C[nome] = K.carica_csr(f"bolle-nitrile-{nome}.npz", N)
             g = np.asarray((C[nome] > 0).sum(1)).ravel()
@@ -469,7 +469,7 @@ def carica_componenti(con_shrinkage=True, min_sim_kw=0.02, min_sim_cast=0.02, ri
         M = ((C[nome] + C[nome].T) * 0.5).tocsr()
         M.setdiag(0)
         M.eliminate_zeros()
-        np.savez_compressed(ML / f"bolle-nitrile-{nome}.npz", data=M.data,
+        np.savez_compressed(K.A(f"bolle-nitrile-{nome}.npz"), data=M.data,
                             indices=M.indices, indptr=M.indptr)
     return C
 

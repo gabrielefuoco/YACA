@@ -104,7 +104,7 @@ def stato(_args) -> int:
     print(f"  {'artefatto':<44} {'MB':>7}  stato")
     vivi = mancanti = 0
     for nome, _cosa, _chi, stato_ in ARTEFATTI:
-        f = K.ML / nome
+        f = K.A(nome)
         if f.exists():
             mb = f.stat().st_size / 1048576
             vivi += 1 if stato_ == "VIVO" else 0
@@ -117,14 +117,14 @@ def stato(_args) -> int:
     # il contratto di allineamento: il controllo che oggi ha fermato un errore vero
     print("\n  CONTRATTO DI ALLINEAMENTO degli spazi (idf e vocabolario):")
     for pref in ("04", "05"):
-        imp = K.ML / f"{pref}-impronte.json"
+        imp = K.A(f"{pref}-impronte.json")
         if not imp.exists():
             print(f"    {pref}: impronte assenti")
             continue
-        idf = np.load(K.ML / f"{pref}-idf.npy") if (K.ML / f"{pref}-idf.npy").exists() else None
-        vocab = json.load(open(K.ML / f"{pref}-vocab.json", encoding="utf-8"))
+        idf = np.load(K.A(f"{pref}-idf.npy")) if K.A(f"{pref}-idf.npy").exists() else None
+        vocab = json.load(open(K.A(f"{pref}-vocab.json"), encoding="utf-8"))
         if idf is None:
-            tf = sp.load_npz(K.ML / f"{pref}-tfidf.npz").tocsr()
+            tf = sp.load_npz(K.A(f"{pref}-tfidf.npz")).tocsr()
             df = np.asarray((tf > 0).sum(0)).ravel()
             idf = np.log(tf.shape[0] / (1 + df)).astype(np.float32)
         h_i = hashlib.sha256(np.asarray(idf, np.float32).tobytes()).hexdigest()[:16]
@@ -153,7 +153,7 @@ def colloca(args) -> int:
         dati = json.load(open(args.file, encoding="cp1252"))
     S_v3 = C.carica(v3=True)
     S_v1 = C.carica(v3=False)
-    mem = np.load(K.ML / "bolle-nitrile-V8.npy")     # la partizione dei centroidi: vedi trappole
+    mem = np.load(K.A("bolle-nitrile-V8.npy"))     # la partizione dei centroidi: vedi trappole
     out = []
     t = time.time()
     for d in dati:
@@ -174,10 +174,10 @@ def voti(args) -> int:
     from . import bubbles as B
     SOGLIA = _parse(args.soglia) or 10.0
     MIN = args.min_membri
-    base = K.ML / (args.base or "bolle-eterogeneo-V10-p1.0-r200.npy")
+    base = K.A(args.base or "bolle-eterogeneo-V10-p1.0-r200.npy")
     mem = np.load(base)
     NB = int(mem.max()) + 1
-    triangolo = K.ML / (args.triangolo or "bolle-eterogeneo-V10-p1.0-triangolo.npz")
+    triangolo = K.A(args.triangolo or "bolle-eterogeneo-V10-p1.0-triangolo.npz")
     q = np.load(triangolo)
     W = sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(B.N, B.N)).tocsr()
     print(f"  base: {base.name} ({NB:,} bolle) · triangolo: {triangolo.name}")

@@ -55,32 +55,32 @@ def carica(v3=True):
     esiste.
     """
     prefisso = "05" if v3 else "04"
-    TFIDF = sp.load_npz(ML / f"{prefisso}-tfidf.npz").tocsr()
-    vocab = json.load(open(ML / f"{prefisso}-vocab.json", encoding="utf-8"))
+    TFIDF = sp.load_npz(K.A(f"{prefisso}-tfidf.npz")).tocsr()
+    vocab = json.load(open(K.A(f"{prefisso}-vocab.json"), encoding="utf-8"))
     if v3:
         # ATTENZIONE, e questa riga e' la lezione del ticket 04 scritta in codice.
         # `05-idf.npy` contiene gli idf GREZZI. Il corpus e' stato costruito con
         # `idf * PESI_TIPO`, quindi la query deve usare lo stesso prodotto: se usasse gli idf
         # grezzi, i due lati del coseno non parlerebbero la stessa lingua e **nessun crash** lo
         # direbbe — solo punteggi che scivolano. Ci sono caduto scrivendo questa funzione.
-        _idf_grezzo = np.load(ML / "05-idf.npy")
+        _idf_grezzo = np.load(K.A("05-idf.npy"))
         _peso = np.zeros(len(vocab), np.float32)
         for _t, _j in vocab.items():
             _peso[_j] = _idf_grezzo[_j] * PESI_TIPO.get(_t[:3], 1.0)
-        SUM = sp.load_npz(ML / "05-centroidi.npz").tocsr()
-        META = np.load(ML / "05-centroidi-meta.npz")
+        SUM = sp.load_npz(K.A("05-centroidi.npz")).tocsr()
+        META = np.load(K.A("05-centroidi-meta.npz"))
         NORMA = META["norme"]
         bolle_serie = META["bolle_serie"]
         bolle_film = META["bolle_film"]
         quota_tv = META["quota_tv"]
-        mem = np.load(ML / "bolle-nitrile-V8.npy")
+        mem = np.load(K.A("bolle-nitrile-V8.npy"))
         sz = np.bincount(mem)
         idf = _peso
     else:
         df = np.asarray((TFIDF > 0).sum(0)).ravel()
         idf = np.log(TFIDF.shape[0] / (1 + df))
-        C4 = np.load(ML / "04-centroidi.npz")
-        P = np.load(ML / "mappa-pesata-6-2.npz", allow_pickle=True)
+        C4 = np.load(K.A("04-centroidi.npz"))
+        P = np.load(K.A("mappa-pesata-6-2.npz"), allow_pickle=True)
         bolle_serie, bolle_film = C4["bolle_serie"], C4["bolle_film"]
         quota_tv, mem, sz = P["quota_tv"], P["mem"], P["sz"]
         ordine = np.argsort(mem, kind="stable")
@@ -103,10 +103,10 @@ def carica(v3=True):
     # le impronte giuste PER VARIANTE: V1 e V3 hanno vocabolari e idf diversi, e confrontare l'uno
     # con l'impronta dell'altro fa scattare il contratto a vuoto. E' successo, ed e' il contratto a
     # essere giusto: sono io a dovergli dare il riferimento corretto.
-    _imp = ML / f"{prefisso}-impronte.json"
+    _imp = K.A(f"{prefisso}-impronte.json")
     if _imp.exists():
         from . import canon as _K
-        _idf_att = np.load(ML / "05-idf.npy").astype(np.float32) if v3 else idf
+        _idf_att = np.load(K.A("05-idf.npy")).astype(np.float32) if v3 else idf
         _K.assert_allineamento_spazi(_idf_att, vocab, json.load(open(_imp, encoding="utf-8")),
                                      nome=f"colloca_finale/{prefisso}")
     return dict(vocab=vocab, idf=idf, TFIDF=TFIDF, SUM=SUM, NORMA=NORMA, TUTTE=TUTTE,
