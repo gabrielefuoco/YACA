@@ -193,3 +193,7 @@ __pycache__/
 
 # crash dump di git-bash su Windows
 *.stackdump
+
+# I dati del modulo: artefatti rigenerabili (423 MB). Stanno in graph/data/, e si rifanno coi
+# comandi di graph/steps/ — vedi graph/README.md. In git sta il codice, non l'output.
+graph/data/
