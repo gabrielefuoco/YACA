@@ -78,35 +78,57 @@ costa, ma **non è la causa principale** dell'instabilità: ordinare nella coda 
 chiunque. Un utente pesante ha **~7 mondi sopra il 2%** della storia, **26 sopra lo 0,5%**, e ne tocca
 **90**. Il numero di liste e la loro distanza li decide il tipo del profilo, non un top-k fisso.
 
-### 3b. Il peso dei semi: **`plays`, storia intera, nessun decadimento**
+### 3b. Il peso dei semi: **film `min(plays,3)` · serie `1 + 2 × frazione di episodi`**
 
-`graph/measure/pesi.py`, 100 utenti, **taglio temporale** (seme = il 70% più vecchio, oro = il 30% più
-recente: la situazione del prodotto). Il nullo sono 276 titoli a caso.
+Il punto di partenza era «pesare con `plays`»: misurato, il `plays` lineare vinceva su tutto (33,6×).
+**Il proprietario ha bocciato quella conclusione, e aveva due ragioni.**
 
-| schema | lift titoli | lift bolle | primi 10 mondi |
-|---|---|---|---|
-| uniforme (276 semi) | 10,4× | 5,87× | **30%** |
-| recenza | 11,8× | 5,61× | 20% |
-| **ri-visioni (`plays`)** | **18,2×** | **7,67×** | **30%** |
-| recenza × ri-visioni | 18,1× | 6,41× | 30% |
-| rango inverso `1/i` | 15,9× | 6,58× | 20% |
-| rango logaritmico | 11,2× | 5,97× | 30% |
-| ultimi 30 | 38,7× | 6,99× | 20% |
-| **ultimi 15 (il prodotto)** | **47,5×** | **7,78×** | 20% |
-| **15 a caso, peso pieno** | 34,1× | 4,44× | 10% |
-| 30 a caso, peso pieno | 32,0× | 6,38× | 20% |
-| **semi a caso (nullo)** | **1,65×** | — | 0% |
+**Ragione 1 — il metro non era il gusto.** Il banco a taglio temporale misura il **comportamento** (cosa
+l'utente guarderà), non il gusto: con `play` lineari il modello vinceva perché riconosceva **le serie a
+metà** e prevedeva la puntata successiva — che l'utente guarderebbe comunque. **Quel lift era leakage,
+non qualità.** E il banco premia anche la prossimità temporale: la stessa cosa che faceva sembrare
+fortissima la recenza (§3b, la controprova dei «15 a caso»).
 
-**Decisione: il peso è `plays` — le ri-visioni — su tutta la storia, e nient'altro.** Il +75% rispetto
-all'uniforme è l'unico guadagno su *tutte* le metriche (lift **e** copertura). Recenza e rango **non
-comprano niente**: `recenza × ri-visioni` fa esattamente come `plays` da solo, e il decadimento di rango
-proposto in `todo/8` (inverso 15,9×, logaritmico 11,2×) è **peggio** dell'usare tutta la storia con
-`plays`. Semplificazione, non complicazione.
+**Ragione 2 — il seme era sbilanciato sul medium.** Misurato con `graph/measure/equilibrio.py` (253
+utenti, solo i pesi, nessuna diffusione):
 
-**Il tetto dei 15, misurato sul meccanismo nuovo**: +162% di lift ma copertura dal **30% al 20%**. Non è
-un bug — è uno scambio. E la lezione metodologica tenuta a verbale: i «15 a caso» fanno **34×**, cioè la
-concentrazione spiega i tre quarti del vantaggio apparente della recenza; solo il resto (+39%) è
-recenza vera.
+| schema | peso alle serie (sono il 53% dei titoli) | **su utenti di soli film** (<30% serie) |
+|---|---|---|
+| `1 + log(plays)` | 77% | 43% (max 63%) |
+| `min(plays, 20)` | **91%** | **67%** (p90 81%, max 85%) |
+| `min(plays, 3)` | 71% | 38% |
+| **la specifica** | **67%** | **31%** (max 50%) |
+
+E su **storia corta** (< 60 titoli) il singolo titolo più pesante prende: 8,0% con il log, **20,8%** con
+`min(plays,20)`, **5,2%** con la specifica. Cioè: con la proposta dell'autore, **a un utente di soli film
+un'unica serie poteva tarare un quinto del seme** — esattamente la paura del proprietario.
+
+**La decisione** (specifica del proprietario, 15/10/2026): le puntate **non contano mai come play**,
+contano come **quanto della serie hai visto**.
+
+| | peso |
+|---|---|
+| film visto 1 volta | **1** |
+| film visto 2-3 volte | 2-3 |
+| film visto 10 volte | 3 (cap) |
+| serie di 100 episodi vista **tutta** | **3** |
+| serie di 100 episodi a metà | 2 |
+| serie appena iniziata (2 su 100) | 1,04 |
+
+**Costo misurato**: 14,70× di lift contro 18,17× del `1+log` e 22,39× del lineare toppato — **il quinto
+perso è in gran parte il leakage**, e il segnale resta (**+43% sopra l'uniforme, 9× il caso**).
+
+**Niente boost ai recenti**: misurato e **vuoto** — +10%, +20%, +50% sugli ultimi 5-10 non spostano
+niente (17,85 → 17,9-18,1). **La recenza conta come SELEZIONE, non come peso**: i «soli ultimi 15» fanno
+47,5× perché *buttano via* il resto, non perché lo pesano di più.
+
+**Limiti dichiarati**:
+- la raffinazione «conta come visti anche gli episodi prima del minimo» (per chi ha iniziato a metà
+  serie, o l'aveva vista altrove) **non è calcolabile**: serve il dettaglio per episodio, e i file in
+  cache hanno solo `plays`, `last_watched_at`. Si può fare, ma va **rifetchato** — e non si scarica altro
+  per ora.
+- il confronto col banco resta un **probe di leakage**, non un verdetto: per le decisioni di prodotto
+  («una serie da 100 episodi non deve valere 100 film») il metro è l'**equilibrio**, non il lift.
 
 ### 4. Il tipo del profilo: cinque assi, da dichiarato + dedotto
 
@@ -210,8 +232,8 @@ Con la mia raccomandazione, da confermare o ribattere:
    dei voti · vicini sulla mappa. «Per membro» misurato e **scartato** (§2b).
 2. ~~La soglia del portafoglio~~ — **DISSOLTA**: non esiste una soglia onesta, il numero di liste lo
    decide chi invoca (§2c).
-3. ~~Il peso dei semi~~ — **CHIUSA**: `plays` (le ri-visioni) su tutta la storia, nient'altro (§3b).
-   Recenza e decadimento di rango misurati e **scartati**.
+3. ~~Il peso dei semi~~ — **CHIUSA**: film `min(plays,3)`, serie `1 + 2 × frazione di episodi` — le
+   puntate non contano come play (§3b). Recenza, decadimento di rango e boost misurati e **scartati**.
 4. **Il freddo** (0-3 semi). *Raccomando: il grafo non risponde, e lo dice; il prodotto ricade sulle
    regole attuali, e va detto che sono imbarazzanti (report 04: voto B 68).*
 5. **I tipi di lista.** Il portafoglio li rende possibili quasi gratis (il mondo, il quartiere, la

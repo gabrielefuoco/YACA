@@ -94,8 +94,13 @@ def ppr(P, seme, pesi, iters=ITER):
     return r
 
 
-def pesi_per(nome, eta, plays, quante):
-    """I pesi del seme secondo lo schema. `quante` limita ai piu' recenti."""
+def pesi_per(nome, eta, plays, quante, righe=None):
+    """I pesi del seme secondo lo schema. `quante` limita ai piu' recenti.
+
+    Per gli schemi per-medium servono le righe del seme (per sapere film o serie) e `NEP` (il numero di
+    episodi, 1 per un film): cosi' `plays / NEP` diventa **quante volte hai visto tutto intero** — la
+    stessa grandezza per un film visto tre volte e per una serie di 100 episodi vista 100 volte.
+    """
     i = np.arange(quante)
     rec = 0.5 ** (eta[:quante] / EMIVITA)
     pl = 1.0 + np.log(plays[:quante].astype(float))
@@ -107,20 +112,55 @@ def pesi_per(nome, eta, plays, quante):
         return pl
     if nome == "recenza x ri-visioni":
         return rec * pl
-    if nome == "rango inverso 1/i":
-        return 1.0 / (i + 1.0)
-    if nome == "rango logaritmico":
-        return 1.0 / np.log2(2.0 + i)
+    if nome == "ri-visioni LINEARI":
+        return plays[:quante].astype(float)
+    if nome == "ri-visioni RADICE":
+        return np.sqrt(plays[:quante].astype(float))
+    if nome == "log TOPPATO 20":
+        return np.log1p(np.minimum(plays[:quante], 20).astype(float))
+    if nome == "lineare TOPPATO 20":
+        return np.minimum(plays[:quante], 20).astype(float)
+    if nome == "lineare TOPPATO 5":
+        return np.minimum(plays[:quante], 5).astype(float)
+    if nome == "intero x log (disegno utente)":
+        nep = NEP[righe[:quante]] if righe is not None else np.ones(quante)
+        intero = np.minimum(plays[:quante].astype(float) / nep, 1.0)      # quante volte TUTTO INTERO
+        return intero * np.log1p(np.minimum(plays[:quante], 50).astype(float))
+    if nome == "intero x log, intero fino a 2":
+        nep = NEP[righe[:quante]] if righe is not None else np.ones(quante)
+        intero = np.minimum(plays[:quante].astype(float) / nep, 2.0)
+        return intero * np.log1p(np.minimum(plays[:quante], 50).astype(float))
+    if nome == "SPEC utente (film 1-3, serie 1-3)":
+        # LA SPECIFICHE DEL PROPRIETARIO: una serie di 100 episodi deve valere come 2/3 film, non 100.
+        # Le puntate non contano mai come play: contano come QUANTO della serie hai visto.
+        nep = NEP[righe[:quante]] if righe is not None else np.ones(quante)
+        pl = plays[:quante].astype(float)
+        return np.where(nep > 1.0, 1.0 + 2.0 * np.minimum(pl / nep, 1.0), np.minimum(pl, 3.0))
+    if nome == "intero secco (no log)":
+        nep = NEP[righe[:quante]] if righe is not None else np.ones(quante)
+        return np.minimum(plays[:quante].astype(float) / nep, 2.0)
     if nome == "ultimi 15 (il prodotto)":
         return (rec * pl)[:15]
     if nome == "ultimi 30":
         return (rec * pl)[:30]
+    # IL BOOST AI PIU' RECENTI: i primi dell'array sono i visti piu' di recente (A e' ordinato per
+    # recenza). Nel benchmark l'ultimo in assoluto sta nell'oro nascosto, quindi si spingono i piu'
+    # recenti DEL PASSATO — che in produzione, dove il seme e' tutta la storia, sono gli ultimi visti.
+    if (nome.startswith("intero x log + boost") or nome.startswith("log TOPPATO 20 + boost")):
+        base = ("intero x log (disegno utente)" if nome.startswith("intero")
+                else "log TOPPATO 20")
+        p = pesi_per(base, eta, plays, quante, righe).copy()
+        import re as _re
+        m = _re.search(r"boost (\d+)% ultimi (\d+)", nome)
+        perc, k = int(m.group(1)), int(m.group(2))
+        p[:k] *= 1.0 + perc / 100.0
+        return p
     raise ValueError(nome)
 
 
-SCHEMI = ("uniforme", "recenza", "ri-visioni", "recenza x ri-visioni",
-          "rango inverso 1/i", "rango logaritmico", "ultimi 30", "ultimi 15 (il prodotto)",
-          "15 a caso, peso pieno", "15 a caso, uniformi", "30 a caso, peso pieno")
+SCHEMI = ("uniforme", "ri-visioni", "lineare TOPPATO 20",
+          "SPEC utente (film 1-3, serie 1-3)",
+          "15 a caso, peso pieno")
 
 
 def main():
@@ -140,12 +180,37 @@ def main():
     P = sp.diags(1.0 / deg) @ Wp
     print(f"  grafo potato top-{K_POTA}: {Wp.nnz:,} archi ({time.time()-T0:.0f}s)", flush=True)
 
+    # NEP: quanti episodi ha una voce. 1 per un film, il numero di episodi per una serie (TMDB). Cosi'
+    # `plays / NEP` = quante volte hai visto TUTTO INTERO, la stessa grandezza per i due medium.
+    global NEP
+    NEP = np.ones(N, np.float32)
+    import pandas as _pd
+    _tv = _pd.read_parquet(K.ROOT / ".cache" / "tmdb" / "tv.parquet",
+                           columns=["id", "number_of_episodes"])
+    _mancanti = 0
+    for i, e in zip(_tv["id"], _tv["number_of_episodes"]):
+        r = B.ROW_OF.get(f"tv:{int(i)}")
+        if r is None:
+            continue
+        e = _pd.to_numeric(e, errors="coerce")
+        if e is None or _pd.isna(e) or e <= 0:
+            _mancanti += 1
+            continue
+        NEP[r] = float(e)
+    print(f"  NEP: episodi per serie caricati · serie senza numero di episodi: {_mancanti} "
+          f"(restano a 1) ({time.time()-T0:.0f}s)", flush=True)
+    _ser = B.IS_TV.astype(bool)
+    print(f"  sui titoli: {int(_ser.sum()):,} serie · {int((~_ser).sum()):,} film", flush=True)
+
     pool = [f.stem[6:] for f in sorted(K.TK.glob("movie-*.json"))
             if (K.TK / f"show-{f.stem[6:]}.json").exists()]
     utenti = np.random.default_rng(41).choice(pool, size=min(QUANTI_UTENTI * 2, len(pool)),
                                               replace=False)
 
     acc = {s: {"lift_t": [], "lift_b": [], "hit10": [], "semi": []} for s in SCHEMI}
+    # I GRUPPI: le domande del proprietario — chi non ha ri-visioni, chi ha storie corte o lunghissime.
+    gruppo = {"frazione_rewatch": [], "n_semi": [], "quota_serie": [], "usati": []}
+    dist = {"film": [], "serie": []}
     base = {"lift_t": [], "hit10": []}
     usati = 0
     for u in utenti:
@@ -169,7 +234,7 @@ def main():
                 pesi = (pesi_per("recenza x ri-visioni", eta, plays, len(A))[sel]
                         if "peso pieno" in s else np.ones(len(sel)))
             else:
-                pesi = pesi_per(s, eta, plays, len(A))
+                pesi = pesi_per(s, eta, plays, len(A), righe=A)
                 seme = A[:len(pesi)]
             r = ppr(P, seme, pesi)
             tot = r.sum()
@@ -181,6 +246,15 @@ def main():
             primi = np.argsort(-att)[:10]
             acc[s]["hit10"].append(sum(1 for b in primi if b in bolle_B) / 10)
             acc[s]["semi"].append(int(len(seme)))
+        # chi sono questi utenti: quante ri-visioni ha il suo passato, quanti semi, che media
+        pl_A = plays[:len(A)].astype(float)
+        gruppo["frazione_rewatch"].append(float((pl_A > 1).mean()))
+        gruppo["n_semi"].append(len(A))
+        is_tv = B.IS_TV[A]
+        gruppo["quota_serie"].append(float(is_tv.mean()))
+        gruppo["usati"].append((usati,))
+        dist["film"].extend(pl_A[~is_tv].tolist())
+        dist["serie"].extend(pl_A[is_tv].tolist())
         ran = np.random.default_rng(77).choice(N, size=len(A), replace=False)
         rn = ppr(P, ran, np.ones(len(A)))
         base["lift_t"].append(float(rn[Bt].sum() / max(rn[idx_caso].sum(), 1e-12)))
@@ -200,6 +274,30 @@ def main():
           f"{100*np.median(base['hit10']):>14.0f}%")
     print(f"\n  lift titoli = quante volte piu' massa cade sui titoli del FUTURO che su titoli a caso")
     print(f"  primi 10 mondi = quanti dei 10 mondi accesi contengono un titolo del futuro")
+
+    print(f"\n  ── COSA VUOL DIRE `plays` — film contro serie (sui semi di tutti gli utenti)")
+    for chiave in ("film", "serie"):
+        v = np.array(dist[chiave])
+        print(f"    {chiave:<6} {len(v):>7,} voci · mediana {np.median(v):>5.1f} · p90 "
+              f"{np.percentile(v, 90):>5.1f} · p99 {np.percentile(v, 99):>6.1f} · "
+              f"massimo {v.max():>6.0f} · quota con plays>1: {100*(v > 1).mean():.0f}%")
+    print(f"    -> se le serie hanno plays molto piu' alti, `plays` NON e' confrontabile fra i due")
+
+    print(f"\n  ── I GRUPPI, e la scelta conta per tutti?")
+    fr = np.array(gruppo["frazione_rewatch"])
+    ns = np.array(gruppo["n_semi"])
+    for etichetta, maschera in (("senza ri-visioni (<10% dei titoli)", fr < 0.10),
+                                ("con ri-visioni (>=10%)", fr >= 0.10),
+                                ("storia corta (< 150 semi)", ns < 150),
+                                ("storia lunga (>= 150 semi)", ns >= 150)):
+        if maschera.sum() < 5:
+            print(f"    {etichetta:<36} —  utenti {int(maschera.sum())} (troppo pochi)")
+            continue
+        riga = [f"{etichetta:<36} utenti {int(maschera.sum()):>3}"]
+        for s in SCHEMI:
+            lt = np.array(acc[s]["lift_t"])[maschera]
+            riga.append(f"{s.split()[0][:10]}: {np.median(lt):>5.1f}x")
+        print("    " + " · ".join(riga))
     print(f"\nFINE ({time.time()-T0:.0f}s)")
 
 
