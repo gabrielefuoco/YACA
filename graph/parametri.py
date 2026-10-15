@@ -119,6 +119,29 @@ SCHEDA = [
      "Da che anno un titolo e' «uscita nuova»: l'anno in corso e quello prima. La lista e' l'unico "
      "lavoro della porta d'ingresso nel meccanismo, quindi questo numero e' visibile.",
      "measure/liste.py"),
+    ("FILTRO_VS_MODULAZIONE", "modulare", "MISURATO",
+     "LA REGOLA DEGLI ASSI: un asse NON deve sostituire l'attivazione (filtrando i titoli dentro i mondi "
+     "o riordinando i mondi), deve MODULARLA. Misurato su 60 utenti, 40 titoli per portafoglio: "
+     "sostituendo, il riempimento crolla a 3-14 titoli e la copertura del futuro va a 0,0-0,7%; "
+     "modulando, il riempimento resta 32 e la copertura 2,3-2,6%, e un terzo dei titoli cambia "
+     "(Jaccard 0,67). Vale per tutti gli assi, fascia compresa.",
+     "measure/ricetta.py"),
+    ("ASSE_PESO", 0.5, "INVENTATO",
+     "Quanto un asse extra modula l'attivazione: att x (1 + 0,5 x (quota - 0,5)). Misurato: a 0,5 il "
+     "cozy cambia un terzo dei titoli (Jaccard 0,67) mentre l'impegnativo NON cambia niente "
+     "(Jaccard 1,00) — le due liste di generi hanno prevalenze molto diverse (30.814 contro 8.279 "
+     "titoli) e probabilmente vogliono pesi diversi.",
+     "measure/ricetta.py"),
+    ("ASSE_COZY_GENERI", "35,10751,10749,16", "DICHIARATO (curatela del proprietario)",
+     "I generi dell'asse «cozy»: commedia, famiglia, romantico, animazione. Lista PROVVISORIA scritta "
+     "dall'autore per provare l'asse: la curatela vera e' del proprietario, e i generi sono la parte "
+     "grossolana — le keyword sarebbero piu' fini.",
+     "measure/ricetta.py"),
+    ("ASSE_IMPEGNATIVO_GENERI", "99,36,10752", "DICHIARATO (curatela del proprietario)",
+     "I generi dell'asse «impegnativo»: documentario, storico, guerra. Provvisoria come sopra. NOTA: "
+     "il genere «Dramma» (18) e' stato ESCLUSO di proposito — copre meta' del catalogo e non "
+     "filtra niente.",
+     "measure/ricetta.py"),
     ("SAGHE_ROTTE_SU_SERIE", True, "MISURATO",
      "Le collezioni TMDB esistono solo per i film, quindi la lista «saghe» e' VUOTA per i mondi "
      "televisivi (verificato su due utenti su due). O si costruisce diversamente, o non si propone.",

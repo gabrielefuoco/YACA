@@ -438,6 +438,26 @@ Real O'Neals* — **un contenitore**. Stesso parametro, stesso ordinamento: uno 
 richiede un giudizio, e il banco che guarda il comportamento non lo può dare. Il test non isola
 `MONDI_DIVERSI_SOGLIA_FASCIA`, che resta **INVENTATO**: valida l'insieme, non il singolo valore.
 
+**E la regola che ne esce, misurata, vale per TUTTI gli assi — compresa la fascia**:
+
+| come si usa un asse | riempimento | copertura del futuro |
+|---|---|---|
+| **sostituendo** l'attivazione (filtro sui titoli, o riordino dei mondi) | **3-14 titoli** | **0,0-0,7%** |
+| **modulando** l'attivazione (l'asse pesa) | **32 titoli** | **2,3-2,6%** |
+
+Modulando, il portafoglio **resta pieno e resta giusto**, e un terzo dei titoli cambia (Jaccard 0,67).
+Sostituendo, si svuota e la copertura va a zero. È la stessa lezione della fascia (§13) applicata a un
+asse diverso, ed è una regola di implementazione, non un'opinione.
+
+**E gli assi hanno prevalenze diverse**: l'asse «cozy» copre **30.814** titoli, «impegnativo» **8.279**.
+Con lo stesso peso il primo morde (Jaccard 0,67) e il secondo **non fa niente** (Jaccard 1,00): i pesi
+per asse vanno tarati, e la lista dei generi è **curatela** — provvisoria quella scritta dall'autore.
+
+Nota di nomenclatura, dalla discussione con il proprietario: **uno slider deve nominare la RICHIESTA,
+non la PERSONA** — «Resta nel tuo mondo / Esci dal tuo mondo» dice cosa ottieni; «conservatore /
+esploratore» descrive chi sei, e il carattere il profilo ce l'ha già dedotto (canone 0,87, forma 0,82).
+Etichettare la persona rischia di contraddire la deduzione.
+
 ## Not yet specified
 
 Con la mia raccomandazione, da confermare o ribattere:

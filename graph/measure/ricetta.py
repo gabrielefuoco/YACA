@@ -111,6 +111,28 @@ def main():
                 VOT[r] = float(v)
     VOTMED = np.array([np.median(VOT[MEM == b]) if (MEM == b).any() else 0.0 for b in range(NB)])
     VOTMED_CAT = float(np.median(VOTMED[VOTMED > 0]))
+    # L'ASSE NUOVO «cozy / impegnativo»: non e' nella fascia ne' nella distanza, e il meccanismo non
+    # ha niente su cui instradarlo — ma i GENERI li abbiamo. Liste PROVVISORIE, e la curatela e' del
+    # proprietario: qui servono solo a vedere se l'asse morde e se le liste si svuotano.
+    COZY_ID = {35, 10751, 10749, 16}            # commedia · famiglia · romantico · animazione
+    IMP_ID = {99, 36, 10752}                    # documentario · storico · guerra
+    COZY = np.zeros(N, bool)
+    IMP = np.zeros(N, bool)
+    for tipo, f in (("movie", "movies.parquet"), ("tv", "tv.parquet")):
+        d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f, columns=["id", "genres"])
+        for i, g in zip(d["id"], d["genres"]):
+            r = B.ROW_OF.get(f"{tipo}:{int(i)}")
+            if r is None:
+                continue
+            try:
+                voci = json.loads(g) if isinstance(g, str) else (g or [])
+            except Exception:
+                voci = []
+            ids = {int(x["id"]) for x in voci if isinstance(x, dict) and "id" in x}
+            COZY[r] = bool(ids & COZY_ID)
+            IMP[r] = bool(ids & IMP_ID)
+    print(f"  asse cozy/impegnativo (provvisorio): cozy {int(COZY.sum()):,} titoli · "
+          f"impegnativo {int(IMP.sum()):,} ({time.time()-T0:.0f}s)", flush=True)
     NEP = np.ones(N, np.float32)
     tv = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / "tv.parquet",
                          columns=["id", "number_of_episodes"])
@@ -156,25 +178,46 @@ def main():
                 break
         return scelti
 
-    def titoli(bolle, r_tit, visti, quanti):
+    def titoli(bolle, r_tit, visti, quanti, filtro=None):
         fuori = []
         for b in bolle:
             m = np.setdiff1d(np.where(MEM == b)[0], list(visti))
+            if filtro is not None:
+                m = m[filtro[m]]
             if len(m):
                 fuori.extend(m[np.argsort(-r_tit[m])][:quanti].tolist())
         return set(fuori)
+
+    def att_con_asse(att, maschera):
+        """L'asse MODULA l'attivazione invece di sostituirla.
+
+        E' la regola che nasce dal fallimento del filtro per genere: filtrare DENTRO i mondi svuota le
+        liste (3-14 titoli su 40) e azzera la copertura, perche' i mondi sono gia' comunita' coerenti e
+        il filtro ne rimuove la struttura. Qui l'asse diventa una quota PER MONDO, e l'attivazione resta
+        il segnale principale.
+        """
+        quota = np.zeros(NB)
+        for b in np.unique(MEM):
+            m = np.where(MEM == b)[0]
+            quota[b] = float(maschera[m].mean()) if len(m) else 0.0
+        return att * (1.0 + 0.5 * (quota - 0.5))
 
     varianti = [("base", dict(quante=LARGHEZZA_BASE)),
                 ("+ largo", dict(quante=LARGHEZZA_BASE * 2)),
                 ("+ lontano", dict(quante=LARGHEZZA_BASE, distanza=True)),
                 ("+ nicchia", dict(quante=LARGHEZZA_BASE, fascia="nicchia")),
-                ("+ popolare", dict(quante=LARGHEZZA_BASE, fascia="popolare"))]
+                ("+ popolare", dict(quante=LARGHEZZA_BASE, fascia="popolare")),
+                ("+ cozy", dict(quante=LARGHEZZA_BASE, filtro=COZY)),
+                ("+ impegnativo", dict(quante=LARGHEZZA_BASE, filtro=IMP)),
+                ("+ cozy pesato", dict(quante=LARGHEZZA_BASE, asse=COZY)),
+                ("+ impegn. pesato", dict(quante=LARGHEZZA_BASE, asse=IMP))]
 
     pool = [f.stem[6:] for f in sorted(K.TK.glob("movie-*.json"))
             if (K.TK / f"show-{f.stem[6:]}.json").exists()]
     utenti = np.random.default_rng(404).choice(pool, size=QUANTI_UTENTI * 2, replace=False)
     jac = {n: [] for n, _ in varianti[1:]}
     oro_preso = {n: [] for n, _ in varianti}
+    riempimento = {n: [] for n, _ in varianti}
     usati = 0
     esempi = []
     for u in utenti:
@@ -194,11 +237,13 @@ def main():
         visti = set(semi.tolist())
         pezzi = {}
         for nome, kw in varianti:
-            bolle = scegli_mondi(att, kw.get("quante", LARGHEZZA_BASE), kw.get("distanza", False),
+            att2 = att_con_asse(att, kw["asse"]) if "asse" in kw else att
+            bolle = scegli_mondi(att2, kw.get("quante", LARGHEZZA_BASE), kw.get("distanza", False),
                                  kw.get("fascia"))
             per = max(TITOLI_TOTALI // max(len(bolle), 1), 2)
-            t = titoli(bolle, r_tit, visti, per)
+            t = titoli(bolle, r_tit, visti, per, kw.get("filtro"))
             pezzi[nome] = t
+            riempimento[nome].append(len(t))
             oro_preso[nome].append(len(t & oro) / len(oro))
         for nome in jac:
             jac[nome].append(len(pezzi["base"] & pezzi[nome]) / len(pezzi["base"] | pezzi[nome]))
@@ -207,10 +252,11 @@ def main():
         usati += 1
 
     print(f"\n  utenti: {usati} · titoli per portafoglio: {TITOLI_TOTALI}\n")
-    print(f"  {'variante':>12} {'Jaccard vs base':>17} {'titoli del futuro presi':>26}")
+    print(f"  {'variante':>12} {'Jaccard vs base':>17} {'titoli del futuro presi':>26} {'ne restano':>12}")
     for nome, _ in varianti:
         j = f"{np.median(jac[nome]):.2f}" if nome in jac else "— (e' la base)"
-        print(f"  {nome:>12} {j:>17} {100*np.median(oro_preso[nome]):>25.1f}%")
+        print(f"  {nome:>12} {j:>17} {100*np.median(oro_preso[nome]):>25.1f}% "
+              f"{int(np.median(riempimento[nome])):>12}")
     print(f"\n  lettura: Jaccard alto (0,8-1,0) = quel parametro NON cambia cosa si vede.")
     print(f"  Basso (0,1-0,4) = lo cambia. E «titoli del futuro» e' informazione, NON verdetto:")
     print(f"  il banco guarda il comportamento, e una scelta di prodotto non si arbitra con quello.")
