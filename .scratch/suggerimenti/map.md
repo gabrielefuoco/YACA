@@ -359,32 +359,39 @@ scelta di correttezza, non di efficienza.
 
 ### 5c. Cosa si salva: **la ricetta a priori, la lista per profilo**
 
-Distinzione del proprietario (15/10/2026), ed è più pulita di quella dell'autore:
+Distinzione del proprietario (15/10/2026), e l'autore l'aveva appiattita sbagliando: sono **tre** cose,
+non due. La correzione è del proprietario stesso («la ricetta non è uguale per tutti, o no?»).
 
-- **LA RICETTA** è il *come*: il codice più `graph/parametri.py`. Si salva **a priori**, è uguale per
-tutti, e **non è un dato di profilo**. Non cambia mai se non quando la si cambia — e allora cambia per
-tutti insieme.
-- **LA LISTA** è il risultato **processato e completo** — i mondi, i loro membri, l'ordine — ed è
-salvata **per profilo**, ricalcolata a ogni cambio della cronologia.
+- **LA RICETTA** è il *come*: il codice più `graph/parametri.py`. È **la stessa per tutti** — è una
+funzione, non un dato di profilo — e si salva a priori. Non cambia mai se non quando la si cambia, e
+allora cambia per tutti insieme.
+- **GLI ARGOMENTI DELLA RICETTA** sono invece **per profilo**: la **storia** e gli **slider**. È qui che
+due profili divergono: *stessa funzione, argomenti diversi*. Gli slider vivono già in un posto di
+profilo (`activeProfileSettings`).
+- **LA LISTA** è il risultato di applicare la ricetta a quegli argomenti — i mondi, i loro membri,
+l'ordine — ed è salvata **per profilo**, ricalcolata a ogni cambio di un argomento.
 
-**La chiave della cache, completa**:
+**La chiave della cache, letta bene**:
 
 ```
-hash(storia) · versione dell'artefatto · impronta della ricetta · slider
+ARGOMENTI   hash(storia) · slider
+VERSIONI    versione dell'artefatto · impronta della ricetta
 ```
 
-Le prime due erano decise (§5b). La terza **la aggiunge l'autore, ed è necessaria**: senza l'impronta
-della ricetta, cambiare un iperparametro (per esempio `MONDI_DIVERSI_SOGLIA_FASCIA`) continuerebbe a
-servire liste costruite coi valori vecchi — **in silenzio**. È **la stessa trappola della partizione**
-(§9): un artefatto e un parametro che si disallineano e non lo dicono a nessuno. E si chiude con lo
-stesso rimedio: **una impronta**, e la si calcola dalla tabella stessa (un hash di `parametri.SCHEDA`).
+Le due versioni dicono *con che cosa* è stata calcolata; i due argomenti dicono *per chi*. **L'impronta
+della ricetta la aggiunge l'autore, ed è necessaria**: senza, cambiare un iperparametro (per esempio
+`MONDI_DIVERSI_SOGLIA_FASCIA`) continuerebbe a servire liste costruite coi valori vecchi — **in
+silenzio**. È **la stessa trappola della partizione** (§9): un artefatto e un parametro che si
+disallineano senza che niente vada in errore. Si chiude con lo stesso rimedio — un'impronta calcolata
+dalla tabella stessa (`parametri.impronta()`, un hash dei 26 iperparametri). **Misurato**: cambiando un
+valore l'impronta cambia, quindi le liste salvate si invalidano da sole.
 
 **Cosa contiene la lista salvata**: **gli id, non i testi.** I titoli, le trame e le immagini il
 prodotto li ha già nel suo database: salvare quelli sarebbe duplicare. Con i soli id, una lista
 completa (4-8 liste · 20-40 titoli · l'ordine) sta in **pochi KB per profilo**.
 
 **E il TTL**: con la chiave completa, le 12 ore **non servono più per la correttezza** — restano come
-**limite di spazio** (si tengono le liste recenti, si buttano le vecchie). Non e' piu' una scadenza: e'
+**limite di spazio** (si tengono le liste recenti, si buttano le vecchie). Non è più una scadenza: è
 una politica di sgombero.
 
 ## Not yet specified
