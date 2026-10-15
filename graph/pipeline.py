@@ -221,15 +221,26 @@ def lista(args) -> int:
     """Il motore. Vedi `graph/motore.py`: e' l'unico posto dove il meccanismo viene USATO."""
     from graph import motore as MO
     M = MO.Motore()
+    MO.carica_titoli()
+    slider = {k: v for k, v in (("largo", args.largo), ("lontano", args.lontano),
+                                ("cozy", args.cozy), ("canone", args.canone)) if v is not None}
+    if args.utenti:
+        for u in args.utenti.split(","):
+            u = u.strip()
+            if not u:
+                continue
+            print("\n" + "=" * 100)
+            print(f"UTENTE {u}")
+            print("=" * 100)
+            MO.stampa(M.lista(MO.da_trakt(u), slider))
+        return 0
     if args.file:
         storia = [(k, p) for k, p in json.load(open(args.file, encoding="utf-8"))]
     elif args.utente:
         storia = MO.da_trakt(args.utente)
     else:
-        print("serve un file o --utente")
+        print("serve un file, --utente o --utenti")
         return 2
-    slider = {k: v for k, v in (("largo", args.largo), ("lontano", args.lontano),
-                                ("cozy", args.cozy), ("canone", args.canone)) if v is not None}
     esito = M.lista(storia, slider)
     MO.carica_titoli()
     MO.stampa(esito)
@@ -255,6 +266,7 @@ def main(argv=None) -> int:
     pl = sub.add_parser("lista", help="IL MOTORE: entra una storia, escono le liste")
     pl.add_argument("file", nargs="?", help="un JSON [[chiave, plays], ...]")
     pl.add_argument("--utente", help="un utente Trakt in cache (alternativo al file)")
+    pl.add_argument("--utenti", help="piu' utenti in un colpo solo, separati da virgola")
     pl.add_argument("--largo", type=int, default=None, help="quante liste (2-8)")
     pl.add_argument("--lontano", type=float, default=None, help="0=vicino · 1=mondi diversi")
     pl.add_argument("--cozy", type=float, default=None, help="-1=impegnativo · +1=cozy")
