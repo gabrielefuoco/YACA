@@ -335,7 +335,7 @@ I **cinque INVENTATI** che la tabella dichiara da sola (`da_rivedere()`):
 ancora i propri valori locali (`ALPHA`, `K_POTA`, `ITER`) — vanno collegati anche loro, altrimenti i
 posti dove guardare restano due.
 
-### 12. La cache: **chiave = hash della storia + versione dell'artefatto**
+### 11. La cache: **chiave = hash della storia + versione dell'artefatto**
 
 `graph/measure/cache.py`, 100 utenti, semi base ~283. Aggiungendo visioni nuove al seme:
 
@@ -357,7 +357,7 @@ completa — `hash(storia) + versione dell'artefatto` — perché:
 Il costo dichiarato: ~50-150 ms per visione anche quando comprerebbe 1,00 di Jaccard, cioè zero. È una
 scelta di correttezza, non di efficienza.
 
-### 13. Cosa si salva: **la ricetta a priori, la lista per profilo**
+### 12. Cosa si salva: **la ricetta a priori, la lista per profilo**
 
 Distinzione del proprietario (15/10/2026), e l'autore l'aveva appiattita sbagliando: sono **tre** cose,
 non due. La correzione è del proprietario stesso («la ricetta non è uguale per tutti, o no?»).
@@ -394,7 +394,7 @@ completa (4-8 liste · 20-40 titoli · l'ordine) sta in **pochi KB per profilo**
 **limite di spazio** (si tengono le liste recenti, si buttano le vecchie). Non è più una scadenza: è
 una politica di sgombero.
 
-### 11. La ricetta cambia cosa si vede — **misurato**
+### 13. La ricetta cambia cosa si vede — **misurato**
 
 `graph/measure/ricetta.py`, 60 utenti. Due parametri opposti — *«non uscire dal tuo mondo»* (la bolla di
 testa + i vicini immediati) contro *«voglio uscire»* (otto mondi scelti per diversità di fascia e
@@ -434,12 +434,12 @@ Con la mia raccomandazione, da confermare o ribattere:
 5. ~~I tipi di lista~~ — **CHIUSA**: quattro liste — *il tuo mondo*, *un passo fuori*, *le uscite nuove*,
    *la nicchia di qualità* — più **un catalogo per ogni mondo diverso** (§3d). Le saghe restano fuori:
    misurate **rotte sulle serie**.
-6. ~~La cache~~ — **CHIUSA**: chiave = **hash della storia + versione dell'artefatto** (§12). Misurato:
+6. ~~La cache~~ — **CHIUSA**: chiave = **hash della storia + versione dell'artefatto** (§11). Misurato:
    per un profilo maturo la storia non muove il portafoglio (Jaccard 1,00 con 10 visioni nuove); la
    chiave completa si sceglie per esattezza, per coprire il caso non misurato e per non avere casi
    speciali sui profili freddi.
 7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri), e la ricetta
-   **cambia cosa si vede** — misurato, Jaccard 0,11 fra due parametri opposti (§11). Resta aperto solo
+   **cambia cosa si vede** — misurato, Jaccard 0,11 fra due parametri opposti (§13). Resta aperto solo
    il **contenuto preciso** (slider o «profili di serata», che nominano le stesse tre manopole) e la
    domanda che appartiene al proprietario: **i due portafogli sono migliori per quell'utente?**
 8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
