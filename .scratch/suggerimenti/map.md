@@ -394,6 +394,28 @@ completa (4-8 liste · 20-40 titoli · l'ordine) sta in **pochi KB per profilo**
 **limite di spazio** (si tengono le liste recenti, si buttano le vecchie). Non è più una scadenza: è
 una politica di sgombero.
 
+### 11. La ricetta cambia cosa si vede — **misurato**
+
+`graph/measure/ricetta.py`, 60 utenti. Due parametri opposti — *«non uscire dal tuo mondo»* (la bolla di
+testa + i vicini immediati) contro *«voglio uscire»* (otto mondi scelti per diversità di fascia e
+medium) — applicati **alla stessa attivazione**: nessuna diffusione in più, due selezioni.
+
+| | |
+|---|---|
+| Jaccard fra i due portafogli (sui **titoli** mostrati) | **mediana 0,11** · p10 0,03 · p90 0,24 |
+| titoli mostrati | stretto mediana 25 · largo mediana 60 |
+
+**Il controllo che rende il numero leggibile**: se il portafoglio stretto fosse *contenuto* in quello
+largo, il Jaccard sarebbe 25/60 = **0,42**. Misurato **0,11**, cioè molto meno: non è «meno titoli», sono
+**altri mondi**. Quindi la ricetta **non è decorativa** — cambia cosa l'utente vede, non solo l'ordine.
+
+**E la seconda metà della domanda resta aperta, per dichiarazione**: che i due portafogli siano
+*migliori* per quell'utente richiede un giudizio, e il banco che guarda il comportamento non lo può
+dare. Questa è l'ultima assunzione non misurata del disegno, ed è **del proprietario**.
+
+Nota: il test non isola *quale* dei tre parametri fa la differenza, quindi
+`MONDI_DIVERSI_SOGLIA_FASCIA` resta **INVENTATO** — il test valida l'insieme, non il singolo valore.
+
 ## Not yet specified
 
 Con la mia raccomandazione, da confermare o ribattere:
@@ -416,12 +438,10 @@ Con la mia raccomandazione, da confermare o ribattere:
    per un profilo maturo la storia non muove il portafoglio (Jaccard 1,00 con 10 visioni nuove); la
    chiave completa si sceglie per esattezza, per coprire il caso non misurato e per non avere casi
    speciali sui profili freddi.
-7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri: larghezza · distanza ·
-   fascia), non una lista di titoli — e la lista è il loro *risultato* (§5c). Resta aperto **il
-   contenuto preciso** (gli "slider" o i "profili di serata" che nominano le stesse tre manopole) e
-   soprattutto **la verifica che la ricetta serva**: due profili con la stessa storia e tipo diverso
-   ricevono portafogli diversi **e migliori per loro**? Finché non e' dimostrato, gli slider sono
-   decorativi e la lista resta l'alternativa onesta.
+7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri), e la ricetta
+   **cambia cosa si vede** — misurato, Jaccard 0,11 fra due parametri opposti (§11). Resta aperto solo
+   il **contenuto preciso** (slider o «profili di serata», che nominano le stesse tre manopole) e la
+   domanda che appartiene al proprietario: **i due portafogli sono migliori per quell'utente?**
 8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
 
 ## Out of scope
