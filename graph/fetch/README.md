@@ -10,7 +10,7 @@ sono **dati scaricati** (e possono vivere in `.cache/`, che è una cache e si pu
 |---|---|---|---|
 | **TMDB** (i parquet dei film e delle serie) | `.cache/tmdb/*.parquet` | il prodotto: `src/api/tmdb.js` li mette in cache; i parquet sono una sua esportazione | **da esplicitare** ✗ |
 | **MovieLens** (ml-32m) | `.cache/movielens/ml-32m/` | dataset pubblico, da scaricare a mano (https://grouplens.org/datasets/movielens/) | dichiarato ✓ |
-| **MovieLens pulito** | `.cache/movielens/ratings-puliti.parquet` | **GENERATORE NON IDENTIFICATO** — nessuno dei 275 script lo scrive | **da ricostruire** ✗✗ |
+| **MovieLens pulito** | `.cache/movielens/ratings-puliti.parquet` | **`upstream/00_ratings_puliti.py`** (15/10/2026). Il generatore era `.scratch/ml-collaborativo/ranker-pairwise.py`, righe 186-195, e il nome stava in una **variabile** (`CLEAN`): per questo `grep` per nome file non lo trovava. La ricetta è «tengo le coppie il cui movieId mappa su un titolo del canone» — **nessun filtro sui voti** — e `usecols` scartava `rating` e `timestamp` al momento della lettura, che è perché il file ha due colonne. Riproduce il file **esattamente** (31.652.632 righe · 200.948 utenti) e ora tiene anche le due colonne che l'originale buttava via | **fatto** ✓ |
 | **Trakt** (le co-visioni) | `.cache/trakt/` | i **7** script `fetch-trakt-*.js` — in questa cartella: `users` (le co-visioni), `followers`, `full`, `bulk`, `lists`, `movies`, `related` | **fatto** ✓ |
 | **spazi-trakt.npz** | `.cache/movielens/` | **`upstream/spazi-trakt.py`** | **fatto** ✓ |
 | **cf-spazio.npz · cf-studente.npz** | `.cache/movielens/` | **`upstream/cf-edges.py`** (righe 62 e 86) | **fatto** ✓ |
