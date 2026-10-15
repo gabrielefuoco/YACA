@@ -94,6 +94,11 @@ SCHEDA = [
      "La ricaduta quando non ci sono titoli ripetuti: i primi 2-3 di ogni catalogo.", "da costruire"),
 
     # ---------------------------------------------------------------- liste
+    ("MIN_TITOLI_MONDO", 5, "INVENTATO",
+     "Quanti titoli non visti deve avere un mondo perche' valga come catalogo a se'. Nato dal motore: "
+     "la selezione prendeva il mondo 3379 (4 titoli) e la sua lista ne mostrava UNO. Il primo mondo, "
+     "quello del profilo, resta sempre anche se e' piccolo.",
+     "graph/motore.py"),
     ("NICCHIA_POPOLARITA_MAX", 20.0, "DICHIARATO (del PRODOTTO)",
      "HIDDEN_GEMS_MAX_POPULARITY di src/engines/hybrid/dataFetchers.js. Usato invece di inventarne un "
      "secondo: se il prodotto cambia la sua soglia, questa segue.", "src/engines/hybrid/dataFetchers.js"),

@@ -217,6 +217,25 @@ ATTENZIONE a due cose, sono le trappole della ricetta:
     return 0
 
 
+def lista(args) -> int:
+    """Il motore. Vedi `graph/motore.py`: e' l'unico posto dove il meccanismo viene USATO."""
+    from graph import motore as MO
+    M = MO.Motore()
+    if args.file:
+        storia = [(k, p) for k, p in json.load(open(args.file, encoding="utf-8"))]
+    elif args.utente:
+        storia = MO.da_trakt(args.utente)
+    else:
+        print("serve un file o --utente")
+        return 2
+    slider = {k: v for k, v in (("largo", args.largo), ("lontano", args.lontano),
+                                ("cozy", args.cozy), ("canone", args.canone)) if v is not None}
+    esito = M.lista(storia, slider)
+    MO.carica_titoli()
+    MO.stampa(esito)
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="python -m graph.pipeline", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -233,6 +252,14 @@ def main(argv=None) -> int:
     pv.add_argument("--triangolo", default=None)
     pv.set_defaults(fn=voti)
     sub.add_parser("pesanti", help="come rigenerare tutto").set_defaults(fn=pesanti)
+    pl = sub.add_parser("lista", help="IL MOTORE: entra una storia, escono le liste")
+    pl.add_argument("file", nargs="?", help="un JSON [[chiave, plays], ...]")
+    pl.add_argument("--utente", help="un utente Trakt in cache (alternativo al file)")
+    pl.add_argument("--largo", type=int, default=None, help="quante liste (2-8)")
+    pl.add_argument("--lontano", type=float, default=None, help="0=vicino · 1=mondi diversi")
+    pl.add_argument("--cozy", type=float, default=None, help="-1=impegnativo · +1=cozy")
+    pl.add_argument("--canone", type=float, default=None, help="-1=nicchia · +1=popolare")
+    pl.set_defaults(fn=lista)
     a = p.parse_args(argv)
     return a.fn(a)
 
