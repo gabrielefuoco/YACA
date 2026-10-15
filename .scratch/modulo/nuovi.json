@@ -1,0 +1,95 @@
+[
+ {
+  "id": 1283515,
+  "title": "Verity",
+  "tipo": "movie",
+  "vote_count": 95,
+  "keywords": [
+   {
+    "name": "psychological thriller"
+   },
+   {
+    "name": "based on novel or book"
+   },
+   {
+    "name": "novelist"
+   }
+  ],
+  "genres": [
+   {
+    "name": "Mystery"
+   },
+   {
+    "name": "Thriller"
+   }
+  ],
+  "cast": [
+   {
+    "name": "Anne Hathaway"
+   },
+   {
+    "name": "Dakota Johnson"
+   },
+   {
+    "name": "Josh Hartnett"
+   }
+  ],
+  "directors": [
+   {
+    "name": "Michael Showalter"
+   }
+  ],
+  "production_countries": [
+   "US"
+  ],
+  "original_language": "en",
+  "production_companies": [
+   {
+    "name": "Amazon MGM Studios"
+   }
+  ],
+  "release_date": "2026-09-30"
+ },
+ {
+  "id": 999,
+  "title": "Il conte di Montecristo",
+  "tipo": "movie",
+  "vote_count": 1453,
+  "keywords": [
+   {
+    "name": "revenge"
+   },
+   {
+    "name": "based on novel or book"
+   }
+  ],
+  "genres": [
+   {
+    "name": "Adventure"
+   },
+   {
+    "name": "Drama"
+   }
+  ],
+  "cast": [
+   {
+    "name": "Pierre Niney"
+   }
+  ],
+  "directors": [
+   {
+    "name": "Alexandre de La Patellière"
+   }
+  ],
+  "production_countries": [
+   "FR"
+  ],
+  "original_language": "fr",
+  "production_companies": [
+   {
+    "name": "Chapter 2"
+   }
+  ],
+  "release_date": "2024-06-28"
+ }
+]
