@@ -10,10 +10,20 @@ sono **dati scaricati** (e possono vivere in `.cache/`, che è una cache e si pu
 |---|---|---|---|
 | **TMDB** (i parquet dei film e delle serie) | `.cache/tmdb/*.parquet` | il prodotto: `src/api/tmdb.js` li mette in cache; i parquet sono una sua esportazione | **da esplicitare** ✗ |
 | **MovieLens** (ml-32m) | `.cache/movielens/ml-32m/` | dataset pubblico, da scaricare a mano (https://grouplens.org/datasets/movielens/) | dichiarato ✓ |
-| **MovieLens pulito** | `.cache/movielens/ratings-puliti.parquet` | uno script della fase 1, in `.scratch/ml-collaborativo/` | **da portare qui** ✗ |
+| **MovieLens pulito** | `.cache/movielens/ratings-puliti.parquet` | **GENERATORE NON IDENTIFICATO** — nessuno dei 275 script lo scrive | **da ricostruire** ✗✗ |
 | **Trakt** (le co-visioni) | `.cache/trakt/` | i **7** script `fetch-trakt-*.js` — in questa cartella: `users` (le co-visioni), `followers`, `full`, `bulk`, `lists`, `movies`, `related` | **fatto** ✓ |
-| **gli spazi Trakt e CF** | `.cache/movielens/spazi-trakt.npz`, `cf-spazio.npz`, `cf-studente.npz`, `spazio-pulito.npz`, `boot-B.npz` | gli script della fase 1, in `.scratch/ml-collaborativo/` | **da portare qui** ✗ |
-| **i componenti della fase 1** | `.cache/movielens/nuovo-KW.npz`, `nuovo-CAST.npz`, `nuovo-DIR.npz`, `nuovo-TV.npz`, `nuovo-LIST.npz`, `nuovo-COLL.npz`, `nuovo-PROD.npz` | `componenti-nuovi.py`, `07-componenti.py` — fase 1 | **da portare qui** ✗ |
+| **spazi-trakt.npz** | `.cache/movielens/` | **`upstream/spazi-trakt.py`** | **fatto** ✓ |
+| **cf-spazio.npz · cf-studente.npz** | `.cache/movielens/` | **`upstream/cf-edges.py`** (righe 62 e 86) | **fatto** ✓ |
+| **spazio-pulito.npz** | `.cache/movielens/` | **`upstream/contaminazione.py`** (riga 74) | **fatto** ✓ |
+| **boot-B.npz** | `.cache/movielens/` | **`upstream/boot-comp.py`** (riga 122, il nome arriva da argomento) | **fatto** ✓ |
+| **nuovo-KW/CAST/DIR/TV/LIST/COLL/PROD.npz** | `.cache/movielens/` | **`upstream/componenti-nuovi.py`** | **fatto** ✓ |
+
+## La regola per trovarli, imparata stasera
+
+Cercare il **nome del file** nel sorgente non basta: **gli script costruiscono i nomi in variabili**
+(`CACHE = ML / f"cf-spazio.npz"`, `np.savez_compressed(ML / nome, ...)`). Un grep del nome fallisce
+su cinque su sei. La domanda giusta e': **cosa scrive questo script?** — e va letta la riga di
+scrittura, non cercato il nome.
 
 ## La regola
 

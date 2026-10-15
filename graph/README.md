@@ -15,7 +15,10 @@ graph/
                              divisione voti, centroidi. Si lanciano da qui, non da `.scratch/`.
   data/                      55 file, 422 MB — GLI ARTEFATTI: le partizioni, il triangolo, i centroidi,
                              gli embedding, i componenti. Sono il risultato del lavoro, non una cache.
-  fetch/                     chi scarica cosa (TMDB, MovieLens, Trakt) — vedi `fetch/README.md`
+  fetch/                     chi scarica cosa: i 7 fetcher Trakt + il README degli input
+  upstream/                  i 5 script che PRODUCONO gli input della fase 1:
+                             spazi-trakt.py · componenti-nuovi.py · cf-edges.py ·
+                             boot-comp.py · contaminazione.py
 ```
 
 **La regola, ed è quella che rende possibile la manutenzione**: `graph/data/` è il risultato del
