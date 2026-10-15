@@ -27,6 +27,8 @@ import scipy.sparse as sp
 
 from . import canon as K
 from . import parametri as P
+from .camminata import PESO_TIPO_FATTORI
+from . import camminata as _C
 
 # ============================================================ LA RICETTA
 # I parametri con cui e' costruito tutto quello che c'e' in `.cache/movielens`. Prima vivevano solo
@@ -299,6 +301,80 @@ def lettura(args) -> int:
     return 0
 
 
+def esporta(args) -> int:
+    """L'ARTEFATTO PER IL PRODOTTO — l'unica cosa che attraversa il confine fra modulo e `src/`.
+
+    Cosa contiene, e nient'altro (sta sotto i 2 MB):
+      titoli:   {chiave: bolla}            per ogni titolo del canone
+      bolle:    {bolla: {n, voti, vicini}} taglia, mediana dei voti, i vicini sulla mappa 6+2
+      episodi:  {chiave: n}                solo per le SERIE: serve al loro peso (frazione di episodi)
+      versione: impronte E PARAMETRI       artefatto + ricetta, e i valori che l'engine JS deve usare
+
+    I PARAMETRI VIAGGIANO CON L'ARTEFATTO, e non e' un vezzo: l'engine del prodotto non deve avere
+    numeri cablati, altrimenti la fonte dei valori diventa due. Chi cambia un iperparametro in
+    `graph/parametri.py` lo trova nell'artefatto appena lo riesporta — e l'impronta della ricetta lo
+    registra.
+
+    Cosa NON contiene: i membri per bolla (si ricavano da `titoli`), i titoli e le trame (il prodotto
+    li ha già nel suo database), la partizione o i centroidi (servono solo al modulo).
+    """
+    import numpy as np
+    from graph import bubbles as B
+    D = K.DATA
+    MEM = np.load(D / "bolle-eterogeneo-subvoti.npy")
+    NB = int(MEM.max()) + 1
+    SZ = np.bincount(MEM)
+    M = np.load(D / "mappa-finale-6-2.npz", allow_pickle=True)
+    INTRA = M["intra"]
+    VOT = np.zeros(len(MEM))
+    import pandas as pd
+    for tipo, f in (("movie", "movies.parquet"), ("tv", "tv.parquet")):
+        d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f, columns=["id", "vote_count"])
+        for i, v in zip(d["id"], d["vote_count"]):
+            r = B.ROW_OF.get(f"{tipo}:{int(i)}")
+            if r is not None and not pd.isna(v):
+                VOT[r] = float(v)
+    titoli = {B.KEYS[i]: int(MEM[i]) for i in range(len(MEM))}
+    bolle = {}
+    for b in range(NB):
+        m = np.where(MEM == b)[0]
+        bolle[str(b)] = {
+            "n": int(SZ[b]),
+            "voti": int(np.median(VOT[m])) if len(m) else 0,
+            "vicini": sorted({int(x) for x in INTRA[b] if x >= 0}),
+        }
+    # gli episodi, SOLO per le serie: e' il denominatore del loro peso
+    episodi = {}
+    import pandas as pd
+    tv = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / "tv.parquet", columns=["id", "number_of_episodes"])
+    for i, e in zip(tv["id"], tv["number_of_episodes"]):
+        ch = f"tv:{int(i)}"
+        e = pd.to_numeric(e, errors="coerce")
+        if ch in B.ROW_OF and e is not None and not pd.isna(e) and e > 1:
+            episodi[ch] = int(e)
+    fuori = pathlib.Path(args.fuori)
+    fuori.parent.mkdir(parents=True, exist_ok=True)
+    with open(fuori, "w", encoding="utf-8") as f:
+        json.dump({"versione": {
+                       "artefatto": K.sha_file("bolle-eterogeneo-subvoti.npy"),
+                       "ricetta": P.impronta(),
+                       # I VALORI CHE L'ENGINE DEL PRODOTTO DEVE USARE, cosi' non ne cabla nessuno
+                       "alpha": P.ALPHA, "iterazioni": P.ITER,
+                       "peso_film_max": P.PESO_FILM_MAX,
+                       "peso_serie": [P.PESO_SERIE_BASE, P.PESO_SERIE_FASCIA],
+                       "fattore_tipo": PESO_TIPO_FATTORI,
+                       "freddo_sotto": P.FREDDO_SOTTO,
+                       "min_titoli_mondo": P.MIN_TITOLI_MONDO},
+                   "titoli": titoli, "bolle": bolle, "episodi": episodi}, f,
+                  ensure_ascii=False, separators=(",", ":"))
+    mb = fuori.stat().st_size / 1024 / 1024
+    print(f"  scritto: {fuori} — {mb:.2f} MB · {len(titoli):,} titoli · {len(bolle):,} bolle · "
+          f"{len(episodi):,} serie con episodi")
+    print(f"  versione: artefatto {K.sha_file('bolle-eterogeneo-subvoti.npy')} · "
+          f"ricetta {P.impronta()}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="python -m graph.pipeline", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -328,6 +404,9 @@ def main(argv=None) -> int:
     plet.add_argument("--quanti", type=int, default=10)
     plet.add_argument("--fuori", default=".scratch/suggerimenti/lettura.md")
     plet.set_defaults(fn=lettura)
+    pex = sub.add_parser("esporta", help="l'artefatto per il prodotto (src/data/bolle.json)")
+    pex.add_argument("--fuori", default="src/data/bolle.json")
+    pex.set_defaults(fn=esporta)
     a = p.parse_args(argv)
     return a.fn(a)
 
