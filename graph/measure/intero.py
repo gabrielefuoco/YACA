@@ -46,6 +46,7 @@ def main():
     utenti = np.random.default_rng(77).choice(pool, size=min(QUANTI_UTENTI * 2, len(pool)),
                                               replace=False)
     prec, cop, temp = [], [], []
+    prec_t, jac_t = [], []
     per_tipo = {}
     ranghi = []
     n_mostrati = []
@@ -69,6 +70,21 @@ def main():
                     per_tipo[li["tipo"]] = per_tipo.get(li["tipo"], 0) + 1
                     ranghi.append(pos)
         mostrati = list(dict.fromkeys(mostrati))      # dedup, tenendo l'ordine
+        # IL CONFRONTO COI TIPI DI SEGNALE. I tipi veri (like, love, libreria, voti) stanno nel database
+        # del PRODOTTO: qui si usa un PROXY dichiarato — ri-visto >= 2 volte = «loved» — solo per vedere
+        # se i fattori di tipo (INVENTATI: loved 3 · liked 2 · library 1,5 · watched 1) spostano
+        # qualcosa. Se spostano poco, i fattori non sono critici; se spostano molto, la calibrazione
+        # conta e va fatta coi dati veri.
+        semi_tip = [(ch, pl, "loved" if pl >= 2 else "watched") for ch, pl in semi]
+        esito_t = M.lista(semi_tip)
+        mostrati_t = []
+        for li in esito_t["liste"]:
+            mostrati_t += [kk for kk, _ in li["titoli"]]
+        mostrati_t = list(dict.fromkeys(mostrati_t))
+        if mostrati and mostrati_t:
+            jac_t.append(len(set(mostrati) & set(mostrati_t)) / len(set(mostrati) | set(mostrati_t)))
+            if oro:
+                prec_t.append(len(set(mostrati_t) & oro) / len(mostrati_t))
         n_mostrati.append(len(mostrati))
         if not mostrati or not oro:
             continue
@@ -85,6 +101,12 @@ def main():
     print(f"  {100*np.median(prec):>11.1f}% {100*np.median(cop):>10.1f}% "
           f"{100*np.median(n_mostrati)/M.N:>19.2f}%")
     print(f"\n  lift sulla precisione: {np.median(prec) / (np.median(n_mostrati)/M.N):.0f}x")
+    if jac_t:
+        print(f"\n  CON I TIPI DI SEGNALE (proxy: ri-visto >= 2 volte = loved):")
+        print(f"    Jaccard fra i due portafogli ... mediana {np.median(jac_t):.2f}")
+        print(f"    precisione: senza tipi {100*np.median(prec):.1f}% · con i tipi "
+              f"{100*np.median(prec_t):.1f}%")
+        print(f"    -> {'i fattori di tipo NON spostano quasi niente' if np.median(jac_t) > 0.8 else 'i fattori di tipo spostano molto: la calibrazione conta'}")
     print(f"\n  DOVE STA IL FUTURO — titoli dell'oro trovati, per tipo di lista:")
     tot = sum(per_tipo.values()) or 1
     for nome, c in sorted(per_tipo.items(), key=lambda z: -z[1])[:8]:

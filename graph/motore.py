@@ -243,6 +243,10 @@ class Motore:
         att_s = self.modula(att, slider, dedotto)
         bolle = self.scegli_mondi(att_s, slider)
         visti = set(righe.tolist())
+        # LA LIBRERIA E' INTENZIONE, NON VISIONE: un titolo che l'utente ha messo in libreria NON va
+        # escluso dai suggerimenti come se l'avesse visto. Si escludono i soli titoli visti/amati.
+        if any(t == "library" for t in tipi):
+            visti = {int(r_) for r_, t in zip(righe, tipi) if t != "library"}
         # I MONDI TROPPO PICCOLI non valgono come catalogo a se' (parametri.MIN_TITOLI_MONDO). Il PRIMO
         # resta sempre, anche se e' piccolo: e' il mondo del profilo. Nato dal motore: il mondo 3379
         # (4 titoli) produceva una lista di UN titolo.
