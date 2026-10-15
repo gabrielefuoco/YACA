@@ -39,6 +39,7 @@ import scipy.sparse as sp
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from graph import bubbles as B
+from graph import camminata as C
 from graph import canon as K
 from graph import parametri as P
 
@@ -62,10 +63,8 @@ class Motore:
         q = np.load(K.A("bolle-eterogeneo-V10-p1.0-triangolo.npz"))
         self.N = int(q["indptr"].shape[0]) - 1
         W = sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(self.N, self.N)).tocsr()
-        self.Wp = self._pota((W + W.T).tocsr(), P.POTA_PER_RIGA)
-        self.deg = np.asarray(self.Wp.sum(1)).ravel()
-        self.deg[self.deg <= 0] = 1
-        self.Tr = sp.diags(1.0 / self.deg) @ self.Wp
+        self.Wp = C.pota((W + W.T).tocsr())
+        self.Tr = C.transizione(self.Wp)
         self.MEM = np.load(K.A("bolle-eterogeneo-subvoti.npy"))
         self.NB = int(self.MEM.max()) + 1
         self.SZ = np.bincount(self.MEM)
@@ -134,38 +133,18 @@ class Motore:
 
     @staticmethod
     def _pota(M, k):
-        r_, c_, v_ = [], [], []
-        for i in range(M.shape[0]):
-            lo, hi = M.indptr[i], M.indptr[i + 1]
-            idx, val = M.indices[lo:hi], M.data[lo:hi]
-            if len(idx) > k:
-                o = np.argpartition(-val, k)[:k]
-                idx, val = idx[o], val[o]
-            r_.append(np.full(len(idx), i, np.int32))
-            c_.append(idx.astype(np.int32))
-            v_.append(val)
-        D = sp.csr_matrix((np.concatenate(v_), (np.concatenate(r_), np.concatenate(c_))),
-                          shape=M.shape)
-        return (D + D.T).tocsr()
+        """Vedi `graph/camminata.py`: la camminata sta in un posto solo."""
+        return C.pota(M, k)
 
     # ------------------------------------------------------------------ i semi
     def pesi_semi(self, righe, plays):
-        """Il peso di ogni titolo della storia: film min(plays,3), serie 1+2x(frazione episodi)."""
-        nep = self.NEP[righe]
-        pl = np.asarray(plays, float)
-        return np.where(nep > 1.0, P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * np.minimum(pl / nep, 1.0),
-                        np.minimum(pl, P.PESO_FILM_MAX))
+        """Vedi `camminata.pesi_semi`: film min(plays,3), serie 1+2x(frazione episodi)."""
+        return C.pesi_semi(righe, plays, self.NEP)
 
     def diffondi(self, righe, plays):
         """PageRank personalizzato: l'attivazione PER MONDO e quella PER TITOLO."""
-        w = self.pesi_semi(righe, plays)
-        e = np.zeros(self.N, np.float64)
-        e[righe] = w / max(w.sum(), 1e-12)
-        r = e.copy()
-        for _ in range(P.ITER):
-            r = P.ALPHA * e + (1 - P.ALPHA) * (r @ self.Tr)
-        r = r / r.sum()
-        return np.bincount(self.MEM, weights=r, minlength=self.NB) / r.sum(), r
+        r = C.diffondi(self.Tr, righe, plays, self.NEP)
+        return C.attiva_per_mondo(r, self.MEM, self.NB), r
 
     def deduci(self, righe):
         """Gli assi che la storia dice da sola: canone (voti mediani) e forma (quanti mondi pieni)."""

@@ -30,6 +30,7 @@ import scipy.sparse as sp
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
+from graph import camminata as _cam
 from graph import canon as K
 from graph import parametri as P
 
@@ -43,19 +44,7 @@ MIN_TITOLI = P.BANCO_MIN_TITOLI
 EMIVITA = 365.0
 
 
-def pota(M, k):
-    r_, c_, v_ = [], [], []
-    for i in range(M.shape[0]):
-        lo, hi = M.indptr[i], M.indptr[i + 1]
-        idx, val = M.indices[lo:hi], M.data[lo:hi]
-        if len(idx) > k:
-            o = np.argpartition(-val, k)[:k]
-            idx, val = idx[o], val[o]
-        r_.append(np.full(len(idx), i, np.int32))
-        c_.append(idx.astype(np.int32))
-        v_.append(val)
-    P = sp.csr_matrix((np.concatenate(v_), (np.concatenate(r_), np.concatenate(c_))), shape=M.shape)
-    return (P + P.T).tocsr()
+pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def storia(u):
