@@ -394,27 +394,43 @@ completa (4-8 liste · 20-40 titoli · l'ordine) sta in **pochi KB per profilo**
 **limite di spazio** (si tengono le liste recenti, si buttano le vecchie). Non è più una scadenza: è
 una politica di sgombero.
 
-### 13. La ricetta cambia cosa si vede — **misurato**
+### 13. La ricetta cambia cosa si vede — **misurato**, e un parametro per volta
 
-`graph/measure/ricetta.py`, 60 utenti. Due parametri opposti — *«non uscire dal tuo mondo»* (la bolla di
-testa + i vicini immediati) contro *«voglio uscire»* (otto mondi scelti per diversità di fascia e
-medium) — applicati **alla stessa attivazione**: nessuna diffusione in più, due selezioni.
+`graph/measure/ricetta.py`, 60 utenti. **Cinque portafogli da 40 titoli ciascuno** dalla stessa
+attivazione — a **parità di titoli mostrati**, altrimenti il confronto misurerebbe la quantità e non la
+composizione.
 
-| | |
-|---|---|
-| Jaccard fra i due portafogli (sui **titoli** mostrati) | **mediana 0,11** · p10 0,03 · p90 0,24 |
-| titoli mostrati | stretto mediana 25 · largo mediana 60 |
+| variante | Jaccard vs base | titoli del futuro presi |
+|---|---|---|
+| base (4 mondi, i più accesi) | — | **2,4%** |
+| **+ largo** (8 mondi invece di 4) | 0,36 | **3,4%** |
+| + lontano (mondi diversi per fascia/medium) | 0,59 | 2,6% |
+| + nicchia (mondi ordinati dai più oscuri) | **0,00** | **0,3%** |
+| + popolare (dai più votati) | 0,00 | 0,7% |
+| *(a caso: 40 titoli su 66.259)* | — | *0,06%* |
 
-**Il controllo che rende il numero leggibile**: se il portafoglio stretto fosse *contenuto* in quello
-largo, il Jaccard sarebbe 25/60 = **0,42**. Misurato **0,11**, cioè molto meno: non è «meno titoli», sono
-**altri mondi**. Quindi la ricetta **non è decorativa** — cambia cosa l'utente vede, non solo l'ordine.
+**Quaranta titoli prendono il 2,4-3,4% del futuro dell'utente contro lo 0,06% del caso: un fattore
+40-57.** E i tre parametri NON pesano uguale:
 
-**E la seconda metà della domanda resta aperta, per dichiarazione**: che i due portafogli siano
-*migliori* per quell'utente richiede un giudizio, e il banco che guarda il comportamento non lo può
-dare. Questa è l'ultima assunzione non misurata del disegno, ed è **del proprietario**.
+- **la larghezza aiuta** (3,4% > 2,4%): più mondi, più futuro coperto;
+- **la distanza è la più debole** (Jaccard 0,59): cambia il 40% dei titoli con un costo modesto;
+- **la fascia è la più potente e la più pericolosa**: Jaccard **0,00** — cambia *tutto* — ma la
+  copertura crolla a **0,3%**, otto volte *sotto* la base.
 
-Nota: il test non isola *quale* dei tre parametri fa la differenza, quindi
-`MONDI_DIVERSI_SOGLIA_FASCIA` resta **INVENTATO** — il test valida l'insieme, non il singolo valore.
+**E quel crollo è un difetto dell'implementazione dell'autore, non del parametro**: la fascia
+*riordina* i mondi verso l'estremo, invece di *filtrare* attorno alla fascia che la storia ha già
+dedotto. Ordinando per «il più oscuro» si pescano i contenitori eterogenei — lo stesso difetto visto
+nei mondi lontani (§3d). **Lezione per la UI: la fascia non deve ordinare, deve filtrare** — e vuole il
+**guardiano della coerenza**.
+
+**Le due letture, e una dice l'opposto dell'altra**: per un utente la «nicchia» ha prodotto
+*Little Dorrit · Nord e sud · Daniel Deronda · The Way We Live Now* — **un mondo vittoriano coerente e
+specifico**; per un altro ha prodotto *Jeffrey Epstein · Aiuto! - Help! · United We Fall · The
+Real O'Neals* — **un contenitore**. Stesso parametro, stesso ordinamento: uno dei due va guardato.
+
+**E la seconda metà della domanda resta al proprietario**: che i due portafogli siano *migliori*
+richiede un giudizio, e il banco che guarda il comportamento non lo può dare. Il test non isola
+`MONDI_DIVERSI_SOGLIA_FASCIA`, che resta **INVENTATO**: valida l'insieme, non il singolo valore.
 
 ## Not yet specified
 
@@ -438,10 +454,11 @@ Con la mia raccomandazione, da confermare o ribattere:
    per un profilo maturo la storia non muove il portafoglio (Jaccard 1,00 con 10 visioni nuove); la
    chiave completa si sceglie per esattezza, per coprire il caso non misurato e per non avere casi
    speciali sui profili freddi.
-7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri), e la ricetta
-   **cambia cosa si vede** — misurato, Jaccard 0,11 fra due parametri opposti (§13). Resta aperto solo
-   il **contenuto preciso** (slider o «profili di serata», che nominano le stesse tre manopole) e la
-   domanda che appartiene al proprietario: **i due portafogli sono migliori per quell'utente?**
+7. ~~Il contenuto degli slider~~ — **CHIUSA**: sono una **ricetta** (tre parametri), la ricetta **cambia
+   cosa si vede**, e i tre parametri **non pesano uguale** (§13): la **larghezza** aiuta, la **distanza**
+   è la più debole, la **fascia** è la più potente ma va *filtrata*, non *ordinata* — ordinandola crolla
+   la copertura, e serve il guardiano della coerenza. Restano aperti: il **contenuto preciso** (slider o
+   profili di serata) e la domanda del proprietario — *i due portafogli sono migliori per quell'utente?*
 8. ~~α dopo la potatura~~ — **CHIUSA**: α = 0,60, misurato su 120 utenti (§7b).
 
 ## Out of scope
