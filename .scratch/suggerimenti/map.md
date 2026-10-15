@@ -335,7 +335,7 @@ I **cinque INVENTATI** che la tabella dichiara da sola (`da_rivedere()`):
 ancora i propri valori locali (`ALPHA`, `K_POTA`, `ITER`) — vanno collegati anche loro, altrimenti i
 posti dove guardare restano due.
 
-### 5b. La cache: **chiave = hash della storia + versione dell'artefatto**
+### 12. La cache: **chiave = hash della storia + versione dell'artefatto**
 
 `graph/measure/cache.py`, 100 utenti, semi base ~283. Aggiungendo visioni nuove al seme:
 
@@ -357,7 +357,7 @@ completa — `hash(storia) + versione dell'artefatto` — perché:
 Il costo dichiarato: ~50-150 ms per visione anche quando comprerebbe 1,00 di Jaccard, cioè zero. È una
 scelta di correttezza, non di efficienza.
 
-### 5c. Cosa si salva: **la ricetta a priori, la lista per profilo**
+### 13. Cosa si salva: **la ricetta a priori, la lista per profilo**
 
 Distinzione del proprietario (15/10/2026), e l'autore l'aveva appiattita sbagliando: sono **tre** cose,
 non due. La correzione è del proprietario stesso («la ricetta non è uguale per tutti, o no?»).
@@ -434,7 +434,7 @@ Con la mia raccomandazione, da confermare o ribattere:
 5. ~~I tipi di lista~~ — **CHIUSA**: quattro liste — *il tuo mondo*, *un passo fuori*, *le uscite nuove*,
    *la nicchia di qualità* — più **un catalogo per ogni mondo diverso** (§3d). Le saghe restano fuori:
    misurate **rotte sulle serie**.
-6. ~~La cache~~ — **CHIUSA**: chiave = **hash della storia + versione dell'artefatto** (§5b). Misurato:
+6. ~~La cache~~ — **CHIUSA**: chiave = **hash della storia + versione dell'artefatto** (§12). Misurato:
    per un profilo maturo la storia non muove il portafoglio (Jaccard 1,00 con 10 visioni nuove); la
    chiave completa si sceglie per esattezza, per coprire il caso non misurato e per non avere casi
    speciali sui profili freddi.
