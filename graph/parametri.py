@@ -18,8 +18,15 @@ Tre stati, e sono la cosa piu' importante di questo file:
 """
 import os
 
-# nome, valore, stato, perche', dove
+# # nome, valore, stato, perche', dove
+#
+# ATTENZIONE, e questa nota sta qui perche' l'errore e' stato fatto TRE volte in una sera: **niente
+# stringhe multi-riga dentro questa tabella**. Sono tuple: una stringa spezzata su due righe senza
+# concatenazione esplicita e' un SyntaxError, e il file non si carica piu' — quindi non falliscono solo
+# le descrizioni, falliscono TUTTI gli arbitri che importano di qui. Se serve piu' spazio, si usa la
+# concatenazione implicita (stringhe adiacenti), come nella voce CATALOGHI_MIN_RIPETIZIONI.
 SCHEDA = [
+    # NOTA: ogni stringa sta su UNA riga, o e' concatenata con stringhe adiacenti. Vedi l'avviso in testa.
     # ---------------------------------------------------------------- diffusione
     ("POTA_PER_RIGA", 16, "MISURATO",
      "Archi tenuti per ogni titolo. Tiene il 12% degli archi, costa 8,7x meno, e RAFFORZA i legami "
@@ -73,10 +80,14 @@ SCHEDA = [
      "sceglie piu' prudenza.", "measure/freddo.py"),
 
     # ---------------------------------------------------------------- semi dai cataloghi (i piu' deboli)
-    ("CATALOGHI_MIN_RIPETIZIONI", 2, "INVENTATO",
-     "«Titoli presenti in piu' di un catalogo». E' la regola del proprietario, ma il numero non e' "
-     "verificato: i 179 cataloghi NON sono ancora stati valutati offline, quindi non sappiamo nemmeno "
-     "se la sovrapposizione ha materiale. PRIMA MISURA DA FARE.", "da costruire"),
+    ("CATALOGHI_MIN_RIPETIZIONI", 2, "MISURATO VUOTO (1 famiglia su 179)",
+     "«Titoli presenti in piu' di un catalogo». Misurato sulla famiglia «Registi» (11 cataloghi, "
+     "`measure/cataloghi.py`): 0 titoli su 220 stanno in piu' di uno, e la sovrapposizione mediana "
+     "fra coppie e' 0. Per quella famiglia la prima strada e' VUOTA e parte sempre la seconda (i top "
+     "2-3 di ogni catalogo). ATTENZIONE: quella famiglia e' disgiunta PER COSTRUZIONE (i film di un "
+     "regista non stanno nel catalogo di un altro). L'overlap vero va cercato nelle famiglie per "
+     "GENERE e per MARCA (Pixar vs Animazione, Marvel vs Supereroi): non ancora misurate.",
+     "measure/cataloghi.py"),
     ("CATALOGHI_QUANTI", 10, "INVENTATO",
      "Quanti titoli prendere dai cataloghi attivi come seme sintetico.", "da costruire"),
     ("CATALOGHI_TOP_PER_CATALOGO", 3, "INVENTATO",
