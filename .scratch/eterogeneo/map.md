@@ -54,6 +54,48 @@ V8. Le bolle **non hanno id stabili fra partizioni** — *Deadpool & Wolverine* 
 americani. Il contratto `assert_allineamento_spazi` non ha protetto perché la **partizione** non era
 nell'elenco degli artefatti. **Partizione, centroidi e vocabolario sono un artefatto solo.**
 
+## Le tre domande dell'utente (15/10)
+
+**1. Cosa sono i titoli senza trama?** Non roba scadente: sono i **poco votati** (mediana **26** voti
+contro **127** di chi ha una trama; sopra i 1000 voti: **0,2%** contro 14,4%). I più votati senza trama
+sono **telenovelas latinoamericane** (*Rebelde* 5.213, *El señor de los cielos*, *El Chavo del Ocho*,
+*Avenida Brasil*) e **commedie francesi** (*Le Jeu, Les Tuche, Brice de Nice, Les Bronzés*) — popolari
+nei loro mercati, minori per noi. Nella lettura degli inserimenti, *Il conte di Montecristo* finiva con
+*Le Jeu* e *Les Tuche*: **correttamente**, e senza trama.
+
+**2. Gli altri componenti li coprono?** **Sì**, e bene:
+
+| componente | copre (con trama) | copre (senza trama) |
+|---|---|---|
+| KW | 94,9% | **88,8%** |
+| CAST | 97,2% | **93,4%** |
+| DIR | 76,9% | 61,9% |
+| PROD | 75,4% | 66,3% |
+| TV (co-visione) | 66,6% | 37,3% |
+| LIST (curate) | 22,4% | **5,9%** |
+| COLL | 11,0% | 6,3% |
+
+Il componente di trama è quindi un **di più**, non una necessità: i metadati coprono l'88-93% anche di
+chi non ha una trama. Quello che non li raggiunge è il **comportamento** (TV 37%, LIST 6%) — perché
+sono titoli che nessuno ha ancora guardato.
+
+**3. Le bolle ancora grandi.** A RB 200 il problema è **quasi risolto**: sopra i 200 titoli restano
+**2 bolle** (604 titoli, **0,9%** del canone), sopra i 120 sono 31 in tutto (6,3%).
+
+| fascia | bolle | titoli |
+|---|---|---|
+| 200+ | **2** | 604 (0,9%) |
+| 150-200 | 5 | 823 (1,2%) |
+| 120-150 | 8 | 1.055 (1,6%) |
+| 100-120 | 16 | 1.733 (2,6%) |
+| 60-100 | 180 | 13.207 (19,9%) |
+| 30-60 | 551 | 22.580 (34,1%) |
+
+E le dieci più grosse sono **incoerenti**, ma per una ragione precisa: hanno **19-28% di titoli con una
+trama** contro il 54% del canone — sono i **contenitori dei titoli senza trama**, dove i metadati sono
+sottili e il comportamento non arriva. **Il rimedio non è una risoluzione più fine** (RB 400 romperebbe
+le bolle buone): è **più segnale** per quei ~600 titoli, che oggi non esiste.
+
 ## Not yet specified
 
 - Il **peso del componente**: provato solo a 1,0. 0,5 e 2,0 cambierebbero la coerenza, e vanno misurati
