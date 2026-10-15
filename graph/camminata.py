@@ -44,20 +44,32 @@ def transizione(M):
     return sp.diags(1.0 / deg) @ M
 
 
-def pesi_semi(righe, plays, NEP):
-    """Il peso di ogni titolo della storia (§3b della mappa).
+PESO_TIPO_FATTORI = {"loved": 3.0, "liked": 2.0, "library": 1.5, "watched": 1.0}
+"""I fattori del tipo di segnale, letti da PESO_TIPO (una stringa, per stare nella tabella)."""
+
+
+def pesi_semi(righe, plays, NEP, tipi=None):
+    """Il peso di ogni titolo della storia (§3b della mappa, esteso ai TIPI di segnale).
 
     film:  min(plays, PESO_FILM_MAX)                       «i plays vanno limitati»
     serie: 1 + 2 x (frazione di episodi visti)             le puntate NON contano come play
+
+    `tipi` (facoltativo) e' un array di stringhe: "loved", "liked", "watched", "library". Il peso di
+    base viene **moltiplicato** per il fattore del tipo. Senza `tipi` il comportamento e' quello di
+    prima, bit per bit: e' il contratto della regressione.
     """
     nep = NEP[righe]
     pl = np.asarray(plays, float)
-    return np.where(nep > 1.0,
+    base = np.where(nep > 1.0,
                     P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * np.minimum(pl / nep, 1.0),
                     np.minimum(pl, P.PESO_FILM_MAX))
+    if tipi is None:
+        return base
+    fattore = np.array([PESO_TIPO_FATTORI.get(str(t), 1.0) for t in tipi], float)
+    return base * fattore
 
 
-def diffondi(Tr, righe, plays, NEP, alpha=None, iters=None):
+def diffondi(Tr, righe, plays, NEP, alpha=None, iters=None, tipi=None):
     """PageRank personalizzato. Restituisce l'attivazione **per titolo**, normalizzata a somma 1.
 
     `Tr` e' la matrice di transizione (vedi `transizione`), `NEP` il numero di episodi per titolo.
@@ -65,7 +77,7 @@ def diffondi(Tr, righe, plays, NEP, alpha=None, iters=None):
     """
     alpha = P.ALPHA if alpha is None else alpha
     iters = P.ITER if iters is None else iters
-    w = pesi_semi(righe, plays, NEP)
+    w = pesi_semi(righe, plays, NEP, tipi)
     e = np.zeros(Tr.shape[0], np.float64)
     e[righe] = w / max(w.sum(), 1e-12)
     r = e.copy()

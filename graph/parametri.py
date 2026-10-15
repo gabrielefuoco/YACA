@@ -55,6 +55,17 @@ SCHEDA = [
      "sostiene e' l'EQUILIBRIO, non il lift: con il cap a 20, a un utente di soli film le serie "
      "prendevano il 67% del peso del seme (fino all'85%); con la specifica, il 31%.",
      "measure/equilibrio.py (253 utenti)"),
+    ("PESO_TIPO", "loved 3 · liked 2 · library 1,5 · watched 1", "INVENTATO",
+     "IL MOLTIPLICATORE DEL TIPO DI SEGNALE. Fino a ieri il motore conosceva UN SOLO tipo — «visto», "
+     "pesato con le ri-visioni — e buttava via i segnali espliciti, che sono i piu' forti: un «love» e' "
+     "l'utente che DICE una cosa, non che la fa. Il prodotto ne distingue quattro "
+     "(SEED_SIGNAL_LIMITS = loved, liked, watched, library) e li usa gia'. "
+     "I moltiplicatori qui sono INVENTATI: non c'e' modo di calibrarli offline, perche' like, love, "
+     "libreria e voti stanno nel database del PRODOTTO, non nella cache Trakt. Vanno tarati quando i "
+     "dati esisteranno — e allora la calibrazione di §3b va RIFATTA, perche' e' stata fatta sulle "
+     "ri-visioni sole. NOTA: la libreria e' INTENZIONE, non visione — un titolo in libreria NON va "
+     "escluso dai suggerimenti come se fosse visto.",
+     "graph/camminata.py"),
     ("PESO_SERIE_BASE", 1.0, "DICHIARATO",
      "Il peso minimo di una serie. Insieme a PESO_SERIE_FASCIA definisce «una serie di 100 episodi "
      "deve valere come 2/3 film, non come 100».", "measure/pesi.py"),

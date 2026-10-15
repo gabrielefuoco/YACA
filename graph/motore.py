@@ -137,13 +137,13 @@ class Motore:
         return C.pota(M, k)
 
     # ------------------------------------------------------------------ i semi
-    def pesi_semi(self, righe, plays):
-        """Vedi `camminata.pesi_semi`: film min(plays,3), serie 1+2x(frazione episodi)."""
-        return C.pesi_semi(righe, plays, self.NEP)
+    def pesi_semi(self, righe, plays, tipi=None):
+        """Vedi `camminata.pesi_semi`: film min(plays,3), serie 1+2x(frazione episodi), volte il tipo."""
+        return C.pesi_semi(righe, plays, self.NEP, tipi)
 
-    def diffondi(self, righe, plays):
+    def diffondi(self, righe, plays, tipi=None):
         """PageRank personalizzato: l'attivazione PER MONDO e quella PER TITOLO."""
-        r = C.diffondi(self.Tr, righe, plays, self.NEP)
+        r = C.diffondi(self.Tr, righe, plays, self.NEP, tipi=tipi)
         return C.attiva_per_mondo(r, self.MEM, self.NB), r
 
     def deduci(self, righe):
@@ -221,13 +221,25 @@ class Motore:
 
     # ------------------------------------------------------------------ IL METODO
     def lista(self, storia, slider=None):
+        """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`.
+
+        Il `tipo` e' il segnale del prodotto: "loved", "liked", "watched", "library". Senza tipo si
+        assume "watched": il comportamento di prima, bit per bit.
+        """
         slider = {**SLIDER_DEFAULT, **(slider or {})}
-        righe = np.array([B.ROW_OF[k] for k, _ in storia if k in B.ROW_OF], np.int64)
-        plays = np.array([p for k, p in storia if k in B.ROW_OF], float)
-        if len(righe) == 0:
+        voci = []
+        for voce in storia:
+            ch, pl = voce[0], voce[1]
+            tp = voce[2] if len(voce) > 2 else "watched"
+            if ch in B.ROW_OF:
+                voci.append((ch, pl, tp))
+        if not voci:
             return {"errore": "nessun titolo della storia e' nel canone", "liste": []}
+        righe = np.array([B.ROW_OF[ch] for ch, _, _ in voci], np.int64)
+        plays = np.array([pl for _, pl, _ in voci], float)
+        tipi = [tp for _, _, tp in voci]
         dedotto = self.deduci(righe)
-        att, r = self.diffondi(righe, plays)
+        att, r = self.diffondi(righe, plays, tipi)
         att_s = self.modula(att, slider, dedotto)
         bolle = self.scegli_mondi(att_s, slider)
         visti = set(righe.tolist())
