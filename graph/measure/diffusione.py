@@ -28,6 +28,7 @@ import scipy.sparse as sp
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
+from graph import camminata as _cam
 from graph import canon as K
 from graph import parametri as P
 
@@ -77,16 +78,8 @@ def raggiungibilita(Ws, N, reins):
 
 
 def diffondi(Ws, seme, alpha=ALPHA, iters=ITER):
-    """PageRank personalizzato: r = alpha*e + (1-alpha)*r*P, con P riga-stocastica."""
-    deg = np.asarray(Ws.sum(1)).ravel().astype(np.float64)
-    deg[deg <= 0] = 1.0
-    P = sp.diags(1.0 / deg) @ Ws
-    e = np.zeros(Ws.shape[0], np.float64)
-    e[seme] = 1.0 / len(seme)
-    r = e.copy()
-    for _ in range(iters):
-        r = alpha * e + (1 - alpha) * (r @ P)
-    return r
+    """PageRank personalizzato col seme UNIFORME — `camminata.ppr`, `pesi=None`."""
+    return _cam.ppr(_cam.transizione(Ws), seme, None, alpha=alpha, iters=iters)
 
 
 def concentrazione(r, seme, mem, sz):

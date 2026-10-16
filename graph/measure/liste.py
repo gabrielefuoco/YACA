@@ -122,12 +122,7 @@ def main():
     VOTMED = np.array([np.median(VOT[MEM == b]) if (MEM == b).any() else 0 for b in range(NB)])
 
     def ppr(seme, pesi, iters=20):
-        e = np.zeros(N, np.float64)
-        e[seme] = pesi / pesi.sum()
-        r = e.copy()
-        for _ in range(iters):
-            r = ALPHA * e + (1 - ALPHA) * (r @ Pp)
-        return r
+        return _cam.ppr(Pp, seme, pesi, alpha=ALPHA, iters=iters)
 
     def top(b, r, quanti=QUANTI, escludi=None):
         m = np.where(MEM == b)[0]

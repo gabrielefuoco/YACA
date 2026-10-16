@@ -53,15 +53,8 @@ pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def diffondi(M, seme, pesi, alpha, iters=30):
-    deg = np.asarray(M.sum(1)).ravel()
-    deg[deg <= 0] = 1
-    P = sp.diags(1.0 / deg) @ M
-    e = np.zeros(M.shape[0], np.float64)
-    e[seme] = pesi / pesi.sum()
-    r = e.copy()
-    for _ in range(iters):
-        r = alpha * e + (1 - alpha) * (r @ P)
-    return r
+    """Il grafo, la transizione e il ciclo: tutti in `camminata`."""
+    return _cam.ppr(_cam.transizione(M), seme, pesi, alpha=alpha, iters=iters)
 
 
 # ---------------------------------------------------------------- gli utenti Trakt

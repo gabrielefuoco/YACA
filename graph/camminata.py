@@ -69,21 +69,43 @@ def pesi_semi(righe, plays, NEP, tipi=None):
     return base * fattore
 
 
+def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False):
+    """PageRank personalizzato su una matrice di transizione GIA' PRONTA (vedi `transizione`).
+
+    **L'unico posto dove sta il ciclo.** Prima era riscritto in NOVE arbitri (`alfa`, `cache`,
+    `diffusione`, `freddo`, `lettura`, `liste`, `pesi`, `ricetta`, `soglia`), ognuno col suo. Il nucleo
+    era identico parola per parola (`r = alpha*e + (1-alpha)*(r @ P)`), ma il giorno che uno di quelli
+    avesse cambiato una riga, quel banco avrebbe misurato una VARIANTE del motore credendo di misurare
+    il motore — la classe di errore che questo modulo ha gia' pagato piu' volte.
+
+    Le tre varianti che gli arbitri usavano davvero, e che qui sono parametri invece che copie:
+      · `pesi=None` -> seme **uniforme** (1/len). Serve a `diffusione.py`, che vuole il comportamento di
+        un seme scelto a caso;
+      · `normalizza=True` -> `r / r.sum()` in uscita, come faceva `ricetta.py` (e `diffondi`);
+      · `alpha=None` -> `parametri.ALPHA`, ma gli arbitri passano il LORO valore, perche' alcuni lo
+        leggono da una variabile d'ambiente (`ALPHA=0.9 python graph/measure/freddo.py`).
+    """
+    alpha = P.ALPHA if alpha is None else float(alpha)
+    iters = P.ITER if iters is None else int(iters)
+    e = np.zeros(Tr.shape[0], np.float64)
+    if pesi is None:
+        e[seme] = 1.0 / max(len(seme), 1)
+    else:
+        e[seme] = np.asarray(pesi, np.float64) / max(float(np.sum(pesi)), 1e-12)
+    r = e.copy()
+    for _ in range(iters):
+        r = alpha * e + (1 - alpha) * (r @ Tr)
+    return r / r.sum() if normalizza else r
+
+
 def diffondi(Tr, righe, plays, NEP, alpha=None, iters=None, tipi=None):
     """PageRank personalizzato. Restituisce l'attivazione **per titolo**, normalizzata a somma 1.
 
     `Tr` e' la matrice di transizione (vedi `transizione`), `NEP` il numero di episodi per titolo.
     Il restart `alpha` viene da `parametri.ALPHA` — misurato su 120 utenti.
     """
-    alpha = P.ALPHA if alpha is None else alpha
-    iters = P.ITER if iters is None else iters
     w = pesi_semi(righe, plays, NEP, tipi)
-    e = np.zeros(Tr.shape[0], np.float64)
-    e[righe] = w / max(w.sum(), 1e-12)
-    r = e.copy()
-    for _ in range(iters):
-        r = alpha * e + (1 - alpha) * (r @ Tr)
-    return r / r.sum()
+    return ppr(Tr, righe, w, alpha=alpha, iters=iters, normalizza=True)
 
 
 def attiva_per_mondo(r, MEM, NB):

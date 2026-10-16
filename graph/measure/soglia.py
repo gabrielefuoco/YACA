@@ -71,12 +71,8 @@ def storia(u):
 
 
 def ppr(P, seme, pesi, iters=ITER):
-    e = np.zeros(P.shape[0], np.float64)
-    e[seme] = pesi / pesi.sum()
-    r = e.copy()
-    for _ in range(iters):
-        r = ALPHA * e + (1 - ALPHA) * (r @ P)
-    return r
+    """Il ciclo sta in `camminata.ppr`. `alpha=ALPHA` perche' qui si puo' sovrascrivere da ambiente."""
+    return _cam.ppr(P, seme, pesi, alpha=ALPHA, iters=iters)
 
 
 def attivazione(r, MEM, NB):

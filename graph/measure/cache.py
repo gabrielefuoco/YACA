@@ -102,13 +102,8 @@ def main():
                         np.minimum(pl, P.PESO_FILM_MAX))
 
     def ppr(seme, plays):
-        e = np.zeros(N, np.float64)
-        w = pesi_spec(seme, plays)
-        e[seme] = w / w.sum()
-        r = e.copy()
-        for _ in range(P.ITER):
-            r = P.ALPHA * e + (1 - P.ALPHA) * (r @ Pm)
-        return np.bincount(MEM, weights=r, minlength=NB) / r.sum()
+        att = _cam.ppr(Pm, seme, pesi_spec(seme, plays), alpha=P.ALPHA, iters=P.ITER, normalizza=True)
+        return np.bincount(MEM, weights=att, minlength=NB)
 
     def top(att, quanti=10):
         return np.argsort(-att)[:quanti]

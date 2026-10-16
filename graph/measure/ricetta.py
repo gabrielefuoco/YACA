@@ -135,16 +135,9 @@ def main():
           flush=True)
 
     def ppr(seme, plays):
-        e = np.zeros(N, np.float64)
-        nep = NEP[seme]
-        pl = plays.astype(float)
-        w = np.where(nep > 1.0, P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * np.minimum(pl / nep, 1.0),
-                     np.minimum(pl, P.PESO_FILM_MAX))
-        e[seme] = w / w.sum()
-        r = e.copy()
-        for _ in range(P.ITER):
-            r = P.ALPHA * e + (1 - P.ALPHA) * (r @ Pm)
-        return r / r.sum()
+        """Il peso inline era `pesi_semi` senza il fattore di tipo: adesso e' `pesi_semi`."""
+        return _cam.ppr(Pm, seme, _cam.pesi_semi(seme, plays, NEP),
+                        alpha=P.ALPHA, iters=P.ITER, normalizza=True)
 
     def scegli_mondi(att, quante, distanza=False, fascia=None):
         """I mondi, con UN parametro variato alla volta. La fascia riordina, non filtra."""

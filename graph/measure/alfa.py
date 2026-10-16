@@ -74,12 +74,8 @@ def storia(u):
 
 
 def ppr(P, seme, pesi, alpha, iters=ITER):
-    e = np.zeros(P.shape[0], np.float64)
-    e[seme] = pesi / pesi.sum()
-    r = e.copy()
-    for _ in range(iters):
-        r = alpha * e + (1 - alpha) * (r @ P)
-    return r
+    """Il ciclo sta in `camminata.ppr`: qui solo la firma, perche' i punti di chiamata non cambino."""
+    return _cam.ppr(P, seme, pesi, alpha=alpha, iters=iters)
 
 
 def top10(r, MEM):

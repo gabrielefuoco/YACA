@@ -1,0 +1,191 @@
+"""test_graph_pipeline.py — i contratti del modulo, in pochi secondi.
+
+NON è la micro-fixture da 100 titoli che il ticket 15 chiedeva per intero: quella richiede che gli step
+di `graph/steps/` siano chiamabili su un sottoinsieme, cioè il **ticket 14** (ancora da decidere con il
+proprietario) — oggi gli step sono script a livello globale, e non si possono né importare né fermare a
+100 titoli. Questa suite copre quello che si può coprire senza, e copre le due cose che più facilmente
+si rompono in silenzio:
+
+  1. **l'equivalenza delle nove varianti di diffusione**, ora unificate in `camminata.ppr` (ticket 07).
+     Il test le riscrive come erano e verifica che la versione unica le riproduca *bit per bit*: è la
+     prova del refactor, e resta come documentazione di quali varianti erano vere e quali no.
+  2. **i contratti dell'artefatto che il prodotto legge** (`src/data/bolle.json`) e dei metadati del
+     canone. Non sono test di comodo: sono le cose su cui `Bolle.js` costruisce, e se cambiano si vuole
+     sapere — non scoprirlo dopo.
+
+Cosa NON c'è, ed è dichiarato: la miscela, la chiusura triangolare, Leiden e la potatura al nucleo (i
+passi 0–2 della costruzione) non si provano qui, perché non sono funzioni invocabili su un grafo piccolo.
+"""
+import json
+import pathlib
+
+import numpy as np
+import pytest
+import scipy.sparse as sp
+
+from graph import camminata as C
+from graph import canon as K
+from graph import parametri as P
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+# ------------------------------------------------------------------ 1. la diffusione, una volta sola
+
+def _grafo_finto(n=60, semi=7):
+    """Un grafo sparso deterministico, e un seme. Niente artefatti: si prova la matematica."""
+    rng = np.random.default_rng(4)
+    M = sp.random(n, n, density=0.05, random_state=4, format="csr").astype(np.float64)
+    M = (M + M.T).tocsr()
+    seme = rng.choice(n, size=semi, replace=False)
+    pesi = rng.uniform(0.5, 6.0, size=semi)
+    return C.transizione(M), seme, pesi
+
+
+def test_ppr_riproduce_le_varianti_degli_arbitri():
+    """Le nove copie erano quattro varianti. `camminata.ppr` le riproduce tutte, bit per bit.
+
+    Le varianti vere, lette una per una dai nove file prima di cancellarle:
+      · seme pesato con `pesi.sum()`      -> `alfa`, `soglia`, `liste`, `lettura`
+      · seme pesato con `max(..., 1e-12)` -> `freddo`, `pesi`
+      · seme UNIFORME `1/len(seme)`       -> `diffusione`
+      · uscita normalizzata `r/r.sum()`   -> `ricetta` (e `diffondi`)
+    """
+    Tr, seme, pesi = _grafo_finto()
+    for alpha in (0.15, 0.6, 0.9):
+        for iters in (1, 5, 20):
+            atteso = _a_mano(Tr, seme, pesi, alpha, iters, normalizza=False)
+            np.testing.assert_array_equal(C.ppr(Tr, seme, pesi, alpha=alpha, iters=iters), atteso)
+            atteso_norm = _a_mano(Tr, seme, pesi, alpha, iters, normalizza=True)
+            np.testing.assert_array_equal(
+                C.ppr(Tr, seme, pesi, alpha=alpha, iters=iters, normalizza=True), atteso_norm)
+
+
+def _a_mano(Tr, seme, pesi, alpha, iters, normalizza):
+    """Il ciclo com'era scritto in ognuna delle nove copie. È la stessa cosa, scritta di nuovo qui:
+    se `camminata.ppr` cambia, questo test lo dice invece di lasciarlo passare."""
+    e = np.zeros(Tr.shape[0], np.float64)
+    e[seme] = np.asarray(pesi, np.float64) / max(float(np.sum(pesi)), 1e-12)
+    r = e.copy()
+    for _ in range(iters):
+        r = alpha * e + (1 - alpha) * (r @ Tr)
+    return r / r.sum() if normalizza else r
+
+
+def test_ppr_seme_uniforme_e_il_caso_di_diffusione_py():
+    Tr, seme, _ = _grafo_finto()
+    e = np.zeros(Tr.shape[0], np.float64)
+    e[seme] = 1.0 / len(seme)
+    r = e.copy()
+    for _ in range(9):
+        r = 0.6 * e + (1 - 0.6) * (r @ Tr)
+    np.testing.assert_array_equal(C.ppr(Tr, seme, None, alpha=0.6, iters=9), r)
+
+
+def test_la_diffusione_del_motore_e_la_stessa_cosa():
+    """`C.diffondi` non deve avere un ciclo suo: è `ppr` col seme costruito da `pesi_semi`."""
+    Tr, seme, _ = _grafo_finto(n=40, semi=5)
+    NEP = np.ones(Tr.shape[0], np.float32)
+    NEP[seme[:2]] = 24.0
+    plays = np.array([2, 30, 1, 1, 4])
+    np.testing.assert_array_equal(
+        C.diffondi(Tr, seme, plays, NEP, alpha=0.6, iters=15),
+        C.ppr(Tr, seme, C.pesi_semi(seme, plays, NEP), alpha=0.6, iters=15, normalizza=True))
+
+
+def test_il_ciclo_non_e_duplicato_da_nessuna_parte():
+    """Il criterio di chiusura del ticket 07, in una riga: il ciclo esiste in UN posto solo."""
+    testo = "\n".join((ROOT / "graph" / n).read_text(encoding="utf-8")
+                      for n in ("camminata.py", "motore.py", "bubbles.py", "collocator.py", "canon.py"))
+    for f in sorted((ROOT / "graph" / "measure").glob("*.py")):
+        testo += f.read_text(encoding="utf-8")
+    assert testo.count("r = alpha * e + (1 - alpha) * (r @ Tr)") == 1
+
+
+# ------------------------------------------------------------------ 2. l'artefatto che il prodotto legge
+
+@pytest.fixture(scope="module")
+def bolle():
+    return json.loads((ROOT / "src" / "data" / "bolle.json").read_text(encoding="utf-8"))
+
+
+def test_le_righe_di_transizione_sono_normalizzate(bolle):
+    """`P` è una riga stocastica: se non lo fosse, la diffusione del prodotto perderebbe massa."""
+    n = len(bolle["bolle"])
+    peggiori = []
+    for b, v in bolle["bolle"].items():
+        s = sum(w for _, w in v["P"])
+        peggiori.append(abs(s - 1.0))
+    # i pesi sono arrotondati a 4 decimali nell'artefatto: la somma può scostarsi di ~1e-4, non di più
+    assert max(peggiori) < 5e-3, f"riga peggiore: {max(peggiori)}"
+
+
+def test_i_membri_di_ogni_bolla_sono_il_suo_conteggio(bolle):
+    conta = {}
+    for _, b in bolle["titoli"].items():
+        conta[b] = conta.get(b, 0) + 1
+    for b, v in bolle["bolle"].items():
+        assert conta.get(int(b), 0) == v["n"], f"bolla {b}: n={v['n']}, membri={conta.get(int(b), 0)}"
+
+
+def test_gli_id_delle_bolle_sono_validi(bolle):
+    n = len(bolle["bolle"])
+    fuori = [k for k, b in bolle["titoli"].items() if not (0 <= b < n)]
+    assert not fuori, f"{len(fuori)} titoli puntano a bolle inesistenti: {fuori[:3]}"
+
+
+def test_ogni_bolla_ha_un_nome_o_e_dichiarata_piccola(bolle):
+    """Le bolle con centroide hanno `termini`; le 575 piccole no, ed è la verità. Nessuna via di mezzo."""
+    senza = [b for b, v in bolle["bolle"].items() if not v.get("termini")]
+    for b in senza:
+        assert bolle["bolle"][b]["n"] < 40, f"bolla {b} senza termini ma con {bolle['bolle'][b]['n']} titoli"
+    assert len(senza) < 700, f"{len(senza)} bolle senza termini: erano 575"
+
+
+# ------------------------------------------------------------------ 3. i metadati, coi numeri già noti
+
+def test_i_metadati_riproducono_i_numeri_noti():
+    """COZY 30.814 e IMP 8.279 sono le prevalenze scritte in `parametri.py`, NEP>1 = 16.529 è quella
+    dell'artefatto delle serie: tre incroci indipendenti. Se si sfalsano, la ricostruzione ha perso
+    qualcosa per strada — ed è esattamente quello che è successo quando i titoli erano un array `<U`
+    da 41 MB invece di un file di righe."""
+    m = K.metadati()
+    assert len(m["VOT"]) == 66_259
+    assert int(m["COZY"].sum()) == 30_814
+    assert int(m["IMP"].sum()) == 8_279
+    assert int((m["NEP"] > 1).sum()) == 16_529
+    assert (m["VOT"] > 0).sum() > 66_000
+
+
+# ------------------------------------------------------------------ 4. i contratti di `canon` si accendono
+
+def test_il_contratto_di_simmetria_protesta():
+    A = sp.csr_matrix(np.array([[0.0, 1.0], [0.0, 0.0]]))
+    with pytest.raises(Exception):
+        K.assert_simmetrica(A, nome="prova", controlla=True)
+
+
+def test_il_contratto_di_ordine_protesta_col_verso_sbagliato():
+    """È il bug che è stato fatto TRE volte in una sera: `argsort(argsort(v))` è ASCENDENTE, quindi
+    ordina per primi i valori più bassi.
+
+    ATTENZIONE al verso, che ho sbagliato scrivendo questo test: `atteso_positivo=False` è il caso
+    normale — `ordine[0]` è il MIGLIORE, quindi il rango correla NEGATIVAMENTE col punteggio. Con
+    `atteso_positivo=True` (che chiederebbe al migliore di avere il punteggio più basso) un ordine
+    rovesciato risulta perfettamente correlato e il contratto non ha niente da protestare — giustamente.
+    """
+    valori = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    sbagliato = np.argsort(np.argsort(valori))        # crescente: il peggiore per primo
+    with pytest.raises(Exception):
+        K.assert_ordine(sbagliato, valori, nome="prova", atteso_positivo=False, controlla=True)
+    giusto = np.argsort(-valori)                      # decrescente: il migliore per primo
+    K.assert_ordine(giusto, valori, nome="prova", atteso_positivo=False, controlla=True)
+
+
+def test_le_costanti_dei_parametri_hanno_una_sola_fonte():
+    """`camminata` legge da `parametri`: se qualcuno scrive un numero a mano, questo test non lo prende —
+    ma prende il caso in cui il valore non esista più."""
+    assert 0.0 < P.ALPHA < 1.0
+    assert P.ITER >= 1
+    assert P.PESO_FILM_MAX >= 1
+    assert P.DELTA_FASCIA > 0
