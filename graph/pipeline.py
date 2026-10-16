@@ -347,14 +347,10 @@ def esporta(args) -> int:
     _deg = np.asarray(W.sum(1)).ravel()
     _deg[_deg <= 0] = 1
     TR = sp.diags(1.0 / _deg) @ W
-    VOT = np.zeros(len(MEM))
-    import pandas as pd
-    for tipo, f in (("movie", "movies.parquet"), ("tv", "tv.parquet")):
-        d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f, columns=["id", "vote_count"])
-        for i, v in zip(d["id"], d["vote_count"]):
-            r = B.ROW_OF.get(f"{tipo}:{int(i)}")
-            if r is not None and not pd.isna(v):
-                VOT[r] = float(v)
+    VOT = np.asarray(K.metadati()["VOT"], float)
+    # ^ I VOTI VENGONO DALL'ARTEFATTO DEI METADATI, non da una rilettura dei Parquet: `canon.metadati()`
+    #   li ha gia' allineati alle righe del canone, vettorizzati e con l'impronta dei generi dentro.
+    #   Prima qui c'erano due `pd.read_parquet` con un ciclo Python su 117.000 righe (ticket 29).
     titoli = {B.KEYS[i]: int(MEM[i]) for i in range(len(MEM))}
     # I TERMINI E GLI ESEMPI DI OGNI MONDO (ticket 12). Senza, una bolla e' `mondo 1084 · 25 titoli ·
     # voti 636`: per sapere CHE COS'E' bisogna incrociare i parquet o leggere i titoli uno a uno. Coi

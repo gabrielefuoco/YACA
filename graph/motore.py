@@ -60,11 +60,11 @@ class Motore:
     """Tutto caricato una volta. Il costo e' il caricamento (~20 s), non la risposta."""
 
     def __init__(self, silenzioso=False):
-        q = np.load(K.A("bolle-eterogeneo-V10-p1.0-triangolo.npz"))
-        self.N = int(q["indptr"].shape[0]) - 1
-        W = sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(self.N, self.N)).tocsr()
-        self.Wp = C.pota((W + W.T).tocsr())
-        self.Tr = C.transizione(self.Wp)
+        # LA TRANSIZIONE PRONTA: il triangolo si carica, si simmetrizza e si pota UNA VOLTA, e il
+        # risultato si salva (`camminata.transizione_pronta`, con le impronte del triangolo e della
+        # potatura). Prima si rifaceva a ogni avvio: era il costo dei 2 secondi che restavano.
+        self.Tr = C.transizione_pronta()
+        self.N = self.Tr.shape[0]
         self.MEM = np.load(K.A("bolle-eterogeneo-subvoti.npy"))
         self.NB = int(self.MEM.max()) + 1
         self.SZ = np.bincount(self.MEM)
@@ -366,12 +366,15 @@ TITOLI = {}
 
 
 def carica_titoli():
-    """Riempie TITOLI (chiave -> nome) per la stampa. Separato perche' serve solo a MOSTRARE."""
-    import pandas as pd
-    for f, tipo, col in (("movies.parquet", "movie", "title"), ("tv.parquet", "tv", "name")):
-        d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f, columns=["id", col])
-        for i, t in zip(d["id"], d[col]):
-            TITOLI[f"{tipo}:{int(i)}"] = str(t)
+    """Riempie TITOLI (chiave -> nome) per la stampa. Separato perche' serve solo a MOSTRARE.
+
+    PRIMA RILEGGEVA I PARQUET (due letture complete con un ciclo Python su ~117.000 righe) per
+    riprendere dei titoli che sono gia' dentro `canon.metadati()`: erano 146 MB di lettura per una
+    mappa di stringhe che si costruisce in 40 ms dall'artefatto.
+    """
+    m = K.metadati()
+    for r, chiave in enumerate(K.titoli()[0]):
+        TITOLI[chiave] = str(m["TIT"][r])
     return TITOLI
 
 

@@ -10,6 +10,7 @@ le matrici, i pesi e i parametri arrivano da fuori.
 
     pota(M, k)                          la potatura: top-k archi per riga, poi simmetrizza
     transizione(M)                      la matrice di transizione (righe che sommano a 1)
+    transizione_pronta(nome, k)         la stessa, cachata su disco (le due impronte dentro)
     pesi_semi(righe, plays, NEP)        il peso dei semi: film min(plays,3), serie 1+2x(frazione episodi)
     diffondi(Tr, righe, pesi, ...)      PageRank personalizzato: l'attivazione PER TITOLO
     attiva_per_mondo(r, MEM, NB)        la somma sui membri: l'attivazione PER MONDO
@@ -17,6 +18,7 @@ le matrici, i pesi e i parametri arrivano da fuori.
 import numpy as np
 import scipy.sparse as sp
 
+from graph import canon as K
 from graph import parametri as P
 
 
@@ -37,6 +39,36 @@ def pota(M, k=None):
     return (D + D.T).tocsr()
 
 
+def transizione_pronta(nome="bolle-eterogeneo-V10-p1.0-triangolo.npz", k=None):
+    """LA TRANSIZIONE POTATA, CACHATA SU DISCO — 1,52M archi invece di 13,2M da riportare in giro.
+
+    Il costo dell'avvio era qui: caricare il triangolo (6,6M archi), simmetrizzarlo (13,2M) e potarlo
+    con un ciclo Python su 66.259 righe. Il risultato dipende SOLO dal triangolo e da `POTA_PER_RIGA`,
+    quindi si salva — e l'artefatto porta le DUE IMPRONTE: se il triangolo cambia, o se cambia la
+    potatura, si ricostruisce da solo invece di servire in silenzio una transizione vecchia. E' lo
+    stesso patto di `canon.metadati()` e di `bolle.json`, e serve perche' la classe di errore che questo
+    modulo combatte e' sempre la stessa: un artefatto vecchio e un parametro nuovo che si disallineano
+    senza far crashare niente.
+    """
+    k = P.POTA_PER_RIGA if k is None else k
+    z = K.DATA / "transizione-potata.npz"
+    sha = K.sha_file(nome)
+    if z.exists():
+        d = np.load(z)
+        if str(d["triangolo_sha"]) == sha and int(d["k"]) == int(k):
+            return sp.csr_matrix((d["data"], d["indices"], d["indptr"]),
+                                 shape=tuple(int(x) for x in d["shape"])).tocsr()
+        print("  transizione-potata: il triangolo o la potatura sono cambiati, ricostruisco", flush=True)
+    q = np.load(K.A(nome))
+    n = int(q["indptr"].shape[0]) - 1
+    W = sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(n, n)).tocsr()
+    Tr = transizione(pota((W + W.T).tocsr(), k))
+    np.savez_compressed(z, data=Tr.data, indices=Tr.indices, indptr=Tr.indptr,
+                        shape=np.array(Tr.shape), triangolo_sha=np.array(sha), k=np.array(int(k)))
+    print(f"  transizione-potata: costruita e salvata ({z.stat().st_size/1e6:.1f} MB)", flush=True)
+    return Tr
+
+
 def transizione(M):
     """La matrice riga-stocastica: ogni nodo distribuisce 1,0 di massa fra i suoi archi."""
     deg = np.asarray(M.sum(1)).ravel()
@@ -44,8 +76,9 @@ def transizione(M):
     return sp.diags(1.0 / deg) @ M
 
 
-PESO_TIPO_FATTORI = {"loved": 3.0, "liked": 2.0, "library": 1.5, "watched": 1.0}
-"""I fattori del tipo di segnale, letti da PESO_TIPO (una stringa, per stare nella tabella)."""
+PESO_TIPO_FATTORI = P.PESO_TIPO
+"""I fattori del tipo di segnale. LA FONTE E' `parametri.PESO_TIPO` (un dizionario in tabella): qui
+resta solo il nome con cui questo modulo lo chiama, perche' `pipeline.py` lo importa da qui."""
 
 
 def pesi_semi(righe, plays, NEP, tipi=None):

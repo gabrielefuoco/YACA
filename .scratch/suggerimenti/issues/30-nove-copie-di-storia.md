@@ -12,3 +12,7 @@ arbitri **5x piu' veloci** (il caricamento dei Parquet e' il loro costo).
 **Come si verifica**: gli arbitri ristampati devono dare **gli stessi numeri** — e questo e' il caso in
 cui possono *non* darli, perche' le copie locali ordinano il tempo in modi diversi (e' la classe del
 ticket 01). Se un numero cambia, quella copia stava misurando un'altra cosa: va indagato, non accettato.
+
+---
+
+RINVIATO CON UN'ANALISI MIGLIORE, il 16/10/2026. Non e' il refactor meccanico che sembrava: i nove `ppr` erano **copie identiche** e si sono sostituiti con uno script in un colpo (9/9), ma le `def storia(u)` degli arbitri hanno **firme di ritorno diverse** — `(righe, eta, plays)` in alcuni, `(righe, pesi, quando, titoli)` in altri, con ordinamenti del tempo diversi (e' la classe del ticket 01). Sostituirle a mano, una per una, e' l'unico modo di farlo senza cambiare cosa misura un banco; e ognuna va ristampata per verificare che i numeri non cambino. Restano ~450 righe da tagliare, ma vanno tagliate con le mani, non con un'ancora.
