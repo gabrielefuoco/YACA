@@ -108,7 +108,7 @@ describe('il ponte fra il grafo e il feed', () => {
         const ids = Object.values(righe).flat();
         expect(ids.length).toBeGreaterThan(0);
         for (const id of ids) {
-            expect(String(id)).toMatch(/^tmdb:(movie|tv):\d+$/);
+            expect(String(id)).toMatch(/^tmdb:\d+$/);   // la forma BREVE: e' quella che usano i provider
         }
     });
 
