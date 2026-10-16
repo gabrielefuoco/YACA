@@ -673,8 +673,16 @@ async function catalogHandler(args, userConfig, hostUrl) {
             if (type === 'movie' || type === 'series') {
                 results = results.filter(i => {
                     if (i.media_type) {
+                        // `series` E' LA STESSA COSA DI `tv`, e questo filtro scartava proprio quella:
+                        // l'uscita del prodotto espone `type: 'series'` (MetaPreview, come vuole Stremio),
+                        // ma qui il campo interno ammetteva solo `tv`. Gli item che arrivano col prefisso
+                        // `tmdb:` — cioe' i cataloghi che usano quel formato, fra cui le righe del grafo —
+                        // portavano `series` e venivano buttati: 60 nel pool, 3 nella risposta.
+                        // Non e' un caso limite: e' lo stesso nome che il filtro deve accettare, perche'
+                        // e' quello che il prodotto produce.
                         const expectedType = type === 'series' ? 'tv' : 'movie';
-                        return i.media_type === expectedType || i.media_type === 'person';
+                        const accettati = expectedType === 'tv' ? ['tv', 'series'] : ['movie'];
+                        return accettati.includes(i.media_type) || i.media_type === 'person';
                     }
                     return true;
                 });
