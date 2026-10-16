@@ -1,80 +1,97 @@
-"""fai-digest.py — il digest del lavoro, per il senior.
+"""fai-digest.py — il digest di TUTTO il modulo e dei ticket svolti, per il senior.
 
-Richiesta dell'utente (16/10/2026): «crea digest del lavoro svolto e handoff (solo di riepilogo/
-esplicativo) per il collega senior».
+Richiesta del proprietario (16/10/2026): «fai il digest di tutto il modulo e dei ticket svolti, con un
+handoff. chiedigli se c'e' qualche altro bug, qualcosa da controllare o i prossimi passi».
 
-DENTRO, e sono quattro cose:
-  1. L'HANDOFF — `handoff-senior-6.md`, che e' la porta d'ingresso: cosa e' cambiato, i numeri col
-     loro metodo, le decisioni, e SOPRATTUTTO le cinque cose ritirate e le cose non verificate.
-  2. LA MAPPA — `.scratch/suggerimenti/map.md`: 15 sezioni, ogni decisione con la sua misura accanto.
-  3. IL CODICE — il modulo `graph/` (canon, bubbles, camminata, collocator, motore, parametri,
-     pipeline) e il primo pezzo dentro il prodotto (`src/engines/bolle/`).
-  4. LE MISURE — i dodici arbitri che hanno deciso il disegno attuale. Gli altri nove arbitri del
-     modulo restano fuori: sono citati nella mappa, e si eseguono con un comando.
+Dentro, in quest'ordine di importanza:
+  1. L'HANDOFF 7 — la porta d'ingresso, e in fondo le TRE DOMANDE (BUG / COSA CONTROLLARE / PROSSIMI PASSI).
+     C'e' anche l'handoff 6, che e' il riepilogo precedente: il 7 dice cosa e' cambiato dopo la revisione.
+  2. I TICKET — i 16 file di `.scratch/suggerimenti/issues/`, con le prove, i fix e le cose NON verificate.
+     E' lo stato del lavoro, raccontato ticket per ticket.
+  3. IL MODULO — `graph/`: il codice, i 21 arbitri (le misure), gli step della costruzione, i README.
+  4. IL PRODOTTO — l'engine `src/engines/bolle/` e il suo README.
+  5. I TEST — `tests/test_graph_pipeline.py` (12 + 5 prove, 2,5 s) e `tests/bolleParity.test.js`.
+  6. GLI SCRIPT degli edit — `sostituisci-ppr.py` e `parametri-nei-file.py`: servono a leggere il §2
+     dell'handoff 7, che parla dei loro effetti collaterali.
+  7. LA MAPPA — il registro della ricerca (15 sezioni, ogni decisione con la sua misura). E' anteriore
+     alla revisione: le cose cambiate dopo stanno nei ticket e nell'handoff 7.
 
-FUORI, e perche':
-  · `src/data/bolle.json` (1,55 MB di JSON): e' l'artefatto, si rigenera con `pipeline esporta`
-  · gli altri nove arbitri, gli script della fase 1, i report del percorso: sono la storia,
-    non il sistema
-  · i dati (`graph/data/`, 655 MB): si rigenerano
-  · i log
+Fuori, e perche':
+  · `src/data/bolle.json` (2,5 MB di JSON) e `graph/data/` (655 MB di artefatti): si rigenerano con
+    `python -m graph.pipeline build` (e adesso c'e' il DAG che dice cosa va rifatto)
+  · `.cache/` (i dati scaricati), i log, i file temporanei
+  · `graph/upstream/`: la preparazione dei dati, non il sistema
 """
 import pathlib
 
 from gitingest import ingest
 
 INCLUDE = [
-    # ------------------------------------------------------------------ 1. L'HANDOFF
+    # ------------------------------------------------------------- 1. l'handoff, e quello prima
+    ".scratch/suggerimenti/handoff-senior-7.md",
     ".scratch/suggerimenti/handoff-senior-6.md",
-    # ------------------------------------------------------------------ 2. LA MAPPA
-    ".scratch/suggerimenti/map.md",
-    # ------------------------------------------------------------------ 3. IL CODICE
+    # ------------------------------------------------------------- 2. i ticket svolti
+    ".scratch/suggerimenti/issues/*.md",
+    # ------------------------------------------------------------- 3. il modulo
     "graph/*.py",
     "graph/README.md",
+    "graph/measure/*.py",
     "graph/measure/README.md",
+    "graph/steps/*.py",
     "graph/fetch/README.md",
+    # ------------------------------------------------------------- 4. il prodotto
     "src/engines/bolle/Bolle.js",
     "src/engines/bolle/README.md",
-    # ------------------------------------------------------------------ 4. LE MISURE che hanno deciso
-    "graph/measure/diffusione.py",
-    "graph/measure/alfa.py",
-    "graph/measure/pesi.py",
-    "graph/measure/equilibrio.py",
-    "graph/measure/freddo.py",
-    "graph/measure/soglia.py",
-    "graph/measure/cache.py",
-    "graph/measure/ricetta.py",
-    "graph/measure/intero.py",
-    "graph/measure/liste.py",
-    "graph/measure/lettura.py",
-    "graph/measure/cataloghi.py",
-    # ------------------------------------------------------------------ e i due todo di prodotto
-    "todo/8_seed_cronologia_decadimento.md",
-    "todo/9_assi_del_profilo.md",
+    # ------------------------------------------------------------- 5. i test
+    "tests/test_graph_pipeline.py",
+    "tests/bolleParity.test.js",
+    # ------------------------------------------------------------- 6. gli script degli edit
+    ".scratch/suggerimenti/sostituisci-ppr.py",
+    ".scratch/suggerimenti/parametri-nei-file.py",
+    ".scratch/suggerimenti/prova-pesi.js",
+    # ------------------------------------------------------------- 7. la mappa
+    ".scratch/suggerimenti/map.md",
 ]
 
-ESCLUDI = ["*.json", "*.log", "graph/data/*", "digest*.txt", "src/data/*"]
+ESCLUDI = ["*.json", "*.log", "graph/data/*", "src/data/*", "digest*.txt", "__pycache__/*", "*.npy",
+           "*.npz", "*.parquet"]
 
 if __name__ == "__main__":
     summary, tree, contenuto = ingest(".", include_patterns=INCLUDE, exclude_patterns=ESCLUDI,
-                                      output="digest.txt")
+                                      output="digest_7.txt")
     print(summary)
-    d = pathlib.Path("digest.txt")
+    d = pathlib.Path("digest_7.txt")
     tok = [r.split(":")[1].strip() for r in summary.splitlines() if "Estimated tokens" in r]
     print(f"\nfile: {d.resolve()}")
     print(f"dimensione: {d.stat().st_size/1024/1024:.2f} MB · righe {len(contenuto.splitlines()):,}")
     print(f"token stimati: {tok[0] if tok else '?'}")
-    print(f"\n{'-'*70}\ncontrollo del contenuto (deve esserci, non deve esserci):")
-    for etichetta, frammento, atteso in (
-            ("l'handoff", "handoff-senior-6", True),
-            ("la mappa", "map.md", True),
-            ("il motore", "graph/motore.py", True),
-            ("la camminata", "graph/camminata.py", True),
-            ("la tabella", "graph/parametri.py", True),
-            ("l'engine del prodotto", "Bolle.js", True),
-            ("le misure", "intero.py", True),
-            ("il JSON del prodotto", "bolle.json", False),
-            ("script della fase 1", "ml-collaborativo", False)):
-        n = contenuto.count(frammento)
-        esito = "OK" if (n > 0) == atteso else "!!"
-        print(f"  [{esito}] {etichetta:<24} {n:>4} occorrenze (atteso {'presente' if atteso else 'assente'})")
+
+    # I CONTROLLI GUARDANO I FILE, NON LE OCCORRENZE DEL TESTO.
+    # La volta scorsa contavano le stringhe — e `bolle.json` risultava «presente» perche' il nome
+    # compare nel codice, mentre `ml-collaborativo` risultava incluso perche' e' citato nei commenti.
+    righe = [l.strip() for l in tree.splitlines() if l.strip() and not l.strip().endswith("/")]
+    nomi = [righe_i.split("/")[-1].replace("\\", "").strip() for righe_i in righe]
+    nomi = [n for n in nomi if "." in n]
+    print(f"\n{'-'*72}\ncontrollo sull'ALBERO (file inclusi: {len(nomi)}):")
+    for etichetta, presente, frammento in (
+            ("handoff 7", True, "handoff-senior-7"),
+            ("handoff 6", True, "handoff-senior-6"),
+            ("i 16 ticket", True, "06-slider-canone"),
+            ("il DAG", True, "pipeline.py"),
+            ("la diffusione unificata", True, "camminata.py"),
+            ("la storia unica", True, "canon.py"),
+            ("la tabella dei parametri", True, "parametri.py"),
+            ("gli step", True, "03_divisione_voti.py"),
+            ("gli arbitri", True, "intero.py"),
+            ("l'engine del prodotto", True, "Bolle.js"),
+            ("i test python", True, "test_graph_pipeline.py"),
+            ("il test di parita'", True, "bolleParity.test.js"),
+            ("gli script degli edit", True, "sostituisci-ppr.py"),
+            ("la mappa", True, "map.md"),
+            ("l'ARTEFATTO (2,5 MB di JSON)", False, "bolle.json"),
+            ("gli artefatti (655 MB)", False, "bolle-eterogeneo-subvoti.npy"),
+            ("altre cartelle della repo", False, "HierarchicalGraph.js"),
+            ("gli upstream", False, "00_pulizia_movielens.py")):
+        n = sum(1 for x in nomi if frammento in x)
+        esito = "OK" if (n > 0) == bool(presente) else "!!"
+        print(f"  [{esito}] {etichetta:<30} {n:>3} file (atteso {'presente' if presente else 'assente'})")
