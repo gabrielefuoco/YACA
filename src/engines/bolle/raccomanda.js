@@ -36,7 +36,7 @@
 const Bolle = require('./Bolle');
 const LRUCache = require('../../utils/LRUCache');
 
-const CAP = 10;          // la capienza delle liste, la stessa del motore Python
+const CAP = 60;         // il tetto di una riga: gli altri hero ne portano 100, e il prodotto pagina da 20
 const VICINI = 3;        // i tre mondi di «un passo fuori»
 
 // LA CHIAVE DELLA CACHE, decisa nella mappa e costruita adesso:
@@ -188,7 +188,7 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
  * LE RIGHE SONO CORTE, ed e' la natura del grafo: un mondo ha una mediana di 11 titoli. Non si allunga
  * prendendo dai mondi vicini — quelli sono gia' "un passo fuori".
  */
-function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = 30 } = {}) {
+function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = CAP } = {}) {
     const tipo = mediaType === 'movie' ? 'movie' : 'tv';
     const suffisso = tipo === 'movie' ? 'movies' : 'series';
     const solo = { [`yaca_mondi_${suffisso}`]: [], [`yaca_passo_fuori_${suffisso}`]: [] };
