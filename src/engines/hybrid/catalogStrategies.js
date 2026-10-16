@@ -53,7 +53,7 @@ function resolveTypeSelectors(user, context, directTypeSelectors = null) {
     return activeProfile?.settings?.typeSelectors || activeProfile?.typeSelectors || null;
 }
 
-const graph = require('../graph/HierarchicalGraph');
+const graph = require('../keywords/HierarchicalGraph');
 
 const HERO_DIVERSITY_CAPS = Object.freeze({
     genre: 3,

@@ -95,9 +95,9 @@ def test_la_diffusione_del_motore_e_la_stessa_cosa():
 
 def test_il_ciclo_non_e_duplicato_da_nessuna_parte():
     """Il criterio di chiusura del ticket 07, in una riga: il ciclo esiste in UN posto solo."""
-    testo = "\n".join((ROOT / "graph" / n).read_text(encoding="utf-8")
+    testo = "\n".join((ROOT / "services" / "graph" / n).read_text(encoding="utf-8")
                       for n in ("camminata.py", "motore.py", "bubbles.py", "collocator.py", "canon.py"))
-    for f in sorted((ROOT / "graph" / "measure").glob("*.py")):
+    for f in sorted((ROOT / "services" / "graph" / "measure").glob("*.py")):
         testo += f.read_text(encoding="utf-8")
     assert testo.count("r = alpha * e + (1 - alpha) * (r @ Tr)") == 1
 

@@ -6,7 +6,7 @@ const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
 // La convenzione del nome file NON viene riscritta qui: la produce il costruttore
 // (scripts/erdb-builder/build.js) ed è la stessa che chiede la rotta `/erdb-poster/:file`.
 // Un nome inventato qui produrrebbe file che la rotta non troverebbe mai: poster invisibile, zero errori.
-const { posterFileName } = require('../../../scripts/erdb-builder/build');
+const { posterFileName } = require('../../erdb/build');
 // Unica fonte di verità sulla cartella dei poster: la stessa che serve la rotta statica e
 // in cui scrive il drenatore. Se le due divergessero, nessun file sarebbe mai servito.
 const { getCacheDir } = require('../../api/staticPosters');

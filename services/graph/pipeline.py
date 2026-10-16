@@ -619,7 +619,7 @@ PASSO = [
     {"nome": "esporta", "cmd": ["-m", "graph.pipeline", "esporta"], "env": {},
      "legge": ["bolle-eterogeneo-subvoti.npy", "mappa-finale-6-2.npz", "05-centroidi*.npz",
                "metadati-canone.npz", "titoli-canone.txt"],
-     "scrive": ["../../src/data/bolle.json"], "params": [], "tempo": "~5 s"},
+     "scrive": ["../../../src/data/bolle.json"], "params": [], "tempo": "~5 s"},
 ]
 MANIFEST = K.DATA / "manifest-build.json"
 
@@ -758,10 +758,10 @@ def build(args) -> int:
         if not piano(manifest)[p["nome"]]["da_fare"]:
             print(f"  salto  {p['nome']}")
             continue
-        cmd = [sys.executable] + [str(DATA.parent / c) if c.endswith(".py") else c for c in p["cmd"]]
+        cmd = [sys.executable] + [str(K.DATA.parent / c) if c.endswith(".py") else c for c in p["cmd"]]
         print(f"  eseguo {p['nome']}: {' '.join(p['cmd'])} (env {p['env'] or '-'})", flush=True)
         env = {**os.environ, **p["env"]}
-        r = subprocess.run(cmd, env=env, cwd=str(DATA.parent.parent))
+        r = subprocess.run(cmd, env=env, cwd=str(K.ROOT))
         if r.returncode != 0:
             print(f"  FERMO: {p['nome']} e' uscito con {r.returncode}. Il manifest non lo registra.")
             return r.returncode

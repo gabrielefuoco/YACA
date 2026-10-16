@@ -18,3 +18,5 @@ tests
 docs
 eslint.config.js
 frontend/package-lock.json
+services/graph/
+services/keyword-graph/

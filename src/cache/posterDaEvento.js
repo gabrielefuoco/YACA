@@ -18,7 +18,7 @@
  * `{tipo, id, badge}` e il nome file li contiene gia' tutti.
  */
 
-const { posterFileName, posterUrl } = require('../../scripts/erdb-builder/build');
+const { posterFileName, posterUrl } = require('../erdb/build');
 
 // I soli `tipo` che la coda puo' contenere: 'tv' e tutto il resto? No, solo questi due.
 // Qualunque altro valore e' un evento malformato e deve farsi sentire (vedi `erdbIdDaEvento`).

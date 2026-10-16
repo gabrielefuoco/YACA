@@ -31,7 +31,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const BUILD = path.resolve(__dirname, '..', '..', 'scripts', 'erdb-builder', 'build.js');
+const BUILD = path.resolve(__dirname, '..', '..', 'src', 'erdb', 'build.js');
 const { run } = require(BUILD);
 
 const args = process.argv.slice(2);

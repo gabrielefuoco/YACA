@@ -16,7 +16,7 @@
 const catalogStrategies = require('../src/engines/hybrid/catalogStrategies');
 const dataFetchers = require('../src/engines/hybrid/dataFetchers');
 const ProfileScorer = require('../src/profile/ProfileScorer');
-const graph = require('../src/engines/graph/HierarchicalGraph');
+const graph = require('../src/engines/keywords/HierarchicalGraph');
 
 jest.mock('../src/clients/tmdb', () => ({
     createTmdbClient: jest.fn(() => ({ get: jest.fn() })),

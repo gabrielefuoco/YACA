@@ -13,7 +13,7 @@
  *  3. l'estrazione e la fusione del DNA (statico, attivo, finale).
  *
  * Dipendenze ammesse: `src/data/keywordIds.js` (foglia) e
- * `src/engines/graph/HierarchicalGraph.js` (grafo in RAM: dipendenza statica
+ * `src/engines/keywords/HierarchicalGraph.js` (grafo in RAM: dipendenza statica
  * della matematica L1-L5). Il call graph resta aciclico.
  *
  * ATTENZIONE: `globalDfCache` è stato di modulo e deve restare **una sola
@@ -23,7 +23,7 @@
  */
 
 const { isRetiredTmdbKeywordId, sanitizeDnaVector } = require('../data/keywordIds');
-const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+const HierarchicalGraph = require('../engines/keywords/HierarchicalGraph');
 
 // ============================================================================
 // 1. Anti-flat: decadimento, saturazione, rarità, flatness
