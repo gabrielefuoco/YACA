@@ -120,9 +120,10 @@ Di seguito sono elencate le variabili d'ambiente effettivamente supportate ed es
 ## Come si mantengono questi documenti
 
 Le **mappe di lavoro** stanno in `.scratch/<mappa>/` (una mappa + i suoi ticket). Sono
-**locali**: `.scratch/` è nel `.gitignore`, quindi non viaggiano con un clone e non esistono
-su altre macchine. Contengono il racconto di come si è arrivati a una decisione — le misure,
-i vicoli ciechi, gli errori — ed è per questo che spiegano meglio del codice.
+**versionate**: dal 06/10/2026 `.scratch/` è tracciata in git — 766 file al 17/10/2026 — dopo che una
+cancellazione accidentale aveva distrutto nove mappe storiche e nessuna copia le conteneva (vedi
+`.scratch/README.md`). Viaggiano quindi con il clone, e contengono il racconto di come si è arrivati a una
+decisione — le misure, i vicoli ciechi, gli errori — ed è per questo che spiegano meglio del codice.
 
 **Quando una mappa si chiude**, si raccoglie qui quello che non dipende dalla sessione:
 

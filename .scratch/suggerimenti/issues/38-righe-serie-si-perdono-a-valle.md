@@ -71,3 +71,52 @@ percorso, e **nessuna** ha spostato il numero: il pool era corretto fin dall'ini
 E il promemoria che vale sempre: **la CHIAVE di cache va alzata** ogni volta che cambia cosa entra in una
 struttura memorizzata (dieci volte il 17/10, dieci volte era la differenza fra un fix che funziona e uno
 che non produce effetto).
+
+---
+
+## La pista nuova (revisione esterna del 17/10/2026, verificata sul codice)
+
+### Il meccanismo: due spazi di id che si sovrascrivono, e un medium che si perde
+
+In TMDB gli id numerici di `movie` e `tv` sono **due spazi separati che condividono gli stessi interi**
+(`655` esiste sia come serie sia come film). Le righe del grafo consegnano stringhe nella forma breve
+`'tmdb:655'`, che **non porta il medium**; gli hero che funzionano consegnano oggetti già arricchiti (con
+`media_type`). Se il passo che idrata le stringhe in oggetti non riceve o non propaga il tipo del catalogo, un
+`item.type || 'movie'` di fallback manda le serie a cercare nella tabella **film**: per i film il default è
+giusto, per le serie trova il film omonimo di id — che il filtro di tipo a valle
+(`catalogHandler.js`, `expectedType === 'tv'`) abbatte.
+**Questo spiega perché il guasto è 57 su 60 per le serie e 0 su 60 per i film.**
+
+Secondo punto di perdita sullo stesso tratto: `annotationKeyFor` si aspetta `'tv'` mentre la richiesta di
+Stremio arriva come `'series'` → qualunque filtro post-fetch (ita, `animePolicy`) che legga `item.media_type`
+senza normalizzare `series → tv` scarta in silenzio.
+
+### Un fatto verificato che restringe il campo
+
+`getEngineHybridCatalog` (`src/catalog/providers/HybridProvider.js:14`) fa **`.slice(0, 20)`**: il tetto di 20
+titoli per pagina è suo, quindi i 20 dei film **non sono un caso**. Per le serie il conto è 60 → (≤20) → 3:
+la perdita grossa sta **dentro** la catena di idratazione, non nel provider.
+
+### La sonda (firma verificata)
+
+```bash
+docker exec yaca-app node -e '
+const { getEngineHybridCatalog } = require("./src/catalog/providers/HybridProvider");
+const { resolveUserConfig } = require("./src/models/UserConfig");
+(async () => {
+  const u = await resolveUserConfig("<USER_ID>");
+  const raw = await getEngineHybridCatalog("yaca_mondi", "series", 0, u, process.env.TMDB_API_KEY, {});
+  console.log("1. HybridProvider:", raw.length, "primo:", typeof raw[0], raw[0]);
+})();'
+```
+
+Lettura: **≤20 e coerenti** → la perdita è nel provider/pool (stringhe non idratate); **molti** → il filtro è a
+valle, in `catalogHandler.js`. Il primo argomento è la **base id** (`yaca_mondi`), non l'id del catalogo: la
+firma è `(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings)`.
+
+### L'invariante che chiude la classe di guasto (lega il ticket 08 e il 12 della mappa `confini`)
+
+**Nel pool non entrano stringhe scalari.** Se l'adattatore consegna
+`{ id: 'tmdb:655', tmdbId: 655, type: 'series', media_type: 'tv' }` — o idrata passando esplicitamente il
+medium — la differenza di formato con gli altri otto hero sparisce alla radice, e il guasto non può
+ripresentarsi nel modulo nuovo.
