@@ -207,11 +207,20 @@ def main():
     for u in utenti:
         if usati >= QUANTI_UTENTI:
             break
-        righe, eta, plays = storia(u)
+        righe, eta, plays = storia(u)                    # dal piu' recente al piu' vecchio
         if len(righe) < MIN_TITOLI:
             continue
+        # LO SPLIT E' NEL TEMPO, ED E' ESPLICITO. Prima si tagliava `righe[:taglio]` credendo che fosse
+        # il passato — ma l'ordine di `storia()` e' di RECENZA, quindi si seminava dal PRESENTE per
+        # misurare sul PASSATO remoto. Ora le posizioni si ricavano da `eta` (grande = vecchio), quindi
+        # il verso di `storia()` non conta piu'. I semi restano dati dal piu' recente al piu' vecchio
+        # perche' gli schemi parlano di «ultimi 15/30» e `pesi_per` legge un PREFISSO degli array che
+        # riceve: cosi' «ultimi 15» vuol dire «i 15 piu' recenti fra i semi», che e' la spec di prodotto.
+        o = np.argsort(-np.asarray(eta))                 # dal passato al futuro
         taglio = int(len(righe) * FRAZIONE)
-        A, Bt = righe[:taglio], righe[taglio:]           # il passato semina, il futuro e' l'oro
+        pos_p, pos_f = o[:taglio], o[taglio:]
+        A, Bt = righe[pos_p][::-1], righe[pos_f]         # A: i semi, i piu' recenti del passato
+        eta_A, plays_A = eta[pos_p][::-1], plays[pos_p][::-1]
         if len(A) < 10 or len(Bt) < 5:
             continue
         bolle_B = set(MEM[Bt].tolist())
@@ -222,10 +231,10 @@ def main():
                 sel = np.random.default_rng(5).choice(len(A), size=min(quanti, len(A)),
                                                        replace=False)
                 seme = A[sel]
-                pesi = (pesi_per("recenza x ri-visioni", eta, plays, len(A))[sel]
+                pesi = (pesi_per("recenza x ri-visioni", eta_A, plays_A, len(A))[sel]
                         if "peso pieno" in s else np.ones(len(sel)))
             else:
-                pesi = pesi_per(s, eta, plays, len(A), righe=A)
+                pesi = pesi_per(s, eta_A, plays_A, len(A), righe=A)
                 seme = A[:len(pesi)]
             r = ppr(P, seme, pesi)
             tot = r.sum()
@@ -238,7 +247,7 @@ def main():
             acc[s]["hit10"].append(sum(1 for b in primi if b in bolle_B) / 10)
             acc[s]["semi"].append(int(len(seme)))
         # chi sono questi utenti: quante ri-visioni ha il suo passato, quanti semi, che media
-        pl_A = plays[:len(A)].astype(float)
+        pl_A = plays_A.astype(float)
         gruppo["frazione_rewatch"].append(float((pl_A > 1).mean()))
         gruppo["n_semi"].append(len(A))
         is_tv = B.IS_TV[A]

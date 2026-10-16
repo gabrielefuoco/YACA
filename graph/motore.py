@@ -171,11 +171,16 @@ class Motore:
                      - self._quota_per_mondo(self.IMP) * slider["cozy"])
             out = out * np.exp(P.ASSE_PESO * quota)
         if slider.get("canone"):
-            # la fascia e' un filtro ATTORNO al canone dedotto, non un riordino verso l'estremo
+            # LA FASCIA E' UNA FINESTRA CHE SI SPOSTA, NON UN RIORDINO VERSO L'ESTREMO.
+            # Qui c'era `abs(q - c) * abs(s) * np.sign(q - c) * s`: ma `abs(x)*sign(x)` E' IDENTICO a
+            # `x`, quindi l'esponente era `-(q-c)*s*|s|` — una RETTA, non una campana. Con s>0 premiava
+            # i mondi mainstream in assoluto, con s<0 i contenitori a 0 voti: esattamente il riordino
+            # verso l'estremo che il commento diceva di evitare (e che in ricetta.py faceva crollare la
+            # copertura allo 0,3%). Ora il centro si sposta: +1 = piu' popolare, -1 = piu' di nicchia,
+            # e nessuno dei due estremi puo' premiare un mondo a zero voti (P.DELTA_FASCIA).
             q = np.log(np.maximum(self.VOTMED, 1.0))
-            c = np.log(max(dedotto["canone"], 1.0))
-            out = out * np.exp(-P.ASSE_PESO * abs(q - c) * abs(slider["canone"])
-                               * np.sign(q - c) * slider["canone"])
+            c = np.log(max(dedotto["canone"], 1.0)) + slider["canone"] * P.DELTA_FASCIA
+            out = out * np.exp(-P.ASSE_PESO * np.abs(q - c))
         return out
 
     # ------------------------------------------------------------------ la selezione
@@ -292,22 +297,15 @@ class Motore:
 
 
 def da_trakt(utente):
-    """La storia di un utente Trakt in cache: [(chiave, plays), ...]. I file sono troncati a 300 voci."""
-    fuori = []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{utente}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            ch = f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}"
-            if ch in B.ROW_OF:
-                fuori.append((ch, int(voce.get("plays") or 1)))
-    return fuori
+    """La storia di un utente Trakt in cache: [(chiave, plays), ...] IN ORDINE CRONOLOGICO.
+
+    Prima questa funzione ciclava `movie` poi `show` senza leggere `last_watched_at`, quindi l'array era
+    **tutti i film e poi tutte le serie**: chi tagliava a meta' credendo di separare passato e futuro
+    separava i MEDIUM. Ora la storia arriva gia' ordinata da `canon.storia_trakt`, che e' l'unico posto
+    dove questi JSON si leggono. I file sono troncati a 300 voci.
+    """
+    chiavi, _righe, plays, _eta = K.storia_trakt(utente, ordine="cronologico")
+    return [(c, int(p)) for c, p in zip(chiavi, plays)]
 
 
 def stampa(esito):

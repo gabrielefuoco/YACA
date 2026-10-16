@@ -148,6 +148,13 @@ SCHEDA = [
      "(Jaccard 1,00) — le due liste di generi hanno prevalenze molto diverse (30.814 contro 8.279 "
      "titoli) e probabilmente vogliono pesi diversi.",
      "measure/ricetta.py"),
+    ("DELTA_FASCIA", 1.0, "INVENTATO",
+     "Di quanto lo slider `canone` sposta la finestra, in spazio LOGARITMICO dei voti: 1,0 = un fattore "
+     "e (~2,7x). Serve a `motore.modula`: la fascia e' una finestra attorno al canone DEDOTTO, che si "
+     "sposta con lo slider — non un riordino verso l'estremo. Prima qui non c'era niente perche' la "
+     "formula era `abs(q-c)*sign(q-c)*s`, che e' algebricamente `(q-c)*s`: una retta, che con s>0 "
+     "premiava i mondi mainstream in assoluto e con s<0 quelli a 0 voti. Da calibrare su ricetta.py.",
+     "measure/ricetta.py"),
     ("ASSE_COZY_GENERI", "35,10751,10749,16", "DICHIARATO (curatela del proprietario)",
      "I generi dell'asse «cozy»: commedia, famiglia, romantico, animazione. Lista PROVVISORIA scritta "
      "dall'autore per provare l'asse: la curatela vera e' del proprietario, e i generi sono la parte "

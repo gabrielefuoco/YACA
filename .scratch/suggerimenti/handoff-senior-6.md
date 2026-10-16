@@ -77,16 +77,26 @@ la loro bolla, nei due versi» è **automatica** — nessun arco sintetico, ness
 | **saghe spezzate** | **0 su 1.994** | collezioni TMDB sulla **mappa navigabile** 6+2 |
 | **α (il restart)** | **0,60** | 120 utenti, taglio temporale: il lift si appiattisce, la luce sprecata esplode (65%→91% da 0,6 a 0,9) |
 | **potatura** | **top-16 per riga** | 12% degli archi, 8,7× meno lavoro, e le saghe **rafforzate** (26,6%→47,8%) |
-| **il motore intero** | precisione **5,0%** · **63×** il pavimento (0,08%) | 100 utenti, taglio temporale, liste complete nell'ordine in cui escono |
-| **dove sta il futuro trovato** | **38%** in *un passo fuori* · **21%** in *il tuo mondo* | stessa misura, per tipo di lista |
-| **l'ordine** | rango mediano **3** · **55%** nelle prime 4 posizioni | stessa misura |
-| **il tempo per chiamata** | **115 ms** (p90 128) | misurato, non stimato |
+| **il motore intero** | precisione **6,4%** · **76×** il pavimento (0,08%) | 100 utenti, taglio temporale, liste complete nell'ordine in cui escono |
+| **dove sta il futuro trovato** | **31%** in *un passo fuori* · **20%** in *il tuo mondo* | stessa misura, per tipo di lista |
+| **l'ordine** | rango mediano **3** · **58%** nelle prime 4 posizioni | stessa misura |
+| **il tempo per chiamata** | **147 ms** (p90 171) | misurato, non stimato |
 | **il freddo** | si accende da **1** titolo: 36,9× contro lo 0,6× di un titolo a caso | 60 utenti, seme = i primi K visti |
 
 **Il banco misura il comportamento, non il gusto** — e va ricordato ogni volta che lo si legge: chiede
 «la luce cade dove l'utente guarderà?», e la risposta giusta può arrivare dal leakage (indovinare la
 puntata successiva di una serie a metà, che l'utente guarderebbe comunque). Per le decisioni di
 **prodotto** il metro è l'**equilibrio**, non il lift.
+
+**QUESTI NUMERI SONO STATI RIFATTI IL 16/10/2026, dopo la revisione del senior**, e la tabella qui
+sopra è quella corretta. Il taglio di `intero.py` non era temporale: `da_trakt` non leggeva
+`last_watched_at` e ciclava film-poi-serie, quindi si misurava «dai film indovina le serie» — e in
+`pesi.py` lo split era addirittura invertito (il presente seminava per predire il passato remoto).
+La precisione è **salita** da 5,0% a 6,4% e io avevo previsto che **scendesse**, perché uno split
+temporale vero è più difficile. Sbagliato io, non il dato: con i medium separati mancava la
+possibilità strutturale che una serie ne trovasse un'altra. Il 38%/21% per *un passo fuori* / *il tuo
+mondo* diventa 31%/20% — **la conclusione di prodotto resta identica**, che è il motivo per cui le
+misure vanno rifatte quando si trova un bug: per sapere quali conclusioni sopravvivono.
 
 ---
 
@@ -148,12 +158,12 @@ puntata successiva di una serie a metà, che l'utente guarderebbe comunque). Per
    **zero** titoli (il canone *è* il grafo). Va provato quando il catalogo crescerà davvero.
 2. **I quattro segnali del prodotto (like, love, libreria, voti) non sono calibrati.** L'engine li accetta
    e i fattori sono in tabella marcati **INVENTATI**: stanno nel database del prodotto, non offline. Con
-   un *proxy* dichiarato (ri-visto ≥ 2 = loved) i titoli cambiano del 17% e la precisione sale da 5,0% a
-   **6,1%** — quindi valgono l'integrazione, ma la calibrazione va rifatta.
+   un *proxy* dichiarato (ri-visto ≥ 2 = loved) la precisione va da 6,4% a **6,2%** e i due portafogli
+   hanno Jaccard 0,81 — cioè **i fattori di tipo oggi non spostano quasi niente**. Non è un via libera:
 3. **Tutta la calibrazione dei pesi è parziale**: è stata fatta sulle **ri-visioni sole**, perché era
    l'unico segnale disponibile offline.
 4. **La composizione delle liste nel feed non è decisa**: i numeri dicono di mostrare **prima** *un passo
-   fuori* (38% del futuro trovato) e poi *il tuo mondo* (21%).
+   fuori* (31% del futuro trovato) e poi *il tuo mondo* (20%).
 5. **La cache non è costruita**: la chiave è decisa, il codice no.
 6. **I voti Trakt non li abbiamo**: le 540 liste in cache sono quelle **pubbliche** di Trakt (prese per la
    co-occorrenza cross-medium), quindi `my_rating` è il voto di chi le ha create, non dei nostri utenti.

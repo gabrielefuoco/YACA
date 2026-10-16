@@ -14,6 +14,7 @@ Scelte canoniche, dichiarate:
     anche dove e' piu' rado);
   * la normalizzazione finale e' una sola, sulla somma.
 """
+import functools
 import glob, json, pathlib
 import numpy as np
 import pandas as pd
@@ -61,13 +62,75 @@ def A(nome):
     return p
 
 
+@functools.lru_cache(maxsize=1)
 def titoli():
+    """LE 66.259 CHIAVI DEL CANONE, nell'ordine delle righe. Costosa: si legge una volta sola.
+
+    `lru_cache` perche' tutti la chiedono per le stesse quattro cose (`KEYS`, `ROW_OF`, `N`, `IS_TV`) e
+    prima era un'esecuzione a tempo di IMPORT di `bubbles.py`: chi importava il modulo — anche solo per
+    una costante — pagava la lettura di `spazi-trakt.npz` e 66.259 stringhe.
+    """
     z = np.load(A("spazi-trakt.npz"), allow_pickle=True)
     tmdb, tipo = z["tmdb"], z["tipo"]
     keys = [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)]
     row_of = {k: r for r, k in enumerate(keys)}
     is_tv = (tipo == "tv")
     return keys, row_of, len(keys), is_tv
+
+
+def storia_trakt(utente, ordine="cronologico"):
+    """LA STORIA DI UN UTENTE TRAKT IN CACHE — una funzione sola, per tutti.
+
+    Prima ognuno la leggeva per conto suo — dieci copie, e **non tutte uguali**: `motore.da_trakt` non
+    leggeva `last_watched_at` e ciclava film-poi-serie, quindi chi tagliava la storia a meta' credendo
+    di separare passato e futuro stava separando **medium** (film come semi, serie come oro). E' la
+    classe di bug che questa funzione chiude alla radice: l'ordine si chiede, non si ricostruisce.
+
+    Ritorna quattro liste ALLINEATE (e nella stessa posizione):
+      · `chiavi` — `"movie:603"`, `"tv:1396"`
+      · `righe`  — l'indice di riga nel canone (`-1` mai: i titoli fuori canone sono scartati)
+      · `plays`  — quante volte (per le serie Trakt conta la serie, non le puntate)
+      · `eta`    — giorni da quando e' stata vista: **grande = vecchio**, `3650` se la data manca
+
+    `ordine`: "cronologico" = il piu' VECCHIO per primo (il passato semina, il futuro e' l'oro) — e' il
+    default, ed e' quello che serve a uno split temporale; "recente" = il piu' nuovo per primo (gli
+    «ultimi 15» del prodotto); `None` = l'ordine del file, come sta su Trakt.
+    """
+    _, row_of, _, _ = titoli()
+    chiavi, righe, plays, eta = [], [], [], []
+    adesso = pd.Timestamp.now(tz="UTC")            # una volta sola, non dentro il ciclo per riga
+    for tipo in ("movie", "show"):
+        p = TK / f"{tipo}-{utente}.json"
+        if not p.exists():
+            continue
+        try:
+            j = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for voce in (j["list"] if isinstance(j, dict) else j):
+            ids = (voce.get(tipo) or {}).get("ids") or {}
+            tmdb = ids.get("tmdb")
+            if tmdb is None:
+                continue
+            ch = f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}"
+            r = row_of.get(ch)
+            if r is None:
+                continue
+            try:
+                g = (adesso - pd.Timestamp(voce.get("last_watched_at"))).days
+            except Exception:
+                g = 3650                            # data assente o illeggibile: la piu' vecchia
+            chiavi.append(ch)
+            righe.append(int(r))
+            plays.append(int(voce.get("plays") or 1))
+            eta.append(max(int(g), 0))
+    o = np.arange(len(chiavi))
+    if ordine == "cronologico":
+        o = np.argsort(-np.array(eta, dtype=np.int64), kind="stable")
+    elif ordine == "recente":
+        o = np.argsort(np.array(eta, dtype=np.int64), kind="stable")
+    return ([chiavi[i] for i in o], np.array(righe, dtype=np.int64)[o],
+            np.array(plays, dtype=np.int64)[o], np.array(eta, dtype=np.int64)[o])
 
 
 # ---------------------------------------------------------------- gli archi

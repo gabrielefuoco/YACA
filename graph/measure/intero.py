@@ -54,9 +54,11 @@ def main():
     for u in utenti:
         if usati >= QUANTI_UTENTI:
             break
-        storia = MO.da_trakt(u)                      # in ordine di recenza
+        storia = MO.da_trakt(u)                      # CRONOLOGICA: il piu' vecchio per primo
         if len(storia) < 2 * P.BANCO_MIN_TITOLI:
             continue
+        # IL TAGLIO E' NEL TEMPO DAVVERO. Prima `da_trakt` non leggeva le date e metteva tutti i film
+        # prima di tutte le serie: questo taglio separava i MEDIUM (film semi, serie oro), non il tempo.
         taglio = int(len(storia) * P.TAGLIO_TEMPORALE)
         semi, oro = storia[:taglio], {k for k, _ in storia[taglio:]}
         t = time.time()

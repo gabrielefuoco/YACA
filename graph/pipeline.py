@@ -164,7 +164,11 @@ def colloca(args) -> int:
         dati = json.load(open(args.file, encoding="cp1252"))
     S_v3 = C.carica(v3=True)
     S_v1 = C.carica(v3=False)
-    mem = np.load(K.A("bolle-nitrile-V8.npy"))     # la partizione dei centroidi: vedi trappole
+    mem = np.load(K.A("bolle-eterogeneo-subvoti.npy"))   # LA PARTIZIONE FINALE, non V8
+    # ^ fino al 16/10/2026 qui c'era `bolle-nitrile-V8.npy`: la partizione SUPERATA. I `membri`
+    #   stampati venivano da li', mentre i centroidi e la mappa sono quelli finali: due partizioni
+    #   diverse nella stessa risposta. `collocator.py` lo dice esplicitamente alla riga della sua
+    #   costante PARTIZIONE — questo era l'unico posto rimasto indietro.
     out = []
     t = time.time()
     for d in dati:
@@ -192,30 +196,33 @@ def voti(args) -> int:
     q = np.load(triangolo)
     W = sp.csr_matrix((q["data"], q["indices"], q["indptr"]), shape=(B.N, B.N)).tocsr()
     print(f"  base: {base.name} ({NB:,} bolle) · triangolo: {triangolo.name}")
-    print("  il resto del lavoro sta in `.scratch/eterogeneo/11-subclustering-voti.py`, che e' dove e'")
-    print("  stato misurato: spread p90/p10 > 10, almeno 15 titoli, risoluzioni 0,05..0,8 coi pesi")
-    print("  normalizzati. Portarlo qui significa spostare ~60 righe; non l'ho fatto per non toccare")
-    print("  quello che ha prodotto i numeri. Il risultato e' `bolle-eterogeneo-subvoti.npy`.")
+    print("  il resto del lavoro sta in `graph/steps/03_divisione_voti.py`, che e' dove e' stato")
+    print("  misurato: spread p90/p10 > 10, almeno 15 titoli, risoluzioni 0,05..0,8 coi pesi")
+    print("  normalizzati. Il risultato e' `bolle-eterogeneo-subvoti.npy`.")
+    print("  NOTA: quello step e' ancora uno script a livello globale, quindi non si puo' chiamare da")
+    print("  qui — vedi il ticket `14-build-dag`, che lo incapsula in una funzione `esegui()`.")
     return 0
 
 
 def pesanti(_args) -> int:
     """Come si rigenera TUTTO, nell'ordine giusto. Non esegue: stampa."""
-    print("""LA SEQUENZA, e i tempi misurati il 15/10/2026:
+    print("""LA SEQUENZA, e i tempi misurati il 15/10/2026. Gli script stanno in `graph/steps/`:
 
   0. ollama pull qwen3-embedding:0.6b                                  (~1 min, 0,6 GB)
-     python .scratch/eterogeneo/../coerenza/04h-embed-qwen3.py         (~17 min, 35.829 trame)
-  1. python .scratch/eterogeneo/01-componente-trama.py                 (~13 s, 1,65M archi)
-  2. RES=200 python .scratch/eterogeneo/02-v10.py 1.0                  (~13 min, 11 GB di picco)
+     python graph/steps/00_embedding_trame.py                          (~17 min, 35.829 trame)
+  1. python graph/steps/01_componente_trama.py                         (~13 s, 1,65M archi)
+  2. RES=200 python graph/steps/02_partizione.py 1.0                   (~13 min, 11 GB di picco)
      -> il triangolo e la partizione RB 200
-  3. python .scratch/eterogeneo/11-subclustering-voti.py 10 15         (~8 s, la divisione per voti)
-  4. python .scratch/mappa-pesata/05c-salva-v3.py                      (~20 s, i centroidi V3)
-  5. la mappa 6+2: .scratch/mappa-pesata/01-02-pesata.py + 07-falsi-vicini.py
+  3. python graph/steps/03_divisione_voti.py 10 15                     (~8 s, la divisione per voti)
+  4. python graph/steps/05_centroidi_v3.py                             (~20 s, i centroidi V3)
+  5. la mappa 6+2: python graph/steps/06_mappa.py
 
-ATTENZIONE a due cose, sono le trappole della ricetta:
+ATTENZIONE a tre cose, sono le trappole della ricetta:
   · il passo 2 va lanciato con RES=200 nella stessa riga di comando, non come variabile a parte;
   · il triangolo si chiama `r100` o `r200` secondo il lancio, ma e' sempre lo stesso grafo (e' PRIMA
     di Leiden). Se ne manca uno, l'altro vale.
+  · QUESTA SEQUENZA NON E' UN DAG: gli step sono script a livello globale, e i parametri di
+    costruzione stanno ancora dentro di loro, non in `parametri.py` (ticket 13 e 14).
 """)
     return 0
 
@@ -329,7 +336,17 @@ def esporta(args) -> int:
     NB = int(MEM.max()) + 1
     SZ = np.bincount(MEM)
     M = np.load(D / "mappa-finale-6-2.npz", allow_pickle=True)
-    INTRA = M["intra"]
+    INTRA, CROSS = M["intra"], M["cross"]          # 6 intra-medium + 2 PONTI cross-medium
+    # LA TRANSIZIONE VERA FRA BOLLE. Il .npz contiene gia' il grafo sparso pesato (45.194 archi, gli
+    # stessi della mappa): era buttato via, e `Bolle.js` diffondeva dividendo la massa in parti UGUALI
+    # fra i vicini, senza auto-anello e senza ponti cross. In Python invece il 47,8% della massa resta
+    # nella bolla a ogni passo e il resto esce in proporzione ai pesi. Qui si esporta quella riga, cosi'
+    # le 20 iterazioni del prodotto riproducono l'attivazione del modulo.
+    W = sp.csr_matrix((M["grafo_data"], M["grafo_indices"], M["grafo_indptr"]),
+                      shape=(NB, NB)).tocsr()
+    _deg = np.asarray(W.sum(1)).ravel()
+    _deg[_deg <= 0] = 1
+    TR = sp.diags(1.0 / _deg) @ W
     VOT = np.zeros(len(MEM))
     import pandas as pd
     for tipo, f in (("movie", "movies.parquet"), ("tv", "tv.parquet")):
@@ -342,10 +359,17 @@ def esporta(args) -> int:
     bolle = {}
     for b in range(NB):
         m = np.where(MEM == b)[0]
+        riga = TR.getrow(b)
+        # `P`: [bolla, peso normalizzato], dall'arco piu' forte, AUTO-ANELLO INCLUSO (`dest == b`).
+        # L'auto-anello e' il pezzo che mancava: senza, il 100% di (1-alpha)*r[b] esce dalla bolla,
+        # mentre sui titoli il 47,8% della massa ci resta (i membri di una bolla sono densamente
+        # connessi fra loro). Per i vicini «da navigare» basta scartare la voce con dest == b.
+        coppie = sorted(zip((int(x) for x in riga.indices), (round(float(x), 4) for x in riga.data)),
+                        key=lambda t: -t[1])
         bolle[str(b)] = {
             "n": int(SZ[b]),
             "voti": int(np.median(VOT[m])) if len(m) else 0,
-            "vicini": sorted({int(x) for x in INTRA[b] if x >= 0}),
+            "P": [[d_, p_] for d_, p_ in coppie],
         }
     nuovi = 0
     if getattr(args, "colloca", False):
@@ -363,8 +387,9 @@ def esporta(args) -> int:
                     candidati.append((riga.to_dict(), tipo if tipo == "tv" else "movie", ch))
         if getattr(args, "max", 0):
             candidati = candidati[:args.max]
-        for dd, tipo, ch in candidati:
-            bolla, _conf, _n, _f = CO.colloca(dd, tipo, S)
+        S_v1 = CO.carica(v3=False)         # V1 per la MACRO: senza S_macro `colloca` scende a V3,
+        for dd, tipo, ch in candidati:     # e la bolla macro passerebbe dal 63,0% al 35,3%
+            bolla, _conf, _n, _f = CO.colloca(dd, tipo, S, S_macro=S_v1)
             if bolla is not None:
                 titoli[ch] = int(bolla)
                 bolle[str(int(bolla))]["n"] += 1

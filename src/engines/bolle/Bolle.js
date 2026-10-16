@@ -64,10 +64,14 @@ class Bolle {
         return this.membriCache.get(Number(bolla)) || [];
     }
 
-    /** I vicini sulla mappa 6+2: 6 intra-medium + 2 ponti cross-medium, simmetrizzati. */
+    /**
+     * I vicini sulla mappa 6+2 (6 intra-medium + 2 ponti cross-medium), SENZA l'auto-anello e
+     * ORDINATI PER PESO: il primo è l'arco più forte. Il peso vero sta in `P` — vedi `attiva`.
+     */
     vicini(bolla) {
         const b = this.loadData().bolle[String(bolla)];
-        return b ? b.vicini : [];
+        if (!b) return [];
+        return b.P.filter(([dest]) => dest !== Number(bolla)).map(([dest]) => dest);
     }
 
     /**
@@ -89,6 +93,12 @@ class Bolle {
      * La diffusione sulle bolle: PageRank personalizzato.
      * `storia` = [{ chiave, plays, tipo }] — `tipo` è facoltativo e vale `watched`.
      * Restituisce `[[bolla, attivazione], ...]` ordinate dalla più accesa.
+     *
+     * LA TRANSIZIONE È PESATA E CON AUTO-ANELLO. L'artefatto porta per ogni bolla la riga
+     * normalizzata del grafo 6+2 (`P`, 45.194 archi pesati, `dest == b` = auto-anello). Prima qui si
+     * divideva la massa in parti UGUALI fra i vicini e la si espelleva tutta: senza auto-anello e senza
+     * ponti cross-medium, il che faceva divergere questa diffusione da quella del modulo (dove il
+     * 47,8% della massa resta nella bolla a ogni passo).
      */
     attiva(storia) {
         const v = this.loadData().versione;
@@ -109,10 +119,9 @@ class Bolle {
             const nuovo = new Float64Array(this.nBolle);
             for (let b = 0; b < this.nBolle; b++) {
                 if (r[b] === 0) continue;
-                const vic = this.vicini(b);
-                if (vic.length === 0) { nuovo[b] += r[b]; continue; }
-                const quota = r[b] / vic.length;
-                for (const j of vic) nuovo[j] += quota;
+                const riga = (this.data.bolle[String(b)] || {}).P;
+                if (!riga || riga.length === 0) { nuovo[b] += r[b]; continue; }
+                for (const [dest, w] of riga) nuovo[dest] += r[b] * w;
             }
             for (let b = 0; b < this.nBolle; b++) {
                 r[b] = v.alpha * seme[b] + (1 - v.alpha) * nuovo[b];

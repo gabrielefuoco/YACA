@@ -28,7 +28,20 @@ import scipy.sparse as sp
 QUI = pathlib.Path(__file__).resolve().parent
 from . import canon as K
 
-KEYS, ROW_OF, N, IS_TV = K.titoli()
+
+# LE COSTANTI SI CHIEDONO, NON SI CARICANO ALL'IMPORT (PEP 562).
+# Prima qui c'era `KEYS, ROW_OF, N, IS_TV = K.titoli()`: un'esecuzione a tempo di import, quindi chi
+# faceva `from graph import bubbles as B` — anche solo per leggere `B.N`, e lo fanno motore.py,
+# collocator.py, pipeline.py e tutti gli arbitri — pagava la lettura di `spazi-trakt.npz` e 66.259
+# stringhe. `K.titoli()` e' cachato, quindi il costo si paga al primo uso e una volta sola.
+_COSTANTI = ("KEYS", "ROW_OF", "N", "IS_TV")
+
+
+def __getattr__(nome):
+    if nome in _COSTANTI:
+        v = K.titoli()
+        return v[_COSTANTI.index(nome)]
+    raise AttributeError(f"module 'graph.bubbles' has no attribute {nome!r}")
 ML = K.ML
 TOPK = 30
 
