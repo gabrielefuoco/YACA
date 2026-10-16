@@ -62,7 +62,15 @@ function getActiveKidsMode(userConfig, context) {
     return (activeProfile?.settings?.kidsMode ?? activeProfile?.kidsMode) === true;
 }
 
-const HERO_PRIORITY = Object.freeze(['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']);
+// I DUE SLUG DEL GRAFO SONO ADDITIVI. Entrano nel gruppo DOPO l'assegnazione disgiunta, portano i loro id
+// da `bolle.json` e possono ripetere un titolo che un'altra riga ha gia' preso: e' una scelta del
+// proprietario — sono due motori diversi che dicono cose diverse, e la riga del grafo si spiega da sola.
+// Stanno qui perche' da questa lista derivano `HERO_CATALOG_IDS` (quindi il PERCORSO hero e la sua chiave
+// di cache) e il controllo di validita' della cache: senza l'eccezione `SLUG_ADDITIVI` quel controllo,
+// che pretende la disgiunzione, scarterebbe il gruppo a ogni richiesta e lo ricostruirebbe da capo.
+const SLUG_ADDITIVI = new Set(['mondi', 'passo_fuori']);
+const HERO_PRIORITY = Object.freeze(['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered',
+                                     'mondi', 'passo_fuori']);
 const HERO_CATALOG_IDS = new Map([
     ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
         `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`,
@@ -150,6 +158,7 @@ function isSharedHeroCacheEntry(entry, mediaType) {
     // gruppo coerente e verificabile.
     const claimedIds = new Set();
     for (const slug of HERO_PRIORITY) {
+        if (SLUG_ADDITIVI.has(slug)) continue;      // le righe del grafo non sono disgiunte, per scelta
         const pool = entry.catalogs[getHeroCatalogId(slug, mediaType)];
         if (!Array.isArray(pool)) return false;
         for (const item of pool) {
