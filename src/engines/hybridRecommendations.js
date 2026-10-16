@@ -322,26 +322,40 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     // Se il grafo manca o la storia e' vuota, le due righe restano vuote e il resto del feed non se ne
     // accorge: `righePerStremio` non solleva mai.
     try {
-        // LA STESSA STORIA DEL MOTORE, non una lettura mia. La prima versione leggeva `WatchHistory`
-        // direttamente e trovava zero documenti: i segnali dell'utente stanno anche altrove (la libreria,
-        // gli array legacy di `AddonConfig`, il sync Trakt), e `collectRealSeeds` e' la funzione del
-        // motore che li raccoglie tutti e li pesa (loved 4 · liked 3 · visto 2 · libreria 1).
-        // Rileggerli per conto mio significava avere due idee di «storia» che potevano divergere — e
-        // divergevano: le mie due righe erano vuote.
+        // IL REQUIRE C'ERA, E L'HO PERSO riscrivendo questo blocco: ogni chiamata lanciava
+        // `righePerStremio is not defined`, finiva nel catch, e le righe restavano vuote. Il log lo
+        // diceva chiaramente («[Mondi] righe del grafo non disponibili: righePerStremio is not defined»)
+        // e per due deploy ho guardato solo il conteggio finale invece del messaggio.
+        const { righePerStremio } = require('./bolle/raccomanda');
         const { collectRealSeeds } = require('./hybrid/catalogStrategies');
+        // LA STORIA HA DUE SORGENTI. `collectRealSeeds` legge quello che il prodotto ha in casa
+        // (WatchHistory, libreria, gli array legacy): per un utente il cui profilo non e' mai stato
+        // sincronizzato in mongo quella e' vuota — verificato, 0 seed — e la sua storia vera sta in
+        // **Trakt**, che e' gia' stato scaricato qui sopra (`rawTraktResult`, condiviso fra gli hero).
+        // Usare solo la prima lasciava le righe vuote proprio per gli utenti che usano l'addon.
         const { seeds } = await collectRealSeeds({ userId, context, mediaType, user: userConfig });
-        // `seeds` e' una Map `idTmdb -> peso`. LA FORMA CONTA: `raccomanda` traduce dalla forma del
-        // PRODOTTO (`tmdbId`, `type`, `signals`), quindi qui si costruisce QUELLA — passargli una storia
-        // gia' tradotta (`chiave`/`plays`/`tipo`) la farebbe scartare tutta, e la riga tornerebbe vuota
-        // senza un errore. E' il secondo bug di questa catena, trovato dalla prova locale prima del push.
         const PESO_A_TIPO = { 4: 'loved', 3: 'liked', 2: 'watched', 1: 'library' };
         const tipoSeeds = mediaType === 'movie' ? 'movie' : 'tv';
-        const storia = [...seeds.entries()].map(([id, w]) => ({
+        const semi = [...seeds.entries()].map(([id, w]) => ({
             tmdbId: Number(id),
             type: tipoSeeds,
             signals: [{ type: PESO_A_TIPO[w] || 'watched' }],
         }));
-        Object.assign(assigned, righePerStremio(storia, { mediaType }));
+        // Gli id di Trakt si aggiungono SOLO se sono numeri TMDB: `raccomanda` lavora sulle chiavi del
+        // canone, e un id `tt…` non troverebbe nessuna bolla (verrebbe scartato in silenzio, che qui e'
+        // peggio che non aggiungerlo).
+        const visti = new Set(semi.map((s) => s.tmdbId));
+        for (const voce of (rawTraktResult.ids || [])) {
+            const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
+            if (!Number.isFinite(id) || visti.has(id)) continue;
+            visti.add(id);
+            semi.push({ tmdbId: id, type: tipoSeeds, signals: [{ type: 'liked' }] });
+        }
+        const fuori = righePerStremio(semi, { mediaType });
+        Object.assign(assigned, fuori);
+        console.log(`[Mondi] ${mediaType}: seed da archivio ${seeds.size}, da Trakt ${semi.length - seeds.size}` +
+            ` · mondi ${(fuori[`yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`] || []).length}` +
+            ` · passo fuori ${(fuori[`yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`] || []).length}`);
     } catch (e) {
         console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
     }
