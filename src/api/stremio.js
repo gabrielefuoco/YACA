@@ -255,6 +255,15 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
         { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
         { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
         { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
+        // LE RIGHE DEL GRAFO (src/engines/bolle/), misurate il 16/10/2026: il mondo piu' acceso rende
+        // 12,81% per titolo mostrato, "un passo fuori" 10,62%. La nicchia di qualita' rende 4,31% ed e'
+        // percio' l'ultima quando arrivera'; le uscite nuove non sono qui perche' servono gli anni del
+        // catalogo. Queste due righe arrivano dal grafo, non dal motore ibrido, e si vedono solo se il
+        // profilo le ha fra i `selectedPresets` (come tutti gli hero).
+        { id: 'yaca_mondi_movies', type: 'movie', name: '🌍 Il tuo mondo', extra: [{ name: 'skip' }] },
+        { id: 'yaca_mondi_series', type: 'series', name: '🌍 Il tuo mondo', extra: [{ name: 'skip' }] },
+        { id: 'yaca_passo_fuori_movies', type: 'movie', name: '🔭 Un passo fuori', extra: [{ name: 'skip' }] },
+        { id: 'yaca_passo_fuori_series', type: 'series', name: '🔭 Un passo fuori', extra: [{ name: 'skip' }] },
     ];
 
     const typeSelectors = profile?.settings?.typeSelectors;

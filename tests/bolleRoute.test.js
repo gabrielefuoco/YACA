@@ -16,7 +16,8 @@ const express = require('express');
 // Quindi in un test il token firmato e quello verificato dalla rotta sono due segreti diversi, e la
 // rotta risponde 401 — che e' esattamente quello che e' successo al primo giro di questi test.
 // Non e' un difetto del prodotto: e' il comportamento documentato quando manca la configurazione.
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'segreto-di-prova-per-i-test';
+const _jwtPrima = process.env.JWT_SECRET;
+process.env.JWT_SECRET = _jwtPrima || "segreto-di-prova-per-i-test";
 
 jest.mock('../src/models/WatchHistory', () => ({
     find: jest.fn(),
@@ -75,7 +76,12 @@ beforeAll(async () => {
     cookies = `yaca_session=${jwt.sign({ userId: 'utente-di-prova' }, getJwtSecret())}`;
 });
 
-afterAll(async () => { await new Promise((r) => server.close(r)); });
+afterAll(async () => {
+    await new Promise((r) => server.close(r));
+    // igiene: si rimette l ambiente com era. `process.env` e condiviso fra i file di test nello
+    // stesso worker, e lasciare un JWT_SECRET impostato cambierebbe il comportamento di chi lo legge.
+    if (_jwtPrima === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = _jwtPrima;
+});
 
 const VOCI = [
     { tmdbId: 314, type: 'tv', episodesWatched: 172, signals: [{ type: 'loved' }] },

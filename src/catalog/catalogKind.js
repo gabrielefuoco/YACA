@@ -23,6 +23,11 @@ const FIXED_CATALOGS_REGISTRY = {
     'yaca_watchlist_anime': { mediaSet: ['film', 'serie'], anime: 'yes', alwaysVisible: true },
 
     // 8 Hero Catalogs (Phase 4) - agnostici sulla dimensione anime (Opzione B, ticket 15)
+    // le righe del grafo: film e serie separati, come gli altri hero
+    'yaca_mondi_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_mondi_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_passo_fuori_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
+    'yaca_passo_fuori_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
     'yaca_true_blend_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
     'yaca_true_blend_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
     'yaca_seed_network_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },

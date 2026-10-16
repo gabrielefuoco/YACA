@@ -299,6 +299,22 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         [traktCatalogId]: rawTraktResult.ids
     };
     const assigned = assignHeroPools(pools, mediaType);
+    // LE RIGHE DEL GRAFO — DOPO l'assegnazione, non dentro.
+    // Non consumano il bacino degli hero (160 candidati per 4 righe x 50 = 200 titoli disgiunti) e non
+    // tolgono niente a nessuno: portano i loro id, presi da `src/data/bolle.json`. Possono ripetere un
+    // titolo che un'altra riga ha gia' preso, ed e' una scelta: sono due motori diversi che dicono cose
+    // diverse, e la riga del grafo si spiega da sola (i mondi hanno un nome, i termini, gli esempi).
+    // Se il grafo manca o la storia e' vuota, le due righe restano vuote e il resto del feed non se ne
+    // accorge: `righePerStremio` non solleva mai.
+    try {
+        const WatchHistory = require('../models/WatchHistory');
+        const { righePerStremio } = require('./bolle/raccomanda');
+        const voci = await WatchHistory.find({ owner: userId, context })
+            .sort({ lastWatchedAt: -1 }).limit(300).lean();
+        Object.assign(assigned, righePerStremio(voci, { mediaType }));
+    } catch (e) {
+        console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
+    }
     let hiddenForInsufficientFallback = false;
     console.log(`[HeroPool] Trakt status per ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}, isDegradedFallback=${rawTraktResult.isDegradedFallback}, fallbackUsed=${rawTraktResult.fallbackUsed}`);
     if (rawTraktResult.isDegradedFallback) {

@@ -119,7 +119,8 @@ function isCatalogSortable(catalogMeta) {
     const id = String(catalogMeta.id || '');
     if (id === 'preset_anime_simulcast' || id === 'yaca_preset_preset_anime_simulcast') return false;
     if (id.startsWith('yaca_watchlist_')) return false;
-    if (id.startsWith('yaca_true_blend_') || id.startsWith('yaca_seed_network_') ||
+    if (id.startsWith('yaca_mondi_') || id.startsWith('yaca_passo_fuori_') ||
+        id.startsWith('yaca_true_blend_') || id.startsWith('yaca_seed_network_') ||
         id.startsWith('yaca_hidden_gems_') || id.startsWith('yaca_trakt_filtered_')) {
         return false;
     }
