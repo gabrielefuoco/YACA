@@ -316,11 +316,26 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     // Se il grafo manca o la storia e' vuota, le due righe restano vuote e il resto del feed non se ne
     // accorge: `righePerStremio` non solleva mai.
     try {
-        const WatchHistory = require('../models/WatchHistory');
-        const { righePerStremio } = require('./bolle/raccomanda');
-        const voci = await WatchHistory.find({ owner: userId, context })
-            .sort({ lastWatchedAt: -1 }).limit(300).lean();
-        Object.assign(assigned, righePerStremio(voci, { mediaType }));
+        // LA STESSA STORIA DEL MOTORE, non una lettura mia. La prima versione leggeva `WatchHistory`
+        // direttamente e trovava zero documenti: i segnali dell'utente stanno anche altrove (la libreria,
+        // gli array legacy di `AddonConfig`, il sync Trakt), e `collectRealSeeds` e' la funzione del
+        // motore che li raccoglie tutti e li pesa (loved 4 · liked 3 · visto 2 · libreria 1).
+        // Rileggerli per conto mio significava avere due idee di «storia» che potevano divergere — e
+        // divergevano: le mie due righe erano vuote.
+        const { collectRealSeeds } = require('./hybrid/catalogStrategies');
+        const { seeds } = await collectRealSeeds({ userId, context, mediaType, user: userConfig });
+        // `seeds` e' una Map `idTmdb -> peso`. LA FORMA CONTA: `raccomanda` traduce dalla forma del
+        // PRODOTTO (`tmdbId`, `type`, `signals`), quindi qui si costruisce QUELLA — passargli una storia
+        // gia' tradotta (`chiave`/`plays`/`tipo`) la farebbe scartare tutta, e la riga tornerebbe vuota
+        // senza un errore. E' il secondo bug di questa catena, trovato dalla prova locale prima del push.
+        const PESO_A_TIPO = { 4: 'loved', 3: 'liked', 2: 'watched', 1: 'library' };
+        const tipoSeeds = mediaType === 'movie' ? 'movie' : 'tv';
+        const storia = [...seeds.entries()].map(([id, w]) => ({
+            tmdbId: Number(id),
+            type: tipoSeeds,
+            signals: [{ type: PESO_A_TIPO[w] || 'watched' }],
+        }));
+        Object.assign(assigned, righePerStremio(storia, { mediaType }));
     } catch (e) {
         console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
     }
