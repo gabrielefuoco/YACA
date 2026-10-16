@@ -36,23 +36,13 @@ MIN_TITOLI = P.EQUILIBRIO_MIN_TITOLI
 
 
 def storia(u):
-    righe, plays = [], []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            righe.append(r)
-            plays.append(int(voce.get("plays") or 1))
-    return np.array(righe, np.int64), np.array(plays, np.float64)
+    """(righe, plays) — l'equilibrio del seme, dall'unica lettura della storia (`canon.storia_trakt`).
+
+    Non ordina e non pesa: gli servono solo i titoli e i plays, e li prende dall'ordine CRONOLOGICO
+    perche' e' quello che la storia ha davvero. Prima l'ordine era quello del file: film, poi serie.
+    """
+    _ch, righe, plays, _eta = K.storia_trakt(u, ordine="cronologico")
+    return righe, plays.astype(np.float64)
 
 
 def pesi_schema(nome, righe, plays):

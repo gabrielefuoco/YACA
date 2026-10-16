@@ -48,31 +48,14 @@ pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def storia(u):
-    """(righe, eta' in giorni, plays) in ordine di recenza decrescente."""
-    import pandas as pd
-    righe, eta, plays = [], [], []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            try:
-                g = (pd.Timestamp.now(tz="UTC") - pd.Timestamp(voce.get("last_watched_at"))).days
-            except Exception:
-                g = 3650
-            righe.append(r)
-            eta.append(max(int(g), 0))
-            plays.append(int(voce.get("plays") or 1))
-    o = np.argsort(eta)                      # il piu' recente per primo
-    return np.array(righe)[o], np.array(eta)[o], np.array(plays)[o]
+    """(righe, eta, plays) in ordine di RECENZA — la lettura sta in `canon.storia_trakt`, una sola.
+
+    L'ordine e' quello di prima (il piu' recente per primo) e il consumatore comunque riordina da solo
+    (`o = np.argsort(-eta)`, il taglio esplicito nel tempo): quindi questo banco deve dare gli STESSI
+    numeri di prima — ed e' la verifica di questo ticket.
+    """
+    _ch, righe, plays, eta = K.storia_trakt(u, ordine="recente")
+    return righe, eta, plays
 
 
 def ppr(P, seme, pesi, iters=ITER):
@@ -200,6 +183,7 @@ def main():
     dist = {"film": [], "serie": []}
     base = {"lift_t": [], "hit10": []}
     usati = 0
+    saltati = 0
     for u in utenti:
         if usati >= QUANTI_UTENTI:
             break
@@ -215,7 +199,15 @@ def main():
         o = np.argsort(-np.asarray(eta))                 # dal passato al futuro
         taglio = int(len(righe) * FRAZIONE)
         pos_p, pos_f = o[:taglio], o[taglio:]
-        # IL CONTRATTO, dove il bug e' nato due volte: semina dal passato, non dal futuro.
+        # GLI UTENTI CON UNA STORIA SENZA TEMPO SI SALTANO. Se le date sono tutte uguali (un import
+        # massivo su Trakt) l'eta' mediana dei semi e quella dell'oro coincidono: non c'e' un passato e
+        # un futuro da separare, e misurarci sopra vuol dire misurare il caso. Il contratto qui sotto
+        # controlla l'INVERSIONE — e l'ha trovata il 16/10/2026 su un utente vero, che senza questo
+        # salto avrebbe fatto uscire un banco che nessuno poteva piu' leggere.
+        if len(pos_p) == 0 or len(pos_f) == 0 \
+                or float(np.median(eta[pos_p])) <= float(np.median(eta[pos_f])):
+            saltati += 1
+            continue
         K.assert_split_temporale(eta[pos_p], eta[pos_f], nome=f"utente {u}")
         A, Bt = righe[pos_p][::-1], righe[pos_f]         # A: i semi, i piu' recenti del passato
         eta_A, plays_A = eta[pos_p][::-1], plays[pos_p][::-1]
@@ -262,7 +254,7 @@ def main():
         if usati % 25 == 0:
             print(f"    {usati} utenti ({time.time()-T0:.0f}s)", flush=True)
 
-    print(f"\n  utenti: {usati} · semi: {int(np.median(acc[SCHEMI[0]]['semi']))} "
+    print(f"\n  utenti: {usati} · saltati per storia senza tempo: {saltati} · semi: {int(np.median(acc[SCHEMI[0]]['semi']))} "
           f"(il 70% piu' vecchio) · oro: il 30% piu' recente\n")
     print(f"  {'schema':>22} {'lift titoli':>12} {'lift bolle':>11} {'primi 10 mondi':>15}")
     for s in SCHEMI:

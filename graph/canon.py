@@ -618,7 +618,11 @@ def assert_split_temporale(eta_semi, eta_oro, nome="split", controlla=True):
     a, b = np.asarray(eta_semi, float), np.asarray(eta_oro, float)
     if len(a) == 0 or len(b) == 0:
         return
-    if float(np.median(a)) <= float(np.median(b)):
+    # SI CONTROLLA L'INVERSIONE, NON LA PARITA'. Un'eta' mediana IDENTICA non e' un bug: e' uno split
+    # DEGENERE — una storia le cui date sono tutte uguali (un import massivo su Trakt, per esempio)
+    # non ha un passato e un futuro da separare. Quel che conta e' che il passato NON sia piu' giovane
+    # dell'oro, ed e' il chiamante a decidere se saltare l'utente: qui si accende solo sull'inversione.
+    if float(np.median(a)) < float(np.median(b)):
         raise AssertionError(
             f"{nome}: i semi hanno eta' mediana {np.median(a):.0f} giorni, l'oro {np.median(b):.0f}. "
             f"Il passato deve avere eta' PIU' GRANDE: questo split sta seminando dal futuro.")

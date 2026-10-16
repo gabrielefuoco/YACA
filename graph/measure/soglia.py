@@ -46,28 +46,13 @@ pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def storia(u):
-    import pandas as pd
-    righe, pesi = [], []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            try:
-                eta = (pd.Timestamp.now(tz="UTC") - pd.Timestamp(voce.get("last_watched_at"))).days
-            except Exception:
-                eta = 3650
-            righe.append(r)
-            pesi.append((1 + np.log(int(voce.get("plays") or 1))) * 0.5 ** (eta / EMIVITA))
-    return np.array(righe, np.int64), np.array(pesi, np.float64)
+    """(righe, pesi) — il peso e' recenza x ri-visioni, la stessa formula di prima, dall'unica lettura.
+
+    L'ordine cambia: era l'ordine del file (film, poi serie), adesso e' cronologico.
+    """
+    _ch, righe, plays, eta = K.storia_trakt(u, ordine="cronologico")
+    pesi = (1 + np.log(plays.astype(float))) * 0.5 ** (eta / EMIVITA)
+    return righe, pesi
 
 
 def ppr(P, seme, pesi, iters=ITER):

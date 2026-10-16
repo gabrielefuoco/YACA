@@ -59,32 +59,14 @@ def diffondi(M, seme, pesi, alpha, iters=30):
 
 # ---------------------------------------------------------------- gli utenti Trakt
 def storia(u):
-    """(righe, pesi, date) di un utente: recenza x ri-visioni. I file sono troncati a 300 voci."""
-    righe, pesi, quando, titoli = [], [], [], []
-    for tipo, ep in (("movie", "movie"), ("show", "show")):
-        p = K.TK / f"{ep}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            data = voce.get("last_watched_at")
-            try:
-                t = pd.Timestamp(data)
-                eta = (pd.Timestamp.now(tz="UTC") - t).days
-            except Exception:
-                eta = 3650
-            plays = int(voce.get("plays") or 1)
-            righe.append(r)
-            pesi.append((1 + np.log(plays)) * 0.5 ** (eta / (365 * EMIVITA_ANNI)))
-            quando.append(eta)
-    return np.array(righe, np.int64), np.array(pesi, np.float64), np.array(quando)
+    """(righe, pesi, quando) — il peso e' recenza x ri-visioni con emivita in ANNI, dall'unica lettura.
+
+    La formula e' quella di prima, ricostruita dall'eta'. L'ordine ora e' cronologico: prima era quello
+    del file (film, poi serie) e questo banco ne legge le DATE per stampare i portafogli lungo la scala.
+    """
+    _ch, righe, plays, eta = K.storia_trakt(u, ordine="cronologico")
+    pesi = (1 + np.log(plays.astype(float))) * 0.5 ** (eta / (365 * EMIVITA_ANNI))
+    return righe, pesi, eta.astype(float)
 
 
 def scegli_utenti(quanti=40):

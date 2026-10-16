@@ -41,28 +41,13 @@ pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def storia(u):
-    righe, plays, eta = [], [], []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            try:
-                g = (pd.Timestamp.now(tz="UTC") - pd.Timestamp(voce.get("last_watched_at"))).days
-            except Exception:
-                g = 3650
-            righe.append(r)
-            plays.append(int(voce.get("plays") or 1))
-            eta.append(g)
-    return np.array(righe, np.int64), np.array(plays, np.float64), np.array(eta, float)
+    """(righe, plays, eta) in ordine CRONOLOGICO — la lettura sta in `canon.storia_trakt`, una sola.
+
+    Prima l'ordine era quello del file: prima tutti i film, poi tutte le serie. Questo banco ci costruiva
+    sopra il taglio passato/futuro, quindi non separava il tempo — separava i MEDIUM (e' il ticket 01).
+    """
+    _ch, righe, plays, eta = K.storia_trakt(u, ordine="cronologico")
+    return righe, plays.astype(np.float64), eta.astype(float)
 
 
 def main():
