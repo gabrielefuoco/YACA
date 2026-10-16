@@ -49,3 +49,25 @@ Questo ticket tocca gli stessi file del ticket 08 (il prodotto che parla col ser
 cui il servizio si innesta. Chi prende il 12 e chi prende l'08 devono **dirlo nei ticket** prima di toccare
 `hybridRecommendations.js`, se no due confini si sovrappongono e quando qualcosa si rompe non si sa quale dei
 due ha rotto.
+
+---
+
+## Emendamento — la misura del ticket 38 (17/10/2026), e il requisito che ne eredita
+
+Il ticket 38 della mappa `suggerimenti` è stato **chiuso a metà**, e la metà che resta è di questo ticket.
+Misurato sul deploy, con un utente vero e un profilo con `effectiveTypeSelectors: { anime: 'exclude' }`:
+
+- con `anime: 'neutral'` la **stessa** richiesta restituisce **20 serie su 20** (`yaca_mondi_series`);
+- con il profilo reale, **18 dei primi 20 id** del pool erano **anime**;
+- `getHybridCatalog` fa `.slice(0, 20)` **prima** dei filtri post-fetch: il filtro toglie poi i 18 anime e ne
+  restano **2-3** — ed è questo, non la forma degli id, il 60 → 3.
+
+**Il requisito che questo ticket eredita**: il **taglio si applica dopo i filtri, mai prima**. Vale per il cap
+di pagina (20) e per il `cap` del contratto (60): un tetto applicato a monte di un filtro è un filtro che
+scarta il materiale utile. Collaudo: il conteggio per un profilo con `anime: 'exclude'`, prima e dopo.
+
+Cosa il 38 ha **già** portato in `main` (e che l'estrazione deve **conservare**, non reinventare):
+`ensurePoolItem` che impone l'invariante «nel pool non entrano stringhe» su tutti i pool assegnati; il medium
+risolto nell'idratazione (`item.media_type || item.type`) e in uscita; la risoluzione della base id
+(`yaca_mondi` + `series` → `yaca_mondi_series`, che prima cadeva nel fallback dei **film**); `annotationKeyFor`
+che normalizza `series → tv`; e `HERO_CACHE_KEY_VERSION` a **v11**.
