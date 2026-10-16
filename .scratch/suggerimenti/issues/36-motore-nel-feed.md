@@ -53,6 +53,47 @@ L'artefatto: `src/data/bolle.json` (3,2 MB) **è in git**, quindi qualunque ista
 Space, il mate, un portatile appena clonato. E `raccomanda.js` ha la sua cache con la chiave che porta
 artefatto e impronta della ricetta: se l'artefatto cambia, le liste vecchie non vengono servite.
 
+## LA CUCITURA ESATTA, e i numeri che servono per decidere (trovati il 16/10/2026)
+
+Il posto preciso in cui il motore entra: `buildSharedHeroCatalogs` in `hybridRecommendations.js`.
+
+    const [trueBlend, seed, hidden, trakt] = await Promise.all([
+        runPoolBuilder(builder, fallback, 'true_blend', [args]),   // <- una voce in piu' e' una sorgente in piu'
+        ...
+    ]);
+    const pools = { [getHeroCatalogId('true_blend', mediaType)]: normalizePoolResult(trueBlendResult), ... }
+
+Una sorgente nuova = un `runPoolBuilder` in piu' + una voce in `pools` + due righe nel manifest + una voce
+in `HERO_PRIORITY`. Il pool e' un array di **id TMDB numerici** (`normalizePoolResult` accetta `[...]` o
+`{ids: [...]}`), e tutto l'arricchimento (poster, badge, cache per profilo) e' **condiviso**: non va
+toccato. Quindi la cucitura e' piccola.
+
+**MA NON E' UNA RIGA IN PIU', e questi sono i numeri che lo dicono.**
+
+1. **L'assegnazione e' DISGIUNTA**: un titolo va in UNA sola riga. Lo dice il codice stesso — «con un pool
+   a monte di 160, true_blend (primo nella priorita') consuma 50 item, impoverendo a cascata» — e il
+   budget e' `heroCandidateLimit = 160` (250 in contesto stretto) per **4 righe x 50 = 200 titoli
+   disgiunti**. Una quinta riga **affama le altre quattro**: o si alza il bacino (piu' latenza TMDB/DuckDB)
+   o si abbassa il numero per riga (righe piu' corte). **E' una decisione misurata, non un dettaglio.**
+2. **TREDICI FILE DI TEST** fissano il comportamento degli hero: `heroDiversity` (471 righe),
+   `heroPolicyAndTrakt` (611), `hybridRecommendations` (293), piu' `animeContentFilter`,
+   `catalogCacheKeys`, `catalogKindAndSelectors`, `heroAnimeTypeSelectors`, `heroMovieDateRegression`,
+   `hybridRatingsSync`, `hybridRecommendationsFallback`, `manifestFingerprint`, `presetsSorting`,
+   `profileDuplicates`. Vanno fatti girare **prima e dopo**, e alcuni andranno aggiornati (quelli che
+   contano le righe e la copertura).
+
+**QUINDI: e' una mattina con i test, non l'ultima ora di una sessione.** Il lavoro e' pronto e turnkey —
+cucitura, budget, test da toccare, nomi e ordine decisi dalle misure (il tuo mondo 12,81% per slot, un
+passo fuori 10,62%, la nicchia 4,31% e percio' ULTIMA) — ma va fatto con i test aperti.
+
+## E UNA COSA CHE NON C'ENTRA, e vale la pena dirlo
+
+**Il trasferimento dei dati sul mate NON dipende da questo.** Il prodotto ha bisogno solo di
+`src/data/bolle.json` (3,2 MB, in git): la Space, il mate o un portatile appena clonato servono il grafo
+appena clonano il repo. I ~2 GB utili sono del MODULO — gli artefatti per ricostruire e i parquet TMDB
+per collocare i titoli nuovi ogni notte — e il job notturno gira da riga di comando, non passa dal feed.
+Quindi: **la chiavetta si puo' fare adesso**, e il feed dopo, con calma.
+
 ## La domanda
 
 A o B? E se A: la quinta riga **sostituisce** una delle quattro quando il profilo ha una storia
