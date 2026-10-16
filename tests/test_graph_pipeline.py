@@ -189,3 +189,69 @@ def test_le_costanti_dei_parametri_hanno_una_sola_fonte():
     assert P.ITER >= 1
     assert P.PESO_FILM_MAX >= 1
     assert P.DELTA_FASCIA > 0
+
+
+# ------------------------------------------------------------------ 5. il DAG della costruzione
+
+from graph import pipeline as PIPE   # noqa: E402  (serve il modulo intero, non una sua parte)
+
+
+def _catena_finta():
+    """Tre passi finti che si passano i file come quelli veri. Serve a provare la PROPAGAZIONE."""
+    return [
+        {"nome": "a", "cmd": [], "env": {}, "legge": [], "scrive": ["04-trama-qwen3b.npy"],
+         "params": ["MOD_EMBEDDING"], "tempo": ""},
+        {"nome": "b", "cmd": [], "env": {}, "legge": ["04-trama-qwen3b.npy"],
+         "scrive": ["eterogeneo-TRAMA.npz"], "params": [], "tempo": ""},
+        {"nome": "c", "cmd": [], "env": {}, "legge": ["eterogeneo-TRAMA.npz"],
+         "scrive": ["mappa-finale-6-2.npz"], "params": [], "tempo": ""},
+        {"nome": "isolato", "cmd": [], "env": {}, "legge": [],
+         "scrive": ["bolle-eterogeneo-subvoti.npy"], "params": [], "tempo": ""},
+    ]
+
+
+def test_il_piano_rifa_tutto_quando_il_manifest_e_vuoto():
+    p = PIPE.piano({}, _catena_finta())
+    assert all(d["da_fare"] for d in p.values())
+    assert "mai eseguito" in p["a"]["motivi"]
+
+
+def test_il_piano_non_rifa_niente_quando_e_tutto_in_ordine():
+    finte = _catena_finta()
+    p = PIPE.piano({n["nome"]: {"stato": PIPE.stato_di(n)} for n in finte}, finte)
+    assert not any(d["da_fare"] for d in p.values()), p
+
+
+def test_un_parametro_cambiato_si_propaga_a_valle_e_non_ai_laterali():
+    """E' IL CASO DEL 15/10/2026: un artefatto rigenerato e gli altri no. La propagazione e' PER FILE,
+    quindi il passo che legge l'uscita di `a` e' sporco, e quello che non la legge no."""
+    finte = _catena_finta()
+    man = {n["nome"]: {"stato": PIPE.stato_di(n)} for n in finte}
+    man["a"]["stato"]["parametri"]["MOD_EMBEDDING"] = "un-altro-modello"
+    p = PIPE.piano(man, finte)
+    assert p["a"]["da_fare"] and any("parametro cambiato" in m for m in p["a"]["motivi"])
+    assert p["b"]["da_fare"] and any("a monte a" in m for m in p["b"]["motivi"])
+    assert p["c"]["da_fare"] and any("a monte" in m for m in p["c"]["motivi"])
+    assert not p["isolato"]["da_fare"], "un passo che non legge niente di a non c'entra: e' un falso positivo"
+
+
+def test_un_uscita_riscritta_fuori_da_qui_e_dichiarata_tale():
+    """LA TRAPPOLA DELLA PARTIZIONE, in una riga di piano: se l'uscita di un passo non e' piu' quella
+    che il passo aveva scritto, qualcuno l'ha rigenerata altrove — e non e' un dettaglio."""
+    finte = _catena_finta()
+    man = {n["nome"]: {"stato": PIPE.stato_di(n)} for n in finte}
+    man["isolato"]["stato"]["uscite"]["bolle-eterogeneo-subvoti.npy"] = "un-altro-hash"
+    p = PIPE.piano(man, finte)
+    assert p["isolato"]["da_fare"]
+    assert any("RISCRITTA FUORI DA QUI" in m for m in p["isolato"]["motivi"])
+
+
+def test_il_dag_vero_e_in_ordine_topologico():
+    """L'ordine della tabella E' l'ordine dei passi: se un passo leggesse l'uscita di uno che viene dopo,
+    la propagazione lo ignorerebbe e il piano mentirebbe. Questo test lo dice subito."""
+    for i, p in enumerate(PIPE.PASSO):
+        for q in PIPE.PASSO[i + 1:]:
+            suoi = {f.name for pat in p["legge"] for f in PIPE._file_di(pat)}
+            dopo = {f.name for pat in q["scrive"] for f in PIPE._file_di(pat)}
+            assert not (suoi & dopo), (f"{p['nome']} legge {sorted(suoi & dopo)}, "
+                                       f"che {q['nome']} scrive ma viene DOPO: ordine sbagliato")

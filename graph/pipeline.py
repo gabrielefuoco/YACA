@@ -542,6 +542,202 @@ def parita(args) -> int:
     return 0
 
 
+# ============================================================================================
+# IL DAG DELLA COSTRUZIONE (ticket 14)
+# ============================================================================================
+# Perche' esiste, in una riga: il 15/10/2026 i centroidi del collocatore sono stati costruiti sulla
+# partizione V8 mentre il resto del sistema lavorava sulle 3.497 bolle di `subvoti`. Un artefatto
+# vecchio mescolato con uno nuovo, per giorni, senza un crash e senza un numero che protestasse — solo
+# punteggi che scivolavano. Questo e' il posto dove quel silenzio diventa un errore.
+#
+# COME FUNZIONA: ogni passo dichiara cosa LEGGE (glob), cosa SCRIVE (glob), e quali PARAMETRI lo
+# invalidano. `build` confronta lo stato attuale con un manifest e dice quali passi vanno rifatti — e
+# perche'. **Non esegue niente senza `--esegui`**: il piano e' l'output di default, perche' un DAG che
+# parte da solo su passi da 17 minuti e' un altro genere di problema.
+#
+# E UNA COSA CHE QUESTO DAG NON FA, dichiarata: non riscrive gli step come funzioni. `02_partizione.py`
+# legge `sys.argv` e `os.environ` da dentro, e non posso verificare che una riscrittura non cambi il
+# risultato (13 minuti, 11 GB di picco). Gli step restano comandi; diventano funzioni quando avro' un
+# modo di provare che producono gli stessi byte.
+PASSO = [
+    {"nome": "embedding_trame", "cmd": ["steps/00_embedding_trame.py"], "env": {},
+     "legge": [], "scrive": ["04-trama-qwen3b*.npy"], "params": ["MOD_EMBEDDING"],
+     "tempo": "~17 min"},
+    {"nome": "componente_trama", "cmd": ["steps/01_componente_trama.py"], "env": {},
+     "legge": ["04-trama-qwen3b*.npy"], "scrive": ["eterogeneo-TRAMA.npz"],
+     "params": ["TRAMA_TOPK", "TRAMA_SOGLIA", "TRAMA_BLOCCO"], "tempo": "~13 s"},
+    {"nome": "partizione", "cmd": ["steps/02_partizione.py"], "env": {"RES": "200"},
+     "legge": ["eterogeneo-TRAMA.npz", "bolle-nitrile-V8.npy"],
+     "scrive": ["bolle-eterogeneo-V10-p1.0-r200*", "eterogeneo-chimere-p1.0-r200*"],
+     "params": ["PARTIZIONE_RES", "PARTIZIONE_PESI", "PARTIZIONE_MIN_SIM_KW",
+                "PARTIZIONE_MIN_SIM_CAST"], "tempo": "~13 min, 11 GB di picco"},
+    {"nome": "divisione_voti", "cmd": ["steps/03_divisione_voti.py"], "env": {},
+     "legge": ["bolle-eterogeneo-V10-p1.0*.npz", "bolle-eterogeneo-V10-p1.0*.npy"],
+     "scrive": ["bolle-eterogeneo-subvoti.npy"],
+     "params": ["VOTI_SPREAD_MIN", "VOTI_MIN_MEMBRI", "VOTI_RISOLUZIONI"], "tempo": "~8 s"},
+    {"nome": "centroidi_v1", "cmd": ["steps/04_centroidi.py"], "env": {},
+     "legge": ["bolle-eterogeneo-subvoti.npy", "bolle-eterogeneo-V10-p1.0*.npz"],
+     # I NOMI SONO PRECISI, NON `04-*`: quel pattern catturava anche `04-trama-qwen3b.npy`, che e'
+     # l'artefatto dell'embedding — di un ALTRO passo. E' la stessa radice del ticket 11 (due pipeline
+     # che si spartiscono il prefisso `04-`), e l'ha scoperta il test dell'ordine topologico: se
+     # `centroidi_v1` dichiara di scrivere un file di `embedding_trame`, la propagazione fa un errore.
+     "scrive": ["04-centroidi.npz", "04-vocab.json", "04-tfidf.npz", "04-idf.npy", "04-impronte.json"],
+     "params": ["CENTROIDI_MIN_MEMBRI"], "tempo": "oltre 15 min"},
+    {"nome": "centroidi_v3", "cmd": ["steps/05_centroidi_v3.py"], "env": {},
+     "legge": ["bolle-eterogeneo-subvoti.npy", "04-centroidi.npz"],
+     "scrive": ["05-centroidi.npz", "05-centroidi-meta.npz", "05-tfidf.npz", "05-vocab.json",
+               "05-idf.npy", "05-impronte.json"],
+     "params": ["V3_DF_MIN", "V3_TETTO_IDF", "PESI_TOKEN"], "tempo": "~20 s"},
+    {"nome": "mappa", "cmd": ["steps/06_mappa.py"], "env": {},
+     "legge": ["bolle-eterogeneo-subvoti.npy", "bolle-eterogeneo-V10-p1.0*.npz"],
+     "scrive": ["mappa-finale-6-2.npz"], "params": ["MAPPA_INTRA", "MAPPA_CROSS"], "tempo": "~1 min"},
+    {"nome": "esporta", "cmd": ["-m", "graph.pipeline", "esporta"], "env": {},
+     "legge": ["bolle-eterogeneo-subvoti.npy", "mappa-finale-6-2.npz", "05-centroidi*.npz",
+               "metadati-canone.npz", "titoli-canone.txt"],
+     "scrive": ["../../src/data/bolle.json"], "params": [], "tempo": "~5 s"},
+]
+MANIFEST = K.DATA / "manifest-build.json"
+
+
+def _sha_breve(p):
+    return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()[:16]
+
+
+def _file_di(pat, base=None):
+    """I file che corrispondono a un pattern, dalle due cartelle che contano: `graph/data/` e `src/`.
+
+    I pattern sono relativi a `graph/data/`; uno che comincia con `../` punta fuori (l'artefatto del
+    prodotto), e in quel caso si risolve la CARTELLA e si cerca il nome dentro — non il contrario, che
+    elencherebbe tutto il contenuto della cartella.
+    """
+    base = base or K.DATA
+    percorso = pathlib.Path(pat)
+    if percorso.is_absolute() or pat.startswith(".."):
+        p = (base / percorso.parent).resolve()
+        return sorted(p.glob(percorso.name)) if p.exists() else []
+    return sorted(base.glob(pat))
+
+
+def stato_di(passo):
+    """Lo stato OSSERVABILE di un passo: l'impronta dei suoi ingressi, i suoi parametri, i suoi uscite."""
+    ingressi = {f.name: _sha_breve(f) for pat in passo["legge"] for f in _file_di(pat)}
+    uscite = {f.name: _sha_breve(f) for pat in passo["scrive"] for f in _file_di(pat)}
+    return {"ingressi": ingressi, "uscite": uscite,
+            "parametri": {k: str(getattr(P, k)) for k in passo["params"]}}
+
+
+def piano(manifest=None, passo=PASSO):
+    """QUALI PASSI VANNO RIFATTI, E PERCHE'. E' una funzione PURA: si prova senza eseguire niente.
+
+    L'ORDINE DELLA TABELLA E' L'ORDINE DEI PASSI: la propagazione guarda solo i passi gia' visitati,
+    quindi `PASSO` deve stare in ordine topologico. (Se un giorno non lo fosse, questo commento e' la
+    trappola: nessuno se ne accorgerebbe.)
+
+    Un passo e' da rifare se:
+      · non e' mai stato eseguito;
+      · un suo ingresso e' cambiato, o manca;
+      · un suo parametro e' cambiato;
+      · una sua USCITA non e' piu' quella che il passo aveva scritto — cioe' qualcuno l'ha
+        rigenerata fuori da qui: E' LA TRAPPOLA DELLA PARTIZIONE, trasformata in una riga di piano;
+      · un passo A MONTE e' da rifare e riscrivera' un file che questo legge (la propagazione E' PER
+        FILE, non per nome: e' quello che il 15/10/2026 sarebbe servito).
+    """
+    manifest = manifest if manifest is not None else (json.loads(MANIFEST.read_text(encoding="utf-8"))
+                                                      if MANIFEST.exists() else {})
+    fuori, sporco = {}, set()
+    for i, p in enumerate(passo):
+        ora = stato_di(p)
+        prima, motivi = manifest.get(p["nome"], {}).get("stato"), []
+        if prima is None:
+            motivi.append("mai eseguito")
+        else:
+            for nome, h in ora["ingressi"].items():
+                if nome not in prima["ingressi"]:
+                    motivi.append(f"ingresso nuovo: {nome}")
+                elif prima["ingressi"][nome] != h:
+                    motivi.append(f"ingresso cambiato: {nome}")
+            for nome, h in prima["ingressi"].items():
+                if nome not in ora["ingressi"]:
+                    motivi.append(f"ingresso sparito: {nome}")
+            for k, v in ora["parametri"].items():
+                if prima["parametri"].get(k) != v:
+                    motivi.append(f"parametro cambiato: {k} ({prima['parametri'].get(k)} -> {v})")
+            for nome, h in prima.get("uscite", {}).items():
+                if nome not in ora["uscite"]:
+                    motivi.append(f"uscita sparita: {nome}")
+                elif ora["uscite"][nome] != h:
+                    motivi.append(f"uscita RISCRITTA FUORI DA QUI: {nome}")
+        monte = []
+        for q in passo:
+            if q["nome"] not in sporco or q["nome"] == p["nome"]:
+                continue
+            suoi = {f.name for pat in q["scrive"] for f in _file_di(pat)}
+            letti = {f.name for pat in p["legge"] for f in _file_di(pat)}
+            if suoi & letti:
+                monte.append(f"a monte {q['nome']} riscrivera' {', '.join(sorted(suoi & letti))}")
+        motivi.extend(monte)
+        fuori[p["nome"]] = {"da_fare": bool(motivi), "motivi": motivi, "tempo": p["tempo"]}
+        if motivi:
+            sporco.add(p["nome"])
+    return fuori
+
+
+def build(args) -> int:
+    """IL PIANO, e — solo con `--esegui` — l'esecuzione. Vedi `PASSO` e `piano()`."""
+    import os
+    import subprocess
+    if getattr(args, "registra", False):
+        # REGISTRA LO STATO ATTUALE come costruzione fatta. Serve a chi adotta il DAG su un repo che ha
+        # gia' i suoi artefatti: non si ricostruiscono trenta minuti per poter dire «sono aggiornato».
+        # ED E' UNA DICHIARAZIONE, non una verifica: registra che QUESTI file hanno QUESTI hash e che
+        # QUESTI parametri valgono ORA. Se gli artefatti sono piu' vecchi dei parametri, il manifest
+        # mente — e il piano, da li' in poi, non lo scoprira'. Va usato una volta, e sapendo cosa dice.
+        m = {}
+        print("REGISTRO LA COSTRUZIONE ATTUALE — e' una dichiarazione, non una verifica:\n")
+        for p in PASSO:
+            s = stato_di(p)
+            u = sum(len(v) for v in [s["uscite"]])
+            print(f"  {p['nome']:<20} {u} uscite · {len(s['ingressi'])} ingressi · "
+                  f"parametri {', '.join(p['params']) or '-'}")
+            m[p["nome"]] = {"stato": s, "quando": time.strftime("%Y-%m-%d %H:%M") + " (registrata)"}
+        MANIFEST.write_text(json.dumps(m, indent=1, ensure_ascii=False), encoding="utf-8")
+        print(f"\n  manifest: {MANIFEST}")
+        return 0
+    piano_ = piano()
+    if not getattr(args, "esegui", False):
+        print("PIANO DELLA COSTRUZIONE — niente e' stato eseguito (aggiungi --esegui per farlo)\n")
+        for p in PASSO:
+            d = piano_[p["nome"]]
+            if not d["da_fare"]:
+                print(f"  salto  {p['nome']:<20} ({p['tempo']})")
+                continue
+            print(f"  RIFAI  {p['nome']:<20} ({p['tempo']})")
+            for m in d["motivi"]:
+                print(f"           perche': {m}")
+        print(f"\n  da rifare: {sum(1 for d in piano_.values() if d['da_fare'])} su {len(PASSO)}")
+        return 0
+    manifest = (json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.exists() else {})
+    for p in PASSO:
+        if not piano(manifest)[p["nome"]]["da_fare"]:
+            print(f"  salto  {p['nome']}")
+            continue
+        cmd = [sys.executable] + [str(DATA.parent / c) if c.endswith(".py") else c for c in p["cmd"]]
+        print(f"  eseguo {p['nome']}: {' '.join(p['cmd'])} (env {p['env'] or '-'})", flush=True)
+        env = {**os.environ, **p["env"]}
+        r = subprocess.run(cmd, env=env, cwd=str(DATA.parent.parent))
+        if r.returncode != 0:
+            print(f"  FERMO: {p['nome']} e' uscito con {r.returncode}. Il manifest non lo registra.")
+            return r.returncode
+        stato = stato_di(p)
+        mancanti = [u for pat in p["scrive"] for u in [pat] if not _file_di(pat)]
+        if mancanti:
+            print(f"  ATTENZIONE: {p['nome']} e' uscito bene ma non ha scritto {mancanti}")
+        manifest[p["nome"]] = {"stato": stato, "quando": time.strftime("%Y-%m-%d %H:%M")}
+        MANIFEST.write_text(json.dumps(manifest, indent=1, ensure_ascii=False), encoding="utf-8")
+    print(f"\n  manifest: {MANIFEST}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="python -m graph.pipeline", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -580,6 +776,12 @@ def main(argv=None) -> int:
     ppar = sub.add_parser("parita", help="il golden della parita' Python <-> JavaScript")
     ppar.add_argument("--fuori", default="tests/fixtures/parita.json")
     ppar.set_defaults(fn=parita)
+    pbu = sub.add_parser("build", help="il piano della costruzione, e con --esegui anche l'esecuzione")
+    pbu.add_argument("--esegui", action="store_true",
+                     help="esegue davvero (senza, stampa solo il piano: e' l'output di default)")
+    pbu.add_argument("--registra", action="store_true",
+                     help="registra lo stato ATTUALE come costruzione fatta (dichiarazione, non verifica)")
+    pbu.set_defaults(fn=build)
     a = p.parse_args(argv)
     return a.fn(a)
 
