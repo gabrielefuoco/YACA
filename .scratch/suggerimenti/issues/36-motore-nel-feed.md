@@ -1,4 +1,4 @@
-Status: needs-info
+Status: resolved
 Type: task
 
 # Il motore del grafo entra nel FEED — e sono due strade, non una
@@ -99,3 +99,10 @@ Quindi: **la chiavetta si puo' fare adesso**, e il feed dopo, con calma.
 A o B? E se A: la quinta riga **sostituisce** una delle quattro quando il profilo ha una storia
 sufficiente, o si aggiunge sempre? (Con le misure di oggi, la riga del grafo merita il primo posto: il
 mondo più acceso rende 12,81% per titolo mostrato, e la nicchia 4,31%.)
+
+---
+
+RISOLTO il 17/10/2026: la strada A ("una riga in piu', non toccare gli altri quattro") e' stata
+implementata. Due righe nuove nel feed (`yaca_mondi_*`, `yaca_passo_fuori_*`), servite dal grafo DOPO
+l'assegnazione disgiunta: non consumano il bacino degli hero e possono ripetere un titolo. Nove posti su
+dieci sono derivati dal registro; il decimo (`HERO_PRIORITY` dentro il motore) e' stato aggiunto a mano.

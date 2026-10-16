@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # Gli hero sono definiti in OTTO posti, e la duplicazione ha gia' prodotto una divergenza
@@ -94,3 +94,16 @@ il gruppo sarebbe stato **scartato e ricostruito a ogni richiesta, per sempre**.
 definizione), ma nasce dagli stessi id — quindi appartiene al registro, come gli altri nove. E' la stessa
 lezione di tutte le altre volte: la conoscenza chiave-per-id deve stare in UN posto, e dieci prove che
 qualcuno la stia duplicando sono dieci prove di troppo.
+
+---
+
+RISOLTO il 17/10/2026: `src/catalog/registry.js` (295 righe) e' la fonte sola per 12 righe, e da li'
+derivano manifest, fingerprint, catalogKind, ordinamento, mappatura strategie, il CONSUMATORE
+(`HybridProvider`, il nono posto) e la UI (tre endpoint esistenti, nessuna rotta nuova). Lavoro dello slave
+agy, integrato con un merge a mano (un conflitto su `DnaAndAiPanel.tsx`, risolto tenendo la versione
+dinamica). 13 file di test verdi, zero test modificati. Il nome "True Blend" non esiste piu' in nessuna
+definizione.
+
+RESTA UN DECIMO POSTO, per chi riprende: `HERO_PRIORITY` in `hybridRecommendations.js` e' l'ORDINE di
+priorita' degli hero — un concetto diverso dalla definizione delle righe, ma nasce dagli stessi id, quindi
+appartiene al registro come gli altri nove. E' l'unico che decide QUALE PERCORSO prende un catalogo.
