@@ -120,3 +120,33 @@ firma è `(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings)`.
 `{ id: 'tmdb:655', tmdbId: 655, type: 'series', media_type: 'tv' }` — o idrata passando esplicitamente il
 medium — la differenza di formato con gli altri otto hero sparisce alla radice, e il guasto non può
 ripresentarsi nel modulo nuovo.
+
+## Esito
+
+### 1. I numeri della sonda prima del fix (misurati su mate, utente `REOZrGNRr3`, profilo `4159713d`)
+- `getEngineHybridCatalog("yaca_mondi", "series", 0, ...)`: restituiva **20 titoli, tutti di tipo `movie`** (es. *Spider-Man: Brand New Day*), perché `"yaca_mondi"` senza suffisso non coincideva con alcuna chiave di `HERO_CATALOG_IDS`, ricadendo nel fallback popolare dei film.
+- `getEngineHybridCatalog("yaca_mondi_series", "series", 0, ...)`: il pool hero conteneva 60 ID ben formati, ma la risposta conteneva solo **3 titoli** (`Scrubs - Medici ai primi ferri`, `Scrubs`, `The Boy Next World`), tutti serie.
+- `getEngineHybridCatalog("yaca_mondi_movies", "movie", 0, ...)`: restituiva **20 titoli**, tutti film.
+- `getEngineHybridCatalog("yaca_passo_fuori_series", "series", 0, ...)`: il pool hero conteneva 38 ID, ma ne uscivano solo **2 titoli**.
+
+### 2. La causa esatta della perdita 60 → (≤20) → 3
+Dall'indagine dentro il container è emersa la causa esatta:
+1. **La base id nel provider**: `HybridProvider.js` passava la `baseId` nuda (`yaca_mondi`) a `getHybridCatalog`, che senza `_series` nel nome deduceva `mediaType = 'movie'` e falliva la ricerca hero, cadendo sui film.
+2. **Bare strings nel pool**: `righePerStremio` in `raccomanda.js` produceva stringhe scalari `'tmdb:4556'`, violando l'invariante e lasciando l'idratazione senza il medium originario.
+3. **La causa dei 3 superstiti**: Il profilo dell'utente ha `effectiveTypeSelectors: { anime: 'exclude' }`. Nella partizione delle bolle del grafo, il mondo attivo per le serie contiene un mix di serie live-action e anime. `getHybridCatalog` applica `recommendationIds.slice(0, 20)` a monte del filtraggio anime; dei primi 20 ID campionati nel pool, **17 sono risultati anime e solo 3 non-anime** (Scrubs 4556, Scrubs 295778, The Boy Next World). Il filtro `cleanResults.filter(item => !isItemAnime(item))` ha eliminato i 17 anime, lasciando esattamente 3 serie.
+4. **La riprova**: Eseguendo la stessa sonda con `{ typeSelectors: { anime: 'neutral' } }`, sono usciti **20 titoli su 20, tutti serie** (`count: 20, types: [ 'series', ... ]`).
+
+### 3. Il fix applicato
+- **Invariante del pool (`src/engines/bolle/raccomanda.js`)**: `righePerStremio` restituisce ora oggetti strutturati `{ id: 'tmdb:<tmdbId>', tmdbId, type, media_type, toString() }`.
+- **Invariante hero pool (`src/engines/hybridRecommendations.js`)**: introdotto `ensurePoolItem` che converte qualunque voce del pool in oggetto tipizzato con medium consistente (`tv` per le serie, `movie` per i film).
+- **Idratazione (`src/engines/hybridRecommendations.js`)**: `rateLimitedMap` e il background warm-up utilizzano il medium proprio dell'item (`recItem.media_type || recItem.type`) per interrogare DuckDB e TMDB ed emettono card corredate di `media_type`.
+- **Risoluzione provider (`src/catalog/providers/HybridProvider.js`)**: `getEngineHybridCatalog` risolve dinamicamente la baseId senza suffisso (`yaca_mondi` + `type='series'` → `yaca_mondi_series`).
+- **Normalizzazione catalogo (`src/handlers/catalogHandler.js`)**: `annotationKeyFor` normalizza `series → tv` per la ricerca dei badge ITA ed esporta la funzione per i test. Il filtro post-fetch accetta indifferentemente `media_type` o `type`.
+- **Bump cache key**: `HERO_CACHE_KEY_VERSION` incrementata da `v10` a `v11`.
+
+### 4. I numeri dopo il fix
+- `tests/graphRowsInvariant.test.js`: 4 test verdi (invariante film, invariante serie, normalizzazione `annotationKeyFor`, risoluzione target in `HybridProvider`).
+- `tests/bolleParity.test.js`: 4 test verdi (parità Python/JS intatta).
+- `tests/raccomanda.test.js`: 12 test verdi.
+- Sonda su mate: con `anime: 'neutral'` la riga `yaca_mondi_series` produce **20 serie su 20**. Con `anime: 'exclude'`, il numero è 3 perché il pool contiene anime che vengono esclusi a valle dello `slice(0, 20)` (il filtraggio a monte nel pool sarà di competenza del modulo pool nel ticket 12).
+

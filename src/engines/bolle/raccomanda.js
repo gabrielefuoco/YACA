@@ -223,7 +223,16 @@ function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = CAP } 
         // piccolo ma molto acceso viene prima di un mondo grande e tiepido — ed e' giusto cosi'.
         const perBolla = (bolla) => (Bolle.membri(bolla) || []).slice(0, cap)
             .filter((k) => String(k).startsWith(prefisso))
-            .map((k) => `tmdb:${String(k).split(':')[1]}`);
+            .map((k) => {
+                const tmdbId = Number(String(k).split(':')[1]);
+                return {
+                    id: `tmdb:${tmdbId}`,
+                    tmdbId,
+                    type: tipo === 'movie' ? 'movie' : 'series',
+                    media_type: tipo === 'movie' ? 'movie' : 'tv',
+                    toString() { return this.id; }
+                };
+            });
         const mondi = (r.portafoglio || []).filter((m) => conta(m.bolla) > 0).slice(0, MONDI_PER_RIGA);
         solo[`yaca_mondi_${suffisso}`] = mondi.flatMap((m) => perBolla(m.bolla)).slice(0, cap);
         const vicini = ((scelto && scelto.vicini) || []).slice(0, VICINI).filter((b) => conta(b) >= minimo);
