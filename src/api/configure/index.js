@@ -2,6 +2,7 @@ const UserConfig = require('../../models/UserConfig');
 const { validateAuth, validateKeys, sanitizeCustomCatalogs } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
+const { getHeroUiGroups } = require('../../catalog/registry');
 
 /**
  * Sceglie il profilo attivo da salvare.
@@ -143,6 +144,7 @@ module.exports = async (req, res) => {
             configVersion: userDoc.config?.configVersion,
             apiKeys: userDoc.apiKeys, // Return keys for frontend state sync
             warnings,
+            heroCatalogs: getHeroUiGroups(),
             message: userDoc.apiKeys?.stremio && manifestChanged
                 ? "Configurazione salvata. Stremio aggiornato."
                 : "Configurazione salvata."

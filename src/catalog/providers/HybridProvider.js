@@ -1,12 +1,8 @@
 const { getHybridCatalog } = require('../../engines/hybridRecommendations');
 
-const TASTE_BASED_IDS = new Set([
-    // Hero Catalogs (Phase 4)
-    'yaca_true_blend_movies', 'yaca_true_blend_series',
-    'yaca_seed_network_movies', 'yaca_seed_network_series',
-    'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
-    'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
-]);
+const { HERO_CATALOG_IDS_SET } = require('../registry');
+
+const TASTE_BASED_IDS = HERO_CATALOG_IDS_SET;
 
 async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings) {
     const traktToken = userConfig.apiKeys?.trakt;

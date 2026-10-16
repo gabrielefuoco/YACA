@@ -8,7 +8,7 @@ const ALWAYS_VISIBLE_IDS = new Set([
   'yaca_watchlist_anime',
 ]);
 
-const HERO_REGISTRY: Record<string, CatalogKind> = {
+const FALLBACK_HERO_REGISTRY: Record<string, CatalogKind> = {
   // le righe del grafo
   yaca_mondi_movies: { mediaSet: ['film'], anime: 'agnostic' },
   yaca_mondi_series: { mediaSet: ['serie'], anime: 'agnostic' },
@@ -23,6 +23,24 @@ const HERO_REGISTRY: Record<string, CatalogKind> = {
   yaca_trakt_filtered_movies: { mediaSet: ['film'], anime: 'agnostic' },
   yaca_trakt_filtered_series: { mediaSet: ['serie'], anime: 'agnostic' },
 };
+
+let activeHeroRegistry: Record<string, CatalogKind> = { ...FALLBACK_HERO_REGISTRY };
+
+export function registerHeroCatalogs(catalogs?: Array<{ idBase?: string; id?: string; mediaSet?: ('film' | 'serie')[]; anime?: 'agnostic' | 'yes' | 'no' | 'mixed' }>): void {
+  if (!Array.isArray(catalogs)) return;
+  catalogs.forEach((c) => {
+    if (c.idBase) {
+      activeHeroRegistry[`${c.idBase}_movies`] = { mediaSet: ['film'], anime: 'agnostic' };
+      activeHeroRegistry[`${c.idBase}_series`] = { mediaSet: ['serie'], anime: 'agnostic' };
+    }
+    if (c.id) {
+      activeHeroRegistry[c.id] = {
+        mediaSet: c.mediaSet || (c.id.endsWith('_series') ? ['serie'] : ['film']),
+        anime: c.anime || 'agnostic'
+      };
+    }
+  });
+}
 
 function stripPresetPrefix(id?: string): string {
   if (!id) return '';
@@ -46,8 +64,8 @@ export function getFrontendCatalogKind(catalog: any): CatalogKind {
   const id = catalog.id || '';
   const baseId = stripPresetPrefix(id);
 
-  if (HERO_REGISTRY[id]) return HERO_REGISTRY[id];
-  if (HERO_REGISTRY[baseId]) return HERO_REGISTRY[baseId];
+  if (activeHeroRegistry[id]) return activeHeroRegistry[id];
+  if (activeHeroRegistry[baseId]) return activeHeroRegistry[baseId];
 
   if (catalog.type === 'anime') {
     return { mediaSet: ['film', 'serie'], anime: 'yes' };

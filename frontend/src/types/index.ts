@@ -175,6 +175,15 @@ export interface AnalyticsData {
   };
   /** Studi di produzione della libreria (sezione STUDI del DNA, fuori dal vettore DNA). */
   studios?: Array<{ id: string; name: string; weight: number; type?: string }>;
+  heroCatalogs?: HeroCatalogUiGroup[];
+}
+
+export interface HeroCatalogUiGroup {
+  idBase: string;
+  label: string;
+  emoji: string;
+  desc: string;
+  type?: 'ai' | 'algo';
 }
 
 export interface WatchHistoryItem {

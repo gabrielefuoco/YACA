@@ -212,20 +212,8 @@ router.get('/:id/analytics', async (req, res) => {
             }
         }
 
-        const CATALOG_MODES = {
-            yaca_true_blend_movies: 'trueBlend',
-            yaca_true_blend_series: 'trueBlend',
-            yaca_seed_network_movies: null,
-            yaca_seed_network_series: null,
-            yaca_hidden_gems_movies: 'hiddenGems',
-            yaca_hidden_gems_series: 'hiddenGems',
-            // Le righe del GRAFO non hanno una strategia ibrida: le costruisce hybridRecommendations
-            // dopo l'assegnazione disgiunta, leggendo bolle.json.
-            yaca_mondi_movies: null,
-            yaca_mondi_series: null,
-            yaca_passo_fuori_movies: null,
-            yaca_passo_fuori_series: null,
-        };
+        const { getHeroCatalogModes, getHeroUiGroups } = require('../catalog/registry');
+        const CATALOG_MODES = getHeroCatalogModes();
 
         // Studi di produzione della libreria (sezione "STUDI" del DNA).
         // Restano fuori dal vettore DNA: non influenzano punteggi e cataloghi.
@@ -241,7 +229,7 @@ router.get('/:id/analytics', async (req, res) => {
         const aiLogs = {};
         const flatnessMetrics = profile?.flatnessMetrics || calculateFlatnessMetrics(profile?.compiledVectors?.V_final);
 
-        return res.json({ aiLogs, baseDnaParams, studios, flatnessMetrics });
+        return res.json({ aiLogs, baseDnaParams, studios, flatnessMetrics, heroCatalogs: getHeroUiGroups() });
     } catch (err) {
         console.error(`[Analytics] Error fetching profile analytics for ${profileId}:`, err.message);
         return res.status(500).json({ error: 'Internal server error' });
