@@ -36,7 +36,7 @@ const {
     resolveK,
     clusterTasteSignals,
     shouldRecomputeClusters,
-} = require('../../src/utils/tasteClusters');
+} = require('../../src/dna/dnaEngine');
 const { sanitizeDnaVector } = require('../../src/data/keywordIds');
 const ProfileScorer = require('../../src/profile/ProfileScorer');
 

@@ -2,8 +2,8 @@
  * Estrazione DNA — verifica del confine (passo 2, ticket 22).
  *
  * Il motore matematico vive in `src/dna/dnaEngine.js`; i vecchi path
- * (`src/utils/dnaExtractor.js`, `src/utils/dnaRarity.js`,
- * `src/utils/tasteClusters.js`) sono thin-shim di riesportazione.
+ * (`src/utils/dnaExtractor.js`, `src/utils/dnaRarity.js`)
+ * sono thin-shim di riesportazione.
  *
  * Qui si verificano le due trappole silenziose dichiarate dal ticket:
  *  - `globalDfCache` deve restare **la stessa istanza** anche quando
@@ -18,7 +18,6 @@ const path = require('path');
 const dnaEngine = require('../../src/dna/dnaEngine');
 const dnaRarity = require('../../src/utils/dnaRarity');
 const dnaExtractor = require('../../src/utils/dnaExtractor');
-const tasteClusters = require('../../src/utils/tasteClusters');
 const keywordIds = require('../../src/data/keywordIds');
 
 describe('estrazione DNA — thin-shim e identità del modulo', () => {
@@ -38,10 +37,6 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
         expect(dnaExtractor.extractActiveDNAFromTmdbData).toBe(dnaEngine.extractActiveDNAFromTmdbData);
         expect(dnaExtractor.normalizeVector).toBe(dnaEngine.normalizeVector);
         expect(dnaExtractor.calculateWeightedInteractions).toBe(dnaEngine.calculateWeightedInteractions);
-
-        expect(tasteClusters.clusterTasteSignals).toBe(dnaEngine.clusterTasteSignals);
-        expect(tasteClusters.shouldRecomputeClusters).toBe(dnaEngine.shouldRecomputeClusters);
-        expect(tasteClusters.MIN_SIGNALS_FOR_CLUSTERING).toBe(dnaEngine.MIN_SIGNALS_FOR_CLUSTERING);
     });
 
     it('globalDfCache: la stessa istanza anche iniettando via src/utils/dnaRarity (path di duckDbStore)', () => {
@@ -114,6 +109,5 @@ describe('estrazione DNA — contratto dei consumatori esterni', () => {
         expect(dnaExtractor.computeFinalDNA(vStatic, vActive, 150)).toEqual(
             dnaEngine.computeFinalDNA(vStatic, vActive, 150)
         );
-        expect(tasteClusters.clusterTasteSignals([])).toEqual(dnaEngine.clusterTasteSignals([]));
     });
 });

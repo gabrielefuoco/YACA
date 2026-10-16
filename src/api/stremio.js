@@ -15,7 +15,6 @@ const crypto = require('crypto');
 const { urlPosterDaRottaLegacy } = require('../catalog/formatters/StremioFormatter');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler, isMetaDubbed } = require('../handlers/metaHandler');
-const { streamHandler } = require('../handlers/streamHandler');
 const { parseExtra } = require('../utils/helpers');
 const { getPresets } = require('../data/presets');
 const { isCatalogConformant } = require('../catalog/catalogKind');
@@ -321,8 +320,7 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
         logo: `${hostUrl}/fiamma_yaca.png`,
         resources: [
             'catalog',
-            'meta',
-            { name: 'stream', types: ['movie', 'series', 'anime', 'other'], idPrefixes: ['tt', 'tmdb:', 'kitsu:'] }
+            'meta'
         ],
         types: ['movie', 'series', 'anime', 'other'],
         catalogs: catalogs,
@@ -433,23 +431,9 @@ router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/met
     }
 });
 
-// StreamHandler
-router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/stream/:type/:id.json'], async (req, res) => {
-    const userConfig = await UserConfig.resolveUserConfig(req.params.userHandle);
-    if (!userConfig) {
-        return res.status(200).json({ streams: [] });
-    }
-    const { type, id } = req.params;
-    const args = { type, id };
-
-    try {
-        const response = await streamHandler(args, userConfig);
-        res.setHeader('Cache-Control', 'no-cache, no-store');
-        res.json(response);
-    } catch (err) {
-        console.error("Errore Stream Endpoint:", err.message);
-        res.json({ streams: [] });
-    }
+// Stream endpoint — compatibility fallback for cached Stremio manifests
+router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/stream/:type/:id.json'], (req, res) => {
+    res.json({ streams: [] });
 });
 
 // Sync Status Polling endpoint (Phase 0.4: Dumb Frontend Pattern)
