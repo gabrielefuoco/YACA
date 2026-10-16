@@ -13,7 +13,7 @@
  */
 
 const duckDbStore = require('../db/duckDbStore');
-const UserLibraryItem = require('../db/models/UserLibraryItem');
+const { leggiItemPerStudi } = require('../library');
 const animeMappingStore = require('../data/animeMappingStore');
 
 const DEFAULT_LIMIT = 8;
@@ -91,9 +91,7 @@ async function fetchRows(table, { ids = [], imdbIds = [] }) {
 async function computeStudioProfile(addonUuid, { limit = DEFAULT_LIMIT } = {}) {
     if (!addonUuid) return [];
 
-    const docs = await UserLibraryItem.collection
-        .find({ addonUuid, removed: { $ne: true } })
-        .toArray();
+    const docs = await leggiItemPerStudi(addonUuid);
 
     if (!docs || docs.length === 0) return [];
 

@@ -1,14 +1,13 @@
 const mongoose = require('mongoose');
-const UserLibraryItem = require('../../db/models/UserLibraryItem');
+const { leggiWatchlist, WATCHLIST_PAGE_SIZE } = require('../../library');
 const LibrarySyncService = require('../../services/LibrarySyncService');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
 const duckDbStore = require('../../db/duckDbStore');
 const { mapDuckDbRowToMeta } = require('./DuckDbProvider');
-const { normalizeLegacyPosterHost } = require('../../utils/libraryIdentity');
+const { normalizeLegacyPosterHost } = require('../../library');
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const WATCHLIST_PAGE_SIZE = 20;
 
 /**
  * Trigger background sync if needed.
@@ -125,51 +124,13 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
     // 1. Fire async sync if interval passed
     triggerSyncIfNeeded(uuid);
 
-    // 2. Map catalog ID to stremio types
-    let targetType = 'movie'; // Default to movie
-    if (id === 'yaca_watchlist_movies') {
-        targetType = 'movie';
-    } else if (id === 'yaca_watchlist_series') {
-        targetType = 'series';
-    } else if (id === 'yaca_watchlist_anime') {
-        // In Stremio, anime can be series or movie, but sometimes they have type 'anime'.
-        // Or we might need to query for both type: 'anime' or maybe type in ['series', 'movie'] and some anime flag?
-        // Usually stremio cinemeta sets type='series' but hanime/kitsu sets 'anime' or 'series'
-        targetType = 'anime'; // We will assume kitsu/anilist uses 'anime' or 'series'
-    }
-
-    // Prepare query for UserLibraryItem
-    let query = {
+    // 2. Query library reading port
+    const items = await leggiWatchlist({
         addonUuid: uuid,
-        removed: false,
-        itemId: { $ne: null, $exists: true },
-        // Un solo risultato per titolo: i duplicati con id diverso (tt… / tmdb:… / kitsu:…)
-        // vengono marcati al sync e nascosti qui.
-        duplicateOf: null
-    };
-
-    if (id === 'yaca_watchlist_anime') {
-        // Anime might be identified by source (kitsu:, hanime:, etc.) or type.
-        // NB: niente `$regex` su `_id`: nel modello è un ObjectId e Mongoose lancia
-        // "Can't use $regex", facendo fallire l'INTERA query (catalogo sempre vuoto).
-        // Gli id di Stremio vivono in `itemId`.
-        query.$or = [
-            { type: 'anime' },
-            { itemId: { $regex: /^(kitsu|hanime|anilist):/ } }
-        ];
-    } else {
-        query.type = targetType;
-        // Exclude anime from standard series/movies if possible by removing known anime prefixes
-        query.itemId = { $ne: null, $exists: true, $not: { $regex: /^(kitsu|hanime|anilist):/ } };
-    }
-
-    // 3. Query the DB. itemId is unique within an addon and is the stable
-    // tie-breaker when several library rows share the same _mtime timestamp.
-    const items = await UserLibraryItem.find(query)
-        .sort({ _mtime: -1, itemId: 1 })
-        .skip(skip)
-        .limit(WATCHLIST_PAGE_SIZE)
-        .lean();
+        catalogId: id,
+        skip,
+        limit: WATCHLIST_PAGE_SIZE
+    });
 
     if (!items || items.length === 0) {
         return [];

@@ -18,7 +18,7 @@
 const express = require('express');
 const router = express.Router();
 
-const WatchHistory = require('../models/WatchHistory');
+const { cronologiaDi } = require('../library');
 const { raccomanda } = require('../engines/bolle/raccomanda');
 
 const COOKIE = 'yaca_session';
@@ -49,10 +49,7 @@ router.post('/bolle', async (req, res) => {
         // `{owner, context}` e' la coppia con cui il resto del prodotto indicizza i profili: `context`
         // e' l'id del profilo, o 'global'. La storia piu' recente per prima: il motore pesa le
         // ri-visioni e la recenza, e una storia troncata deve perdere il vecchio, non il nuovo.
-        const voci = await WatchHistory.find({ owner: userId, context: profileId })
-            .sort({ lastWatchedAt: -1 })
-            .limit(STORIA_MAX)
-            .lean();
+        const voci = await cronologiaDi({ userId, profileId, limit: STORIA_MAX });
 
         const fuori = raccomanda(voci, { quante });
         return res.json({ ok: true, ...fuori, quanti_voci: voci.length, profilo: profileId });

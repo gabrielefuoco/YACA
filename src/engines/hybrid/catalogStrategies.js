@@ -78,8 +78,13 @@ const HIDDEN_MUSIC_GENRE_ID = 10402;
 
 // Ticket 13 — pesi e cap dei seed reali del Seed Network (loved 4 / liked 3 /
 // visto 2 / libreria 1), più Trakt e DNA come sorgenti di riserva.
-const SEED_SIGNAL_WEIGHTS = Object.freeze({ loved: 4, liked: 3, watched: 2, library: 1, trakt: 3, dna: 2 });
-const SEED_SIGNAL_LIMITS = Object.freeze({ loved: 20, liked: 15, watched: 15, library: 15 });
+const {
+    collectRealSeeds,
+    semiDi,
+    SEED_SIGNAL_WEIGHTS,
+    SEED_SIGNAL_LIMITS,
+    normalizeSeedId
+} = require('../../library');
 const SEED_TRAKT_LIMIT = 10;
 const SEED_DNA_LIMIT = 5;
 const SEED_DNA_MIN_REAL_SEEDS = 5;
@@ -866,122 +871,10 @@ async function buildTopGenresMixCatalog(userId, context, tmdbApiKey, mediaType, 
 
 /**
  * 🕸️ Hero Catalog 2: Super-Seed Network ("La Rete dei tuoi Preferiti")
+ *
+ * collectRealSeeds e le regole sui semi pesati si trovano ora nel modulo libreria
+ * (src/library/seeds.js — Ticket 15) e vengono importati a inizio file.
  */
-function toSeedMediaType(type) {
-    return (type === 'tv' || type === 'series' || type === 'anime') ? 'tv' : 'movie';
-}
-
-function normalizeSeedId(rawId) {
-    if (rawId === null || rawId === undefined) return null;
-    const id = String(rawId).trim();
-    if (!id || ['undefined', 'null', 'nan'].includes(id.toLowerCase())) return null;
-    return id;
-}
-
-function getSeedTimestamp(...values) {
-    for (const value of values) {
-        if (!value) continue;
-        const time = value instanceof Date ? value.getTime() : Date.parse(String(value));
-        if (Number.isFinite(time)) return time;
-    }
-    return 0;
-}
-
-function keepMostRecentSeed(map, id, at) {
-    const previous = map.get(id);
-    if (previous === undefined || at > previous) map.set(id, at);
-}
-
-/**
- * Ticket 13 — I seed arrivano dai segnali reali (WatchHistory.signals +
- * UserLibraryItem) con i pesi loved 4 / liked 3 / visto 2 / libreria 1,
- * filtrati per tipo media e limitati per sorgente.
- * La libreria è per account: la leggiamo solo per i contesti che hanno già una
- * cronologia reale, così un profilo mai sincronizzato resta freddo.
- */
-async function collectRealSeeds({ userId, context, mediaType, user = null }) {
-    const targetType = mediaType === 'movie' ? 'movie' : 'tv';
-    const buckets = {
-        loved: new Map(),
-        liked: new Map(),
-        watched: new Map(),
-        library: new Map()
-    };
-    let historyDocs = [];
-    try {
-        const WatchHistory = require('../../models/WatchHistory');
-        historyDocs = await WatchHistory.find({ owner: userId, context }).lean();
-        if (!Array.isArray(historyDocs)) historyDocs = [];
-    } catch (_e) {
-        historyDocs = [];
-    }
-
-    for (const doc of historyDocs) {
-        if (toSeedMediaType(doc.type) !== targetType) continue;
-        const id = normalizeSeedId(doc.tmdbId);
-        if (!id) continue;
-        const fallbackAt = getSeedTimestamp(doc.lastWatchedAt, doc.createdAt)
-            || (typeof doc.daysAgo === 'number' ? Date.now() - doc.daysAgo * 86400000 : 0);
-        const signals = Array.isArray(doc.signals) && doc.signals.length > 0
-            ? doc.signals
-            : [{ type: 'watched', at: doc.lastWatchedAt, daysAgo: doc.daysAgo }];
-        for (const signal of signals) {
-            const bucket = buckets[signal?.type];
-            if (!bucket) continue;
-            const signalAt = getSeedTimestamp(signal.at)
-                || (typeof signal.daysAgo === 'number' ? Date.now() - signal.daysAgo * 86400000 : 0);
-            keepMostRecentSeed(bucket, id, signalAt || fallbackAt);
-        }
-    }
-
-    if (historyDocs.length > 0) {
-        try {
-            let addonUuid = user?.uuid || user?.addonUuid || null;
-            if (!addonUuid) {
-                const UserAccount = require('../../db/models/UserAccount');
-                const account = await UserAccount.findOne({ userId }).lean();
-                addonUuid = account?.addonUuid || null;
-            }
-            if (addonUuid) {
-                const UserLibraryItem = require('../../db/models/UserLibraryItem');
-                const libraryDocs = await UserLibraryItem.find({
-                    addonUuid,
-                    removed: { $ne: true },
-                    tmdbId: { $exists: true, $ne: null }
-                }).lean();
-                for (const lib of Array.isArray(libraryDocs) ? libraryDocs : []) {
-                    if (toSeedMediaType(lib.type) !== targetType) continue;
-                    const id = normalizeSeedId(lib.tmdbId);
-                    if (!id) continue;
-                    keepMostRecentSeed(buckets.library, id, getSeedTimestamp(lib._mtime, lib.addedAt, lib.createdAt));
-                }
-            }
-        } catch (_e) {}
-    }
-
-    const seeds = new Map();
-    const counts = { loved: 0, liked: 0, watched: 0, library: 0 };
-    const now = Date.now();
-    for (const [type, bucket] of Object.entries(buckets)) {
-        if (type === 'watched') {
-            const selected = [...bucket.entries()].sort((a, b) => b[1] - a[1]);
-            counts.watched = selected.length;
-            for (const [id, timestamp] of selected) {
-                const days = timestamp > 0 ? Math.max(0, (now - timestamp) / 86400000) : Infinity;
-                const weight = Math.max(0.20, Math.pow(0.5, days / 60));
-                seeds.set(id, (seeds.get(id) || 0) + weight);
-            }
-        } else {
-            const limit = SEED_SIGNAL_LIMITS[type] ?? 0;
-            const selected = [...bucket.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
-            counts[type] = selected.length;
-            for (const [id] of selected) {
-                seeds.set(id, (seeds.get(id) || 0) + SEED_SIGNAL_WEIGHTS[type]);
-            }
-        }
-    }
-    return { seeds, counts };
-}
 
 /**
  * Ticket 13 — il refill di finalizeHeroQualityCandidates può riaccodare in blocco

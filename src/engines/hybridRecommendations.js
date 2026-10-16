@@ -327,7 +327,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         // diceva chiaramente («[Mondi] righe del grafo non disponibili: righePerStremio is not defined»)
         // e per due deploy ho guardato solo il conteggio finale invece del messaggio.
         const { righePerStremio } = require('./bolle/raccomanda');
-        const { collectRealSeeds } = require('./hybrid/catalogStrategies');
+        const { collectRealSeeds } = require('../library');
         // LA STORIA HA DUE SORGENTI. `collectRealSeeds` legge quello che il prodotto ha in casa
         // (WatchHistory, libreria, gli array legacy): per un utente il cui profilo non e' mai stato
         // sincronizzato in mongo quella e' vuota — verificato, 0 seed — e la sua storia vera sta in
