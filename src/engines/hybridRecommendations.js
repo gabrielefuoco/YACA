@@ -89,7 +89,7 @@ const HERO_CATALOG_IDS = new Map([
 // cache ha continuato a servire il gruppo vecchio: `cache=hit ms=2 titles=0`, con il codice nuovo che non
 // girava mai. Un bump di una lettera e' tutto quello che serve; il costo di dimenticarlo e' un fix
 // deployato che non produce nessun effetto, e nessun errore che lo dica.
-const HERO_CACHE_KEY_VERSION = 'v8';
+const HERO_CACHE_KEY_VERSION = 'v9';
 const HERO_CACHE_SCHEMA_VERSION = 7;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;

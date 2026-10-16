@@ -38,6 +38,7 @@ const LRUCache = require('../../utils/LRUCache');
 
 const CAP = 60;         // il tetto di una riga: gli altri hero ne portano 100, e il prodotto pagina da 20
 const VICINI = 3;        // i tre mondi di «un passo fuori»
+const MONDI_PER_RIGA = 8;   // quanti mondi accesi entrano nella riga «il tuo mondo», in ordine di attivazione
 
 // LA CHIAVE DELLA CACHE, decisa nella mappa e costruita adesso:
 //   hash(storia) · versione artefatto · impronta ricetta · slider
@@ -215,15 +216,17 @@ function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = CAP } 
         const scelto = (r.portafoglio || []).find((m) => conta(m.bolla) >= minimo)
             || (r.portafoglio || []).find((m) => conta(m.bolla) > 0);
         if (!scelto) return solo;
-        // «il tuo mondo» usa il mondo SCELTO; «un passo fuori» i suoi vicini, per peso dell'arco.
+        // IL MONDO, E POI GLI ALTRI: si percorre il PORTAFOGLIO in ordine di attivazione.
+        // Prima si usava UN mondo + i suoi tre vicini, e con una storia ricca si buttava via quasi tutto:
+        // misurato, i 25 mondi accesi da otto serie contengono 308 serie, e le due righe ne usavano ~13.
+        // La VICINANZA NON SONO GLI HOP: e' l'attivazione, ed e' gia' ordinata nel portafoglio. Un mondo
+        // piccolo ma molto acceso viene prima di un mondo grande e tiepido — ed e' giusto cosi'.
         const perBolla = (bolla) => (Bolle.membri(bolla) || []).slice(0, cap)
             .filter((k) => String(k).startsWith(prefisso))
             .map((k) => `tmdb:${tipo === 'movie' ? 'movie' : 'tv'}:${String(k).split(':')[1]}`);
-        // GLI ID DEVONO AVERE IL PREFISSO, non essere numeri nudi: `annotationKeyFor` risolve `tmdb:`,
-        // `tt…` e `kitsu:`, e per tutto il resto fa `return null`. Con un numero nudo il pool arriva pieno
-        // e le CARD restano vuote: e' il «Empty content» visto in Stremio.
-        solo[`yaca_mondi_${suffisso}`] = perBolla(scelto.bolla);
-        const vicini = (scelto.vicini || []).slice(0, VICINI).filter((b) => conta(b) >= minimo);
+        const mondi = (r.portafoglio || []).filter((m) => conta(m.bolla) > 0).slice(0, MONDI_PER_RIGA);
+        solo[`yaca_mondi_${suffisso}`] = mondi.flatMap((m) => perBolla(m.bolla)).slice(0, cap);
+        const vicini = ((scelto && scelto.vicini) || []).slice(0, VICINI).filter((b) => conta(b) >= minimo);
         solo[`yaca_passo_fuori_${suffisso}`] = vicini.flatMap(perBolla).slice(0, cap);
     } catch (e) {
         // una riga vuota e' meglio di un feed rotto: se il grafo manca (artefatto assente, dati
