@@ -45,31 +45,15 @@ pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def storia(u):
-    """(righe, plays) in ordine CRONOLOGICO: il piu' VECCHIO per primo."""
-    import pandas as pd
-    righe, eta, plays = [], [], []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            try:
-                g = (pd.Timestamp.now(tz="UTC") - pd.Timestamp(voce.get("last_watched_at"))).days
-            except Exception:
-                g = 3650
-            righe.append(r)
-            eta.append(int(g))
-            plays.append(int(voce.get("plays") or 1))
-    o = np.argsort(-np.array(eta))              # eta' grande = vecchio: il piu' vecchio per primo
-    return np.array(righe)[o], np.array(plays)[o]
+    """(righe, plays) in ordine CRONOLOGICO — la lettura sta in `canon.storia_trakt`, una sola.
+
+    Qui c'erano ~25 righe che riaprivano i JSON di Trakt e chiamavano `pd.Timestamp` dentro il ciclo,
+    per ogni titolo di ogni utente: una delle nove copie della stessa lettura (ticket 30). L'ordine e'
+    lo stesso di prima (`-eta`: il piu' vecchio per primo) ma la tie-break e' `stable`, quindi e'
+    DETERMINISTICO — prima dipendeva dall'ordinamento instabile di NumPy.
+    """
+    _chiavi, righe, plays, _eta = K.storia_trakt(u, ordine="cronologico")
+    return righe, plays
 
 
 def pesi_spec(righe, plays, NEP):

@@ -35,6 +35,7 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import camminata as _cam
+from graph import motore as MO
 from graph import canon as K
 from graph import parametri as P
 
@@ -48,29 +49,15 @@ pota = _cam.pota     # la camminata sta in graph/camminata.py (era copiata qui)
 
 
 def storia(u):
-    import pandas as pd
-    righe, plays, eta = [], [], []
-    for tipo in ("movie", "show"):
-        p = K.TK / f"{tipo}-{u}.json"
-        if not p.exists():
-            continue
-        j = json.load(open(p, encoding="utf-8"))
-        for voce in (j["list"] if isinstance(j, dict) else j):
-            ids = (voce.get(tipo) or {}).get("ids") or {}
-            tmdb = ids.get("tmdb")
-            if tmdb is None:
-                continue
-            r = B.ROW_OF.get(f"{'tv' if tipo == 'show' else 'movie'}:{int(tmdb)}")
-            if r is None:
-                continue
-            righe.append(r)
-            plays.append(int(voce.get("plays") or 1))
-            try:
-                eta.append((pd.Timestamp.now(tz="UTC") - pd.Timestamp(voce.get("last_watched_at"))).days)
-            except Exception:
-                eta.append(3650)
-    o = np.argsort(-np.array(eta))
-    return np.array(righe)[o], np.array(plays)[o]
+    """(righe, plays) in ordine CRONOLOGICO — la lettura sta in `canon.storia_trakt`, una sola.
+
+    Qui c'erano ~25 righe che riaprivano i JSON di Trakt e chiamavano `pd.Timestamp` dentro il ciclo,
+    per ogni titolo di ogni utente: una delle nove copie della stessa lettura (ticket 30). L'ordine e'
+    lo stesso di prima (`-eta`: il piu' vecchio per primo) ma la tie-break e' `stable`, quindi e'
+    DETERMINISTICO — prima dipendeva dall'ordinamento instabile di NumPy.
+    """
+    _chiavi, righe, plays, _eta = K.storia_trakt(u, ordine="cronologico")
+    return righe, plays
 
 
 def main():
@@ -134,31 +121,22 @@ def main():
     print(f"  artefatti pronti · mediana voti dei mondi: {VOTMED_CAT:,.0f} ({time.time()-T0:.0f}s)",
           flush=True)
 
+    # IL MOTORE VERO, non una sua imitazione. Fino al 16/10/2026 questo arbitro misurava DUE varianti
+    # che il prodotto non ha: `att_con_asse` usava la formula lineare `att * (1 + 0.5*(quota-0.5))`
+    # invece dell'esponenziale di `Motore.modula`, e la «fascia» RIORDINAVA i mondi per voti mediani
+    # invece di modulare l'attivazione con lo slider. Quindi le sue conclusioni — «il cozy cambia un
+    # terzo dei titoli», «la fascia fa crollare la copertura» — descrivevano un comportamento che il
+    # motore non ha. Adesso si chiama `Motore` (che costa 0,28 s: non c'e' piu' nessuna ragione per
+    # ricopiarne le formule), e le varianti di FILTRO restano come CONTROPROVA: sono l'esperimento che
+    # ha mostrato che filtrare dentro i mondi svuota le liste, ed e' la ragione per cui il prodotto
+    # modula invece di filtrare.
+    M = MO.Motore(silenzioso=True)
+    print(f"  motore pronto ({time.time()-T0:.0f}s)", flush=True)
+
     def ppr(seme, plays):
         """Il peso inline era `pesi_semi` senza il fattore di tipo: adesso e' `pesi_semi`."""
         return _cam.ppr(Pm, seme, _cam.pesi_semi(seme, plays, NEP),
                         alpha=P.ALPHA, iters=P.ITER, normalizza=True)
-
-    def scegli_mondi(att, quante, distanza=False, fascia=None):
-        """I mondi, con UN parametro variato alla volta. La fascia riordina, non filtra."""
-        o = list(np.argsort(-att)[:40])
-        if fascia == "nicchia":
-            o.sort(key=lambda b: VOTMED[b])
-        elif fascia == "popolare":
-            o.sort(key=lambda b: -VOTMED[b])
-        scelti = []
-        for cb in o:
-            cb = int(cb)
-            if distanza:
-                meio = B.IS_TV[MEM == cb].mean() > 0.5
-                if not all(abs(np.log(max(VOTMED[cb], 1) / max(VOTMED[bb], 1)))
-                           > P.MONDI_DIVERSI_SOGLIA_FASCIA
-                           or meio != (B.IS_TV[MEM == bb].mean() > 0.5) for bb in scelti):
-                    continue
-            scelti.append(cb)
-            if len(scelti) == quante:
-                break
-        return scelti
 
     def titoli(bolle, r_tit, visti, quanti, filtro=None):
         fuori = []
@@ -170,29 +148,18 @@ def main():
                 fuori.extend(m[np.argsort(-r_tit[m])][:quanti].tolist())
         return set(fuori)
 
-    def att_con_asse(att, maschera):
-        """L'asse MODULA l'attivazione invece di sostituirla.
-
-        E' la regola che nasce dal fallimento del filtro per genere: filtrare DENTRO i mondi svuota le
-        liste (3-14 titoli su 40) e azzera la copertura, perche' i mondi sono gia' comunita' coerenti e
-        il filtro ne rimuove la struttura. Qui l'asse diventa una quota PER MONDO, e l'attivazione resta
-        il segnale principale.
-        """
-        quota = np.zeros(NB)
-        for b in np.unique(MEM):
-            m = np.where(MEM == b)[0]
-            quota[b] = float(maschera[m].mean()) if len(m) else 0.0
-        return att * (1.0 + 0.5 * (quota - 0.5))
-
+    # LE VARIANTI SONO SLIDER DEL PRODOTTO, non parametri inventati: `modula` per gli assi,
+    # `scegli_mondi` per la larghezza e la distanza. `filtro` resta e non e' uno slider: e' la
+    # controprova di cosa NON si deve fare.
     varianti = [("base", dict(quante=LARGHEZZA_BASE)),
                 ("+ largo", dict(quante=LARGHEZZA_BASE * 2)),
-                ("+ lontano", dict(quante=LARGHEZZA_BASE, distanza=True)),
-                ("+ nicchia", dict(quante=LARGHEZZA_BASE, fascia="nicchia")),
-                ("+ popolare", dict(quante=LARGHEZZA_BASE, fascia="popolare")),
+                ("+ lontano", dict(quante=LARGHEZZA_BASE, lontano=1.0)),
+                ("+ nicchia", dict(quante=LARGHEZZA_BASE, canone=-1.0)),
+                ("+ popolare", dict(quante=LARGHEZZA_BASE, canone=+1.0)),
                 ("+ cozy", dict(quante=LARGHEZZA_BASE, filtro=COZY)),
                 ("+ impegnativo", dict(quante=LARGHEZZA_BASE, filtro=IMP)),
-                ("+ cozy pesato", dict(quante=LARGHEZZA_BASE, asse=COZY)),
-                ("+ impegn. pesato", dict(quante=LARGHEZZA_BASE, asse=IMP))]
+                ("+ cozy pesato", dict(quante=LARGHEZZA_BASE, cozy=+1.0)),
+                ("+ impegn. pesato", dict(quante=LARGHEZZA_BASE, cozy=-1.0))]
 
     pool = [f.stem[6:] for f in sorted(K.TK.glob("movie-*.json"))
             if (K.TK / f"show-{f.stem[6:]}.json").exists()]
@@ -214,16 +181,25 @@ def main():
             continue
         r_tit = ppr(semi, plays[:taglio])
         att = np.bincount(MEM, weights=r_tit, minlength=NB) / r_tit.sum()
+        # GLI ASSI DEDOTTI DALLA STORIA: servono al slider `canone`, che sposta la finestra attorno al
+        # profilo invece di spingere verso l'estremo (ticket 06).
+        dedotto = M.deduci(list(semi))
         # ATTENZIONE, e questo era un bug: dal portafoglio si escludono i SEMI, non tutta la storia.
         # Escludendo anche l'oro, «titoli del futuro presi» risultava strutturalmente zero.
         visti = set(semi.tolist())
         pezzi = {}
         for nome, kw in varianti:
-            att2 = att_con_asse(att, kw["asse"]) if "asse" in kw else att
-            bolle = scegli_mondi(att2, kw.get("quante", LARGHEZZA_BASE), kw.get("distanza", False),
-                                 kw.get("fascia"))
+            quante = kw.get("quante", LARGHEZZA_BASE)
+            filtro = kw.get("filtro")
+            slider = {k: v for k, v in kw.items() if k in ("cozy", "canone")}
+            if slider:
+                slider["largo"] = quante
+                att2 = M.modula(att, slider, dedotto)
+            else:
+                att2 = att
+            bolle = M.scegli_mondi(att2, {"largo": quante, "lontano": kw.get("lontano", 0.0)})
             per = max(TITOLI_TOTALI // max(len(bolle), 1), 2)
-            t = titoli(bolle, r_tit, visti, per, kw.get("filtro"))
+            t = titoli(bolle, r_tit, visti, per, filtro)
             pezzi[nome] = t
             riempimento[nome].append(len(t))
             oro_preso[nome].append(len(t & oro) / len(oro))

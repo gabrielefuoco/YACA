@@ -146,10 +146,13 @@ SCHEDA = [
      "(Jaccard 0,67). Vale per tutti gli assi, fascia compresa.",
      "measure/ricetta.py"),
     ("ASSE_PESO", 0.5, "INVENTATO",
-     "Quanto un asse extra modula l'attivazione: att x (1 + 0,5 x (quota - 0,5)). Misurato: a 0,5 il "
-     "cozy cambia un terzo dei titoli (Jaccard 0,67) mentre l'impegnativo NON cambia niente "
-     "(Jaccard 1,00) — le due liste di generi hanno prevalenze molto diverse (30.814 contro 8.279 "
-     "titoli) e probabilmente vogliono pesi diversi.",
+     "Quanto un asse extra modula l'attivazione: att x exp(0,5 x (quota_cozy - quota_impegnativo)). "
+     "RIMISURATO il 16/10/2026 COL MOTORE VERO (ticket 32): prima questo arbitro usava una formula "
+     "lineare e una fascia che RIORDINAVA i mondi — due comportamenti che il prodotto non ha — e le "
+     "sue conclusioni descrivevano un motore che non esiste. Adesso: cozy pesato Jaccard 0,61, "
+     "impegnativo pesato 0,67: cambiano ENTRAMBI, e la vecchia asimmetria («il cozy cambia un terzo "
+     "dei titoli, l'impegnativo NON cambia niente») era un artefatto. E la fascia non fa piu' crollare "
+     "la copertura: canone -1 da' Jaccard 0,56 e 2,4% dell'oro (era 0,00 e 0,3%).",
      "measure/ricetta.py"),
     ("DELTA_FASCIA", 1.0, "INVENTATO",
      "Di quanto lo slider `canone` sposta la finestra, in spazio LOGARITMICO dei voti: 1,0 = un fattore "
