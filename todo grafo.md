@@ -1,358 +1,275 @@
-Questo sesto handoff segna il passaggio dalla ricerca al sistema: avete chiuso i debiti tecnici segnalati nel quinto handoff (`canon.A()` ora solleva `FileNotFoundError` senza ripieghi silenziosi, `assert_partizione` verifica l'hash `sha256` di `bolle-eterogeneo-subvoti.npy`, e `saghe.py` è stato ricalcolato sulla mappa vera 6+2 smascherando la tautologia del triangolo), avete centralizzato i 34 iperparametri con il loro stato epistemico in `graph/parametri.py`, unificato la diffusione in `graph/camminata.py` e portato il primo modulo reale dentro `src/engines/bolle/Bolle.js` alimentato da un artefatto statico di soli 1,55 MB (`src/data/bolle.json`).
+Ho letto per intero i file del modulo, gli step, i 21 arbitri, il motore JavaScript e i test contenuti nel digest.
 
-Ho ispezionato riga per riga il codice nuovo in `digest_5.txt` (`motore.py`, `camminata.py`, `parametri.py`, `pipeline.py`, `Bolle.js` e i nuovi arbitri in `graph/measure/`). Prima di collegare `Bolle.js` ai cataloghi serviti da YACA, ci sono **quattro bug nel codice nuovo** — uno dei quali altera direttamente la misura di `intero.py` e un altro dimezza l'accuratezza del job notturno `esporta --colloca` — che vanno corretti subito.
+Di seguito trovi la revisione completa divisa nelle quattro categorie che hai chiesto — partendo dalla **causa esatta dei due residui numerici insoluti che hai segnalato nel §4.3**, passando per i **bug subdoli**, le **ottimizzazioni**, le **semplificazioni** e i **contratti mancanti**. Per ogni punto c'è il file, le righe, il meccanismo del problema e la soluzione.
 
 ---
 
-## 1. Audit del codice nuovo (`digest_5.txt`): 4 bug trovati
+## 0. La spiegazione dei due residui numerici insoluti (§4.3 dell'Handoff 7)
 
-### A. In `graph/measure/intero.py` lo split "temporale" non è temporale: mette i Film nei semi e le Serie nell'oro (e in `pesi.py` il tempo è invertito)
+Nel §4.3 segnali due discrepanze di cui non avevi isolato la causa. Entrambe hanno una spiegazione algebrica esatta nel codice:
 
-In `intero.py` (righe 44–48) il commento dice che `MO.da_trakt(u)` restituisce la storia in ordine di recenza e taglia al 70%:
+### Residuo A — Perché la parità Python↔JS ha un errore fino a `4,2e-5`
+
+Guarda come `graph/pipeline.py:esporta` (righe 253–262) salva le probabilità di transizione `"P"` in `src/data/bolle.json`, e come le usano `pipeline.py:parita` (righe 340–347) e `src/engines/bolle/Bolle.js`:
+
+1. **Arrotondamento a 4 decimali senza rinormalizzazione:** in `pipeline.py:253` scrivi `(round(float(x), 4) for x in riga.data)`. Su una riga con ~15 archi uscenti, arrotondare ciascun peso a $10^{-4}$ fa sì che la somma della riga $\sum_j P_{bj}$ non sia più $1{,}0000$, ma oscilli tra $0{,}9994$ e $1{,}0006$ (in più, gli archi con peso $< 0{,}00005$ diventano `[dest, 0.0]` e restano nel JSON).
+
+
+2. **Normalizzazione finale presente in JS ma assente in `pipeline.py:parita`:** poiché le righe di `Q` non sommano più esattamente a $1$, dopo 20 iterazioni di `r = alpha * meme + (1 - alpha) * (Q.T @ r)` la massa totale `r.sum()` deriva da $1{,}0$ di circa $\pm 5 \times 10^{-4}$. In `Bolle.js` (`attiva`), alla fine del ciclo dividi ogni elemento per `somma = r.reduce((a, x) => a + x, 0)` (`r[b] / somma`); in `pipeline.py:parita` (riga 347), invece, salvi `float(x)` **senza dividere per `r.sum()**` (`pura = [(int(b), float(x)) for b, x in enumerate(r) if x > 0]`)!
+
+
+
+* **Soluzione:** in `pipeline.py:esporta` (riga 253) scarta gli zeri, arrotonda a 6 decimali (o rinormalizza la riga arrotondata), e in `pipeline.py:parita` (riga 347) dividi `r` per `r.sum()` esattamente come fa `Bolle.js`. L'errore scende da `4,2e-5` a $< 10^{-9}$.
+
+
+
+### Residuo B — Perché in `camminata.ppr` 2 righe su 6 differivano di `< 1%`
+
+Guarda `graph/camminata.py:ppr` (righe 68–72):
 
 ```python
-storia = MO.da_trakt(u)                      # in ordine di recenza
-if len(storia) < 2 * P.BANCO_MIN_TITOLI:
-    continue
-taglio = int(len(storia) * P.TAGLIO_TEMPORALE)
-semi, oro = storia[:taglio], {k for k, _ in storia[taglio:]}
+e = np.zeros(Tr.shape[0], np.float64)
+if pesi is None:
+    e[seme] = 1.0 / max(len(seme), 1)
+else:
+    e[seme] = np.asarray(pesi, np.float64) / max(float(np.sum(pesi)), 1e-12)
 
 ```
 
-Ma se guardi `da_trakt(utente)` in `graph/motore.py` (righe 253–267), la funzione **non legge `last_watched_at` e non ordina per data**:
+In NumPy, l'assegnamento indicizzato **`e[seme] = w` NON somma i pesi se `seme` contiene un indice duplicato**: sovrascrive `e[r]` con l'ultima occorrenza e **perde la massa delle occorrenze precedenti** (facendo scendere `e.sum()` sotto $1{,}0$)!
+Quando un utente nei file JSON di Trakt ha due voci che mappano sulla stessa riga `r` del canone (o in `motore.py` ha un titolo sia in `watched` sia in `loved`/`library`), `e.sum() < 1.0`. Se poi chiami `ppr(..., normalizza=False)` contro `ppr(..., normalizza=True)` (che divide alla fine per `r.sum()`), o cambi l'ordine dell'array `seme` (come in `pesi.py` dove hai invertito `pos_p[::-1]`), quale delle due occorrenze duplicate vince la sovrascrittura cambia!
 
+* **Soluzione:** in `graph/camminata.py:ppr` (righe 68–72), sostituisci `e[seme] = ...` con `np.add.at(e, seme, w)` seguito da `e /= max(float(e.sum()), 1e-12)`.
+
+
+
+---
+
+## 1. Bug subdoli (non crashano, ma alterano i risultati o le conclusioni)
+
+### 1.1 In `motore.py:lista()`, la lista `uscite_nuove` NON ordina per attivazione `r`: prende i primi 10 per indice di catalogo!
+
+* **Dove:** `graph/motore.py`, righe 218–221.
+
+
+* **Cosa succede:**
 ```python
-for tipo in ("movie", "show"):
-    p = K.TK / f"{tipo}-{utente}.json"
-    ...
-    fuori.append((ch, int(voce.get("plays") or 1)))
+nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
+         if int(self.MEM[x]) in set(bolle) and x not in visti]
+liste.append({"tipo": "uscite_nuove", "mondo": None,
+              "titoli": [(B.KEYS[x], float(r[x])) for x in nuove[:10]]})
 
 ```
 
-Poiché cicla prima su `"movie"` e poi su `"show"`, l'array `storia` contiene **prima tutti i film e in fondo tutte le serie TV**! Tagliando con `storia[:taglio]` (il primo 70%) e `storia[taglio:]` (l'ultimo 30%), `intero.py` non sta facendo uno split passato/futuro: sta usando **i film come seme e le serie TV come bersaglio `oro**` (oppure, per chi ha solo film, l'ordine grezzo del file JSON di Trakt che parte dai più recenti)!
-Inoltre, controlla il verso dell'ordinamento in `graph/measure/pesi.py` (righe 66–67 e 171) rispetto a `cache.py` (riga 62) e `ricetta.py` (riga 60):
 
-* In `cache.py` e `ricetta.py` scrivi `o = np.argsort(-np.array(eta))`, che mette giustamente **i più vecchi per primi** (`eta` grande = visto tanti giorni fa), così `[:taglio]` è il passato e `[taglio:]` è il futuro.
+`np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]` restituisce le righe in **ordine crescente di indice nel canone (`0, 1, 2, ...`)**. `nuove` non viene mai ordinata né per `-r[x]` né per `-self.VOT[x]` prima di fare `nuove[:10]`, anche se nel dizionario di output alleghi `float(r[x])` dando l'illusione che sia ordinata per attivazione! È lo stesso artefatto dell'ordine di indice che avevate combattuto nei report precedenti.
 
 
-* In `pesi.py` (riga 66) scrivi invece `o = np.argsort(eta)` (**i più recenti per primi**), e poi alla riga 171 fai `A, Bt = righe[:taglio], righe[taglio:]` commentando `# il passato semina, il futuro e' l'oro`: ma poiché l'array è ordinato dal più recente al più vecchio, `A` (il 70%) contiene il **presente/futuro recente** e `Bt` (il 30%) contiene il **passato remoto**! Ecco perché in `pesi.py` gli "ultimi 15" facevano un lift di 47,5×: stavano seminando dal presente per predire il passato.
+* **Soluzione:** ordina prima del taglio: `nuove.sort(key=lambda x: (-r[x], -self.VOT[x]))`.
 
 
 
-### B. `pipeline.py:esporta` dimentica i 2 ponti cross-medium (`CROSS`) e `Bolle.js` perde i pesi degli archi e l'auto-anello
+### 1.2 In `motore.py:lista()`, `un_passo_fuori` restituisce fino a 30 titoli (non 10) e non li ordina tra i 3 mondi vicini — gonfiando di 3× il conteggio del «31%–38%» in `intero.py`!
 
-Confrontando `graph/motore.py` con `src/engines/bolle/Bolle.js` e `graph/pipeline.py:esporta`, ci sono due discrepanze importanti tra ciò che è documentato e ciò che è scritto in `bolle.json`:
-
-1. **Mancano i 2 ponti cross-medium nell'esportazione:** in `src/engines/bolle/Bolle.js` (riga 65) il commento dice `/** I vicini sulla mappa 6+2: 6 intra-medium + 2 ponti cross-medium, simmetrizzati. */`. Ma in `graph/pipeline.py` (righe 311 e 322), `esporta` carica **solo `INTRA = M["intra"]**` e ignora la matrice dei ponti cross-medium salvata in `mappa-finale-6-2.npz`! Di conseguenza, in `Bolle.js` la diffusione sulle bolle non può mai attraversare i ponti cross-medium.
+* **Dove:** `graph/motore.py`, righe 155–166 (`titoli_di`) e 210–216 (`righe_titoli(vicini)`); `graph/measure/intero.py`, righe 52–57.
 
 
-2. **Transizione uniforme senza pesi e senza ritenzione interna:** quando in Python cammini sui titoli (`motore.py`), il 47,8% della massa nel grafo potato top-16 resta **dentro la stessa bolla** a ogni passo (perché i membri della bolla sono densamente connessi tra loro), e il resto esce verso le bolle vicine **in proporzione al peso degli archi** tra le bolle. In `Bolle.js` (righe 96–103), invece, a ogni passo **il 100% di `(1 - alpha) * r[b]` viene espulso fuori dalla bolla `b**` e diviso in parti uguali (`r[b] / vic.length`) tra tutti i vicini, come se il 1° vicino (peso 400) e il 6° vicino (peso 12) valessero uguale.
+* **Cosa succede:** `titoli_di(bolle, r, visti, quanti_per_mondo=10)` prende i primi 10 titoli di `vicini[0]`, seguiti dai primi 10 di `vicini[1]`, seguiti dai primi 10 di `vicini[2]`.
+Questo produce due distorsioni silenziose:
 
 
-
-* **Fix a costo zero di RAM:** in `pipeline.py:esporta`, includi sia `intra` sia `cross` e salva accanto a ogni vicino il suo peso normalizzato (o la quota di auto-anello della bolla), così le 20 iterazioni di `Bolle.js` riproducono fedelmente l'attivazione per mondo di `motore.py` continuando a impiegare meno di 2 millisecondi.
-
+1. **`un_passo_fuori` contiene fino a 30 titoli**, mentre `il_tuo_mondo`, `uscite_nuove` e `nicchia_di_qualita` ne contengono al massimo **10** (e `mondo_b` ne contiene **8**). Quando in `intero.py` (riga 55) conti `per_tipo[li["tipo"]] += 1` e concludi che *«il quartiere vale più del mondo: 31%–38% in un_passo_fuori contro 20%–21% in il_tuo_mondo»*, stai confrontando i successi totali di una lista da **30 slot** contro una da **10 slot**! A parità di slot (precisione per card), `il_tuo_mondo` fa $20\% / 10 = \mathbf{2{,}0\%\text{ per slot}}$, mentre `un_passo_fuori` fa $31\% / 30 = \mathbf{1{,}03\%\text{ per slot}}$: cioè `il_tuo_mondo` è quasi **due volte più denso** di `un_passo_fuori`!
 
 
-### C. Il job notturno `esporta --colloca` in `graph/pipeline.py` usa `V3` invece di `V1` per la bolla Macro (e `colloca` legge ancora `V8`)
-
-In `graph/pipeline.py` ci sono due sviste nel cablaggio del collocatore:
-
-1. Alla riga 332 (dentro `def esporta(args)` con `--colloca`), carichi solo `S = CO.carica(v3=True)` e alla riga 340 chiami `CO.colloca(dd, tipo, S)` **senza passare `S_macro=S_v1**`. Ma in `collocator.py` (riga 180), se `S_macro` è `None`, il collocatore usa `V3` anche per scegliere la bolla macro, scendendo dal **63,0% di V1 al 35,3% di V3**! Basta caricare `S_v1 = CO.carica(v3=False)` e passare `S_macro=S_v1` come hai fatto alla riga 142.
-
-
-2. Alla riga 139 (dentro `def colloca(args)`), è rimasto `mem = np.load(K.A("bolle-nitrile-V8.npy"))` invece di `bolle-eterogeneo-subvoti.npy`, quindi i `membri` stampati da `python -m graph.pipeline colloca` vengono ancora estratti dalla partizione V8 sbagliata!
+2. Poiché `titoli_di` concatena per bolla senza riordinare per `-r[x]`, le prime 10 posizioni di `un_passo_fuori` appartengono **tutte esclusivamente a `vicini[0]**`, anche se il 1° titolo di `vicini[1]` ha un'attivazione `r` 10 volte superiore al 10° titolo di `vicini[0]`.
 
 
 
-### D. In `graph/motore.py:modula()` la formula dello slider `canone` cancella il valore assoluto e spinge verso l'estremo
 
-Guarda le righe 155–159 di `graph/motore.py`:
+* **Soluzione:** in `titoli_di(bolle, r, visti, ...)` (quando raccoglie da più bolle per una singola lista come `un_passo_fuori`), ordina i candidati raccolti per `-r[x]` (o fai round-robin tra i 3 vicini) e fissa la capienza della lista; in `intero.py`, stampa sia i colpi totali sia la **precisione per titolo mostrato** di ciascuna lista.
 
+
+
+### 1.3 In `motore.py:modula()`, lo slider `canone` ha una discontinuità a gradino in `0.0`
+
+* **Dove:** `graph/motore.py`, righe 135–145.
+
+
+* **Cosa succede:**
 ```python
 if slider.get("canone"):
-    # la fascia e' un filtro ATTORNO al canone dedotto, non un riordino verso l'estremo
     q = np.log(np.maximum(self.VOTMED, 1.0))
-    c = np.log(max(dedotto["canone"], 1.0))
-    out = out * np.exp(-P.ASSE_PESO * abs(q - c) * abs(slider["canone"])
-                       * np.sign(q - c) * slider["canone"])
+    c = np.log(max(dedotto["canone"], 1.0)) + slider["canone"] * P.DELTA_FASCIA
+    out = out * np.exp(-P.ASSE_PESO * np.abs(q - c))
 
 ```
 
-Algebricamente, `abs(q - c) * np.sign(q - c)` è identico a `(q - c)`! Quindi l'esponente non è una campana centrata attorno a `c`, ma una retta monotona `exp(-P.ASSE_PESO * (q - c) * s * |s|)` che moltiplica al massimo i mondi con `VOTMED = 0` quando `slider["canone"] < 0` (o i mondi più mainstream in assoluto quando `> 0`), facendo esattamente il riordino verso l'estremo che il commento alla riga 155 voleva evitare (e che in `ricetta.py` faceva crollare la copertura allo 0,3%).
 
-* **Fix:** sposta il centro target `c_target = c + slider["canone"] * delta_fascia` e penalizza la distanza quadratica o assoluta dal target: `np.exp(-P.ASSE_PESO * abs(q - c_target))`, così lo slider sposta la finestra di canone attorno al profilo dell'utente senza mai premiare i contenitori a 0 voti.
-
+Quando `slider["canone"] == 0.0`, `if slider.get("canone"):` è `False` e `out` resta identico ad `att`. Ma appena l'utente sposta lo slider a `0.01`, l'`if` diventa `True` e scatta l'intera penalità `np.exp(-P.ASSE_PESO * np.abs(q - c))`, perché `P.ASSE_PESO` **non è moltiplicato per `abs(slider["canone"])**` (a differenza di `cozy` alla riga 131, dove `quota` è moltiplicata per `slider["cozy"]`)!
 
 
----
-
-## 2. Valutazione delle scelte architetturali dell'Handoff 6
-
-Al netto dei quattro fix puntuali qui sopra, le scelte di design prese in questo giro sono eccellenti:
-
-1. **Separazione dei pesi per medium (`min(plays, 3)` per i film vs `1 + 2 * (plays / nep)` per le serie) validata sull'Equilibrio (`equilibrio.py`):**
-Aver rifiutato il lift grezzo (gonfiato dal leakage delle serie in corso) e aver costruito `equilibrio.py` ha risolto un difetto reale di prodotto: abbattere dal **67% al 31%** il peso delle serie su un utente prevalentemente cinefilo (e dal 20,8% al 5,2% il peso del singolo titolo su storia corta) impedisce a una singola serie lunga di monopolizzare il seme.
-
-
-2. **La scoperta che *Un passo fuori* (38%) batte *Il tuo mondo* (21%):**
-È il risultato più importante per il feed di YACA. Dentro la micro-bolla primaria dell'utente (mediana 11 titoli) l'utente ha già visto i capolavori principali; le scoperte vere che guarderà nel futuro si trovano nelle bolle immediatamente adiacenti sulla mappa 6+2.
-
-
-3. **La Libreria come intenzione e non come visione (`motore.py`, righe 201–203):**
-Usare i titoli con `tipo == "library"` come **semi positivi per la diffusione**, ma **non inserirli nel set `visti` da nascondere in uscita**, è una finezza di prodotto giustissima.
-
-
-4. **Il contratto di versione dentro `src/data/bolle.json` (`esporta`):**
-Far viaggiare `alpha`, `iterazioni`, `peso_film_max`, `peso_serie`, `fattore_tipo` e le impronte `sha256` direttamente dentro `bolle.json` garantisce che `Bolle.js` in Node.js non possa mai disallinearsi da `graph/parametri.py`.
+* **Soluzione:** o applichi sempre la campana attorno a `c` anche a `slider["canone"] == 0`, oppure moltiplichi l'esponente per `abs(slider["canone"])`: `out = out * np.exp(-P.ASSE_PESO * abs(slider["canone"]) * np.abs(q - c))`.
 
 
 
----
+### 1.4 In `motore.py`, `self.INTRA` ignora i 2 ponti `cross` (mentre `Bolle.js` li usa)
+
+* **Dove:** `graph/motore.py`, riga 66 (`self.INTRA = M["intra"]`).
 
 
-Sì. Avete già fatto il primo passo giusto estraendo `graph/camminata.py` e `graph/parametri.py`, ma leggendo il codice di `graph/` e `src/engines/bolle/Bolle.js` in `digest_5.txt` si vedono **sei refactor strutturali** che tagliano centinaia di righe duplicate, abbattono il tempo di avvio del motore da ~20 secondi a meno di 1 secondo e chiudono alla radice la classe di bug vista poco fa.
-
----
-
-### 1. Completare il lavoro di `camminata.py` dentro gli arbitri (`graph/measure/*.py`)
-
-Avete creato `graph/camminata.py` proprio perché la diffusione era riscritta in dodici posti. Tuttavia, se guardi gli 8 arbitri della diffusione (`alfa.py`, `cache.py`, `freddo.py`, `lettura.py`, `liste.py`, `pesi.py`, `ricetta.py`, `soglia.py`), **hanno sostituito solo `pota = _cam.pota**`, ma continuano tutti a ridefinire localmente:
-
-* la costruzione della matrice riga-stocastica (`deg = np.asarray(Wp.sum(1))... P = sp.diags(1.0 / deg) @ Wp`) invece di chiamare `_cam.transizione(Wp)`;
+* **Cosa succede:** mentre in `pipeline.py:esporta` hai unito correttamente l'intera matrice sparsa `W` (che include i 6 archi `intra` e i 2 ponti `cross`) dentro `bolle[b]["P"]` per `Bolle.js`, `motore.py` continua a leggere solo `M["intra"]` e ignora `M["cross"]`. Quindi in Python `un_passo_fuori` e il campo `vicini` dei mondi non attraversano mai il ponte cross-medium.
 
 
-* una propria funzione `def ppr(...)` o `def diffondi(...)` invece di chiamare `_cam.diffondi(...)`;
-
-
-* una propria funzione `def pesi_spec(...)` invece di chiamare `_cam.pesi_semi(...)`.
+* **Soluzione:** in `motore.py:66`, unisci `M["intra"]` e `M["cross"]` (o leggi direttamente le righe di `W` da `mappa-finale-6-2.npz`).
 
 
 
-**Refactor:** Fai usare a tutti gli arbitri `_cam.transizione`, `_cam.pesi_semi` e `_cam.diffondi`. Elimini ~200 righe duplicate e hai la garanzia matematica che ogni arbitro stia misurando esattamente il motore e non una sua variante locale.
+### 1.5 In `collocator.py:colloca()`, se tutti i coseni nel filtro sono `0.0`, `argmax` restituisce la bolla `0` invece di `None`
 
----
-
-### 2. Unificare `storia(u)` / `da_trakt(u)` in un'unica funzione (eliminando 10 copie)
-
-La lettura dei JSON degli utenti Trakt (`.cache/trakt/users/{movie,show}-{u}.json`) è scritta **10 volte** in 10 file diversi (`motore.py`, `alfa.py`, `cache.py`, `equilibrio.py`, `freddo.py`, `lettura.py`, `liste.py`, `pesi.py`, `ricetta.py`, `soglia.py`), e quasi mai nello stesso modo:
-
-* in `motore.py:da_trakt` non legge la data e concatena tutti i film prima di tutte le serie (causando il bug dello split in `intero.py`);
+* **Dove:** `graph/collocator.py`, righe 201–213.
 
 
-* in `cache.py`, `freddo.py` e `ricetta.py` ordina con `np.argsort(-np.array(eta))` (dal più vecchio al più recente);
+* **Cosa succede:** se un titolo nuovo ha token presenti in `vocab`, ma nessuno di quei token compare nelle bolle compatibili per voti (`ok`), `cos` su quelle bolle vale `0.0`. `np.argmax(cos_f)` restituisce il primo indice `j` che ha valore `0.0` (artefatto dell'ordine di indice) e nella regola di medium `0.0 <= 0.0 * (1 + margine)` è `True`, quindi restituisce una bolla arbitraria con confidenza `0.0`.
 
 
-* in `pesi.py` ordina al contrario con `np.argsort(eta)` (dal più recente al più vecchio);
-
-
-* in 7 file chiama `pd.Timestamp.now(tz="UTC") - pd.Timestamp(...)` **dentro il ciclo Python per ogni singolo film di ogni singolo utente**, che è lentissimo.
+* **Soluzione:** subito dopo `j = int(np.argmax(cos_f))`, se `cos[j] <= 0.0` restituisci `None, 0.0, len(tok), len(tok) - n_dentro`.
 
 
 
-**Refactor:** Metti una sola funzione `storia_trakt(u, ordine="cronologico")` in `canon.py` (usando il confronto diretto o vettorizzato sulle stringhe ISO `last_watched_at`) e richiamala ovunque. Un bug di ordinamento temporale non potrà mai più verificarsi.
+### 1.6 In `pipeline.py:piano()`, il DAG non vede se un file di uscita manca del tutto e non propaga a valle se il file intermedio non è ancora su disco
 
----
-
-### 3. Eliminare le 12 riletture dei Parquet TMDB e i cicli `d.iloc[k]` (avvio di `Motore` da 20s a <1s)
-
-In `graph/motore.py` il commento dice `Il costo e' il caricamento (~20 s), non la risposta`. Ma quel caricamento non dura 20 secondi per colpa della matrice sparsa: dura 20 secondi perché in `Motore.__init__` (righe 74–124) leggi due volte `movies.parquet` e `tv.parquet` iterando riga per riga in Python con **`for k in range(len(d)): riga = d.iloc[k]`** su oltre 117.000 righe!
-Lo stesso identico codice di caricamento di `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP` e `TIT` dai Parquet è copiato in **12 file diversi** (`bubbles.py`, `collocator.py`, `motore.py`, `pipeline.py`, `cache.py`, `cataloghi.py`, `equilibrio.py`, `freddo.py`, `lettura.py`, `liste.py`, `pesi.py`, `ricetta.py`).
-
-**Refactor:**
-
-1. Crea un unico piccolo artefatto `graph/data/metadati-canone.npz` (generato da uno step o cachato da `canon.py`) che contiene i vettori già pronti e allineati alle $N = 66.259$ righe del canone: `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP` e `TIT`.
+* **Dove:** `graph/pipeline.py`, righe 450–497.
 
 
-2. Caricare un `.npz` di 7 array di lunghezza 66.259 richiede **15 millisecondi** (invece di 20 secondi di `d.iloc[k]`) e spazza via 300 righe di parsing Pandas/JSON sparse per tutto il modulo.
+* **Cosa succede:**
+1. Alla riga 479 controlla `for nome, h in prima.get("uscite", {}).items():`. Ma se un pattern in `p["scrive"]` non ha prodotto alcun file su disco (o `prima["uscite"]` era vuoto quando si è lanciato `--registra`), `piano()` non controlla `for pat in p["scrive"]: if not _file_di(pat): motivi.append(...)`!
+
+
+2. Alle righe 491–492, la propagazione a valle calcola `suoi = {f.name for pat in q["scrive"] for f in _file_di(pat)}` cercando i file **già esistenti su disco**. Se un file intermedio è stato cancellato e `q` deve rigenerarlo, `_file_di(pat)` restituisce `[]`, `suoi & letti` è vuoto, e lo step a valle `p` non sa che `q` riscriverà il suo input!
+
+
+
+
+* **Soluzione:**
+1. Aggiungi `for pat in p["scrive"]: if not _file_di(pat): motivi.append(f"uscita mancante: {pat}")`.
+
+
+2. Nella propagazione (riga 491), unisci ai file su disco anche i pattern dichiarati: `(suoi | set(q["scrive"])) & (letti | set(p["legge"]))`.
+
+
+
+
+
+### 1.7 In `canon.py:metadati()`, un carattere `\r` in un titolo TMDB sfalsa l'allineamento di `titoli-canone.txt`
+
+* **Dove:** `graph/canon.py`, righe 530 e 576.
+
+
+* **Cosa succede:** alla riga 576 scrivi `str(t).replace("\n", " ")`, ma non rimuovi `\r`. Quando `pt.read_text(encoding="utf-8")` rilegge il file in modalità universal newlines di Python, qualsiasi `\r` rimasto in una stringa viene convertito in `\n`, e `.split("\n")` alla riga 530 produce un array più lungo di `N`, facendo slittare tutti i titoli successivi di una riga senza lanciare eccezioni!
+
+
+* **Soluzione:** usa `.replace("\r", " ").replace("\n", " ")` in scrittura e aggiungi `assert len(d["TIT"]) == N` in lettura.
+
+
+
+### 1.8 In `steps/03_divisione_voti.py`, il pezzo principale (`part == 0`) è ancora escluso dal calcolo dello spread finale
+
+* **Dove:** `graph/steps/03_divisione_voti.py`, riga 125 (`digest_7.txt`).
+
+
+* **Cosa succede:** alla riga 115 assegni `NUOVA[m_[part == 0]] = b` (il primo sottocluster conserva l'ID `b` del genitore), ma alla riga 125 calcoli `pezzi = [SP2[p] for p in np.setdiff1d(np.unique(NUOVA[MEMBRI[b]]), [b])]`, escludendo proprio `b` dal verdetto sullo spread.
+
+
+* **Soluzione:** togli `np.setdiff1d(..., [b])` e usa `[SP2[p] for p in np.unique(NUOVA[MEMBRI[b]])]`.
 
 
 
 ---
 
-### 4. Togliere l'I/O globale a tempo di `import` da `graph/bubbles.py`
+## 2. Ottimizzazioni (dove tagliare tempi di avvio e latenza delle chiamate)
 
-Alla riga 31 di `graph/bubbles.py` c'è un'esecuzione globale non protetta:
+1. **Tagliare i restanti 2,0 secondi di avvio di `Motore()` a 0,08 secondi salvando `transizione-top16.npz`:**
+Oggi `Motore.__init__` (`graph/motore.py:58–62`) e tutti gli arbitri caricano a ogni avvio `bolle-eterogeneo-V10-p1.0-triangolo.npz` (6,6M archi), fanno `W + W.T` (13,2M archi) ed eseguono `C.pota()` (un ciclo Python `for i in range(66259)` con `argpartition`).
+Poiché il triangolo e `P.POTA_PER_RIGA = 16` sono fissi, salva in `graph/data/transizione-top16.npz` la matrice `Tr` già potata e normalizzata (solo 1,52M archi, accompagnata dall'hash del triangolo e da `POTA_PER_RIGA`). Caricarla direttamente richiede **80 ms** invece di 2,0 s.
+
+
+2. **Tagliare la latenza di `Motore.lista()` da 147 ms a ~25 ms eliminando le scansioni `self.MEM == b`:**
+Dentro `graph/motore.py`:
+* Alla riga 65, `self.MEMBRI = [np.where(self.MEM == b)[0] for b in range(self.NB)]` esegue 3.497 scansioni dell'array `self.MEM` (231 milioni di confronti booleani). Sostituiscilo con il pattern $O(N \log N)$ che usi già in `collocator.py:105`: `ordine = np.argsort(self.MEM, kind="stable"); confini = np.searchsorted(self.MEM[ordine], np.arange(self.NB + 1))`.
+
+
+* Alle righe 122–126 (`_quota_per_mondo`), 151 (`scegli_mondi`) e 232 (`lista`), il codice ricalcola a ogni chiamata `B.IS_TV[self.MEM == cb].mean()` e `maschera[m].mean()`. Precalcola una volta sola in `__init__` i tre vettori statici con `np.bincount`:
+
 
 ```python
-KEYS, ROW_OF, N, IS_TV = K.titoli()
+self.QUOTA_TV = np.bincount(self.MEM, weights=B.IS_TV, minlength=self.NB) / np.maximum(self.SZ, 1)
+self.QUOTA_COZY = np.bincount(self.MEM, weights=self.COZY, minlength=self.NB) / np.maximum(self.SZ, 1)
+self.QUOTA_IMP = np.bincount(self.MEM, weights=self.IMP, minlength=self.NB) / np.maximum(self.SZ, 1)
 
 ```
 
-Chiunque faccia `from graph import bubbles as B` scatena immediatamente la lettura da disco di `spazi-trakt.npz` e la costruzione di un dizionario di 66.259 stringhe. Inoltre, `motore.py`, `collocator.py`, `pipeline.py` e tutti gli arbitri in `graph/measure/` importano `bubbles as B` **esclusivamente per leggere le costanti `B.ROW_OF`, `B.KEYS`, `B.N`, `B.IS_TV**`, anche quando non usano nessuna funzione di `bubbles.py`!
 
-**Refactor:** `titoli()` vive già in `graph/canon.py`. Aggiungi `@functools.lru_cache(maxsize=1)` a `canon.titoli()` in `canon.py` ed esponi lì l'accesso ai 4 array, togliendo l'esecuzione a tempo di import da `bubbles.py`.
-
----
-
-### 5. Allineare `src/engines/bolle/Bolle.js` a `graph/motore.py` (portare `deduci`, `modula` e `scegli_mondi` in JS)
-
-Oggi c'è una frattura tra ciò che avete misurato in Python (`graph/motore.py`) e ciò che avete portato in JavaScript (`src/engines/bolle/Bolle.js`):
-
-* `motore.py` deduce il profilo (`canone`, `forma`, `freddo`), modula l'attivazione delle bolle con gli slider (`cozy`, `canone`), seleziona i mondi diversi per fascia/medium (`scegli_mondi` con `largo` e `lontano`) e scarta i mondi con meno di `MIN_TITOLI_MONDO` titoli non visti.
-
-
-* `Bolle.js` fa solo il PageRank piatto sulle bolle e restituisce `att.slice(0, quante)`, senza pesi sugli archi tra bolle, senza i 2 ponti cross-medium (`cross`), senza `deduci`, senza `modula` e senza `scegli_mondi`.
-
-
-
-**Refactor:** Tutta la logica di `deduci()`, `modula()` e `scegli_mondi()` in `motore.py` lavora già **a livello di bolla** (vettori di 3.497 elementi), non a livello di titolo!
-Se in `pipeline.py:esporta` aggiungi a ogni bolla di `src/data/bolle.json` le tre quote pre-calcolate (`quota_serie`, `quota_cozy`, `quota_imp`) e i pesi di transizione dei vicini `6+2` (inclusi i `cross`), puoi copiare pari passo `deduci`, `modula` e `scegli_mondi` dentro `Bolle.js` in 40 righe di JavaScript. A quel punto `Bolle.js` avrà il 100% delle capacità di scelta dei mondi di `motore.py`.
-
----
-
-### 6. Ripulire `graph/pipeline.py` dai riferimenti morti a `.scratch/`
-
-In `graph/pipeline.py`, le funzioni `voti()` (righe 151–166), `pesanti()` (righe 169–189) e la tabella `ARTEFATTI` (righe 53–83) citano ancora nei messaggi di output i vecchi script `.scratch/eterogeneo/01-componente-trama.py`, `.scratch/eterogeneo/02-v10.py`, `.scratch/eterogeneo/11-subclustering-voti.py` e `.scratch/mappa-pesata/05c-salva-v3.py`, che nel frattempo sono stati estratti e rinominati dentro `graph/steps/` (`00_embedding_trame.py` .. `06_mappa.py`).
-
-**Refactor:** Aggiorna `pesanti()` e `ARTEFATTI` in `pipeline.py` perché puntino esclusivamente a `graph/steps/00_...` – `06_...`, e fai in modo che `python -m graph.pipeline voti` chiami direttamente la funzione di `graph/steps/03_divisione_voti.py` invece di stampare che il codice sta in `.scratch/`.
-
----
-
-Oltre alla deduplicazione del codice vista prima, se guardiamo `graph/` e `src/engines/bolle/` con l'obiettivo di renderli **comprensibili a colpo d'occhio, modificabili da un solo punto e solidi nel tempo**, ci sono **sei interventi architetturali** che farebbero fare il salto di qualità definitivo al modulo.
-
-Li divido esattamente lungo le tre dimensioni che hai chiesto.
-
----
-
-## 1. Per renderla COMPRENSIBILE: togliere l'archeologia dei ticket
-
-### A. Rinominare gli artefatti da «numeri di ticket» a «nomi di dominio» (Registro unico in `canon.py`)
-
-Oggi in `graph/data/` e nel codice convivono nomi che sono fossili della storia dei ticket di `.scratch/`:
-
-* `04-tfidf.npz` e `04-centroidi.npz` (che in realtà sono lo spazio **V1 Macro** per scegliere la bolla) contro `05-tfidf.npz` e `05-centroidi.npz` (che sono lo spazio **V3 Micro** per scegliere i vicini);
-
-
-* `bolle-nitrile-KW.npz` (che viene dall'effort `bolle-nitrile`) accanto a `nuovo-TV.npz` (che viene da `ml-collaborativo`) e a `eterogeneo-TRAMA.npz` (che viene da `eterogeneo`);
-
-
-* `04-trama-qwen3b.npy` accanto a `bolle-eterogeneo-V10-p1.0-r200.npy` e `bolle-eterogeneo-subvoti.npy`.
-
-
-
-Tra due mesi nessuno ricorderà perché `04` è macro e `05` è micro.
-
-* **Cosa fare:** Crea in `canon.py` un dizionario costante `ARTEFATTI` (o rinomina i file in `graph/data/`) con nomi parlanti di dominio:
-* `comp-KW.npz`, `comp-CAST.npz`, `comp-DIR.npz`, `comp-PROD.npz`, `comp-COLL.npz`, `comp-TV.npz`, `comp-LIST.npz`, `comp-TRAMA.npz`;
-
-
-* `grafo-miscela.npz` (il triangolo), `partizione-base.npy`, `partizione-finale.npy`, `mappa-bolle.npz`;
-
-
-* `spazio-macro-v1.npz` e `spazio-micro-v3.npz`.
-Chiunque apra `graph/data/` capisce l'intera pipeline leggendo `ls`.
+Il costo di `modula()` e `scegli_mondi()` scende a zero.
 
 
 
 
-
-### B. Rendere le bolle "auto-descrittive" dentro `bolle.json` e `motore.py` (Etichetta + Attribuzione del seme)
-
-Oggi una bolla in `bolle.json` e in `motore.py` è solo un numero opaco: `mondo 1084 · acceso 4.3% · 25 titoli · voti mediani 636`. Per capire *che cos'è* il mondo `1084` e *perché* si è acceso per quell'utente, devi incrociare i parquet o leggere i titoli uno a uno. In `bolle-esempi.md`, invece, avevi stampato i **top token del centroide V3** (`ge:thriller · kw:psychological thriller · di:david fincher`) e i **3 titoli più votati**: quella riga rendeva ogni bolla immediatamente leggibile.
-
-* **Cosa fare:**
-1. In `pipeline.py:esporta`, aggiungi a ogni bolla di `bolle.json` due campi leggerissimi (~180 KB in tutto su 3.497 bolle): `"termini": ["ge:thriller", "kw:psychological thriller", ...]` (i 5 token V3 più forti del centroide) e `"esempi": ["Inception", "Fight Club", "Seven"]` (i 3 titoli più votati).
-
-
-2. In `motore.py` e `Bolle.js`, per ogni mondo acceso restituisci anche `"da_semi": ["movie:603", ...]` (i 2 titoli della storia dell'utente che hanno versato più massa in quella bolla).
-Così ogni suggerimento diventa **spiegabile** all'istante (*"Mondo 820 [thriller psicologico, Fincher] acceso perché hai amato Se7en e Gone Girl"*).
-
-
+3. **Usare `K.metadati()` dentro `pipeline.py:esporta`, `collocator.py:_mediane_voti` e `motore.py:carica_titoli`:**
+Quei tre punti rileggono ancora `movies.parquet` e `tv.parquet` con cicli Python su 117.000 righe per estrarre `VOT`, `NEP` e `TIT`, che sono già pronti e vettorizzati in `K.metadati()`.
 
 
 
 ---
 
-## 2. Per renderla FACILMENTE MODIFICABILE: un solo posto per parametri e step
+## 3. Semplificazioni e Refactor (il rapporto 4.622 righe codice vs 4.040 righe arbitri)
 
-### C. Eliminare i parametri cablati dentro `steps/*.py` e `collocator.py` (unificare `RICETTA` e `parametri.py`)
+Hai notato che gli arbitri (`4.040` righe) sono grandi quasi quanto il sistema che misurano (`4.622` righe). Guardando `graph/measure/*.py`, circa **1.400 di quelle 4.040 righe non sono logica di misura, ma codice infrastrutturale copiato e incollato** prima che esistessero `canon.storia_trakt`, `canon.metadati` e `camminata.transizione`:
 
-Oggi avete `graph/parametri.py` (che governa la camminata e le liste) e il dizionario `RICETTA` in `graph/pipeline.py` (che descrive la costruzione del grafo). Ma **`RICETTA` in `pipeline.py` è solo un testo descrittivo**: gli script che costruiscono davvero gli artefatti hanno ancora tutti i numeri cablati al loro interno:
-
-* `01_componente_trama.py` cabla `TOPK = 30`, `SOGLIA = 0.30`;
-
-
-* `02_partizione.py` cabla `BASE = {"CF": 1, ..., "COLL": 3, "LIST": 1}`, `beta = 0.25`, `alpha0 = 0.1`, `min_sim_kw = 0.12`, `min_sim_cast = 0.02`, `quanti_nucleo = 4`;
+1. **Sostituire le 8 copie locali di `def storia(u):` e i caricamenti manuali di `NEP`/`VOT` negli arbitri:**
+In `alfa.py`, `cache.py`, `equilibrio.py`, `freddo.py`, `lettura.py`, `liste.py`, `pesi.py`, `ricetta.py` e `soglia.py` è rimasta in ciascun file la vecchia `def storia(u):` (25 righe per file che aprono i JSON Trakt e chiamano `pd.Timestamp` dentro il ciclo) e il caricamento manuale di `tv.parquet` per `NEP` (20 righe per file). Sostituendoli con `K.storia_trakt(u)` e `K.metadati()["NEP"]`, tagli ~450 righe duplicate e rendi tutti gli arbitri 5× più veloci.
 
 
-* `03_divisione_voti.py` cabla `SPREAD_MIN = 10.0`, `MIN_MEMBRI = 15`, `RISOLUZIONI = (0.05, 0.1, 0.2, 0.4, 0.8)`;
+2. **Separare gli arbitri vivi dagli arbitri storici V7/V8:**
+In `graph/measure/` ci sono 6 file (`banco.py`, `loo_esatto.py`, `voto_diretto.py`, `geometria.py`, `coerenza.py`, `sim_trama.py`) che puntano ancora in modo cablato a `bolle-nitrile-V8.npy`, `bolle-nitrile-V7-triangolo.npz` o `ML / "06c-voto.npz"`, e `banco.py` fa `import colloca as C` (un modulo che non esiste in `graph/`, esiste solo in `.scratch/inserimento/`). Spostarli in `graph/measure/legacy/` (o allinearli a `PARTIZIONE`) chiarisce subito quali arbitri verificano il sistema attuale e quali documentano il passato.
 
 
-* `04_centroidi.py` e `collocator.py` cablano separatamente `DF_MIN = 3`, `TETTO = 20.0`, `PESI_TIPO = {"ge:": 1.5, "rt:": 1.5, "co:": 0.4, "ca:": 0.4, "di:": 0.8}`, `FATTORE_VOTI = 10.0`, `MARGINE = 1.0`.
+3. **Allineare la formula dell'asse in `ricetta.py` a quella di `motore.py`:**
+In `graph/measure/ricetta.py` (riga 158), `att_con_asse` usa ancora la vecchia formula lineare `att * (1.0 + 0.5 * (quota - 0.5))` invece dell'esponenziale `att * np.exp(P.ASSE_PESO * (quota_cozy - quota_imp))` di `motore.py:131`, e per la fascia (righe 131–133) ordina ancora brutalmente `o.sort(key=lambda b: VOTMED[b])` invece di chiamare `motore.modula()`. Fai chiamare a `ricetta.py` direttamente `Motore.modula()`!
 
 
-
-Se domani cambi un peso in `PESI_TIPO` dentro `collocator.py` senza cambiarlo in `04_centroidi.py` (o cambi un peso dei componenti in `RICETTA`), i file non sono più sincronizzati.
-
-* **Cosa fare:** Sposta **tutti** i parametri di costruzione (quelli oggi descritti in `RICETTA` e cablati in `steps/*.py` e `collocator.py`) dentro `graph/parametri.py`. `pipeline.py:ricetta` stamperà direttamente `parametri.py`, e cambiare un parametro in `parametri.py` modificherà realmente il comportamento degli step di build.
-
-
-
-### D. Trasformare `graph/steps/*.py` da script top-level a funzioni chiamabili (e `pesanti` in un vero DAG)
-
-Se apri `graph/steps/00_embedding_trame.py`, `01_componente_trama.py`, `02_partizione.py`, `03_divisione_voti.py` e `04_centroidi.py`, tutto il codice è scritto a livello globale del modulo, fuori da qualsiasi funzione `def`. Non puoi importarli da `pipeline.py` né testarli su un grafo piccolo senza eseguire l'intero calcolo su 66.259 titoli.
-Inoltre, in `pipeline.py`, `pesanti` stampa solo un promemoria testuale di comandi da lanciare a mano.
-
-* **Cosa fare:**
-1. Incapsula ogni file in `graph/steps/` dentro una funzione `esegui(dati_dir=K.DATA, params=P)`.
-
-
-2. In `pipeline.py`, definisci la lista degli step come un piccolo DAG dichiarativo: per ogni step indichi `(nome, funzione, file_input, file_output, parametri_usati)`.
-
-
-3. Aggiungi un comando `python -m graph.pipeline build`: scorre gli step in ordine, controlla se gli hash degli input o dei `parametri_usati` sono cambiati rispetto all'ultima esecuzione (salvati in `graph/data/manifest-build.json`), e **riesegue automaticamente solo gli step a valle di ciò che hai modificato** (esattamente come fa `make`).
-Se cambi `SPREAD_MIN` da `10` a `12`, `pipeline build` salta gli step `00`, `01` e `02` (risparmiando 30 minuti) e rilancia da solo `03` (8 s), `04/05` (20 s), `06` e `esporta`!
-
-
+4. **Spostare i 4 pesi `PESO_TIPO_FATTORI` da `camminata.py` a `parametri.py`:**
+In `graph/parametri.py` (riga 60), `PESO_TIPO` è salvato come stringa descrittiva `"loved 3 · liked 2 · library 1,5 · watched 1"`, mentre il dizionario vero `PESO_TIPO_FATTORI = {"loved": 3.0, ...}` vive cablato in `graph/camminata.py:39`. Se qualcuno cambia `PESO_TIPO_FATTORI` in `camminata.py`, `parametri.impronta()` **non cambia**! Metti direttamente il dizionario `{"loved": 3.0, "liked": 2.0, "library": 1.5, "watched": 1.0}` come valore di `PESO_TIPO` dentro `SCHEDA` in `parametri.py` (esattamente come hai fatto per `PESI_TOKEN` alla riga 243).
 
 
 
 ---
 
-## 3. Per renderla SOLIDA: test veloci su grafo giocattolo e parità Python/JS
+## 4. I contratti mancanti da aggiungere a `graph/canon.py`
 
-### E. Creare una "Micro-Fixture" (100 titoli, 5 bolle) e una suite `pytest` da 3 secondi
+I contratti attuali in `canon.py` coprono il pareggio di `argsort`, il verso, il LOO, l'allineamento di `idf`/`vocab` e l'hash della partizione. Per blindare i punti emersi sopra, ti consiglio di aggiungere questi **quattro contratti**:
 
-Nel §6.7 di `handoff-senior-6.md` hai evidenziato il limite principale per la manutenzione futura: *"Il modulo non ha una suite di test: i contratti sono assert a runtime, e i 21 arbitri misurano, non verificano"*. Il motivo per cui non avete scritto test unitari è che far girare `bubbles.py` o `motore.py` sul grafo vero richiede 422 MB di artefatti e minuti di calcolo.
-
-* **Cosa fare:** Crea uno scriptino che estrae una volta sola dai vostri dati un **micro-canone di 100 titoli** (es. 20 film di *Star Wars/Star Trek*, 20 anime *Seinen*, 20 film di *Fincher/Nolan*, 20 *K-drama*, 20 *Spaghetti Western*) e lo salva in `tests/fixtures/micro_graph/` (~500 KB).
-Con i 100 titoli della micro-fixture puoi scrivere **un solo file `tests/test_graph_pipeline.py**` che gira in **2 secondi** e verifica:
-
-
-1. che `bubbles.py` costruisca la miscela, faccia la chiusura triangolare, giri Leiden e poti al nucleo senza crash;
+1. **`assert_stocastica(P_bolle, nome="P")` (Contratto di conservazione della massa sulla mappa esportata):**
+Verifica su `bolle.json` (e su `Tr`) che:
+* tutti i pesi di transizione siano $\ge 0$ e finiti;
 
 
-2. che `03_divisione_voti` e `04_centroidi` producano artefatti con impronte `sha256` valide;
+* per ogni bolla non isolata, $\vert{}\sum_{(d, p) \in P[b]} p - 1{,}0\vert{} \le 10^{-5}$ (avrebbe intercettato subito la deriva `4,2e-5` causata da `round(..., 4)` in `esporta`);
 
 
-3. che `collocator.py` metta *Verity* o *Deadpool* nella bolla giusta e scatti con `AssertionError` se si altera l'hash della partizione;
-
-
-4. che i 6 contratti di `canon.py` (`ranghi`, `assert_partizione`, `assert_allineamento_spazi`, `assert_loo_esatto`) si accendano sui casi corrotti.
+* la mediana dell'auto-anello $P_{bb}$ sia $> 0{,}10$ (impedisce che una rigenerazione della mappa perda per errore la diagonale / ritenzione interna della bolla).
 
 
 
 
-
-### F. Test automatico di Parità Python ↔ JavaScript (`motore.py` vs `Bolle.js`)
-
-Avete due motori che devono parlare la stessa lingua: `graph/motore.py` (usato in Python dagli arbitri per misurare e decidere i parametri) e `src/engines/bolle/Bolle.js` (usato in Node.js dal prodotto per servire Stremio).
-Il rischio più insidioso in assoluto, tra sei mesi, è che qualcuno modifichi la formula dei pesi o della modulazione in `motore.py`, la misuri con gli arbitri, veda che migliora, e **dimentichi di aggiornare `Bolle.js**` (o viceversa).
-
-* **Cosa fare:** Aggiungi un test Jest in `tests/bolleParity.test.js` (nella suite `npm test` che avete già per il backend) che:
+2. **`assert_split_temporale(eta_semi, eta_oro, nome="split")` (Contratto anti-inversione passato/futuro):**
+Verifica che `eta_semi.min() >= eta_oro.max()` (o `np.median(eta_semi) > np.median(eta_oro)` dove `eta` è in giorni da oggi). Chiude per sempre la classe di bug che aveva colpito `pesi.py` (tempo invertito) e `intero.py` (taglio per medium invece che per data).
 
 
-1. prende 5 storie utente fisse (una solo film, una solo serie, una mista con `loved`/`library`, una fredda con 2 titoli);
+3. **`assert_Lunghezza_Canone(arr, nome)` dentro `metadati()` e `titoli()`:**
+Verifica che ogni array restituito da `K.metadati()` (`TIT`, `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP`) abbia `len(arr) == N` e nessun `NaN`.
 
 
-2. invoca `Bolle.portafoglio(storia, slider)` in Node.js e confronta l'output con il JSON generato da `python -m graph.motore` (o con uno snapshot golden generato da `esporta`);
+4. **`assert_monotonia_lista(lista_titoli, nome)` in `motore.py:lista()`:**
+Prima di restituire `liste` da `Motore.lista()`, verifica che nelle liste ordinate per attivazione (`il_tuo_mondo`, `uscite_nuove`, `mondo_b`) la sequenza dei punteggi `[score for _, score in li["titoli"]]` sia monotona non crescente (`all(s[i] >= s[i+1] for i in range(len(s)-1))`). Questo contratto avrebbe fatto scattare immediatamente un `AssertionError` su `uscite_nuove` (che usciva ordinata per indice di catalogo invece che per `r[x]`) e su `un_passo_fuori` (che concatenava 3 bolle senza riordinare)!
 
 
-3. verifica che i pesi dei semi (`Bolle.peso`) e l'ordine delle bolle attivate coincidano al 100% tra Python e JavaScript.
-
-
-
-
-
----
