@@ -98,15 +98,14 @@ describe('parità Python <-> JavaScript', () => {
             console.log(`    ${storia.nome.padEnd(28)} errore normalizzato ${peggio.toExponential(1)}` +
                 ` sulla bolla ${dove} (${valMio.toExponential(4)} contro ${valSuo.toExponential(4)})` +
                 ` · mondi con attivazione ${sua.length}`);
-            // TOLLERANZA: MISURATA fino a **4,2e-5** (il caso peggiore, su una storia di soli film, sulla
-            // bolla 1590). **La causa non e' stata isolata**, e va detto invece di incolpare il floating
-            // point: i pesi dei semi sono bit-identici (il test sopra lo dimostra), l'ordine di somma dei
-            // semi e' lo stesso, e la diffusione e' una contrazione (alpha 0,6), quindi due ordini di somma
-            // diversi nella matvec non dovrebbero bastare a spiegare 1e-5. Quello che SI sa: i primi
-            // DIECI MONDI escono nello stesso ordine, e l'errore e' cinque ordini di grandezza sotto
-            // qualunque cosa produca una formula cambiata (che sposta i valori di punti percentuali).
-            // La soglia sta a 1e-3: prende la deriva vera, lascia passare questa.
-            expect(peggio).toBeLessThan(1e-3);
+            // TOLLERANZA: MISURATA **1,1e-8** dopo che la causa è stata chiusa. Prima era 4,2e-5 e la
+            // causa non era isolata: l'artefatto arrotondava i pesi a 4 decimali SENZA rinormalizzare
+            // (le righe si scostavano da 1 fino a 7e-4) e `pipeline.parita` salvava `r` SENZA dividerlo
+            // per `r.sum()`, mentre `Bolle.js` lo divide. Due errori che si sommavano. Adesso l'export
+            // rinormalizza, `parita` normalizza, e la soglia può stare a 1e-6 con novanta volte di
+            // margine. Quello che questo test deve prendere non è il rumore: è una formula cambiata da
+            // una parte sola.
+            expect(peggio).toBeLessThan(1e-6);
         }
         console.log('  ^ le due implementazioni della stessa diffusione: scipy (Python) contro i cicli (JS)');
     });

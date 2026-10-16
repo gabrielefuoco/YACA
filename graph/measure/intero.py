@@ -48,6 +48,7 @@ def main():
     prec, cop, temp = [], [], []
     prec_t, jac_t = [], []
     per_tipo = {}
+    slot_tipo = {}
     ranghi = []
     n_mostrati = []
     usati = 0
@@ -66,6 +67,11 @@ def main():
         temp.append((time.time() - t) * 1000)
         mostrati = []
         for li in esito["liste"]:
+            # LE DUE METRICHE, e servono TUTTE E DUE. I colpi totali premiano le liste lunghe:
+            # `un_passo_fuori` ne aveva 26-30 contro i 10 delle altre, e il confronto «31% contro 20%»
+            # era fra liste di lunghezza diversa. Il rapporto per SLOT (colpi / titoli mostrati) e' il
+            # solo numero confrontabile — ed e' quello che dice quanto rende un posticino in classifica.
+            slot_tipo[li["tipo"]] = slot_tipo.get(li["tipo"], 0) + len(li["titoli"])
             for pos, (kk, _) in enumerate(li["titoli"]):
                 mostrati.append(kk)
                 if kk in oro:
@@ -111,8 +117,13 @@ def main():
         print(f"    -> {'i fattori di tipo NON spostano quasi niente' if np.median(jac_t) > 0.8 else 'i fattori di tipo spostano molto: la calibrazione conta'}")
     print(f"\n  DOVE STA IL FUTURO — titoli dell'oro trovati, per tipo di lista:")
     tot = sum(per_tipo.values()) or 1
+    print(f"    {'lista':<20} {'colpi':>6} {'quota':>6} {'slot':>6} {'PER SLOT':>9}")
     for nome, c in sorted(per_tipo.items(), key=lambda z: -z[1])[:8]:
-        print(f"    {nome:<20} {c:>5} ({100*c/tot:>4.0f}%)")
+        sl = slot_tipo.get(nome, 0)
+        print(f"    {nome:<20} {c:>6} ({100*c/tot:>4.0f}%) {sl:>6} "
+              f"{100*c/sl:>8.2f}%" if sl else f"    {nome:<20} {c:>6} ({100*c/tot:>4.0f}%)")
+    print("    ^ colpi = quanti titoli dell'oro ha trovato QUELLA lista · PER SLOT = quanti per titolo")
+    print("      mostrato. E' l'unico confronto onesto: le liste hanno capienze diverse.")
     if ranghi:
         r = np.array(ranghi)
         print(f"\n  IL RANGO DENTRO LA LISTA (0 = primo): mediana {int(np.median(r))} · "

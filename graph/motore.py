@@ -71,6 +71,20 @@ class Motore:
         self.MEMBRI = [np.where(self.MEM == b)[0] for b in range(self.NB)]
         M = np.load(K.A("mappa-finale-6-2.npz"), allow_pickle=True)
         self.INTRA = M["intra"]
+        # I VICINI VENGONO DALLA MAPPA PESATA, NON DALLA SOLA `intra`. `M["intra"]` ha i 6 archi
+        # intra-medium e basta: finche' si leggeva solo quella, `vicini` e `un_passo_fuori` **non
+        # attraversavano mai il confine fra film e serie** — mentre l'engine del prodotto, che diffonde
+        # su `P` (esportata dalla mappa intera, ponti compresi), lo attraversa. Due motori che dicono
+        # cose diverse sulla stessa mappa. L'ordine e' per PESO: i tre di `un_passo_fuori` sono i ponti
+        # piu' forti, non i primi tre per indice.
+        _W = sp.csr_matrix((M["grafo_data"], M["grafo_indices"], M["grafo_indptr"]),
+                           shape=(self.NB, self.NB)).tocsr()
+        self.VICINI = []
+        for b in range(self.NB):
+            riga = _W.getrow(b)
+            ordine = np.argsort(-riga.data)
+            self.VICINI.append(np.array([int(riga.indices[o]) for o in ordine
+                                         if int(riga.indices[o]) != b], np.int32))
         self.artefatto = K.sha_file("bolle-eterogeneo-subvoti.npy")
         # TUTTI I METADATI IN UN COLPO: `canon.metadati()` li costruisce una volta, vettorizzato, e li
         # salva in `graph/data/`. Qui prima c'erano DUE passate complete sui Parquet TMDB iterate riga per
@@ -143,7 +157,10 @@ class Motore:
             # e nessuno dei due estremi puo' premiare un mondo a zero voti (P.DELTA_FASCIA).
             q = np.log(np.maximum(self.VOTMED, 1.0))
             c = np.log(max(dedotto["canone"], 1.0)) + slider["canone"] * P.DELTA_FASCIA
-            out = out * np.exp(-P.ASSE_PESO * np.abs(q - c))
+            # IL FATTORE `abs(slider)` NON E' DECORATIVO: senza, a `canone = 0.0` non si applica niente e
+            # a `canone = 0.01` si applica la penalita' INTERA — un gradino dove l'utente si aspetta una
+            # curva. Il ramo `cozy` lo fa gia' cosi' (la `quota` e' moltiplicata per lo slider).
+            out = out * np.exp(-P.ASSE_PESO * np.abs(slider["canone"]) * np.abs(q - c))
         return out
 
     # ------------------------------------------------------------------ la selezione
@@ -225,10 +242,19 @@ class Motore:
                     tenuti.append(b)
             bolle = tenuti
         primo = bolle[0] if bolle else None
-        vicini = [int(x) for x in self.INTRA[primo] if x >= 0][:3] if primo is not None else []
+        vicini = [int(x) for x in self.VICINI[primo] if x >= 0][:3] if primo is not None else []
 
         def righe_titoli(bs, quanti=10):
-            return [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti)]
+            # «UN PASSO FUORI» E' UNA LISTA, NON TRE LISTE ATTACCATE. `titoli_di` prende `quanti` titoli
+            # DA OGNI bolla: con tre vicini faceva fino a 30 titoli, e senza riordinarli fra le bolle le
+            # prime dieci posizioni erano tutte del primo vicino. Due conseguenze misurate: la lista era
+            # grande il triplo delle altre (e il confronto «31% contro 20%» in `intero.py` confrontava
+            # successi TOTALI di liste di lunghezza diversa), e l'ordine era quello dei mondi, non
+            # dell'attivazione. Con una bolla sola non si tocca niente: li' `titoli_di` e' gia' ordinata.
+            fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti)]
+            if len(bs) > 1:
+                fuori = sorted(fuori, key=lambda t: -t[1])[:quanti]
+            return fuori
 
         liste = []
         liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": righe_titoli([primo])})
@@ -236,6 +262,10 @@ class Motore:
         # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
         nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
                  if int(self.MEM[x]) in set(bolle) and x not in visti]
+        # ORDINATE PRIMA DEL TAGLIO. `np.where(...)[0]` e' in ordine CRESCENTE DI RIGA DEL CANONE, e
+        # senza questo `nuove[:10]` prendeva i primi dieci per indice di catalogo mentre il tuple
+        # portava `float(r[x])`, dando l'illusione di un ordine per attivazione che non c'era.
+        nuove.sort(key=lambda x: (-float(r[x]), -float(self.VOT[x])))
         liste.append({"tipo": "uscite_nuove", "mondo": None,
                       "titoli": [(B.KEYS[x], float(r[x])) for x in nuove[:10]]})
         # la nicchia di qualita': non iper-popolare, ben votata, meglio se in liste di altri
@@ -255,7 +285,7 @@ class Motore:
                 "mondi": [{"bolla": int(b), "attivazione": float(att[b]), "titoli": int(self.SZ[b]),
                            "voti_mediani": float(self.VOTMED[b]),
                            "quota_serie": float(B.IS_TV[self.MEM == b].mean()),
-                           "vicini": [int(x) for x in self.INTRA[b] if x >= 0][:6]} for b in bolle],
+                           "vicini": [int(x) for x in self.VICINI[b][:6]]} for b in bolle],
                 "liste": liste}
 
 

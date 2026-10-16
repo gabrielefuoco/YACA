@@ -377,8 +377,15 @@ def esporta(args) -> int:
         # L'auto-anello e' il pezzo che mancava: senza, il 100% di (1-alpha)*r[b] esce dalla bolla,
         # mentre sui titoli il 47,8% della massa ci resta (i membri di una bolla sono densamente
         # connessi fra loro). Per i vicini «da navigare» basta scartare la voce con dest == b.
-        coppie = sorted(zip((int(x) for x in riga.indices), (round(float(x), 4) for x in riga.data)),
+        coppie = sorted(zip((int(x) for x in riga.indices), (float(x) for x in riga.data)),
                         key=lambda t: -t[1])
+        # SCARTARE GLI ZERI e RINORMALIZZARE DOPO L'ARROTONDAMENTO. Prima si arrotondava a 4 decimali
+        # senza rinormalizzare, e su una riga con ~15 archi la somma scendeva a 0,9993 (misurato:
+        # scarto fino a 7e-4) — e restavano nel JSON 24 pesi a ZERO, che sono archi che non esistono.
+        # Quella deriva era la causa del residuo di 4,2e-5 fra il motore Python e quello JavaScript.
+        coppie = [(d_, p_) for d_, p_ in coppie if p_ > 0.0]
+        _somma = sum(p_ for _, p_ in coppie)
+        coppie = [(d_, p_ / _somma) for d_, p_ in coppie] if _somma > 0 else []
         # il centroide NORMALIZZATO: la norma grezza dipende da quanti titoli ha la bolla e da quanto
         # sono lunghi i loro testi, e senza normalizzare i «termini piu' forti» sarebbero sempre quelli
         # delle bolle grandi.
@@ -509,6 +516,10 @@ def parita(args) -> int:
         r = meme.copy()
         for _ in range(int(v["iterazioni"])):
             r = v["alpha"] * meme + (1.0 - v["alpha"]) * (Q.T @ r)
+        # SI NORMALIZZA, come fa `Bolle.js` (`r[b] / somma`). Prima qui si salvava `r` senza dividere:
+        # era l'altra meta' del residuo di 4,2e-5 — il test di parita' confrontava un vettore
+        # normalizzato con uno no.
+        r = r / max(float(r.sum()), 1e-300)
         pura = [(int(b), float(x)) for b, x in enumerate(r) if x > 0]
         pura.sort(key=lambda t: -t[1])
         pura = pura[:30]
@@ -651,6 +662,11 @@ def piano(manifest=None, passo=PASSO):
         if prima is None:
             motivi.append("mai eseguito")
         else:
+            # UN'USCITA DICHIARATA E MAI PRODOTTA E' UN PROBLEMA, e prima non si vedeva: il ciclo qui
+            # sotto guarda solo le uscite che c'erano quando si e' registrato.
+            for pat in p["scrive"]:
+                if not _file_di(pat):
+                    motivi.append(f"uscita mai prodotta: {pat}")
             for nome, h in ora["ingressi"].items():
                 if nome not in prima["ingressi"]:
                     motivi.append(f"ingresso nuovo: {nome}")
@@ -671,10 +687,14 @@ def piano(manifest=None, passo=PASSO):
         for q in passo:
             if q["nome"] not in sporco or q["nome"] == p["nome"]:
                 continue
+            # I NOMI DELLE USCITE DI `q`: quelli su disco E quelli che il manifest aveva registrato.
+            # Il secondo insieme e' quello che conta quando un file e' stato CANCELLATO — senza,
+            # `_file_di` restituisce [] e il passo a valle non sa che il suo input sta per cambiare.
             suoi = {f.name for pat in q["scrive"] for f in _file_di(pat)}
+            suoi |= set(manifest.get(q["nome"], {}).get("stato", {}).get("uscite", {}))
             letti = {f.name for pat in p["legge"] for f in _file_di(pat)}
             if suoi & letti:
-                monte.append(f"a monte {q['nome']} riscrivera' {', '.join(sorted(suoi & letti))}")
+                monte.append(f"a monte {q['nome']} riscrivera' {', '.join(sorted(suoi & letti)[:4])}")
         motivi.extend(monte)
         fuori[p["nome"]] = {"da_fare": bool(motivi), "motivi": motivi, "tempo": p["tempo"]}
         if motivi:

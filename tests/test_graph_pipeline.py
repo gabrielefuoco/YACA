@@ -110,14 +110,17 @@ def bolle():
 
 
 def test_le_righe_di_transizione_sono_normalizzate(bolle):
-    """`P` è una riga stocastica: se non lo fosse, la diffusione del prodotto perderebbe massa."""
-    n = len(bolle["bolle"])
-    peggiori = []
-    for b, v in bolle["bolle"].items():
-        s = sum(w for _, w in v["P"])
-        peggiori.append(abs(s - 1.0))
-    # i pesi sono arrotondati a 4 decimali nell'artefatto: la somma può scostarsi di ~1e-4, non di più
-    assert max(peggiori) < 5e-3, f"riga peggiore: {max(peggiori)}"
+    """`P` è una riga stocastica: se non lo fosse, la diffusione del prodotto perderebbe massa.
+
+    QUESTA TOLLERANZA ERA 5e-3, e allargarla è stato il modo in cui un bug si è nascosto per un giorno.
+    L'export arrotondava a 4 decimali senza rinormalizzare e le righe si scostavano da 1 fino a 7e-4:
+    io ho visto lo scostamento e ho scelto una tolleranza che lo accogliesse. Adesso l'export
+    rinormalizza (e scarta i pesi nulli), quindi la tolleranza può essere quella vera.
+    """
+    peggiori = [abs(sum(w for _, w in v["P"]) - 1.0) for v in bolle["bolle"].values() if v["P"]]
+    assert peggiori and max(peggiori) < 1e-9, f"riga peggiore: {max(peggiori)}"
+    zeri = [(b, d) for b, v in bolle["bolle"].items() for d, w in v["P"] if w <= 0.0]
+    assert not zeri, f"{len(zeri)} archi con peso nullo: {zeri[:3]}"
 
 
 def test_i_membri_di_ogni_bolla_sono_il_suo_conteggio(bolle):

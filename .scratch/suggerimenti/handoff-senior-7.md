@@ -27,6 +27,16 @@ tira fuori le liste da mostrare.
    liste: il tuo mondo · un passo fuori · le uscite nuove · la nicchia di qualità
 ```
 
+> **CORREZIONE DEL 16/10/2026, dopo la revisione.** Questo documento diceva che *«il 31% del futuro
+> trovato sta in un passo fuori e il 20% in il tuo mondo»* e ne faceva una raccomandazione di prodotto.
+> **Era un artefatto**: `un_passo_fuori` conteneva 26-30 titoli contro i 10 delle altre liste, e il
+> confronto era fra totali di liste di lunghezza diversa. A parità di slot (dopo i ticket 19, 20 e 22):
+> `il_tuo_mondo` **12,81%**, `un_passo_fuori` **10,62%**, `uscite_nuove` 14,12% (ma solo 3,5 slot per
+> utente), `nicchia_di_qualita` **4,31%**. Quindi: **il tuo mondo è più denso del quartiere**, e la
+> lista debole è la *nicchia*, non il quartiere. La revisione che ha portato a questa correzione è quella
+> che stai leggendo — vale a dire che il revisore ha corretto l'autore su una conclusione che l'autore
+> aveva ripetuto tutto il giorno.
+
 **I numeri che contano**, coi loro metodi: coerenza intra-bolla **+0,942**; α misurato su 120 utenti;
 potatura top-16 (12% degli archi, 8,7× meno lavoro); motore intero **precisione 6,4%** contro un pavimento
 dello 0,08% (**76×**), su 100 utenti con taglio temporale; **31%** del futuro trovato sta in *un passo
