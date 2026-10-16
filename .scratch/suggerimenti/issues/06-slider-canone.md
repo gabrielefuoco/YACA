@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # Lo slider `canone` e' una retta verso l'estremo, non una fascia attorno al profilo
@@ -17,3 +17,7 @@ c_target))`. Lo slider **sposta la finestra**, non spinge all'estremo: `delta_fa
 ---
 
 IL FIX C'E', manca la ristampa di `ricetta.py`. La formula e' ora `exp(-ASSE_PESO * |q - c_target|)` con `c_target = c + slider * DELTA_FASCIA` (nuovo parametro, INVENTATO, 1,0 in spazio log = un fattore e): la finestra si SPOSTA invece di spingere all'estremo. Prima `abs(q-c)*sign(q-c)` era identico a `(q-c)`: una retta che con s<0 premiava i contenitori a 0 voti.
+
+---
+
+RISTAMPATO il 16/10/2026. `ricetta.py`: lo slider ora cambia tutto da entrambi i lati (Jaccard 0,00, contro 0,28 del cozy) e la copertura del futuro va a 0,3-0,7% contro il 2,4% della base — informazione, non verdetto, come dice il banco stesso. CRITERIO DI CHIUSURA VERIFICATO su tre utenti veri: `canone` -1 -> voti medi dei mondi tenuti 643 (drob70) e 453 (ahuitema) · 0 -> 507 e 78 · +1 -> 1.479 e 684. Monotono, e **zero mondi a zero voti in tutti i casi** — che e' precisamente quello che la vecchia formula faceva premiando `VOTMED = 0`.

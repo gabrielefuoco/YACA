@@ -15,7 +15,7 @@ Scelte canoniche, dichiarate:
   * la normalizzazione finale e' una sola, sulla somma.
 """
 import functools
-import glob, json, pathlib
+import glob, hashlib, json, pathlib
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -754,6 +754,88 @@ def recall_catalogo(R, gold_di, chiavi, filtro, NS=(10, 100, 500)):
 # ==================================================================  LE METRICHE NUOVE
 # Ticket 01 della mappa `grafo-servibile`. Si AGGIUNGONO a quelle sopra, non le sostituiscono:
 # la recall globale resta come numero di sanita', queste sono lo strumento di decisione.
+
+# ---------------------------------------------------------------- i metadati del canone
+def metadati():
+    """I METADATI DEL CANONE in array allineati alle righe, costruiti UNA VOLTA.
+
+    Perche' esiste: `Motore.__init__` impiegava **51 secondi** a partire, e non per la matrice sparsa —
+    per due passate complete sui Parquet TMDB (`movies.parquet` + `tv.parquet`, ~117.000 righe) iterate
+    con `for k in range(len(d)): riga = d.iloc[k]`, cioe' riga per riga in Python. Lo stesso parsing
+    stava in dodici file. Qui si fa **vettorizzato** (una `map` sull'indice) e il risultato si salva:
+    il caricamento diventa la lettura di un .npz.
+
+    Ritorna un dizionario con `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP` (array di N) e `TIT`
+    (le stringhe). `COZY` e `IMP` dipendono da DUE PARAMETRI (`ASSE_COZY_GENERI`,
+    `ASSE_IMPEGNATIVO_GENERI`): l'artefatto ne porta l'impronta, e se i parametri cambiano si ricostruisce
+    da solo invece di servire in silenzio una tassonomia vecchia. E' lo stesso patto di `bolle.json`.
+    """
+    from . import parametri as P
+    z, pt = DATA / "metadati-canone.npz", DATA / "titoli-canone.txt"
+    sha_generi = hashlib.sha256(f"{P.ASSE_COZY_GENERI}|{P.ASSE_IMPEGNATIVO_GENERI}"
+                                .encode()).hexdigest()[:16]
+    if z.exists() and pt.exists():
+        g = np.load(z)
+        if str(g["generi_sha"]) == sha_generi:
+            d = {k: g[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")}
+            # I titoli come TESTO, non come array `<U`: numpy usa 4 byte per carattere e una larghezza
+            # fissa pari al titolo piu' lungo (350 caratteri -> 41 MB). Un file di righe e' 2 MB e si
+            # legge in 40 ms.
+            d["TIT"] = np.array(pt.read_text(encoding="utf-8").split("\n"), dtype=object)
+            return d
+        print("  metadati-canone: i generi degli assi sono cambiati, ricostruisco", flush=True)
+    _, row_of, N, _ = titoli()
+    cozy = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
+    imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
+    d = {k: np.zeros(N, np.float64) for k in ("VOT", "VAVE", "POP", "ANNO", "NEP")}
+    d["NEP"] += 1.0                                   # 1 = un film: il denominatore del peso serie
+    d["COZY"] = np.zeros(N, bool)
+    d["IMP"] = np.zeros(N, bool)
+    titoli_str = np.array([""] * N, dtype=object)
+    for tipo, f, col, dcol, ecol in (("movie", "movies.parquet", "title", "release_date", None),
+                                     ("tv", "tv.parquet", "name", "first_air_date",
+                                      "number_of_episodes")):
+        p = ROOT / ".cache" / "tmdb" / f
+        cols = ["id", "vote_count", "vote_average", "popularity", col, dcol, "genres"]
+        if ecol:
+            cols.append(ecol)
+        df = pd.read_parquet(p, columns=cols)
+        # DA CHIAVE A RIGA, VETTORIZZATO: una sola espressione al posto di un ciclo Python per riga.
+        righe = np.array([row_of.get(f"{tipo}:{int(i)}", -1) if pd.notna(i) else -1
+                          for i in df["id"]], dtype=np.int64)
+        ok = righe >= 0
+        d["VOT"][righe[ok]] = pd.to_numeric(df["vote_count"], errors="coerce").to_numpy()[ok]
+        d["VAVE"][righe[ok]] = pd.to_numeric(df["vote_average"], errors="coerce").to_numpy()[ok]
+        d["POP"][righe[ok]] = pd.to_numeric(df["popularity"], errors="coerce").to_numpy()[ok]
+        anni = df[dcol].astype("string").str.slice(0, 4)
+        d["ANNO"][righe[ok]] = pd.to_numeric(anni, errors="coerce").to_numpy()[ok]
+        titoli_str[righe[ok]] = df[col].astype(str).to_numpy()[ok]
+        if ecol:
+            e = pd.to_numeric(df[ecol], errors="coerce").to_numpy()
+            buoni = ok & np.isfinite(e) & (e > 0)
+            d["NEP"][righe[buoni]] = e[buoni]
+        for j, g in enumerate(df["genres"].to_numpy()):
+            if not ok[j]:
+                continue
+            try:
+                voci = json.loads(g) if isinstance(g, str) else (g or [])
+            except Exception:
+                voci = []
+            ids = {int(x["id"]) for x in voci if isinstance(x, dict) and "id" in x}
+            d["COZY"][righe[j]] = bool(ids & cozy)
+            d["IMP"][righe[j]] = bool(ids & imp)
+    d["VOT"] = np.nan_to_num(d["VOT"])
+    d["VAVE"] = np.nan_to_num(d["VAVE"])
+    d["POP"] = np.nan_to_num(d["POP"])
+    d["ANNO"] = np.nan_to_num(d["ANNO"])
+    np.savez_compressed(z, generi_sha=np.array(sha_generi),
+                        **{k: d[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")})
+    pt.write_text("\n".join(str(t).replace("\n", " ") for t in titoli_str), encoding="utf-8")
+    print(f"  metadati-canone: costruiti e salvati ({z.stat().st_size/1e6:.1f} MB "
+          f"+ {pt.stat().st_size/1e6:.1f} MB)", flush=True)
+    d["TIT"] = titoli_str
+    return d
+
 
 def voti():
     """La popolarita' del catalogo (vote_count TMDB), nella riga dei titoli."""

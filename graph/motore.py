@@ -72,56 +72,19 @@ class Motore:
         M = np.load(K.A("mappa-finale-6-2.npz"), allow_pickle=True)
         self.INTRA = M["intra"]
         self.artefatto = K.sha_file("bolle-eterogeneo-subvoti.npy")
-        # titoli, voti, anno, popolarita', voto medio
-        self.TIT = np.array([""] * self.N, dtype=object)
-        self.VOT = np.zeros(self.N)
-        self.VAVE = np.zeros(self.N)
-        self.POP = np.zeros(self.N)
-        self.ANNO = np.zeros(self.N)
-        for tipo, f, col, dcol in (("movie", "movies.parquet", "title", "release_date"),
-                                   ("tv", "tv.parquet", "name", "first_air_date")):
-            d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f)
-            for k in range(len(d)):
-                riga = d.iloc[k]
-                r = B.ROW_OF.get(f"{tipo}:{int(riga['id'])}")
-                if r is None:
-                    continue
-                self.TIT[r] = str(riga[col])
-                for nome, arr in (("vote_count", self.VOT), ("vote_average", self.VAVE),
-                                  ("popularity", self.POP)):
-                    v = pd.to_numeric(riga.get(nome), errors="coerce")
-                    if v is not None and not pd.isna(v):
-                        arr[r] = float(v)
-                ax = str(riga.get(dcol) or "")[:4]
-                self.ANNO[r] = float(ax) if ax.isdigit() else 0.0
-        self.VOTMED = np.array([float(np.median(self.VOT[self.MEMBRI[b]]))
-                                if len(self.MEMBRI[b]) else 0.0 for b in range(self.NB)])
-        # numero di episodi (per il peso delle serie) e i generi (per l'asse cozy)
-        self.NEP = np.ones(self.N, np.float32)
+        # TUTTI I METADATI IN UN COLPO: `canon.metadati()` li costruisce una volta, vettorizzato, e li
+        # salva in `graph/data/`. Qui prima c'erano DUE passate complete sui Parquet TMDB iterate riga per
+        # riga (`d.iloc[k]` su ~117.000 righe): erano il costo vero dell'avvio — **51 secondi** misurati,
+        # non i 20 che diceva il commento — e la matrice sparsa non c'entrava niente.
+        m = K.metadati()
+        self.TIT, self.VOT = m["TIT"], m["VOT"]
+        self.VAVE, self.POP, self.ANNO = m["VAVE"], m["POP"], m["ANNO"]
+        self.NEP = m["NEP"].astype(np.float32)          # (il denominatore del peso delle serie)
+        self.COZY, self.IMP = m["COZY"], m["IMP"]       # gli assi, dalle impronte dei generi
         self._generi = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
         self._generi_imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
-        self.COZY = np.zeros(self.N, bool)
-        self.IMP = np.zeros(self.N, bool)
-        for tipo, f, col in (("movie", "movies.parquet", None), ("tv", "tv.parquet", "number_of_episodes")):
-            cols = ["id", "genres"] + ([col] if col else [])
-            d = pd.read_parquet(K.ROOT / ".cache" / "tmdb" / f, columns=cols)
-            for k in range(len(d)):
-                riga = d.iloc[k]
-                r = B.ROW_OF.get(f"{tipo}:{int(riga['id'])}")
-                if r is None:
-                    continue
-                if col:
-                    e = pd.to_numeric(riga[col], errors="coerce")
-                    if e is not None and not pd.isna(e) and e > 0:
-                        self.NEP[r] = float(e)
-                g = riga.get("genres")
-                try:
-                    voci = json.loads(g) if isinstance(g, str) else (g or [])
-                except Exception:
-                    voci = []
-                ids = {int(x["id"]) for x in voci if isinstance(x, dict) and "id" in x}
-                self.COZY[r] = bool(ids & self._generi)
-                self.IMP[r] = bool(ids & self._generi_imp)
+        self.VOTMED = np.array([float(np.median(self.VOT[self.MEMBRI[b]]))
+                                if len(self.MEMBRI[b]) else 0.0 for b in range(self.NB)])
         # la componente LISTE di Trakt: corroborazione per la nicchia di qualita'
         z = np.load(K.A("nuovo-LIST.npz"))
         n = len(z["indptr"]) - 1
