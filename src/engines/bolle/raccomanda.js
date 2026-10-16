@@ -181,9 +181,15 @@ function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = 30 } =
     const solo = { [`yaca_mondi_${suffisso}`]: [], [`yaca_passo_fuori_${suffisso}`]: [] };
     try {
         const r = raccomanda(storia, { quante, cap });
+        // GLI ID DEVONO AVERE IL PREFISSO, non essere numeri nudi.
+        // `annotationKeyFor` in `src/handlers/catalogHandler.js` risolve gli id in tre forme — `tmdb:`,
+        // `tt…`, `kitsu:` — e per tutto il resto fa `return null`. Con un numero nudo il pool arriva
+        // pieno (`titles=20` nei log) e le CARD restano vuote: e' il «Empty content» che si vedeva in
+        // Stremio. Si usa la forma piena `tmdb:<tipo>:<id>`, dove il tipo e' scritto nell'id.
         const prendi = (nome) => {
             const l = r.liste.find((x) => x.tipo === nome);
-            return l ? l.items.filter((i) => i.type === tipo).map((i) => i.id) : [];
+            return l ? l.items.filter((i) => i.type === tipo)
+                .map((i) => `tmdb:${tipo === 'movie' ? 'movie' : 'tv'}:${i.id}`) : [];
         };
         solo[`yaca_mondi_${suffisso}`] = prendi('il_tuo_mondo');
         solo[`yaca_passo_fuori_${suffisso}`] = prendi('un_passo_fuori');

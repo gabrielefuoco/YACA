@@ -99,6 +99,24 @@ describe('il ponte fra il grafo e il feed', () => {
         expect(r.esclusi).toEqual(['tv:314', 'tv:1396', 'movie:603']);
     });
 
+    test('gli id per il feed hanno il prefisso tmdb:, non sono numeri nudi', () => {
+        // IL BUG DEL 16/10/2026 in una riga: `annotationKeyFor` in `src/handlers/catalogHandler.js`
+        // risolve `tmdb:`, `tt…` e `kitsu:`, e per tutto il resto fa `return null`. Con un numero nudo
+        // il pool era pieno (`titles=20` nei log dell'app) e le CARD restavano vuote: il «Empty content»
+        // che si vedeva in Stremio.
+        const righe = R.righePerStremio(STORIA, { mediaType: 'movie' });
+        const ids = Object.values(righe).flat();
+        expect(ids.length).toBeGreaterThan(0);
+        for (const id of ids) {
+            expect(String(id)).toMatch(/^tmdb:(movie|tv):\d+$/);
+        }
+    });
+
+    test('la riga dei film si chiama movies, quella delle serie series', () => {
+        expect(Object.keys(R.righePerStremio(STORIA, { mediaType: 'movie' }))).toContain('yaca_mondi_movies');
+        expect(Object.keys(R.righePerStremio(STORIA, { mediaType: 'series' }))).toContain('yaca_mondi_series');
+    });
+
     test('una storia vuota non esplode e non accende niente', () => {
         const r = R.raccomanda([], {});
         expect(r.liste).toEqual([]);
