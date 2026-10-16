@@ -428,6 +428,99 @@ def esporta(args) -> int:
     return 0
 
 
+def parita(args) -> int:
+    """IL GOLDEN DELLA PARITA' Python <-> JavaScript (ticket 16 di `.scratch/suggerimenti/issues/`).
+
+    Perche' esiste: ci sono DUE motori che devono dire la stessa cosa — `graph/motore.py`, che misura e
+    decide i parametri, e `src/engines/bolle/Bolle.js`, che serve il prodotto. Il rischio non e' che uno
+    dei due si rompa: e' che qualcuno cambi la formula in Python, misuri che migliora, e **dimentichi il
+    JavaScript**. Da li' in poi il numero misurato non e' piu' quello servito, e nessuno se ne accorge.
+
+    Il golden ha DUE livelli, e non sono la stessa cosa:
+
+      `bolla_pura` — l'algoritmo del PRODOTTO (diffusione sulle bolle con la `P` esportata), ricalcolato
+        qui **con scipy**, cioe' con una implementazione diversa da quella di `Bolle.js` (matrice contro
+        cicli). Questo confronto deve tornare **esatto**: se non torna, una delle due parti e' cambiata.
+
+      `titoli_aggregato` — l'attivazione del motore VERO, che cammina sui **titoli** (13,2 milioni di
+        archi), aggregata alle bolle. Qui l'uguaglianza NON c'e' e non deve esserci: e' la semplificazione
+        dichiarata (bolle invece di titoli). Il test confronta i due ordinamenti con una soglia, e serve a
+        **misurare quanto costa** quella semplificazione — e a protestare se un giorno costa troppo.
+    """
+    import numpy as np
+    from graph import motore as MO
+    M = MO.Motore(silenzioso=True)
+    d = json.load(open("src/data/bolle.json", encoding="utf-8"))
+    v = d["versione"]
+    riga_P = {int(b): [(int(x), float(w)) for x, w in vv["P"]] for b, vv in d["bolle"].items()}
+
+    # CINQUE STORIE FISSE, scelte dal canone con una regola deterministica (nessuna dipendenza dalla
+    # cache di Trakt: il fixture deve valere per chiunque cloni il repository).
+    K_, ROW_OF, N, IS_TV = MO.B.KEYS, MO.B.ROW_OF, M.N, MO.B.IS_TV
+    film = [k for k in K_ if k.startswith("movie:")]
+    serie = [k for k in K_ if k.startswith("tv:")]
+    mescola = lambda L, passo, quanti: [L[(i * passo) % len(L)] for i in range(quanti)]
+    storie = [
+        ("solo film", [(k, 2, "loved") for k in mescola(film, 811, 5)]),
+        ("solo serie", [(k, 12, "watched") for k in mescola(serie, 277, 5)]),
+        ("mista con loved e library", [(k, 3, "loved") for k in mescola(film, 1493, 3)]
+                                      + [(k, 1, "library") for k in mescola(serie, 631, 3)]),
+        ("fredda, due titoli", [(film[7], 1, "watched"), (serie[11], 1, "watched")]),
+        ("lunga, trenta titoli", [(k, 2, "liked") for k in mescola(film, 97, 15)]
+                                 + [(k, 20, "loved") for k in mescola(serie, 113, 15)]),
+    ]
+    fuori, misure = {"versioni": {"artefatto": v["artefatto"], "ricetta": v["ricetta"]}, "storie": []}, []
+    for nome, storia in storie:
+        righe = np.array([ROW_OF[k] for k, _, _ in storia], np.int64)
+        plays = np.array([p for _, p, _ in storia], np.int64)
+        tipi = [t for _, _, t in storia]
+        w = M.pesi_semi(righe, plays, tipi)
+        meme = np.zeros(M.NB)
+        for r_, w_ in zip(righe, w):
+            meme[int(M.MEM[r_])] += float(w_)
+        meme /= max(meme.sum(), 1e-12)
+        # ---- livello 1: la bolla pura, con scipy (matrice) invece che coi cicli
+        Q = sp.lil_matrix((M.NB, M.NB))
+        for b, voci in riga_P.items():
+            for dest, ww in voci:
+                Q[b, dest] = ww
+        Q = Q.tocsr()
+        r = meme.copy()
+        for _ in range(int(v["iterazioni"])):
+            r = v["alpha"] * meme + (1.0 - v["alpha"]) * (Q.T @ r)
+        pura = [(int(b), float(x)) for b, x in enumerate(r) if x > 0]
+        pura.sort(key=lambda t: -t[1])
+        pura = pura[:30]
+        # ---- livello 2: il motore vero, aggregato alle bolle
+        att, _r = M.diffondi(righe, plays, tipi)
+        fatta = [(int(b), float(x)) for b, x in enumerate(att) if x > 0]
+        fatta.sort(key=lambda t: -t[1])
+        fatta = fatta[:30]
+        m10 = set(b for b, _ in pura[:10])
+        n10 = set(b for b, _ in fatta[:10])
+        jac = len(m10 & n10) / max(len(m10 | n10), 1)
+        misure.append((nome, jac, pura[0][0] == fatta[0][0], pura[0][0] in n10))
+        fuori["storie"].append({
+            "nome": nome,
+            "semi": [{"chiave": k, "plays": int(p_), "tipo": t_, "peso": float(w_),
+                      "bolla": int(M.MEM[ROW_OF[k]])} for (k, p_, t_), w_ in zip(storia, w)],
+            "bolla_pura": [[b, round(x, 9)] for b, x in pura],
+            "titoli_aggregato": [[b, round(x, 9)] for b, x in fatta],
+        })
+    fuori["misure"] = [{"nome": n, "jaccard_primi_10": round(j, 3),
+                        "primo_mondo_uguale": u, "primo_mondo_dentro_i_primi_10": d_} for n, j, u, d_ in misure]
+    p = pathlib.Path(args.fuori)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    json.dump(fuori, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print(f"  scritto: {p} — {len(storie)} storie")
+    print("  quanto COSTA la semplificazione dichiarata (bolle invece di titoli):")
+    for n, j, u, d_ in misure:
+        print(f"    {n:<28} jaccard primi 10 {j:>5.2f} · primo mondo uguale "
+              f"{'si' if u else 'NO'} · dentro i primi 10 {'si' if d_ else 'NO'}")
+    print(f"  versione: artefatto {v['artefatto']} · ricetta {v['ricetta']}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="python -m graph.pipeline", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -463,6 +556,9 @@ def main(argv=None) -> int:
                      help="assegna una bolla ai titoli che l'artefatto non conosce (il job notturno)")
     pex.add_argument("--max", type=int, default=0, help="fermati dopo N collocazioni (prove)")
     pex.set_defaults(fn=esporta)
+    ppar = sub.add_parser("parita", help="il golden della parita' Python <-> JavaScript")
+    ppar.add_argument("--fuori", default="tests/fixtures/parita.json")
+    ppar.set_defaults(fn=parita)
     a = p.parse_args(argv)
     return a.fn(a)
 
