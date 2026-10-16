@@ -25,8 +25,9 @@ una terza copia, che deve restare allineata a mano.
 | `src/catalog/catalogSorting.js` | il prefisso degli id hero | no: e' l'ordinamento |
 | `src/api/profiles.js` (`CATALOG_MODES`) | id -> strategia dell'engine | no: e' il cablaggio al motore |
 | `frontend/src/app/page.tsx` (`HERO_PRESET_IDS`) | quali righe ha un profilo NUOVO | no: e' una scelta di prodotto |
+| **`src/catalog/providers/HybridProvider.js`** (righe 5-8) | **`HERO_IDS`: decide quali id sono serviti come riga hero** | **si'**: e' la stessa lista, ed e' il CONSUMATORE |
 
-Quindi: **cinque posti sono la stessa cosa ripetuta**, tre sono concetti diversi che per caso usano lo
+Quindi: **sei posti sono la stessa cosa ripetuta** (il nono l'ho trovato dopo, ed e' il piu' importante che mancava), tre sono concetti diversi che per caso usano lo
 stesso id. E il costo l'abbiamo pagato il 16/10/2026: ho aggiunto le righe del grafo in tre posti su otto,
 e il risultato e' stato **una funzione invisibile** — il codice deployato, le righe nel manifest, e nulla
 da selezionare nella UI. Il proprietario ha testato e ha visto gli stessi suggerimenti di prima.
@@ -54,6 +55,17 @@ come per il ticket 36. E' mezza giornata, e il momento giusto e' **dopo** che il
 le righe del grafo: se le righe non piacciono, cambia anche il registro.
 
 ## Un'osservazione per il proprietario
+
+## IL NONO POSTO, TROVATO DOPO — e senza quello le righe sarebbero VUOTE
+
+`src/catalog/providers/HybridProvider.js:5-8` ha una lista `HERO_IDS` cablata, ed e' **il consumatore**:
+decide se un id in arrivo e' una riga hero da servire (chiama `getHybridCatalog`). Le mie greps non l'avevano
+trovato perche' cercavano id+nome, e li' c'e' una lista di soli id.
+
+Conseguenza se non si tocca: le righe del grafo sarebbero **selezionabili nella UI e vuote in Stremio** —
+la stessa classe di fallimento silenzioso che questo ticket chiude, un livello piu' sotto. E' anche la
+prova che il registro unico serve: nove liste che devono restare allineate a mano, e ne bastava una
+dimenticata per rendere inutile tutto il resto.
 
 Questo e' il tipo di cosa su cui il revisore esterno ha reso due volte: non un bug, ma una **forma** che
 invita all'errore. Vale la pena chiedergli se il registro unico e' la strada, o se ne vede una migliore.
