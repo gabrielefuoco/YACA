@@ -52,7 +52,7 @@ INCLUDE = [
     # --- 6. i documenti che spiegano l'algoritmo del prodotto
     "docs/ALGORITHMS.md",
     "docs/CATALOG_LOGIC.md",
-    "Ottimizzazione e Futuro del Grafo YACA.md",
+    ".scratch/documenti-origine/Ottimizzazione e Futuro del Grafo YACA.md",
 ]
 
 ESCLUDI = ["*.log", ".scratch/*/log/*", "digest*.txt"]

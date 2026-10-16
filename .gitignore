@@ -150,6 +150,7 @@ node_modules/
 # Anteprima di debug scritta da tests/dnaChartGrouping.test.js a ogni giro: è un
 # artefatto, non un documento — versionarlo sporcherebbe il working tree a ogni test.
 .scratch/*.html
+.scratch/mappa-pesata/bolle-nuovi.json
 
 # Binaries
 *.exe

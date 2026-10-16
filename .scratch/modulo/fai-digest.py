@@ -43,7 +43,7 @@ INCLUDE = [
     ".scratch/coerenza/ricerche/04-trama.md",          # la metrica di trama, e il modello sbagliato
     ".scratch/todo-grafo/ricerche/08-congelamento.md", # il congelamento di V8
     "todo/8_seed_cronologia_decadimento.md",           # l'unica cosa aperta, ed e' fuori dal grafo
-    "Ottimizzazione e Futuro del Grafo YACA.md",       # il documento da cui e' nato tutto
+    ".scratch/documenti-origine/Ottimizzazione e Futuro del Grafo YACA.md",       # il documento da cui e' nato tutto
 ]
 
 ESCLUDI = ["*.log", ".scratch/*/log/*", "graph/data/*", "digest*.txt"]
