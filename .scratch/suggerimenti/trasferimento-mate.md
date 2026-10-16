@@ -1,60 +1,70 @@
-# Cosa portare sul mate — tre livelli, e il più piccolo basta quasi sempre
+# Il mate: cosa c'e' adesso, e cosa resta
 
-**Il prodotto non ha bisogno di niente**: `src/data/bolle.json` (3,2 MB) è in git, quindi il mate serve il
-grafo appena clona il repository, senza copiare un byte.
+**FATTO il 16/10/2026.** Il mate e' operativo: l'app serve la rotta del grafo, e il modulo colloca i
+titoli. Qui c'e' cosa e' stato messo e cosa manca.
 
-## Livello 1 — COLLOCARE I TITOLI NUOVI (e far girare il motore): 104 MB
+## 1. L'app — deployata e allineata al commit
 
-È quello che serve ogni notte, e sta in una cartella:
+L'immagine `ghcr.io/gabrielefuoco/yaca:latest` viene costruita dalla CI (`.github/workflows/deploy.yml`,
+sul push a main) e **watchtower la tira giu' da solo**: il container `yaca-app` e' stato riavviato da
+solo dopo il push, e dentro ci sono il nostro artefatto e la nostra rotta. Verificato **dentro** il
+container, non dedotto:
 
-| cosa | peso | perché |
+    src/data/bolle.json        3.266.688 byte   PRESENTE
+    src/api/bolle.js                            PRESENTE
+    src/api/stremio.js:263-266  🌍 Il tuo mondo · 🔭 Un passo fuori (film e serie)
+
+E la rotta risponde, sulla porta mappata (7860):
+
+    GET  /            → 200
+    POST /api/bolle   → 401 {"ok":false,"errore":"sessione assente o scaduta"}
+
+**Non serve forzare niente**: il percorso e' push → CI → ghcr → watchtower.
+
+## 2. Il modulo — in `/srv/yaca/modulo`, 138 MB di dati
+
+| cosa | dove | peso |
 |---|---|---|
-| `graph/data/04-*` e `05-*` (spazi V1 e V3, vocaboli, idf, centroidi, impronte) | 38 M | il coseno con cui si sceglie la bolla macro e i vicini micro |
-| `graph/data/bolle-eterogeneo-subvoti.npy` | 0,5 M | la partizione: quali bolle esistono |
-| `graph/data/mappa-finale-6-2.npz` + `transizione-potata.npz` | 9,5 M | la mappa 6+2 e la transizione potata (per il motore, non per il collocatore) |
-| `graph/data/metadati-canone.npz` + `titoli-canone.txt` | 1,9 M | voti, anni, episodi, generi e i 66.259 titoli |
-| **`.cache/tmdb/movies.parquet` + `tv.parquet`** | **66 M** | **i TOKEN di un titolo nuovo**: le keyword, i generi, il cast. Il grafo dice DOVE sono le bolle, non COSA è un titolo nuovo |
+| il repo clonato (commit `ed402f5`) | `/srv/yaca/modulo` | — |
+| gli artefatti del modulo | `graph/data/` | 138 M |
+| i parquet TMDB | `.cache/tmdb/` | 111 M |
+| l'ambiente python | `.venv/` (numpy, pandas, scipy, pyarrow) | 385 M |
 
-**E le storie di Trakt NON servono**, che è il punto della domanda: `.cache/trakt/users/` (1,2 GB) serve
-solo ai BANCHI — le misure che hanno deciso i parametri — non alla collocazione. Il collocatore legge i
-parquet TMDB e i centroidi, e basta.
+**I parquet TMDB sono quelli dell'app**, copiati dal suo volume `yaca_tmdb`: hanno **tutte le colonne**
+che il collocatore legge (verificato con duckdb, per film e serie: nessuna mancante) ed e' lo stesso
+dump (57,3 MB contro i 56,7 del portatile, 9,0 contro 8,9). Sono una COPIA, non un collegamento: il
+volume e' di root e il modulo non puo' leggerlo. **Vanno riallineati**, ed e' una riga:
 
-## Livello 2 — ricostruire il grafo da zero: +560 MB (666 MB di `graph/data/` in tutto)
+    docker run --rm -v yaca_tmdb:/v -v /srv/yaca/modulo/.cache/tmdb:/out alpine         sh -c "cp /v/movies.parquet /v/tv.parquet /out/"
 
-Il resto di `graph/data/` è materiale di costruzione: l'embedding delle trame (`04-trama-qwen3b.npy`,
-140 MB), i due triangoli (75 MB), la miscela (`eterogeneo-TRAMA.npz`, 9,4 MB) e le partizioni degli
-esperimenti. Serve solo a `python -m graph.pipeline build` da zero — che è un lavoro da mezz'ora di
-calcolo e 11 GB di picco, non una cosa che si fa sul mate per abitudine.
+## 3. Le prove, eseguite sul mate
 
-## Livello 3 — rilanciare i banchi: +1,2 GB
+    .venv/bin/python -m graph.pipeline stato          → canone: 66.259 titoli
+    .venv/bin/python -m graph.pipeline build          → da rifare: 0 su 8
+    .venv/bin/python -m graph.collocator              → 10 titoli collocati in 6 s
+        Insidious - Fuori dall'Altrove  → bolla 2403 (5 titoli: TUTTI gli Insidious)
+        Spider-Man: Brand New Day       → bolla 2273 (Doctor Strange, Black Widow, Shang-Chi)
+        Verity                          → bolla 1682 (la stessa del portatile: coerenza fra macchine)
+    Motore()                                          → 0,60 s · 3.497 mondi · 66.259 titoli
 
-`.cache/trakt/users/` sono le storie pubbliche degli utenti Trakt, da cui si misurano α, i pesi, il
-freddo, il taglio temporale. Servono a rifare le MISURE, non a far funzionare niente. Si copiano se e
-quando si vuole rilanciare un banco sul server invece che sul portatile.
+**Il mate NON ricostruisce il grafo**, e non deve: gli manca l'embedding delle trame (`04-trama-qwen3b.npy`,
+140 MB) e i due triangoli. Per questo il DAG e' stato **registrato** (`build --registra`) — e' una
+dichiarazione esplicita, non una verifica: dice «questi sono gli artefatti, non chiedermi di rifarli».
+Un nodo che SERVE non ricostruisce.
 
-## I comandi
+## 4. Cosa resta
 
-```bash
-# LIVELLO 1 (104 MB) — dal repo alla chiavetta
-mkdir -p /d/yaca/data /d/yaca/cache/tmdb
-cp graph/data/{04-tfidf.npz,04-vocab.json,04-centroidi.npz,04-impronte.json} /d/yaca/data/
-cp graph/data/{05-tfidf.npz,05-vocab.json,05-idf.npy,05-centroidi.npz,05-centroidi-meta.npz,05-impronte.json} /d/yaca/data/
-cp graph/data/{bolle-eterogeneo-subvoti.npy,mappa-finale-6-2.npz,transizione-potata.npz} /d/yaca/data/
-cp graph/data/{metadati-canone.npz,titoli-canone.txt,manifest-build.json} /d/yaca/data/
-cp .cache/tmdb/{movies.parquet,tv.parquet} /d/yaca/cache/tmdb/
-sync                       # e solo dopo si stacca la chiavetta
+1. **il refresh dei parquet TMDB** (la riga sopra) — da mettere nel giro notturno, altrimenti un'uscita
+   nuova non arriva al collocatore;
+2. **il lavoro periodico**: non c'e' ancora un timer che lanci `esporta --colloca`. Con l'ambiente
+   pronto e' una riga di systemd o di cron — e va deciso *quando* (una volta al giorno? a che ora?);
+3. **le righe nuove nell'interfaccia**: come tutti gli hero, si vedono se il profilo le ha fra i
+   `selectedPresets`. La UI di configurazione deve offrirle: e' il pezzo che il proprietario sta per
+   testare.
 
-# LIVELLO 3, se serve:  cp -r .cache/trakt/users /d/yaca/cache/trakt/
+## 5. Cosa NON e' stato copiato, e perche'
 
-# SUL MATE, dopo il clone
-git clone https://github.com/gabrielefuoco/YACA.git && cd YACA
-cp -r /mnt/chiavetta/yaca/data/. graph/data/ && cp -r /mnt/chiavetta/yaca/cache/tmdb/. .cache/tmdb/
-
-# LE DUE VERIFICHE
-python -m graph.pipeline stato     # dice quali artefatti ci sono e quali mancano
-python -m graph.pipeline build     # deve dire «da rifare: 0 su 8»
-python -c "from graph import motore as M; M.Motore(silenzioso=True); print('motore ok')"
-```
-
-Se `build` dice che qualcosa è da rifare, non è un errore: è il DAG che ha confrontato gli hash e ha
-visto una differenza. Si guarda **cosa** dice, e da lì si decide.
+    .cache/movielens/          4,4 G   il dataset grezzo: serve solo a ricostruire da zero
+    .cache/trakt/users/        1,2 G   le storie pubbliche: servono ai BANCHI, non alla collocazione
+    i due triangoli, l'embedding, la miscela   ~560 M   materiale di costruzione
+    due copie parziali di trakt  870 M   `users/` e' quella viva
