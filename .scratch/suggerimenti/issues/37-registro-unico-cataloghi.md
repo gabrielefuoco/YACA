@@ -69,3 +69,28 @@ dimenticata per rendere inutile tutto il resto.
 
 Questo e' il tipo di cosa su cui il revisore esterno ha reso due volte: non un bug, ma una **forma** che
 invita all'errore. Vale la pena chiedergli se il registro unico e' la strada, o se ne vede una migliore.
+
+---
+
+## DECIMO POSTO, e non era nelle nove: `HERO_PRIORITY` dentro il motore (17/10/2026)
+
+Lo slave ha derivato nove posti e il registro funziona. Ma quando il proprietario ha testato, le due righe
+mostravano il **catalogo generico** — ordine di popolarita', film e serie mescolati — invece dei mondi.
+I log dell'app hanno detto perche':
+
+    [Hybrid Debug] cacheKey=<utente>_<profilo>_yaca_mondi_movies     <- la chiave PER CATALOGO
+
+mentre i quattro hero usano la chiave **condivisa del gruppo**. La chiave la sceglie `getHeroCatalogInfo()`
+in `src/engines/hybridRecommendations.js`, che legge `HERO_CATALOG_IDS`: una Map **costruita da
+`HERO_PRIORITY`** — quattro slug cablati nel motore, diversi dalle nove liste del resto del sistema.
+Nessuna delle nove diceva *quale percorso prendere*: tutte dicevano cosa mostrare.
+
+**E il decimo posto serviva a DUE cose**, il che ha richiesto due modifiche: oltre al percorso, alimenta
+`isSharedHeroCacheEntry`, il controllo di validita' della cache che pretende la **disgiunzione** fra hero.
+Le righe del grafo sono additive per scelta (possono ripetere un titolo): senza un'eccezione (`SLUG_ADDITIVI`)
+il gruppo sarebbe stato **scartato e ricostruito a ogni richiesta, per sempre**.
+
+**Per il registro**: `HERO_PRIORITY` e' un concetto diverso (l'ORDINE di priorita' degli hero, non la loro
+definizione), ma nasce dagli stessi id — quindi appartiene al registro, come gli altri nove. E' la stessa
+lezione di tutte le altre volte: la conoscenza chiave-per-id deve stare in UN posto, e dieci prove che
+qualcuno la stia duplicando sono dieci prove di troppo.
