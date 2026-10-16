@@ -351,7 +351,25 @@ def esporta(args) -> int:
     # ^ I VOTI VENGONO DALL'ARTEFATTO DEI METADATI, non da una rilettura dei Parquet: `canon.metadati()`
     #   li ha gia' allineati alle righe del canone, vettorizzati e con l'impronta dei generi dentro.
     #   Prima qui c'erano due `pd.read_parquet` con un ciclo Python su 117.000 righe (ticket 29).
-    titoli = {B.KEYS[i]: int(MEM[i]) for i in range(len(MEM))}
+    # I TITOLI, IN ORDINE. Prima l'ordine era quello del canone — le righe di `spazi-trakt.npz` — che per
+    # un utente e' arbitrario: nel mondo Star Trek, Voyager finiva settimo dietro a quattro voci doppie
+    # di Stargate. Ora si inseriscono RAGGRUPPATI PER BOLLA e, dentro ogni bolla, per VOTO BAYESIANO
+    # (voto medio corretto dal numero di voti: il grezzo premia il nuovo e il mal votato, il bayesiano
+    # premia quello che la gente ha davvero apprezzato).
+    #
+    # E NON COSTA UN BYTE: l'ordine e' quello di INSERZIONE nella mappa, e il JSON lo conserva. In
+    # JavaScript `Object.entries` lo rispetta perche' le chiavi (`tv:1396`) non sono integer-like — se
+    # fossero numeri nudi, il motore le riordinerebbe da solo e tutto questo sarebbe inutile.
+    _voti = np.asarray(K.metadati()["VOT"], float)
+    _medi = np.asarray(K.metadati()["VAVE"], float)
+    _con_voto = _voti > 0
+    _C = float(_medi[_con_voto].mean()) if _con_voto.any() else 0.0
+    _m = float(np.percentile(_voti[_con_voto], 60)) if _con_voto.any() else 0.0
+    _bayes = (_voti * _medi + _m * _C) / np.maximum(_voti + _m, 1e-9)
+    titoli = {}
+    for _b in range(NB):
+        for _r in sorted(np.where(MEM == _b)[0].tolist(), key=lambda r_: -_bayes[r_]):
+            titoli[B.KEYS[_r]] = _b
     # I TERMINI E GLI ESEMPI DI OGNI MONDO (ticket 12). Senza, una bolla e' `mondo 1084 · 25 titoli ·
     # voti 636`: per sapere CHE COS'E' bisogna incrociare i parquet o leggere i titoli uno a uno. Coi
     # termini del centroide V3 (`ge:thriller · kw:psychological thriller · di:david fincher`) e i tre

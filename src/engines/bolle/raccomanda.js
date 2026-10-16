@@ -141,11 +141,14 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
     // non favorisce il mondo più forte solo perché viene prima, e il dettaglio per mondo esposto a parte
     // (`per_mondo`), così chi invoca ha tutto per riordinare col proprio catalogo.
     const vicini = primo.vicini.slice(0, VICINI).filter(regge);
+    // «UN PASSO FUORI» RAGGRUPPATO PER MONDO, non mescolato.
+    // Prima si faceva round-robin fra i tre vicini: un item per mondo a turno. Era «fair», ma
+    // distruggeva il raggruppamento — e il raggruppamento e' l'informazione: un mondo e' una comunita'
+    // coerente, e mostrarne due titoli, poi due di un altro, poi di nuovo i primi non dice niente a chi
+    // guarda. Adesso i vicini si concatenano nell'ordine di PESO dell'arco, ciascuno coi suoi titoli
+    // nell'ordine che l'artefatto ha scelto (bayesiano, dentro la bolla).
     const perMondo = vicini.map((b) => ({ bolla: b, items: perBolla(b) }));
-    const passo = [];
-    for (let i = 0; i < cap; i++) {
-        for (const g of perMondo) if (g.items[i]) passo.push(g.items[i]);
-    }
+    const passo = perMondo.flatMap((g) => g.items).slice(0, cap);
     const spiega = (m) => (m ? {
         come: Bolle.descrivi(m.bolla), perche: m.da_semi || [], voti: m.voti, titoli: m.titoli,
     } : {});
