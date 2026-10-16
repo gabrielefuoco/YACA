@@ -113,8 +113,8 @@ class Motore:
                                      minlength=self.NB) / np.maximum(self.SZ, 1)
         self._generi = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
         self._generi_imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
-        self.VOTMED = np.array([float(np.median(self.VOT[self.MEMBRI[b]]))
-                                if len(self.MEMBRI[b]) else 0.0 for b in range(self.NB)])
+        self.VOTMED = np.array([K.mediana_voti(self.VOT[self.MEMBRI[b]])
+                                for b in range(self.NB)])
         # la componente LISTE di Trakt: corroborazione per la nicchia di qualita'
         z = np.load(K.A("nuovo-LIST.npz"))
         n = len(z["indptr"]) - 1

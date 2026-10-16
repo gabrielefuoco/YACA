@@ -390,7 +390,7 @@ def esporta(args) -> int:
         forti = np.argsort(-c)[:5]
         bolle[str(b)] = {
             "n": int(SZ[b]),
-            "voti": int(np.median(VOT[m])) if len(m) else 0,
+            "voti": int(K.mediana_voti(VOT[m])),
             "termini": [_inv[int(j)] for j in forti if c[j] > 0] if b in _POS else [],
             "esempi": [str(TIT[int(r_)]) for r_ in m[np.argsort(-VOT[m])][:3]],
             "P": [[d_, p_] for d_, p_ in coppie],
@@ -588,7 +588,7 @@ PASSO = [
      # l'artefatto dell'embedding — di un ALTRO passo. E' la stessa radice del ticket 11 (due pipeline
      # che si spartiscono il prefisso `04-`), e l'ha scoperta il test dell'ordine topologico: se
      # `centroidi_v1` dichiara di scrivere un file di `embedding_trame`, la propagazione fa un errore.
-     "scrive": ["04-centroidi.npz", "04-vocab.json", "04-tfidf.npz", "04-idf.npy", "04-impronte.json"],
+     "scrive": ["04-centroidi.npz", "04-vocab.json", "04-tfidf.npz", "04-impronte.json"],
      "params": ["CENTROIDI_MIN_MEMBRI"], "tempo": "oltre 15 min"},
     {"nome": "centroidi_v3", "cmd": ["steps/05_centroidi_v3.py"], "env": {},
      "legge": ["bolle-eterogeneo-subvoti.npy", "04-centroidi.npz"],
@@ -658,11 +658,14 @@ def piano(manifest=None, passo=PASSO):
         if prima is None:
             motivi.append("mai eseguito")
         else:
-            # UN'USCITA DICHIARATA E MAI PRODOTTA E' UN PROBLEMA, e prima non si vedeva: il ciclo qui
-            # sotto guarda solo le uscite che c'erano quando si e' registrato.
-            for pat in p["scrive"]:
-                if not _file_di(pat):
-                    motivi.append(f"uscita mai prodotta: {pat}")
+            # QUI C'ERA UN CONTROLLO IN PIU', E L'HO TOLTO: «per ogni pattern di `scrive` che non
+            # corrisponde a nessun file, il passo e' sporco». Idea giusta, effetto disastroso — un
+            # passo con un'uscita OPZIONALE o dichiarata male restava sporco PER SEMPRE, anche dopo
+            # `--registra`, e il piano non tornava piu' a zero. Un controllo che non si puo' azzerare
+            # e' peggio di nessun controllo: insegna a ignorare il piano.
+            # I due casi veri restano coperti: una uscita CANCELLATA la prende il ciclo qui sotto
+            # («uscita sparita»), e una uscita che il passo non produce la dice `--esegui` quando
+            # finisce (il controllo `mancanti`).
             for nome, h in ora["ingressi"].items():
                 if nome not in prima["ingressi"]:
                     motivi.append(f"ingresso nuovo: {nome}")

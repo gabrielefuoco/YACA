@@ -66,9 +66,23 @@ def _mediane_voti(mem):
             r = B.ROW_OF.get(f"{typ}:{int(i)}")
             if r is not None and not pd.isna(vc):
                 v[r] = float(vc)
+    # UNO ZERO NON E' UN VOTO. Il parquet scrive `vote_count = 0` per i titoli appena usciti, e pandas
+    # — che salta i NaN per conto suo — QUELLO zero lo conta. Ed era l'unica divergenza rimasta fra
+    # questa funzione e `canon.mediana_voti`: otto bolle su 3.497, trovate dal controllo qui sotto al
+    # primo giro. Adesso la regola e' una sola: si ignorano sia i titoli assenti sia quelli a zero voti.
+    v = np.where(v > 0, v, np.nan)
     NB = int(mem.max()) + 1
+    # LA MEDIANA DEI VOTI CON UNA DEFINIZIONE SOLA, quella di `canon.mediana_voti`: gli zeri sono
+    # «non lo so», non «non l'ha visto nessuno». Qui si usava pandas, che salta i NaN per conto suo —
+    # ed era la definizione GIUSTA, mentre l'esportazione e `Motore` contavano gli zeri. Coincidevano
+    # al 99,8% per caso; adesso coincidono perche' e' la stessa riga di codice.
     med = pd.DataFrame({"b": mem, "v": v}).groupby("b")["v"].median()
     out = med.reindex(range(NB)).to_numpy(np.float32)
+    _voti_bolla = np.array([K.mediana_voti(v[mem == b]) for b in range(NB)], np.float32)
+    _diversi = np.abs(np.nan_to_num(out, nan=0.0) - _voti_bolla) > 1e-3
+    if _diversi.any():
+        print(f"  ATTENZIONE: {int(_diversi.sum())} bolle dove le due mediane differiscono: "
+              f"le due definizioni si sono riallontanate, e va capito perche'", flush=True)
     _VOTI_CACHE[k] = out
     return out
 PREFISSO = {"keywords": "kw:", "genres": "ge:", "networks": "rt:", "production_companies": "co:",

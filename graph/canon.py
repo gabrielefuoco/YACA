@@ -572,6 +572,21 @@ def assert_modello(target, previsione, nome="modello", coef_norma=None, controll
 
 
 # ---------------------------------------------------------------- i contratti aggiunti il 16/10/2026
+def mediana_voti(voti):
+    """LA MEDIANA DEI VOTI DI UNA BOLLA, in un posto solo. Uno zero NON e' «nessuno l'ha visto»:
+    e' «non lo sappiamo» (un titolo appena uscito ha `vote_count = 0`), e una mediana calcolata su un
+    misto di noti e ignoti non descrive ne' gli uni ne' gli altri.
+
+    Perche' esiste, visto che conta 19 titoli su 66.259 e cambia 8 bolle su 3.497 (misurato il
+    16/10/2026): perche' **due definizioni della stessa cosa** vivevano nel modulo — `collocator`
+    saltava i NaN, l'esportazione e `Motore` contavano gli zeri — e per caso coincidevano al 99,8%.
+    Una divergenza silenziosa che oggi costa poco e' la stessa divergenza che domani costa una serata.
+    """
+    v = np.asarray(voti, float)
+    v = v[v > 0]
+    return float(np.median(v)) if len(v) else 0.0
+
+
 def assert_stocastica(P, nome="P", tol=1e-9, controlla=True, auto_anello_sopra=0.10):
     """CONTRATTO DI CONSERVAZIONE DELLA MASSA. Una riga di transizione che non somma a 1 perde massa.
 
