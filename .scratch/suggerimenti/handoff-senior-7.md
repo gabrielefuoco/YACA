@@ -1,140 +1,127 @@
-# Handoff 7 — la revisione è diventata lavoro, e il lavoro ha prodotto altre domande
+# Handoff 7 — revisione profonda del modulo, per il senior
 
-**Settimo handoff, e il primo che non è solo un riepilogo: in fondo ci sono tre domande precise.**
+Questo documento non è un resoconto del lavoro fatto. È un **incarico di revisione**: leggi tutto il
+codice, controlla tutto, e scrivi tutto quello che noti — **con la soluzione possibile accanto**, anche
+quando è una riga o solo un'ipotesi.
 
-Il sesto raccontava il grafo che entra nel prodotto e il meccanismo misurato. La tua revisione di quel
-handoff ha prodotto **16 ticket**, e questa settimana li abbiamo fatti quasi tutti: 15 chiusi, 1 aperto.
-Il modulo è cambiato parecchio, e in un modo che vale la pena guardare, perché **tre dei quattro bug che
-avevi trovato erano sintomi di qualcosa di più grande** — e quella cosa più grande si è ripresentata, con
-me come autore, altre sei volte.
-
----
-
-## 1. Cos'è cambiato, in ordine
-
-**I quattro bug che avevi trovato.** Tutti veri, verificati uno per uno sul codice prima di toccarlo.
-  · **lo split «temporale» non era temporale** (`da_trakt` non leggeva `last_watched_at` e metteva tutti i
-    film prima di tutte le serie): risolto con **una sola funzione** `canon.storia_trakt(u, ordine=...)`,
-    che è anche il modo in cui si chiude quella classe di bug. La storia di prova ha **174 cambi di
-    medium**, dove prima ce n'era 1.
-  · **l'artefatto perdeva i 2 ponti cross-medium e i pesi degli archi**: ora porta `P` = 45.194 archi
-    pesati con l'auto-anello. Misurato col banco: il salto uniforme cambiava **3 dei primi 10 mondi**
-    (Jaccard 0,54), e la versione pesata è anche **più veloce** (73 ms contro 179).
-  · **il job notturno usava V3 per la macro e leggeva la partizione V8**: sistemato.
-  · **lo slider `canone` era una retta** (`abs(q-c)*sign(q-c)` è identico a `(q-c)`): ora il centro si
-    sposta davvero. Verificato su tre utenti: `-1` → voti medi 643 e 453, `0` → 507 e 78, `+1` → 1.479 e
-    684. Monotono, e **zero mondi a zero voti** in tutti i casi.
-
-**Le rimisure, che sono la parte da guardare.** Il numero che avevo annunciato era misurato su uno split
-rotto. Rifatto: precisione **6,4%** (era 5,0%), lift **76×** (era 63×), *un passo fuori* 31% (era 38%),
-*il tuo mondo* 20% (era 21%), rango mediano 3, 58% entro le prime quattro posizioni, 147 ms a chiamata.
-**La conclusione di prodotto non cambia.** E io avevo previsto che scendesse, perché uno split vero è più
-difficile: sbagliato io, non il dato — con i medium separati mancava la possibilità strutturale che una
-serie ne trovasse un'altra.
-
-**I refactor.** Gli arbitri sono passati da nove copie della diffusione a **una** (`camminata.ppr`, con
-le quattro varianti che erano vere fatte parametri); i 19 parametri di costruzione hanno **una fonte
-sola** in `parametri.py` (`PESI_TOKEN` era scritto in due posti, e cambiarne uno solo faceva scivolare i
-punteggi); l'avvio del motore è passato da **51,2 s a 2,0**; le bolle hanno `termini`, `esempi` e
-`da_semi`, quindi un mondo si legge in una riga.
-
-**E il DAG** (`pipeline build`): tabella dei passi, manifest, e un piano che dice *cosa rifare e perché*.
-Cambiando `VOTI_SPREAD_MIN` restano in salto i tre passi pesanti (17 min · 13 s · 13 min/11 GB) e si
-accendono solo i cinque a valle. La propagazione è **per file**, e il piano ha una memoria delle uscite:
-se un artefatto non è più quello che il passo aveva scritto, il motivo lo dice — *«uscita RISCRITTA FUORI
-DA QUI»*. È la trappola del 15/10 in una riga.
+Il digest che accompagna questo file contiene **tutto il modulo**: non fidarti dei riassunti qui sotto,
+servono solo a farti orientare in fretta. La fonte è il codice.
 
 ---
 
-## 2. La cosa su cui mi serve il tuo occhio: i sei effetti collaterali
+## 1. Cos'è il modulo, in mezza pagina
 
-Questa settimana ho fatto **sostituzioni in massa** con script (9-19 rimpiazzi per volta, con l'ancora
-esatta e un controllo che ogni sostituzione sia avvenuta). Il metodo ha funzionato: 9/9, 15/18, 7/7. Ma
-**sei volte** un edit scriptato ha prodotto un effetto che nessun controllo ha visto:
+YACA suggerisce film e serie. Il modulo `graph/` costruisce **una mappa di "mondi"** — 3.497 bolle
+coerenti, da 66.259 titoli — e un **motore** che, da una storia di visioni, accende i mondi giusti e ne
+tira fuori le liste da mostrare.
 
-1. l'import di `ppr` inserito **dopo l'ultima riga** `from graph import`, che in quel file stava **dentro
-   un blocco**: `NameError` a runtime, e lo script aveva detto «sostituito e compila»;
-2. un'ancora che ha inserito `canon.esiste()` **fra il decoratore `@functools.lru_cache` e la sua
-   funzione** — il decoratore è rimasto appiccicato a `esiste`, `titoli()` ha smesso di essere cachata,
-   e `esporta` è passato da 30 secondi a **97 minuti** (2.488 secondi per 100.000 accessi a una costante);
-3. percorsi `/tmp/...` che per bash e per il Python di Windows sono **due posti diversi** (due volte);
-4. un `pos = max(...)` che sceglie l'ultima occorrenza invece della prima;
-5. `$TEMP` risolto diversamente dai due lati;
-6. e il più istruttivo: **`canon.A(nome).exists()` in sette file**, che quando hai reso severo `A()` sono
-   diventati **bombe** — il ramo di ripiego non si è mai più eseguito, e `steps/03_divisione_voti.py`
-   cercava il triangolo in tre nomi, il file giusto c'era, e **lo step non partiva**. Tradotto: gli
-   artefatti non erano più riproducibili da nessuno, e nessuno se n'era accorto perché nessuno aveva più
-   ricostruito. Il sintomo era chiaro, la causa no: la colpa era di un `if` che sembrava prudente.
+```
+   storia (titoli + ri-visioni + tipo di segnale)
+        │
+   peso dei semi (film min(plays,3) · serie 1+2×(frazione di episodi) · × fattore di tipo)
+        │
+   diffusione: PageRank personalizzato, α=0,60, sul grafo potato top-16  ──»  una sola implementazione
+        │
+   portafoglio: i mondi accesi (attivazione, voti mediani, vicini, membri, termini, esempi, da_semi)
+        │
+   liste: il tuo mondo · un passo fuori · le uscite nuove · la nicchia di qualità
+```
 
-Il sesto non è un errore di script, è una **classe**: un contratto che cambia severità e i chiamanti che
-continuano a trattarlo come permissivo. Ma i primi cinque hanno una radice comune: **il controllo di
-compilazione non è un controllo di correttezza.** Un decoratore appiccicato alla funzione sbagliata è
-Python perfettamente valido.
+**I numeri che contano**, coi loro metodi: coerenza intra-bolla **+0,942**; α misurato su 120 utenti;
+potatura top-16 (12% degli archi, 8,7× meno lavoro); motore intero **precisione 6,4%** contro un pavimento
+dello 0,08% (**76×**), su 100 utenti con taglio temporale; **31%** del futuro trovato sta in *un passo
+fuori* e **20%** in *il tuo mondo*; **147 ms** a chiamata; il freddo si accende da 1 titolo (36,9× contro
+lo 0,6× di un titolo a caso).
 
-**Quello che ho fatto finora** (e su cui voglio il tuo parere, non un complimento): gli script stampano un
-report per ogni rimpiazzo, verificano che il file compili **e** — per il caso 1 — che l'import sia a
-colonna 0. Dopo il caso 2 ho aggiunto il test dell'ordine topologico del DAG e i test di equivalenza
-numerica. Ma ho la sensazione che manchi qualcosa di sistematico.
-
-**Domanda 1 — BUG:** nei file che leggi adesso, c'è qualche **altro** errore come quelli che hai trovato la
-volta scorsa? In particolare guarda: (a) `camminata.ppr` e i nove chiamanti delegati, perché è là che ho
-spostato il codice di nove banchi; (b) `pipeline.PASSO` e `piano()`, perché un piano sbagliato è peggio
-di nessun piano; (c) `canon.storia_trakt`, perché ora la usano anche gli arbitri; (d) `bubbles.__getattr__`
-(PEP 562), perché è un meccanismo che nasconde errori di battitura nei nomi delle costanti.
+**Dove gira cosa**: la mappa si costruisce **offline** (30 minuti, un passo da 11 GB di picco); la
+diffusione gira **online nel prodotto**, e nel prodotto c'è un secondo motore, in JavaScript, che cammina
+sulle **bolle** invece che sui titoli — una semplificazione dichiarata, di cui misuriamo il costo
+(le due diffusioni condividono metà dei primi dieci mondi, Jaccard 0,25–0,54, e il primo mondo del motore
+vero cade sempre nei primi dieci di quello del prodotto).
 
 ---
 
-## 3. Cosa NON è verificato — leggerlo prima di fidarsi
+## 2. Dove guardare — la mappa dei file
 
-1. **Gli step restano comandi, non funzioni.** `02_partizione.py` legge `sys.argv` e `os.environ` da
-   dentro: non posso verificare che una riscrittura non cambi il risultato (13 min, 11 GB) e quindi non
-   l'ho fatta. La micro-fixture da 100 titoli resta **bloccata a monte** da questo.
-2. **Quattro passi non li ho rieseguiti**: `04_centroidi.py` (oltre 15 min, interrotto — l'artefatto è
-   rimasto intatto, verificato con lo sha), `06_mappa.py`, e i tre pesanti (`00` ~17 min, `01`, `02`).
-   **03 e 05 invece riproducono gli artefatti bit per bit**, ed è la prova che l'estrazione dei parametri
-   è fedele.
-3. **Il `ppr` unificato**: `ricetta.py` è **identico al bit**; `pesi.py` è deterministico (due corse
-   coincidono) e ha 4 righe su 6 identiche, le altre due differiscono di **meno dell'1%**. **La causa non
-   è stata isolata.** L'ipotesi più ovvia — float32 contro float64 nel seme — l'ho verificata ed è
-   **falsa**. Le due righe sono rapporti su 100 utenti, quindi sensibili a qualunque differenza minima.
-4. **La parità Python↔JS** ha un residuo di **4,2e-5** (errore normalizzato al massimo) di causa non
-   isolata, con i primi dieci mondi **nello stesso ordine**.
-5. **I quattro segnali del prodotto** (like, love, libreria, voti) restano **inventati**: con un proxy
-   dichiarato la precisione va da 6,4% a 6,2% e i portafogli hanno Jaccard 0,81 — cioè oggi quei fattori
-   **non spostano quasi niente**.
-6. **Il ticket 11 (i nomi degli artefatti) è aperto**, e non è più cosmetico: il DAG ha scoperto che
-   `centroidi_v1` che scrive `04-*` cattura anche `04-trama-qwen3b.npy`, l'artefatto dell'embedding. Due
-   pipeline che si spartiscono il prefisso `04-`.
-7. **La suite `npm test` ha 4 suite rosse preesistenti** (`staticPosters.test.js` e altre), 6 test. Non le
-   ho toccate: ma una suite con dentro test rossi da chissà quanto insegna a ignorare le suite rosse.
-
-**Domanda 2 — COSA CONTROLLARE:** di queste sette, quale ti sembra la più pericolosa? E: c'è una verifica
-che *non* ho fatto e che avrei dovuto fare prima di dichiarare chiuso un ticket? (La mia regola nuova è
-che un refactor si chiude solo con la prova che i numeri non cambiano — ma due volte questa settimana la
-prova era «i numeri *non cambiano quasi*», e ho dovuto scegliere una soglia. Non sono sicuro che sia la
-regola giusta.)
+| file | cos'è | quanto è delicato |
+|---|---|---|
+| `graph/canon.py` | il livello base: registro degli artefatti, lettura dei titoli, `storia_trakt`, i metadati del canone, **i contratti** (`assert_partizione`, `assert_allineamento_spazi`, `assert_ordine`, `assert_simmetrica`, `ranghi`), i banchi e le metriche di recall | **molto**: è la macchina che trasforma un silenzio in un errore |
+| `graph/camminata.py` | **l'unica** implementazione della diffusione: `pota`, `transizione`, `pesi_semi`, `diffondi`, `ppr`, `attiva_per_mondo` | **molto**: ci passano tutte le misure |
+| `graph/motore.py` | il motore: carica tutto, `deduci` (canone, forma, freddo), `modula` (gli assi), `scegli_mondi`, `lista` | **molto**: è la logica di prodotto |
+| `graph/bubbles.py` | la miscela dei componenti, la chiusura triangolare, Leiden, la potatura al nucleo | **molto**: il pezzo più grande e più lento |
+| `graph/collocator.py` | collocare un titolo nuovo in una bolla (due spazi: macro per la bolla, micro per i vicini) | alto |
+| `graph/parametri.py` | la tabella: ~50 iperparametri con stato epistemico (misurato / dichiarato / inventato), impronta della ricetta, `da_rivedere()` | alto |
+| `graph/pipeline.py` | la CLI, l'esportazione dell'artefatto per il prodotto, e **il DAG della costruzione** (`PASSO`, `piano()`, `build`) | alto |
+| `graph/measure/*.py` | **21 arbitri**: le misure che hanno deciso i parametri. Sono l'evidenza, e ognuno deve misurare *il motore*, non una variante | alto |
+| `graph/steps/*.py` | i sette passi della costruzione, in ordine | medio |
+| `src/engines/bolle/Bolle.js` | il motore del prodotto: diffusione sulle bolle, pesi, portafoglio, `descrivi` | alto |
+| `tests/test_graph_pipeline.py` | 17 prove in 2,5 s: equivalenza delle varianti di diffusione, contratti dell'artefatto, numeri incrociati dei metadati, e il DAG | basso costo, da estendere |
+| `tests/bolleParity.test.js` | la parità Python↔JavaScript, con un golden | basso costo |
 
 ---
 
-## 4. I prossimi passi, e dove non so decidere
+## 3. Cosa ti chiedo
 
-**Quello che farei io, in ordine:** (1) il ticket 11 — rinominare gli artefatti, adesso che il DAG dà il
-modo di farlo in sicurezza, perché due pipeline che si spartiscono `04-` sono una trappola pronta;
-(2) gli step come funzioni, partendo da 03 e 05 che so riprodurre bit per bit, così la micro-fixture
-esiste; (3) la calibrazione dei quattro segnali, che richiede i dati del prodotto e quindi una decisione
-del proprietario; (4) il job notturno vero (`esporta --colloca`), che non è mai stato eseguito fino in
-fondo.
+**Leggi tutto il codice, non solo i punti elencati.** Poi scrivi tutto quello che noti. In particolare:
 
-**E due cose su cui non so decidere, e le dico invece di scegliere a caso:**
+1. **bug subdoli** — quelli che non fanno crashare niente e danno numeri finiti e plausibili. È il tipo
+   che questo modulo ha già pagato più volte: un artefatto costruito su una partizione e usato con
+   un'altra; un `argsort(argsort(v))` che ordina al contrario; un contratto che cambia severità e i
+   chiamanti che continuano a trattarlo come permissivo; un'ancora di sostituzione che spezza una struttura
+   senza rompere la sintassi.
+2. **ottimizzazioni** — dove il codice fa più lavoro di quanto serva, e quanto si guadagnerebbe. Ci sono
+   già due misure che mostrano quanto spazio c'è: l'avvio del motore è passato da 51 s a **2,0** spostando
+   il parsing dei Parquet in un artefatto, e una diffusione pesata è risultata **più veloce** di una a
+   pesi uguali perché la seconda allocava un array per bolla per iterazione.
+3. **semplificazioni e piccoli refactor** — cose che si possono togliere, unificare o rendere ovvie, senza
+   cambiare i numeri. E qui ho un numero che vale la pena guardare: il modulo ha **4.622 righe di codice**
+   e **4.040 righe di arbitri**, cioè le misure sono grandi quanto il sistema che misurano. Non so se sia
+   giusto (le misure sono state l'unica difesa contro gli errori silenziosi, e hanno ripagato), ma un
+   rapporto così merita un'occhiata da fuori.
+4. **i contratti** — `graph/canon.py` è pieno di `assert_*` nati da errori reali. Dimmi quali contratti
+   **mancano**: quali proprietà, se violate, produrrebbero un risultato sbagliato invece di un errore.
 
-· **il valore di `DELTA_FASCIA`** (quanto lo slider `canone` sposta la finestra) l'ho messo a **1,0 in
-  spazio logaritmico** senza misurarlo. È dichiarato INVENTATO, ma è l'unico parametro che ho *creato* io
-  questa settimana e non ho idea se 1,0 sia ragionevole;
-· **`PESO_TIPO_FATTORI`** (`loved` 3,0 · `liked` 2,0 · `library` 1,5 · `watched` 1,0): con quei valori i
-  fattori di tipo non spostano quasi niente (vedi §3.5). Potrebbe voler dire che i valori sono troppo
-  vicini, o che il segnale non c'è. **Non lo so distinguere**, e mi sembra il tipo di domanda in cui una
-  lettura esterna vede subito cosa manca.
+**Sii prodigo di dettagli.** Non serve che tu sia breve, e non serve che tu scelga: se noti venti cose,
+scrivi venti cose. Anche quelle che ti sembrano minori — un nome che inganna, un commento che non
+corrisponde più al codice, un parametro il cui valore non ha una misura dietro. E per ognuna, **la
+soluzione possibile**, anche se è «va cancellato» o «non lo so, ma va misurato così».
 
-**Domanda 3 — PROSSIMI PASSI:** sei d'accordo sull'ordine? E: c'è un pezzo che consideri **finito e
-inutile da rifinire oltre**, su cui smettere di spendere? Perché dopo una settimana di rifiniture la
-domanda vera è cosa si può **smettere** di sistemare.
+---
+
+## 4. Le cose che so di non aver verificato
+
+Te le dico perché non ci spenda tempo a riscoprirle — e perché sono i posti dove è più probabile che ci
+sia qualcosa:
+
+1. **cinque degli otto passi della costruzione non sono stati rieseguiti**: `00` (~17 min), `01`, `02`
+   (~13 min, 11 GB), `04` (oltre 15 min, interrotto) e `06`. Gli step `03` e `05` invece **riproducono gli
+   artefatti bit per bit**, quindi l'estrazione dei parametri in `parametri.py` è fedele e il resto è
+   ragionevolmente vero — ma «ragionevolmente» non è «verificato».
+2. **gli step restano comandi, non funzioni**: `02_partizione.py` legge `sys.argv` e `os.environ` da
+   dentro, e non ho un modo di verificare che una riscrittura non cambi il risultato. La micro-fixture di
+   prova da 100 titoli è bloccata da questo.
+3. **due residui numerici di causa non isolata**: nel refactor della diffusione un banco ha 4 righe su 6
+   identiche al bit e 2 che differiscono di **meno dell'1%** (rapporti su 100 utenti); e la parità
+   Python↔JS ha un errore normalizzato fino a **4,2e-5**, coi primi dieci mondi nello stesso ordine.
+4. **i quattro segnali del prodotto** (like, love, libreria, voti) hanno fattori dichiarati inventati: con
+   un proxy la precisione va da 6,4% a 6,2% e i portafogli hanno Jaccard 0,81, cioè oggi quei fattori non
+   spostano quasi niente. Non so se è perché i valori sono troppo vicini o perché il segnale non c'è.
+5. **i nomi degli artefatti sono fossili dei ticket** (`04-` è il macro, `05-` il micro, e due pipeline si
+   spartiscono il prefisso `04-`: il DAG ha già trovato che `04-*` cattura anche l'artefatto
+   dell'embedding). La rinomina è aperta.
+6. **il job notturno (`esporta --colloca`) non è mai stato eseguito fino in fondo**, e oggi collocherebbe
+   zero titoli perché il canone *è* il grafo.
+7. **la suite `npm test` ha 4 suite rosse preesistenti** (6 test, per esempio `staticPosters.test.js`).
+   Non le ho toccate. Una suite con test rossi dentro insegna a ignorare le suite rosse.
+
+---
+
+## 5. Come rispondere
+
+Come preferisci: nel file dove hai scritto la volta scorsa (`todo grafo.md`), dentro i ticket di
+`.scratch/suggerimenti/issues/`, o in un documento tuo. L'importante è che per ogni cosa che scrivi ci sia
+**cosa hai visto, dove, e cosa faresti** — poi i ticket li scrivo io, e li eseguo.
+
+L'ultima volta hai trovato quattro bug reali leggendo un digest, e tre dei quattro erano sintomi di classi
+di errore più grandi. Il modulo adesso è cambiato molto. Questa volta ti chiedo di guardarlo tutto, non
+solo le parti nuove.
