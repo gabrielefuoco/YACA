@@ -274,6 +274,13 @@ def colloca(dd, tipo, S, margine=MARGINE, S_macro=None):
             voti_filtrati = True
 
     j = int(np.argmax(cos_f))
+    # SE TUTTI I COSENI SONO ZERO, NON SI SCEGLIE NIENTE. `argmax` su un vettore di zeri restituisce il
+    # PRIMO indice, e `0.0 <= 0.0 * (1 + margine)` e' vero: un titolo nuovo i cui token non compaiono in
+    # nessuna bolla compatibile per voti atterrava cosi' in una bolla arbitraria (la prima per indice di
+    # catalogo) con confidenza 0.0. Il silenzio e' il difetto, non l'esito: `None` e' il modo in cui
+    # questa funzione dice gia' «non lo so».
+    if float(cos[j]) <= 0.0:
+        return None, 0.0, len(tok), len(tok) - n_dentro
     b = int(Sm["TUTTE"][j])
     # la regola di medium (ticket 03), SIMMETRICA: una serie preferisce le bolle-serie, un film le
     # bolle-film. La prima versione la applicava solo alle serie, e un film poteva atterrare in una

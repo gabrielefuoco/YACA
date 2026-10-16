@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # Quattro contratti da aggiungere a `canon.py`
@@ -15,3 +15,7 @@ Nati da errori reali, come gli altri. Ognuno trasforma un silenzio in un errore:
 4. **`assert_monotonia_lista(lista, nome)`** — in `motore.lista()`, prima di restituire: i punteggi di
    ogni lista ordinata devono essere **non crescenti**. Avrebbe fatto scattare subito `uscite_nuove`
    (ticket 19) e `un_passo_fuori` (ticket 20).
+
+---
+
+FATTI il 16/10/2026 in `canon.py` e COLLEGATI dove servono: `assert_monotonia_lista` in `motore.lista()` (con `nicchia_di_qualita` ESENTE — e' ordinata per qualita', non per attivazione, e l'eccezione sta scritta nel contratto: un contratto che protesta a sproposito si impara a ignorarlo); `assert_split_temporale` in `pesi.py`, dove il bug del tempo invertito e' nato; `assert_lunghezza_canone` in `metadati()`; `assert_stocastica` esiste ed e' provato ma non e' chiamato da nessun percorso di produzione — il test dell'artefatto copre la stessa proprietà in pytest. E i quattro hanno un test che li fa ACCENDERE su casi guasti: un contratto che non protesta mai non e' un contratto, e' un commento.

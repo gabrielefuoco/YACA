@@ -168,6 +168,26 @@ def test_il_contratto_di_simmetria_protesta():
         K.assert_simmetrica(A, nome="prova", controlla=True)
 
 
+def test_i_contratti_nuovi_protestano_sui_casi_corrotti():
+    """Ogni contratto deve ACCENDERSI su un caso guasto: un contratto che non protesta mai non e' un
+    contratto, e' un commento. Questi quattro nascono da errori veri del 16/10/2026."""
+    # 1. massa: una riga che non somma a 1 (era il round a 4 decimali senza rinormalizzazione)
+    R = sp.csr_matrix(np.array([[0.5, 0.4993], [0.0, 1.0]]))
+    with pytest.raises(Exception):
+        K.assert_stocastica(R, nome="prova", tol=1e-9, controlla=True)
+    # 2. tempo: eta' in giorni da oggi, il passato ha eta' PIU' GRANDE
+    with pytest.raises(Exception):
+        K.assert_split_temporale(np.array([2.0, 3.0]), np.array([400.0, 500.0]), controlla=True)
+    K.assert_split_temporale(np.array([400.0, 500.0]), np.array([2.0, 3.0]), controlla=True)
+    # 3. allineamento: un array slittato di una riga
+    with pytest.raises(Exception):
+        K.assert_lunghezza_canone(np.array([1.0, 2.0, 3.0]), "prova", atteso=66_259, controlla=True)
+    # 4. ordine: una lista "ordinata per attivazione" che non lo e'
+    with pytest.raises(Exception):
+        K.assert_monotonia_lista([("a", 0.1), ("b", 0.9)], "prova", controlla=True)
+    K.assert_monotonia_lista([("a", 0.9), ("b", 0.1)], "prova", controlla=True)
+
+
 def test_il_contratto_di_ordine_protesta_col_verso_sbagliato():
     """È il bug che è stato fatto TRE volte in una sera: `argsort(argsort(v))` è ASCENDENTE, quindi
     ordina per primi i valori più bassi.

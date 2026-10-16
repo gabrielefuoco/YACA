@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # `e[seme] = w` perde la massa quando `seme` ha indici duplicati (difetto latente)
@@ -12,3 +12,7 @@ il meccanismo e' vero come **difetto latente**, ma **non spiega** quel residuo, 
 **Fix lo stesso** (costa nulla ed e' difensivo): `np.add.at(e, seme, w)` e poi `e /= max(e.sum(), 1e-12)`.
 Il giorno che un titolo finisse due volte in una storia — per un tipo di segnale doppio, per un merge di
 liste, per una storia costruita a mano con `--file` — il peso sarebbe giusto invece che arbitrario.
+
+---
+
+FATTO il 16/10/2026: `np.add.at(e, seme, w)` e poi `e /= e.sum()` (anche nel caso uniforme). **Resta un residuo senza causa**: il difetto e' latente (zero duplicati su 60 utenti e 19.218 righe) e quindi NON spiega l'1% di `pesi.py`, che va cercato altrove.

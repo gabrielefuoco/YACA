@@ -215,6 +215,8 @@ def main():
         o = np.argsort(-np.asarray(eta))                 # dal passato al futuro
         taglio = int(len(righe) * FRAZIONE)
         pos_p, pos_f = o[:taglio], o[taglio:]
+        # IL CONTRATTO, dove il bug e' nato due volte: semina dal passato, non dal futuro.
+        K.assert_split_temporale(eta[pos_p], eta[pos_f], nome=f"utente {u}")
         A, Bt = righe[pos_p][::-1], righe[pos_f]         # A: i semi, i piu' recenti del passato
         eta_A, plays_A = eta[pos_p][::-1], plays[pos_p][::-1]
         if len(A) < 10 or len(Bt) < 5:

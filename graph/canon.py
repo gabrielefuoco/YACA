@@ -571,6 +571,94 @@ def assert_modello(target, previsione, nome="modello", coef_norma=None, controll
     return r
 
 
+# ---------------------------------------------------------------- i contratti aggiunti il 16/10/2026
+def assert_stocastica(P, nome="P", tol=1e-9, controlla=True, auto_anello_sopra=0.10):
+    """CONTRATTO DI CONSERVAZIONE DELLA MASSA. Una riga di transizione che non somma a 1 perde massa.
+
+    Nasce da un bug vero: `esporta` arrotondava i pesi a 4 decimali SENZA rinormalizzare, e le righe
+    si scostavano da 1 fino a 7e-4 — abbastanza da far divergere il motore Python da quello JavaScript
+    di 4,2e-5 e da rendere "sporca" la parità senza che nessuno sapesse perche'. Il mio test se n'era
+    accorto e io avevo **allargato la tolleranza**: una tolleranza larga e' il posto dove un bug si
+    nasconde, quindi il contratto la tiene stretta e lo dice a voce alta.
+
+    `auto_anello_sopra` e' la seconda meta': nei titoli il 47,8% della massa resta nella bolla a ogni
+    passo, quindi la diagonale della mappa non e' un dettaglio — se una rigenerazione la perdesse,
+    l'attivazione si svuoterebbe dentro i mondi e nessun numero andrebbe in errore.
+    """
+    if not controlla:
+        return
+    S = np.asarray(P.sum(1)).ravel()
+    gradi = np.asarray((P != 0).sum(1)).ravel()
+    vive = gradi > 0
+    if vive.any():
+        peggio = float(np.abs(S[vive] - 1.0).max())
+        if peggio > tol:
+            raise AssertionError(
+                f"{nome}: una riga di transizione non somma a 1 (scarto massimo {peggio:.2e}). "
+                f"La diffusione perde massa a ogni passo, e i numeri restano finiti e plausibili.")
+    diag = np.asarray(P.diagonal()).ravel() if hasattr(P, "diagonal") else np.zeros(0)
+    if len(diag) and vive.any():
+        med = float(np.median(diag[vive]))
+        if med < auto_anello_sopra:
+            raise AssertionError(
+                f"{nome}: la mediana dell'auto-anello e' {med:.3f}, sotto {auto_anello_sopra}. "
+                f"La ritenzione interna delle bolle e' sparita: l'attivazione esce tutta a ogni passo.")
+
+
+def assert_split_temporale(eta_semi, eta_oro, nome="split", controlla=True):
+    """CONTRATTO ANTI-INVERSIONE. `eta` e' in GIORNI DA OGGI: il passato ha eta' PIU' GRANDE.
+
+    Chiude la classe di errore del 16/10/2026, che si e' presentata due volte in due forme diverse:
+    in `pesi.py` l'ordine era invertito (il presente seminava per predire il passato remoto) e in
+    `intero.py` il taglio separava i MEDIUM (film come semi, serie come oro) perche' `da_trakt` non
+    leggeva le date. In entrambi i casi i numeri uscivano, erano plausibili, ed erano sbagliati.
+    """
+    if not controlla:
+        return
+    a, b = np.asarray(eta_semi, float), np.asarray(eta_oro, float)
+    if len(a) == 0 or len(b) == 0:
+        return
+    if float(np.median(a)) <= float(np.median(b)):
+        raise AssertionError(
+            f"{nome}: i semi hanno eta' mediana {np.median(a):.0f} giorni, l'oro {np.median(b):.0f}. "
+            f"Il passato deve avere eta' PIU' GRANDE: questo split sta seminando dal futuro.")
+
+
+def assert_lunghezza_canone(arr, nome, atteso=None, controlla=True):
+    """CONTRATTO DI ALLINEAMENTO DEI METADATI. Un array slittato di una riga non fa crashare niente.
+
+    Nasce da `titoli-canone.txt`: si scriveva il titolo togliendo `\\n` ma non `\\r`, e un ritorno
+    carrello in un titolo qualsiasi — riletto con le newline universali — avrebbe prodotto un array
+    piu' lungo di N, facendo scivolare TUTTI i titoli successivi di una riga. Nessuna eccezione, solo
+    film che si chiamano come il successivo.
+    """
+    if not controlla or arr is None:
+        return
+    a = np.asarray(arr)
+    if atteso is not None and len(a) != atteso:
+        raise AssertionError(f"{nome}: {len(a):,} elementi invece di {atteso:,}. Allineamento perso.")
+    if a.dtype.kind == "f" and np.isnan(a).any():
+        raise AssertionError(f"{nome}: {int(np.isnan(a).sum())} NaN. Un array allineato non ne ha.")
+
+
+def assert_monotonia_lista(titoli, nome, controlla=True):
+    """CONTRATTO DI ORDINE DELLE LISTE. Una lista "ordinata per attivazione" deve esserlo davvero.
+
+    Avrebbe fatto scattare subito DUE bug del 16/10/2026: `uscite_nuove`, che usciva ordinata per
+    indice di catalogo mentre ogni voce portava la sua attivazione (l'illusione di un ordine), e
+    `un_passo_fuori`, che concatenava tre bolle senza riordinarle — ed e' da li' che veniva la
+    conclusione di prodotto sbagliata.
+    """
+    if not controlla or not titoli:
+        return
+    s = [float(x[1]) for x in titoli]
+    for i in range(len(s) - 1):
+        if s[i] + 1e-12 < s[i + 1]:
+            raise AssertionError(
+                f"{nome}: la lista non e' ordinata per attivazione — posizione {i} = {s[i]:.6f}, "
+                f"posizione {i+1} = {s[i+1]:.6f}.")
+
+
 def centra(P, is_tv):
     Q = P.astype(np.float32).copy()
     Q[~is_tv] -= P[~is_tv].mean(0)
@@ -795,6 +883,8 @@ def metadati():
             # fissa pari al titolo piu' lungo (350 caratteri -> 41 MB). Un file di righe e' 2 MB e si
             # legge in 40 ms.
             d["TIT"] = np.array(pt.read_text(encoding="utf-8").split("\n"), dtype=object)
+            _, _, _N, _ = titoli()                     # cachata: qui costa una chiamata, non un caricamento
+            assert_lunghezza_canone(d["TIT"], "titoli-canone.txt", atteso=_N)
             return d
         print("  metadati-canone: i generi degli assi sono cambiati, ricostruisco", flush=True)
     _, row_of, N, _ = titoli()
@@ -843,7 +933,8 @@ def metadati():
     d["ANNO"] = np.nan_to_num(d["ANNO"])
     np.savez_compressed(z, generi_sha=np.array(sha_generi),
                         **{k: d[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")})
-    pt.write_text("\n".join(str(t).replace("\n", " ") for t in titoli_str), encoding="utf-8")
+    pt.write_text("\n".join(str(t).replace("\r", " ").replace("\n", " ") for t in titoli_str),
+                  encoding="utf-8")
     print(f"  metadati-canone: costruiti e salvati ({z.stat().st_size/1e6:.1f} MB "
           f"+ {pt.stat().st_size/1e6:.1f} MB)", flush=True)
     d["TIT"] = titoli_str

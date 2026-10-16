@@ -68,7 +68,13 @@ class Motore:
         self.MEM = np.load(K.A("bolle-eterogeneo-subvoti.npy"))
         self.NB = int(self.MEM.max()) + 1
         self.SZ = np.bincount(self.MEM)
-        self.MEMBRI = [np.where(self.MEM == b)[0] for b in range(self.NB)]
+        # I MEMBRI SENZA 3.497 SCANSIONI. Prima: `[np.where(self.MEM == b)[0] for b in range(NB)]` —
+        # 3.497 passate su 66.259 elementi, ~231 milioni di confronti, a OGNI avvio del motore. E' lo
+        # stesso pattern O(N log N) che `collocator.py` usa gia' da tempo: si ordina una volta e si
+        # cercano i confini.
+        _ord = np.argsort(self.MEM, kind="stable")
+        _conf = np.searchsorted(self.MEM[_ord], np.arange(self.NB + 1))
+        self.MEMBRI = [_ord[_conf[b]:_conf[b + 1]] for b in range(self.NB)]
         M = np.load(K.A("mappa-finale-6-2.npz"), allow_pickle=True)
         self.INTRA = M["intra"]
         # I VICINI VENGONO DALLA MAPPA PESATA, NON DALLA SOLA `intra`. `M["intra"]` ha i 6 archi
@@ -95,6 +101,16 @@ class Motore:
         self.VAVE, self.POP, self.ANNO = m["VAVE"], m["POP"], m["ANNO"]
         self.NEP = m["NEP"].astype(np.float32)          # (il denominatore del peso delle serie)
         self.COZY, self.IMP = m["COZY"], m["IMP"]       # gli assi, dalle impronte dei generi
+        # LE QUOTE PER MONDO, PRECALCOLATE UNA VOLTA. Prima `_quota_per_mondo` rifaceva 3.497 `mean()`
+        # su maschere lunghe a ogni chiamata di `modula()`, e `B.IS_TV[self.MEM == cb].mean()` in
+        # `scegli_mondi` e in `lista` ricostruiva ogni volta una maschera booleana su 66.259 elementi.
+        # `np.bincount` fa la stessa cosa — la stessa, elemento per elemento — una volta sola.
+        self.QUOTA_TV = np.bincount(self.MEM, weights=B.IS_TV.astype(float),
+                                    minlength=self.NB) / np.maximum(self.SZ, 1)
+        self.QUOTA_COZY = np.bincount(self.MEM, weights=self.COZY.astype(float),
+                                      minlength=self.NB) / np.maximum(self.SZ, 1)
+        self.QUOTA_IMP = np.bincount(self.MEM, weights=self.IMP.astype(float),
+                                     minlength=self.NB) / np.maximum(self.SZ, 1)
         self._generi = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
         self._generi_imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
         self.VOTMED = np.array([float(np.median(self.VOT[self.MEMBRI[b]]))
@@ -134,11 +150,18 @@ class Motore:
 
     # ------------------------------------------------------------------ gli assi
     def _quota_per_mondo(self, maschera):
-        q = np.zeros(self.NB)
-        for b in range(self.NB):
-            m = self.MEMBRI[b]
-            q[b] = float(maschera[m].mean()) if len(m) else 0.0
-        return q
+        """LA QUOTA DI UN ASSE PER MONDO: precalcolata in `__init__` per COZY e IMP.
+
+        Il calcolo era 3.497 `mean()` su maschere lunghe a ogni chiamata di `modula()`; qui si legge
+        un vettore. Il confronto e' per identita' (`is`), che e' sicuro perche' `modula` passa
+        esattamente `self.COZY` e `self.IMP`: per una maschera qualsiasi si calcola, come prima.
+        """
+        if maschera is self.COZY:
+            return self.QUOTA_COZY
+        if maschera is self.IMP:
+            return self.QUOTA_IMP
+        return (np.bincount(self.MEM, weights=np.asarray(maschera, float), minlength=self.NB)
+                / np.maximum(self.SZ, 1))
 
     def modula(self, att, slider, dedotto):
         """GLI ASSI MODULANO L'ATTIVAZIONE, non la sostituiscono (§13)."""
@@ -172,10 +195,10 @@ class Motore:
         scelti = []
 
         def diverso_da(cb, scelti):
-            meio = B.IS_TV[self.MEM == cb].mean() > 0.5
+            meio = self.QUOTA_TV[cb] > 0.5
             return all(abs(np.log(max(self.VOTMED[cb], 1) / max(self.VOTMED[bb], 1)))
                        > P.MONDI_DIVERSI_SOGLIA_FASCIA
-                       or meio != (B.IS_TV[self.MEM == bb].mean() > 0.5) for bb in scelti)
+                       or meio != (self.QUOTA_TV[bb] > 0.5) for bb in scelti)
 
         # i primi `quante - diverse` per attivazione, gli altri per diversita'
         for cb in ordine:
@@ -278,13 +301,28 @@ class Motore:
         for b in bolle[1:]:
             liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], 8)})
 
+        # IL CONTRATTO DI ORDINE DELLE LISTE, dove vale. Le liste «ordinate per attivazione» devono
+        # esserlo davvero: senza questo controllo `uscite_nuove` usciva per indice di catalogo (col
+        # punteggio accanto, a dare l'illusione di un ordine) e `un_passo_fuori` erano tre bolle
+        # concatenate — ed e' da quella concatenazione che e' venuta la conclusione di prodotto
+        # sbagliata del 16/10/2026.
+        #
+        # `nicchia_di_qualita` E' ESENTE, e il motivo vale: e' ordinata per QUALITA' (voto medio piu'
+        # il bonus per chi sta nelle liste di altri), non per attivazione. Senza questa eccezione
+        # scritta, il contratto protesterebbe contro una scelta voluta — e un contratto che protesta a
+        # sproposito si impara a ignorarlo. Se un giorno la nicchia diventasse ordine di attivazione,
+        # si toglierebbe da qui.
+        for li in liste:
+            if li["tipo"] != "nicchia_di_qualita":
+                K.assert_monotonia_lista(li["titoli"], f"lista {li['tipo']}")
+
         return {"versioni": {"artefatto": self.artefatto, "ricetta": P.impronta()},
                 "slider": slider,
                 "profilo": dedotto,
                 "semi": {"n": int(len(righe)), "da_catalogo": bool(dedotto["freddo"])},
                 "mondi": [{"bolla": int(b), "attivazione": float(att[b]), "titoli": int(self.SZ[b]),
                            "voti_mediani": float(self.VOTMED[b]),
-                           "quota_serie": float(B.IS_TV[self.MEM == b].mean()),
+                           "quota_serie": float(self.QUOTA_TV[b]),
                            "vicini": [int(x) for x in self.VICINI[b][:6]]} for b in bolle],
                 "liste": liste}
 

@@ -88,10 +88,17 @@ def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False):
     alpha = P.ALPHA if alpha is None else float(alpha)
     iters = P.ITER if iters is None else int(iters)
     e = np.zeros(Tr.shape[0], np.float64)
+    # `np.add.at` INVECE DI `e[seme] = ...`. Con un indice duplicato l'assegnamento indicizzato di NumPy
+    # SOVRASCRIVE, non somma: `e[[i,i]] = [3,7]` da' 7, non 10 — e la massa delle occorrenze precedenti
+    # sparisce. Oggi le storie non hanno duplicati (verificato: zero su 60 utenti e 19.218 righe), quindi
+    # e' un difetto LATENTE — ma e' il tipo che si accende il giorno che una storia arriva da un'altra
+    # strada (un `--file` costruito a mano, un merge di liste, un tipo di segnale doppio) e che allora
+    # produce pesi arbitrari invece che sbagliati in modo visibile.
     if pesi is None:
-        e[seme] = 1.0 / max(len(seme), 1)
+        np.add.at(e, seme, 1.0)
     else:
-        e[seme] = np.asarray(pesi, np.float64) / max(float(np.sum(pesi)), 1e-12)
+        np.add.at(e, seme, np.asarray(pesi, np.float64))
+    e /= max(float(e.sum()), 1e-12)
     r = e.copy()
     for _ in range(iters):
         r = alpha * e + (1 - alpha) * (r @ Tr)

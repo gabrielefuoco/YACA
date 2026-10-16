@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # `colloca`: se tutti i coseni sono zero, `argmax` restituisce la bolla 0
@@ -8,3 +8,7 @@ nelle bolle compatibili per voti, `cos` vale `0.0` su tutte, `np.argmax` restitu
 titolo atterra in una bolla arbitraria con confidenza `0.0`.
 **Fix**: subito dopo `j = int(np.argmax(cos_f))`, `if cos[j] <= 0.0: return None, 0.0, len(tok),
 len(tok) - n_dentro` — che e' gia' il modo in cui la funzione segnala «non lo so».
+
+---
+
+FATTO il 16/10/2026: subito dopo `j = int(np.argmax(cos_f))`, `if float(cos[j]) <= 0.0: return None, 0.0, ...` — che e' il modo in cui la funzione dice gia' «non lo so». **NON ESERCITATO da un test**: il caso richiede un titolo coi token nel vocabolario ma in nessuna bolla compatibile per voti, e non l'ho costruito. Dichiarato.

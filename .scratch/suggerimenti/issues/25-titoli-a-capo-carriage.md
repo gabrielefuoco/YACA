@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # Un `\r` in un titolo sfalsa l'allineamento di `titoli-canone.txt`
@@ -9,3 +9,7 @@ contiene un ritorno carrello, `pt.read_text(...)` (che usa le newline universali
 un'eccezione.
 **Fix**: `.replace("\r", " ").replace("\n", " ")` in scrittura, e `assert len(d["TIT"]) == N` in lettura
 (vedi anche il ticket 34, contratto di lunghezza).
+
+---
+
+FATTO il 16/10/2026: `.replace("\r", " ")` in scrittura e `assert_lunghezza_canone(..., atteso=N)` in lettura. Verificato: il file si carica e il contratto non protesta (66.259 titoli).
