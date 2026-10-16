@@ -74,7 +74,7 @@ print(f"  collezioni TMDB con 2+ titoli nel canone: {len(COLL):,} · "
 # PRETENDE allineata, e se non lo e' la misura si rifiuta di rispondere: un numero su due
 # partizioni diverse non e' un numero.
 MAPPA = next((p for p in ("mappa-finale-6-2.npz", "mappa-pesata-6-2.npz")
-              if K.A(p).exists()), None)
+              if K.esiste(p)), None)
 if MAPPA is None:
     raise SystemExit("manca la mappa 6+2 in graph/data/: senza, la misura delle saghe non ha un\n"
                      "  oggetto onesto su cui misurare (vedi il commento qui sopra)")

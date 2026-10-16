@@ -16,10 +16,11 @@ QUI = pathlib.Path(__file__).resolve().parent
 import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0, LOTTO, OGNI = time.time(), 200, 2000
 ML = K.DATA      # i dati del modulo hanno una cartella loro
-MOD = "qwen3-embedding:0.6b"
+MOD = P.MOD_EMBEDDING
 # PAYLOAD B: "titolo. trama". Misurato su due test (ticket 04i): sul test dei gemelli la separazione
 # passa da +0,314 a +0,342 e soprattutto il caso peggiore si chiude — la coppia simile piu' bassa
 # (0,515) sta sopra la diversa piu' alta (0,435), mentre con la sola trama si sovrapponevano.

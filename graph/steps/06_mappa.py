@@ -30,12 +30,13 @@ import scipy.sparse.csgraph as cg
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
 MEM_NOME = os.environ.get("MEM", "bolle-eterogeneo-subvoti.npy")
 TRI_NOME = os.environ.get("TRI", "bolle-eterogeneo-V10-p1.0-triangolo.npz")
 OUT = os.environ.get("OUT", "mappa-finale-6-2.npz")
-K_INTRA, K_CROSS = 6, 2
+K_INTRA, K_CROSS = P.MAPPA_INTRA, P.MAPPA_CROSS
 
 print("=" * 104)
 print(f"LA MAPPA {K_INTRA}+{K_CROSS} — su {MEM_NOME}")

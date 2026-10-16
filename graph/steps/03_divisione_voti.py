@@ -26,11 +26,12 @@ QUI = pathlib.Path(__file__).resolve().parent
 import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
 ML = K.DATA      # i dati del modulo hanno una cartella loro
-SPREAD_MIN = float(sys.argv[1]) if len(sys.argv) > 1 else 10.0
-MIN_MEMBRI = int(sys.argv[2]) if len(sys.argv) > 2 else 15
+SPREAD_MIN = float(sys.argv[1]) if len(sys.argv) > 1 else P.VOTI_SPREAD_MIN
+MIN_MEMBRI = int(sys.argv[2]) if len(sys.argv) > 2 else P.VOTI_MIN_MEMBRI
 print("=" * 100)
 print(f"SUB-CLUSTERING PER ETEROGENEITA' DI VOTI (p90/p10 > {SPREAD_MIN}, almeno {MIN_MEMBRI} titoli)")
 print("=" * 100, flush=True)
@@ -46,7 +47,7 @@ sz = np.bincount(mem)
 TRI = next((p for p in (f"bolle-eterogeneo-V10-p1.0-r{os.environ.get('RES', '200')}-triangolo.npz",
                         "bolle-eterogeneo-V10-p1.0-r200-triangolo.npz",
                         "bolle-eterogeneo-V10-p1.0-triangolo.npz")
-            if K.A(p).exists()), None)
+            if K.esiste(p)), None)
 if TRI is None:
     raise SystemExit("nessun triangolo di V10 in graph/data/ — rigenera con steps/02_partizione.py")
 print(f"  triangolo: {TRI}", flush=True)
@@ -94,7 +95,7 @@ for b in sorted(bersagli, key=lambda z: -SP[z])[:10]:
 import igraph as ig
 import leidenalg as la
 
-RISOLUZIONI = (0.05, 0.1, 0.2, 0.4, 0.8)
+RISOLUZIONI = tuple(P.VOTI_RISOLUZIONI)
 NUOVA = mem.copy()
 prossimo = NB
 dettagli = []

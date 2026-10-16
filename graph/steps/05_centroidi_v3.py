@@ -29,14 +29,15 @@ import scipy.sparse as sp
 QUI = pathlib.Path(__file__).resolve().parent
 import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
+from graph import parametri as P
 from graph import canon as K
 
 T0 = time.time()
 ML = K.DATA      # i dati del modulo hanno una cartella loro
 PQ = pathlib.Path(".cache/tmdb")
-DF_MIN = 3
-TETTO = 20.0                      # idf massimo = log(N/20)
-PESI = {"ge:": 1.5, "rt:": 1.5, "co:": 0.4, "ca:": 0.4, "di:": 0.8}
+DF_MIN = P.V3_DF_MIN
+TETTO = P.V3_TETTO_IDF                      # idf massimo = log(N/20)
+PESI = dict(P.PESI_TOKEN)          # LA FONTE E' UNA: era il ticket 13
 
 print("=" * 96)
 print("SALVO GLI ARTEFATTI V3")
@@ -44,7 +45,7 @@ print("=" * 96, flush=True)
 
 # LA PARTIZIONE FINALE, non V8: vedi il commento in `collocator.py` e nel README (Trappola 3b).
 PART = os.environ.get("MEM", "bolle-eterogeneo-subvoti.npy")
-if not K.A(PART).exists():
+if not K.esiste(PART):
     raise SystemExit(f"manca {PART} in graph/data/")
 mem = np.load(K.A(PART))
 N = len(mem)

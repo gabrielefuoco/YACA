@@ -29,12 +29,13 @@ QUI = pathlib.Path(__file__).resolve().parent
 import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
 ML = K.DATA      # i dati del modulo hanno una cartella loro
-TOPK = 30
-SOGLIA = 0.30          # da misurare: si stampa il grado a varie soglie prima di scegliere
-BLOCCO = 2000
+TOPK = P.TRAMA_TOPK
+SOGLIA = P.TRAMA_SOGLIA          # da misurare: si stampa il grado a varie soglie prima di scegliere
+BLOCCO = P.TRAMA_BLOCCO
 
 print("=" * 100)
 print("IL COMPONENTE DI TRAMA — dagli embedding agli archi")

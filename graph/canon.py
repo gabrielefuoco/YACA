@@ -63,6 +63,19 @@ def A(nome):
 
 
 @functools.lru_cache(maxsize=1)
+def esiste(nome):
+    """Se un artefatto c'e', SENZA sollevare. Il compagno di `A()`, e serve piu' di quanto sembri.
+
+    Il 16/10/2026 sei posti facevano `A(nome).exists()`: quando `A()` e' stato reso severo (solleva se
+    l'artefatto manca — giusto, era la Trappola 3b), quei sei `if` sono diventati **bombe**: il ramo di
+    ripiego che dovevano proteggere non si e' mai piu' eseguito, e lo script moriva sul PRIMO nome che
+    non esisteva invece di provare il secondo. `steps/03_divisione_voti.py` cercava il triangolo in tre
+    nomi (`-r200`, `-r200`, `-p1.0`): il file giusto c'era, e lo step non partiva lo stesso.
+    Il sintomo era chiaro, la causa no: la colpa era di un `if` che sembrava prudente.
+    """
+    return (DATA / nome).exists()
+
+
 def titoli():
     """LE 66.259 CHIAVI DEL CANONE, nell'ordine delle righe. Costosa: si legge una volta sola.
 

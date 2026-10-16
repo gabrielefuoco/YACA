@@ -29,12 +29,13 @@ import scipy.sparse as sp
 
 QUI = pathlib.Path(__file__).resolve().parent
 from . import bubbles as B
+from . import parametri as P
 from . import canon as K
 
 ML = K.ML
-PESI_TIPO = {"ge:": 1.5, "rt:": 1.5, "co:": 0.4, "ca:": 0.4, "di:": 0.8}   # V3, ticket 05
-MARGINE = 1.0          # il film deve battere il migliore serie di questo fattore (ticket 03)
-FATTORE_VOTI = 10.0    # la regola dei voti: [V/10, V*10] — il ticket 09 di `eterogeneo`
+PESI_TIPO = dict(P.PESI_TOKEN)     # LA FONTE E' UNA: era scritto anche in steps/05_centroidi_v3.py
+MARGINE = P.COLLOCA_MARGINE        # il film deve battere la migliore serie di questo fattore
+FATTORE_VOTI = P.COLLOCA_FATTORE_VOTI   # la regola dei voti: si guarda [V/10, V*10]
 PARTIZIONE = "bolle-eterogeneo-subvoti.npy"   # LE 3.497 BOLLE FINALI. Una sola, per tutti.
 
 _VOTI_CACHE = {}
@@ -151,7 +152,7 @@ def carica(v3=True):
     # essere giusto: sono io a dovergli dare il riferimento corretto.
     # IL CONTRATTO DELLA PARTIZIONE, e non e' un doppione di quello di sopra: quello confronta idf e
     # vocabolario fra loro, questo confronta gli artefatti con la PARTIZIONE su cui sono costruiti.
-    _impr = json.load(open(K.A(f"{prefisso}-impronte.json"), encoding="utf-8"))         if K.A(f"{prefisso}-impronte.json").exists() else {}
+    _impr = json.load(open(K.A(f"{prefisso}-impronte.json"), encoding="utf-8"))         if K.esiste(f"{prefisso}-impronte.json") else {}
     K.assert_partizione(PARTIZIONE, _impr, nome_artefatto=f"{prefisso}-*")
     _imp = K.A(f"{prefisso}-impronte.json")
     if _imp.exists():

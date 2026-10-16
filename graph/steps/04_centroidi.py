@@ -50,6 +50,7 @@ import scipy.sparse as sp
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
 ML = K.DATA            # i dati del modulo hanno una cartella loro
@@ -57,9 +58,9 @@ N = B.N
 import os
 PART = os.environ.get("MEM", "bolle-eterogeneo-subvoti.npy")
 TRI = os.environ.get("TRI", "bolle-eterogeneo-V10-p1.0-triangolo.npz")
-if not K.A(PART).exists():
+if not K.esiste(PART):
     raise SystemExit(f"manca {PART} in graph/data/")
-if not K.A(TRI).exists():
+if not K.esiste(TRI):
     raise SystemExit(f"manca {TRI} in graph/data/")
 print(f"  partizione: {PART} · triangolo: {TRI}", flush=True)
 
@@ -157,7 +158,7 @@ is_tv = B.IS_TV
 q_tv = np.zeros(NB)
 np.add.at(q_tv, mem, is_tv.astype(float))
 quota_tv = q_tv / np.maximum(sz, 1)
-MIN_MEMBRI = 5
+MIN_MEMBRI = P.CENTROIDI_MIN_MEMBRI
 bolle_serie = np.where((quota_tv > 0.5) & (sz >= MIN_MEMBRI))[0]
 bolle_film = np.where((quota_tv <= 0.5) & (sz >= MIN_MEMBRI))[0]
 print(f"\n  bolle totali {NB:,} · a maggioranza SERIE {len(bolle_serie):,} · a maggioranza FILM "

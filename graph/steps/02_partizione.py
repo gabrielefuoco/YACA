@@ -30,14 +30,15 @@ QUI = pathlib.Path(__file__).resolve().parent
 import sys; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 from graph import bubbles as B
 from graph import canon as K
+from graph import parametri as P
 
 T0 = time.time()
 ML = K.DATA      # i dati del modulo hanno una cartella loro
-PESI = [float(x) for x in (sys.argv[1:] or ["1.0"])]
+PESI = [float(x) for x in (sys.argv[1:] or [str(_p) for _p in P.PARTIZIONE_PESI])]
 # LA RISOLUZIONE si puo' cambiare da riga di comando: RES=200 e' la prova «bolle piu' piccole» chiesta
 # dall'utente. Il ticket 09 di `bolle-nitrile` diceva «RB 200 frantuma», ma lo diceva su un'altra
 # partizione e con le metriche vecchie: qui si rimisura, e si GUARDA.
-RES = int(__import__("os").environ.get("RES", "100"))
+RES = int(__import__("os").environ.get("RES", str(P.PARTIZIONE_RES)))
 print("=" * 104)
 print("LA PARTIZIONE COL COMPONENTE DI TRAMA — V10")
 print("=" * 104, flush=True)
@@ -54,7 +55,8 @@ print(f"  componente di trama: {TRAMA.nnz:,} archi · mediana {int(np.median(gt[
 
 # ---------------------------------------------------------------- la miscela
 INS = B.costruisci_insiemi()
-C = B.carica_componenti(con_shrinkage=True, min_sim_kw=0.12, min_sim_cast=0.02,
+C = B.carica_componenti(con_shrinkage=True, min_sim_kw=P.PARTIZIONE_MIN_SIM_KW,
+                        min_sim_cast=P.PARTIZIONE_MIN_SIM_CAST,
                         ricostruisci="cache", insiemi=INS)
 CD = dict(C)
 CD["DIR"] = B.maschera_genere(C["DIR"], INS["GEN"], INS["KW"], etichetta="DIR")

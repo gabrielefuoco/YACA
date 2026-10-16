@@ -132,7 +132,7 @@ def stato(_args) -> int:
         if not imp.exists():
             print(f"    {pref}: impronte assenti")
             continue
-        idf = np.load(K.A(f"{pref}-idf.npy")) if K.A(f"{pref}-idf.npy").exists() else None
+        idf = np.load(K.A(f"{pref}-idf.npy")) if K.esiste(f"{pref}-idf.npy") else None
         vocab = json.load(open(K.A(f"{pref}-vocab.json"), encoding="utf-8"))
         if idf is None:
             tf = sp.load_npz(K.A(f"{pref}-tfidf.npz")).tocsr()

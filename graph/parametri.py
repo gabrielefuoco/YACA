@@ -192,6 +192,86 @@ SCHEDA = [
      "measure/equilibrio.py"),
     ("STORIA_CORTA_SOTTO", 60, "ANALISI",
      "«Storia corta» = meno di 60 titoli. Taglio di analisi, non regola.", "measure/equilibrio.py"),
+
+    # ================================================================ I PARAMETRI DI COSTRUZIONE
+    # Questi NON governano la camminata: governano gli step che PRODUCONO gli artefatti (`graph/steps/`).
+    # Stavano cablati dentro gli script, e due di loro — la tassonomia dei token e i pesi per tipo —
+    # erano scritti DUE VOLTE (`steps/05_centroidi_v3.py` e `collocator.py`): cambiarne uno solo li
+    # disallineava in silenzio, senza crash e senza numeri che protestassero. E' il ticket 13.
+    #
+    # ATTENZIONE, e vale per chi legge fra un anno: cambiare uno di questi valori cambia l'impronta
+    # della ricetta, quindi invalida l'artefatto del prodotto e il fixture della parita' — ed e' giusto
+    # che lo faccia, perche' un grafo ricostruito e' un grafo diverso. Gli script hanno ancora le loro
+    # vie di scampo da riga di comando (`RES=100`, `python steps/03... 8 15`): qui ci sono i DEFAULT,
+    # cioe' i valori con cui sono stati costruiti gli artefatti che stanno in `graph/data/`.
+    ("MOD_EMBEDDING", "qwen3-embedding:0.6b", "TECNICO",
+     "Il modello che produce le 35.829 trame (~17 min, 0,6 GB). Non si scarica da solo: "
+     "`ollama pull qwen3-embedding:0.6b` prima.", "steps/00_embedding_trame.py"),
+    ("TRAMA_TOPK", 30, "SCELTO",
+     "I 30 vicini di trama per titolo. Da qui nascono gli 1,65M archi di `eterogeneo-TRAMA`: "
+     "alzarlo gonfia un componente che pesa gia' molto.", "steps/01_componente_trama.py"),
+    ("TRAMA_SOGLIA", 0.30, "SCELTO",
+     "Sotto questa similarita' di trama l'arco non si tiene. Lo script stampa il grado a varie soglie "
+     "prima di scegliere, apposta perche' il valore si guarda e non si indovina.",
+     "steps/01_componente_trama.py"),
+    ("TRAMA_BLOCCO", 2000, "TECNICO",
+     "Le righe per blocco nel calcolo della similarita': serve alla memoria, non al risultato.",
+     "steps/01_componente_trama.py"),
+    ("PARTIZIONE_RES", 200, "SCELTO",
+     "La risoluzione di Leiden. 200 e' la prova «bolle piu' piccole»: da qui vengono le 3.497 bolle "
+     "finali, dopo la divisione per voti. Si sovrascrive con `RES=100 python steps/02_partizione.py`.",
+     "steps/02_partizione.py"),
+    ("PARTIZIONE_PESI", [1.0], "SCELTO",
+     "I pesi dei componenti nella miscela, uno per argomento da riga di comando. `1.0` = i valori di "
+     "base, ed e' quello che ha prodotto gli artefatti attuali.", "steps/02_partizione.py"),
+    ("PARTIZIONE_MIN_SIM_KW", 0.12, "SCELTO",
+     "Similarita' minima fra due titoli sul solo asse delle keyword, dentro lo shrinkage dei componenti.",
+     "steps/02_partizione.py"),
+    ("PARTIZIONE_MIN_SIM_CAST", 0.02, "SCELTO",
+     "Come sopra, sul cast. E' piu' basso perche' il cast e' molto piu' sparpagliato.",
+     "steps/02_partizione.py"),
+    ("VOTI_SPREAD_MIN", 10.0, "SCELTO",
+     "La divisione per voti: una bolla si spacca solo se lo spread p90/p10 dei SUOI voti supera "
+     "questo valore (dopo aver imposto almeno 15 titoli a pezzo). E' la regola che ha prodotto le "
+     "3.497 bolle finali: senza, l'eterogeneita' dei voti restava dentro le bolle.",
+     "steps/03_divisione_voti.py"),
+    ("VOTI_MIN_MEMBRI", 15, "SCELTO",
+     "Titoli minimi perche' una bolla possa essere divisa. Sotto, la divisione fa piu' danno che bene.",
+     "steps/03_divisione_voti.py"),
+    ("VOTI_RISOLUZIONI", (0.05, 0.1, 0.2, 0.4, 0.8), "SCELTO",
+     "Le risoluzioni provate IN ORDINE dentro una bolla da spaccare: la prima che regge vince. "
+     "Fisse e dichiarate, non una ricerca libera — cosi' il risultato e' riproducibile.",
+     "steps/03_divisione_voti.py"),
+    ("CENTROIDI_MIN_MEMBRI", 5, "TECNICO",
+     "Sotto i 5 titoli una bolla non ha un centroide: e' il motivo per cui l'artefatto del prodotto "
+     "ha `termini` per 2.922 bolle su 3.497 e non per tutte.", "steps/04_centroidi.py"),
+    ("V3_DF_MIN", 3, "SCELTO",
+     "Document frequency minima perche' un token entri nel vocabolario V3: sotto, il token e' troppo "
+     "raro per dire qualcosa. E' una delle tre differenze fra lo spazio V1 e il V3.",
+     "steps/05_centroidi_v3.py"),
+    ("V3_TETTO_IDF", 20.0, "SCELTO",
+     "Tetto dell'idf: un token che compare in pochissimi titoli non deve pesare come se fosse "
+     "l'unico indizio del catalogo.", "steps/05_centroidi_v3.py"),
+    ("PESI_TOKEN", {"ge:": 1.5, "rt:": 1.5, "co:": 0.4, "ca:": 0.4, "di:": 0.8}, "SCELTO",
+     "QUESTO VALORE ERA SCRITTO IN DUE POSTI — qui in `steps/05_centroidi_v3.py` e in "
+     "`collocator.py` come `PESI_TIPO` — e i due lati del coseno devono parlare la stessa lingua: "
+     "cambiarlo in un posto solo non faceva fallire niente, faceva scivolare i punteggi. Genere e "
+     "rete contano molto, casa e cast poco, registi in mezzo.",
+     "steps/05_centroidi_v3.py + collocator.py"),
+    ("COLLOCA_MARGINE", 1.0, "SCELTO",
+     "Di quanto un film deve battere la migliore serie per vincere la collocazione: la regola del "
+     "medium, misurata nel ticket 03 di `eterogeneo`.", "collocator.py"),
+    ("COLLOCA_FATTORE_VOTI", 10.0, "SCELTO",
+     "La regola dei voti: si guardano le bolle con mediana dentro [V/10, V*10]. Sceglie il PIANO "
+     "prima della stanza — senza, *Il gladiatore II* atterrava in una bolla con mediana 89.",
+     "collocator.py"),
+    ("MAPPA_INTRA", 6, "SCELTO",
+     "I vicini intra-medium di ogni bolla sulla mappa navigabile. Con MAPPA_CROSS fanno i 6+2 archi.",
+     "steps/06_mappa.py"),
+    ("MAPPA_CROSS", 2, "SCELTO",
+     "I ponti verso l'altro medium, scelti per peso. Sono i 2 archi che l'artefatto del prodotto "
+     "buttava via prima del 16/10/2026, e senza i quali la diffusione non attraversava mai il confine.",
+     "steps/06_mappa.py"),
 ]
 
 # La tabella pubblica i nomi: cosi' non possono divergere da essa.
