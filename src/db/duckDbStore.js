@@ -410,7 +410,7 @@ class DuckDbStore {
             // costruite prima dell'iniezione (es. in un test, o se il dump si
             // carica dopo le prime richieste) vanno buttate, non riusate.
             try {
-                require('../engines/graph/HierarchicalGraph').invalidateKeywordCaches();
+                require('../engines/keywords/HierarchicalGraph').invalidateKeywordCaches();
             } catch (_e) { /* grafo non caricato: niente da invalidare */ }
         } catch (err) {
             console.warn('[DuckDbStore] Error building DF cache:', err.message);

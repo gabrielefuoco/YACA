@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: grilling
 Blocked by: 04
 
@@ -193,3 +193,82 @@ re-export** al vecchio percorso.
 Il 07 scrive `Dockerfile`, entrypoint, test e percorsi del modulo: se nasce con `graph/` alla root e poi il 06
 lo sposta, il lavoro del 07 va rifatto. Quindi: **questo ticket applica lo spostamento per primo**, e il 07
 nasce dentro `services/graph/`. (La collisione era dichiarata qui; ora è risolta in una direzione.)
+
+---
+
+## Esito dell'applicazione (17/10/2026)
+
+L'assetto è stato interamente applicato e verificato nel worktree.
+
+### 1. Spostamenti e Rinomine
+- **`graph/` → `services/graph/`** (47 file spostati): il pacchetto conserva il nome `graph`. Creato `pytest.ini` (`pythonpath = services`), aggiornato `services/graph/canon.py` (`ROOT = pathlib.Path(__file__).resolve().parents[2]`, `DATA = pathlib.Path(__file__).resolve().parent / "data"`), `pipeline.py` (scrittura bolle.json relativa a root, cwd in esecuzione su K.ROOT), `spazi-trakt.py` e il test `tests/test_graph_pipeline.py`.
+- **`src/engines/graph/` → `src/engines/keywords/`** (1 file spostato): `HierarchicalGraph.js` risiede ora sotto `src/engines/keywords/`.
+- **`offline_graph_builder/` → `services/keyword-graph/`** (3 file spostati). Aggiornato `.gitignore` con le regole per `services/keyword-graph/{venv, cache, .env, __pycache__}`.
+- **`todo/` → `docs/todo/`** (9 file spostati). Spostato inoltre `scripts/extracted_nsfw_keywords.json` in `docs/todo/extracted_nsfw_keywords.json` accanto alla relativa nota.
+- **Promozione `scripts/erdb-builder/` → `src/erdb/`**: creato `src/erdb/build.js` e `src/erdb/index.js`, mantenuto `scripts/erdb-builder/build.js` come thin CLI wrapper / re-export shim per retrocompatibilità.
+
+### 2. Cancellazioni e Storico Script
+- **19 script eliminati** con `git rm` (14 migrazioni/riparazioni one-off + 5 tool campagna QC).
+- Scritto il documento di tracciamento e recupero in [`docs/storico-script.md`](../../docs/storico-script.md) con SHA di commit, data, descrizione dell'attività e stato di prova dell'esecuzione.
+
+### 3. Aggiornamento Import e Chiamanti (Conteggi)
+- **Import di `HierarchicalGraph` aggiornati (5 moduli di prodotto/codice + 8 file di test + 1 doc)**:
+  - `src/engines/hybrid/catalogStrategies.js:56`
+  - `src/dna/dnaEngine.js:26` (e commento riga 16)
+  - `src/profile/ProfileScorer.js:187, 363, 477`
+  - `src/db/duckDbStore.js:413`
+  - `docs/ALGORITHMS.md:231`
+  - Suite di test: `tests/dnaKeywordIdentity.test.js`, `tests/diag.recommender.h1.lightMeta.test.js`, `tests/diag.recommender.h8.determinism.test.js`, `tests/characterization/dnaCharacterization.test.js`, `tests/characterization/dnaEngineExtraction.test.js`, `tests/duckDbAndMatchmaker.test.js`, `tests/heroAnimeFavoredSeam.test.js`, `tests/heroAnimeTypeSelectors.test.js`, `tests/ticket15.dnaFixes.test.js`.
+- **Import di `erdb` aggiornati (4 moduli di prodotto + 1 script ops)**:
+  - `src/api/staticPosters.js:7`
+  - `src/cache/posterDaEvento.js:21`
+  - `src/catalog/formatters/StremioFormatter.js:9`
+  - `src/utils/libraryPosterRefresh.js:35`
+  - `ops/erdb-legion/costruisci.js:34`
+
+### 4. `.dockerignore`
+- Esclusi `services/graph/` e `services/keyword-graph/` dall'immagine Docker dell'applicazione.
+- Mantenuto `scripts/` nel build context (verificato per i servizi e timer di `ops/`).
+
+### 5. Verifiche Eseguite
+- **Require check individuali**:
+  - `node -e "require('./src/engines/keywords/HierarchicalGraph')"` -> OK
+  - `node -e "require('./src/dna/dnaEngine')"` -> OK
+  - `node -e "require('./src/profile/ProfileScorer')"` -> OK
+  - `node -e "require('./src/db/duckDbStore')"` -> OK
+  - `node -e "require('./src/engines/hybrid/catalogStrategies'); process.exit(0)"` -> OK
+  - `node -e "require('./src/erdb/build')"` -> OK
+  - `node -e "require('./src/erdb')"` -> OK
+  - `node -e "require('./scripts/erdb-builder/build')"` -> OK
+  - `node -e "require('./src/api/staticPosters')"` -> OK
+  - `node -e "require('./src/cache/posterDaEvento')"` -> OK
+  - `node -e "require('./src/catalog/formatters/StremioFormatter')"` -> OK
+  - `node -e "require('./src/utils/libraryPosterRefresh')"` -> OK
+- **Test mirati Jest (un file alla volta)**:
+  - `npx jest tests/erdbBuilder.test.js` -> 27 passed (0.96s)
+  - `npx jest tests/posterNameConcordance.test.js` -> 9 passed (0.79s)
+  - `npx jest tests/erdbList.test.js` -> 23 passed (4.20s)
+  - `npx jest tests/dnaKeywordIdentity.test.js` -> 13 passed (0.73s)
+  - `npx jest tests/diag.recommender.h1.lightMeta.test.js` -> 2 passed (1.04s)
+  - `npx jest tests/diag.recommender.h8.determinism.test.js` -> 2 passed (0.49s)
+  - `npx jest tests/characterization/dnaCharacterization.test.js` -> 40 passed (0.69s)
+  - `npx jest tests/characterization/dnaEngineExtraction.test.js` -> 7 passed (1.30s)
+  - `npx jest tests/heroAnimeFavoredSeam.test.js` -> 9 passed (0.96s)
+  - `npx jest tests/heroAnimeTypeSelectors.test.js` -> 8 passed (6.40s)
+  - `npx jest tests/ticket15.dnaFixes.test.js` -> 20 passed (0.59s)
+- **Verifica Python del modulo graph**:
+  - `PYTHONPATH=services py -m graph.pipeline --help` -> OK (exit code 0)
+  - `PYTHONPATH=services py -m graph.pipeline ricetta` -> OK (exit code 0)
+  - `PYTHONPATH=services py -m graph.pipeline pesanti` -> OK (exit code 0)
+  - `py -m pytest tests/test_graph_pipeline.py -k "test_ppr_riproduce_le_varianti_degli_arbitri"` -> OK
+  - `py -m pytest tests/test_graph_pipeline.py -k "test_il_ciclo_non_e_duplicato_da_nessuna_parte"` -> OK
+  - `py -m pytest tests/test_graph_pipeline.py -k "test_il_dag_vero_e_in_ordine_topologico"` -> OK
+
+### 6. Passaggi rimanenti sul Mate (Produzione)
+Sul server host (`mate`):
+1. **Spostamento dei dati non tracciati**: spostare la cartella da 138 MB dei dati di calcolo:
+   ```bash
+   mv /srv/yaca/modulo/graph/data /srv/yaca/modulo/services/graph/data
+   ```
+2. **Ambiente e PYTHONPATH**: nei comandi manuali o cron che invocano la pipeline dalla radice del repo, assicurarsi di esportare `PYTHONPATH=services` (es. `PYTHONPATH=services python -m graph.pipeline ...`).
+

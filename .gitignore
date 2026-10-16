@@ -162,6 +162,10 @@ offline_graph_builder/venv/
 offline_graph_builder/__pycache__/
 offline_graph_builder/.env
 offline_graph_builder/cache/
+services/keyword-graph/venv/
+services/keyword-graph/__pycache__/
+services/keyword-graph/.env
+services/keyword-graph/cache/
 tmdb_worker/
 *.parquet
 *.jsonl

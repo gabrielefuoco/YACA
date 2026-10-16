@@ -184,7 +184,7 @@ class ProfileScorer {
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
         const keywordItems = filterRetiredTmdbKeywords(getKeywordItems(tmdbData));
-        const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+        const HierarchicalGraph = require('../engines/keywords/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
         
         // --- 1.1 Curva Logaritmica del Thematic Score (Soft-cap) ---
@@ -360,7 +360,7 @@ class ProfileScorer {
 
         // Keywords (VSM Gerarchico: L1, L2, L3)
         const keywordItems = filterRetiredTmdbKeywords(getKeywordItems(lightData));
-        const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+        const HierarchicalGraph = require('../engines/keywords/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords(keywordItems);
 
         let genreScore = 0;
@@ -474,7 +474,7 @@ class ProfileScorer {
         }
 
         // 3. HierarchicalGraph vectorization / semantic keywords
-        const HierarchicalGraph = require('../engines/graph/HierarchicalGraph');
+        const HierarchicalGraph = require('../engines/keywords/HierarchicalGraph');
         let vec = {};
         if (HierarchicalGraph && HierarchicalGraph.isLoaded && kws.length > 0) {
             vec = HierarchicalGraph.vectorizeKeywords(kws);

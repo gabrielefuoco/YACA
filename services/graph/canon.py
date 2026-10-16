@@ -22,14 +22,14 @@ import scipy.sparse as sp
 
 # La radice si ricava dal FILE, non dalla cartella corrente: prima `pathlib.Path(".")`
 # significava che il modulo funzionava solo se lanciato dalla radice del repo.
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 # GLI INPUT: i dati SCARICATI (TMDB, MovieLens, Trakt). Restano in `.cache`, sono una cache: si
 # possono riscaricare e non sono il prodotto del nostro lavoro.
 ML = ROOT / ".cache" / "movielens"
-# I DATI DEL MODULO: le partizioni, i centroidi, gli embedding, i componenti. Vivono in `graph/data/`
+# I DATI DEL MODULO: le partizioni, i centroidi, gli embedding, i componenti. Vivono in `services/graph/data/`
 # perche' sono il risultato del nostro lavoro: se stanno in una cache, la pulizia della cache li
 # cancella, e la manutenzione non sa piu' cosa e' prodotto e cosa e' scaricato.
-DATA = ROOT / "graph" / "data"
+DATA = pathlib.Path(__file__).resolve().parent / "data"
 GOLD = ROOT / ".scratch" / "ml-collaborativo" / "gold"
 TK = ROOT / ".cache" / "trakt" / "users"
 

@@ -80,7 +80,7 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
             }
         }
         expect(requires).toEqual(
-            expect.arrayContaining(['../data/keywordIds', '../engines/graph/HierarchicalGraph'])
+            expect.arrayContaining(['../data/keywordIds', '../engines/keywords/HierarchicalGraph'])
         );
     });
 });

@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { erdbIdDaNomeFile, eventoDaNomeFile } = require('../cache/posterDaEvento');
-const { posterUrl } = require('../../scripts/erdb-builder/build');
+const { posterUrl } = require('../erdb/build');
 const { scarica, scrivi } = require('../cache/drenaPoster');
 
 // Cartella dei poster già composti: in produzione è un volume montato in /data/erdb-cache,

@@ -21,7 +21,7 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.preprocessing import normalize
 from scipy import sparse as sp
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 PQ, ML = ROOT / ".cache" / "tmdb", ROOT / ".cache" / "movielens"
 CAP = int(os.environ.get("CAP", "2000"))
 ALPHA, SEED, MIN_U, MIN_I, MIN_A, MIN_CO, K_NN = 30.0, 20261008, 20, 10, 5, 5, 200
