@@ -9,6 +9,11 @@ const ALWAYS_VISIBLE_IDS = new Set([
 ]);
 
 const HERO_REGISTRY: Record<string, CatalogKind> = {
+  // le righe del grafo
+  yaca_mondi_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_mondi_series: { mediaSet: ['serie'], anime: 'agnostic' },
+  yaca_passo_fuori_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_passo_fuori_series: { mediaSet: ['serie'], anime: 'agnostic' },
   yaca_true_blend_movies: { mediaSet: ['film'], anime: 'agnostic' },
   yaca_true_blend_series: { mediaSet: ['serie'], anime: 'agnostic' },
   yaca_seed_network_movies: { mediaSet: ['film'], anime: 'agnostic' },

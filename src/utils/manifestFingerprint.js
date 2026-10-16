@@ -78,6 +78,10 @@ function getEffectiveActiveProfileId(userConfig) {
 }
 
 const DEFAULT_HERO_CATALOGS = [
+    { id: 'yaca_mondi_movies', type: 'movie', name: '🌍 Il tuo mondo' },
+    { id: 'yaca_mondi_series', type: 'series', name: '🌍 Il tuo mondo' },
+    { id: 'yaca_passo_fuori_movies', type: 'movie', name: '🔭 Un passo fuori' },
+    { id: 'yaca_passo_fuori_series', type: 'series', name: '🔭 Un passo fuori' },
     { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te' },
     { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te' },
     { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti' },

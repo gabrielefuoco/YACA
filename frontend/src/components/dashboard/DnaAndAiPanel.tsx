@@ -14,6 +14,10 @@ const HERO_CATALOGS_BASE = [
   { idBase: 'yaca_seed_network', label: 'Seed Network', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli amati (Stacking).' },
   { idBase: 'yaca_hidden_gems', label: 'Hidden Gems', emoji: '💎', type: 'ai', desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.' },
   { idBase: 'yaca_trakt_filtered', label: 'Trakt Filtered', emoji: '🌐', type: 'algo', desc: 'Suggerimenti community filtrati col tuo DNA.' },
+  // LE RIGHE DEL GRAFO (src/engines/bolle/): il mondo piu' acceso rende 12,81% per titolo mostrato,
+  // "un passo fuori" 10,62% — misurato il 16/10/2026.
+  { idBase: 'yaca_mondi', label: 'Il tuo mondo', emoji: '🌍', type: 'algo', desc: 'La bolla che la tua storia accende di piu': il tuo mondo, coi suoi titoli.' },
+  { idBase: 'yaca_passo_fuori', label: 'Un passo fuori', emoji: '🔭', type: 'algo', desc: 'I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.' },
 ];
 
 const TMDB_KEY_TO_DNA_TYPE: Record<string, DNAItem['type']> = {

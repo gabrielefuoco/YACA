@@ -219,6 +219,12 @@ router.get('/:id/analytics', async (req, res) => {
             yaca_seed_network_series: null,
             yaca_hidden_gems_movies: 'hiddenGems',
             yaca_hidden_gems_series: 'hiddenGems',
+            // Le righe del GRAFO non hanno una strategia ibrida: le costruisce hybridRecommendations
+            // dopo l'assegnazione disgiunta, leggendo bolle.json.
+            yaca_mondi_movies: null,
+            yaca_mondi_series: null,
+            yaca_passo_fuori_movies: null,
+            yaca_passo_fuori_series: null,
         };
 
         // Studi di produzione della libreria (sezione "STUDI" del DNA).
