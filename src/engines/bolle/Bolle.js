@@ -92,7 +92,10 @@ class Bolle {
     /**
      * La diffusione sulle bolle: PageRank personalizzato.
      * `storia` = [{ chiave, plays, tipo }] — `tipo` è facoltativo e vale `watched`.
-     * Restituisce `[[bolla, attivazione], ...]` ordinate dalla più accesa.
+     * Restituisce `[[bolla, attivazione, da_semi], ...]` ordinate dalla più accesa, dove `da_semi` sono
+     * i 2 titoli della storia che hanno versato più massa in quel mondo: è quello che rende un mondo
+     * **spiegabile** invece che solo acceso (*«Mondo 820 [sketch comedy, satira] acceso perché hai
+     * amato Fawlty Towers e Black Books»*).
      *
      * LA TRANSIZIONE È PESATA E CON AUTO-ANELLO. L'artefatto porta per ogni bolla la riga
      * normalizzata del grafo 6+2 (`P`, 45.194 archi pesati, `dest == b` = auto-anello). Prima qui si
@@ -103,6 +106,7 @@ class Bolle {
     attiva(storia) {
         const v = this.loadData().versione;
         const seme = new Float64Array(this.nBolle);
+        const daSemi = new Map();          // bolla -> [[chiave, peso], ...]: CHI l'ha accesa, non solo quanto
         let tot = 0;
         for (const voce of storia || []) {
             const b = this.bollaDi(voce.chiave);
@@ -110,6 +114,8 @@ class Bolle {
             const w = this.peso(voce.chiave, voce.plays, voce.tipo);
             seme[b] += w;
             tot += w;
+            if (!daSemi.has(b)) daSemi.set(b, []);
+            daSemi.get(b).push([voce.chiave, w]);
         }
         if (tot === 0) return [];
         for (let b = 0; b < this.nBolle; b++) seme[b] /= tot;
@@ -130,7 +136,11 @@ class Bolle {
         const somma = r.reduce((a, x) => a + x, 0) || 1;
         const fuori = [];
         for (let b = 0; b < this.nBolle; b++) {
-            if (r[b] > 0) fuori.push([b, r[b] / somma]);
+            if (r[b] > 0) {
+                const suoi = (daSemi.get(b) || []).slice()
+                    .sort((x, y) => y[1] - x[1]).slice(0, 2).map((x) => x[0]);
+                fuori.push([b, r[b] / somma, suoi]);
+            }
         }
         return fuori.sort((a, b) => b[1] - a[1]);
     }
@@ -142,14 +152,27 @@ class Bolle {
      */
     portafoglio(storia, { quante = 4 } = {}) {
         const att = this.attiva(storia);
-        return att.slice(0, Math.max(1, quante)).map(([bolla, attivazione]) => ({
+        return att.slice(0, Math.max(1, quante)).map(([bolla, attivazione, daSemi]) => ({
             bolla,
             attivazione,
             titoli: this.data.bolle[String(bolla)].n,
             voti: this.data.bolle[String(bolla)].voti,
+            // I DUE TITOLI CHE L'HANNO ACCESA, e i termini del centroide: un mondo si legge in una riga.
+            da_semi: daSemi || [],
+            termini: this.data.bolle[String(bolla)].termini || [],
+            esempi: this.data.bolle[String(bolla)].esempi || [],
             vicini: this.vicini(bolla),
             membri: this.membri(bolla),
         }));
+    }
+
+    /** Una riga leggibile per un mondo: come `python -m graph.pipeline lista` fa dall'altra parte. */
+    descrivi(bolla) {
+        const b = this.loadData().bolle[String(bolla)];
+        if (!b) return `mondo ${bolla} — sconosciuto`;
+        const t = (b.termini || []).slice(0, 3).join(', ') || 'senza centroide (bolla piccola)';
+        return `mondo ${bolla} [${t}] — ${b.n} titoli, voti mediani ${b.voti}` +
+            ((b.esempi || []).length ? ` · es. ${b.esempi.join(', ')}` : '');
     }
 
     /** Quanti titoli di questa storia il grafo conosce. Serve a decidere se il profilo è «freddo». */

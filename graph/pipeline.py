@@ -356,6 +356,19 @@ def esporta(args) -> int:
             if r is not None and not pd.isna(v):
                 VOT[r] = float(v)
     titoli = {B.KEYS[i]: int(MEM[i]) for i in range(len(MEM))}
+    # I TERMINI E GLI ESEMPI DI OGNI MONDO (ticket 12). Senza, una bolla e' `mondo 1084 · 25 titoli ·
+    # voti 636`: per sapere CHE COS'E' bisogna incrociare i parquet o leggere i titoli uno a uno. Coi
+    # termini del centroide V3 (`ge:thriller · kw:psychological thriller · di:david fincher`) e i tre
+    # titoli piu' votati, un mondo si legge in una riga — ed e' quello che rendeva leggibile
+    # `bolle-esempi.md` quando l'ho visto la prima volta.
+    from graph import collocator as CO
+    _S = CO.carica(v3=True)
+    _inv = {j: t for t, j in _S["vocab"].items()}
+    _CEN, _NORMA = _S["SUM"].tocsr(), _S["NORMA"]
+    # I CENTROIDI SONO 2.922, NON 3.497: `TUTTE` e' la mappa bolla -> riga, e le bolle che non ci sono
+    # (le piccole) semplicemente non hanno un centroide. Restano senza `termini`, ed e' la verita'.
+    _POS = {int(b): i for i, b in enumerate(_S["TUTTE"])}
+    TIT = K.metadati()["TIT"]
     bolle = {}
     for b in range(NB):
         m = np.where(MEM == b)[0]
@@ -366,9 +379,17 @@ def esporta(args) -> int:
         # connessi fra loro). Per i vicini «da navigare» basta scartare la voce con dest == b.
         coppie = sorted(zip((int(x) for x in riga.indices), (round(float(x), 4) for x in riga.data)),
                         key=lambda t: -t[1])
+        # il centroide NORMALIZZATO: la norma grezza dipende da quanti titoli ha la bolla e da quanto
+        # sono lunghi i loro testi, e senza normalizzare i «termini piu' forti» sarebbero sempre quelli
+        # delle bolle grandi.
+        c = (_CEN.getrow(_POS[b]).toarray().ravel() / max(float(_NORMA[_POS[b]]), 1e-9)
+             if b in _POS else np.zeros(1))
+        forti = np.argsort(-c)[:5]
         bolle[str(b)] = {
             "n": int(SZ[b]),
             "voti": int(np.median(VOT[m])) if len(m) else 0,
+            "termini": [_inv[int(j)] for j in forti if c[j] > 0] if b in _POS else [],
+            "esempi": [str(TIT[int(r_)]) for r_ in m[np.argsort(-VOT[m])][:3]],
             "P": [[d_, p_] for d_, p_ in coppie],
         }
     nuovi = 0

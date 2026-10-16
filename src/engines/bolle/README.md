@@ -6,8 +6,17 @@ quanto sono accesi, e chi ci sta dentro.
 ```js
 const bolle = require('./src/engines/bolle/Bolle');
 const p = bolle.portafoglio([{ chiave: 'tv:314', plays: 3, tipo: 'loved' }]);
-// → [{ bolla, attivazione, titoli, voti, vicini, membri }, ...]
+// → [{ bolla, attivazione, titoli, voti, termini, esempi, da_semi, vicini, membri }, ...]
+
+for (const m of p) console.log(bolle.descrivi(m.bolla));
+//   mondo 1084 [ge:sci-fi & fantasy, kw:space travel, ge:action & adventure]
+//     — 25 titoli, voti mediani 636 · es. Star Trek: Discovery, Star Trek: Picard, Stargate SG-1
 ```
+
+**Ogni mondo è spiegabile**: `termini` sono i 5 token più forti del suo centroide V3, `esempi` i 3 titoli
+più votati, e `da_semi` i due titoli della storia che hanno versato più massa in quel mondo — quindi la
+frase «acceso perché hai amato questo» si compone senza incrociare nient'altro. Le 575 bolle senza
+centroide (le piccole) hanno `termini` vuoto: è la verità, non un difetto.
 
 ## Da dove viene
 
@@ -23,7 +32,7 @@ python -m graph.pipeline esporta        # scrive src/data/bolle.json
 | | |
 |---|---|
 | `titoli` | `{chiave: bolla}` per tutti i 66.259 titoli del canone |
-| `bolle` | per ogni bolla: `{n, voti, vicini}` — taglia, mediana dei voti, i vicini sulla mappa 6+2 |
+| `bolle` | per ogni bolla: `{n, voti, termini, esempi, P}` — taglia, mediana dei voti, i termini del centroide, i 3 titoli più votati, e la riga di transizione pesata (auto-anello incluso) |
 | `episodi` | `{chiave: n}` solo per le serie: serve al denominatore del loro peso |
 
 Più `versione`, che porta **le impronte e i parametri**: `alpha`, `iterazioni`, i pesi, i fattori di
@@ -39,7 +48,9 @@ Questo engine **non** fa tre cose, e non sono dimenticanze:
    archi fra titoli; qui sui **45.194** fra bolle. La conseguenza è una sola e va saputa:
    **l'attivazione per titolo non c'è**, quindi **l'ordine dentro una bolla lo decide chi invoca** — che
    ha il catalogo e può ordinare per voto, anno o popolarità. È una scelta di prodotto, non un limite
-   tecnico da nascondere.
+   tecnico da nascondere. **E il suo costo si misura**: le due diffusioni condividono metà dei primi
+   dieci mondi (jaccard 0,25–0,54) e il primo mondo del motore vero cade sempre nei primi dieci di
+   questo. Il test `tests/bolleParity.test.js` lo ristampa a ogni `npm test`.
 2. **Non colloca i titoli nuovi.** Un'uscita del 2026 non è nel grafo: la assegna a una bolla il **job
    notturno** (`graph/collocator.py`, ~11 ms per titolo, ~90/100 all'occhio). Finché non c'è, per questo
    engine quel titolo non esiste.
