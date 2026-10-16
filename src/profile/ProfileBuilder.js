@@ -1,5 +1,12 @@
 const TasteProfile = require('../models/TasteProfile');
-const WatchHistory = require('../models/WatchHistory');
+const {
+    storiaDi,
+    leggiLibreriaPerProfilo,
+    registraVisione,
+    backfillCronologia,
+    trovaCronologiaPerIds,
+    scriviBatchCronologia
+} = require('../library');
 const AddonConfig = require('../db/models/AddonConfig');
 const UserAccount = require('../db/models/UserAccount');
 const {
@@ -81,14 +88,15 @@ class ProfileBuilder {
         
         if (!tmdbId || !type) return;
 
-        await WatchHistory.findOneAndUpdate(
-            { owner, context, tmdbId },
-            { 
-                $set: { type, lastWatchedAt, source },
-                $inc: { episodesWatched: episodesWatched } 
-            },
-            { upsert: true }
-        );
+        await registraVisione({
+            owner,
+            context,
+            tmdbId,
+            type,
+            episodesWatched,
+            lastWatchedAt,
+            source
+        });
 
         // --- Delta Update DNA ---
         ProfileBuilder._updateVectorsAsync(owner, context, tmdbId, type).catch(err => {
@@ -184,30 +192,7 @@ class ProfileBuilder {
      * Backfill della cronologia/segnali da global a un contesto secondario se vuoto.
      */
     static async backfillProfileWatchHistory(owner, targetContext) {
-        if (!owner || !targetContext || targetContext === 'global') return;
-        try {
-            const count = await WatchHistory.countDocuments({ owner, context: targetContext });
-            if (count > 0) return;
-            const globalDocs = await WatchHistory.find({ owner, context: 'global' }).lean();
-            if (globalDocs.length === 0) return;
-
-            const bulkOps = globalDocs.map(doc => {
-                const copy = { ...doc, context: targetContext };
-                delete copy._id;
-                delete copy.createdAt;
-                delete copy.updatedAt;
-                return {
-                    updateOne: {
-                        filter: { owner, context: targetContext, tmdbId: copy.tmdbId },
-                        update: { $set: copy },
-                        upsert: true
-                    }
-                };
-            });
-            await WatchHistory.bulkWrite(bulkOps, { ordered: false });
-        } catch (err) {
-            console.warn(`[ProfileBuilder] Backfill error for ${targetContext}:`, err.message);
-        }
+        await backfillCronologia({ owner, targetContext });
     }
 
     /**
@@ -222,7 +207,7 @@ class ProfileBuilder {
         const vStatic = profile.compiledVectors?.V_static || {};
 
         // 1. Legge cronologia e segnali
-        const historyDocs = await WatchHistory.find({ owner, context }).lean();
+        const historyDocs = await storiaDi({ userId: owner, profileId: context });
         const itemMap = new Map(); // tmdbId -> { tmdbId, type, weight }
 
         for (const doc of historyDocs) {
@@ -252,12 +237,7 @@ class ProfileBuilder {
         const addonUuid = await ProfileBuilder._resolveAddonUuid(owner);
         if (addonUuid) {
             try {
-                const UserLibraryItem = require('../db/models/UserLibraryItem');
-                const libraryDocs = await UserLibraryItem.find({
-                    addonUuid,
-                    removed: { $ne: true },
-                    tmdbId: { $exists: true, $ne: null }
-                }).lean();
+                const libraryDocs = await leggiLibreriaPerProfilo({ addonUuid });
 
                 for (const lib of libraryDocs) {
                     const tmdbId = Number(lib.tmdbId);
@@ -405,7 +385,7 @@ class ProfileBuilder {
             const tmdbIds = [...new Set(parsedEntries.map(e => e.tmdbId))];
 
             for (const ctx of targetContexts) {
-                const existingDocs = await WatchHistory.find({ owner, context: ctx, tmdbId: { $in: tmdbIds } }).lean();
+                const existingDocs = await trovaCronologiaPerIds({ owner, context: ctx, tmdbIds });
                 const existingMap = new Map(existingDocs.map(d => [d.tmdbId, d]));
 
                 const bulkOps = [];
@@ -450,7 +430,7 @@ class ProfileBuilder {
                 }
 
                 if (bulkOps.length > 0) {
-                    await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+                    await scriviBatchCronologia(bulkOps);
                 }
 
                 await ProfileBuilder.recomputeVectorsForUser(owner, ctx);
@@ -557,7 +537,7 @@ class ProfileBuilder {
 
             // 3. Fan-out su tutti i contesti del profilo
             for (const ctx of targetContexts) {
-                const existingDocs = await WatchHistory.find({ owner, context: ctx, tmdbId: { $in: tmdbIds } }).lean();
+                const existingDocs = await trovaCronologiaPerIds({ owner, context: ctx, tmdbIds });
                 const existingMap = new Map(existingDocs.map(d => [d.tmdbId, d]));
 
                 const bulkOps = [];
@@ -588,7 +568,7 @@ class ProfileBuilder {
                 }
 
                 if (bulkOps.length > 0) {
-                    await WatchHistory.bulkWrite(bulkOps, { ordered: false });
+                    await scriviBatchCronologia(bulkOps);
                 }
 
                 // Esegue anche backfill per contesti che non avevano storico

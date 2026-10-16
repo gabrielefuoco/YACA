@@ -249,8 +249,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                     // Ricalcola V_final combinando il nuovo V_static con il V_active (o vuoto)
                     const { computeFinalDNA, calculateWeightedInteractions } = require('../../utils/dnaExtractor');
                     const { calculateFlatnessMetrics } = require('../../utils/dnaRarity');
-                    const WatchHistory = require('../../models/WatchHistory');
-                    const historyDocs = await WatchHistory.find({ owner: userId, context: profile.id }).lean();
+                    const { storiaDi } = require('../../library');
+                    const historyDocs = await storiaDi({ userId, profileId: profile.id });
                     const totalInteractions = calculateWeightedInteractions(historyDocs);
                     const vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
                     const flatnessMetrics = calculateFlatnessMetrics(vFinal);

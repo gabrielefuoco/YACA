@@ -3,11 +3,18 @@ const router = express.Router();
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
-const WatchHistory = require('../models/WatchHistory');
 const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const LibraryConverterService = require('../services/LibraryConverterService');
-const UserLibraryItem = require('../db/models/UserLibraryItem');
+const {
+    storiaDi,
+    leggiLibreria,
+    contaDaConvertire,
+    trovaItemLibreria,
+    salvaItemLibreria,
+    normalizeLegacyPosterHost,
+    applyDuplicateMarks
+} = require('../library');
 const { sanitizeDnaVector, isRetiredTmdbKeywordId } = require('../data/keywordIds');
 const { calculateFlatnessMetrics } = require('../utils/dnaRarity');
 
@@ -29,11 +36,7 @@ router.post('/:id/convert-library', async (req, res) => {
         const user = await UserAccount.findOne({ userId });
         let count = 0;
         if (user && user.addonUuid) {
-            count = await UserLibraryItem.countDocuments({
-                addonUuid: user.addonUuid,
-                mapped: false,
-                removed: false
-            });
+            count = await contaDaConvertire({ addonUuid: user.addonUuid });
         }
         
         // Fire and forget
@@ -248,9 +251,7 @@ router.get('/:id/raw-data', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const history = await WatchHistory.find({ owner: userId, context: profileId })
-            .sort({ lastWatchedAt: -1 })
-            .lean();
+        const history = await storiaDi({ userId, profileId });
 
         // Resolve manualDNA and activeCatalogs from AddonConfig via Two-Table Split
         const account = await UserAccount.findOne({ userId }).lean();
@@ -370,15 +371,8 @@ router.get('/:id/library', async (req, res) => {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
-        const items = await require('../db/models/UserLibraryItem').find({
-            addonUuid: account.addonUuid,
-            removed: false,
-            // I duplicati (stesso titolo con id diversi: tt… / tmdb:… / kitsu:…) vengono
-            // marchiati al sync e qui nascosti: la griglia mostra una card per titolo.
-            duplicateOf: null
-        }).sort({ _ctime: -1 }).lean();
+        const items = await leggiLibreria({ addonUuid: account.addonUuid });
 
-        const { normalizeLegacyPosterHost } = require('../utils/libraryIdentity');
         const currentHost = process.env.HOST_URL || `${req.protocol}://${req.get('host')}`;
 
         const seen = new Set();
@@ -433,11 +427,13 @@ router.post('/:id/library', async (req, res) => {
             if (resolved) poster = resolved;
         }
 
-        const UserLibraryItem = require('../db/models/UserLibraryItem');
-        let existing = await UserLibraryItem.findOne({
+        let existing = await trovaItemLibreria({
             addonUuid: account.addonUuid,
-            $or: [{ itemId: normalizedItemId }, { _id: normalizedItemId }, { itemId: item.id }, { _id: item.id }]
-        });
+            itemId: normalizedItemId
+        }) || (normalizedItemId !== item.id ? await trovaItemLibreria({
+            addonUuid: account.addonUuid,
+            itemId: item.id
+        }) : null);
 
         // NON sovrascrivere _ctime se già esistente o se specificato nell'item
         const ctime = existing?._ctime || (item._ctime ? new Date(item._ctime) : now);
@@ -463,11 +459,10 @@ router.post('/:id/library', async (req, res) => {
             existing.itemId = normalizedItemId;
             await existing.save();
         } else {
-            await UserLibraryItem.create(doc);
+            await salvaItemLibreria(doc);
         }
 
         // Applica i marcatori duplicateOf per evitare duplicati attivi
-        const { applyDuplicateMarks } = require('../utils/libraryIdentity');
         await applyDuplicateMarks(account.addonUuid);
 
         let hostUrl = process.env.BASE_URL;
@@ -500,10 +495,9 @@ router.delete('/:id/library/:itemId', async (req, res) => {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
-        const UserLibraryItem = require('../db/models/UserLibraryItem');
-        const item = await UserLibraryItem.findOne({
+        const item = await trovaItemLibreria({
             addonUuid: account.addonUuid,
-            $or: [{ itemId: itemId }, { _id: itemId }]
+            itemId
         });
         
         if (item) {
