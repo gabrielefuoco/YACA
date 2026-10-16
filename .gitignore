@@ -203,3 +203,7 @@ __pycache__/
 # comandi di graph/steps/ — vedi graph/README.md. In git sta il codice, non l'output.
 graph/data/
 digest*.txt
+
+# I dati del modulo (spostato in services/ il 17/10/2026): 666 MB di artefatti e i log delle corse
+services/graph/data/
+services/graph/log/
