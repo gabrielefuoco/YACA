@@ -89,7 +89,7 @@ const HERO_CATALOG_IDS = new Map([
 // cache ha continuato a servire il gruppo vecchio: `cache=hit ms=2 titles=0`, con il codice nuovo che non
 // girava mai. Un bump di una lettera e' tutto quello che serve; il costo di dimenticarlo e' un fix
 // deployato che non produce nessun effetto, e nessun errore che lo dica.
-const HERO_CACHE_KEY_VERSION = 'v10';
+const HERO_CACHE_KEY_VERSION = 'v11';
 const HERO_CACHE_SCHEMA_VERSION = 7;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
@@ -128,6 +128,32 @@ function getRecommendationId(item) {
     return id;
 }
 
+function ensurePoolItem(item, mediaType) {
+    const isObj = typeof item === 'object' && item !== null;
+    const rawId = isObj ? (item.id || item.tmdbId) : item;
+    const cleanId = normalizeContentId(rawId);
+    const tmdbId = Number(cleanId);
+    const defaultType = mediaType === 'movie' ? 'movie' : 'series';
+    const defaultMediaType = mediaType === 'movie' ? 'movie' : 'tv';
+    if (isObj) {
+        return {
+            ...item,
+            id: item.id && String(item.id).startsWith('tmdb:') ? item.id : `tmdb:${cleanId}`,
+            tmdbId: Number.isFinite(item.tmdbId) ? item.tmdbId : (Number.isFinite(tmdbId) ? tmdbId : cleanId),
+            type: item.type || defaultType,
+            media_type: item.media_type || (item.type === 'series' ? 'tv' : defaultMediaType),
+            toString() { return this.id; }
+        };
+    }
+    return {
+        id: `tmdb:${cleanId}`,
+        tmdbId: Number.isFinite(tmdbId) ? tmdbId : cleanId,
+        type: defaultType,
+        media_type: defaultMediaType,
+        toString() { return this.id; }
+    };
+}
+
 /**
  * Assegna in modo esclusivo i candidati dei quattro hero. L'ordine dei blocchi
  * è il requisito di priorità, non l'ordine delle richieste HTTP.
@@ -144,7 +170,7 @@ function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MA
             const id = getRecommendationId(item);
             if (!id || claimedIds.has(id)) continue;
             claimedIds.add(id);
-            catalogIds.push(item);
+            catalogIds.push(ensurePoolItem(item, mediaType));
             if (catalogIds.length >= maxItemsPerCatalog) break;
         }
         assigned[catalogId] = catalogIds;
@@ -358,7 +384,9 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
             }
         }
         const fuori = righePerStremio(semi, { mediaType });
-        Object.assign(assigned, fuori);
+        for (const [k, v] of Object.entries(fuori)) {
+            assigned[k] = (v || []).map((it) => ensurePoolItem(it, mediaType));
+        }
         const suffisso = mediaType === 'movie' ? 'movies' : 'series';
         const nMondi = (fuori[`yaca_mondi_${suffisso}`] || []).length;
         const nPasso = (fuori[`yaca_passo_fuori_${suffisso}`] || []).length;
@@ -525,13 +553,14 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         async (recItem) => {
             try {
                 const isObj = typeof recItem === 'object' && recItem !== null;
-                const tmdbId = isObj ? recItem.id : recItem;
+                const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
                 const matchScore = isObj ? recItem.matchScore : null;
                 const itemFallbackUsed = isObj ? recItem.fallbackUsed : undefined;
                 const itemTraktAvailable = isObj ? recItem.traktAvailable : undefined;
 
                 const normalizedId = normalizeContentId(tmdbId);
-                const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
+                const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
+                const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
                 let item = null;
                 try {
                     const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
@@ -546,7 +575,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
                 if (!item) {
                     if (!tmdbClient) tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-                    const endpoint = mediaType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
+                    const endpoint = tmdbType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
                     const res = await tmdbClient.get(endpoint, {
                         params: {
                             append_to_response: 'images,keywords',
@@ -595,9 +624,13 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                     ? item.keywords
                     : (item.keywords?.results || item.keywords?.keywords || []);
 
+                const cardType = (tmdbType === 'tv' || tmdbType === 'series') ? 'series' : 'movie';
+                const cardMediaType = tmdbType === 'movie' ? 'movie' : 'tv';
+
                 return {
                     id: `tmdb:${normalizedId}`,
-                    type: mediaType === 'movie' ? 'movie' : 'series',
+                    type: cardType,
+                    media_type: cardMediaType,
                     name: item.title || item.name || 'Unknown',
                     poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
                     posterShape: 'poster',
@@ -633,9 +666,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 async (recItem) => {
                     try {
                         const isObj = typeof recItem === 'object' && recItem !== null;
-                        const tmdbId = isObj ? recItem.id : recItem;
+                        const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
                         const normalizedId = normalizeContentId(tmdbId);
-                        const tmdbType = mediaType === 'movie' ? 'movie' : 'tv';
+                        const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
+                        const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
                         const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
                         if (!duckMeta || !duckMeta.rawTMDB) {
                             await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType);

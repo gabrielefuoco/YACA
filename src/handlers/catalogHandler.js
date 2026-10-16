@@ -386,14 +386,16 @@ function getLatestEpisodeInfo(item) {
  */
 function annotationKeyFor(item, imdbMap = {}) {
     const rawId = String(item.id || '').replace(/_ita_offset$/, '');
-    const cardType = item.type === 'movie' ? 'movie' : 'tv';
+    const rawType = item.media_type || item.type;
+    const cardType = (rawType === 'movie') ? 'movie' : 'tv';
 
     if (rawId.startsWith('tmdb:')) {
         const parts = rawId.split(':');
-        // Forma piena: `tmdb:movie:123` / `tmdb:tv:123` — il tipo è nell'id.
-        if (parts[1] === 'movie' || parts[1] === 'tv') {
+        // Forma piena: `tmdb:movie:123` / `tmdb:tv:123` / `tmdb:series:123` — il tipo è nell'id.
+        if (parts[1] === 'movie' || parts[1] === 'tv' || parts[1] === 'series') {
             const id = Number(parts[2]);
-            return Number.isFinite(id) ? { type: parts[1], id } : null;
+            const resolvedType = parts[1] === 'movie' ? 'movie' : 'tv';
+            return Number.isFinite(id) ? { type: resolvedType, id } : null;
         }
         // Forma legacy: `tmdb:123` (e `tmdb:123:1:2`) — il tipo lo dà la card.
         const legacyId = Number(parts[1]);
@@ -402,7 +404,7 @@ function annotationKeyFor(item, imdbMap = {}) {
 
     if (rawId.startsWith('tt')) {
         const mapped = imdbMap[rawId];
-        return mapped ? { type: mapped.type, id: mapped.id } : null;
+        return mapped ? { type: mapped.type === 'movie' ? 'movie' : 'tv', id: mapped.id } : null;
     }
 
     if (rawId.startsWith('kitsu:')) {
@@ -672,7 +674,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
             // 2. FILTRAGGIO POST-FETCH: Nasconde tipo sbagliato
             if (type === 'movie' || type === 'series') {
                 results = results.filter(i => {
-                    if (i.media_type) {
+                    const medium = i.media_type || (i.type === 'series' ? 'tv' : i.type);
+                    if (medium) {
                         // `series` E' LA STESSA COSA DI `tv`, e questo filtro scartava proprio quella:
                         // l'uscita del prodotto espone `type: 'series'` (MetaPreview, come vuole Stremio),
                         // ma qui il campo interno ammetteva solo `tv`. Gli item che arrivano col prefisso
@@ -682,7 +685,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                         // e' quello che il prodotto produce.
                         const expectedType = type === 'series' ? 'tv' : 'movie';
                         const accettati = expectedType === 'tv' ? ['tv', 'series'] : ['movie'];
-                        return accettati.includes(i.media_type) || i.media_type === 'person';
+                        return accettati.includes(medium) || medium === 'person';
                     }
                     return true;
                 });
@@ -986,5 +989,6 @@ module.exports = {
     applyPostCacheBadges,
     isItemAnime,
     extractTmdbId,
-    findAiringStateDocument
+    findAiringStateDocument,
+    annotationKeyFor
 };
