@@ -345,11 +345,17 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         // canone, e un id `tt…` non troverebbe nessuna bolla (verrebbe scartato in silenzio, che qui e'
         // peggio che non aggiungerlo).
         const visti = new Set(semi.map((s) => s.tmdbId));
-        for (const voce of (rawTraktResult.ids || [])) {
-            const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
-            if (!Number.isFinite(id) || visti.has(id)) continue;
-            visti.add(id);
-            semi.push({ tmdbId: id, type: tipoSeeds, signals: [{ type: 'liked' }] });
+        // SOLO SE TRAKT E' DAVVERO DISPONIBILE. Quando il token manca o Trakt non risponde, il motore
+        // «degrada» e riempie il risultato col FALLBACK POPOLARE (160 id generici). Usarli come storia
+        // significherebbe accendere le bolle dei titoli popolari e mostrare di nuovo il catalogo generico
+        // — cioe' esattamente il sintomo che si stava cercando di togliere. Il log del degrado c'e' gia'.
+        if (rawTraktResult.traktAvailable) {
+            for (const voce of (rawTraktResult.ids || [])) {
+                const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
+                if (!Number.isFinite(id) || visti.has(id)) continue;
+                visti.add(id);
+                semi.push({ tmdbId: id, type: tipoSeeds, signals: [{ type: 'liked' }] });
+            }
         }
         const fuori = righePerStremio(semi, { mediaType });
         Object.assign(assigned, fuori);
