@@ -1,45 +1,60 @@
-# Cosa portare sul mate, e quanto pesa
+# Cosa portare sul mate — tre livelli, e il più piccolo basta quasi sempre
 
-**Il prodotto non ha bisogno di niente**: `src/data/bolle.json` (3,2 MB) è in git, quindi il mate serve
-il grafo appena clona il repository. Gli 8 GB qui sotto sono del **modulo** — servono a ricostruire e al
-job notturno, non a rispondere agli utenti.
+**Il prodotto non ha bisogno di niente**: `src/data/bolle.json` (3,2 MB) è in git, quindi il mate serve il
+grafo appena clona il repository, senza copiare un byte.
 
-## Da copiare: ~2,0 GB
+## Livello 1 — COLLOCARE I TITOLI NUOVI (e far girare il motore): 104 MB
 
-| percorso | peso | a cosa serve |
+È quello che serve ogni notte, e sta in una cartella:
+
+| cosa | peso | perché |
 |---|---|---|
-| `graph/data/` | 666 M | gli artefatti: partizione, triangolo, mappa, centroidi, metadati, transizione potata |
-| `.cache/trakt/users/` | 1,2 G | le storie degli utenti: servono ai banchi (e in futuro al job notturno per le storie vere) |
-| `.cache/tmdb/` | 66 M | i parquet TMDB: servono a collocare i titoli nuovi ogni notte |
+| `graph/data/04-*` e `05-*` (spazi V1 e V3, vocaboli, idf, centroidi, impronte) | 38 M | il coseno con cui si sceglie la bolla macro e i vicini micro |
+| `graph/data/bolle-eterogeneo-subvoti.npy` | 0,5 M | la partizione: quali bolle esistono |
+| `graph/data/mappa-finale-6-2.npz` + `transizione-potata.npz` | 9,5 M | la mappa 6+2 e la transizione potata (per il motore, non per il collocatore) |
+| `graph/data/metadati-canone.npz` + `titoli-canone.txt` | 1,9 M | voti, anni, episodi, generi e i 66.259 titoli |
+| **`.cache/tmdb/movies.parquet` + `tv.parquet`** | **66 M** | **i TOKEN di un titolo nuovo**: le keyword, i generi, il cast. Il grafo dice DOVE sono le bolle, non COSA è un titolo nuovo |
 
-Dentro `graph/data/` viaggia anche `manifest-build.json`: il DAG si ricostruisce la sua storia e dice
-subito se qualcosa non torna.
+**E le storie di Trakt NON servono**, che è il punto della domanda: `.cache/trakt/users/` (1,2 GB) serve
+solo ai BANCHI — le misure che hanno deciso i parametri — non alla collocazione. Il collocatore legge i
+parquet TMDB e i centroidi, e basta.
 
-## Da NON copiare: ~5,3 GB
+## Livello 2 — ricostruire il grafo da zero: +560 MB (666 MB di `graph/data/` in tutto)
 
-| percorso | peso | perché no |
-|---|---|---|
-| `.cache/movielens/` | 4,4 G | il dataset grezzo (`ml-32m`, 32M di valutazioni): serve solo a ricostruire da zero, e si riscarica |
-| `.cache/trakt/users-full/` e `users-backup-400/` | 870 M | copie parziali della stessa cosa: `users/` è quella viva |
-| `graph/upstream/` | 160 K | sta in git |
+Il resto di `graph/data/` è materiale di costruzione: l'embedding delle trame (`04-trama-qwen3b.npy`,
+140 MB), i due triangoli (75 MB), la miscela (`eterogeneo-TRAMA.npz`, 9,4 MB) e le partizioni degli
+esperimenti. Serve solo a `python -m graph.pipeline build` da zero — che è un lavoro da mezz'ora di
+calcolo e 11 GB di picco, non una cosa che si fa sul mate per abitudine.
 
-## I comandi, pronti (bastano quando la chiavetta è collegata)
+## Livello 3 — rilanciare i banchi: +1,2 GB
+
+`.cache/trakt/users/` sono le storie pubbliche degli utenti Trakt, da cui si misurano α, i pesi, il
+freddo, il taglio temporale. Servono a rifare le MISURE, non a far funzionare niente. Si copiano se e
+quando si vuole rilanciare un banco sul server invece che sul portatile.
+
+## I comandi
 
 ```bash
-# 1. dal repo, verso la chiavetta (D: nell'esempio — si controlla con `ls /d/`)
-mkdir -p /d/yaca && cp -r graph/data /d/yaca/data && mkdir -p /d/yaca/cache/tmdb /d/yaca/cache/trakt
-cp -r .cache/tmdb/. /d/yaca/cache/tmdb/ && cp -r .cache/trakt/users /d/yaca/cache/trakt/users
-sync                       # e solo dopo si stacca: senza questo la chiavetta può perdere la coda
+# LIVELLO 1 (104 MB) — dal repo alla chiavetta
+mkdir -p /d/yaca/data /d/yaca/cache/tmdb
+cp graph/data/{04-tfidf.npz,04-vocab.json,04-centroidi.npz,04-impronte.json} /d/yaca/data/
+cp graph/data/{05-tfidf.npz,05-vocab.json,05-idf.npy,05-centroidi.npz,05-centroidi-meta.npz,05-impronte.json} /d/yaca/data/
+cp graph/data/{bolle-eterogeneo-subvoti.npy,mappa-finale-6-2.npz,transizione-potata.npz} /d/yaca/data/
+cp graph/data/{metadati-canone.npz,titoli-canone.txt,manifest-build.json} /d/yaca/data/
+cp .cache/tmdb/{movies.parquet,tv.parquet} /d/yaca/cache/tmdb/
+sync                       # e solo dopo si stacca la chiavetta
 
-# 2. sul mate (via SSH), dopo aver clonato il repo
+# LIVELLO 3, se serve:  cp -r .cache/trakt/users /d/yaca/cache/trakt/
+
+# SUL MATE, dopo il clone
 git clone https://github.com/gabrielefuoco/YACA.git && cd YACA
 cp -r /mnt/chiavetta/yaca/data/. graph/data/ && cp -r /mnt/chiavetta/yaca/cache/tmdb/. .cache/tmdb/
-cp -r /mnt/chiavetta/yaca/cache/trakt/users .cache/trakt/
 
-# 3. le due verifiche: gli artefatti ci sono, e il motore parte
-python -m graph.pipeline stato          # 12 vivi · 7 esperimenti · 0 mancanti
-python -m graph.pipeline build          # deve dire «da rifare: 0 su 8»
+# LE DUE VERIFICHE
+python -m graph.pipeline stato     # dice quali artefatti ci sono e quali mancano
+python -m graph.pipeline build     # deve dire «da rifare: 0 su 8»
+python -c "from graph import motore as M; M.Motore(silenzioso=True); print('motore ok')"
 ```
 
-Se `build` dice che qualcosa è da rifare, non è un errore: è il DAG che ha confrontato gli hash e ha visto
-una differenza. Si guarda **cosa** dice, e da lì si decide.
+Se `build` dice che qualcosa è da rifare, non è un errore: è il DAG che ha confrontato gli hash e ha
+visto una differenza. Si guarda **cosa** dice, e da lì si decide.

@@ -163,4 +163,36 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
     return { ...fuori, cache: false };
 }
 
-module.exports = { raccomanda, storiaDaWatchHistory, chiaveDi, tipoDi, itemDi, CAP, VICINI, cache };
+/**
+ * LE RIGHE PER STREMIO — due righe pronte per il manifest, per un medium.
+ *
+ * `il tuo mondo` e `un passo fuori` sono le due liste che il motore puo' comporre da solo (le altre due
+ * hanno bisogno degli anni e dei voti, che stanno nel catalogo del prodotto). Gli id sono numeri TMDB,
+ * come quelli degli hero del prodotto, e le righe **entrano DOPO l'assegnazione disgiunta** degli hero:
+ * non consumano il loro bacino e possono ripetere un titolo che un'altra riga ha gia' preso. E' una
+ * scelta: sono due motori diversi che dicono cose diverse, e la riga del grafo si spiega da sola.
+ *
+ * LE RIGHE SONO CORTE, ed e' la natura del grafo: un mondo ha una mediana di 11 titoli. Non si allunga
+ * prendendo dai mondi vicini — quelli sono gia' "un passo fuori".
+ */
+function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = 30 } = {}) {
+    const tipo = mediaType === 'movie' ? 'movie' : 'tv';
+    const suffisso = tipo === 'movie' ? 'movies' : 'series';
+    const solo = { [`yaca_mondi_${suffisso}`]: [], [`yaca_passo_fuori_${suffisso}`]: [] };
+    try {
+        const r = raccomanda(storia, { quante, cap });
+        const prendi = (nome) => {
+            const l = r.liste.find((x) => x.tipo === nome);
+            return l ? l.items.filter((i) => i.type === tipo).map((i) => i.id) : [];
+        };
+        solo[`yaca_mondi_${suffisso}`] = prendi('il_tuo_mondo');
+        solo[`yaca_passo_fuori_${suffisso}`] = prendi('un_passo_fuori');
+    } catch (e) {
+        // una riga vuota e' meglio di un feed rotto: se il grafo manca (artefatto assente, dati
+        // inattesi) il resto delle raccomandazioni del prodotto continua a funzionare.
+        console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
+    }
+    return solo;
+}
+
+module.exports = { raccomanda, storiaDaWatchHistory, chiaveDi, tipoDi, itemDi, righePerStremio, CAP, VICINI, cache };
