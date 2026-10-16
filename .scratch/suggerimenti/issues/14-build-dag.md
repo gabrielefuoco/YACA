@@ -1,4 +1,4 @@
-Status: blocked
+Status: ready-for-agent
 Type: task
 
 # `pipeline build`: gli step come funzioni, con ricostruzione incrementale
@@ -25,3 +25,13 @@ e ha rivelato due cose che vanno risolte *prima* di scrivere un DAG:
 Quindi il ticket resta aperto, ma con due prerequisiti **chiusi o localizzati** invece che ignoti. Le
 decisioni che servono al proprietario restano quelle scritte in origine: se `build` debba **eseguire** o
 solo **dire** (un `--dry-run`), e se il manifest debba stare in git (no: e' un artefatto di build).
+
+---
+
+**SBLOCCATO il 16/10/2026.** I due prerequisiti che avevo dichiarato sono chiusi:
+ 1. il bug `A().exists()` che rendeva impossibile rieseguire gli step — sistemato (`canon.esiste`), e gli
+    step 03 e 05 adesso **riproducono gli artefatti bit per bit**;
+ 2. `pipeline esporta` non finisce piu' — risolto, e adesso impiega **5 secondi** invece di 30.
+Il DAG si puo' scrivere. Restano le due decisioni del proprietario, che sono le stesse di prima: se `build`
+debba **eseguire** o solo **dire** (un `--dry-run` come primo passo), e se il manifest debba stare in git
+(no: e' un artefatto di build, va in `.gitignore`).

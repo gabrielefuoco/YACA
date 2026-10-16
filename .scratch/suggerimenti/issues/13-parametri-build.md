@@ -40,10 +40,22 @@ partiva lo stesso**. Tradotto: gli artefatti attuali non erano piu' riproducibil
 Rimedio: `canon.esiste(nome)` (il compagno non severo di `A()`) e i sette chiamanti sistemati. Il sintomo
 era chiaro, la causa no: la colpa era di un `if` che sembrava prudente.
 
-**E UN PROBLEMA APERTO, dichiarato e localizzato**: dopo queste modifiche **`pipeline esporta` non
-finisce piu'** (due timeout a 900 s, EXIT=124; prima ci metteva ~30 s). Il blocco sta **dentro
-`collocator.carica(v3=True)`**, dopo i metadati (0,6 s): i caricamenti dei file sono istantanei (0,1 s
-ciascuno, misurato), quindi non e' I/O — e' quella funzione. NON RISOLTO. L'artefatto del prodotto e'
-comunque intatto e coerente (2,53 MB, ricetta `b6607839ad84e7ae` riallineata a mano: i valori sono
-provati identici, l'impronta cambiava solo perche' la tabella e' cresciuta), pytest e Jest passano, e il
-prodotto serve il mondo 1084 al 63,1%. **Ma il job notturno e' rotto, e va sistemato per primo.**
+**PROBLEMA APERTO, RISOLTO IL 16/10/2026 — e la causa era mia, in una riga.** `pipeline esporta` non
+finiva piu' (due timeout a 900 s). Lo stack l'ha detto: `collocator.carica` -> `_mediane_voti` (riga 66:
+`B.ROW_OF.get(...)` dentro un ciclo su **117.000 righe per parquet**) -> `bubbles.__getattr__` -> `canon.titoli`.
+E `titoli()` **non era piu' cachata**: quando ho inserito `canon.esiste()` con uno script, l'ancora era
+`def titoli():` e il testo nuovo e' finito **fra il decoratore `@functools.lru_cache` e la sua funzione** —
+lasciando il decoratore appiccicato a `esiste`. Cosi' ogni accesso a una costante di `bubbles` ricostruiva
+le 66.259 chiavi e il dizionario:
+    100.000 accessi a `B.ROW_OF`:  **2.488 secondi** -> **0,05 s**
+In `_mediane_voti` sono 234.000 accessi: **97 minuti**. Ecco l'«hang».
+Adesso `esporta` finisce in **5 secondi** (era ~30 prima del refactor: piu' veloce, perche' ora `titoli()`
+e' cachata *e* i metadati sono un artefatto — due lavori di oggi che si sommano). Artefatto riscritto dal
+comando vero, non a mano: ricetta `b6607839ad84e7ae`, 2,54 MB, pytest 12/12, Jest 4/4.
+
+**LA LEZIONE, e vale piu' del bug**: lo script aveva stampato «sostituito e compila», e il file **compilava
+davvero** — un decoratore appiccicato alla funzione sbagliata e' Python perfettamente valido. Il controllo
+di compilazione non e' un controllo di correttezza. Ed e' il **terzo** effetto collaterale di un edit
+scriptato in questa sessione (l'import di `ppr` messo in fondo al file, i percorsi `/tmp` fra bash e
+Windows, e questo): gli script restano lo strumento giusto per 9-19 rimpiazzi verificabili, ma i loro
+controlli devono guardare la **struttura**, non solo che il file si carichi.

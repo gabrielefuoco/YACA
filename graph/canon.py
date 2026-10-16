@@ -62,7 +62,6 @@ def A(nome):
     return p
 
 
-@functools.lru_cache(maxsize=1)
 def esiste(nome):
     """Se un artefatto c'e', SENZA sollevare. Il compagno di `A()`, e serve piu' di quanto sembri.
 
@@ -76,6 +75,7 @@ def esiste(nome):
     return (DATA / nome).exists()
 
 
+@functools.lru_cache(maxsize=1)
 def titoli():
     """LE 66.259 CHIAVI DEL CANONE, nell'ordine delle righe. Costosa: si legge una volta sola.
 
