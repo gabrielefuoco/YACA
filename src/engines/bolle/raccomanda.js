@@ -112,20 +112,22 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
     const dentro = cache.get(chiave);
     if (dentro) return { ...dentro, cache: true };
 
+    const portafoglio0 = Bolle.portafoglio(s, { quante });
+    if (portafoglio0.length === 0) {
+        const vuoto = { liste: [], items: [], versioni: vs, esclusi: s.map((x) => x.chiave) };
+        cache.set(chiave, vuoto);
+        return { ...vuoto, cache: false };
+    }
+    // IL MONDO DEL PROFILO DEVE POTER RIEMPIRE UNA RIGA (qui, sulla taglia TOTALE: questa funzione non
+    // conosce il medium — la scelta per-medium la fa `righePerStremio`, che lo conosce).
+    // Il valore viene dall'artefatto e non e' cablato qui, come `alpha` e i pesi.
+    const minimo = Number(vs.min_titoli_mondo) || 0;
     const portafoglio = Bolle.portafoglio(s, { quante });
     if (portafoglio.length === 0) {
         const vuoto = { liste: [], items: [], versioni: vs, esclusi: s.map((x) => x.chiave) };
         cache.set(chiave, vuoto);
         return { ...vuoto, cache: false };
     }
-    // IL MONDO DEL PROFILO DEVE POTER RIEMPIRE UNA RIGA.
-    // Il motore Python ha questa regola da sempre (`MIN_TITOLI_MONDO`, un iperparametro in tabella, nato
-    // da un mondo di 4 titoli che produceva una lista di UN titolo) e il valore viaggia nell'artefatto:
-    // qui non era applicato, e una riga da DUE titoli e' arrivata al prodotto.
-    // La regola del Python e' «il primo mondo resta sempre, anche se e' piccolo: e' il mondo del
-    // profilo». Qui si fa la stessa cosa con una preferenza: si prende il primo mondo che REGGE una
-    // riga, e solo se nessuno la regge si torna al primo (il mondo del profilo, per piccolo che sia).
-    const minimo = Number(vs.min_titoli_mondo) || 0;
     const primo = portafoglio.find((m) => (m.titoli || 0) >= minimo) || portafoglio[0];
     const regge = (bolla) => {
         const m = portafoglio.find((x) => x.bolla === bolla);
@@ -174,7 +176,7 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
             items.push(it);
         }
     }
-    const fuori = { liste, items, versioni: vs, esclusi: s.map((x) => x.chiave) };
+    const fuori = { liste, items, versioni: vs, esclusi: s.map((x) => x.chiave), portafoglio };
     cache.set(chiave, fuori);
     return { ...fuori, cache: false };
 }
@@ -196,19 +198,33 @@ function righePerStremio(storia, { mediaType = 'movie', quante = 3, cap = CAP } 
     const suffisso = tipo === 'movie' ? 'movies' : 'series';
     const solo = { [`yaca_mondi_${suffisso}`]: [], [`yaca_passo_fuori_${suffisso}`]: [] };
     try {
-        const r = raccomanda(storia, { quante, cap });
-        // GLI ID DEVONO AVERE IL PREFISSO, non essere numeri nudi.
-        // `annotationKeyFor` in `src/handlers/catalogHandler.js` risolve gli id in tre forme — `tmdb:`,
-        // `tt…`, `kitsu:` — e per tutto il resto fa `return null`. Con un numero nudo il pool arriva
-        // pieno (`titles=20` nei log) e le CARD restano vuote: e' il «Empty content» che si vedeva in
-        // Stremio. Si usa la forma piena `tmdb:<tipo>:<id>`, dove il tipo e' scritto nell'id.
-        const prendi = (nome) => {
-            const l = r.liste.find((x) => x.tipo === nome);
-            return l ? l.items.filter((i) => i.type === tipo)
-                .map((i) => `tmdb:${tipo === 'movie' ? 'movie' : 'tv'}:${i.id}`) : [];
-        };
-        solo[`yaca_mondi_${suffisso}`] = prendi('il_tuo_mondo');
-        solo[`yaca_passo_fuori_${suffisso}`] = prendi('un_passo_fuori');
+        // LA SCELTA DEL MONDO, PER MEDIUM. `raccomanda` non conosce il medium: filtra i mondi sulla taglia
+        // TOTALE, e un mondo da 25 titoli di cui 2 serie lo passa — poi il filtro per medium lascia 2
+        // titoli, ed e' quello che si vedeva nella riga serie. Qui si contano i titoli DI QUESTO medium,
+        // e si guardano piu' mondi del necessario: con una storia mista i primi quattro possono essere
+        // tutti di film, e allora la riga serie non avrebbe nessun mondo che regge.
+        const r = raccomanda(storia, { quante: Math.max(quante, 12) });
+        const prefisso = `${tipo}:`;
+        const minimo = Number((r.versioni || {}).min_titoli_mondo) || 0;
+        const conta = (bolla) => (Bolle.membri(bolla) || [])
+            .filter((k) => String(k).startsWith(prefisso)).length;
+        // DUE GRADI DI RIPIEGO, e il secondo conta: un mondo che REGGE la riga, altrimenti il primo che
+        // ha ALMENO UN titolo di questo medium. Prendere il primo mondo in assoluto (di film) lasciava la
+        // riga serie vuota: e' il caso misurato con una storia mista — i mondi accesi erano 4 di film e
+        // uno con 4 serie, e nessuno passava la soglia di 5.
+        const scelto = (r.portafoglio || []).find((m) => conta(m.bolla) >= minimo)
+            || (r.portafoglio || []).find((m) => conta(m.bolla) > 0);
+        if (!scelto) return solo;
+        // «il tuo mondo» usa il mondo SCELTO; «un passo fuori» i suoi vicini, per peso dell'arco.
+        const perBolla = (bolla) => (Bolle.membri(bolla) || []).slice(0, cap)
+            .filter((k) => String(k).startsWith(prefisso))
+            .map((k) => `tmdb:${tipo === 'movie' ? 'movie' : 'tv'}:${String(k).split(':')[1]}`);
+        // GLI ID DEVONO AVERE IL PREFISSO, non essere numeri nudi: `annotationKeyFor` risolve `tmdb:`,
+        // `tt…` e `kitsu:`, e per tutto il resto fa `return null`. Con un numero nudo il pool arriva pieno
+        // e le CARD restano vuote: e' il «Empty content» visto in Stremio.
+        solo[`yaca_mondi_${suffisso}`] = perBolla(scelto.bolla);
+        const vicini = (scelto.vicini || []).slice(0, VICINI).filter((b) => conta(b) >= minimo);
+        solo[`yaca_passo_fuori_${suffisso}`] = vicini.flatMap(perBolla).slice(0, cap);
     } catch (e) {
         // una riga vuota e' meglio di un feed rotto: se il grafo manca (artefatto assente, dati
         // inattesi) il resto delle raccomandazioni del prodotto continua a funzionare.
