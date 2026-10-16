@@ -118,7 +118,20 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
         cache.set(chiave, vuoto);
         return { ...vuoto, cache: false };
     }
-    const primo = portafoglio[0];
+    // IL MONDO DEL PROFILO DEVE POTER RIEMPIRE UNA RIGA.
+    // Il motore Python ha questa regola da sempre (`MIN_TITOLI_MONDO`, un iperparametro in tabella, nato
+    // da un mondo di 4 titoli che produceva una lista di UN titolo) e il valore viaggia nell'artefatto:
+    // qui non era applicato, e una riga da DUE titoli e' arrivata al prodotto.
+    // La regola del Python e' «il primo mondo resta sempre, anche se e' piccolo: e' il mondo del
+    // profilo». Qui si fa la stessa cosa con una preferenza: si prende il primo mondo che REGGE una
+    // riga, e solo se nessuno la regge si torna al primo (il mondo del profilo, per piccolo che sia).
+    const minimo = Number(vs.min_titoli_mondo) || 0;
+    const primo = portafoglio.find((m) => (m.titoli || 0) >= minimo) || portafoglio[0];
+    const regge = (bolla) => {
+        const m = portafoglio.find((x) => x.bolla === bolla);
+        const n = m ? (m.titoli || 0) : (Bolle.data.bolle[String(bolla)] || {}).n || 0;
+        return n >= minimo;
+    };
     const perBolla = (bolla) => (Bolle.membri(bolla) || []).slice(0, cap).map(itemDi);
     // «UN PASSO FUORI» E' UNA LISTA, NON TRE — ed è il bug del 16/10/2026 che ho rifatto qui al primo
     // tentativo: tre mondi da dieci fanno trenta item, e il confronto con le altre liste (da dieci)
@@ -127,7 +140,7 @@ function raccomanda(storia, { quante = 4, cap = CAP } = {}) {
     // pezzo che manca — è il confine dichiarato). Quindi: **round-robin fra i tre mondi**, che è fair e
     // non favorisce il mondo più forte solo perché viene prima, e il dettaglio per mondo esposto a parte
     // (`per_mondo`), così chi invoca ha tutto per riordinare col proprio catalogo.
-    const vicini = primo.vicini.slice(0, VICINI);
+    const vicini = primo.vicini.slice(0, VICINI).filter(regge);
     const perMondo = vicini.map((b) => ({ bolla: b, items: perBolla(b) }));
     const passo = [];
     for (let i = 0; i < cap; i++) {
