@@ -246,25 +246,8 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
     const profile = userConfig.profiles?.find(p => p.id === activeProfileId) || (userConfig.profiles?.[0]);
 
     const selectedPresets = profile?.raw_ui_state?.selectedPresets;
-    const heroCatalogs = [
-        { id: 'yaca_true_blend_movies', type: 'movie', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
-        { id: 'yaca_true_blend_series', type: 'series', name: '⭐ Scelti per Te', extra: [{ name: 'skip' }] },
-        { id: 'yaca_seed_network_movies', type: 'movie', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
-        { id: 'yaca_seed_network_series', type: 'series', name: '🕸️ La Rete dei tuoi Preferiti', extra: [{ name: 'skip' }] },
-        { id: 'yaca_hidden_gems_movies', type: 'movie', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
-        { id: 'yaca_hidden_gems_series', type: 'series', name: '💎 Gemme Nascoste', extra: [{ name: 'skip' }] },
-        { id: 'yaca_trakt_filtered_movies', type: 'movie', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
-        { id: 'yaca_trakt_filtered_series', type: 'series', name: '🌐 Suggeriti dalla Community', extra: [{ name: 'skip' }] },
-        // LE RIGHE DEL GRAFO (src/engines/bolle/), misurate il 16/10/2026: il mondo piu' acceso rende
-        // 12,81% per titolo mostrato, "un passo fuori" 10,62%. La nicchia di qualita' rende 4,31% ed e'
-        // percio' l'ultima quando arrivera'; le uscite nuove non sono qui perche' servono gli anni del
-        // catalogo. Queste due righe arrivano dal grafo, non dal motore ibrido, e si vedono solo se il
-        // profilo le ha fra i `selectedPresets` (come tutti gli hero).
-        { id: 'yaca_mondi_movies', type: 'movie', name: '🌍 Il tuo mondo', extra: [{ name: 'skip' }] },
-        { id: 'yaca_mondi_series', type: 'series', name: '🌍 Il tuo mondo', extra: [{ name: 'skip' }] },
-        { id: 'yaca_passo_fuori_movies', type: 'movie', name: '🔭 Un passo fuori', extra: [{ name: 'skip' }] },
-        { id: 'yaca_passo_fuori_series', type: 'series', name: '🔭 Un passo fuori', extra: [{ name: 'skip' }] },
-    ];
+    const { getManifestHeroCatalogs } = require('../catalog/registry');
+    const heroCatalogs = getManifestHeroCatalogs();
 
     const typeSelectors = profile?.settings?.typeSelectors;
 

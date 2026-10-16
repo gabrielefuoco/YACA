@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector } from '@/types';
+import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector, HeroCatalogUiGroup } from '@/types';
 import { api } from '@/lib/api';
 import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
@@ -8,17 +8,23 @@ import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { DnaBarChart } from './DnaBarChart';
 import { formatDnaLabel, groupDnaItems, DnaCategoryGroup } from '@/lib/dnaChart';
 import { CatalogLivePreview } from './CatalogLivePreview';
+import { registerHeroCatalogs } from '@/lib/catalogKind';
 
-const HERO_CATALOGS_BASE = [
-  { idBase: 'yaca_true_blend', label: 'True Blend', emoji: '🎯', type: 'ai', desc: 'Ricerca semantica AI + Scoring algoritmico.' },
-  { idBase: 'yaca_seed_network', label: 'Seed Network', emoji: '🕸️', type: 'algo', desc: 'Espande la rete dei titoli amati (Stacking).' },
-  { idBase: 'yaca_hidden_gems', label: 'Hidden Gems', emoji: '💎', type: 'ai', desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.' },
-  { idBase: 'yaca_trakt_filtered', label: 'Trakt Filtered', emoji: '🌐', type: 'algo', desc: 'Suggerimenti community filtrati col tuo DNA.' },
-  // LE RIGHE DEL GRAFO (src/engines/bolle/): il mondo piu' acceso rende 12,81% per titolo mostrato,
-  // "un passo fuori" 10,62% — misurato il 16/10/2026.
-  { idBase: 'yaca_mondi', label: 'Il tuo mondo', emoji: '🌍', type: 'algo', desc: 'La bolla che la tua storia accende di piu': il tuo mondo, coi suoi titoli.' },
-  { idBase: 'yaca_passo_fuori', label: 'Un passo fuori', emoji: '🔭', type: 'algo', desc: 'I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.' },
+const FALLBACK_HERO_BASES = [
+  'yaca_true_blend',
+  'yaca_seed_network',
+  'yaca_hidden_gems',
+  'yaca_trakt_filtered',
+  'yaca_mondi',
+  'yaca_passo_fuori',
 ];
+
+const DEFAULT_HERO_CATALOGS_FALLBACK: HeroCatalogUiGroup[] = FALLBACK_HERO_BASES.map(idBase => ({
+  idBase,
+  label: '',
+  emoji: '✨',
+  desc: ''
+}));
 
 const TMDB_KEY_TO_DNA_TYPE: Record<string, DNAItem['type']> = {
   with_genres: 'genre',
@@ -73,6 +79,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
   const [manualScore, setManualScore] = useState<number>(200);
   const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
+
+  const heroCatalogs: HeroCatalogUiGroup[] = useMemo(() => {
+    if (analytics?.heroCatalogs && analytics.heroCatalogs.length > 0) {
+      return analytics.heroCatalogs;
+    }
+    return DEFAULT_HERO_CATALOGS_FALLBACK;
+  }, [analytics?.heroCatalogs]);
 
   const getDnaName = (vectorKey: string) => {
     const prefix = vectorKey.charAt(0);
@@ -131,6 +144,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
       const data = await api.getProfileAnalytics(profile.id, activeUserId);
       if (data && !data.error) {
         setAnalytics(data);
+        if (data.heroCatalogs) {
+          registerHeroCatalogs(data.heroCatalogs);
+        }
       }
     } catch {
       // Analytics fetch failed — non-blocking
@@ -287,7 +303,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
 
         <div className="flex flex-col gap-4 sm:gap-6">
-          {HERO_CATALOGS_BASE.map((catalog) => {
+          {heroCatalogs.map((catalog) => {
             const idMovies = `${catalog.idBase}_movies`;
             const idSeries = `${catalog.idBase}_series`;
             const movieSwitchId = `${catalog.idBase}-switch-movies`;
@@ -323,7 +339,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{catalog.emoji}</span>
-                      <span className="text-sm font-bold text-marrow-light">{catalog.label}</span>
+                      <span className="text-sm font-bold text-marrow-light">{catalog.label || catalog.idBase}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
@@ -344,9 +360,11 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                       </label>
                     </div>
                   </div>
-                  <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
-                    {catalog.desc}
-                  </p>
+                  {catalog.desc && (
+                    <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
+                      {catalog.desc}
+                    </p>
+                  )}
                 </div>
                 <div className="p-4 flex-grow flex flex-col gap-4">
                   {isCatalogDisabled ? (

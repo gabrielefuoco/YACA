@@ -13,6 +13,8 @@
  * }
  */
 
+const { getHeroCatalogKindMap } = require('./registry');
+
 // Registry esplicito per 8 Hero e cataloghi fissi/utility
 const FIXED_CATALOGS_REGISTRY = {
     // Utility e libreria personale (sempre visibili nel manifest)
@@ -22,20 +24,8 @@ const FIXED_CATALOGS_REGISTRY = {
     'yaca_watchlist_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: true },
     'yaca_watchlist_anime': { mediaSet: ['film', 'serie'], anime: 'yes', alwaysVisible: true },
 
-    // 8 Hero Catalogs (Phase 4) - agnostici sulla dimensione anime (Opzione B, ticket 15)
-    // le righe del grafo: film e serie separati, come gli altri hero
-    'yaca_mondi_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_mondi_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_passo_fuori_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_passo_fuori_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_true_blend_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_true_blend_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_seed_network_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_seed_network_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_hidden_gems_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_hidden_gems_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_trakt_filtered_movies': { mediaSet: ['film'], anime: 'agnostic', alwaysVisible: false },
-    'yaca_trakt_filtered_series': { mediaSet: ['serie'], anime: 'agnostic', alwaysVisible: false },
+    // Righe hero (e grafo) derivate dal registro unico (ticket 37)
+    ...getHeroCatalogKindMap()
 };
 
 const ALWAYS_VISIBLE_IDS = new Set(
