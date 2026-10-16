@@ -89,7 +89,7 @@ const HERO_CATALOG_IDS = new Map([
 // cache ha continuato a servire il gruppo vecchio: `cache=hit ms=2 titles=0`, con il codice nuovo che non
 // girava mai. Un bump di una lettera e' tutto quello che serve; il costo di dimenticarlo e' un fix
 // deployato che non produce nessun effetto, e nessun errore che lo dica.
-const HERO_CACHE_KEY_VERSION = 'v3';
+const HERO_CACHE_KEY_VERSION = 'v4';
 const HERO_CACHE_SCHEMA_VERSION = 7;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
@@ -359,9 +359,18 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         }
         const fuori = righePerStremio(semi, { mediaType });
         Object.assign(assigned, fuori);
+        const suffisso = mediaType === 'movie' ? 'movies' : 'series';
+        const nMondi = (fuori[`yaca_mondi_${suffisso}`] || []).length;
+        const nPasso = (fuori[`yaca_passo_fuori_${suffisso}`] || []).length;
         console.log(`[Mondi] ${mediaType}: seed da archivio ${seeds.size}, da Trakt ${semi.length - seeds.size}` +
-            ` · mondi ${(fuori[`yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`] || []).length}` +
-            ` · passo fuori ${(fuori[`yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`] || []).length}`);
+            ` · mondi ${nMondi} · passo fuori ${nPasso}`);
+        // GUARDIANO: se ci sono seed e le righe restano vuote, il guasto e' DENTRO questo blocco o sotto,
+        // non nella storia. E' il caso che ha bruciato tre deploy: il gruppo veniva memorizzato vuoto e poi
+        // servito per sempre, senza un errore. Un avviso qui lo avrebbe detto alla prima richiesta.
+        if (semi.length > 0 && nMondi === 0 && nPasso === 0) {
+            console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in entrambe le righe ` +
+                `(${mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
+        }
     } catch (e) {
         console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
     }
