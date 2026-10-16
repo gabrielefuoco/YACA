@@ -83,8 +83,14 @@ const HERO_CATALOG_IDS = new Map([
 // Bump v1 -> v2 (ticket 17): i pool dei hero cambiano composizione (quota anime
 // dal ~10% all'80%+), ma senza il bump la cache servirebbe i risultati vecchi per
 // tutto il TTL delle raccomandazioni (7 giorni).
-const HERO_CACHE_KEY_VERSION = 'v2';
-const HERO_CACHE_SCHEMA_VERSION = 6;
+// CAMBIARE COSA ENTRA NEL GRUPPO RICHIEDE DI ALZARE QUESTA VERSIONE.
+// Le due modifiche di oggi — `SLUG_ADDITIVI` (l'esclusione dal controllo di disgiunzione) e il gancio che
+// aggiunge le righe del grafo — hanno cambiato il CONTENUTO del gruppo senza cambiare la chiave, e la
+// cache ha continuato a servire il gruppo vecchio: `cache=hit ms=2 titles=0`, con il codice nuovo che non
+// girava mai. Un bump di una lettera e' tutto quello che serve; il costo di dimenticarlo e' un fix
+// deployato che non produce nessun effetto, e nessun errore che lo dica.
+const HERO_CACHE_KEY_VERSION = 'v3';
+const HERO_CACHE_SCHEMA_VERSION = 7;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
