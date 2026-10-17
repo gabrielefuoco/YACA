@@ -6,7 +6,7 @@ const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
 
 // Mock duckDbStore in memory
-jest.mock('../src/db/duckDbStore', () => ({
+jest.mock('../src/indice/duckDbStore', () => ({
     query: jest.fn().mockImplementation((sql, params) => {
         const id = params && params[0];
         if (id === 550 || id === '550') {
@@ -152,7 +152,7 @@ describe('User Library Deduplication & Poster Resolution', () => {
 
             // Il mock di DuckDB serve un poster per il solo Fight Club:
             // azzero il contatore per misurare quante risoluzioni fa questo test.
-            const duckDbStore = require('../src/db/duckDbStore');
+            const duckDbStore = require('../src/indice/duckDbStore');
             duckDbStore.query.mockClear();
 
             // Simula la costruzione dei bulkOps come in LibrarySyncService

@@ -21,7 +21,7 @@ const {
 const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('./scoringEngine');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../../catalog/providers/DuckDbProvider');
-const duckDbStore = require('../../db/duckDbStore');
+const duckDbStore = require('../../indice/duckDbStore');
 const { F, S, G } = require('../../data/filters');
 const { isAnimeContent, normalizeAnimeMarker } = require('../../utils/animeIdentity');
 const {
@@ -43,15 +43,6 @@ function matchesTypeSelectors(item, typeSelectors, tipo) {
         return !isItemAnime(item, tipo);
     }
     return true;
-}
-
-function resolveTypeSelectors(user, context, directTypeSelectors = null) {
-    if (directTypeSelectors && typeof directTypeSelectors === 'object') {
-        return directTypeSelectors;
-    }
-    const profiles = user?.profiles ?? user?.config?.profiles ?? [];
-    const activeProfile = profiles.find(p => p.id === context);
-    return activeProfile?.settings?.typeSelectors || activeProfile?.typeSelectors || null;
 }
 
 const graph = require('../keywords/HierarchicalGraph');

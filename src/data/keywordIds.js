@@ -33,7 +33,7 @@ function isRetiredTmdbKeywordId(value) {
 // chiave `id:<id>` sia per l'input oggetto `{id,name}` sia per il solo id:
 // misurato sullo stesso titolo, 14 chiavi a freddo e 74 a caldo.
 //
-// NIENTE I/O QUI: la mappa la costruisce `src/db/duckDbStore.js` con la stessa
+// NIENTE I/O QUI: la mappa la costruisce `src/indice/duckDbStore.js` con la stessa
 // query che già legge tutte le keyword del dump, come per la cache df.
 // ============================================================================
 

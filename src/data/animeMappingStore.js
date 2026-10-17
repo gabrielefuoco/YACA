@@ -1,5 +1,5 @@
 const axios = require('axios');
-const duckDbStore = require('../db/duckDbStore');
+const duckDbStore = require('../indice/duckDbStore');
 // Tabella alias del tipo (movie/tv/series/anime) in un posto solo: `utils/animeIdentity`
 // non ha require di livello superiore, quindi questa dipendenza non chiude nessun ciclo.
 const { normalizeTipoAnime } = require('../utils/animeIdentity');

@@ -34,7 +34,7 @@ function timeIt(label, fn, runs = 5) {
 }
 
 // ---------------------------------------------------------------- A. FTS5 Tier 2
-const { Tier2SearchClient } = require(path.join(APP, 'src/db/tier2Index'));
+const { Tier2SearchClient } = require(path.join(APP, 'src/indice/tier2'));
 const client = new Tier2SearchClient();
 console.log(`\n### Ricerca '${term}' (type=${type}) · indice ${client.dbPath}`);
 const rows = timeIt('A. FTS5 Tier 2 (search)', () => (client.init() ? client.search(term, { limit: 20, type: idxType }) : []), 7);

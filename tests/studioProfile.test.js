@@ -3,7 +3,7 @@
  * Tutto locale (parquet + Mongo), nessuna chiamata TMDB. Gli studi NON entrano
  * nel vettore DNA: servono solo alla vista.
  */
-jest.mock('../src/db/duckDbStore', () => ({ query: jest.fn() }));
+jest.mock('../src/indice/duckDbStore', () => ({ query: jest.fn() }));
 jest.mock('../src/library/models/UserLibraryItem', () => ({
     collection: { find: jest.fn() }
 }));
@@ -11,7 +11,7 @@ jest.mock('../src/data/animeMappingStore', () => ({
     kitsuToTmdb: new Map([['142', '129']])
 }));
 
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { computeStudioProfile, parseLibraryId } = require('../src/profile/studioProfile');
 

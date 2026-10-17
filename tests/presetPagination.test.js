@@ -31,7 +31,7 @@ jest.mock('../src/catalog/providers/WatchlistProvider', () => ({
 
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
 const { routeCatalogRequest, PRESET_PAGE_SIZE } = require('../src/catalog/CatalogRouter');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 
 const EMPTY_USER_CONFIG = { profiles: [], activeProfileId: null };
 
@@ -90,19 +90,20 @@ describe('Ticket 20: paginazione deterministica dei preset DuckDB', () => {
     });
 
     test('la query standard applica id ASC prima di LIMIT/OFFSET', async () => {
-        const sql = await buildCatalogQuery({
+        const { sql, params } = await compileQuery({
             type: 'movie',
             where: ['"vote_count" >= 100'],
             orderBy: '"vote_average" DESC, "vote_count" DESC'
         }, 20, 20);
 
         expect(sql).toContain(
-            'ORDER BY "vote_average" DESC, "vote_count" DESC, id ASC LIMIT 20 OFFSET 20'
+            'ORDER BY "vote_average" DESC, "vote_count" DESC, id ASC LIMIT ? OFFSET ?'
         );
+        expect(params).toEqual(expect.arrayContaining([20, 20]));
     });
 
     test('la query FTS applica id ASC prima di LIMIT/OFFSET', async () => {
-        const sql = await buildCatalogQuery({
+        const { sql, params } = await compileQuery({
             type: 'series',
             where: [{ _fts: 'matrix' }],
             orderBy: '"popularity" DESC NULLS LAST'
@@ -110,7 +111,8 @@ describe('Ticket 20: paginazione deterministica dei preset DuckDB', () => {
 
         expect(sql).toContain("ORDER BY CASE WHEN lower(trim(coalesce(name, '')))");
         expect(sql).toContain(
-            "fts_main_tv.match_bm25(id, 'matrix') DESC, id ASC LIMIT 20 OFFSET 20"
+            "fts_main_tv.match_bm25(id, ?) DESC, id ASC LIMIT ? OFFSET ?"
         );
+        expect(params).toEqual(expect.arrayContaining([20, 20]));
     });
 });

@@ -172,7 +172,7 @@ test('istanza che non risponde entro il tetto: 404 come oggi E l\'evento in coda
 
     // 3b. E il drenatore, da quell'evento, ricava proprio il file che la rotta chiede:
     //     un evento che rifà un file diverso produrrebbe un poster che nessuno chiede.
-    const { nomeFileDaEvento } = require('../src/cache/posterDaEvento');
+    const { nomeFileDaEvento } = require('../src/posters/posterDaEvento');
     expect(nomeFileDaEvento(coda.push.mock.calls[0][0])).toBe(nome);
 
     // 4. Niente in cartella, nemmeno mezzo file: la rotta non ha scritto niente.

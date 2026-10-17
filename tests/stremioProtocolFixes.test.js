@@ -2,9 +2,9 @@ const express = require('express');
 const axios = require('axios');
 const http = require('http');
 const stremioRouter = require('../src/api/stremio');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 
 // Utente inesistente: il protocollo Stremio vuole HTTP 200 con payload vuoto
@@ -62,27 +62,32 @@ describe('Stremio Protocol Fixes', () => {
     });
 
     describe('(b) Paginazione a step 100 e calcolo offset corretto', () => {
-        test('buildCatalogQuery genera LIMIT 100 e OFFSET corretto per step di 100', async () => {
+        test('compileQuery genera LIMIT ? OFFSET ? corretto per step di 100', async () => {
             const preset = { type: 'movie', where: [] };
 
-            const sqlPage0 = await buildCatalogQuery(preset, 0);
-            expect(sqlPage0).toContain('LIMIT 100 OFFSET 0');
+            const res0 = await compileQuery(preset, 0, 100);
+            expect(res0.sql).toContain('LIMIT ? OFFSET ?');
+            expect(res0.params).toEqual(expect.arrayContaining([100, 0]));
 
-            const sqlPage1 = await buildCatalogQuery(preset, 100);
-            expect(sqlPage1).toContain('LIMIT 100 OFFSET 100');
+            const res1 = await compileQuery(preset, 100, 100);
+            expect(res1.sql).toContain('LIMIT ? OFFSET ?');
+            expect(res1.params).toEqual(expect.arrayContaining([100, 100]));
 
-            const sqlPage2 = await buildCatalogQuery(preset, 200);
-            expect(sqlPage2).toContain('LIMIT 100 OFFSET 200');
+            const res2 = await compileQuery(preset, 200, 100);
+            expect(res2.sql).toContain('LIMIT ? OFFSET ?');
+            expect(res2.params).toEqual(expect.arrayContaining([100, 200]));
         });
 
-        test('buildCatalogQuery FTS rispetta LIMIT 100 e OFFSET skip', async () => {
+        test('compileQuery FTS rispetta LIMIT ? e OFFSET skip', async () => {
             const ftsPreset = { type: 'movie', where: [{ _fts: 'Inception' }] };
 
-            const sqlFts0 = await buildCatalogQuery(ftsPreset, 0);
-            expect(sqlFts0).toContain('LIMIT 100 OFFSET 0');
+            const resFts0 = await compileQuery(ftsPreset, 0, 100);
+            expect(resFts0.sql).toContain('LIMIT ? OFFSET ?');
+            expect(resFts0.params).toEqual(expect.arrayContaining([100, 0]));
 
-            const sqlFts100 = await buildCatalogQuery(ftsPreset, 100);
-            expect(sqlFts100).toContain('LIMIT 100 OFFSET 100');
+            const resFts100 = await compileQuery(ftsPreset, 100, 100);
+            expect(resFts100.sql).toContain('LIMIT ? OFFSET ?');
+            expect(resFts100.params).toEqual(expect.arrayContaining([100, 100]));
         });
 
         test('DuckDbProvider getDuckDbCatalogFromPreset e getDuckDbCatalogFromFilters hanno default limit 100', async () => {

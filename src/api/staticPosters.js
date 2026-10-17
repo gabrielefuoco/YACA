@@ -135,7 +135,7 @@ const mettiInCoda = (fileName, badge) => {
     const chiave = `${evento.tipo}|${evento.id}`;
 
     try {
-        const coda = require('../cache/codaEventi');
+        const coda = require('../posters/codaEventi');
         Promise.resolve(coda.push(evento))
             .then((accodato) => {
                 // Solo quando è entrato davvero: se era già in attesa è idempotenza, e

@@ -32,7 +32,7 @@ const mockImdbIds = new Map();
 // resto è coda lunga.
 const mockDump = new Map([['1668', 'tt0108778']]);
 
-jest.mock('../src/db/duckDbStore', () => ({
+jest.mock('../src/indice/duckDbStore', () => ({
     isInitialized: true,
     query: jest.fn(async () => []),
     init: jest.fn(async () => {}),
@@ -109,7 +109,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 
 const { metaHandler } = require('../src/handlers/metaHandler');
 const { resolveImdbId } = require('../src/clients/tmdb');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 const animeMappingStore = require('../src/data/animeMappingStore');
 

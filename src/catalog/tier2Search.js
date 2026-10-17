@@ -21,7 +21,7 @@
  * uscito. Anche qui degrado morbido: archivio assente o rotto => `[]`.
  */
 
-const { Tier2SearchClient } = require('../db/tier2Index');
+const { Tier2SearchClient } = require('../indice/tier2');
 const { TIER2_FLAG, mergeLocalWithTier2 } = require('../ricerca/fusione');
 
 // Quanti titoli del Tier 2 aggiungere a una pagina di ricerca (20 = PRESET_PAGE_SIZE).

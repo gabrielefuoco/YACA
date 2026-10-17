@@ -60,7 +60,7 @@ jest.mock('../src/cache/CacheManager', () => {
 // Il dump contiene 1668 (Friends). `inDump` si può spegnere per misurare il caso Tier 2.
 let mockInDump = true;
 
-jest.mock('../src/db/duckDbStore', () => ({
+jest.mock('../src/indice/duckDbStore', () => ({
     isInitialized: true,
     query: jest.fn(async () => []),
     init: jest.fn(async () => {}),
@@ -97,7 +97,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 }));
 
 const { metaHandler } = require('../src/handlers/metaHandler');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 
 /**

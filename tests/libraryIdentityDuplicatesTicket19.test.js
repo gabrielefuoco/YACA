@@ -20,9 +20,9 @@ const {
     clearUnresolvedTypeLog
 } = require('../src/library/ingestion/libraryMediaTypeResolution');
 const { planDuplicateMarks } = require('../src/library/identity');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 
-jest.mock('../src/db/duckDbStore', () => ({
+jest.mock('../src/indice/duckDbStore', () => ({
     query: jest.fn()
 }));
 

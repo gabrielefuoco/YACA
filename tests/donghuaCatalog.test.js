@@ -1,6 +1,6 @@
 const { getPresets } = require('../src/data/presets');
-const duckDbStore = require('../src/db/duckDbStore');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const duckDbStore = require('../src/indice/duckDbStore');
+const { compileQuery } = require('../src/indice/compiler');
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
 
 describe('Preset Donghua Dedicato (Ticket 45)', () => {
@@ -31,7 +31,7 @@ describe('Preset Donghua Dedicato (Ticket 45)', () => {
         const presets = getPresets();
         const donghua = presets.find(p => p.id === 'preset_donghua');
 
-        const sql = await buildCatalogQuery({
+        const { sql, params } = await compileQuery({
             type: donghua.type,
             where: donghua.where,
             orderBy: donghua.orderBy
@@ -43,7 +43,7 @@ describe('Preset Donghua Dedicato (Ticket 45)', () => {
         // Non deve contenere join o clausole su anime_mappings
         expect(sql).not.toContain('anime_mappings');
 
-        const rows = await duckDbStore.query(sql);
+        const rows = await duckDbStore.query(sql, params);
         expect(rows.length).toBe(20);
         for (const row of rows) {
             expect(row.original_language).toBe('zh');

@@ -11,7 +11,7 @@
  * che è ciò che `metaHandler` usa (`metaHandlerDumpImdbId.test.js` la percorre con un finto
  * lettore, `metaHandlerImdbIdNoNetwork.test.js` ne misura l'effetto sulle richieste di rete).
  */
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 
 describe('duckDbStore.resolveTmdbToImdb', () => {
     test('input vuoto o non valido: risposta vuota, nessuna eccezione', async () => {

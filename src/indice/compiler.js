@@ -99,7 +99,7 @@ async function compileQuery(preset, skip = 0, limit = 100, dbClient = null) {
         let foundRecs = false;
         if (Number.isFinite(cleanSimilarId) && cleanSimilarId > 0) {
             try {
-                const client = dbClient || require('../db/duckDbStore');
+                const client = dbClient || require('./duckDbStore');
                 const targetRow = await client.query(`SELECT recommendations FROM ${table} WHERE id = ?`, [cleanSimilarId]);
                 if (targetRow.length > 0 && targetRow[0].recommendations) {
                     const recIds = typeof targetRow[0].recommendations === 'string'

@@ -7,7 +7,7 @@ const {
     sanitizeFts5Query,
     Tier2SearchClient,
     getTier2Stats
-} = require('../src/db/tier2Index');
+} = require('../src/indice/tier2');
 
 function runDuckDb(con, sql) {
     return new Promise((resolve, reject) => {
@@ -198,7 +198,7 @@ describe('Tier 2 SQLite FTS5 + Parquet Index', () => {
 });
 
 describe('buildExportSelect (sorgente Tier 2 = daily export)', () => {
-    const { buildExportSelect } = require('../src/db/tier2Index');
+    const { buildExportSelect } = require('../src/indice/tier2');
 
     it('legge i campi dell export: original_title per i film, original_name per le serie', () => {
         const sql = buildExportSelect('/tmp/movie_ids_01_02_2026.json.gz', '/tmp/tv_series_ids_01_02_2026.json.gz');

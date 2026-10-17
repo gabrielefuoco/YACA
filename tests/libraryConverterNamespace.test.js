@@ -43,7 +43,7 @@ const mockDuckDbStore = {
     })
 };
 
-jest.mock('../src/db/duckDbStore', () => mockDuckDbStore);
+jest.mock('../src/indice/duckDbStore', () => mockDuckDbStore);
 
 const mockAnimeMappingStore = {
     isReady: true,

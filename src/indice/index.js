@@ -9,7 +9,7 @@
  * Ha due clienti: i Cataloghi (via DuckDbProvider) e la Ricerca.
  */
 
-const duckDbStore = require('../db/duckDbStore');
+const duckDbStore = require('./duckDbStore');
 const compiler = require('./compiler');
 const tier2 = require('./tier2');
 

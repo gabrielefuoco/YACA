@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const APP = process.env.PROBE_APP_DIR || '/app';
 const Redis = require(path.join(APP, 'node_modules/ioredis'));
-const { Tier2SearchClient } = require(path.join(APP, 'src/db/tier2Index'));
+const { Tier2SearchClient } = require(path.join(APP, 'src/indice/tier2'));
 
 const term = process.argv[2] || 'the bear';
 const type = process.argv[3] || 'series';

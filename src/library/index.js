@@ -50,7 +50,17 @@ const {
 } = require('./reader');
 
 const identity = require('./identity');
-const { resolveLibraryContext, risolviContestoLibreria } = require('./context');
+const { contestoDi } = require('../profile');
+
+async function resolveLibraryContext(input = {}) {
+    const ctx = await contestoDi(input);
+    return {
+        userId: ctx.userId,
+        profileId: ctx.profileId,
+        addonUuid: ctx.addonUuid
+    };
+}
+const risolviContestoLibreria = resolveLibraryContext;
 
 // Ingestion services & state machine (Ticket 16)
 const LibrarySyncService = require('./ingestion/LibrarySyncService');

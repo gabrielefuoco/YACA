@@ -1,4 +1,4 @@
-const duckDbStore = require('../db/duckDbStore');
+const duckDbStore = require('../indice/duckDbStore');
 let ImdbToTmdbMapping = null;
 try {
     ImdbToTmdbMapping = require('../db/models/ImdbToTmdbMapping');

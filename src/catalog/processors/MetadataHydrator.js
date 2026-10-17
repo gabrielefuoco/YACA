@@ -1,6 +1,6 @@
 const { getTmdbMovieDetails } = require('../../clients/tmdb');
 const { normalizeContentId } = require('../../utils/contentId');
-const duckDbStore = require('../../db/duckDbStore');
+const duckDbStore = require('../../indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('../providers/DuckDbProvider');
 const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
 

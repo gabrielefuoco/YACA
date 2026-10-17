@@ -14,6 +14,9 @@ YACA è un addon per Stremio progettato con un'architettura **stateful** e modul
 - **Modulo Pool (`src/pool/`)**: Porta unica di composizione dei cataloghi hero del feed, con assegnazione pairwise mutuamente esclusiva e inserimento additivo delle righe del grafo.
 - **Modulo Libreria (`src/library/`)**: Dominio isolato che possiede i fatti oggettivi dell'utente (watchlist, cronologia, preferenze) e governa la macchina a stati di ingestione e conversione verso TMDB.
 
+> [!IMPORTANT]
+> **Regola dei Moduli e Confini (Ticket 28)**: I consumatori passano sempre e solo dalle porte canoniche dei moduli (`src/library/`, `src/indice/`, `src/posters/`, `src/pool/`, `src/ricerca/`, `src/profile/`, ecc.) e mai da shim intermedi o residui storici (`src/cache/`, `src/db/`, `src/erdb/`). Nessun ponte o shim di retrocompatibilità temporaneo è ammesso nel codice di produzione: un confine dichiarato va imposto.
+
 Sopra questo strato, YACA supporta **Profili Multipli** (es. "Cinema d'Autore", "Anime Fan", "Bambini") ciascuno dotato di un proprio **DNA vettoriale** contestuale e cataloghi dedicati.
 
 ### Mappa Architetturale

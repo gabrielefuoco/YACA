@@ -8,11 +8,6 @@
  */
 
 const posters = require('../src/posters');
-const erdbShim = require('../src/erdb');
-const erdbBuildShim = require('../src/erdb/build');
-const cacheCodaShim = require('../src/cache/codaEventi');
-const cachePosterShim = require('../src/cache/posterDaEvento');
-const cacheDrenaShim = require('../src/cache/drenaPoster');
 
 describe('Modulo Poster — Superficie pubblica', () => {
     test('esporta la coda e le sue primitive', () => {
@@ -74,19 +69,5 @@ describe('Modulo Poster — Superficie pubblica', () => {
         expect(typeof posters.drenaCodaPoster.main).toBe('function');
         expect(typeof posters.drenaCodaPoster.gira).toBe('function');
         expect(typeof posters.drenaCodaPoster.aspettaRedis).toBe('function');
-    });
-});
-
-describe('Modulo Poster — Retrocompatibilità shims', () => {
-    test('src/erdb e src/erdb/build puntano al modulo poster', () => {
-        expect(erdbBuildShim.posterFileName).toBe(posters.posterFileName);
-        expect(erdbBuildShim.posterUrl).toBe(posters.posterUrl);
-        expect(erdbShim.posterFileName).toBe(posters.posterFileName);
-    });
-
-    test('src/cache/codaEventi, posterDaEvento, drenaPoster puntano al modulo poster', () => {
-        expect(cacheCodaShim.push).toBe(posters.push);
-        expect(cachePosterShim.erdbIdDaNomeFile).toBe(posters.erdbIdDaNomeFile);
-        expect(cacheDrenaShim.drena).toBe(posters.drena);
     });
 });
