@@ -140,3 +140,22 @@ Totale: 7 suite eseguite singolarmente, **71 test passati**, zero fallimenti.
 ### 7. Cosa serve alla prossima fetta
 - Sostituzione della seconda strategia: `trakt_filtered` (o `seed_network`).
 - Per `trakt_filtered`: isolare il client Trakt in `src/library/` (che possiede la cronologia) o `src/clients/trakt`, e alimentare la strategia attraverso `indice.candidati`.
+
+## Verifica dell'integratore (18/10/2026) — fetta 1 accettata
+
+**Cosa ho verificato eseguendo** (non leggendo il referto dell'agente):
+
+| verifica | comando | esito |
+|---|---|---|
+| `mongoose`/`TasteProfile` fuori dall'indice | `grep -rn "mongoose\|TasteProfile" src/indice/*.js` | **solo 2 commenti** in `keywordIds.js` ✓ |
+| kids mode non svuota più il catalogo | `indice.candidati({kidsMode:true,…})` | **72 candidati**, motivo dichiarato `taste_profile_non_disponibile` ✓ |
+| chiave di cache distinta OFF/ON | `grep _hg src/cache/index.js` + `nuova_catena_hidden_gems` in `toHeroDesc`/`buildSharedHeroCacheKey` | suffisso `_hg` ✓ |
+| **la misura ora è vera** | `node scripts/qa/probe-hidden-gems-jaccard.js` (committata, 7,7 KB) | **58/58 score non-zero**, media 4.46 — il VSM è acceso ✓ |
+| i numeri | la sonda | film OFF 160 / ON 75, Jaccard **0.063**; serie OFF 160 / ON 58, **0.09** |
+| suite toccate + intera | `npx jest` | **195 suite, 1971 test, zero rossi** ✓ |
+
+**Nota sui numeri**: quelli della prima misura (98→77, Jaccard 0.087) **non sono confrontabili** con questi — venivano da una sonda improvvisata che girava **senza profilo di gusto**, quindi misurava un percorso che in produzione non esiste. Il riferimento d'ora in poi è **la sonda committata**.
+
+**Il rilievo che vale più di tutti** (revisione di specifica): *un numero giusto con una spiegazione sbagliata è peggio di un numero sbagliato*, perché la spiegazione è ciò che convince. Terza volta in un giorno con questa forma.
+
+**Prossima fetta**: `trakt_filtered` (o `seed_network`) — richiede l'isolamento dell'ingestione Trakt in `src/library/`. Poi `true_blend` (il cuore). Poi il pool svuotato e il serving.
