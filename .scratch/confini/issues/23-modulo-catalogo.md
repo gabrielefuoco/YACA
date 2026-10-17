@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: grilling
 
 # 23 — Il modulo catalogo: il tipo e la validazione
@@ -86,3 +86,46 @@ esegue diventa il feed.
 Minimo: la definizione ha **un posto** (col `grep` che dimostra che nessuno la interpreta per conto suo), la
 validazione **rifiuta** ciò che il servirlo non sa fare (con i test), e il contratto dell'anteprima è dichiarato
 nel modulo e implementato fuori — con l'anteprima vera (card + diagnosi) che resta identica.
+
+## Esito (17/10/2026)
+
+Risolto conformemente alle 5 decisioni stabilite:
+
+1. **La forma del Tipo Catalogo (`src/catalog/definition.js`)**:
+   - Una natura sola di catalogo: la riga hero di sistema e il preset utente condividono la stessa identica forma dichiarativa:
+     - `id`: identificatore univoco del catalogo;
+     - `name`: stringa descrittiva utente (max 100 char);
+     - `emoji`: icona / emoji del catalogo;
+     - `mediaSet`: sottoinsieme non vuoto di `['film', 'serie']` (con derivazione bidirezionale di `type`: `'movie'` | `'series'` | `'both'`);
+     - `anime`: asse anime canonico (`'yes'` | `'no'` | `'mixed'` | `'agnostic'`);
+     - `filters`: oggetto dichiarativo con `queries[]` (ingresso per il compilatore dell'indice del Ticket 22) e `where` nativo;
+     - `sort`: configurazione con `by` (chiave TMDB o Stremio), `orderBy` (SQL), `sortable` (booleano) e `presentation_strategy`;
+     - `system`: proprietà di sistema che distinguono offerta di sistema da richiesta utente (`isSystem`, `userModifiable`, `priority`, `additive`, `alwaysVisible`, `strategy`, `uiType`, `idBase`, `label`, `desc`, `category`, `provider`).
+
+2. **I due dataset migrati alla nuova forma**:
+   - **Dataset di sistema**: le 12 righe hero di `src/catalog/registry.js` sono state riscritte come istanze dichiarative di `defineCatalog` con proprietà di sistema esplicite (priorità da 1 a 6, additività, strategia, `provider: 'hybrid'`).
+   - **Dataset utente**: i 163 preset di `src/data/presets.js` vengono generati attraverso `defineCatalog`, mantenendo piena retrocompatibilità per i consumatori esistenti (`p.queries`, `p.where`, `p.orderBy`, ecc.).
+   - *Nota architetturale*: i cataloghi utente memorizzati nel documento MongoDB (`AddonConfig.profiles[].catalogs`) non sono stati migrati qui: come concordato, la migrazione dei dati persistiti è di competenza del Ticket 21.
+
+3. **Invarianza assoluta delle derivazioni (`src/catalog/registry.js`)**:
+   - Tutte le proiezioni discendono direttamente dalle definizioni hero di sistema:
+     - Manifest Stremio (`getManifestHeroCatalogs()`): esattamente 12 righe;
+     - Fingerprint rows (`getHeroCatalogFingerprintRows()`): esattamente 12 righe id/type/name;
+     - Kind map (`getHeroCatalogKindMap()`): 12 righe con `mediaSet`, `anime: 'agnostic'`, `alwaysVisible: false`;
+     - Pool spec (`getHeroPoolSpec()`): invariante, con `heroPriority` ordinato su 6 slug, `slugAdditivi` (`mondi`, `passo_fuori`), 6 slug e 12 cataloghi;
+     - Gruppi UI (`getHeroUiGroups()`): 6 card raggruppate per `idBase`;
+     - Prefissi e filtri (`getHeroPrefixes()`, `isHeroCatalogId()`);
+     - Hash del registro (`getRegistryHash()`): identico byte per byte a prima (`71354fae575c3d16`).
+
+4. **Validazione: Intersezione tra Lingua e Capacità Servire (`src/catalog/validation.js` e `src/catalog/capabilities.js`)**:
+   - `capabilities.js` definisce la forma di una dichiarazione di capacità delle fonti (`id`, `supportedMediaSets`, `supportedAnime`, `supportedFilters`, `supportedSorts`, metodi `canServe*`) e registra le fonti attuali (`duckdb`, `airing_state`, `hybrid`, `watchlist`).
+   - `validation.js` incrocia la lingua (validità id, lunghezza nome, mediaSet consentiti, asse anime, intervalli numerici) con le capacità dichiarate della fonte target (senza importare i provider di esecuzione). Rifiuta filtri sconosciuti o non supportati (es. `with_crew` su `airing_state`), ordinamenti vietati e mediaSet incompatibili.
+   - Tutti i 12 hero di sistema e tutti i 163 preset utente validano con 0 errori.
+
+5. **Contratto dell'Anteprima (`src/catalog/previewContract.js`)**:
+   - `formatPreviewResponse` e `validatePreviewResponse` stabiliscono il contratto pubblico: cap a 20 card, card standardizzate (`id`, `titolo`/`title`, `poster`, `anno`/`year`, `badgeIta`, `durata`/`duration`, `voto`, `type`), e diagnosi strutturata (`candidati`, `entrati`, `tagliati` per criterio `ita`, `kids`, `genere`, `gia_visto`, `qualita`, `collezioni`).
+   - La rotta `POST /api/configurazione/anteprima` produce i conteggi e formatta il payload tramite `formatPreviewResponse`.
+
+6. **Cosa resta al Ticket 22**:
+   - Il **registro unificato delle fonti** nel servire (di cui questo ticket ha fissato la forma della capacità).
+   - Il **compilatore dell'indice** che prende in ingresso i filtri dichiarativi (`catalog.filters`) e genera la query parametrizzata per DuckDB / FTS5.
