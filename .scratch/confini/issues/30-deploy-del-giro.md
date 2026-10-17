@@ -50,3 +50,35 @@ non discusso per un'ora con la produzione a metà.
 Il **ticket 18** resta aperto per la sua parte: il workflow che pubblica l'immagine del servizio aspetta lo
 **scope `workflow`** del token (`gh auth refresh -s workflow`). Fino ad allora `yaca-graph` si aggiorna con
 `docker compose build graph` sul mate — che funziona (fatto il 17/10/2026).
+
+## ⚠️ Verificato sul mate il 18/10/2026 — PRIMA del push serve un cambio al compose
+
+**Il buco**: l'app **non monta** il volume dell'anime-source, ma il modulo anime legge l'artefatto da lì
+(`src/anime/mapping.js`: `ANIME_MAPPING_PATH` / `ANIME_MAPPING_DIR`, default `.cache/anime-mappings.json`).
+Il produttore lo scrive in `yaca_anime_source_cache:/app/.cache` (10,4 MB, verificato), e quel volume è montato
+**solo** nel servizio. In produzione l'app non troverebbe l'artefatto → insiemi anime vuoti → `non-lo-so` su tutto
+→ l'euristica decide → **i cataloghi anime si rompono in silenzio**.
+
+**Da fare nello stesso push** (una riga di compose + una di ambiente):
+```yaml
+  app:
+    volumes:
+      - yaca_anime_source_cache:/data/anime-source:ro   # ← l'artefatto, in sola lettura
+    environment:
+      - ANIME_MAPPING_PATH=/data/anime-source/anime-mappings.json
+```
+E la verifica, dopo il deploy: `docker exec yaca-app ls -la /data/anime-source/` → il file c'è, e
+`docker logs yaca-app | grep -i "artefatto assente"` → **nessuna** riga.
+
+**Gli altri passi, verificati adesso**:
+- `deploy.yml` (l'app) scatta a ogni push; `deploy-anime-source.yml` scatta se cambia `services/anime-source/**`
+  — e i nostri commit lo cambiano ✓ quindi il **produttore** si aggiorna da sé.
+- **`yaca-graph` va ricostruito a mano** sul mate (`cd /srv/yaca && docker compose build graph && docker compose up -d graph`):
+  il suo workflow è bloccato dal ticket 18 (manca lo scope `workflow`), e `services/graph/parametri.py` è cambiato
+  (ticket 39: `DELTA_FASCIA` misurato).
+- **Il timer dei poster NON è un problema**: l'unità sul mate fa
+  `docker exec --workdir /app … yaca-app node scripts/drena-coda-poster.js` — gira **dentro il container**, non
+  sull'host, e lo script esiste ancora (il ticket 28 l'ha tenuto apposta). Ripuntarlo a
+  `src/posters/drenaCodaPoster.js` è **opzionale**, non necessario.
+- **La verifica che conta**: boot ~1,6 s, RAM ~284 MiB a freddo, i conteggi delle righe del grafo, e il file
+  dell'artefatto dentro l'app (sopra). Più `docker stats`: l'app non deve fare il giro del daemon (ticket 34).

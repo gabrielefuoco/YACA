@@ -108,3 +108,11 @@ urgente — ma è l'unico candidato che passa il criterio.
 
 **Non farei**: nessun nuovo servizio per l'indice, i client, l'AI o i dati. Il criterio della mappa regge, e i
 numeri lo confermano: dove serve, il confine è già un modulo; dove il ciclo di vita è diverso, il servizio c'è già.
+
+## Correzione (18/10/2026, verificata sul mate)
+
+Ho scritto che il drenatore dei poster «gira sul mate come unità systemd **con `node` e il repo sull'host**».
+**È falso**: l'unità fa `docker exec --workdir /app … yaca-app node scripts/drena-coda-poster.js` — gira **dentro
+il container dell'app**, senza bisogno di node né del repo sull'host. La conclusione del ticket non cambia (il
+drenatore resta il candidato a container proprio, per il ciclo di vita), ma il **motivo scritto era sbagliato** —
+e un motivo sbagliato in un ticket è peggio di nessun motivo, perché il prossimo lo eredita.
