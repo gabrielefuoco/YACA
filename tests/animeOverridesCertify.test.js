@@ -1,4 +1,4 @@
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeMappingStore } = require('../src/anime');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { F } = require('../src/data/filters');
 

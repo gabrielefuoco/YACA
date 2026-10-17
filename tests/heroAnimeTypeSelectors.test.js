@@ -98,7 +98,7 @@ const {
     getDuckDbCatalogFromFilters,
     getDuckDbCatalogFromPreset
 } = require('../src/catalog/providers/DuckDbProvider');
-const { normalizeAnimeMarker } = require('../src/utils/animeIdentity');
+const { normalizeAnimeMarker } = require('../src/anime');
 const {
     buildTopGenresMixCatalog,
     buildHybridCatalog,

@@ -15,7 +15,7 @@ const {
     ANIME_POLICY_MODES,
     getProfileAnimationQuota,
     getPolicyFromQuota
-} = require('../engines/hybrid/animePolicy');
+} = require('../anime');
 
 /**
  * Risolve in modo puro i selettori effettivi per una data richiesta su un profilo.

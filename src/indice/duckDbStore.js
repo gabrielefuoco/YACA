@@ -273,7 +273,7 @@ class DuckDbStore {
             this.isInitialized = true;
 
             // Seeding anime mappings post-init se presenti
-            const animeMappingStore = require('../data/animeMappingStore');
+            const { animeMappingStore } = require('../anime');
             if (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow) {
                 const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
                 const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];

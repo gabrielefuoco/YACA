@@ -48,10 +48,17 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
  * esterni al modulo.
  */
 let mockAiringSnapshot = null;
-jest.mock('../src/data/animeAiringState', () => ({
-    ...jest.requireActual('../src/data/animeAiringState'),
-    getSnapshot: jest.fn(async () => mockAiringSnapshot || { docs: [], byTmdbId: new Map() })
-}));
+jest.mock('../src/anime', () => {
+    const actual = jest.requireActual('../src/anime');
+    return {
+        ...actual,
+        getAiringSnapshot: jest.fn(async () => mockAiringSnapshot || { docs: [], byTmdbId: new Map() }),
+        animeAiringState: {
+            ...actual.animeAiringState,
+            getSnapshot: jest.fn(async () => mockAiringSnapshot || { docs: [], byTmdbId: new Map() })
+        }
+    };
+});
 
 const mockSchedeInCassa = new Map();
 
@@ -64,8 +71,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
 
 const stremioRouter = require('../src/api/stremio');
 const itaAnnotations = require('../src/data/itaAnnotations');
-const animeAiringState = require('../src/data/animeAiringState');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeAiringState, animeMappingStore } = require('../src/anime');
 
 const HOST_HANDLE = 'prova';
 const POSTER_TMDB = id => `https://image.tmdb.org/t/p/w500/poster-${id}.jpg`;

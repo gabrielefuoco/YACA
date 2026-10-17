@@ -73,11 +73,17 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn(async (imdbId) => ({ id: { 'tt0108778': '1668', 'tt0098800': '999' }[imdbId] }))
 }));
 
-jest.mock('../src/data/animeMappingStore', () => ({
+const mockAnimeMappingStore = {
     resolveKitsu: jest.fn(() => null),
     resolveKitsuMovie: jest.fn(() => null),
     resolveTmdbFromKitsu: jest.fn(() => null),
     isAnimeTmdbId: jest.fn(() => false)
+};
+
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: mockAnimeMappingStore,
+    mappingStore: mockAnimeMappingStore
 }));
 
 // Copia fedele di `fetchTmdbEpisodes`: id IMDb quando c'è, altrimenti la forma nativa, e dalla
@@ -111,7 +117,7 @@ const { metaHandler } = require('../src/handlers/metaHandler');
 const { resolveImdbId } = require('../src/clients/tmdb');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeMappingStore } = require('../src/anime');
 
 const ID_IMDB = 'tt0108778';
 const ID_TMDB = 'tmdb:1668';

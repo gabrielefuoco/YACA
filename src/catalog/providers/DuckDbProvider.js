@@ -7,8 +7,7 @@
 
 const indice = require('../../indice');
 const { F, S } = require('../../data/filters');
-const animeMappingStore = require('../../data/animeMappingStore');
-const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
+const { animeMappingStore, normalizeAnimeMarker } = require('../../anime');
 const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
 
 const {

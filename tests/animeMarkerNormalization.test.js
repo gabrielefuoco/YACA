@@ -1,12 +1,12 @@
 const {
     ANIME_MARKER_DEFAULT,
     normalizeAnimeMarker,
-    isAnimeContent
-} = require('../src/utils/animeIdentity');
+    isAnimeContent,
+    animeMappingStore
+} = require('../src/anime');
 const { isItemAnime } = require('../src/handlers/catalogHandler');
 const { applyKitsuMappingToMeta } = require('../src/handlers/metaHandler');
 const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
-const animeMappingStore = require('../src/data/animeMappingStore');
 
 describe('Ticket 28: contratto unico del marker _isAnime', () => {
     afterEach(() => {

@@ -11,7 +11,7 @@
  * annotazioni, ticket 04 della mappa doppiaggio-ita): qui si inietta via `options.itaSnapshot`.
  */
 
-const animeAiringState = require('../src/data/animeAiringState');
+const { animeAiringState } = require('../src/anime');
 const { applyPostCacheBadges } = require('../src/handlers/catalogHandler');
 
 const NOW = Date.UTC(2026, 8, 23, 12, 0, 0);

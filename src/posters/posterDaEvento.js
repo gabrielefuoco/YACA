@@ -270,7 +270,7 @@ function urlDaEvento(base, { tipo, id, badge } = {}) {
  * vecchio senza che nessuno se ne accorga. Quindi: entrambi, ognuno col poster giusto.
  *
  * `cercaKitsu(id, tipo)` e' INIETTATA (la mappa la passa chi chiama, vedi
- * `src/data/animeMappingStore.js`: `resolveKitsuMovie` per i film, `resolveKitsu`
+ * `src/anime/`: `resolveKitsuMovie` per i film, `resolveKitsu`
  * per le serie) e non viene importata qui: questo modulo resta puro, senza rete ne'
  * database, e i test non dipendono da dati reali. Se non c'e' mappatura (o non c'e'
  * funzione, o la mappa e' rotta) l'elenco ha un elemento solo: il poster TMDB si

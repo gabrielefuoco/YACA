@@ -11,12 +11,15 @@ const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/Metadat
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 const itaAnnotations = require('../data/itaAnnotations');
 const duckDbStore = require('../indice/duckDbStore');
-const animeAiringState = require('../data/animeAiringState');
-const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
-const animeMappingStore = require('../data/animeMappingStore');
+const {
+    animeAiringState,
+    animeMappingStore,
+    normalizeAnimeMarker,
+    extractAnimeTmdbId,
+    isItemAnime
+} = require('../anime');
 const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
 const { applyKidsMode } = require('../utils/kidsModeFilters');
-const { isItemAnime } = require('../engines/hybrid/animePolicy');
 
 const extractTmdbId = extractAnimeTmdbId;
 
@@ -482,7 +485,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
         hostUrl
     };
 
-    // Annotazioni ITA dal file prodotto dal modulo `services/doppiaggi-source`: una lettura per finestra
+    // Annotazioni ITA dal file prodotto dal modulo `doppiaggi-source`: una lettura per finestra
     // (snapshot in RAM con TTL breve), non una query per item. Il core non scrive mai questo file.
     let itaSnapshot = options.itaSnapshot || null;
     if (!itaSnapshot) {
@@ -553,7 +556,7 @@ async function applyPostCacheBadges(cachedData, userConfig, hostUrl, catalogMeta
             // Fuori dal catalogo simulcast l'anime mostra SOLO il badge `ITA` secco (o niente):
             // niente numero di episodio, niente badge di stagione. La verità è la colonna `ita`,
             // che vale `true` anche per i doppiati solo AnimeUnity. L'unione NON la fa la build
-            // del parquet: la fa `services/doppiaggi-source`, che legge `anime_airing_state`.
+            // del parquet: la fa `doppiaggi-source`, che legge `anime_airing_state`.
             // La build legge solo `ita_annotations.jsonl`: se quel passaggio salta, il badge ITA
             // degli anime sparisce da tutti i cataloghi senza che nessuno se ne accorga.
             //

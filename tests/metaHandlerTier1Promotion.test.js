@@ -20,11 +20,17 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn(async () => null)
 }));
 
-jest.mock('../src/data/animeMappingStore', () => ({
+const mockAnimeMappingStore = {
     resolveKitsu: jest.fn(() => null),
     resolveKitsuMovie: jest.fn(() => null),
     resolveTmdbFromKitsu: jest.fn(() => null),
     isAnimeTmdbId: jest.fn(() => false)
+};
+
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: mockAnimeMappingStore,
+    mappingStore: mockAnimeMappingStore
 }));
 
 jest.mock('../src/clients/tmdb', () => ({

@@ -23,8 +23,7 @@
  */
 
 const itaAnnotations = require('../src/data/itaAnnotations');
-const animeAiringState = require('../src/data/animeAiringState');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeAiringState, animeMappingStore } = require('../src/anime');
 const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/handlers/catalogHandler');
 
 const USER_CONFIG = { profiles: [{ id: 'global', settings: {} }], activeProfileId: 'global' };

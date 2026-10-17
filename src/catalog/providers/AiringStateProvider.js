@@ -16,8 +16,7 @@
  * altrimenti `tmdb:{id}`. Le due card (sub e ITA) condividono lo stesso id.
  */
 
-const animeAiringState = require('../../data/animeAiringState');
-const animeMappingStore = require('../../data/animeMappingStore');
+const { animeAiringState, animeMappingStore } = require('../../anime');
 const { getDuckDbCatalogFromPreset } = require('./DuckDbProvider');
 
 const PAGE_SIZE = 20;

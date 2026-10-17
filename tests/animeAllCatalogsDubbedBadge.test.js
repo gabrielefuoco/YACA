@@ -13,8 +13,7 @@
  *  - degrado silenzioso se il file manca o la collection è vuota.
  */
 
-const animeMappingStore = require('../src/data/animeMappingStore');
-const animeAiringState = require('../src/data/animeAiringState');
+const { animeMappingStore, animeAiringState } = require('../src/anime');
 const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/handlers/catalogHandler');
 
 /**

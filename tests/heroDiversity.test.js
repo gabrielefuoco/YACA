@@ -78,7 +78,7 @@ const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvide
 const dataFetchers = require('../src/engines/hybrid/dataFetchers');
 const strategies = require('../src/engines/hybrid/catalogStrategies');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
-const { normalizeAnimeMarker } = require('../src/utils/animeIdentity');
+const { normalizeAnimeMarker } = require('../src/anime');
 const {
     getHybridCatalog,
     buildSharedHeroCatalogs,

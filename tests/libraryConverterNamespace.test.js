@@ -102,7 +102,11 @@ const mockAnimeMappingStore = {
     _tmdbIdPuro: jest.fn(id => String(id))
 };
 
-jest.mock('../src/data/animeMappingStore', () => mockAnimeMappingStore);
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: mockAnimeMappingStore,
+    mappingStore: mockAnimeMappingStore
+}));
 
 let mockCandidates = [];
 jest.mock('../src/library/models/UserLibraryItem', () => ({

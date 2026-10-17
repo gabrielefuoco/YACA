@@ -12,7 +12,7 @@ const NICHE_MAX_VOTE_BONUS = 2.5;
 const { isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { G } = require('../data/filters');
 const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../data/keywordIds');
-const { resolveAnimePolicy, computeAnimeScoreMultiplier } = require('../engines/hybrid/animePolicy');
+const { resolveAnimePolicy, computeAnimeScoreMultiplier } = require('../anime');
 
 function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);

@@ -7,7 +7,7 @@ const { rateLimitedMap } = require('../../utils/rateLimiter');
 const DuckDbProvider = require('../../catalog/providers/DuckDbProvider');
 const { F } = require('../../data/filters');
 const { applyKidsMode } = require('../../utils/kidsModeFilters');
-const { isItemAnime } = require('./animePolicy');
+const { isItemAnime } = require('../../anime');
 
 // Ticket 21: ampliato a 260 per consentire il pool allargato a monte (250) nei contesti stretti
 const MAX_HERO_FALLBACK_FETCH = 260;

@@ -511,7 +511,7 @@ function _caricaRedis(log) {
 
 function _caricaStoreMappa(log) {
     try {
-        return require('../data/animeMappingStore');
+        return require('../anime').animeMappingStore;
     } catch (err) {
         log.warn(`[Drena] mappa anime non caricabile (${err && err.message ? err.message : err}): ` +
             'i poster anime di questo giro avranno solo il lato TMDB.');

@@ -21,8 +21,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => {
     return { ...actual, getDuckDbCatalogFromPreset: jest.fn() };
 });
 
-const animeAiringState = require('../src/data/animeAiringState');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeAiringState, animeMappingStore } = require('../src/anime');
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
 const { getAiringStateCatalog } = require('../src/catalog/providers/AiringStateProvider');
 const { applyAiringStateBadges } = require('../src/handlers/catalogHandler');

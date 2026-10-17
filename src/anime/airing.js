@@ -2,7 +2,7 @@
  * animeAiringState.js
  *
  * Lettore lato YACA della collezione `anime_airing_state` scritta dal modulo esterno
- * `services/anime-source` (contratto: ticket `07`, consumo: ticket `13`).
+ * `anime-source` (contratto: ticket `07`, consumo: ticket `13`).
  *
  * IL CATALOGO "Simulcast (Nuovi Episodi)" LEGGE `homeReleases` (ticket 52, 04/10/2026):
  * chi ha un episodio uscito nelle ultime due settimane, secondo la HOME di AnimeUnity
@@ -15,7 +15,7 @@
  * Cosa resta in vita e perché (non è tutto morto):
  *  - `sub`/`dub`/`italian` e `episodes[]` restano letti per i DUE consumatori che non sono
  *    il simulcast: il backfill di novità (`getNoveltyEntries`, vedi `scripts/backfill-airing-anime.js`)
- *    e l'unione delle annotazioni ITA (`services/doppiaggi-source`, che legge `dub`/`episodes[]`
+ *    e l'unione delle annotazioni ITA (`doppiaggi-source`, che legge `dub`/`episodes[]`
  *    e il `mediaType` dichiarato).
  *  - `_id` = TMDB id in stringa (chiave di dedup/lookup);
  *  - `schemaVersion` = 1; i documenti con versione più alta vengono IGNORATI (degrado, mai crash);
@@ -32,6 +32,7 @@
  */
 
 const mongoose = require('mongoose');
+const { snapshotDaArtefatto } = require('../utils/snapshotDaArtefatto');
 
 const COLLECTION_NAME = 'anime_airing_state';
 const SUPPORTED_SCHEMA_VERSION = 1;
@@ -82,13 +83,8 @@ function emptySnapshot() {
     };
 }
 
-const cache = {
-    snapshot: null,
-    fetchedAt: 0,
-    inflight: null,
-    lastLogKey: null,
-    lastLogAt: 0
-};
+let lastLogKey = null;
+let lastLogAt = 0;
 
 async function defaultDataSource() {
     const connection = mongoose.connection;
@@ -269,9 +265,9 @@ function logRefresh(snapshot, error) {
             ? `err:${error.message}`
             : `ok:${snapshot.docs.length}:${snapshot.ignoredSchema}:${snapshot.invalid}:${snapshot.homeInWindow}:${snapshot.homeStale}`;
 
-        if (cache.lastLogKey === key && now - cache.lastLogAt < CACHE_TTL_MS) return;
-        cache.lastLogKey = key;
-        cache.lastLogAt = now;
+        if (lastLogKey === key && now - lastLogAt < CACHE_TTL_MS) return;
+        lastLogKey = key;
+        lastLogAt = now;
 
         if (error) {
             const served = snapshot.docs.length > 0 ? `${snapshot.docs.length} serie dall'ultimo stato noto` : 'catalogo vuoto';
@@ -293,46 +289,31 @@ function logRefresh(snapshot, error) {
 
 // ─── Snapshot con cache L1 ───────────────────────────────────────────────────
 
-async function refresh() {
-    try {
+const snapshotReader = snapshotDaArtefatto({
+    leggi: async () => {
         const rawDocs = await dataSource();
         const snapshot = buildSnapshot(Array.isArray(rawDocs) ? rawDocs : []);
         snapshot.fetchedAt = Date.now();
         snapshot.degraded = false;
         snapshot.lastError = null;
-        cache.snapshot = snapshot;
-        cache.fetchedAt = snapshot.fetchedAt;
         logRefresh(snapshot, null);
         return snapshot;
-    } catch (error) {
-        // Degrado: si serve l'ultimo stato noto (anche stantio), o il vuoto. Mai eccezioni.
-        const fallback = cache.snapshot || emptySnapshot();
-        fallback.degraded = true;
-        fallback.lastError = error.message;
-        cache.snapshot = fallback;
-        // Negativa per un TTL: non martelliamo Mongo se è giù.
-        cache.fetchedAt = Date.now();
+    },
+    ttlMs: CACHE_TTL_MS,
+    suErrore: 'keepLastKnown',
+    onError: (fallback, error) => {
         logRefresh(fallback, error);
-        return fallback;
-    }
-}
+    },
+    vuoto: emptySnapshot
+});
 
 /**
  * Snapshot validato dello stato, servito da cache L1 con TTL ~60s.
  * Non lancia mai: su errore ritorna lo snapshot precedente (degraded: true) o uno vuoto.
  * @returns {Promise<{docs: Array, byTmdbId: Map, byKitsuId: Map, ignoredSchema: number, invalid: number, degraded: boolean, fetchedAt: number}>}
  */
-async function getSnapshot() {
-    const now = Date.now();
-    if (cache.snapshot && now - cache.fetchedAt < CACHE_TTL_MS) {
-        return cache.snapshot;
-    }
-    if (cache.inflight) return cache.inflight;
-
-    cache.inflight = refresh().finally(() => {
-        cache.inflight = null;
-    });
-    return cache.inflight;
+async function getSnapshot(options = {}) {
+    return snapshotReader.getSnapshot(options);
 }
 
 // ─── Helper puri sulla finestra temporale ────────────────────────────────────
@@ -605,7 +586,7 @@ function getDubEpisode(doc) {
 
 /**
  * Soglia del veto: oltre, il documento è una serie. **Copia di `MOVIE_MAX_EPISODES`** in
- * `services/doppiaggi-source/src/anime.js` (il writer delle annotazioni): se le due soglie
+ * `doppiaggi-source/anime.js` (il writer delle annotazioni): se le due soglie
  * divergono, il lettore e il writer non concordano più su cosa sia un film.
  */
 const MOVIE_MAX_EPISODES = 3;
@@ -712,11 +693,9 @@ function setDataSourceForTests(fn) {
 }
 
 function resetForTests(keepDataSource = false) {
-    cache.snapshot = null;
-    cache.fetchedAt = 0;
-    cache.inflight = null;
-    cache.lastLogKey = null;
-    cache.lastLogAt = 0;
+    snapshotReader.reset();
+    lastLogKey = null;
+    lastLogAt = 0;
     if (!keepDataSource) dataSource = defaultDataSource;
 }
 

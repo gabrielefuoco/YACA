@@ -2,13 +2,16 @@ const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient, resolveImdbId }
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
 const cache = require('../cache');
-const animeMappingStore = require('../data/animeMappingStore');
+const {
+    animeMappingStore,
+    animeAiringState,
+    normalizeAnimeMarker,
+    extractAnimeTmdbId
+} = require('../anime');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../db/tier1LazyPromotion');
-const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
 const duckDbStore = require('../indice/duckDbStore');
 const itaAnnotations = require('../data/itaAnnotations');
-const animeAiringState = require('../data/animeAiringState');
 
 // Cache per l'oggetto meta finale combinato
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });

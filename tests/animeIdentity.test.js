@@ -1,5 +1,4 @@
-const { isAnimeContent, hasAnimeKeyword, isAnimeKeywordString } = require('../src/utils/animeIdentity');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { isAnimeContent, hasAnimeKeyword, isAnimeKeywordString, animeMappingStore } = require('../src/anime');
 
 describe('Anime Identity & Canonical Rule (Zero-Network Synthetic Tests)', () => {
     describe('Keyword Helper (Anti-false-positive check)', () => {

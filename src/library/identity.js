@@ -23,7 +23,7 @@ const UserLibraryItem = require('./models/UserLibraryItem');
 const { resolveItemMediaType } = require('./ingestion/libraryMediaTypeResolution');
 let animeMappingStore = null;
 try {
-    animeMappingStore = require('../data/animeMappingStore');
+    animeMappingStore = require('../anime').animeMappingStore;
 } catch (_e) {
     animeMappingStore = null;
 }

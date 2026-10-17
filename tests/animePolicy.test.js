@@ -6,7 +6,7 @@ const {
     getEffectiveTypeSelectors,
     isItemAnime,
     computeAnimeScoreMultiplier
-} = require('../src/engines/hybrid/animePolicy');
+} = require('../src/anime');
 const ProfileScorer = require('../src/profile/ProfileScorer');
 
 describe('Anime Policy (Ticket 26)', () => {
@@ -234,7 +234,7 @@ describe('Anime Policy (Ticket 26)', () => {
         });
 
         it('voce di pool con solo id inoltra esattamente movie e tv allo store', () => {
-            const animeMappingStore = require('../src/data/animeMappingStore');
+            const { animeMappingStore } = require('../src/anime');
             const calls = [];
             jest.spyOn(animeMappingStore, 'isAnimeTmdbId').mockImplementation((id, tipo) => {
                 calls.push({ id, tipo });
@@ -257,7 +257,7 @@ describe('Anime Policy (Ticket 26)', () => {
         });
 
         it('computeAnimeScoreMultiplier inoltra tipo alla voce di pool', () => {
-            const animeMappingStore = require('../src/data/animeMappingStore');
+            const { animeMappingStore } = require('../src/anime');
             const calls = [];
             jest.spyOn(animeMappingStore, 'isAnimeTmdbId').mockImplementation((id, tipo) => {
                 calls.push({ id, tipo });

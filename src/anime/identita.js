@@ -1,20 +1,59 @@
 /**
- * animeIdentity.js
- * 
- * Modulo condiviso per l'identità canonica Anime in YACA.
- * 
- * REGOLA CANONICA:
- * anime ⟺ il tmdbId è presente in animeMappingStore (Anibridge/Fribb)
- *          OPPURE (genere 16 AND (original_language === 'ja' OR keyword TMDB contiene 'anime' case-insensitive))
- * 
- * Regola Keyword:
- * Una keyword è considerata "anime" se include il termine "anime" (case-insensitive),
- * escludendo esplicitamente qualificatori come "anime-inspired", "anime inspired",
- * "anime-influenced", "anime influenced", "anime-style" o "anime style", che identificano
- * produzioni occidentali stilisticamente influenzate dall'animazione giapponese (es. Avatar, Castlevania).
+ * src/anime/identita.js
+ *
+ * Modulo identità canonica Anime in YACA (Ticket 32).
+ *
+ * REGOLA CANONICA (Decisione 6 e 7):
+ * 1. Lo store risponde tre stati: 'si' | 'non-lo-so' | 'no'.
+ *    - 'si': id presente negli indici o certificato -> anime (true)
+ *    - 'no': id in exclude -> non anime (false, l'euristica si ferma)
+ *    - 'non-lo-so': id assente -> l'euristica decide
+ * 2. L'euristica decide SOLO su 'non-lo-so':
+ *    Genere 16 (Animation) AND (original_language === 'ja' OR keyword TMDB contiene 'anime' case-insensitive,
+ *    escludendo qualificatori occidentali come anime-inspired / influenced / style).
+ * 3. Quando l'euristica dice 'si' su un 'non-lo-so', viene registrato per il log aggregato al refresh
+ *    (Decisione 7: id + titolo come candidati certify).
  */
 
 const ANIME_MARKER_DEFAULT = false;
+
+// Buffer aggregato dei candidati certify prodotti dall'euristica su titoli 'non-lo-so'
+const candidatiCertify = new Map();
+
+function recordCandidatoCertify(tmdbId, title) {
+    if (!tmdbId) return;
+    const cleanId = String(tmdbId).trim();
+    if (!cleanId) return;
+    if (!candidatiCertify.has(cleanId)) {
+        candidatiCertify.set(cleanId, {
+            id: cleanId,
+            title: title ? String(title).trim() : ''
+        });
+    } else if (title && !candidatiCertify.get(cleanId).title) {
+        candidatiCertify.get(cleanId).title = String(title).trim();
+    }
+}
+
+/**
+ * Emette in una sola riga aggregata tutti i candidati certify emersi dall'euristica (Decisione 7)
+ * e svuota il buffer.
+ */
+function flusheLogCandidatiCertify() {
+    if (candidatiCertify.size === 0) return [];
+    const list = Array.from(candidatiCertify.values());
+    candidatiCertify.clear();
+    const formatted = list.map(c => (c.title ? `${c.id} ("${c.title}")` : `${c.id}`)).join(', ');
+    console.log(`[AnimeIdentity] Verdetto euristica su 'non-lo-so': ${list.length} candidati per certify -> ${formatted}`);
+    return list;
+}
+
+function getCandidatiCertify() {
+    return Array.from(candidatiCertify.values());
+}
+
+function resetCandidatiCertifyForTests() {
+    candidatiCertify.clear();
+}
 
 function isAnimeKeywordString(keyword) {
     if (!keyword || typeof keyword !== 'string') return false;
@@ -73,34 +112,44 @@ function hasAnimationGenre(genreIds) {
 
 /**
  * Determina se un contenuto è da considerarsi Anime secondo la regola canonica YACA.
- * Funzione pura: nessun I/O, nessun side-effect.
- * 
+ *
  * @param {Object} [params]
  * @param {string|number} [params.tmdbId] - ID TMDB del contenuto
+ * @param {string} [params.title] - Titolo dell'opera (per visibilità candidati certify)
+ * @param {string} [params.name] - Alias del titolo
  * @param {Array<number|string|Object>} [params.genreIds] - Array di ID genere o oggetti genere
  * @param {string} [params.originalLanguage] - Codice lingua ISO (es. 'ja', 'en')
  * @param {Array<string|Object>|Object|string} [params.keywords] - Lista o oggetto keywords TMDB
  * @param {Object} [params.mappingStore] - Istanza dello store di mapping anime (opzionale)
- * @param {string} [params.tipo] - Tipo del contenuto ('movie' | 'tv' | 'series' | 'anime') per disambiguare lo store
+ * @param {string} [params.tipo] - Tipo del contenuto ('movie' | 'tv' | 'series' | 'anime')
  * @returns {boolean}
  */
-function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingStore, tipo } = {}) {
+function isAnimeContent({ tmdbId, title, name, genreIds, originalLanguage, keywords, mappingStore, tipo } = {}) {
     let store = mappingStore;
     if (store === undefined) {
         try {
-            store = require('../data/animeMappingStore');
+            store = require('./mapping');
         } catch {
             store = null;
         }
     }
 
-    // 1. Lookup rapido nello store certificato (Anibridge / Fribb)
-    // Se tipo è specificato, lo inoltriamo a store.isAnimeTmdbId(tmdbId, tipo) per interrogare
-    // la sola partizione coerente (movie vs tv) ed evitare collisioni di ID TMDB (ticket 13).
-    // Se tipo è assente/undefined, preserviamo la chiamata legacy senza tipo per retrocompatibilità.
-    // Un tipo *fornito* ma non riconosciuto vale "nessun namespace": non si ricade sull'unione,
-    // altrimenti un errore di scrittura riaprirebbe la collisione in silenzio.
-    if (tmdbId && store && typeof store.isAnimeTmdbId === 'function') {
+    // 1. Interrogazione dello store sui tre stati (Decisione 6):
+    //    - 'si': id negli indici o certificato -> true
+    //    - 'no': id in exclude -> false (stop euristica)
+    //    - 'non-lo-so': id assente -> l'euristica decide
+    if (tmdbId && store && typeof store.statoAnime === 'function') {
+        const storeTipo = normalizeTipoAnime(tipo);
+        const stato = store.statoAnime(tmdbId, storeTipo || undefined);
+        if (stato === 'si') {
+            return true;
+        }
+        if (stato === 'no') {
+            return false;
+        }
+        // 'non-lo-so': prosegui con l'euristica
+    } else if (tmdbId && store && typeof store.isAnimeTmdbId === 'function') {
+        // Fallback di retrocompatibilità se viene iniettato un mock privo di statoAnime
         const storeTipo = normalizeTipoAnime(tipo);
         const storeMatch = storeTipo
             ? store.isAnimeTmdbId(tmdbId, storeTipo)
@@ -110,19 +159,21 @@ function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingS
         }
     }
 
-    // 2. Genere 16 (Animation) obbligatorio per l'euristica TMDB
+    // 2. Euristica TMDB: opera solo su 'non-lo-so' (o assenza di store)
+    // Genere 16 (Animation) obbligatorio per l'euristica
     if (!hasAnimationGenre(genreIds)) {
         return false;
     }
 
-    // 3. Lingua originale giapponese ('ja')
     const lang = typeof originalLanguage === 'string' ? originalLanguage.toLowerCase().trim() : '';
-    if (lang === 'ja') {
-        return true;
-    }
+    const hasJa = lang === 'ja';
+    const hasKw = hasAnimeKeyword(keywords);
 
-    // 4. Keyword TMDB contenente "anime" (con filtro anti-falsi positivi)
-    if (hasAnimeKeyword(keywords)) {
+    if (hasJa || hasKw) {
+        // Decisione 7: registra il verdetto dell'euristica come candidato certify
+        if (tmdbId) {
+            recordCandidatoCertify(tmdbId, title || name);
+        }
         return true;
     }
 
@@ -131,7 +182,6 @@ function isAnimeContent({ tmdbId, genreIds, originalLanguage, keywords, mappingS
 
 /**
  * Estrae un TMDB id dai payload Stremio senza richiedere una rete.
- * I suffissi di presentazione (`_ita_offset`) non cambiano l'opera.
  */
 function extractAnimeTmdbId(item) {
     if (!item) return null;
@@ -192,14 +242,6 @@ function extractAnimeGenreIds(item) {
 
 /**
  * Unico contratto di normalizzazione del marcatore anime.
- *
- * Un boolean già presente è autorevole e viene soltanto propagato. In assenza
- * del marker, Kitsu/AniList e `type: anime` sono prove positive; per i payload
- * TMDB viene usata `isAnimeContent`. Il default unico è `false`: senza prove
- * non abilitiamo enrichment Kitsu, filtri anime o badge-specifici.
- *
- * La funzione muta il payload e restituisce il boolean. Le chiamate successive
- * sono O(1) e non ripetono classificazioni o lookup.
  */
 function normalizeAnimeMarker(item, options = {}) {
     if (!item || typeof item !== 'object') return false;
@@ -212,23 +254,22 @@ function normalizeAnimeMarker(item, options = {}) {
         || rawId.startsWith('anilist:');
 
     if (!isAnime) {
-        // Ticket 13: ricaviamo il tipo ('movie' o 'tv') da options.tipo o da item.type per inoltrarlo
-        // a isAnimeContent ed evitare collisioni di ID TMDB fra film e serie.
         let tipo = opts.tipo;
         if (!tipo && item.type) {
             tipo = item.type;
         }
-        // La tabella degli alias sta in un posto solo: `normalizeTipoAnime`.
         const tipoNormalizzato = normalizeTipoAnime(tipo);
         if (tipoNormalizzato) {
             tipo = tipoNormalizzato;
         } else if (tipo !== undefined) {
-            // Tipo fornito ma non riconosciuto: nessun namespace, come nello store.
             tipo = null;
         }
 
+        const title = opts.title || item.title || item.name || item.rawTMDB?.title || item.rawTMDB?.name;
+
         isAnime = isAnimeContent({
             tmdbId: opts.tmdbId ?? extractAnimeTmdbId(item),
+            title,
             genreIds: opts.genreIds ?? extractAnimeGenreIds(item),
             originalLanguage: opts.originalLanguage
                 ?? item.original_language
@@ -241,24 +282,13 @@ function normalizeAnimeMarker(item, options = {}) {
         });
     }
 
-    // Unico fallback per il marker; `isAnimeContent` resta il resolver
-    // canonico, ma non può far ereditare un default implicito al boundary.
     if (typeof isAnime !== 'boolean') isAnime = ANIME_MARKER_DEFAULT;
     item._isAnime = isAnime;
     return isAnime;
 }
 
 /**
- * Normalizza il tipo di contenuto nella coppia canonica che lo store anime usa davvero.
- *
- * PERCHÉ ESISTE: TMDB tiene **id separati** per film e serie, quindi il tipo è ciò che
- * disambigua una collisione di numero (il film *Mediterraneo* e la serie anime *Toriko*
- * condividono il 38251). La tabella degli alias vive qui e in nessun altro posto:
- * una seconda copia altrove è il modo in cui un giorno si riapre quel bug in silenzio.
- *
- * @param {string} [tipo] `'movie' | 'series' | 'tv' | 'anime'`
- * @returns {'movie'|'tv'|null} `null` quando il tipo è assente o non riconosciuto: il
- *   chiamante decide se è un errore (la DSL dei filtri solleva) o "nessun namespace" (lo store).
+ * Normalizza il tipo di contenuto nella coppia canonica ('movie' | 'tv').
  */
 function normalizeTipoAnime(tipo) {
     if (tipo === undefined || tipo === null) return null;
@@ -273,8 +303,12 @@ module.exports = {
     normalizeTipoAnime,
     normalizeAnimeMarker,
     extractAnimeTmdbId,
+    extractAnimeGenreIds,
     isAnimeContent,
     hasAnimeKeyword,
     isAnimeKeywordString,
-    hasAnimationGenre
+    hasAnimationGenre,
+    flusheLogCandidatiCertify,
+    getCandidatiCertify,
+    resetCandidatiCertifyForTests
 };
