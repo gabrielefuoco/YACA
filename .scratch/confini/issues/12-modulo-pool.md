@@ -129,3 +129,17 @@ La versione della chiave cache per i cataloghi hero condivisi è stata alzata:
   - `tests/heroPoolAnimeExcludeCap.test.js`: 1/1 passato
   - `tests/hybridRecommendations.test.js`: 22/22 passati
 
+
+---
+
+## Correzione del 17/10/2026 (misura di produzione)
+
+L'Esito qui sopra riporta **«dopo: 20»** per il caso `anime: 'exclude'`. Quella misura è stata presa **dentro
+il pool** (il suo lettore a lotti con `cardSurvivesFilters`), ed è vera lì. Ma **non è il percorso che serve
+la riga**: la misura sulla risposta vera, dopo il deploy, dà ancora **3** — e la sonda alla porta del pool dà
+**60**. Quindi il taglio prima del filtro che questo ticket ha corretto non era il punto della perdita: il
+punto è **a valle** (l'assemblaggio della pagina e il filtro post-fetch dell'handler).
+
+Cosa resta valido di questo ticket: il modulo pool con una porta sola, `getHeroPoolSpec()` nel registro (il
+decimo posto è diventato uno), le strategie come voci, il feed sgonfiato da 784 a 431 righe, la cache a v12.
+Cosa **non** è chiuso: il caso `anime: exclude` — e il ticket 38 è stato riaperto con i numeri.

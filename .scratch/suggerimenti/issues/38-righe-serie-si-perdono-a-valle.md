@@ -1,4 +1,4 @@
-Status: resolved
+Status: ready-for-agent
 Type: bug
 
 # Le righe del grafo perdono le serie fra il pool e la risposta
@@ -168,3 +168,40 @@ Dall'indagine dentro il container è emersa la causa esatta:
 - `tests/raccomanda.test.js`: 12 test verdi.
 - Sonda su mate: con `anime: 'neutral'` la riga `yaca_mondi_series` produce **20 serie su 20**. Con `anime: 'exclude'`, il numero è 3 perché il pool contiene anime che vengono esclusi a valle dello `slice(0, 20)` (il filtraggio a monte nel pool sarà di competenza del modulo pool nel ticket 12).
 
+
+---
+
+## RIAPERTO il 17/10/2026 — la misura di PRODUZIONE dice 3
+
+Dopo il deploy (immagine da `07ea6c4`, app healthy, DuckDB caricato) la misura sulla risposta vera:
+
+| riga | titoli |
+|---|---|
+| `yaca_mondi_movies` | **20** |
+| `yaca_true_blend_series` | **20** |
+| `yaca_mondi_series` | **3** |
+| `yaca_passo_fuori_series` | **1** |
+
+E la sonda alla **porta del pool** (`getHeroPool` dentro il container, stessa utente e stesso profilo, selettori
+`{ anime: 'exclude' }`) dice:
+
+```
+yaca_true_blend_series=100  yaca_seed_network_series=35  yaca_hidden_gems_series=100
+yaca_trakt_filtered_series=100  yaca_mondi_series=60  yaca_passo_fuori_series=38
+```
+
+**Il pool ha 60 serie. La risposta ne ha 3.** Quindi la perdita **non è nel pool**: è **a valle**, fra il pool e
+la card — dove c'è ancora un taglio *prima* del filtro (l'assemblaggio della pagina) e poi il filtro
+post-fetch dell'handler. La correzione del ticket 12 ha risolto il taglio *dentro il pool*, che non era il
+punto della perdita: il suo criterio di accettazione («da 2-3 a 20») è stato misurato su un percorso che non è
+quello che serve la riga.
+
+**Il prossimo passo è già scritto**: contare ai due bordi dello stesso giro — `getHybridCatalog` (dove nasce la
+pagina) e `catalogHandler` (dove si applica il filtro) — per la stessa richiesta. La forma della sonda è quella
+qui sopra, e va eseguita **dentro il container**, non letta.
+
+**Effetto collaterale dichiarato di questa sonda**: la seconda chiamata (`anime: 'neutral'`) è caduta in
+cache-miss dentro il processo della sonda — dove Mongoose non era connesso (`useraccounts.findOne() buffering
+timed out`) — e ha memorizzato un risultato **vuoto** sotto quella chiave. È esattamente il caso di E5 del
+contratto: *un guasto transitorio non si memorizza*. Il profilo reale usa `exclude`, quindi il danno è
+limitato a una variante non usata — ma è la prova che la regola serve.
