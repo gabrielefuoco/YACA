@@ -146,3 +146,20 @@ Tests:       71 failed, 3 skipped, 1811 passed, 1885 total
 | `tests/presetBurtonOrdering.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB multi-worker. Eseguito singolarmente è 100% verde (1/1). |
 | `tests/donghuaCatalog.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB multi-worker. Eseguito singolarmente è 100% verde (4/4). |
 | `tests/sottosogliaVisibility.test.js` | **Ambientale (Concorrenza Windows)** | Collisione e corruzione temporanea schema DuckDB durante i test concorrenti. Eseguito singolarmente su database pulito è 100% verde (24/24). |
+
+## Aggiornamento (18/10/2026) — la suite è verde, e la preesistente è risolta
+
+Dopo i merge dei ticket 27, 28, 29, 32 (entrambi i lati), 35, 36, 38, 39 e `t39`, la suite intera dà:
+
+```
+Test Suites: 1 skipped, 189 passed, 189 of 190
+Tests:       4 skipped, 1915 passed, 1919 total
+```
+
+**Zero fallimenti.** E `metaHandlerEpisodeIds` — l'unica rossa dichiarata *preesistente* (04/10, commit
+`947163b`) e segnata «da verificare» nella tabella qui sopra — **passa 5/5**: l'ha risolta il modulo anime
+(`48fa30a`), che ha cambiato la forma con cui gli id degli episodi vengono normalizzati. Non è uno skip: è una
+risoluzione, verificata eseguendola.
+
+Le uniche escluse sono le 4 che dipendono dalla rete (`retireTmdbScoringData` e le sue), dichiarate tali dal
+ticket 29.
