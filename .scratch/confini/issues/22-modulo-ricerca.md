@@ -1,4 +1,4 @@
-Status: resolved (prima metà: indice e compilatore)
+Status: resolved
 Type: grilling
 
 # 22 — Il modulo ricerca (e l'AI come modulo a parte)
@@ -118,8 +118,69 @@ L'indice è ora un modulo autonomo con **un solo contratto**:
   - `tests/searchTier2Merge.test.js`: **24/24 passati**.
   - `tests/duckDbAndMatchmaker.test.js`: 22 passati, 1 fallimento pre-esistente per assenza del dump reale TMDB da 138MB (`Spider-Man: No Way Home`).
 
-### 5. Cosa resta per la seconda metà del ticket (Modulo Ricerca)
-- Il registro unificato delle sei fonti (`registry.js` per i provider).
-- La logica di fusione locale/Tier 2 con ordinamento definitivo (da agganciare al tipo catalogo del ticket 23).
-- L'esposizione della porta unica `cerca({ q, tipo, contesto, cap })` con risposta strutturata a lista vuota + `motivi[]` in caso di degrado o assenza di risultati.
+### 5. Transizione alla Seconda Metà
+Gli obiettivi pendenti della prima metà (registro delle fonti, fusione con ordinamento, e porta `cerca`) sono stati integralmente realizzati nella seconda metà.
+
+---
+
+## Esito (Seconda Metà: Registro delle Fonti, Fusione, Porta Unica e Adattatore AI)
+
+### 1. La forma del Registro delle Fonti (`src/ricerca/registry.js`)
+Le sei fonti storiche del prodotto (`duckdb`, `hybrid`, `trakt`, `watchlist`, `airing_state`, `ai_discovery`) sono state contrattualizzate in voci unificate create con `defineSourceEntry({ ... })`. Ogni voce dichiara:
+- **Identità**: `id` e `name`;
+- **Specie di fonte (`kind`)**: `'index'`, `'recommendation'`, `'external_api'`, `'user_library'`, `'external_state'`, `'semantic'`;
+- **Capacità dichiarate (`capabilities`)**: oggetto conforme al contratto fissato dal Ticket 23 in `src/catalog/capabilities.js` (`canServeFilter`, `canServeMediaSet`, `canServeAnime`, `canServeSort`);
+- **Applicabilità e interfacce di esecuzione**:
+  - per il servire catalogo: `appliesToCatalog(requestContext)` e `serveCatalog(requestContext)`;
+  - per la ricerca candidati: `appliesToSearch(searchContext)` e `search(searchContext)`.
+
+### 2. I due consumatori del registro
+- **Consumatore 1 — Il Servire (`src/catalog/CatalogRouter.js`)**:
+  `CatalogRouter` non importa più manualmente i sei provider (`TraktProvider`, `HybridProvider`, `AiDiscoveryProvider`, `AiringStateProvider`, `DuckDbProvider`, `WatchlistProvider`) né gestisce una cascata di `if`/`else` artigianale. Costruisce l'oggetto `requestContext`, interroga il registro tramite `findSourceForCatalog(requestContext)` e delega direttamente a `source.serveCatalog(requestContext)`.
+- **Consumatore 2 — La Ricerca (`src/ricerca/door.js`)**:
+  Interroga il registro tramite `findSourcesForSearch(searchContext)` per individuare e consultare le fonti che offrono candidati per la tipologia di ricerca richiesta.
+
+### 3. Il proprietario della fusione e dell'ordinamento (`src/ricerca/fusione.js`)
+La logica di fusione ed ordinamento (storicamente testata in `tests/searchTier2Merge.test.js` senza un modulo proprietario) appartiene ora al modulo ricerca:
+- `mergeLocalWithTier2(localItems, tier2Items)`: posiziona prima i titoli locali (ordinati per rilevanza FTS BM25 di DuckDB), poi i titoli della coda lunga Tier 2 FTS5 (marcati con `_tier2: true`). Deduplica rigidamente per TMDB ID facendo vincere la copia locale ed eliminando il doppione Tier 2. Mantiene intatti eventuali duplicati interni ai locali e non effettua chiamate di rete.
+- `fondiEOrdina({ locali, tier2, learned, altri }, options)`: coordina la cascata multi-livello applicando l'eventuale tetto `cap` o `limit`.
+- `src/catalog/tier2Search.js` ora importa e riesporta `mergeLocalWithTier2` e `TIER2_FLAG` da `src/ricerca/fusione.js`, garantendo che `tests/searchTier2Merge.test.js` rimanga 100% verde (24/24 test passati) senza modifiche alla suite.
+
+### 4. La firma della porta unica (`src/ricerca/door.js`)
+La porta del modulo ricerca espone un'unica funzione di ingresso:
+```javascript
+cerca({ q, tipo, contesto, cap, tmdbApiKey, client, mistralKey })
+```
+- **Parametri**:
+  - `q`: stringa di ricerca utente;
+  - `tipo`: parametro opzionale (`'titolo'` default / `'multi'`, `'genere'`, `'keyword'`, `'persona'`);
+  - `contesto`: oggetto contesto ereditato dal Modulo Profilo (`contestoDi`: `{ userId, kidsMode, selettoriEffettivi, slider }`); la porta riceve il contesto, non lo costruisce;
+  - `cap`: limite massimo di item restituiti (default 20).
+- **Contratto di risposta**:
+  Restituisce **SEMPRE** `{ items: Array, motivi: Array<string> }`: **mai un'eccezione o errore HTTP 4xx/5xx** (in piena conformità con `docs/STREMIO_INTERNALS.md:129`). In caso di query vuota, nessun risultato, tipo non supportato o degrado di una fonte, il payload è vuoto (`items: []`) con causale esplicita tracciata in `motivi[]`.
+- **Adattatore HTTP (`src/api/ricerca.js`)**:
+  La rotta `GET /api/ricerca?tipo=...&q=...` è diventata un *thin adapter* di poche righe sopra `cerca(...)`, validando la sessione e delegando l'esecuzione alla porta.
+
+### 5. L'adattatore AI oggi (`src/ricerca/aiAdapter.js` e `src/ricerca/prompts.js`)
+L'AI è mantenuta rigorosamente **fuori dalla ricerca** (Decisione 16/22):
+- **I prompt appartengono alla ricerca**: `src/ricerca/prompts.js` definisce `SEARCH_UNDERSTANDING_SYSTEM_PROMPT` e `buildSearchUnderstandingPrompt(query, context)` per l'estrazione semantica di parametri da linguaggio naturale;
+- **L'AI fornisce il meccanismo**: `richiediComprensioneAI({ prompt, systemPrompt, mistralKey, context })` definisce la forma della chiamata verso il servizio AI, restituendo `{ comprensione, raw, degraded, reason }`. Oggi delega all'SDK Mistral o degrada senza eccezioni se la chiave non è disponibile, registrando il motivo di degrado senza bloccare la pipeline lessicale.
+
+### 6. Regression Net e Collaudo Finale
+Tutte le suite di collaudo sono state eseguite singolarmente con esito verde:
+- `tests/ricercaDoor.test.js`: **18/18 passati** (contratto porta cerca, degrado morbido, fusione/ordinamento, contesto kidsMode, registro 6 fonti, prompt e adattatore AI);
+- `tests/searchTier2Merge.test.js`: **24/24 passati**;
+- `tests/domainSurface.test.js`: **29/29 passati**;
+- `tests/indice.test.js`: **11/11 passati**;
+- `tests/catalogTypeAndValidation.test.js`: **25/25 passati**;
+- `tests/animeContentFilter.test.js`: **20/20 passati**;
+- `tests/catalogKindAndSelectors.test.js`: **22/22 passati**.
+Totale: **149 test eseguiti e passati con successo**.
+
+### 7. Cosa resta
+Il Ticket 22 è ora **interamente risolto** in entrambe le metà (Indice e Compilatore per la prima metà; Registro Fonti, Fusione, Porta Unica, Adattatore Rotta e AI per la seconda).
+Rimane a valle per la mappa confini:
+- Il modulo configurazione utente (proprietà chiavi API per-utente come Mistral BYOK);
+- L'eventuale modulo AI autonomo per la gestione unificata del budget e del rate limiting delle chiamate LLM.
+
 

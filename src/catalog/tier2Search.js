@@ -22,9 +22,7 @@
  */
 
 const { Tier2SearchClient } = require('../db/tier2Index');
-
-/** Marcatore interno: questo meta viene dall'indice Tier 2 e non è ancora stato arricchito. */
-const TIER2_FLAG = '_tier2';
+const { TIER2_FLAG, mergeLocalWithTier2 } = require('../ricerca/fusione');
 
 // Quanti titoli del Tier 2 aggiungere a una pagina di ricerca (20 = PRESET_PAGE_SIZE).
 const TIER2_PAGE_SIZE = 20;
@@ -214,31 +212,7 @@ async function searchLearnedTitles(search, { type = 'movie', limit = LEARNED_PAG
     }
 }
 
-/**
- * Fusione: **prima** i titoli locali (nell'ordine e con i filtri di oggi: hanno titolo italiano
- * e poster pronti), **poi** i risultati del Tier 2 nell'ordine di rilevanza dell'indice.
- * In caso di id in comune vince il locale e il Tier 2 viene scartato; i duplicati interni ai
- * locali non vengono toccati, così la risposta resta identica a quella di prima.
- */
-function mergeLocalWithTier2(localItems = [], tier2Items = []) {
-    const seen = new Set();
-    const merged = [];
-
-    for (const item of localItems) {
-        const key = toTmdbId(item);
-        if (key) seen.add(key);
-        merged.push(item);
-    }
-
-    for (const item of tier2Items) {
-        const key = toTmdbId(item);
-        if (key && seen.has(key)) continue;
-        if (key) seen.add(key);
-        merged.push(item);
-    }
-
-    return merged;
-}
+// Nota: mergeLocalWithTier2 è ora posseduta dal modulo ricerca (src/ricerca/fusione.js)
 
 module.exports = {
     TIER2_FLAG,
