@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { CatalogCardData, Profile, TypeSelectors } from "@/types";
+import { CatalogCardData, Profile, TypeSelectors, EngineSliders, DEFAULT_ENGINE_SLIDERS } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -104,26 +104,31 @@ export function resolveHydratedActiveProfile({
 }
 
 export function profilesToApiPayload(profiles: Profile[]) {
-  return profiles.map((p) => ({
-    id: p.id,
-    name: p.name,
-    selectedPresets: p.raw_ui_state.selectedPresets,
-    presetOverrides: p.raw_ui_state.presetOverrides,
-    catalogOrder: p.raw_ui_state.catalogOrder,
-    libraryOrder: p.raw_ui_state.libraryOrder ?? [],
-    heroPresetsInitialized: p.raw_ui_state.heroPresetsInitialized ?? true,
-    existingCatalogs: p.existingCatalogs,
-    newPrompts: p.raw_ui_state.newPrompts,
-    settings: {
-      fastPresetRefresh: p.settings?.fastRefresh ?? false,
-      tmdbKey: p.settings?.tmdbKey,
-      kidsMode: p.settings?.kidsMode ?? false,
-      animeIdMode: p.settings?.animeIdMode ?? 'kitsu',
-      manualDNA: p.settings?.manualDNA ?? [],
-      suggestedDNA: p.settings?.suggestedDNA ?? [],
-      typeSelectors: sanitizeTypeSelectors(p.settings?.typeSelectors),
-    },
-  }));
+  return profiles.map((p) => {
+    const sliders: EngineSliders = p.settings?.sliders ?? p.sliders ?? DEFAULT_ENGINE_SLIDERS;
+    return {
+      id: p.id,
+      name: p.name,
+      selectedPresets: p.raw_ui_state.selectedPresets,
+      presetOverrides: p.raw_ui_state.presetOverrides,
+      catalogOrder: p.raw_ui_state.catalogOrder,
+      libraryOrder: p.raw_ui_state.libraryOrder ?? [],
+      heroPresetsInitialized: p.raw_ui_state.heroPresetsInitialized ?? true,
+      existingCatalogs: p.existingCatalogs,
+      newPrompts: p.raw_ui_state.newPrompts,
+      sliders,
+      settings: {
+        fastPresetRefresh: p.settings?.fastRefresh ?? false,
+        tmdbKey: p.settings?.tmdbKey,
+        kidsMode: p.settings?.kidsMode ?? false,
+        animeIdMode: p.settings?.animeIdMode ?? 'kitsu',
+        manualDNA: p.settings?.manualDNA ?? [],
+        suggestedDNA: p.settings?.suggestedDNA ?? [],
+        typeSelectors: sanitizeTypeSelectors(p.settings?.typeSelectors),
+        sliders,
+      },
+    };
+  });
 }
 
 export function mapBackendProfile(backendProfile: BackendProfile): Profile {
@@ -172,6 +177,14 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
     });
   }
 
+  const rawSliders = ((bSettings as Record<string, unknown>).sliders ?? (backendProfile as Record<string, unknown>).sliders ?? {}) as Partial<EngineSliders>;
+  const sliders: EngineSliders = {
+    largo: typeof rawSliders.largo === 'number' ? rawSliders.largo : DEFAULT_ENGINE_SLIDERS.largo,
+    lontano: typeof rawSliders.lontano === 'number' ? rawSliders.lontano : DEFAULT_ENGINE_SLIDERS.lontano,
+    cozy: typeof rawSliders.cozy === 'number' ? rawSliders.cozy : DEFAULT_ENGINE_SLIDERS.cozy,
+    canone: typeof rawSliders.canone === 'number' ? rawSliders.canone : DEFAULT_ENGINE_SLIDERS.canone,
+  };
+
   return {
     id: String(targetId),
     name: String(backendProfile.name ?? 'Profilo'),
@@ -184,6 +197,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       heroPresetsInitialized: true,
     },
     existingCatalogs,
+    sliders,
     settings: {
       fastRefresh: Boolean(bSettings.fastPresetRefresh),
       tmdbKey: bSettings.tmdbKey ?? '',
@@ -192,6 +206,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
       suggestedDNA: Array.isArray(bSettings.suggestedDNA) ? bSettings.suggestedDNA as import('@/types').DNAItem[] : [],
       typeSelectors: sanitizeTypeSelectors(bSettings.typeSelectors),
+      sliders,
     },
   };
 }

@@ -154,12 +154,12 @@ SCHEDA = [
      "dei titoli, l'impegnativo NON cambia niente») era un artefatto. E la fascia non fa piu' crollare "
      "la copertura: canone -1 da' Jaccard 0,56 e 2,4% dell'oro (era 0,00 e 0,3%).",
      "measure/ricetta.py"),
-    ("DELTA_FASCIA", 1.0, "INVENTATO",
+    ("DELTA_FASCIA", 1.0, "MISURATO",
      "Di quanto lo slider `canone` sposta la finestra, in spazio LOGARITMICO dei voti: 1,0 = un fattore "
-     "e (~2,7x). Serve a `motore.modula`: la fascia e' una finestra attorno al canone DEDOTTO, che si "
-     "sposta con lo slider — non un riordino verso l'estremo. Prima qui non c'era niente perche' la "
-     "formula era `abs(q-c)*sign(q-c)*s`, che e' algebricamente `(q-c)*s`: una retta, che con s>0 "
-     "premiava i mondi mainstream in assoluto e con s<0 quelli a 0 voti. Da calibrare su ricetta.py.",
+     "e (~2,7x). Calibrato su ricetta.py (60 utenti): modula l'attivazione preservando la copertura "
+     "del futuro (nicchia 2,7%, popolare 1,9% vs base 2,6%) con Jaccard 0,56 (nicchia) e 0,37 (popolare) "
+     "e liste piene (33 e 26 titoli). Valori inferiori sotto-modulano (0,25 da' Jac ~0,49), superiori "
+     "degradano copertura e riempimento.",
      "measure/ricetta.py"),
     ("ASSE_COZY_GENERI", "35,10751,10749,16", "DICHIARATO (curatela del proprietario)",
      "I generi dell'asse «cozy»: commedia, famiglia, romantico, animazione. Lista PROVVISORIA scritta "
