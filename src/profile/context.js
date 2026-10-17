@@ -73,10 +73,11 @@ async function contestoDi(input = {}) {
         rawProfile?.settings?.kidsMode
     );
 
-    // Calcolo slider Ocean (preferenze motore salvate nel profilo)
-    const slider = rawProfile?.settings?.slider
+    // Calcolo slider del motore (preferenze motore salvate nel profilo: largo, lontano, cozy, canone)
+    const slider = rawProfile?.settings?.sliders
+        || rawProfile?.settings?.slider
         || rawProfile?.settings?.oceanSliders
-        || rawProfile?.settings?.sliders
+        || rawProfile?.sliders
         || {};
 
     // Calcolo dei selettori effettivi tramite funzione pura del modulo
@@ -91,7 +92,11 @@ async function contestoDi(input = {}) {
         addonUuid: resolvedAddonUuid,
         selettoriEffettivi: resolvedSelectors,
         kidsMode,
-        slider
+        // UN nome solo in uscita (`sliders`): l'alias `slider` resta accettato IN INGRESSO (i profili
+        // salvati col nome vecchio devono continuare a funzionare), ma esporne due in uscita
+        // significa lasciare al chiamante la scelta di quale leggere — ed e' come si crea la
+        // catena `ctx.sliders || ctx.slider` che trovi nei consumatori.
+        sliders: slider
     };
 }
 

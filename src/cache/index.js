@@ -101,11 +101,22 @@ function deriva(descrizione) {
                 ? `_art_${artefatto}${ricetta ? `_ric_${ricetta}` : ''}`
                 : '';
 
-            // Variazione: kids e anime
+            // Variazione: kids, anime e slider
             const kidsSuffix = kids ? '_kids' : '';
             const animeSuffix = selettori?.anime ? `_a_${selettori.anime}` : '';
+            const sl = varia.slider ?? varia.sliders;
+            let sliderSuffix = '';
+            if (sl && typeof sl === 'object') {
+                const largo = sl.largo !== undefined ? Number(sl.largo) : 4;
+                const lontano = sl.lontano !== undefined ? Number(sl.lontano) : 0;
+                const cozy = sl.cozy !== undefined ? Number(sl.cozy) : 0;
+                const canone = sl.canone !== undefined ? Number(sl.canone) : 0;
+                if (largo !== 4 || lontano !== 0 || cozy !== 0 || canone !== 0) {
+                    sliderSuffix = `_sl_${largo}_${lontano}_${cozy}_${canone}`;
+                }
+            }
 
-            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}`;
+            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}`;
             break;
         }
 
@@ -133,8 +144,19 @@ function deriva(descrizione) {
 
             const kidsSuffix = kids ? '_kids' : '';
             const animeSuffix = selettori?.anime ? `_a_${selettori.anime}` : '';
+            const slRec = varia.slider ?? varia.sliders;
+            let sliderSuffixRec = '';
+            if (slRec && typeof slRec === 'object') {
+                const largo = slRec.largo !== undefined ? Number(slRec.largo) : 4;
+                const lontano = slRec.lontano !== undefined ? Number(slRec.lontano) : 0;
+                const cozy = slRec.cozy !== undefined ? Number(slRec.cozy) : 0;
+                const canone = slRec.canone !== undefined ? Number(slRec.canone) : 0;
+                if (largo !== 4 || lontano !== 0 || cozy !== 0 || canone !== 0) {
+                    sliderSuffixRec = `_sl_${largo}_${lontano}_${cozy}_${canone}`;
+                }
+            }
 
-            chiave = `${utente}_${profilo}_${catalogo}_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}`;
+            chiave = `${utente}_${profilo}_${catalogo}_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffixRec}`;
             break;
         }
 
@@ -152,6 +174,7 @@ function deriva(descrizione) {
 
             const badgeV = invalida.badgeVersion ?? invalida.versione ?? versione ?? 24;
             const catalogDef = invalida.catalogDef;
+            const slCat = varia.slider ?? varia.sliders;
 
             const params = {
                 type,
@@ -162,6 +185,7 @@ function deriva(descrizione) {
                 catalogDef,
                 ...(condiviso ? {} : { user, profile }),
                 landscape: Boolean(varia.landscape),
+                ...(slCat ? { slider: slCat } : {}),
                 badgeV
             };
 

@@ -280,11 +280,16 @@ async function creaProfilo({ userId, profileData = {}, addonUuid = null } = {}) 
     const uuid = await resolveAddonUuid(userId, addonUuid);
     if (!uuid) throw new Error('Account utente non trovato per la creazione del profilo.');
 
+    const settings = { ...(profileData.settings || {}) };
+    if (profileData.sliders && !settings.sliders) {
+        settings.sliders = profileData.sliders;
+    }
     const newProfile = {
         id: profileData.id || nanoid(8),
         name: profileData.name || 'Nuovo Profilo',
         catalogs: Array.isArray(profileData.catalogs) ? profileData.catalogs : [],
-        settings: { ...(profileData.settings || {}) },
+        settings,
+        ...(settings.sliders ? { sliders: settings.sliders } : {}),
         raw_ui_state: { ...(profileData.raw_ui_state || {}) }
     };
 

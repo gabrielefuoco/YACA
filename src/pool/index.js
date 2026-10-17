@@ -60,8 +60,9 @@ function getHeroCatalogId(slug, mediaType) {
     return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions }) {
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders }) {
     const versions = graphVersions !== undefined ? graphVersions : graphClient.getGraphHealthVersionsCached();
+    const sl = sliders || slider;
     const { chiave } = cache.deriva({
         nome: 'heroes',
         versione: HERO_CACHE_KEY_VERSION,
@@ -71,7 +72,8 @@ function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSel
                 profilo: context,
                 media: mediaType,
                 kids: kidsMode,
-                selettori: typeSelectors
+                selettori: typeSelectors,
+                ...(sl ? { slider: sl } : {})
             },
             invalida: {
                 artefatto: versions?.artefatto,
@@ -303,7 +305,11 @@ const HERO_STRATEGIES = [
                     return;
                 }
 
-                const opzioni = ctx.userConfig?.activeProfileSettings?.graphOptions
+                const opzioni = ctx.sliders
+                    || ctx.slider
+                    || ctx.userConfig?.activeProfileSettings?.sliders
+                    || ctx.userConfig?.activeProfileSettings?.slider
+                    || ctx.userConfig?.activeProfileSettings?.graphOptions
                     || ctx.userConfig?.graphOptions
                     || undefined;
                 const cap = ctx.cap || 60;
@@ -356,7 +362,7 @@ const HERO_STRATEGIES = [
 /**
  * Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta.
  */
-async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors }) {
+async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders }) {
     const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
     const effectiveSelectors = (context && typeof context === 'object' && context.selettoriEffettivi)
         ? context.selettoriEffettivi
@@ -364,6 +370,20 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     const animePolicy = effectiveSelectors?.anime || 'neutral';
     const isTightContext = (animePolicy === 'only' || effectiveSelectors?.anime === 'only');
     const heroCandidateLimit = isTightContext ? 250 : 160;
+
+    const resolvedSliders = slider
+        || sliders
+        || userConfig?.activeProfileSettings?.sliders
+        || userConfig?.activeProfileSettings?.slider
+        || userConfig?.context?.sliders
+        || userConfig?.context?.slider
+        || userConfig?.profiles?.find(p => p.id === (context || userConfig.activeProfileId))?.settings?.sliders
+        || userConfig?.profiles?.find(p => p.id === (context || userConfig.activeProfileId))?.settings?.slider
+        || user?.profiles?.find(p => p.id === context)?.settings?.sliders
+        || user?.profiles?.find(p => p.id === context)?.settings?.slider
+        || profile?.settings?.sliders
+        || profile?.settings?.slider
+        || undefined;
 
     const seedFallback = async () => {
         const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
@@ -426,7 +446,9 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         heroCandidateLimit,
         seedFallback,
         communityFallbackWithMeta,
-        sharedTraktResult
+        sharedTraktResult,
+        sliders: resolvedSliders,
+        slider: resolvedSliders
     };
 
     // Eseguiamo le strategie esclusive in parallelo
@@ -510,6 +532,7 @@ function toHeroDesc(args, keyOrDesc) {
     if (keyOrDesc && typeof keyOrDesc === 'object' && keyOrDesc.nome) {
         return keyOrDesc;
     }
+    const sl = args?.sliders || args?.slider || args?.userConfig?.activeProfileSettings?.sliders || args?.userConfig?.activeProfileSettings?.slider;
     return {
         nome: 'heroes',
         versione: HERO_CACHE_KEY_VERSION,
@@ -519,7 +542,8 @@ function toHeroDesc(args, keyOrDesc) {
                 profilo: args?.context,
                 media: args?.mediaType,
                 kids: args?.kidsMode,
-                selettori: args?.typeSelectors
+                selettori: args?.typeSelectors,
+                ...(sl ? { slider: sl } : {})
             },
             invalida: {
                 artefatto: args?.graphVersions?.artefatto,
@@ -572,7 +596,7 @@ async function getSharedHeroCatalogs(args, keyOrDesc) {
  * LA PORTA UNICA DEL MODULO POOL.
  * Riceve il contesto e restituisce l'assegnato {[catalogId]: items}.
  * Firma:
- * getHeroPool({ userId, context, mediaType, kidsMode, typeSelectors, traktToken, tmdbApiKey, userConfig })
+ * getHeroPool({ userId, context, mediaType, kidsMode, typeSelectors, traktToken, tmdbApiKey, userConfig, slider, sliders })
  * -> Promise<Object> dove result[catalogId] = Array<Item>
  */
 async function getHeroPool(params) {
@@ -584,8 +608,20 @@ async function getHeroPool(params) {
         typeSelectors = null,
         traktToken = null,
         tmdbApiKey = null,
-        userConfig = null
+        userConfig = null,
+        slider = null,
+        sliders = null
     } = params;
+
+    const resolvedSliders = slider
+        || sliders
+        || userConfig?.activeProfileSettings?.sliders
+        || userConfig?.activeProfileSettings?.slider
+        || userConfig?.context?.sliders
+        || userConfig?.context?.slider
+        || userConfig?.profiles?.find(p => p.id === (context || userConfig?.activeProfileId))?.settings?.sliders
+        || userConfig?.profiles?.find(p => p.id === (context || userConfig?.activeProfileId))?.settings?.slider
+        || undefined;
 
     const graphVersions = await graphClient.getGraphHealthVersions();
     const heroDesc = {
@@ -597,7 +633,8 @@ async function getHeroPool(params) {
                 profilo: context,
                 media: mediaType,
                 kids: kidsMode,
-                selettori: typeSelectors
+                selettori: typeSelectors,
+                ...(resolvedSliders ? { slider: resolvedSliders } : {})
             },
             invalida: {
                 artefatto: graphVersions?.artefatto,
@@ -615,7 +652,9 @@ async function getHeroPool(params) {
         kidsMode,
         userConfig,
         typeSelectors,
-        graphVersions
+        graphVersions,
+        sliders: resolvedSliders,
+        slider: resolvedSliders
     }, heroDesc);
 
     const assigned = sharedGroup?.catalogs || {};

@@ -45,7 +45,8 @@ router.post('/', async (req, res) => {
 
         let fuori;
         try {
-            fuori = await graphClient.raccomanda({ semi, cap: quante * 15 });
+            const opzioni = (req.body && (req.body.sliders || req.body.slider || req.body.opzioni)) || undefined;
+            fuori = await graphClient.raccomanda({ semi, opzioni, cap: quante * 15 });
         } catch (err) {
             console.error('[MondiAPI] Errore servizio grafo:', err.message);
             fuori = { liste: [], versioni: {} };
