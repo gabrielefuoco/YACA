@@ -42,15 +42,24 @@ configurazione utente** a parte (oggi non ci sono chiavi per-utente; domani, con
 stanno). Regola di proprietà, se il documento Mongo resta uno: **il modulo profilo è l'unico che tocca
 `profiles[]`; il modulo configurazione non lo tocca mai** — e si difende con un test-guardia.
 
+**La porta e i selettori** (deciso lo stesso giorno): `profiloDi({userId, profileId})` torna il profilo
+**grezzo** (anagrafica, impostazioni, catalogs), e i **selettori effettivi** li risolve una **funzione pura del
+modulo**: `selettoriEffettivi(profilo, richiesta)`. Il motivo per cui non possono stare *dentro* la porta: la
+risoluzione **dipende dalla richiesta** (Stremio può chiedere un tipo diverso da quello del profilo), quindi un
+profilo «già risolto» sarebbe il profilo *per quella richiesta* — un'altra cosa. Il modulo possiede **la regola**,
+i consumatori la applicano con la loro richiesta. **Il precedente è nella repo**: `profileStaleness.js`, che porta
+scritto *«era calcolata dentro `getHybridCatalog`… qui è isolata in una funzione pura»*. E la regola oggi vive in
+`resolveTypeSelectors`, dentro `catalogStrategies.js` — cioè nel pezzo che questa mappa ritira.
+
 ## Le domande che restano (per il prossimo grilling)
 
 1. **La forma della porta**: `profiliDi(userId)` + `profiloDi({userId, profileId})` + i comandi
    (crea/duplica/rinomina/elimina/attiva) — e **cosa torna** `profiloDi`: il profilo *grezzo* o il profilo
    **risolto** (con i selettori effettivi calcolati, il `kidsMode` ereditato, gli slider applicati)?
-2. **Chi calcola i selettori effettivi**: oggi `resolveTypeSelectors` (nel vecchio stack) li deduce da
-   profilo + richiesta. Se li calcola il modulo profilo, i consumatori non li deducono più; se li calcolano
-   i consumatori, il modulo profilo fornisce solo i dati grezzi. *(La raccomandazione da discutere: li
-   calcola il modulo, e la porta li restituisce già risolti — è la stessa scelta della libreria coi semi.)*
+2. ~~**Chi calcola i selettori effettivi**~~ → **DECISO**: profilo grezzo dalla porta, e una **funzione pura**
+   del modulo (`selettoriEffettivi(profilo, richiesta)`) che li risolve — perché la risoluzione dipende dalla
+   richiesta. V. sopra. *Resta da decidere*: dove vive quella funzione (nel modulo, come `profileStaleness`) e
+   chi la chiama oggi nei tre consumatori (il pool, il `catalogHandler`, le chiavi di cache).
 3. **Il confine col modulo configurazione utente**: cosa succede se condividono il documento; chi migra i
    dati esistenti (`AddonConfig.profiles[]` oggi contiene anche `raw_ui_state.libraryOrder`, che è della
    libreria: v. ticket 16).
