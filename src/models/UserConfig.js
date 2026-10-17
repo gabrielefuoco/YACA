@@ -12,7 +12,7 @@
 const { nanoid } = require('nanoid');
 const AddonConfig = require('./AddonConfig');
 const UserAccount = require('./UserAccount');
-const { buildManifestFingerprint } = require('../utils/manifestFingerprint');
+const { buildManifestFingerprint } = require('../stremio');
 const UserConfig = {
     _decryptApiKeys(apiKeysObj) {
         if (!apiKeysObj) return {};

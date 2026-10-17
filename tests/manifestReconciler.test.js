@@ -1,16 +1,11 @@
 const AddonConfig = require('../src/models/AddonConfig');
 const UserAccount = require('../src/models/UserAccount');
-const { updateStremioAddonCollection } = require('../src/utils/stremioAddon');
-const { reconcileManifests } = require('../src/utils/manifestReconciler');
-const {
-    buildManifestFingerprint,
-    buildManifestDefinitionsSignature,
-    setHeroCatalogs
-} = require('../src/utils/manifestFingerprint');
+const { updateStremioAddonCollection } = require('../src/stremio/collection');
+const { reconcileManifests, buildManifestFingerprint, buildManifestDefinitionsSignature, setHeroCatalogs } = require('../src/stremio');
 
 jest.mock('../src/models/AddonConfig');
 jest.mock('../src/models/UserAccount');
-jest.mock('../src/utils/stremioAddon');
+jest.mock('../src/stremio/collection');
 jest.mock('nanoid', () => ({
     nanoid: jest.fn(() => 'new-nanoid-ver')
 }));

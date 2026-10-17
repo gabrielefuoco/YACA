@@ -1,7 +1,14 @@
+<<<<<<< HEAD:src/utils/manifestReconciler.js
 const AddonConfig = require('../models/AddonConfig');
 const UserAccount = require('../models/UserAccount');
 const { buildManifestFingerprint } = require('./manifestFingerprint');
 const { updateStremioAddonCollection } = require('./stremioAddon');
+=======
+const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../db/models/UserAccount');
+const { buildManifestFingerprint } = require('./fingerprint');
+const { updateStremioAddonCollection } = require('./collection');
+>>>>>>> t35-stremio:src/stremio/reconciler.js
 const { nanoid } = require('nanoid');
 
 /**

@@ -21,7 +21,7 @@ const {
     LibraryConverterService,
     LibrarySyncService
 } = require('../library');
-const { syncAllStremioData } = require('../utils/stremioAddon');
+const { syncAllStremioData } = require('../stremio');
 const { hybridRecommendationsCache, aiDiscoveryCache } = require('../cache/cacheInstances');
 
 /**
@@ -208,7 +208,7 @@ router.delete('/libreria/:itemId', async (req, res) => {
             await item.save();
 
             if (account.apiKeys?.stremio) {
-                const { stremioClient } = require('../clients/stremio');
+                const { stremioClient } = require('../stremio');
                 await stremioClient.post('/api/datastorePut', {
                     authKey: account.apiKeys.stremio,
                     collection: 'libraryItem',

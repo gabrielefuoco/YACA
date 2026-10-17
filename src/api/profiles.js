@@ -9,7 +9,7 @@ router.use(richiedeSessione);
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../models/UserAccount');
 const AddonConfig = require('../models/AddonConfig');
-const { syncAllStremioData } = require('../utils/stremioAddon');
+const { syncAllStremioData } = require('../stremio');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { LibraryConverterService } = require('../library');
 const {
@@ -394,7 +394,7 @@ router.delete('/:id/library/:itemId', async (req, res) => {
             await item.save();
 
             if (account.apiKeys?.stremio) {
-                const { stremioClient } = require('../clients/stremio');
+                const { stremioClient } = require('../stremio');
                 await stremioClient.post('/api/datastorePut', {
                     authKey: account.apiKeys.stremio,
                     collection: 'libraryItem',

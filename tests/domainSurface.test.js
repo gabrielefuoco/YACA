@@ -75,7 +75,7 @@ jest.mock('../src/pool/graphClient', () => ({
     })
 }));
 
-jest.mock('../src/clients/stremio', () => ({
+jest.mock('../src/stremio/client', () => ({
     stremioClient: {
         post: jest.fn().mockResolvedValue({ data: { result: { authKey: 'stremio-key-mock', user: { email: 'test@example.com' } } } })
     }

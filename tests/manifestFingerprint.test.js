@@ -1,4 +1,4 @@
-const { buildManifestFingerprint } = require('../src/utils/manifestFingerprint');
+const { buildManifestFingerprint } = require('../src/stremio');
 
 function makeConfig() {
     return {

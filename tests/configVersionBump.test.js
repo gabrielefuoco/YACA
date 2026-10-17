@@ -1,7 +1,13 @@
 const UserConfig = require('../src/models/UserConfig');
+<<<<<<< HEAD
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
 const { buildManifestFingerprint } = require('../src/utils/manifestFingerprint');
+=======
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
+const { buildManifestFingerprint } = require('../src/stremio');
+>>>>>>> t35-stremio
 
 jest.mock('../src/models/UserAccount');
 jest.mock('../src/models/AddonConfig');

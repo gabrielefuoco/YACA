@@ -13,7 +13,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const COOKIE_NAME = 'yaca_session';
-const { stremioClient } = require('../../clients/stremio');
+const { stremioClient } = require('../../stremio');
 const { traktClient } = require('../../clients/trakt');
 const UserConfig = require('../../models/UserConfig');
 const UserAccount = require('../../models/UserAccount');

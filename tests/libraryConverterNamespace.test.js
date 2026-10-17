@@ -132,7 +132,7 @@ jest.mock('../src/library/ingestion/LibrarySyncService', () => ({
 const mockStremioClient = {
     post: jest.fn().mockResolvedValue({ data: { success: true } })
 };
-jest.mock('../src/clients/stremio', () => ({
+jest.mock('../src/stremio/client', () => ({
     stremioClient: mockStremioClient
 }));
 

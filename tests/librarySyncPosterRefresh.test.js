@@ -15,9 +15,15 @@ jest.mock('../src/models/ImdbToTmdbMapping', () => ({
 
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
+<<<<<<< HEAD
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
 const { stremioClient } = require('../src/clients/stremio');
+=======
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
+const { stremioClient } = require('../src/stremio');
+>>>>>>> t35-stremio
 const { BADGE_IMG_VERSION } = require('../src/catalog/formatters/posterBadgeVersion');
 
 const HOST = 'https://yaca.test';

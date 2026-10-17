@@ -6,13 +6,14 @@ jest.mock('../src/api/configure/profileProcessor', () => ({
     processProfiles: jest.fn(),
     createGlobalProfileInput: jest.fn(() => ({ id: 'global' }))
 }));
-jest.mock('../src/utils/stremioAddon', () => ({
+jest.mock('../src/stremio', () => ({
+    ...jest.requireActual('../src/stremio'),
     updateStremioAddonCollection: jest.fn()
 }));
 
 const configureRoute = require('../src/api/configure');
 const UserConfig = require('../src/models/UserConfig');
-const { updateStremioAddonCollection } = require('../src/utils/stremioAddon');
+const { updateStremioAddonCollection } = require('../src/stremio');
 
 function makeRequest() {
     return {

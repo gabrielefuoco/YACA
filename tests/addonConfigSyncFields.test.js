@@ -1,7 +1,7 @@
 const AddonConfig = require('../src/models/AddonConfig');
 
 /**
- * `updateSyncTimestamp` (src/utils/stremioAddon.js) scrive tre percorsi che devono esistere anche
+ * `updateSyncTimestamp` (src/stremio/collection.js) scrive tre percorsi che devono esistere anche
  * nello schema: se mancano, mongoose in strict mode li elimina dall'update, l'update resta vuoto e
  * MongoDB rifiuta l'arrayFilters di `profiles.$[elem]` con
  * "The array filter for identifier 'elem' was not used in the update" — facendo fallire l'intero

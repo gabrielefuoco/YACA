@@ -92,9 +92,9 @@ function getHeroCatalogs() {
         return globalHeroCatalogsOverride;
     }
     try {
-        const stremio = require('../api/stremio');
-        if (typeof stremio.buildManifest === 'function') {
-            const manifest = stremio.buildManifest({});
+        const { buildManifest } = require('./manifest');
+        if (typeof buildManifest === 'function') {
+            const manifest = buildManifest({});
             if (manifest && Array.isArray(manifest.catalogs)) {
                 // TUTTI i cataloghi definiti dal codice (standard + hero): una firma che
                 // coprisse solo gli hero non rileverebbe cambi ai cataloghi standard

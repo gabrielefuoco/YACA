@@ -23,12 +23,12 @@ const {
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const UserAccount = require('../src/models/UserAccount');
 const WatchHistory = require('../src/library/models/WatchHistory');
-const { stremioClient } = require('../src/clients/stremio');
+const { stremioClient } = require('../src/stremio');
 
 jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/models/UserAccount');
 jest.mock('../src/library/models/WatchHistory');
-jest.mock('../src/clients/stremio', () => ({
+jest.mock('../src/stremio/client', () => ({
     stremioClient: {
         post: jest.fn().mockResolvedValue({ data: { result: { success: true } } })
     }
