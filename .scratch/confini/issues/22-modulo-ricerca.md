@@ -31,6 +31,22 @@ sono tre file (`catalog/tier2Enrich.js`, `catalog/tier2Search.js`, `db/tier2Inde
   router. Il router fa **due mestieri** (serve un catalogo *e* alimenta la ricerca): è il motivo per cui la scelta
   non era «dentro o fuori», ma *chi possiede le fonti*.
 
+## Tutte le domande decise (17/10/2026)
+
+| domanda | decisione |
+|---|---|
+| l'AI | **fuori dalla ricerca**: è un modulo piccolo e condiviso che fornisce il **meccanismo**, non i prompt (ogni modulo tiene i suoi) |
+| le sei fonti | diventano un **registro** col loro contratto, consultato da **due consumatori**: la ricerca (fusione e ordinamento) e il servire (catalogo → fonte) |
+| l'indice | **un modulo con due clienti** (cataloghi e ricerca); `DuckDbProvider` non è l'indice, è un suo cliente |
+| il query builder | diventa il **compilatore dell'indice**: filtri dichiarativi in, **query parametrizzata** out — e vive nell'indice, non in `src/db/` |
+| la porta | **una**: `cerca({ q, tipo, contesto, cap })`, col `tipo` come parametro (e opzionale, per lasciare aperta la ricerca in linguaggio naturale) |
+| il vuoto | **lista vuota + `motivi[]`, mai un errore** — la stessa forma del contratto del motore e la regola di Stremio (`STREMIO_INTERNALS.md:129`) |
+| indice vs cache | **due moduli, confine *dato vs risposta***: l'indice possiede i file, la freschezza, la ricostruzione e il motore; la cache le risposte memorizzate. La cache non tiene mai l'indice, l'indice non tiene mai una risposta |
+
+**Cosa resta**: l'applicazione (di questo ticket), e il fatto che `DuckDbProvider` va **sdoppiato** — il motore dell'indice da una parte, il *cliente* dei cataloghi dall'altra.
+
+---
+
 ## Le domande che restano (per il prossimo grilling)
 
 1. **La porta**: `cerca({ q, tipo, contesto, cap }) → items`? E il `tipo` (titolo/genere/keyword/persona) è un
