@@ -18,7 +18,7 @@ COSA ESCE — il contratto di ritorno deciso nella mappa (§2b):
     "liste":     [{tipo, mondo, titoli: [(chiave, attivazione), ...]}, ...]
   }
 
-LE LISTE (§3d): il tuo mondo · un passo fuori · le uscite nuove · la nicchia di qualita' — piu' un
+LE LISTE (§3d, Ticket 40): il tuo mondo e i vicini (almeno 50 titoli) · un passo fuori · le uscite nuove · la nicchia di qualita' — piu' un
 catalogo per ogni mondo diverso.
 
 E LA REGOLA DEGLI ASSI (§13), che qui e' codice e non opinione: **un asse non sostituisce l'attivazione,
@@ -278,23 +278,42 @@ class Motore:
         dedotto = self.deduci(righe)
         att, r = self.diffondi(righe, plays, tipi=tipi, pesi=pesi)
         att_s = self.modula(att, slider, dedotto)
-        bolle = self.scegli_mondi(att_s, slider)
         visti = set(righe.tolist())
         # LA LIBRERIA E' INTENZIONE, NON VISIONE: un titolo che l'utente ha messo in libreria NON va
         # escluso dai suggerimenti come se l'avesse visto. Si escludono i soli titoli visti/amati.
         # E2: "catalogo" non e' "library", quindi resta in visti e NON compare fra i suggerimenti.
         if any(t == "library" for t in tipi):
             visti = {int(r_) for r_, t in zip(righe, tipi) if t != "library"}
-        # I MONDI TROPPO PICCOLI non valgono come catalogo a se' (parametri.MIN_TITOLI_MONDO). Il PRIMO
-        # resta sempre, anche se e' piccolo: e' il mondo del profilo. Nato dal motore: il mondo 3379
-        # (4 titoli) produceva una lista di UN titolo.
-        if bolle:
-            tenuti = [bolle[0]]
-            for b in bolle[1:]:
-                if len(np.setdiff1d(self.MEMBRI[b], list(visti))) >= P.MIN_TITOLI_MONDO:
-                    tenuti.append(b)
-            bolle = tenuti
-        primo = bolle[0] if bolle else None
+        visti_list = list(visti)
+
+        def non_visti_mondo(b):
+            m = np.setdiff1d(self.MEMBRI[b], visti_list)
+            if medium == "series":
+                m = m[B.IS_TV[m]]
+            elif medium == "movie":
+                m = m[~B.IS_TV[m]]
+            return m
+
+        # «IL TUO MONDO»: almeno 50 titoli, accumulando i mondi vicini (Ticket 40).
+        # La riga non sceglie un mondo solo: accumula dal mondo del profilo in poi, in ordine
+        # dell'attivazione modulata, finche' non raggiunge almeno 50 titoli (o i mondi finiscono).
+        # Il mondo del profilo resta il primo della riga (esente da MIN_TITOLI_MONDO).
+        # I mondi successivi devono avere almeno MIN_TITOLI_MONDO (5) titoli non visti.
+        ordine_mondi = list(np.argsort(-att_s))
+        primo = int(ordine_mondi[0]) if len(ordine_mondi) > 0 else None
+        bolle = [primo] if primo is not None else []
+        tot_titoli = len(non_visti_mondo(primo)) if primo is not None else 0
+        quante = int(slider.get("largo", 4))
+
+        for b in ordine_mondi[1:]:
+            if tot_titoli >= P.IL_TUO_MONDO_MIN_TITOLI and len(bolle) >= quante:
+                break
+            cb = int(b)
+            mb = non_visti_mondo(cb)
+            if len(mb) >= P.MIN_TITOLI_MONDO:
+                bolle.append(cb)
+                tot_titoli += len(mb)
+
         vicini = [int(x) for x in self.VICINI[primo] if x >= 0][:3] if primo is not None else []
 
         def righe_titoli(bs, quanti=cap_main):
@@ -310,7 +329,8 @@ class Motore:
             return fuori
 
         liste = []
-        liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": righe_titoli([primo])})
+        quanti_tuo = max(P.IL_TUO_MONDO_MIN_TITOLI, cap_main) if cap is None or cap >= P.IL_TUO_MONDO_MIN_TITOLI else cap_main
+        liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": righe_titoli(bolle, quanti_tuo)})
         liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini)})
         # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
         nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
@@ -333,7 +353,7 @@ class Motore:
         liste.append({"tipo": "nicchia_di_qualita", "mondo": None,
                       "titoli": [(B.KEYS[x], float(r[x])) for x in nic[:cap_main]]})
         for b in bolle[1:]:
-            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], 8 if cap is None else min(8, cap_main))})
+            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], cap_main)})
 
         # IL CONTRATTO DI ORDINE DELLE LISTE, dove vale. Le liste «ordinate per attivazione» devono
         # esserlo davvero: senza questo controllo `uscite_nuove` usciva per indice di catalogo (col

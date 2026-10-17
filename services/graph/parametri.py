@@ -108,6 +108,13 @@ SCHEDA = [
      "La ricaduta quando non ci sono titoli ripetuti: i primi 2-3 di ogni catalogo.", "da costruire"),
 
     # ---------------------------------------------------------------- liste
+    ("IL_TUO_MONDO_MIN_TITOLI", 50, "DICHIARATO",
+     "Obiettivo minimo di titoli per la riga «il tuo mondo» (Ticket 40). "
+     "La riga non sceglie un mondo solo: accumula dal mondo del profilo in poi, "
+     "in ordine di attivazione modulata, finche' non raggiunge almeno questo numero "
+     "di titoli non visti (o i mondi finiscono). I mondi successivi al primo devono "
+     "avere almeno MIN_TITOLI_MONDO titoli non visti.",
+     "services/graph/motore.py"),
     ("MIN_TITOLI_MONDO", 5, "INVENTATO",
      "Quanti titoli non visti deve avere un mondo perche' valga come catalogo a se'. Nato dal motore: "
      "la selezione prendeva il mondo 3379 (4 titoli) e la sua lista ne mostrava UNO. Il primo mondo, "
