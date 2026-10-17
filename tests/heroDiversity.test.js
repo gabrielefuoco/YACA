@@ -297,10 +297,10 @@ describe('Ticket 21: shared hero diversity', () => {
         const ids = movieHeroIds.map(catalogId => group.catalogs[catalogId].map(item => String(item)));
 
         expect(ids).toEqual([
-            pool(1, 30).map(item => item.id),
-            pool(31, 60).map(item => item.id),
-            pool(61, 90).map(item => item.id),
-            pool(91, 120).map(item => item.id)
+            pool(1, 30).map(item => `tmdb:${item.id}`),
+            pool(31, 60).map(item => `tmdb:${item.id}`),
+            pool(61, 90).map(item => `tmdb:${item.id}`),
+            pool(91, 120).map(item => `tmdb:${item.id}`)
         ]);
         expect(pairwiseOverlap(ids)).toEqual([[], [], [], [], [], []]);
         expect(dataFetchers.fetchPopularFallbackIds).toHaveBeenCalledTimes(1);
@@ -358,13 +358,13 @@ describe('Ticket 21: shared hero diversity', () => {
         }, key);
         const ids = movieHeroIds.map(catalogId => group.catalogs[catalogId].map(item => item.id));
 
-        expect(group.schemaVersion).toBe(6);
+        expect(group.schemaVersion).toBe(7);
         expect(pairwiseOverlap(ids)).toEqual([[], [], [], [], [], []]);
         expect(ids).toEqual([
-            pool(1, 40).map(item => item.id),
-            pool(101, 140).map(item => item.id),
-            pool(201, 240).map(item => item.id),
-            pool(301, 340).map(item => item.id)
+            pool(1, 40).map(item => `tmdb:${item.id}`),
+            pool(101, 140).map(item => `tmdb:${item.id}`),
+            pool(201, 240).map(item => `tmdb:${item.id}`),
+            pool(301, 340).map(item => `tmdb:${item.id}`)
         ]);
         expect(strategies.buildTopGenresMixCatalog).toHaveBeenCalledTimes(1);
         expect(strategies.buildHybridCatalog).toHaveBeenCalledTimes(1);

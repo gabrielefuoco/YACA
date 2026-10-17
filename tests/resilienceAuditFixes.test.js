@@ -166,11 +166,27 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
     });
 
     // 8. Stremio Manifest stream Resource Types
+    // YACA non fa più da proxy ai flussi (commit 6443a87 e docs/STREMIO_INTERNALS.md:80).
+    // La risorsa 'stream' è stata rimossa dal manifest (ticket 05) per non esporre
+    // una risorsa che YACA non serve (gli stream anime sono serviti da altri addon).
+    // La rotta stream resta come compatibilità per client con manifest in cache e risponde { streams: [] }.
     describe('8. Stremio Manifest stream Resource Types', () => {
-        test('manifest stream resource declaration includes anime', async () => {
+        test('manifest does not declare stream resource (retired proxy 6443a87, docs/STREMIO_INTERNALS.md:80)', async () => {
             const stremioFileContent = fs.readFileSync(path.join(__dirname, '../src/api/stremio.js'), 'utf8');
-            // Check that the stream resource types array includes 'anime'
-            expect(stremioFileContent).toMatch(/name:\s*'stream',\s*types:\s*\[[^\]]*'anime'[^\]]*\]/);
+            // Il manifest dichiara solo catalog e meta, non più stream (6443a87, docs/STREMIO_INTERNALS.md:80)
+            expect(stremioFileContent).not.toMatch(/name:\s*'stream'/);
+            expect(stremioFileContent).not.toMatch(/resources:\s*\[[^\]]*'stream'[^\]]*\]/);
+        });
+
+        test('stream compatibility fallback route still answers { streams: [] } for cached manifests', () => {
+            const stremioRouter = require('../src/api/stremio');
+            const streamLayer = stremioRouter.stack.find(l =>
+                l.route && (Array.isArray(l.route.path) ? l.route.path.some(p => p.includes('/stream/')) : String(l.route.path).includes('/stream/'))
+            );
+            expect(streamLayer).toBeDefined();
+            let jsonPayload = null;
+            streamLayer.route.stack[0].handle({}, { json: (data) => { jsonPayload = data; } });
+            expect(jsonPayload).toEqual({ streams: [] });
         });
     });
 
