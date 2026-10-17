@@ -16,8 +16,8 @@ const COOKIE_NAME = 'yaca_session';
 const { stremioClient } = require('../../clients/stremio');
 const { traktClient } = require('../../clients/trakt');
 const UserConfig = require('../../models/UserConfig');
-const UserAccount = require('../../db/models/UserAccount');
-const AddonConfig = require('../../db/models/AddonConfig');
+const UserAccount = require('../../models/UserAccount');
+const AddonConfig = require('../../models/AddonConfig');
 const { nanoid } = require('nanoid');
 const { risolviProfiloAttivo } = require('../../profile');
 

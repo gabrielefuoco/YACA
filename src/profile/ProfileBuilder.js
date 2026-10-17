@@ -7,8 +7,8 @@ const {
     trovaCronologiaPerIds,
     scriviBatchCronologia
 } = require('../library');
-const AddonConfig = require('../db/models/AddonConfig');
-const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../models/AddonConfig');
+const UserAccount = require('../models/UserAccount');
 const {
     extractActiveDNAFromTmdbData,
     computeFinalDNA,

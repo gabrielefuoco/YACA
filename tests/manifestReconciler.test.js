@@ -1,5 +1,5 @@
-const AddonConfig = require('../src/db/models/AddonConfig');
-const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
 const { updateStremioAddonCollection } = require('../src/utils/stremioAddon');
 const { reconcileManifests } = require('../src/utils/manifestReconciler');
 const {
@@ -8,8 +8,8 @@ const {
     setHeroCatalogs
 } = require('../src/utils/manifestFingerprint');
 
-jest.mock('../src/db/models/AddonConfig');
-jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/models/AddonConfig');
+jest.mock('../src/models/UserAccount');
 jest.mock('../src/utils/stremioAddon');
 jest.mock('nanoid', () => ({
     nanoid: jest.fn(() => 'new-nanoid-ver')

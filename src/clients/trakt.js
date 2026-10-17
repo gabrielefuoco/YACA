@@ -127,7 +127,7 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken, expi
     if (!userId) return false;
 
     try {
-        const UserAccount = require('../db/models/UserAccount');
+        const UserAccount = require('../models/UserAccount');
         const updateSet = {
             'apiKeys.trakt': newAccessToken,
             'apiKeys.traktRefreshToken': newRefreshToken
@@ -167,7 +167,7 @@ async function smartTraktRefresh(userId, refreshToken) {
 
     let UserAccount;
     try {
-        UserAccount = require('../db/models/UserAccount');
+        UserAccount = require('../models/UserAccount');
     } catch (_e) {}
 
     // 1. Controllo stato persistito in DB: se richiede già ri-autorizzazione, non tentare
@@ -357,7 +357,7 @@ async function markDegraded(userId, UserAccount, errorMsg) {
 async function checkTraktHeartbeat(userId, token = null) {
     let UserAccount;
     try {
-        UserAccount = require('../db/models/UserAccount');
+        UserAccount = require('../models/UserAccount');
     } catch (_e) {}
 
     let user = null;

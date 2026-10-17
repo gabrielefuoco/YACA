@@ -1,4 +1,4 @@
-const AddonConfig = require('../src/db/models/AddonConfig');
+const AddonConfig = require('../src/models/AddonConfig');
 
 /**
  * `updateSyncTimestamp` (src/utils/stremioAddon.js) scrive tre percorsi che devono esistere anche

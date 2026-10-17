@@ -7,8 +7,8 @@ const { richiedeSessione } = require('../middleware/sessione');
 // Da qui in poi `req.utenteId` e' l'utente della sessione, e basta.
 router.use(richiedeSessione);
 const TasteProfile = require('../models/TasteProfile');
-const UserAccount = require('../db/models/UserAccount');
-const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../models/UserAccount');
+const AddonConfig = require('../models/AddonConfig');
 const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
 const { LibraryConverterService } = require('../library');

@@ -398,7 +398,7 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
         let stremioKeyToUse = stremioKey;
         if (!stremioKeyToUse) {
             try {
-                const UserAccount = require('../db/models/UserAccount');
+                const UserAccount = require('../models/UserAccount');
                 const account = await UserAccount.findOne({ userId }).lean();
                 stremioKeyToUse = account?.apiKeys?.stremio;
             } catch (_e) {}

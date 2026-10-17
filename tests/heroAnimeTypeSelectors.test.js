@@ -43,11 +43,11 @@ jest.mock('../src/library/models/UserLibraryItem', () => ({
     countDocuments: jest.fn().mockResolvedValue(0)
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn()
 }));
 
@@ -89,8 +89,8 @@ jest.mock('../src/engines/keywords/HierarchicalGraph', () => {
 });
 
 const TasteProfile = require('../src/models/TasteProfile');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 const tmdb = require('../src/clients/tmdb');
 const { traktClient } = require('../src/clients/trakt');
 const {

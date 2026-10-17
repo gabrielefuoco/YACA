@@ -194,12 +194,12 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
     describe('9. Mongoose OverwriteModelError Prevention', () => {
         test('re-requiring models does not throw OverwriteModelError', () => {
             expect(() => {
-                require('../src/db/models/ImdbToTmdbMapping');
+                require('../src/models/ImdbToTmdbMapping');
                 require('../src/models/SystemLog');
                 require('../src/models/TasteProfile');
             }).not.toThrow();
 
-            const ImdbToTmdbMapping = require('../src/db/models/ImdbToTmdbMapping');
+            const ImdbToTmdbMapping = require('../src/models/ImdbToTmdbMapping');
             const SystemLog = require('../src/models/SystemLog');
             const TasteProfile = require('../src/models/TasteProfile');
 

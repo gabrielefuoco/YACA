@@ -13,11 +13,11 @@ jest.mock('../src/models/TasteProfile', () => ({
     updateOne: jest.fn().mockResolvedValue({})
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 

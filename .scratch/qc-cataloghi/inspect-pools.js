@@ -10,7 +10,7 @@ async function main() {
     await duckDbStore.init();
     await animeMappingStore.init();
 
-    const UserAccount = require('../../src/db/models/UserAccount');
+    const UserAccount = require('../../src/models/UserAccount');
     const account = await UserAccount.findOne({ userId: 'REOZrGNRr3' });
     const tmdbKey = account?.apiKeys?.tmdb;
 

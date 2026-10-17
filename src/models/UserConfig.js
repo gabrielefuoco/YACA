@@ -10,8 +10,8 @@
  */
 
 const { nanoid } = require('nanoid');
-const AddonConfig = require('../db/models/AddonConfig');
-const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('./AddonConfig');
+const UserAccount = require('./UserAccount');
 const { buildManifestFingerprint } = require('../utils/manifestFingerprint');
 const UserConfig = {
     _decryptApiKeys(apiKeysObj) {

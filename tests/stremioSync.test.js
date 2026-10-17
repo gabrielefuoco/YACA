@@ -1,15 +1,15 @@
 const { syncAllStremioData, pushToStremioLibrary } = require('../src/utils/stremioAddon');
 const { stremioClient, stremioLikesClient } = require('../src/clients/stremio');
 const { syncTraktRatings } = require('../src/clients/trakt');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const AddonConfig = require('../src/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
 
 jest.mock('../src/clients/stremio');
 jest.mock('../src/clients/trakt');
-jest.mock('../src/db/models/UserAccount');
-jest.mock('../src/db/models/AddonConfig');
+jest.mock('../src/models/UserAccount');
+jest.mock('../src/models/AddonConfig');
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/profile/ProfileBuilder');
 

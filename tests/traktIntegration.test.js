@@ -1,7 +1,7 @@
 const { traktClient, fetchTraktCatalog, refreshTraktTokens } = require('../src/clients/trakt');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 
-jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/models/UserAccount');
 
 describe('Trakt Integration Tests', () => {
     let mockTraktPost;

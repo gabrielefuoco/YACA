@@ -11,8 +11,8 @@
  */
 
 const { nanoid } = require('nanoid');
-const AddonConfig = require('../db/models/AddonConfig');
-const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../models/AddonConfig');
+const UserAccount = require('../models/UserAccount');
 
 function defaultGlobalProfile() {
     return {

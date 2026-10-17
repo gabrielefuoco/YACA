@@ -6,8 +6,8 @@ const { richiedeSessione, erroreDominio } = require('../middleware/sessione');
 router.use(richiedeSessione);
 
 const UserConfig = require('../models/UserConfig');
-const UserAccount = require('../db/models/UserAccount');
-const AddonConfig = require('../db/models/AddonConfig');
+const UserAccount = require('../models/UserAccount');
+const AddonConfig = require('../models/AddonConfig');
 const TasteProfile = require('../models/TasteProfile');
 const { getHeroUiGroups } = require('../catalog/registry');
 const {

@@ -12,13 +12,13 @@ jest.mock('../src/utils/axiosClient', () => ({
     }))
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOneAndUpdate: jest.fn()
 }));
 
 const { traktDisconnectHandler } = require('../src/api/auth/index.js');
 const { syncTraktTokensToDb, refreshTraktTokens, traktClient } = require('../src/clients/trakt');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 
 describe('Trakt Disconnect & traktExpiresAt Persistence', () => {
     beforeEach(() => {

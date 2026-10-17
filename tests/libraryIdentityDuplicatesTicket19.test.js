@@ -153,7 +153,7 @@ describe('Ticket 19: 2. Risoluzione Tipo da DB e Tracciamento Discordanze', () =
 
 describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profiles.js)', () => {
     let handler;
-    const UserAccount = require('../src/db/models/UserAccount');
+    const UserAccount = require('../src/models/UserAccount');
     const UserLibraryItem = require('../src/library/models/UserLibraryItem');
     const libraryIdentity = require('../src/library/identity');
 

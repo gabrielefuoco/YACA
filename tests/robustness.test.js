@@ -6,7 +6,7 @@ jest.mock('../src/cache/CacheManager', () => {
     }));
 });
 
-jest.mock('../src/db/models/ImdbToTmdbMapping', () => ({
+jest.mock('../src/models/ImdbToTmdbMapping', () => ({
     findOne: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue(null)
     }),

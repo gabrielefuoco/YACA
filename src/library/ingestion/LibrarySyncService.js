@@ -1,5 +1,5 @@
-const UserAccount = require('../../db/models/UserAccount');
-const AddonConfig = require('../../db/models/AddonConfig');
+const UserAccount = require('../../models/UserAccount');
+const AddonConfig = require('../../models/AddonConfig');
 const UserLibraryItem = require('../models/UserLibraryItem');
 const { stremioClient } = require('../../clients/stremio');
 const { isAnimeContent } = require('../../utils/animeIdentity');
@@ -462,7 +462,7 @@ class LibrarySyncService {
             const imdbMap = new Map();
             if (imdbIds.length > 0) {
                 try {
-                    const ImdbToTmdbMapping = require('../../db/models/ImdbToTmdbMapping');
+                    const ImdbToTmdbMapping = require('../../models/ImdbToTmdbMapping');
                     const mappings = await ImdbToTmdbMapping.find({ imdbId: { $in: imdbIds } }).lean();
                     for (const m of mappings) {
                         if (m.imdbId && m.tmdbId) {

@@ -62,7 +62,7 @@ async function risolviAddonUuid({ userId, user }) {
     let addonUuid = user?.uuid || user?.addonUuid || null;
     if (!addonUuid && userId) {
         try {
-            const UserAccount = require('../db/models/UserAccount');
+            const UserAccount = require('../models/UserAccount');
             const account = await UserAccount.findOne({ userId }).lean();
             addonUuid = account?.addonUuid || null;
         } catch (_e) {

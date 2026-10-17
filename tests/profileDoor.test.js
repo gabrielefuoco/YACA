@@ -11,10 +11,10 @@ const {
     duplicaProfilo
 } = require('../src/profile');
 
-jest.mock('../src/db/models/UserAccount');
-jest.mock('../src/db/models/AddonConfig');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+jest.mock('../src/models/UserAccount');
+jest.mock('../src/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 
 describe('Profile Module Door (Ticket 21)', () => {
     beforeEach(() => {

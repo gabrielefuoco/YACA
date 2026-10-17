@@ -2,8 +2,8 @@ const { resolvePoster } = require('../src/utils/posterResolver');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { stremioClient } = require('../src/clients/stremio');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 
 // Mock duckDbStore in memory
 jest.mock('../src/indice/duckDbStore', () => ({
