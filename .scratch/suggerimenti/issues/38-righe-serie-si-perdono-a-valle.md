@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # Le righe del grafo perdono le serie fra il pool e la risposta
@@ -205,3 +205,51 @@ cache-miss dentro il processo della sonda — dove Mongoose non era connesso (`u
 timed out`) — e ha memorizzato un risultato **vuoto** sotto quella chiave. È esattamente il caso di E5 del
 contratto: *un guasto transitorio non si memorizza*. Il profilo reale usa `exclude`, quindi il danno è
 limitato a una variante non usata — ma è la prova che la regola serve.
+
+---
+
+## RISOLTO DEFINITIVAMENTE il 17/10/2026 — Esito e Misure di Produzione
+
+Tutte e tre le domande sono state verificate ed eseguite direttamente in produzione sul mate (`REOZrGNRr3`, profilo `4159713d`, container `yaca-app` e `yaca-graph`).
+
+### 1. Perché «un passo fuori» perdeva (42 → 1) e risoluzione a 20/20
+- **Misurazioni ai confini (PRIMA del fix)**:
+  - *Confine 1 (Servizio Python `POST /raccomanda`)*: riceveva tutti i 28 seed dell'utente (20 anime e 8 serie TV ordinarie) perché `HERO_STRATEGIES.graph_rows` non filtrava i seed per `animePolicy`. La random walk nei cluster del grafo partiva prevalentemente da anime, restituendo in `un_passo_fuori` ben **41 serie anime e solo 1 serie non-anime** (*Erased*).
+  - *Confine 2 (Pool hero `assigned['yaca_passo_fuori_series']`)*: 42 serie assegnate (41 anime, 1 non-anime).
+  - *Confine 3 (`getHybridCatalog`)*: il ciclo a lotti valutava ogni card con `cardSurvivesFilters(card, { isKidsMode, effectiveTypeSelectors })`. Avendo il profilo `effectiveTypeSelectors: { anime: 'exclude' }`, 41 dei 42 candidati venivano scartati, lasciando **1 sola serie** superstite.
+  - *Confine 4 (`catalogHandler` HTTP response)*: restituiva esattamente **1 serie** (`metas.length = 1`).
+- **Fix minimale applicato**:
+  - In `src/pool/index.js` (`HERO_STRATEGIES.graph_rows`): i seed di libreria e Trakt vengono ora filtrati per `animePolicy` (`isAnimeContent({ tmdbId, tipo: tipoSeed })`) quando la policy è `'exclude'` o `'only'`. Per l'utente `REOZrGNRr3`, restano esattamente gli 8 seed non-anime (*Fringe*, *Breaking Bad*, *Doctor Who*, *Black Mirror*, *Lost*, *Stranger Things*, *Sherlock*, ecc.).
+  - In `src/engines/hybridRecommendations.js`: passato `effectiveTypeSelectors` alla costruzione della `cacheKey` (allineando la chiave hero col pool).
+  - Incremento `HERO_CACHE_KEY_VERSION = 'v14'`.
+- **Misurazioni ai confini (DOPO il fix)**:
+  - *Confine 1 (`POST /raccomanda`)*: con gli 8 seed non-anime, il servizio ha restituito **47 serie** in `un_passo_fuori` (tutte 47 non-anime).
+  - *Confine 2 (Pool hero)*: `yaca_passo_fuori_series = 47`.
+  - *Confine 3 (`getHybridCatalog`)*: tutte le prime 20 serie superano i filtri (`titles: 20`).
+  - *Confine 4 (`catalogHandler` HTTP response)*:
+    `curl -s http://127.0.0.1:7860/REOZrGNRr3/catalog/series/yaca_passo_fuori_series.json | jq '.metas | length'` → **20 serie su 20 (pagina piena)**.
+
+### 2. Dov'è finito il log `[Mondi]`
+- **Causa**: Il log `[Mondi] ...` risiedeva esclusivamente in `HERO_STRATEGIES.graph_rows` dentro `buildSharedHeroCatalogs`. Nelle richieste reali successive al caricamento iniziale, le richieste venivano servite da `catalogRequestCache` (TTL 14 giorni) o da `hybridRecommendationsCache` (TTL 7 giorni): non venendo rieseguito il builder del pool, nessun log `[Mondi]` raggiungeva stdout. Inoltre, prima del restart la chiave di gruppo Redis era già calda per le serie.
+- **Risoluzione e testimonianza**:
+  1. Preservato e reso esatto il log di build in `HERO_STRATEGIES.graph_rows`:
+     `[Mondi] series: seed da archivio 8, da Trakt 0 · mondi 3 · passo fuori 47`
+  2. Aggiunto log di testimonianza ad ogni risoluzione hero in `getHeroPool`:
+     `[Mondi] series: pool mondi 3 · passo fuori 47`
+  3. Aggiunto log di testimonianza in `src/handlers/catalogHandler.js` per i cataloghi mondi:
+     `[Mondi] catalogo yaca_passo_fuori_series: serviti 20 titoli (cache=miss)` (e `cache=hit` al secondo colpo).
+  - Verificato con `docker logs yaca-app`: compare sia in miss che in hit.
+
+### 3. Verifica E5 (Degrado su guasto e ripristino)
+- **Misura con `docker stop yaca-graph` (cache-miss garantito su movies, key `REOZrGNRr3_4159713d_heroes_v14_movie_a_exclude`)**:
+  - Log di errore emesso: `[Mondi] motore non raggiungibile: getaddrinfo ENOTFOUND graph`
+  - Le righe mondi degradano a 0 senza bloccare la risposta: `yaca_mondi_movies: 0`, `yaca_passo_fuori_movies: 0`
+  - Le altre righe continuano a servire: `yaca_true_blend_movies: 100`, `yaca_seed_network_movies: 33`, `yaca_hidden_gems_movies: 100`
+  - **Correzione bug in `CacheManager.js`**:
+    In precedenza `CacheManager.set` aggiungeva `swrMs` (3600s) anche con `ttlMs` esplicito (60s), impostando la scadenza Redis a ~3660s, e `getWithStatus` verificava `age <= this.ramTtlMs` (7 giorni) invece di `parsed.ttl`. Con il fix (`effectiveSwr = ttlMs ? 0 : this.swrMs` e uso di `effectiveTtl` in `getWithStatus`), Redis memorizza la voce con TTL di sicurezza di **60 secondi** esatti (misurato con `redis-cli ttl`: `21s` rimanenti in decremento verso 0).
+- **Misura dopo `docker start yaca-graph`**:
+  - Container `yaca-graph` tornato Up e healthy.
+  - Scaduto il TTL di 60s, nuova richiesta a `yaca_mondi_movies.json` ha restituito **13 titoli** e `yaca_passo_fuori_movies.json` **20 titoli**, con log:
+    `[Mondi] movie: seed da archivio 15, da Trakt 0 · mondi 44 · passo fuori 60`
+    `[Mondi] catalogo yaca_passo_fuori_movies: serviti 20 titoli (cache=miss)`.
+

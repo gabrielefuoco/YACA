@@ -88,10 +88,12 @@ class CacheManager {
                         const age = Date.now() - originalTimestamp;
                         
                         // Promote to L1
-                        const l1Ttl = this.ramTtlMs + this.swrMs;
+                        const effectiveTtl = parsed.ttl || this.ramTtlMs;
+                        const effectiveSwr = parsed.ttl ? 0 : this.swrMs;
+                        const l1Ttl = effectiveTtl + effectiveSwr;
                         await this._l1Set(key, parsed, l1Ttl);
 
-                        const status = age <= this.ramTtlMs ? 'fresh' : (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs ? 'stale' : 'miss');
+                        const status = age <= effectiveTtl ? 'fresh' : (effectiveSwr > 0 && age <= effectiveTtl + effectiveSwr ? 'stale' : 'miss');
                         const finalValue = parsed.v === NEGATIVE_CACHE_MARKER ? null : parsed.v;
                         return { value: finalValue, status };
                     }
@@ -150,13 +152,14 @@ class CacheManager {
         if (!key) return;
 
         const effectiveTtl = ttlMs || this.redisTtlMs;
+        const effectiveSwr = ttlMs ? 0 : this.swrMs;
         const useRam = options.useRam !== false;
         const storageValue = value === null ? NEGATIVE_CACHE_MARKER : value;
         const envelope = { v: storageValue, t: Date.now(), ttl: effectiveTtl };
 
         // 1. L1 (RAM)
         if (useRam) {
-            const l1Ttl = effectiveTtl + this.swrMs;
+            const l1Ttl = effectiveTtl + effectiveSwr;
             await this._l1Set(key, envelope, l1Ttl);
         }
 
@@ -165,7 +168,7 @@ class CacheManager {
             try {
                 const jitter = effectiveTtl * 0.05 * (Math.random() * 2 - 1);
                 const jitteredTtl = Math.max(0, effectiveTtl + jitter);
-                const expireMs = Math.round(jitteredTtl + this.swrMs); // Keep alive during SWR
+                const expireMs = Math.round(jitteredTtl + effectiveSwr); // Keep alive during SWR
 
                 await redisClient.set(
                     this._getRedisKey(key),

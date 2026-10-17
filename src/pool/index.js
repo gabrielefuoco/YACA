@@ -37,6 +37,7 @@ const {
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const graphClient = require('./graphClient');
+const { isAnimeContent } = require('../utils/animeIdentity');
 
 const HERO_CATALOG_IDS = new Map([
     ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
@@ -45,7 +46,7 @@ const HERO_CATALOG_IDS = new Map([
     ]))
 ]);
 
-const HERO_CACHE_KEY_VERSION = 'v13';
+const HERO_CACHE_KEY_VERSION = 'v14';
 const HERO_CACHE_SCHEMA_VERSION = 7;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
@@ -240,7 +241,22 @@ const HERO_STRATEGIES = [
                     mediaType: ctx.mediaType,
                     user: ctx.userConfig
                 });
-                const semi = [...seeds.entries()].map(([id, w]) => {
+                const tipoSeed = med === 'movie' ? 'movie' : 'tv';
+                const animePolicy = ctx.animePolicy
+                    || ctx.effectiveSelectors?.anime
+                    || ctx.userConfig?.activeProfileSettings?.typeSelectors?.anime
+                    || ctx.userConfig?.typeSelectors?.anime;
+
+                const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
+
+                const rawSeeds = [...seeds.entries()];
+                const filteredSeeds = rawSeeds.filter(([id]) => {
+                    if (animePolicy === 'exclude') return !isAnimeSeed(id);
+                    if (animePolicy === 'only') return isAnimeSeed(id);
+                    return true;
+                });
+
+                const semi = filteredSeeds.map(([id, w]) => {
                     const tmdbId = Number(id);
                     let tipo = 'watched';
                     if (w >= 4) tipo = 'loved';
@@ -254,13 +270,24 @@ const HERO_STRATEGIES = [
                     };
                 });
                 const visti = new Set(semi.map((s) => s.tmdbId));
+                let traktCount = 0;
                 if (rawTraktResult?.traktAvailable) {
                     for (const voce of (rawTraktResult.ids || [])) {
                         const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
                         if (!Number.isFinite(id) || visti.has(id)) continue;
+                        if (animePolicy === 'exclude' && isAnimeSeed(id)) continue;
+                        if (animePolicy === 'only' && !isAnimeSeed(id)) continue;
                         visti.add(id);
                         semi.push({ tmdbId: id, medium: med, tipo: 'liked', peso: 3 });
+                        traktCount++;
                     }
+                }
+
+                if (semi.length === 0) {
+                    assigned[catMondi] = [];
+                    assigned[catPasso] = [];
+                    console.log(`[Mondi] ${ctx.mediaType}: seed da archivio 0, da Trakt 0 · mondi 0 · passo fuori 0`);
+                    return;
                 }
 
                 const opzioni = ctx.userConfig?.activeProfileSettings?.graphOptions
@@ -297,7 +324,7 @@ const HERO_STRATEGIES = [
 
                 const nMondi = (assigned[catMondi] || []).length;
                 const nPasso = (assigned[catPasso] || []).length;
-                console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${seeds.size}, da Trakt ${semi.length - seeds.size}` +
+                console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${filteredSeeds.length}, da Trakt ${traktCount}` +
                     ` · mondi ${nMondi} · passo fuori ${nPasso}`);
                 if (semi.length > 0 && nMondi === 0 && nPasso === 0) {
                     console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in entrambe le righe ` +
@@ -383,6 +410,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         kidsMode,
         userConfig,
         effectiveSelectors,
+        animePolicy,
         heroCandidateLimit,
         seedFallback,
         communityFallbackWithMeta,
@@ -534,6 +562,12 @@ async function getHeroPool(params) {
     }, cacheKey);
 
     const assigned = sharedGroup?.catalogs || {};
+    const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;
+    const catPasso = `yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`;
+    const nMondi = (assigned[catMondi] || []).length;
+    const nPasso = (assigned[catPasso] || []).length;
+    console.log(`[Mondi] ${mediaType}: pool mondi ${nMondi} · passo fuori ${nPasso}`);
+
     return {
         ...assigned,
         catalogs: assigned,
