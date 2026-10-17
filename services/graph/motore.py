@@ -130,12 +130,24 @@ class Motore:
         return C.pota(M, k)
 
     # ------------------------------------------------------------------ i semi
-    def pesi_semi(self, righe, plays, tipi=None):
+    def pesi_semi(self, righe, plays, tipi=None, pesi=None):
         """Vedi `camminata.pesi_semi`: film min(plays,3), serie 1+2x(frazione episodi), volte il tipo."""
+        base = C.pesi_semi(righe, plays, self.NEP, tipi=None)
+        if pesi is not None:
+            # E1: se il prodotto manda il peso numerico lo usa, altrimenti ripiega su PESO_TIPO[tipo]
+            fattore = np.array([
+                float(p) if p is not None else P.PESO_TIPO.get(str(t), 1.0)
+                for p, t in zip(pesi, tipi or ["watched"] * len(righe))
+            ], float)
+            return base * fattore
         return C.pesi_semi(righe, plays, self.NEP, tipi)
 
-    def diffondi(self, righe, plays, tipi=None):
+    def diffondi(self, righe, plays, tipi=None, pesi=None):
         """PageRank personalizzato: l'attivazione PER MONDO e quella PER TITOLO."""
+        if pesi is not None:
+            w = self.pesi_semi(righe, plays, tipi=tipi, pesi=pesi)
+            r = C.ppr(self.Tr, righe, w, normalizza=True)
+            return C.attiva_per_mondo(r, self.MEM, self.NB), r
         r = C.diffondi(self.Tr, righe, plays, self.NEP, tipi=tipi)
         return C.attiva_per_mondo(r, self.MEM, self.NB), r
 
@@ -210,7 +222,7 @@ class Motore:
                     scelti.append(cb)
         return scelti
 
-    def titoli_di(self, bolle, r, visti, quanti_per_mondo=10):
+    def titoli_di(self, bolle, r, visti, quanti_per_mondo=10, medium_filtro=None):
         """I titoli non visti di queste bolle, ordinati per attivazione — SENZA RIPETIZIONI.
 
         Il dedup non e' un dettaglio: due mondi vicini hanno membri in comune, e concatenando le loro
@@ -220,6 +232,10 @@ class Motore:
         fuori, gia = [], set()
         for b in bolle:
             m = np.setdiff1d(self.MEMBRI[b], list(visti))
+            if medium_filtro == "series":
+                m = m[B.IS_TV[m]]
+            elif medium_filtro == "movie":
+                m = m[~B.IS_TV[m]]
             if len(m):
                 for x in m[np.argsort(-r[m])][:quanti_per_mondo].tolist():
                     if x not in gia:
@@ -228,31 +244,41 @@ class Motore:
         return fuori
 
     # ------------------------------------------------------------------ IL METODO
-    def lista(self, storia, slider=None):
-        """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`.
+    def lista(self, storia, slider=None, cap=None, medium=None):
+        """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`
+        OPPURE di `(chiave, plays, tipo, peso)`.
 
-        Il `tipo` e' il segnale del prodotto: "loved", "liked", "watched", "library". Senza tipo si
-        assume "watched": il comportamento di prima, bit per bit.
+        Il `tipo` e' il segnale del prodotto: "loved", "liked", "watched", "library", "catalogo".
+        Senza tipo si assume "watched": il comportamento di prima, bit per bit.
+        `cap`: tetto di titoli per lista (default 10 se None per compatibilita').
+        `medium`: filtro opzionale 'movie' o 'series' (E4).
         """
         slider = {**SLIDER_DEFAULT, **(slider or {})}
+        cap_main = int(cap) if cap is not None else 10
         voci = []
         for voce in storia:
-            ch, pl = voce[0], voce[1]
+            ch = voce[0]
+            pl = voce[1] if len(voce) > 1 else 1
             tp = voce[2] if len(voce) > 2 else "watched"
+            ps = voce[3] if len(voce) > 3 else None
             if ch in B.ROW_OF:
-                voci.append((ch, pl, tp))
+                voci.append((ch, pl, tp, ps))
         if not voci:
             return {"errore": "nessun titolo della storia e' nel canone", "liste": []}
-        righe = np.array([B.ROW_OF[ch] for ch, _, _ in voci], np.int64)
-        plays = np.array([pl for _, pl, _ in voci], float)
-        tipi = [tp for _, _, tp in voci]
+        righe = np.array([B.ROW_OF[ch] for ch, _, _, _ in voci], np.int64)
+        plays = np.array([pl for _, pl, _, _ in voci], float)
+        tipi = [tp for _, _, tp, _ in voci]
+        pesi = [ps for _, _, _, ps in voci]
+        if not any(p is not None for p in pesi):
+            pesi = None
         dedotto = self.deduci(righe)
-        att, r = self.diffondi(righe, plays, tipi)
+        att, r = self.diffondi(righe, plays, tipi=tipi, pesi=pesi)
         att_s = self.modula(att, slider, dedotto)
         bolle = self.scegli_mondi(att_s, slider)
         visti = set(righe.tolist())
         # LA LIBRERIA E' INTENZIONE, NON VISIONE: un titolo che l'utente ha messo in libreria NON va
         # escluso dai suggerimenti come se l'avesse visto. Si escludono i soli titoli visti/amati.
+        # E2: "catalogo" non e' "library", quindi resta in visti e NON compare fra i suggerimenti.
         if any(t == "library" for t in tipi):
             visti = {int(r_) for r_, t in zip(righe, tipi) if t != "library"}
         # I MONDI TROPPO PICCOLI non valgono come catalogo a se' (parametri.MIN_TITOLI_MONDO). Il PRIMO
@@ -267,14 +293,14 @@ class Motore:
         primo = bolle[0] if bolle else None
         vicini = [int(x) for x in self.VICINI[primo] if x >= 0][:3] if primo is not None else []
 
-        def righe_titoli(bs, quanti=10):
+        def righe_titoli(bs, quanti=cap_main):
             # «UN PASSO FUORI» E' UNA LISTA, NON TRE LISTE ATTACCATE. `titoli_di` prende `quanti` titoli
             # DA OGNI bolla: con tre vicini faceva fino a 30 titoli, e senza riordinarli fra le bolle le
             # prime dieci posizioni erano tutte del primo vicino. Due conseguenze misurate: la lista era
             # grande il triplo delle altre (e il confronto «31% contro 20%» in `intero.py` confrontava
             # successi TOTALI di liste di lunghezza diversa), e l'ordine era quello dei mondi, non
             # dell'attivazione. Con una bolla sola non si tocca niente: li' `titoli_di` e' gia' ordinata.
-            fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti)]
+            fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti, medium_filtro=medium)]
             if len(bs) > 1:
                 fuori = sorted(fuori, key=lambda t: -t[1])[:quanti]
             return fuori
@@ -285,21 +311,25 @@ class Motore:
         # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
         nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
                  if int(self.MEM[x]) in set(bolle) and x not in visti]
+        if medium == "series":
+            nuove = [x for x in nuove if B.IS_TV[x]]
+        elif medium == "movie":
+            nuove = [x for x in nuove if not B.IS_TV[x]]
         # ORDINATE PRIMA DEL TAGLIO. `np.where(...)[0]` e' in ordine CRESCENTE DI RIGA DEL CANONE, e
         # senza questo `nuove[:10]` prendeva i primi dieci per indice di catalogo mentre il tuple
         # portava `float(r[x])`, dando l'illusione di un ordine per attivazione che non c'era.
         nuove.sort(key=lambda x: (-float(r[x]), -float(self.VOT[x])))
         liste.append({"tipo": "uscite_nuove", "mondo": None,
-                      "titoli": [(B.KEYS[x], float(r[x])) for x in nuove[:10]]})
+                      "titoli": [(B.KEYS[x], float(r[x])) for x in nuove[:cap_main]]})
         # la nicchia di qualita': non iper-popolare, ben votata, meglio se in liste di altri
-        cand = [x for x in self.titoli_di(bolle + vicini, r, visti, 20)]
+        cand = [x for x in self.titoli_di(bolle + vicini, r, visti, 20 if cap is None else cap_main, medium_filtro=medium)]
         nic = [x for x in cand if self.POP[x] <= P.NICCHIA_POPOLARITA_MAX
                and self.VAVE[x] >= P.NICCHIA_VOTO_MIN]
         nic.sort(key=lambda x: -(self.VAVE[x] + (P.NICCHIA_BONUS_LISTE if self.LISTDEG[x] > 0 else 0)))
         liste.append({"tipo": "nicchia_di_qualita", "mondo": None,
-                      "titoli": [(B.KEYS[x], float(r[x])) for x in nic[:10]]})
+                      "titoli": [(B.KEYS[x], float(r[x])) for x in nic[:cap_main]]})
         for b in bolle[1:]:
-            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], 8)})
+            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], 8 if cap is None else min(8, cap_main))})
 
         # IL CONTRATTO DI ORDINE DELLE LISTE, dove vale. Le liste «ordinate per attivazione» devono
         # esserlo davvero: senza questo controllo `uscite_nuove` usciva per indice di catalogo (col
@@ -316,10 +346,13 @@ class Motore:
             if li["tipo"] != "nicchia_di_qualita":
                 K.assert_monotonia_lista(li["titoli"], f"lista {li['tipo']}")
 
+        # E2: "catalogo" accende da_catalogo: true, e non compare fra i suggerimenti (e' in visti)
+        da_cat = any(t == "catalogo" for t in tipi)
+
         return {"versioni": {"artefatto": self.artefatto, "ricetta": P.impronta()},
                 "slider": slider,
                 "profilo": dedotto,
-                "semi": {"n": int(len(righe)), "da_catalogo": bool(dedotto["freddo"])},
+                "semi": {"n": int(len(righe)), "da_catalogo": da_cat},
                 "mondi": [{"bolla": int(b), "attivazione": float(att[b]), "titoli": int(self.SZ[b]),
                            "voti_mediani": float(self.VOTMED[b]),
                            "quota_serie": float(self.QUOTA_TV[b]),

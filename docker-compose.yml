@@ -54,6 +54,33 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  graph:
+    build:
+      context: .
+      dockerfile: services/graph/Dockerfile
+    image: ghcr.io/gabrielefuoco/yaca-graph:${GRAPH_TAG:-latest}
+    container_name: yaca-graph
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      - PORT=7862
+    volumes:
+      # L'artefatto letto dal modulo come volume read-only (decisione ticket 07)
+      - yaca_graph_data:/app/services/graph/data:ro
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:7862/health').getcode() == 200 else 1)"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   anime-source:
     image: ghcr.io/gabrielefuoco/yaca-anime-source:${ANIME_SOURCE_TAG:-latest}
     container_name: yaca-anime-source
@@ -113,3 +140,5 @@ volumes:
     name: yaca_erdb_cache
   yaca_anime_source_cache:
     name: yaca_anime_source_cache
+  yaca_graph_data:
+    name: yaca_graph_data
