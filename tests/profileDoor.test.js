@@ -137,7 +137,7 @@ describe('Profile Module Door (Ticket 21)', () => {
     });
 
     describe('contestoDi ({ userId, profileId?, richiesta? })', () => {
-        it('produces the full descending context with 6 properties', async () => {
+        it('produces the full descending context with its properties (sliders inclusi)', async () => {
             UserAccount.findOne.mockReturnValue({
                 lean: jest.fn().mockResolvedValue({ userId: 'u1', addonUuid: 'uuid-abc' })
             });
@@ -168,7 +168,9 @@ describe('Profile Module Door (Ticket 21)', () => {
                     anime: 'exclude'
                 },
                 kidsMode: false,
-                slider: { ocean_openness: 0.8 }
+                // Il profilo salva ancora il nome storico `slider`: il contesto lo accetta in
+                // ingresso e lo espone come `sliders` (un nome solo in uscita).
+                sliders: { ocean_openness: 0.8 }
             });
         });
 
