@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { EPISODE_CATALOG_IDS } = require('../constants');
-const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
+const { normalizeAnimeMarker } = require('../../anime');
 // La convenzione del nome file NON viene riscritta qui: la produce il costruttore
 // (scripts/erdb-builder/build.js) ed è la stessa che chiede la rotta `/erdb-poster/:file`.
 // Un nome inventato qui produrrebbe file che la rotta non troverebbe mai: poster invisibile, zero errori.

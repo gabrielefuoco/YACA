@@ -13,7 +13,7 @@
  * `buildFribbIndex(...)` (come in tests/animeMappingMultiTmdbIds.test.js).
  */
 
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeMappingStore } = require('../src/anime');
 const M = animeMappingStore.motiviResolveKitsu;
 
 /** Payload Fribb iniettato: film, film con più id TMDB, serie su due id TMDB. */

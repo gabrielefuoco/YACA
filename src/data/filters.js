@@ -111,7 +111,7 @@ const F = {
     // La tabella degli alias sta in un posto solo (`normalizeTipoAnime`); require pigro perché
     // `filters.js` è la DSL caricata per prima e non deve dipendere dallo store all'avvio.
     animeOf: (tipo) => {
-        const { normalizeTipoAnime } = require('../utils/animeIdentity');
+        const { normalizeTipoAnime } = require('../anime');
         const t = normalizeTipoAnime(tipo);
         // Un tipo non riconosciuto qui è un errore di programmazione, non un caso da indovinare.
         if (!t) throw new Error(`F.animeOf: tipo non riconosciuto: ${tipo}`);

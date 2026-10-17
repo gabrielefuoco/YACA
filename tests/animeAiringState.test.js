@@ -7,7 +7,7 @@
  * diverso), card sub/ITA dalla home, freschezza della fonte, ordinamento e identità.
  */
 
-const animeAiringState = require('../src/data/animeAiringState');
+const { animeAiringState } = require('../src/anime');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 22, 12, 0, 0); // 2026-09-22T12:00:00Z

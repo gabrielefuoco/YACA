@@ -13,7 +13,7 @@ const RecommendationImpression = require('../models/RecommendationImpression');
 const mongoose = require('mongoose');
 
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
-const { resolveAnimePolicy, getEffectiveTypeSelectors, isItemAnime } = require('./hybrid/animePolicy');
+const { resolveAnimePolicy, getEffectiveTypeSelectors, isItemAnime } = require('../anime');
 const { isProfileSyncDue, isStremioSyncDue } = require('./profileStaleness');
 const { isHeroCatalogId } = require('../catalog/registry');
 

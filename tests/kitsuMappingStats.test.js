@@ -3,7 +3,7 @@ const {
     getKitsuMappingStats,
     resetKitsuMappingStats
 } = require('../src/handlers/metaHandler');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeMappingStore } = require('../src/anime');
 
 describe('Kitsu Mapping Stats & Resilience', () => {
     beforeEach(() => {

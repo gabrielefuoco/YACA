@@ -2,13 +2,13 @@ const UserAccount = require('../../models/UserAccount');
 const AddonConfig = require('../../models/AddonConfig');
 const UserLibraryItem = require('../models/UserLibraryItem');
 const { stremioClient } = require('../../stremio');
-const { isAnimeContent } = require('../../utils/animeIdentity');
+const { isAnimeContent } = require('../../anime');
 const { resolvePoster } = require('../../utils/posterResolver');
 const { normalizeLegacyPosterHost, normalizeLibraryId } = require('../identity');
 const { refreshLibraryPoster } = require('../../utils/libraryPosterRefresh');
 let animeMappingStore = null;
 try {
-    animeMappingStore = require('../../data/animeMappingStore');
+    animeMappingStore = require('../../anime').animeMappingStore;
 } catch (_e) {
     animeMappingStore = null;
 }

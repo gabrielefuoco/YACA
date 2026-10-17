@@ -180,7 +180,7 @@ function maxEpisodeNumber(doc) {
  */
 function haDoppiaggio(doc) {
     try {
-        return require('../src/data/animeAiringState').getDubEpisode(doc) !== null;
+        return require('../src/anime').getDubEpisode(doc) !== null;
     } catch (_e) {
         return false;
     }
@@ -546,7 +546,7 @@ function trovaEnv(esplicito = null) {
 
 /** Il piano su documenti già letti. Separato da `main` perché il test lo chiama senza Mongo. */
 async function caricaStoreMappa(log = console.log) {
-    const store = require('../src/data/animeMappingStore');
+    const store = require('../src/anime').animeMappingStore;
     if (store.isReady) return store;
     log('[Backfill mediaType] Carico la mappa anime certificata (AniBridge + Fribb)...');
     await store.init();

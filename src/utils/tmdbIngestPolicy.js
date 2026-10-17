@@ -1,4 +1,4 @@
-const animeAiringState = require('../data/animeAiringState');
+const { animeAiringState } = require('../anime');
 
 /**
  * tmdbIngestPolicy.js

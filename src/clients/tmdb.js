@@ -27,8 +27,7 @@ const { tmdbBudget, TMDB_CATEGORIES } = require('../utils/tmdbBudget');
 
 
 const CacheManager = require('../cache/CacheManager');
-const animeMappingStore = require('../data/animeMappingStore');
-const { normalizeAnimeMarker } = require('../utils/animeIdentity');
+const { animeMappingStore, normalizeAnimeMarker } = require('../anime');
 
 // Costanti di trimming per ridurre il peso dei payload TMDB in cache (anti-OOM / anti-16MB BSON)
 const MAX_CAST_SIZE = 10;

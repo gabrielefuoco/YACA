@@ -15,8 +15,7 @@
  * insieme al codice che li giustificava, e il nome è cambiato perché non raccontasse più una cosa che non c'è.
  */
 
-const animeMappingStore = require('../src/data/animeMappingStore');
-const animeAiringState = require('../src/data/animeAiringState');
+const { animeMappingStore, animeAiringState } = require('../src/anime');
 const {
     applyPostCacheBadges,
     isItemAnime,

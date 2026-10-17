@@ -1,7 +1,7 @@
 /**
  * tests/animeMappingMultiTmdbIds.test.js
  *
- * Lettura dei record anime con PIÙ id TMDB (`src/data/animeMappingStore.buildFribbIndex`).
+ * Lettura dei record anime con PIÙ id TMDB (`src/anime/mapping.js` - `buildFribbIndex`).
  *
  * Nel file vero (`fribb-mini.json`) `themoviedb_id` è `{tv: <numero>}` oppure
  * `{movie: [<numero>, ...]}`: il campo `movie` è un ARRAY di una-quattro varianti
@@ -15,7 +15,7 @@
  *  - id numerico secco (`{movie: 67890}`, `themoviedb_id: 77777`) invariato.
  */
 
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeMappingStore } = require('../src/anime');
 
 /** Record veri, copiati dalle forme presenti in fribb-mini.json. */
 const RECORDS = [

@@ -211,10 +211,12 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
 
     // 10. Open Handles / Timers Blocking Teardown
     describe('10. Open Handles / Timers Blocking Teardown', () => {
-        test('animeMappingStore syncInterval has unref called', () => {
-            const animeMappingStore = require('../src/data/animeMappingStore');
-            const fileContent = fs.readFileSync(path.join(__dirname, '../src/data/animeMappingStore.js'), 'utf8');
-            expect(fileContent).toContain('this.syncInterval.unref()');
+        test('animeMappingStore has no open handles blocking teardown', () => {
+            const { animeMappingStore } = require('../src/anime');
+            expect(animeMappingStore).toBeDefined();
+            const fileContent = fs.readFileSync(path.join(__dirname, '../src/anime/mapping.js'), 'utf8');
+            // Decision 2 & 5: mapping reads artifact lazily via snapshotDaArtefatto, zero background intervals blocking teardown
+            expect(fileContent).not.toContain('setInterval');
         });
     });
 });

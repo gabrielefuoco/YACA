@@ -46,7 +46,7 @@ const mondiRoutes = require('./src/api/mondi');
 connectDB();
 
 // Inizializza Anime Mapping in RAM
-const animeMappingStore = require('./src/data/animeMappingStore');
+const animeMappingStore = require('./src/anime').animeMappingStore;
 animeMappingStore.init().catch(err => console.error('[AnimeMappingStore] Init Error:', err.message));
 
 // 1. Inizializza Express

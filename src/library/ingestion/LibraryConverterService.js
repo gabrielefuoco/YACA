@@ -31,7 +31,7 @@ const {
 // non risolti — non si finge niente.
 let animeMappingStore = null;
 try {
-    animeMappingStore = require('../../data/animeMappingStore');
+    animeMappingStore = require('../../anime').animeMappingStore;
 } catch (_e) {
     animeMappingStore = null;
 }

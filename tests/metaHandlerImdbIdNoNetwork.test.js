@@ -81,11 +81,14 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn(async (imdbId) => ({ id: { 'tt0108778': '1668' }[imdbId] }))
 }));
 
-jest.mock('../src/data/animeMappingStore', () => ({
-    resolveKitsu: jest.fn(() => null),
-    resolveKitsuMovie: jest.fn(() => null),
-    resolveTmdbFromKitsu: jest.fn(() => null),
-    isAnimeTmdbId: jest.fn(() => false)
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: {
+        resolveKitsu: jest.fn(() => null),
+        resolveKitsuMovie: jest.fn(() => null),
+        resolveTmdbFromKitsu: jest.fn(() => null),
+        isAnimeTmdbId: jest.fn(() => false)
+    }
 }));
 
 jest.mock('../src/catalog/providers/DuckDbProvider', () => ({

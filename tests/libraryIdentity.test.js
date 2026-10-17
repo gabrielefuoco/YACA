@@ -4,12 +4,15 @@
  * essere riscritte verso l'host corrente.
  */
 jest.mock('../src/indice/duckDbStore', () => ({ query: jest.fn() }));
-jest.mock('../src/data/animeMappingStore', () => ({
-    kitsuToTmdb: new Map([['7278', '46004'], ['534', '12477']]),
-    // Fribb dichiara il tipo che viaggia con l'id: 7278 (Date A Live) è una serie,
-    // 534 (La tomba delle lucciole) è un film.
-    resolveMediaTypeFromKitsu: jest.fn((kitsuId) => (kitsuId === '7278' ? 'tv' : (kitsuId === '534' ? 'movie' : null))),
-    init: jest.fn()
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: {
+        kitsuToTmdb: new Map([['7278', '46004'], ['534', '12477']]),
+        // Fribb dichiara il tipo che viaggia con l'id: 7278 (Date A Live) è una serie,
+        // 534 (La tomba delle lucciole) è un film.
+        resolveMediaTypeFromKitsu: jest.fn((kitsuId) => (kitsuId === '7278' ? 'tv' : (kitsuId === '534' ? 'movie' : null))),
+        init: jest.fn()
+    }
 }));
 
 const duckDbStore = require('../src/indice/duckDbStore');

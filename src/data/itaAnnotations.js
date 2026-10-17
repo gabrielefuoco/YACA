@@ -1,7 +1,7 @@
 /**
  * itaAnnotations.js
  * Le annotazioni "doppiato in italiano" del catalogo, lette dal file prodotto da
- * `services/doppiaggi-source` e servite come snapshot in RAM.
+ * `doppiaggi-source` e servite come snapshot in RAM.
  *
  * CONTRATTO (deciso dal ticket 04 della mappa `.scratch/doppiaggio-ita`):
  *   {"t":"movie","id":5,"ita":true}    → doppiato
@@ -24,6 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { snapshotDaArtefatto } = require('../utils/snapshotDaArtefatto');
 
 /** TTL dello snapshot: una lettura per finestra, non una per item. */
 const CACHE_TTL_MS = 60 * 1000;
@@ -95,40 +96,8 @@ async function readFile(filePath) {
     return snapshot;
 }
 
-let cache = { snapshot: null, fetchedAt: 0 };
-
-/**
- * Lettura in corso, chiave unica: le chiamate concorrenti aspettano **quella** lettura invece di
- * aprirne una identica. Stesso pattern di `activePromises` in `src/cache/CacheManager.js`: la
- * promise viene tolta quando si assesta (anche se fallisce), così nessun errore resta in circolo e
- * il chiamante dopo ritenta.
- */
-const activePromises = new Map();
-const SNAPSHOT_KEY = 'snapshot';
-
-/**
- * Snapshot delle annotazioni, con cache L1 a TTL breve. Non lancia mai: in caso di errore
- * restituisce uno snapshot vuoto (nessun badge), che è il degrado deciso.
- *
- * SINGLE-FLIGHT: aperte N schede mentre la griglia carica, senza questo passaggio ogni chiamata
- * leggeva il file per conto proprio (misurato: 20 letture di 24.119 righe, ~430 ms di CPU sprecata).
- * Ora ne fanno una sola e le altre 19 aspettano la stessa promise.
- *
- * `force` salta il TTL ma non la lettura in volo: quella è più recente di qualunque snapshot in
- * cache, quindi aspettarla serve `force` lo stesso (e non costa una seconda lettura del file).
- *
- * @param {{force?: boolean}} [options]
- */
-async function getSnapshot(options = {}) {
-    const now = Date.now();
-    if (!options.force && cache.snapshot && now - cache.fetchedAt < CACHE_TTL_MS) {
-        return cache.snapshot;
-    }
-
-    const inFlight = activePromises.get(SNAPSHOT_KEY);
-    if (inFlight) return inFlight;
-
-    const readPromise = (async () => {
+const snapshotReader = snapshotDaArtefatto({
+    leggi: async () => {
         let snapshot;
         try {
             snapshot = await readFile(annotationsPath());
@@ -136,31 +105,33 @@ async function getSnapshot(options = {}) {
             snapshot = emptySnapshot(error.message, annotationsPath());
         }
         if (snapshot.error) {
-            // Una lettura **fallita non entra in cache**: il chiamante riceve comunque lo snapshot
-            // vuoto (il degrado sopra), ma il successivo ritenta invece di aspettare 60 s un
-            // errore che magari è solo transitorio (EMFILE, EIO).
             console.warn(`[ItaAnnotations] snapshot vuoto: ${snapshot.error} (${snapshot.path})`);
-        } else {
-            cache = { snapshot, fetchedAt: now };
+            const err = new Error(snapshot.error);
+            err.snapshot = snapshot;
+            throw err;
         }
         return snapshot;
-    })();
+    },
+    ttlMs: CACHE_TTL_MS,
+    suErrore: 'emptyAndRetry',
+    vuoto: (err) => err?.snapshot || emptySnapshot(err?.message, annotationsPath())
+});
 
-    activePromises.set(SNAPSHOT_KEY, readPromise);
-    // `finally` dentro la promise: si esegue anche se il chiamante è andato via. Il confronto
-    // evita che una lettura vecchia cancelli dalla mappa una lettura più nuova (dopo un `reset`).
-    readPromise.finally(() => {
-        if (activePromises.get(SNAPSHOT_KEY) === readPromise) activePromises.delete(SNAPSHOT_KEY);
-    }).catch(() => {}); // il `finally` non deve generare rejection non gestita
-
-    return readPromise;
+/**
+ * Snapshot delle annotazioni, con cache L1 a TTL breve. Non lancia mai: in caso di errore
+ * restituisce uno snapshot vuoto (nessun badge), che è il degrado deciso.
+ *
+ * @param {{force?: boolean}} [options]
+ */
+async function getSnapshot(options = {}) {
+    return snapshotReader.getSnapshot(options);
 }
 
 /**
  * FALLBACK A DUE TIPI — la guardia, e perché non può essere cieca.
  *
  * Il difetto (ticket 50): il writer delle annotazioni **non conosce il tipo** dell'anime e lo
- * ri-indovina (`services/doppiaggi-source/src/anime.js`, `tv` per default). I 35 film anime
+ * ri-indovina (`doppiaggi-source/src/anime.js`, `tv` per default). I 35 film anime
  * doppiati annotati come `tv` (Howl, Spirited Away, Totoro, Jin-Roh…) non trovavano più la propria
  * chiave: **0 poster `_ITA`**. La cura completa è scrivere il tipo nel documento, ma per quei 954
  * documenti già scritti il lettore deve accorgersene da solo.
@@ -210,8 +181,7 @@ function isDubbed(snapshot, type, tmdbId, options = {}) {
 
 /** Solo per i test. */
 function reset() {
-    cache = { snapshot: null, fetchedAt: 0 };
-    activePromises.clear();
+    snapshotReader.reset();
 }
 
 module.exports = {

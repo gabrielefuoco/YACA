@@ -14,7 +14,7 @@
 
 const duckDbStore = require('../indice/duckDbStore');
 const { leggiItemPerStudi } = require('../library');
-const animeMappingStore = require('../data/animeMappingStore');
+const { animeMappingStore } = require('../anime');
 
 const DEFAULT_LIMIT = 8;
 

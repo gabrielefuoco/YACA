@@ -23,14 +23,15 @@ const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../../catalog/providers/DuckDbProvider');
 const duckDbStore = require('../../indice/duckDbStore');
 const { F, S, G } = require('../../data/filters');
-const { isAnimeContent, normalizeAnimeMarker } = require('../../utils/animeIdentity');
 const {
+    isAnimeContent,
+    normalizeAnimeMarker,
     resolveAnimePolicy,
     getEffectiveTypeSelectors,
     isItemAnime,
     computeAnimeScoreMultiplier,
     ANIME_POLICY_MODES
-} = require('./animePolicy');
+} = require('../../anime');
 const { selettoriEffettivi } = require('../../profile');
 
 function matchesTypeSelectors(item, typeSelectors, tipo) {

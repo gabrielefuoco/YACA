@@ -62,11 +62,17 @@ jest.mock('../src/id_mapping/id_cache', () => ({
     translateImdbToTmdb: jest.fn(async (imdbId) => ({ id: { 'tt0108778': '1668', 'tt0098800': '999' }[imdbId] }))
 }));
 
-jest.mock('../src/data/animeMappingStore', () => ({
+const mockAnimeMappingStore = {
     resolveKitsu: jest.fn(() => null),
     resolveKitsuMovie: jest.fn(() => null),
     resolveTmdbFromKitsu: jest.fn(() => null),
     isAnimeTmdbId: jest.fn(() => false)
+};
+
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: mockAnimeMappingStore,
+    mappingStore: mockAnimeMappingStore
 }));
 
 /**
@@ -111,7 +117,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 
 const { metaHandler } = require('../src/handlers/metaHandler');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
-const animeMappingStore = require('../src/data/animeMappingStore');
+const { animeMappingStore } = require('../src/anime');
 
 const CACHE_NS = 'final_meta_cache';
 const CACHE_KEY = 'meta_1668_series';

@@ -1,4 +1,10 @@
-const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
+/**
+ * src/anime/politica.js
+ *
+ * La decisione anime: policy ONLY / FAVORED / NEUTRAL / EXCLUDE e moltiplicatori VSM (Ticket 32).
+ */
+
+const { normalizeAnimeMarker } = require('./identita');
 
 const ANIME_POLICY_MODES = Object.freeze({
     ONLY: 'only',
@@ -71,6 +77,7 @@ function getPolicyFromQuota(quota) {
  * In assenza di override manuale, la politica è dedotta dal DNA del profilo.
  * @param {Object} profile
  * @param {Object} [typeSelectors]
+ * @param {Object} [options]
  * @returns {'only'|'favored'|'neutral'|'exclude'}
  */
 function resolveAnimePolicy(profile, typeSelectors = null, options = {}) {

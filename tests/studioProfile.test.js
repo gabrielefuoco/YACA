@@ -7,8 +7,11 @@ jest.mock('../src/indice/duckDbStore', () => ({ query: jest.fn() }));
 jest.mock('../src/library/models/UserLibraryItem', () => ({
     collection: { find: jest.fn() }
 }));
-jest.mock('../src/data/animeMappingStore', () => ({
-    kitsuToTmdb: new Map([['142', '129']])
+jest.mock('../src/anime', () => ({
+    ...jest.requireActual('../src/anime'),
+    animeMappingStore: {
+        kitsuToTmdb: new Map([['142', '129']])
+    }
 }));
 
 const duckDbStore = require('../src/indice/duckDbStore');

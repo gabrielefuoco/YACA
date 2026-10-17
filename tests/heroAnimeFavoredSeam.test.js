@@ -89,7 +89,7 @@ const TasteProfile = require('../src/models/TasteProfile');
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
 const ProfileScorer = require('../src/profile/ProfileScorer');
-const { computeAnimeScoreMultiplier, resolveAnimePolicy } = require('../src/engines/hybrid/animePolicy');
+const { computeAnimeScoreMultiplier, resolveAnimePolicy } = require('../src/anime');
 const {
     getDuckDbMetaDetails,
     getDuckDbCatalogFromFilters,
@@ -100,7 +100,7 @@ const {
     buildHiddenGemsCatalog,
     finalizeHeroQualityCandidates
 } = require('../src/engines/hybrid/catalogStrategies');
-const { normalizeAnimeMarker } = require('../src/utils/animeIdentity');
+const { normalizeAnimeMarker } = require('../src/anime');
 
 describe('Issue 17 - Hero Seam Anime (4 Leve TDD)', () => {
     // Fixtures
