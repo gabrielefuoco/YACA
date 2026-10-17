@@ -429,7 +429,8 @@ describe('Auth routes: Stremio e Trakt device flow', () => {
             { userId: 'utente-test-123' },
             expect.objectContaining({
                 $set: expect.objectContaining({ 'apiKeys.trakt': 'trakt-tok-123' })
-            })
+            }),
+            { returnDocument: 'after' }
         );
     });
 
