@@ -131,7 +131,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', catalogRoutes);
 // LA ROTTA DEL GRAFO: il portafoglio dei mondi per un profilo (`POST /api/bolle`).
 // Il calcolo sta in `src/engines/bolle/`, qui c'e' solo il montaggio — come per tutte le altre.
-app.use('/api', require('./src/api/bolle'));
+app.use('/api', cookieParser(), require('./src/api/bolle'));
 
 app.get('/api/user/:userId', inputSanitizer, async (req, res) => {
     try {
@@ -181,7 +181,7 @@ app.post('/api/configure', cookieParser(), configureLimiter, configureRoute);
 // Unified Profiles API (DNA, Sync Status)
 const profileRoutes = require('./src/api/profiles');
 const profileLimiter = rateLimit({ windowMs: 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
-app.use('/api/profiles', profileLimiter, inputSanitizer, profileRoutes);
+app.use('/api/profiles', cookieParser(), profileLimiter, inputSanitizer, profileRoutes);
 
 // Catch-all route per gestire il routing lato client di Next.js
 // Catch-all route per gestire il routing lato client di Next.js (Solo per richieste che sembrano pagine)

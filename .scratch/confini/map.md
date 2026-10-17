@@ -32,6 +32,10 @@ La destinazione è un **codice** più che un documento: ogni ticket taglia un co
 - **La chiave di cache va alzata** ogni volta che cambia *cosa entra* in una struttura memorizzata
   (`HERO_CACHE_KEY_VERSION` e sorelle). Dieci volte il 17/10, dieci volte è stata la differenza fra un fix
   che funziona e uno che non produce effetto.
+- **Un `node -e` che carica un modulo del prodotto NON esce**: `src/cache/cacheInstances` apre ioredis (e i
+  modelli mongoose) e l'event loop resta vivo — quindi un `node -e "require('./src/api/…')"` stampa la sua
+  riga e poi appende la shell **per sempre** (successo il 17/10/2026: otto ore di comando bloccato). Chiude
+  sempre con `process.exit(0)`, e nei comandi lunghi metti un `timeout`.
 - **Trappole già pagate**: gli hero sono definiti in **dieci** posti (nove derivati da `src/catalog/registry.js`,
   il decimo — `HERO_PRIORITY` — no, ed è quello che decide *quale percorso* prende un catalogo); `tv` e
   `series` sono la stessa cosa con due nomi; gli id dei cataloghi del prodotto sono `tmdb:<id>` nella forma

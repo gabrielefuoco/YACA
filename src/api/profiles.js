@@ -1,5 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const { richiedeSessione } = require('../middleware/sessione');
+
+// L'UTENTE NON ARRIVA PIU' DAL CHIAMANTE (17/10/2026). Prima di questo middleware ogni rotta prendeva
+// `userId` da `req.query`/`req.body`: chiunque poteva leggere e scrivere la libreria di chiunque.
+// Da qui in poi `req.utenteId` e' l'utente della sessione, e basta.
+router.use(richiedeSessione);
 const TasteProfile = require('../models/TasteProfile');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
@@ -23,7 +29,7 @@ const { calculateFlatnessMetrics } = require('../utils/dnaRarity');
  * Triggers the conversion of the user's Stremio library metadata.
  */
 router.post('/:id/convert-library', async (req, res) => {
-    const userId = req.body.userId;
+    const userId = req.utenteId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     let hostUrl = process.env.BASE_URL;
@@ -54,7 +60,7 @@ router.post('/:id/convert-library', async (req, res) => {
  */
 router.get('/:id/sync-status', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.query.userId;
+    const userId = req.utenteId;
 
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
@@ -101,7 +107,7 @@ router.get('/:id/sync-status', async (req, res) => {
  */
 router.post('/:id/dna/confirm', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.body.userId;
+    const userId = req.utenteId;
 
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
@@ -155,7 +161,7 @@ router.post('/:id/dna/confirm', async (req, res) => {
  */
 router.post('/:id/sync/refresh', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.body.userId;
+    const userId = req.utenteId;
 
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
@@ -191,7 +197,7 @@ router.post('/:id/sync/refresh', async (req, res) => {
  */
 router.get('/:id/analytics', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.query.userId;
+    const userId = req.utenteId;
 
     if (!userId) return res.status(400).json({ error: 'userId query parameter is required' });
 
@@ -246,7 +252,7 @@ router.get('/:id/analytics', async (req, res) => {
  */
 router.get('/:id/raw-data', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.query.userId;
+    const userId = req.utenteId;
 
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
@@ -364,7 +370,7 @@ router.post('/:id/sync-vectors', async (req, res) => {
  * Fetch the user's library items
  */
 router.get('/:id/library', async (req, res) => {
-    const userId = req.query.userId;
+    const userId = req.utenteId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
@@ -403,7 +409,7 @@ router.get('/:id/library', async (req, res) => {
  * Add a new item to the library
  */
 router.post('/:id/library', async (req, res) => {
-    const userId = req.body.userId;
+    const userId = req.utenteId;
     const { item } = req.body;
     if (!userId || !item || !item.id || !item.type) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -487,7 +493,7 @@ router.post('/:id/library', async (req, res) => {
  * Remove an item from the library
  */
 router.delete('/:id/library/:itemId', async (req, res) => {
-    const userId = req.query.userId;
+    const userId = req.utenteId;
     const itemId = req.params.itemId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
@@ -533,7 +539,7 @@ router.delete('/:id/library/:itemId', async (req, res) => {
  * Non scrive su MongoDB e non chiama Stremio.
  */
 router.get('/:id/library/watched', async (req, res) => {
-    const userId = req.query.userId;
+    const userId = req.utenteId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
@@ -565,7 +571,7 @@ router.get('/:id/library/watched', async (req, res) => {
  * titoli visti non scrive e non chiama Stremio.
  */
 router.post('/:id/library/watched', async (req, res) => {
-    const userId = req.body.userId;
+    const userId = req.utenteId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
@@ -595,7 +601,7 @@ router.post('/:id/library/watched', async (req, res) => {
  */
 router.put('/:id/library/reorder', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.body.userId;
+    const userId = req.utenteId;
     const { itemIds } = req.body; // Array of _ids in the desired new order
     if (!userId || !Array.isArray(itemIds)) return res.status(400).json({ error: 'Invalid payload' });
 
@@ -629,7 +635,7 @@ router.put('/:id/library/reorder', async (req, res) => {
  */
 router.get('/:id/flatness', async (req, res) => {
     const { id: profileId } = req.params;
-    const userId = req.query.userId;
+    const userId = req.utenteId;
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {

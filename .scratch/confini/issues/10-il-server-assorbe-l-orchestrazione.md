@@ -81,6 +81,41 @@ solo. Criterio: **`GET /api/profilo` torna ciò che serve a disegnare la scherma
 (libreria, stato della sincronizzazione, anteprima) restano rotte a sé. Il payload si **misura**
 (`curl -w '%{size_download}'`) prima e dopo.
 
+---
+
+## Il buco IDOR è CHIUSO (17/10/2026, prima di questo ticket)
+
+Era il criterio di accettazione numero uno di questo ticket, ed era **exploitable in produzione**: l'ho
+chiuso subito, senza aspettare la superficie nuova (che resta da fare).
+
+**Cosa è stato fatto** (commit locale su `main`, non ancora in produzione):
+
+1. **`src/middleware/sessione.js`** (nuovo): `utenteDallaSessione(req)` — il meccanismo che viveva in
+   `src/api/bolle.js` — più **`richiedeSessione`**, un middleware che pretende la sessione e mette l'utente in
+   `req.utenteId`, rispondendo `401 { error, code: 'non_autenticato' }` quando non c'è.
+2. **`src/api/profiles.js`**: `router.use(richiedeSessione)` come prima riga, e i **13** accessori
+   `req.body.userId` / `req.query.userId` sostituiti con `req.utenteId`. Il chiamante **non ha più voce in
+   capitolo su chi sta chiedendo**: gli `userId` che il client manda ancora nel corpo e nella query sono
+   ignorati.
+3. **`index.js`**: `cookieParser()` montato su `/api/profiles` **e** su `/api` (le rotte di `bolle.js`).
+
+**Un secondo guasto chiuso dallo stesso giro**: `src/api/bolle.js` leggeva `req.cookies`, che nessuno
+parsava su quel percorso (`cookieParser` c'era solo su auth e `/api/configure`) → `req.cookies` era
+`undefined` e **`POST /api/bolle` rispondeva 401 sempre**. Ora il cookie arriva e la rotta risponde.
+
+**Verifica**: `tests/libraryWatchedService.test.js` 17/17, `tests/seedNetwork.test.js` 23/23,
+`tests/bolleRoute.test.js` 6/6 — e i due moduli caricano.
+
+**Cosa resta di questo ticket, e cosa resta aperto**:
+
+- la superficie nuova (`/api/profilo/*`, `/api/configurazione/*`) e la sua tabella: resta da fare qui;
+- **`GET /sync-status/:userId`** (`src/api/stremio.js:459`, su un router montato su `/`): ha ancora
+  `:userId` nel percorso e va guardato con la superficie nuova — il client manda il proprio id e i cookie
+  viaggiano *same-origin*, quindi la sessione lì si può pretendere, ma va verificato **eseguendo** (quel
+  router è mescolato con le rotte pubbliche di Stremio, che non si toccano);
+- l'errore del middleware è ancora la forma vecchia (`error` stringa) più un `code`: l'unificazione a
+  `{ error: { code, message } }` è di questo ticket, insieme alle altre rotte.
+
 ## Nota
 
 Questo ticket **non** tocca il client (lo fa l'11) e non smonta le rotte vecchie: prima si aggiunge la lingua
