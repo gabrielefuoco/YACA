@@ -169,12 +169,61 @@ const watchlistSource = defineSourceCapabilities({
     supportedSorts: ['_mtime DESC']
 });
 
-// Registro transitorio delle fonti per la validazione di oggi
+// 5. Trakt (Community / Trending)
+const traktSource = defineSourceCapabilities({
+    id: 'trakt',
+    name: 'Trakt Lists & Community',
+    supportedMediaSets: [['film'], ['serie'], ['film', 'serie']],
+    supportedAnime: ['yes', 'no', 'mixed', 'agnostic'],
+    supportedFilters: ['provider', 'target'],
+    supportedSorts: ['trending', 'popular', 'watched', 'collected']
+});
+
+// 6. AI Discovery (Universal & Semantic)
+const aiDiscoverySource = defineSourceCapabilities({
+    id: 'ai_discovery',
+    name: 'AI Discovery & Universal Pipeline',
+    supportedMediaSets: [['film'], ['serie'], ['film', 'serie']],
+    supportedAnime: ['yes', 'no', 'mixed', 'agnostic'],
+    supportedFilters: [
+        'strategy',
+        'similar_to',
+        'text_search',
+        'genre_ids',
+        'without_genre_ids',
+        'people_list',
+        'year_from',
+        'year_to',
+        'runtime_lte',
+        'company_name',
+        'watch_provider',
+        'keyword',
+        'without_keyword',
+        'original_language',
+        'language',
+        'target',
+        'static_items',
+        'sort_by',
+        'vote_average_gte',
+        'vote_average_lte',
+        'provider'
+    ],
+    supportedSorts: [
+        'popularity.desc',
+        'revenue.desc',
+        'primary_release_date.desc',
+        'vote_average.desc'
+    ]
+});
+
+// Registro delle fonti per la validazione e il servire (Ticket 22/23)
 const SOURCES_REGISTRY = {
     duckdb: duckdbSource,
     airing_state: airingStateSource,
     hybrid: hybridSource,
-    watchlist: watchlistSource
+    watchlist: watchlistSource,
+    trakt: traktSource,
+    ai_discovery: aiDiscoverySource
 };
 
 function getSourceCapabilities(sourceId) {
@@ -199,5 +248,7 @@ module.exports = {
     duckdbSource,
     airingStateSource,
     hybridSource,
-    watchlistSource
+    watchlistSource,
+    traktSource,
+    aiDiscoverySource
 };
