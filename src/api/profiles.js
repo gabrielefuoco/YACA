@@ -7,7 +7,7 @@ const { richiedeSessione } = require('../middleware/sessione');
 // Da qui in poi `req.utenteId` e' l'utente della sessione, e basta.
 router.use(richiedeSessione);
 const TasteProfile = require('../models/TasteProfile');
-const UserAccount = require('../models/UserAccount');
+const { accountDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const { syncAllStremioData } = require('../stremio');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
@@ -39,7 +39,7 @@ router.post('/:id/convert-library', async (req, res) => {
     }
     
     try {
-        const user = await UserAccount.findOne({ userId });
+        const user = await accountDi(userId);
         let count = 0;
         if (user && user.addonUuid) {
             count = await contaDaConvertire({ addonUuid: user.addonUuid });
@@ -65,7 +65,7 @@ router.get('/:id/sync-status', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         const addonConfig = account?.addonUuid
             ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
             : null;
@@ -113,7 +113,7 @@ router.post('/:id/dna/confirm', async (req, res) => {
 
     try {
         // Resolve addonUuid and read profiles from AddonConfig
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const addonConfig = await AddonConfig.findOne({ uuid: account.addonUuid });
@@ -166,7 +166,7 @@ router.post('/:id/sync/refresh', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account || !account.apiKeys?.stremio) return res.status(400).json({ error: 'Stremio API Key missing' });
 
         await TasteProfile.updateOne(
@@ -204,7 +204,7 @@ router.get('/:id/analytics', async (req, res) => {
     try {
         const [profile, account] = await Promise.all([
             TasteProfile.findOne({ owner: userId, context: profileId }).lean(),
-            UserAccount.findOne({ userId }).lean()
+            accountDi(userId)
         ]);
         
         const baseDnaParams = { labels: {} };
@@ -256,7 +256,7 @@ router.get('/:id/library', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const items = await leggiLibreria({ addonUuid: account.addonUuid });
@@ -298,7 +298,7 @@ router.post('/:id/library', async (req, res) => {
     }
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const { LibrarySyncService } = require('../library');
@@ -380,7 +380,7 @@ router.delete('/:id/library/:itemId', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const item = await trovaItemLibreria({
@@ -425,7 +425,7 @@ router.get('/:id/library/watched', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const { previewWatchedLibrary } = require('../library');
@@ -457,7 +457,7 @@ router.post('/:id/library/watched', async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'userId is required' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         // Senza authKey il push a Stremio non parte e i titoli risusciterebbero al
@@ -488,7 +488,7 @@ router.put('/:id/library/reorder', async (req, res) => {
     if (!userId || !Array.isArray(itemIds)) return res.status(400).json({ error: 'Invalid payload' });
 
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
         const addonConfig = await AddonConfig.findOne({ uuid: account.addonUuid });

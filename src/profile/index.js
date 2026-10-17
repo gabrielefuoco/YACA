@@ -1,8 +1,9 @@
 /**
- * Modulo Profilo (Ticket 21)
+ * Modulo Profilo (Ticket 21 & Ticket 26)
  *
  * Confine di dominio per il contesto, l'anagrafica profili, le preferenze
- * (selettori, kidsMode, anime policy, slider Ocean) e le deduzioni (TasteProfile, staleness).
+ * (selettori, kidsMode, anime policy, slider Ocean), lo stato UI (ProfileUiState)
+ * e le deduzioni (TasteProfile, staleness).
  *
  * Regole fondamentali del modulo:
  * 1. "La libreria fornisce fatti, il profilo deduce" (Decisione 11/16).
@@ -11,7 +12,8 @@
  * 3. Il profilo è l'unico aggregato che tocca `AddonConfig.profiles[]`.
  * 4. La porta espone il profilo grezzo (`profiloDi`) e una funzione pura (`selettoriEffettivi`)
  *    per la risoluzione al bordo della richiesta.
- * 5. Il contesto unico che scende a tutti i consumatori è prodotto da `contestoDi`.
+ * 5. Lo stato UI (`raw_ui_state`) è posseduto da questo modulo via `ProfileUiState` (Decisione 2).
+ * 6. Il contesto unico che scende a tutti i consumatori è prodotto da `contestoDi`.
  */
 
 const {
@@ -27,6 +29,9 @@ const {
     defaultGlobalProfile,
     risolviProfiloAttivo,
     resolveActiveProfileId,
+    leggiUiState,
+    salvaUiState,
+    selectedPresetsDi,
     profiliDi,
     profiloDi,
     creaProfilo,
@@ -42,7 +47,7 @@ const ProfileScorer = require('./ProfileScorer');
 const studioProfile = require('./studioProfile');
 
 module.exports = {
-    // La porta del modulo (Ticket 21)
+    // La porta del modulo (Ticket 21 & Ticket 26)
     profiliDi,
     profiloDi,
     selettoriEffettivi,
@@ -51,6 +56,11 @@ module.exports = {
     risolviProfiloAttivo,
     resolveActiveProfileId,
     defaultGlobalProfile,
+
+    // Gestione UI State (Ticket 26, Decisione 2)
+    leggiUiState,
+    salvaUiState,
+    selectedPresetsDi,
 
     // Comandi anagrafica profili
     creaProfilo,

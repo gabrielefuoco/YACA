@@ -52,8 +52,9 @@ router.post('/anteprima', async (req, res) => {
             return erroreDominio(res, 404, 'non_trovato', 'Utente non trovato.');
         }
 
-        let tmdbKey = req.body.tmdbKey || user.apiKeys?.tmdb || process.env.TMDB_API_KEY;
-        let mistralKey = req.body.mistralKey || user.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+        const { chiaveEffettiva } = require('../configurazione');
+        let tmdbKey = chiaveEffettiva({ account: user, richiesta: req.body.tmdbKey, servizio: 'tmdb' });
+        let mistralKey = chiaveEffettiva({ account: user, richiesta: req.body.mistralKey, servizio: 'mistral' });
 
         const { contestoDi } = require('../profile');
         const profileContext = await contestoDi({
@@ -299,12 +300,13 @@ router.post('/nome', async (req, res) => {
 
     try {
         const user = await UserConfig.resolveUserConfig(req.utenteId);
-        const mistralKey = user?.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+        const { chiaveEffettiva } = require('../configurazione');
+        const mistralKey = chiaveEffettiva({ account: user, servizio: 'mistral' });
 
         if (!mistralKey) {
-            // Fallback deterministico senza AI
+            // Fallback deterministico senza AI con motivo dichiarato
             const defaultName = `${nameA || ''} & ${nameB || ''}`.trim().replace(/^&\s*|\s*&$/g, '');
-            return res.json({ name: defaultName });
+            return res.json({ name: defaultName, motivi: ['chiave_mistral_assente'] });
         }
 
         const { generateMergedCatalogName } = require('../ai/catalogFusionPrompt');

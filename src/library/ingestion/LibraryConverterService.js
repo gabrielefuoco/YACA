@@ -1,5 +1,5 @@
 const UserLibraryItem = require('../models/UserLibraryItem');
-const UserAccount = require('../../models/UserAccount');
+const { accountDi, chiaveEffettiva } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const { stremioClient, buildStremioLibraryPayload } = require('../../stremio');
 const { createTmdbClient } = require('../../clients/tmdb');
@@ -63,7 +63,7 @@ class LibraryConverterService {
     static async convertAll(userId, hostUrl) {
         try {
             console.log(`[LibraryConverter] Starting library conversion for user ${userId}`);
-            const user = await UserAccount.findOne({ userId });
+            const user = await accountDi(userId);
             if (!user || !user.apiKeys?.stremio) {
                 console.error(`[LibraryConverter] Stremio API key missing for user ${userId}`);
                 return;
@@ -72,7 +72,7 @@ class LibraryConverterService {
             // Deduplica preventivamente la libreria dell'utente prima della conversione
             await LibrarySyncService.deduplicateUserLibrary(user.addonUuid);
 
-            const tmdbClient = createTmdbClient(user.apiKeys.tmdb || process.env.TMDB_API_KEY);
+            const tmdbClient = createTmdbClient(chiaveEffettiva({ account: user, servizio: 'tmdb' }));
             const userConfig = await AddonConfig.findOne({ uuid: user.addonUuid }).lean();
 
             // Gli stessi criteri di sempre (non convertito, non rimosso, non un duplicato

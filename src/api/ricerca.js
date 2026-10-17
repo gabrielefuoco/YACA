@@ -33,7 +33,8 @@ router.get('/', async (req, res) => {
         return res.json({ results: [] });
     }
 
-    const tmdbKey = process.env.TMDB_API_KEY;
+    const { chiaveGlobale } = require('../configurazione');
+    const tmdbKey = chiaveGlobale('tmdb');
     if (!tmdbKey && (TIPI_KEYWORD.has(rawTipo) || TIPI_PERSONA.has(rawTipo))) {
         return erroreDominio(res, 503, 'non_disponibile', 'Servizio di ricerca non configurato.');
     }

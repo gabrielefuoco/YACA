@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { leggiWatchlist, WATCHLIST_PAGE_SIZE } = require('../../library');
 const LibrarySyncService = require('../../library/ingestion/LibrarySyncService');
-const UserAccount = require('../../models/UserAccount');
+const { accountPerAddonUuid } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const duckDbStore = require('../../indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('./DuckDbProvider');
@@ -23,7 +23,7 @@ async function triggerSyncIfNeeded(addonUuid) {
         
         if (!lastSync || (now.getTime() - lastSync.getTime() > SYNC_INTERVAL_MS)) {
             // Find user id to trigger sync
-            const user = await UserAccount.findOne({ addonUuid });
+            const user = await accountPerAddonUuid(addonUuid);
             if (user) {
                 // Fire and forget
                 LibrarySyncService.syncLibraryForUser(user.userId).catch(e => console.error(e));

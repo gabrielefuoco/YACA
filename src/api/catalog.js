@@ -17,8 +17,9 @@ router.post('/preview-catalog', async (req, res) => {
     try {
         const { id, type: customType, filters: customFilters, prompt, tmdbKey, profileId: reqProfileId, userId: reqUserId } = req.body;
         
-        let reqMistralKey = req.body.mistralKey || process.env.MISTRAL_API_KEY;
-        let reqTmdbKey = tmdbKey || process.env.TMDB_API_KEY;
+        const { chiaveEffettiva } = require('../configurazione');
+        let reqMistralKey = chiaveEffettiva({ richiesta: req.body.mistralKey, servizio: 'mistral' });
+        let reqTmdbKey = chiaveEffettiva({ richiesta: tmdbKey, servizio: 'tmdb' });
         let fullUserConfig = { apiKeys: { tmdb: reqTmdbKey, mistral: reqMistralKey } };
 
         // 1. Resolve User Config first to get API keys if not passed directly
@@ -32,9 +33,9 @@ router.post('/preview-catalog', async (req, res) => {
                     const UserConfig = require('../models/UserConfig');
                     const u = await UserConfig.resolveUserConfig(decoded.userId);
                     if (u) {
-                        fullUserConfig = { ...u, apiKeys: { ...u.apiKeys, ...fullUserConfig.apiKeys } };
-                        reqMistralKey = fullUserConfig.apiKeys?.mistral || reqMistralKey;
-                        reqTmdbKey = fullUserConfig.apiKeys?.tmdb || reqTmdbKey;
+                        reqMistralKey = chiaveEffettiva({ account: u, richiesta: req.body.mistralKey, servizio: 'mistral' });
+                        reqTmdbKey = chiaveEffettiva({ account: u, richiesta: tmdbKey, servizio: 'tmdb' });
+                        fullUserConfig = { ...u, apiKeys: { ...u.apiKeys, tmdb: reqTmdbKey, mistral: reqMistralKey } };
                     }
                 }
             } catch (jwtErr) {

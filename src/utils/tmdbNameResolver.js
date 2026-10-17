@@ -230,10 +230,10 @@ async function resolveDnaNames(items, options = {}) {
         return validItems;
     }
 
-    // 3. Prepare TMDB client
     let client = tmdbClient;
     if (!client) {
-        const effectiveKey = apiKey || process.env.TMDB_API_KEY;
+        const { chiaveEffettiva } = require('../configurazione');
+        const effectiveKey = chiaveEffettiva({ richiesta: apiKey, servizio: 'tmdb' });
         if (effectiveKey) {
             try {
                 client = createTmdbClient(effectiveKey);

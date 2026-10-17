@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeString } = require('../utils/helpers');
+const { chiaveGlobale, chiaveEffettiva } = require('../configurazione');
 
 // TMDB Proxy Search endpoints per Autocomplete
 router.get('/tmdb/search/multi', async (req, res) => {
     const query = req.query.query;
-    const tmdbKey = process.env.TMDB_API_KEY;
+    const tmdbKey = chiaveGlobale('tmdb');
     if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
     if (!query) return res.json({ results: [] });
 
@@ -28,7 +29,7 @@ router.get('/tmdb/search/multi', async (req, res) => {
 });
 router.get('/tmdb/search/keyword', async (req, res) => {
     const query = req.query.query;
-    const tmdbKey = process.env.TMDB_API_KEY;
+    const tmdbKey = chiaveGlobale('tmdb');
     if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
     if (!query) return res.json({ results: [] });
 
@@ -49,7 +50,7 @@ router.get('/tmdb/search/keyword', async (req, res) => {
 
 router.get('/tmdb/search/person', async (req, res) => {
     const query = req.query.query;
-    const tmdbKey = process.env.TMDB_API_KEY;
+    const tmdbKey = chiaveGlobale('tmdb');
     if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
     if (!query) return res.json({ results: [] });
 
@@ -72,7 +73,7 @@ router.get('/tmdb/search/person', async (req, res) => {
 
 router.get('/tmdb/search/genre', async (req, res) => {
     const query = String(req.query.query || '').trim().toLowerCase();
-    const tmdbKey = process.env.TMDB_API_KEY;
+    const tmdbKey = chiaveGlobale('tmdb');
     if (!tmdbKey) return res.status(500).json({ error: 'TMDB_API_KEY non configurata sul server' });
     if (!query) return res.json({ results: [] });
 
@@ -99,7 +100,7 @@ router.get('/tmdb/search/genre', async (req, res) => {
 
 // Endpoint per validare una TMDB API Key
 router.post('/validate-tmdb-key', async (req, res) => {
-    const tmdbKey = req.body.tmdbKey || process.env.TMDB_API_KEY;
+    const tmdbKey = chiaveEffettiva({ richiesta: req.body.tmdbKey, servizio: 'tmdb' });
     if (!tmdbKey) {
         return res.status(400).json({ valid: false, error: 'TMDB API key non configurata sul server' });
     }

@@ -204,7 +204,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
         const catalogDNA = buildSuggestedDNAFromCatalogs(profile.catalogs);
 
         // Resolve DNA names across all types using tmdbNameResolver (with budget and cache)
-        const effectiveTmdbKey = tmdbKey || process.env.TMDB_API_KEY;
+        const { chiaveEffettiva } = require('../../configurazione');
+        const effectiveTmdbKey = chiaveEffettiva({ richiesta: tmdbKey, servizio: 'tmdb' });
         const [resolvedManualDNA, resolvedCatalogDNA] = await Promise.all([
             resolveDnaNames(rawManualDNA, { apiKey: effectiveTmdbKey, budgetMs: 1500 }),
             resolveDnaNames(catalogDNA, { apiKey: effectiveTmdbKey, budgetMs: 1500 })

@@ -1,5 +1,5 @@
 const { stremioClient, stremioLikesClient } = require('./client');
-const UserAccount = require('../models/UserAccount');
+const { accountDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
@@ -344,7 +344,7 @@ async function updateSyncTimestamp(userId, profileId) {
     const randomOffsetMs = (Math.floor(Math.random() * 241) - 120) * 60 * 1000;
     const nextSyncInterval = (8 * 60 * 60 * 1000) + randomOffsetMs;
 
-    const account = await UserAccount.findOne({ userId: safeUserId }).lean();
+    const account = await accountDi(safeUserId);
     if (!account?.addonUuid) return;
 
     const update = {

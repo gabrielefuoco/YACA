@@ -5,7 +5,7 @@ const redisClient = require('../cache/redisClient');
 const { clearAllTmdbCaches } = require('../clients/tmdb');
 const { clearIdCache } = require('../id_mapping/id_cache');
 const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('../cache/cacheInstances');
-const UserAccount = require('../models/UserAccount');
+const { contaAccount } = require('../configurazione');
 const SystemLog = require('../models/SystemLog');
 const adminAuth = require('../middleware/adminAuth');
 const TmdbDumpStore = require('../utils/tmdbDumpStore');
@@ -20,7 +20,7 @@ router.use(adminAuth);
 router.get('/metrics', async (req, res) => {
     try {
         const stats = await CacheManager.getAllStats();
-        const activeUsersCount = await UserAccount.countDocuments();
+        const activeUsersCount = await contaAccount();
         
         // Ultime 50 righe del SystemLog
         const recentLogs = await SystemLog.find().sort({ createdAt: -1 }).limit(50).lean();

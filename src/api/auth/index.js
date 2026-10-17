@@ -16,7 +16,13 @@ const COOKIE_NAME = 'yaca_session';
 const { stremioClient } = require('../../stremio');
 const { traktClient } = require('../../clients/trakt');
 const UserConfig = require('../../models/UserConfig');
-const UserAccount = require('../../models/UserAccount');
+const {
+    accountDi,
+    trovaAccountPerEmailOAuthKey,
+    salvaTraktCredenziali,
+    disconnettiTrakt
+} = require('../../configurazione');
+const UserCredentials = require('../../models/UserCredentials');
 const AddonConfig = require('../../models/AddonConfig');
 const { nanoid } = require('nanoid');
 const { risolviProfiloAttivo } = require('../../profile');
@@ -94,12 +100,10 @@ async function loginHandler(req, res) {
         const authKey = data.result.authKey;
         const resolvedEmail = data.result.user?.email || email;
 
-        // 2. Find or create user in DB (UserAccount table)
-        let existingAccount = await UserAccount.findOne({ 
-            $or: [
-                { email: resolvedEmail },
-                { 'apiKeys.stremio': authKey }
-            ]
+        // 2. Find or create user in DB (UserAccount via modulo configurazione)
+        let existingAccount = await trovaAccountPerEmailOAuthKey({
+            email: resolvedEmail,
+            stremioAuthKey: authKey
         });
 
         let userId;
@@ -118,8 +122,8 @@ async function loginHandler(req, res) {
             apiKeys: { stremio: authKey }
         });
 
-        // Re-read the account to get the addonUuid
-        const account = await UserAccount.findOne({ userId }).lean();
+        // Re-read the account to get the addonUuid via accountDi
+        const account = await accountDi(userId);
 
         // 3. Read profiles from AddonConfig (NOT from UserAccount!)
         let addonConfig = null;
@@ -175,8 +179,8 @@ async function meHandler(req, res) {
     try {
         const decoded = jwt.verify(token, getJwtSecret());
 
-        // Read auth data from UserAccount
-        const account = await UserAccount.findOne({ userId: decoded.userId }).lean();
+        // Read auth data from configurazione module
+        const account = await accountDi(decoded.userId);
         if (!account) {
             res.clearCookie(COOKIE_NAME, getCookieOptions());
             return res.status(401).json({ authenticated: false });
@@ -251,17 +255,7 @@ async function traktDisconnectHandler(req, res) {
     }
 
     try {
-        const updated = await UserAccount.findOneAndUpdate(
-            { userId },
-            {
-                $unset: {
-                    'apiKeys.trakt': 1,
-                    'apiKeys.traktRefreshToken': 1,
-                    'apiKeys.traktExpiresAt': 1
-                }
-            },
-            { returnDocument: 'after' }
-        );
+        const updated = await disconnettiTrakt(userId);
 
         if (!updated) {
             return res.status(404).json({ success: false, error: 'Utente non trovato.' });
@@ -407,16 +401,11 @@ async function traktTokenHandler(req, res) {
         const userId = req.utenteId;
         if (userId && access_token) {
             const expiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : null;
-            await UserAccount.findOneAndUpdate(
-                { userId },
-                {
-                    $set: {
-                        'apiKeys.trakt': access_token,
-                        'apiKeys.traktRefreshToken': refresh_token,
-                        'apiKeys.traktExpiresAt': expiresAt
-                    }
-                }
-            );
+            await salvaTraktCredenziali(userId, {
+                accessToken: access_token,
+                refreshToken: refresh_token,
+                expiresAt
+            });
         }
 
         return res.json({ success: true, connected: true });
@@ -449,6 +438,51 @@ async function traktTokenHandler(req, res) {
     }
 }
 
+/**
+ * Legge le credenziali segrete di un utente (Ticket 26, Decisione 1).
+ * Verifica primariamente il documento proprietario UserCredentials (auth).
+ * In assenza, applica il ripiego leggendo da UserAccount finché i dati non sono migrati.
+ *
+ * @param {string} userId
+ * @returns {Promise<string|null>} passwordHash o null
+ */
+async function leggiCredenziali(userId) {
+    if (!userId) return null;
+    try {
+        if (UserCredentials && typeof UserCredentials.findOne === 'function') {
+            const cred = await UserCredentials.findOne({ userId }).lean();
+            if (cred?.passwordHash) {
+                return cred.passwordHash;
+            }
+        }
+        // Ripiego: lettura dal vecchio posto in UserAccount
+        const account = await accountDi(userId);
+        return account?.passwordHash || null;
+    } catch (_err) {
+        return null;
+    }
+}
+
+/**
+ * Salva le credenziali segrete dell'utente in UserCredentials (auth).
+ *
+ * @param {Object} params
+ * @param {string} params.userId
+ * @param {string} params.passwordHash
+ * @returns {Promise<any>}
+ */
+async function salvaCredenziali({ userId, passwordHash }) {
+    if (!userId || !passwordHash) throw new Error('userId e passwordHash sono obbligatori.');
+    if (UserCredentials && typeof UserCredentials.updateOne === 'function') {
+        return await UserCredentials.updateOne(
+            { userId },
+            { $set: { passwordHash } },
+            { upsert: true }
+        );
+    }
+    return null;
+}
+
 module.exports = {
     loginHandler,
     meHandler,
@@ -458,7 +492,9 @@ module.exports = {
     stremioAuthHandler,
     traktCodeHandler,
     traktTokenHandler,
-    getJwtSecret
+    getJwtSecret,
+    leggiCredenziali,
+    salvaCredenziali
 };
 
 

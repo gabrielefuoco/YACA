@@ -67,7 +67,8 @@ function validateKeys(body, existingUser, warnings) {
     const stremioAuthKey = normalizeInputString(body.stremioAuthKey);
     const stremioEmail = body.email || null; // email can come from body in some flows
 
-    const effectiveTmdbKey = personalTmdbKey || process.env.TMDB_API_KEY;
+    const { chiaveEffettiva } = require('../../configurazione');
+    const effectiveTmdbKey = chiaveEffettiva({ account: existingUser, richiesta: personalTmdbKey, servizio: 'tmdb' });
     const effectiveMistralKey = (personalMistralKey === undefined || personalMistralKey === null || personalMistralKey === 'null' || personalMistralKey === '')
         ? (existingUser?.apiKeys?.mistral || null)
         : (personalMistralKey || null);

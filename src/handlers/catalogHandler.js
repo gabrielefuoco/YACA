@@ -618,7 +618,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
         : rawSettings;
     
     // TMDB Client Initialization
-    const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
+    const { chiaveEffettiva } = require('../configurazione');
+    const tmdbApiKey = chiaveEffettiva({ account: userConfig, servizio: 'tmdb' });
     if (!tmdbApiKey) {
         throw new Error("Manca la TMDB API KEY nella configurazione.");
     }

@@ -62,8 +62,8 @@ async function risolviAddonUuid({ userId, user }) {
     let addonUuid = user?.uuid || user?.addonUuid || null;
     if (!addonUuid && userId) {
         try {
-            const UserAccount = require('../models/UserAccount');
-            const account = await UserAccount.findOne({ userId }).lean();
+            const { accountDi } = require('../configurazione');
+            const account = await accountDi(userId);
             addonUuid = account?.addonUuid || null;
         } catch (_e) {
             addonUuid = null;

@@ -52,7 +52,8 @@ const FALLBACK_GENRES = [
  */
 function getSafeTmdbClient(client, apiKey) {
     if (client) return client;
-    const key = apiKey || process.env.TMDB_API_KEY;
+    const { chiaveEffettiva } = require('../configurazione');
+    const key = chiaveEffettiva({ richiesta: apiKey, servizio: 'tmdb' });
     if (!key) return null;
     try {
         return createTmdbClient(key);
