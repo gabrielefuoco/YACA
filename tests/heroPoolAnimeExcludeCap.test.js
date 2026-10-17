@@ -18,6 +18,7 @@
 
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/db/models/AddonConfig');
+jest.mock('../src/db/models/UserAccount');
 jest.mock('../src/clients/tmdb');
 jest.mock('../src/catalog/providers/DuckDbProvider', () => {
     const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
@@ -36,6 +37,7 @@ jest.mock('../src/pool', () => {
 
 const TasteProfile = require('../src/models/TasteProfile');
 const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/db/models/UserAccount');
 const tmdb = require('../src/clients/tmdb');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 const { getHeroPool } = require('../src/pool');
@@ -109,11 +111,25 @@ describe('Ticket 12 / Ticket 38: il cap si applica DOPO i filtri (anime: exclude
             lastUpdated: new Date()
         });
 
+        UserAccount.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({
+                userId: 'liveaction_user',
+                addonUuid: 'addon_uuid'
+            })
+        });
+
         AddonConfig.findOne.mockReturnValue({
             lean: jest.fn().mockResolvedValue({
                 uuid: 'addon_uuid',
                 userId: 'liveaction_user',
-                apiKeys: {}
+                apiKeys: {},
+                profiles: [{
+                    id: 'no_anime_profile',
+                    settings: {
+                        kidsMode: false,
+                        typeSelectors: { film: false, serie: false, anime: 'exclude' }
+                    }
+                }]
             })
         });
 

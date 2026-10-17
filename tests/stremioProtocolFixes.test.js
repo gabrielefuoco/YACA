@@ -89,16 +89,16 @@ describe('Stremio Protocol Fixes', () => {
             const querySpy = jest.spyOn(duckDbStore, 'query').mockResolvedValue([]);
 
             await DuckDbProvider.getDuckDbCatalogFromPreset({ type: 'movie', where: [] }, 0);
-            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT 100 OFFSET 0'));
+            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT ? OFFSET ?'), [100, 0]);
 
             await DuckDbProvider.getDuckDbCatalogFromPreset({ type: 'movie', where: [] }, 100);
-            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT 100 OFFSET 100'));
+            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT ? OFFSET ?'), [100, 100]);
 
             await DuckDbProvider.getDuckDbCatalogFromFilters({}, 'movie', 0);
-            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT 100 OFFSET 0'));
+            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT ? OFFSET ?'), [100, 0]);
 
             await DuckDbProvider.getDuckDbCatalogFromFilters({}, 'movie', 100);
-            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT 100 OFFSET 100'));
+            expect(querySpy).toHaveBeenLastCalledWith(expect.stringContaining('LIMIT ? OFFSET ?'), [100, 100]);
 
             querySpy.mockRestore();
         });

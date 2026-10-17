@@ -1,11 +1,11 @@
 const {
     getHybridCatalog,
-    buildHybridCatalog,
     buildDirectPresetCatalog,
     fetchPopularFallbackIds,
     getActiveKidsMode,
     buildRecommendationCacheKey
 } = require('../src/engines/hybridRecommendations');
+const { buildHybridCatalog } = require('../src/engines/hybrid/catalogStrategies');
 const TasteProfile = require('../src/models/TasteProfile');
 const tmdb = require('../src/clients/tmdb');
 const { traktClient, smartTraktRefresh } = require('../src/clients/trakt');
@@ -91,7 +91,11 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 apiKeys: {
                     trakt: 'old_token',
                     traktRefreshToken: 'valid_refresh_token'
-                }
+                },
+                profiles: [
+                    { id: 'global', name: 'Generale', settings: { kidsMode: false, typeSelectors: {} } },
+                    { id: 'kids_profile', name: 'Kids', settings: { kidsMode: true, typeSelectors: {} } }
+                ]
             })
         });
         TasteProfile.findOne.mockResolvedValue({
@@ -404,7 +408,7 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
             // `v2` dal ticket 17: i pool dei hero cambiano composizione, quindi la chiave cambia
             // con loro — se questo test rosseggia per un bump, il bump è da fare apposta.
             expect(hybridRecommendationsCache.getWithStatus).toHaveBeenCalledWith(
-                'user_1_kids_profile_heroes_v2_movie_kids'
+                'user_1_kids_profile_heroes_v14_movie_kids_a_neutral'
             );
 
             // Item 502 (Horror) MUST NOT be returned in kidsMode

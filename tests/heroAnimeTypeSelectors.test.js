@@ -289,25 +289,31 @@ describe('Hero Movie Catalogs - typeSelectors (anime: only & exclude)', () => {
         // Senza questo, safeTraktFetchDetailed esce con reason='credentials' e il ramo Trakt non è mai disponibile.
         process.env.TRAKT_CLIENT_ID = 'test_trakt_client_id';
 
-        UserAccount.findOne.mockReturnValue({
-            lean: jest.fn().mockResolvedValue({
-                userId: 'otaku_user',
-                addonUuid: 'addon_uuid',
-                apiKeys: { trakt: 'trakt_token' }
+        UserAccount.findOne.mockImplementation((query) => ({
+            lean: jest.fn().mockImplementation(async () => {
+                const uid = query?.userId || (query?.addonUuid === 'liveaction_uuid' ? 'liveaction_user' : 'otaku_user');
+                return {
+                    userId: uid,
+                    addonUuid: uid === 'liveaction_user' ? 'liveaction_uuid' : 'addon_uuid',
+                    apiKeys: { trakt: 'trakt_token' }
+                };
             })
-        });
+        }));
 
-        AddonConfig.findOne.mockReturnValue({
-            lean: jest.fn().mockResolvedValue({
-                uuid: 'addon_uuid',
-                userId: 'otaku_user',
-                apiKeys: { trakt: 'trakt_token' },
-                profiles: animeOnlyUserConfig.profiles
+        AddonConfig.findOne.mockImplementation((query) => ({
+            lean: jest.fn().mockImplementation(async () => {
+                const isLiveAction = query?.userId === 'liveaction_user' || query?.uuid === 'liveaction_uuid';
+                return {
+                    uuid: isLiveAction ? 'liveaction_uuid' : 'addon_uuid',
+                    userId: isLiveAction ? 'liveaction_user' : 'otaku_user',
+                    apiKeys: { trakt: 'trakt_token' },
+                    profiles: isLiveAction ? animeExcludeUserConfig.profiles : animeOnlyUserConfig.profiles
+                };
             })
-        });
+        }));
 
-        TasteProfile.findOne.mockImplementation(({ context }) => Promise.resolve({
-            owner: 'otaku_user',
+        TasteProfile.findOne.mockImplementation(({ owner, context }) => Promise.resolve({
+            owner: owner || 'otaku_user',
             context,
             compiledVectors: {
                 V_final: { 'g:16': 15, 'g:28': 10, 'g:12': 8, 'g:18': 5, 'k:210024': 8 }
