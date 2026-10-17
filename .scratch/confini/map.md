@@ -36,6 +36,20 @@ La destinazione è un **codice** più che un documento: ogni ticket taglia un co
   modelli mongoose) e l'event loop resta vivo — quindi un `node -e "require('./src/api/…')"` stampa la sua
   riga e poi appende la shell **per sempre** (successo il 17/10/2026: otto ore di comando bloccato). Chiude
   sempre con `process.exit(0)`, e nei comandi lunghi metti un `timeout`.
+- **Un agente "fermo" può aver già finito**: il watchdog del 17/10/2026 ha dichiarato «nessun progresso da 43
+  minuti» su un agente che **stava lavorando e aveva già committato** — guardava un file di attività che non si
+  aggiornava, non l'agente. Prima di cancellarlo, **chiedi lo stato**: una domanda da tre righe ha salvato quattro
+  suite allineate.
+- **Nei `printf`/`echo` di bash i backtick eseguono**: una riga di documentazione scritta con i backtick ha
+  *lanciato* i comandi che nominava (per fortuna innocui). Per il testo con backtick, usa un heredoc col
+  delimitatore **quotato** (`<<'EOF'`).
+- **Un test che dipende dall'ambiente è verde in CI e rosso sulla macchina di chi lavora**: `tests/ricercaDoor`
+  passa solo perché `.cache/tmdb/` è vuoto, e dove i dati ci sono l'indice vero risponde e le sue asserzioni
+  cadono. È il contrario di quello che serve (ticket 29).
+- **Le sonde sbagliano più del codice**: il 17/10/2026 le mie tre sonde hanno stampato `slugAdditivi: undefined`,
+  un `Object.keys` che non elencava i metodi dell'istanza, e un `exit=1` che era il caso *documentato* di
+  configurazione mancante. Prima di dichiarare un guasto, **verifica la sonda** — e se la sonda è sbagliata,
+  scrivilo: una sonda imprecisa che *sembra* un guasto è il modo in cui ci si mette a cercare un bug che non c'è.
 - **Trappole già pagate**: gli hero sono definiti in **dieci** posti (nove derivati da `src/catalog/registry.js`,
   il decimo — `HERO_PRIORITY` — no, ed è quello che decide *quale percorso* prende un catalogo); `tv` e
   `series` sono la stessa cosa con due nomi; gli id dei cataloghi del prodotto sono `tmdb:<id>` nella forma
@@ -387,6 +401,24 @@ tempo, buttare l'indice costa il prodotto.
   perdono fra pool e risposta) è un bug, non un confine; il 39 riceve da qui il contratto.
 
 ## Il primo passo, quando si parte
+
+> **Aggiornato il 17/10/2026, dopo l'implementazione.** Tutto il lavoro della notte è **in `main`** (commit
+> locali, non pushati): i ticket 01–25 (il 18 aspetta lo scope `workflow`), l'IDOR chiuso, e **l'architettura a
+> dieci moduli coi suoi confini** (decisione 16). **Il fronte adesso è**:
+>
+> 1. **27** — i tre bug della revisione (il cap prima dei filtri *nella ricerca*, la validazione che ignora le
+>    query dopo la prima, la migrazione di `libraryOrder` che esce 0 su errore critico) e i **5 confini
+>    dichiarati e non rispettati** (le due chiavi a mano, il pool che risolve ancora i selettori, il *servire*
+>    dentro `src/catalog/`, i prompt in `src/ai/`, la cache di lookup in `duckDbStore`);
+> 2. **28** — l'ultimo miglio: 5 `require` da ripuntare, 10 shim da cancellare, **il motore dentro `src/indice/`**,
+>    e `src/db/queryBuilder.js` (che duplica l'SQL vecchio per non aggiornare 8 test) da cancellare;
+> 3. **29** — l'ambiente della suite: i **7 lock del DuckDB** nella corsa parallela su Windows e i test **non
+>    ermetici** (verdi solo perché `.cache/tmdb/` è vuoto);
+> 4. **30** — il deploy del giro, con le **unità systemd** del timer dei poster sul mate;
+> 5. **38** — la scelta del mondo (`il_tuo_mondo` deve scegliere il mondo *compatibile coi selettori*, non il più
+>    acceso) e il **grilling del 26** (il modulo configurazione utente, sei domande scritte).
+>
+> *(Il testo che segue è lo stato precedente, tenuto per il racconto.)*
 
 **Eseguito il 17/10/2026** (decisioni 14–15): in `main` sono entrati **05, 06, 07, 08, 12, 15, 16**, la parte
 CI/compose del **18**, il **fix dell'IDOR** e la **diagnosi del 38**. Il servizio Python è **acceso e healthy
