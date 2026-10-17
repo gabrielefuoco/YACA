@@ -73,3 +73,21 @@ duplicazione di `queryBuilder`), e ha sbagliato **una** cosa (l'IDOR: il middlew
 dello stesso codice divergono, e **le divergenze sono l'informazione**: il mio `grep` dice «il confine regge dove
 l'ho guardato», la revisione dice «ecco dove non hai guardato». Il committente ha rieseguito ogni prova prima di
 accettarla — nessuno dei due è stato creduto sulla parola.
+
+## Esito (parziale) — i tre bug, 18/10/2026
+
+**Fatti e provati** (commit `cb201a6`):
+
+| bug | fix | prova |
+|---|---|---|
+| **3. Il cap prima dei filtri** | `src/ricerca/door.js`: `fondiEOrdina` non riceve più il limite; si filtra per contesto **prima** e si tronca **dopo** | regressione in `tests/ricercaDoor.test.js` ("il cap si applica DOPO il filtro"): **senza il fix 15 titoli, col fix 20** — la prova è stata eseguita in entrambe le direzioni |
+| **4. La validazione ignora i blocchi dopo il primo** | `src/catalog/validation.js`: i controlli (numerici e di capacità della fonte) girano su **tutti** i blocchi, col campo che nomina il blocco | `validateCatalogDefinition` con `queries[1].filtro_che_non_esiste` → `valid: false`, errore `ERR_SOURCE_UNSUPPORTED_FILTER @ filters[1].filtro_che_non_esiste` |
+| **5. La migrazione esce 0 su errore critico** | `scripts/migrate_library_order.js`: `exitCode = 1` nel catch, `process.exit(exitCode)` | con Mongo irraggiungibile: **exit code 1** (prima 0) e "Errore critico" nel log |
+
+Suite toccate: `tests/ricercaDoor.test.js` 19/19, `tests/catalogTypeAndValidation.test.js` 25/25.
+
+**Nota su `validation.js`** (dal ticket 33): il file è un'**isola chiusa** — lo raggiungono solo i test, la produzione entra da `CatalogRouter`. Il bug è corretto, ma il rilievo vero resta: *la porta del modulo catalogo non è la porta che si usa*.
+
+**Non fatto, e perché**: il **confine 1** (le due chiavi di cache costruite a mano) e il **confine 4** (i prompt della ricerca dentro `src/ai/`) richiedono di riscrivere i mock di `tests/aiSearch.test.js` (che mocka `get`/`set` mentre `leggi` usa `getWithStatus`) — lavoro meccanico ma non banale, rimandato. I **4 test di copertura** restano da scrivere.
+
+**Quello che il confine 1 richiede** (già verificato): il caso `default` di `deriva` in `src/cache/index.js` costruisce una chiave **con la versione** (`${nome}:v${versione}:hash(invalida):hash(varia)`) → i due chiamanti devono solo passare una descrizione `{nome, versione, dipendenze:{varia}, ttl}` e usare `leggi`/`scrivi` con `{instance}`. Chiavi attuali: `ai/router.js:130` (`prompt:…`) e `utils/tmdbNameResolver.js:118` (`tipo:id`), quest'ultima usata anche come chiave di deduplicazione (va bene: resta una stringa unica per coppia).
