@@ -124,7 +124,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 11. 🧬 Configurazione e Gestione dei Preset
 *   **[PRESETS.md](PRESETS.md)**
-    *   *Descrizione*: Approfondimento sul sistema di cataloghi pre-configurati (preset) di YACA in `src/data/presets.js`. Spiega come sono strutturati, il dizionario delle entità e l'uso degli script CLI per l'analisi e la validazione dei cataloghi.
+    *   *Descrizione*: Approfondimento sul sistema di cataloghi pre-configurati (preset) di YACA in `src/catalog/presets.js`. Spiega come sono strutturati, il dizionario delle entità e l'uso degli script CLI per l'analisi e la validazione dei cataloghi.
 *   **[PRESETS_DATE.md](PRESETS_DATE.md)**
     *   *Descrizione*: Perché sette preset hanno la data di oggi dentro la definizione: che forma ha, chi la calcola, cosa cambierebbe togliendola e perché finisce nella chiave della cache.
 

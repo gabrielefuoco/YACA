@@ -1,4 +1,4 @@
-const { generateRequestHash } = require('../src/utils/requestHash');
+const { generateRequestHash } = require('../src/cache/requestHash');
 
 describe('generateRequestHash', () => {
     it('should produce a deterministic hash for the same inputs', () => {

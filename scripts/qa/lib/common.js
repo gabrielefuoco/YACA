@@ -192,7 +192,7 @@ function loadSpec(specPath = DEFAULT_SPEC_PATH) {
             if (dup.has(catId)) fail(`Spec: profilo ${profile.id}: catalogo duplicato "${catId}".`);
             dup.add(catId);
             if (!HERO_SET.has(catId) && !presetIds.has(catId)) {
-                fail(`Spec: profilo ${profile.id}: "${catId}" non è né un hero noto né un preset di src/data/presets.js.`);
+                fail(`Spec: profilo ${profile.id}: "${catId}" non è né un hero noto né un preset di src/catalog/presets.js.`);
             }
         }
         if (Array.isArray(profile.history)) {

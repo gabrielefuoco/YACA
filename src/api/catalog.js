@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
-const { getPresets } = require('../data/presets');
+const { getPresets } = require('../catalog/presets');
 
-const { sanitizeString } = require('../utils/helpers');
+const { sanitizeString } = require('../infra/helpers');
 
 const PREVIEW_TIMEOUT_MS = 8000;
 const MAX_PROMPT_LENGTH = 500;
@@ -97,7 +97,7 @@ router.post('/preview-catalog', async (req, res) => {
             
             if (aiFilters?.strategy === 'static_list') {
                 const { getTmdbIdByName, getTmdbMovieDetails } = require('../clients/tmdb');
-                const { rateLimitedMap } = require('../utils/rateLimiter');
+                const { rateLimitedMap } = require('../infra/rateLimiter');
                 const titles = aiFilters.static_items || [];
                 const tmdbType = customType === 'series' ? 'tv' : 'movie';
 

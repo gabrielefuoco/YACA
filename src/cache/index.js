@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const CacheManager = require('./CacheManager');
 const cacheInstances = require('./cacheInstances');
 const redisClient = require('./redisClient');
-const { generateRequestHash } = require('../utils/requestHash');
+const { generateRequestHash } = require('./requestHash');
 
 const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
 const defaultCache = new CacheManager('default_cache', { ramMax: 100, ramTtlMs: 300000 });

@@ -176,7 +176,7 @@ describe('Ticket 35: Pavimenti di visibilità dei sottosoglia', () => {
         const presets = getPresets();
         const animeThemeIds = ['preset_anime_shonen', 'preset_anime_shoujo', 'preset_anime_mecha', 'preset_anime_isekai'];
 
-        // Stessa formula di `src/data/presets.js` (identica a quella del provider).
+        // Stessa formula di `src/catalog/presets.js` (identica a quella del provider).
         const dSeries = new Date();
         dSeries.setMonth(dSeries.getMonth() - 6);
         const sixMonthsAgoStr = dSeries.toISOString().split('T')[0];

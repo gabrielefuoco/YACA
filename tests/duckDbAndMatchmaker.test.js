@@ -1,6 +1,6 @@
 const { compileQuery } = require('../src/indice/compiler');
-const { F, S } = require('../src/data/filters');
-const { getPresets } = require('../src/data/presets');
+const { F, S } = require('../src/catalog/filters');
+const { getPresets } = require('../src/catalog/presets');
 const { 
     buildPresetFromFilters, 
     getDuckDbCatalogFromPreset, 

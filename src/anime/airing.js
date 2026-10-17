@@ -593,7 +593,7 @@ const MOVIE_MAX_EPISODES = 3;
 
 /**
  * Il documento è un **film doppiato**? È la prova che il lettore delle annotazioni esige prima di
- * accettare il fallback a due tipi (ticket 50: `allowTypeFallback` in `src/data/itaAnnotations.js`).
+ * accettare il fallback a due tipi (ticket 50: `allowTypeFallback` in `src/catalog/itaAnnotations.js`).
  *
  * PERCHÉ SERVE LA PROVA E NON BASTA `isAnime`: il badge si mette su una card, e un id TMDB film può
  * essere anche l'id di una serie (5.933 id vivono in entrambe le tabelle). Misurato il 04/10/2026
@@ -618,7 +618,7 @@ function isDubbedFilmDoc(doc) {
 
 /**
  * LE DUE PROVE che autorizzano il fallback a due tipi del ticket 50 (il lettore delle annotazioni
- * pretende entrambe, cfr. `allowTypeFallback` in `src/data/itaAnnotations.js`).
+ * pretende entrambe, cfr. `allowTypeFallback` in `src/catalog/itaAnnotations.js`).
  *
  *  1. **È un film doppiato**: lo dice il documento, col veto sugli episodi. Le serie restano fuori
  *     (una serie ha una corsa di episodi; un film ne ha uno).

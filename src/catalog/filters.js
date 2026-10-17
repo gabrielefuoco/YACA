@@ -253,7 +253,7 @@ const G = {
 // === ENTITÀ DINAMICHE (Sync da DuckDB) ===
 let C = {}, P = { directors: {}, actors: {} }, N = {}, K = {};
 
-const entitiesPath = path.join(__dirname, 'entities.json');
+const entitiesPath = path.join(__dirname, '../data/entities.json');
 if (fs.existsSync(entitiesPath)) {
     try {
         const data = JSON.parse(fs.readFileSync(entitiesPath, 'utf8'));

@@ -35,7 +35,7 @@ const {
     PREVIEW_CAP
 } = require('../src/catalog');
 
-const { getPresets } = require('../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 
 describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
 

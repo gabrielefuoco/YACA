@@ -12,7 +12,7 @@
  *  2. il clustering sparso multi-vettore (k-means deterministico + isteresi);
  *  3. l'estrazione e la fusione del DNA (statico, attivo, finale).
  *
- * Dipendenze ammesse: `src/data/keywordIds.js` (foglia) e
+ * Dipendenze ammesse: `src/indice/keywordIds.js` (foglia) e
  * `src/indice/HierarchicalGraph.js` (grafo in RAM: dipendenza statica
  * della matematica L1-L5). Il call graph resta aciclico.
  *

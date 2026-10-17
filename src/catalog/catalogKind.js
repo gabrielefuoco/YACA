@@ -38,7 +38,7 @@ let _cachedPresetsMap = null;
 function getPresetMap() {
     if (!_cachedPresetsMap) {
         try {
-            const { getPresets } = require('../data/presets');
+            const { getPresets } = require('./presets');
             const presets = getPresets();
             _cachedPresetsMap = new Map(presets.map(p => [p.id, p]));
         } catch {

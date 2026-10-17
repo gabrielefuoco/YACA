@@ -15,7 +15,7 @@ L'architettura SQL-First risolve questo limite abbracciando nativamente un **Dom
 
 ## 2. Componenti Chiave
 
-### A. `src/data/filters.js` (La DSL SQL)
+### A. `src/catalog/filters.js` (La DSL SQL)
 Espone primitive costruttive (factory) sotto l'oggetto `F` e l'oggetto `S` (Sorting).
 Ogni funzione restituisce un frammento SQL.
 
@@ -37,7 +37,7 @@ Il provider che connette la logica astratta al database fisico di esecuzione. Es
 ### D. Il dump TMDB e la politica dei titoli
 
 > [!NOTE]
-> `scripts/sync_entities.js` **non esiste più**: la risoluzione degli ID di crew/cast/keyword è oggi fatta a runtime da `src/data/filters.js` e dal grafo gerarchico, non da un dizionario statico precompilato.
+> `scripts/sync_entities.js` **non esiste più**: la risoluzione degli ID di crew/cast/keyword è oggi fatta a runtime da `src/catalog/filters.js` e dal grafo gerarchico, non da un dizionario statico precompilato.
 
 **I titoli arrivano da TMDB con una politica esplicita: italiano → inglese → originale** (ticket 14).
 

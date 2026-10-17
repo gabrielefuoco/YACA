@@ -22,7 +22,7 @@
  * non può cedere il badge al film omonimo.
  */
 
-const itaAnnotations = require('../src/data/itaAnnotations');
+const itaAnnotations = require('../src/catalog/itaAnnotations');
 const { animeAiringState, animeMappingStore } = require('../src/anime');
 const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/handlers/catalogHandler');
 

@@ -1,4 +1,4 @@
-const { getPresets } = require('../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 
 describe('preset_miniseries closed-format gate', () => {

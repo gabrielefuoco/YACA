@@ -1,9 +1,9 @@
 require('dotenv').config();
-const { getPresets } = require('../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 const tmdb = require('../src/clients/tmdb');
 const fs = require('fs');
 const path = require('path');
-const { rateLimitedMap } = require('../src/utils/rateLimiter');
+const { rateLimitedMap } = require('../src/infra/rateLimiter');
 
 function checkItemMatches(item, params, type) {
     const mismatches = [];

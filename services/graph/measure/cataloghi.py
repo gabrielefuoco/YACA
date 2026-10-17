@@ -8,7 +8,7 @@ INVENTATI proprio per questo.
 
 LA FETTA. Si comincia dalla famiglia «Registi & Autori», dove il filtro **e' una persona** e quindi e'
 replicabile dal nostro parquet: 16 cataloghi tipo `preset_nolan` (`with_crew: 525`, `vote_count >= 200`,
-ordina per voto). La struttura completa dei preset e' in `src/data/presets.js`: ogni voce ha `queries`
+ordina per voto). La struttura completa dei preset e' in `src/catalog/presets.js`: ogni voce ha `queries`
 con parametri in stile TMDB (`with_crew`, `without_genres`, `vote_count.gte`, `sort_by`), quindi il
 resto e' replicabile allo stesso modo — con due approssimazioni dichiarate:
 
@@ -59,12 +59,12 @@ def chiavi_a_id():
 
 
 def leggi_preset():
-    """Estrae i preset della famiglia «registi» da `src/data/presets.js`.
+    """Estrae i preset della famiglia «registi» da `src/catalog/presets.js`.
 
     Non si interpreta tutto il file (179 voci con parametri TMDB diversi): si prendono le voci che
     hanno `with_crew` con UNA persona di TMDB_PEOPLE — la famiglia «Regia: X» — e i suoi numeri.
     """
-    testo = (K.ROOT / "src" / "data" / "presets.js").read_text(encoding="utf-8")
+    testo = (K.ROOT / "src" / "catalog" / "presets.js").read_text(encoding="utf-8")
     fuori = []
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'.*?queries: \[\{(.*?)\}\]", testo):
         pid, nome, corpo = m.group(1), m.group(2), m.group(3)

@@ -25,7 +25,7 @@ jest.mock('../src/library/models/WatchHistory', () => ({
 
 
 
-jest.mock('../src/data/presets', () => ({
+jest.mock('../src/catalog/presets', () => ({
     getPresets: () => [
         { id: 'preset_thriller', where: ['{"id": 111, "type": "keywords"}', '{"id": 53, "type": "genres"}'] },
         { id: 'preset_docs', where: ['{"id": 222, "type": "keywords"}', '{"id": 99, "type": "genres"}'] },
@@ -208,7 +208,7 @@ describe('configure route global profile safeguards', () => {
         expect(profile.settings.suggestedDNA.map(d => d.type)).toEqual(['genre']);
 
         // E il vettore statico non deve contenere chiavi persona (a:/d:)
-        const { extractStaticDNAFromQueries } = require('../src/utils/dnaExtractor');
+        const { extractStaticDNAFromQueries } = require('../src/dna/dnaEngine');
         const vector = extractStaticDNAFromQueries([{ with_genres: '28', with_cast: '10205', with_crew: '5678' }]);
         expect(Object.keys(vector).some(k => k.startsWith('a:') || k.startsWith('d:'))).toBe(false);
         expect(vector['g:28']).toBeGreaterThan(0);

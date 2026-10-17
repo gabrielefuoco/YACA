@@ -34,8 +34,8 @@ const {
     keywordNameForId,
     keywordIdForName,
     isRetiredTmdbKeywordId
-} = require('../src/data/keywordIds');
-const { extractStaticDNAFromQueries } = require('../src/utils/dnaExtractor');
+} = require('../src/indice/keywordIds');
+const { extractStaticDNAFromQueries } = require('../src/dna/dnaEngine');
 const { setGlobalDfCache, getSoftRarityMultiplier } = require('../src/dna/dnaEngine');
 const { computeTopKeywords } = require('../src/engines/hybrid/scoringEngine');
 

@@ -139,7 +139,7 @@ Dove:
 Lo score finale fonde l'affinità calcolata dall'utente con la qualità bayesiana dell'opera secondo i pesi definiti nel profilo (es. `traktWeight` per l'affinità, `tmdbWeight` per la qualità globale).
 
 > [!NOTE]  
-> **DuckDB: due formule diverse, non confonderle.** I preset nativi (`DuckDbProvider.js`) non delegano *questa* formula a DuckDB: l'ordinamento `S.BAYESIAN` è un altro prodotto, `vote_average * LOG10(vote_count)`, pensato per ordinare in modo monotono senza sanzione per i titoli poco votati ([filters.js](../src/data/filters.js#L127), `:144`). La forma a media pesata vera e propria è `S.QUALITY`: $$Q = \frac{R \cdot v + m \cdot C}{v + m} \quad (m = 500,\; C = 6.8)$$ con la popolarità come tie-breaker ([filters.js](../src/data/filters.js#L131), `:146`). **I due parametri sono diversi da quelli di Node**: $m = 500$ / $C = 6.8$ in SQL contro $m = 300$ / $C = 6.5$ in `src/config.js`. Il commento nel codice spiega la scelta di `QUALITY`: *un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000*. La formula di Node resta quella di IMDb e gira solo sui candidati già filtrati.
+> **DuckDB: due formule diverse, non confonderle.** I preset nativi (`DuckDbProvider.js`) non delegano *questa* formula a DuckDB: l'ordinamento `S.BAYESIAN` è un altro prodotto, `vote_average * LOG10(vote_count)`, pensato per ordinare in modo monotono senza sanzione per i titoli poco votati ([filters.js](../src/catalog/filters.js#L127), `:144`). La forma a media pesata vera e propria è `S.QUALITY`: $$Q = \frac{R \cdot v + m \cdot C}{v + m} \quad (m = 500,\; C = 6.8)$$ con la popolarità come tie-breaker ([filters.js](../src/catalog/filters.js#L131), `:146`). **I due parametri sono diversi da quelli di Node**: $m = 500$ / $C = 6.8$ in SQL contro $m = 300$ / $C = 6.5$ in `src/config.js`. Il commento nel codice spiega la scelta di `QUALITY`: *un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000*. La formula di Node resta quella di IMDb e gira solo sui candidati già filtrati.
 
 ---
 
@@ -243,7 +243,7 @@ La regola canonica è in [animeIdentity.js](../src/utils/animeIdentity.js#L1-L14
 
 > [!NOTE]
 > Il predicato **SQL** usato nei preset è volutamente più stretto e **non** valuta le keyword:
-> `id IN anime_mappings OR (genres contiene 16 AND original_language = 'ja')` ([filters.js](../src/data/filters.js#L110)). È una divergenza deliberata e commentata nel codice (le keyword in SQL produrrebbero falsi positivi), quindi un preset basato su keyword anime può dare un insieme più piccolo del corrispondente `normalizeAnimeMarker()` sugli stessi item. Non è un bug da correggere: è il motivo per cui i due percorsi vanno tenuti distinti.
+> `id IN anime_mappings OR (genres contiene 16 AND original_language = 'ja')` ([filters.js](../src/catalog/filters.js#L110)). È una divergenza deliberata e commentata nel codice (le keyword in SQL produrrebbero falsi positivi), quindi un preset basato su keyword anime può dare un insieme più piccolo del corrispondente `normalizeAnimeMarker()` sugli stessi item. Non è un bug da correggere: è il motivo per cui i due percorsi vanno tenuti distinti.
 
 ### 7.2 Politica: risoluzione e moltiplicatori
 `resolveAnimePolicy(profile, typeSelectors)` decide in quest'ordine ([animePolicy.js](../src/engines/hybrid/animePolicy.js#L76-L86)):

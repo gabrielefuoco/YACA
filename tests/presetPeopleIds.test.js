@@ -1,4 +1,4 @@
-const { getPresets, TMDB_PEOPLE } = require('../src/data/presets');
+const { getPresets, TMDB_PEOPLE } = require('../src/catalog/presets');
 
 describe('TMDB people preset IDs', () => {
     // IDs/name verified against TMDB's `/person/{id}` endpoint on 2026-09-24.
