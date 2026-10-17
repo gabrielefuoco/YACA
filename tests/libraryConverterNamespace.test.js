@@ -105,7 +105,7 @@ const mockAnimeMappingStore = {
 jest.mock('../src/data/animeMappingStore', () => mockAnimeMappingStore);
 
 let mockCandidates = [];
-jest.mock('../src/db/models/UserLibraryItem', () => ({
+jest.mock('../src/library/models/UserLibraryItem', () => ({
     find: jest.fn().mockReturnValue({
         limit: jest.fn().mockImplementation(() => Promise.resolve(mockCandidates))
     })
@@ -125,7 +125,7 @@ jest.mock('../src/db/models/AddonConfig', () => ({
     })
 }));
 
-jest.mock('../src/services/LibrarySyncService', () => ({
+jest.mock('../src/library/ingestion/LibrarySyncService', () => ({
     deduplicateUserLibrary: jest.fn().mockResolvedValue(true)
 }));
 
@@ -163,7 +163,7 @@ function createItem(props) {
     };
 }
 
-const LibraryConverterService = require('../src/services/LibraryConverterService');
+const LibraryConverterService = require('../src/library/ingestion/LibraryConverterService');
 
 describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', () => {
     beforeEach(() => {

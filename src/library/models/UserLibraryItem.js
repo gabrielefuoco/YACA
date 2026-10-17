@@ -25,7 +25,7 @@ const userLibraryItemSchema = new mongoose.Schema({
     // Stesso titolo presente con id diversi (tt… / tmdb:… / kitsu:…): il documento
     // secondario punta al primario e viene nascosto da dashboard e cataloghi.
     duplicateOf: { type: String, default: null },
-    // Tetto ai tentativi di conversione (src/services/libraryConversionRetry.js):
+    // Tetto ai tentativi di conversione (src/library/ingestion/conversionStateMachine.js):
     // quanti giri ha fallito questo item e, se sono finiti, quando e perché è stato
     // parcheggiato. Sono dati: rimetterlo in giro è azzerarli, nessun codice da toccare.
     // `parkedAt` è il campo che distingue «parcheggiato» da «ancora in coda»
@@ -51,15 +51,6 @@ CanonicalUserLibraryItem.ensureIndexesSafe = async function() {
     }
 };
 
-function getUserLibraryItemModel() {
-    try {
-        const legacy = require('../../db/models/UserLibraryItem');
-        if (legacy && legacy !== CanonicalUserLibraryItem && Object.keys(legacy).length > 0) {
-            return legacy;
-        }
-    } catch (_) {}
-    return CanonicalUserLibraryItem;
-}
-
-CanonicalUserLibraryItem.getModel = getUserLibraryItemModel;
+CanonicalUserLibraryItem.getModel = () => CanonicalUserLibraryItem;
 module.exports = CanonicalUserLibraryItem;
+

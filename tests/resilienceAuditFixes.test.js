@@ -7,7 +7,7 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
     // 1. UserLibraryItem Multi-User _id Collision
     describe('1. UserLibraryItem Multi-User _id Collision', () => {
         test('UserLibraryItem schema uses itemId and default ObjectId _id', () => {
-            const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+            const UserLibraryItem = require('../src/library/models/UserLibraryItem');
             const schema = UserLibraryItem.schema;
 
             // itemId should be defined and required

@@ -7,8 +7,8 @@
 
 const { WatchHistory, UserLibraryItem } = require('./models');
 
-const getLibraryModel = () => (UserLibraryItem.getModel ? UserLibraryItem.getModel() : UserLibraryItem);
-const getHistoryModel = () => (WatchHistory.getModel ? WatchHistory.getModel() : WatchHistory);
+const getLibraryModel = () => (UserLibraryItem.getModel && UserLibraryItem.getModel()) || UserLibraryItem;
+const getHistoryModel = () => (WatchHistory.getModel && WatchHistory.getModel()) || WatchHistory;
 
 const SEED_SIGNAL_WEIGHTS = Object.freeze({ loved: 4, liked: 3, watched: 2, library: 1, trakt: 3, dna: 2 });
 const SEED_SIGNAL_LIMITS = Object.freeze({ loved: 20, liked: 15, watched: 15, library: 15 });

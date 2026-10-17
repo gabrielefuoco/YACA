@@ -1,12 +1,12 @@
-const UserLibraryItem = require('../db/models/UserLibraryItem');
-const UserAccount = require('../db/models/UserAccount');
-const AddonConfig = require('../db/models/AddonConfig');
-const { stremioClient } = require('../clients/stremio');
-const { createTmdbClient } = require('../clients/tmdb');
-const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
-const { buildStremioLibraryPayload } = require('../utils/stremioAddon');
-const duckDbStore = require('../db/duckDbStore');
-const { resolvePoster, TMDB_IMAGE_BASE } = require('../utils/posterResolver');
+const UserLibraryItem = require('../models/UserLibraryItem');
+const UserAccount = require('../../db/models/UserAccount');
+const AddonConfig = require('../../db/models/AddonConfig');
+const { stremioClient } = require('../../clients/stremio');
+const { createTmdbClient } = require('../../clients/tmdb');
+const { sanitizeCatalogMeta } = require('../../catalog/formatters/StremioFormatter');
+const { buildStremioLibraryPayload } = require('../../utils/stremioAddon');
+const duckDbStore = require('../../db/duckDbStore');
+const { resolvePoster, TMDB_IMAGE_BASE } = require('../../utils/posterResolver');
 const LibrarySyncService = require('./LibrarySyncService');
 const { selectConvertibleItems } = require('./libraryConversionAdmission');
 const { resolveTmdbIdentity } = require('./libraryIdentityResolution');
@@ -32,7 +32,7 @@ const {
 // non risolti — non si finge niente.
 let animeMappingStore = null;
 try {
-    animeMappingStore = require('../data/animeMappingStore');
+    animeMappingStore = require('../../data/animeMappingStore');
 } catch (_e) {
     animeMappingStore = null;
 }

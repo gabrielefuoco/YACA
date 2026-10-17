@@ -19,11 +19,11 @@ const express = require('express');
 const _jwtPrima = process.env.JWT_SECRET;
 process.env.JWT_SECRET = _jwtPrima || "segreto-di-prova-per-i-test";
 
-jest.mock('../src/models/WatchHistory', () => ({
+jest.mock('../src/library/models/WatchHistory', () => ({
     find: jest.fn(),
 }));
 
-const WatchHistory = require('../src/models/WatchHistory');
+const WatchHistory = require('../src/library/models/WatchHistory');
 const rotteBolle = require('../src/api/bolle');
 
 function fakeFind(voci) {

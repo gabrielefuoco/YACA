@@ -7,7 +7,7 @@
 const {
     resolveItemMediaType,
     resolveTargetTableAndEndpoint
-} = require('../src/services/libraryMediaTypeResolution');
+} = require('../src/library/ingestion/libraryMediaTypeResolution');
 
 describe('resolveItemMediaType', () => {
     test('item con type movie nativo restituisce movie', () => {

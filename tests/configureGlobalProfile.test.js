@@ -18,7 +18,7 @@ jest.mock('../src/models/TasteProfile', () => ({
     updateOne: jest.fn().mockResolvedValue({})
 }));
 
-jest.mock('../src/models/WatchHistory', () => ({
+jest.mock('../src/library/models/WatchHistory', () => ({
     countDocuments: jest.fn().mockResolvedValue(0)
 }));
 

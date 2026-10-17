@@ -1,12 +1,12 @@
 const stremioRouter = require('../src/api/stremio');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const { getWatchlistCatalog } = require('../src/catalog/providers/WatchlistProvider');
-const LibrarySyncService = require('../src/services/LibrarySyncService');
+const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const { normalizeLegacyId } = require('../scripts/migrate_library_itemid_null');
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { executeUniversalPipeline } = require('../src/catalog/providers/AiDiscoveryProvider');
 
-jest.mock('../src/db/models/UserLibraryItem');
+jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/db/models/AddonConfig', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));

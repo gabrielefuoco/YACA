@@ -7,7 +7,7 @@ const {
     EXCLUSION_REASONS,
     evaluateConversionAdmission,
     selectConvertibleItems
-} = require('../src/services/libraryConversionAdmission');
+} = require('../src/library/ingestion/libraryConversionAdmission');
 
 const eligibleItem = () => ({
     itemId: 'tt0095327',

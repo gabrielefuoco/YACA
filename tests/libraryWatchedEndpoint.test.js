@@ -12,13 +12,13 @@
  */
 
 const UserAccount = require('../src/db/models/UserAccount');
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { stremioClient } = require('../src/clients/stremio');
 const router = require('../src/api/profiles');
 
 jest.mock('../src/db/models/UserAccount');
 jest.mock('../src/db/models/AddonConfig');
-jest.mock('../src/db/models/UserLibraryItem');
+jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/clients/stremio', () => ({
     stremioClient: {
         post: jest.fn().mockResolvedValue({ data: { result: { success: true } } })
@@ -28,7 +28,13 @@ jest.mock('../src/clients/stremio', () => ({
 function findHandler(path, method) {
     const layer = router.stack.find(s => s.route && s.route.path === path && s.route.methods[method]);
     expect(layer).toBeDefined();
-    return layer.route.stack[0].handle;
+    const rawHandler = layer.route.stack[0].handle;
+    return (req, res) => {
+        if (!req.utenteId && (req.query?.userId || req.body?.userId)) {
+            req.utenteId = req.query?.userId || req.body?.userId;
+        }
+        return rawHandler(req, res);
+    };
 }
 
 function makeRes() {

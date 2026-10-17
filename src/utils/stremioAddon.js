@@ -1,7 +1,6 @@
 const { stremioClient, stremioLikesClient } = require('../clients/stremio');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
-const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
@@ -161,15 +160,12 @@ async function syncAllStremioData(userId, authKey, profileId = 'global') {
             library
         };
 
-        const ProfileBuilder = require('../profile/ProfileBuilder');
-        const account = await UserAccount.findOne({ userId: safeUserId }).lean();
-        const tmdbKey = account?.apiKeys?.tmdb;
-
-        const addonConfig = account?.addonUuid
-            ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
-            : null;
-
-        await ProfileBuilder.syncStremioData(safeUserId, stremioData, safeProfileId);
+        const { ingestStremioData } = require('../library');
+        await ingestStremioData({
+            userId: safeUserId,
+            profileId: safeProfileId,
+            stremioData
+        });
 
         if (safeProfileId === 'global') {
             await pushToTrakt(safeUserId, stremioData);
@@ -320,6 +316,7 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
             }
 
             if (catalogMeta) {
+                const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
                 const results = await executeUniversalPipeline(
                     catalogMeta,
                     tmdbClient,

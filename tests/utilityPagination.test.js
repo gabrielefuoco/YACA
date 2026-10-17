@@ -1,8 +1,8 @@
-jest.mock('../src/db/models/UserLibraryItem', () => ({
+jest.mock('../src/library/models/UserLibraryItem', () => ({
     find: jest.fn()
 }));
 
-jest.mock('../src/services/LibrarySyncService', () => ({
+jest.mock('../src/library/ingestion/LibrarySyncService', () => ({
     syncLibraryForUser: jest.fn()
 }));
 
@@ -33,7 +33,7 @@ jest.mock('../src/catalog/providers/AiringStateProvider', () => ({
     getAiringStateCatalog: jest.fn()
 }));
 
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const {
     getWatchlistCatalog,

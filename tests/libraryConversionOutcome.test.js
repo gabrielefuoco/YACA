@@ -12,9 +12,9 @@ const {
     applyConversionOutcome,
     summarizeUnresolvedRun,
     buildConversionState
-} = require('../src/services/libraryConversionOutcome');
-const { RESOLUTION_REASONS, resolveTmdbIdentity } = require('../src/services/libraryIdentityResolution');
-const { evaluateConversionAdmission, selectConvertibleItems } = require('../src/services/libraryConversionAdmission');
+} = require('../src/library/ingestion/libraryConversionOutcome');
+const { RESOLUTION_REASONS, resolveTmdbIdentity } = require('../src/library/ingestion/libraryIdentityResolution');
+const { evaluateConversionAdmission, selectConvertibleItems } = require('../src/library/ingestion/libraryConversionAdmission');
 
 /** Mappa Kitsu finestra: conosce solo gli id che il test le ha insegnato. */
 function fakeKitsuMap(known = {}) {

@@ -18,22 +18,22 @@ const {
     findWatchedItems,
     previewWatchedLibrary,
     removeWatchedLibrary
-} = require('../src/services/libraryWatchedService');
+} = require('../src/library/ingestion/libraryWatchedService');
 
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const UserAccount = require('../src/db/models/UserAccount');
-const WatchHistory = require('../src/models/WatchHistory');
+const WatchHistory = require('../src/library/models/WatchHistory');
 const { stremioClient } = require('../src/clients/stremio');
 
-jest.mock('../src/db/models/UserLibraryItem');
+jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/db/models/UserAccount');
-jest.mock('../src/models/WatchHistory');
+jest.mock('../src/library/models/WatchHistory');
 jest.mock('../src/clients/stremio', () => ({
     stremioClient: {
         post: jest.fn().mockResolvedValue({ data: { result: { success: true } } })
     }
 }));
-jest.mock('../src/utils/libraryIdentity', () => ({
+jest.mock('../src/library/identity', () => ({
     applyDuplicateMarks: jest.fn().mockResolvedValue({ duplicates: 0, cleared: 0 })
 }));
 

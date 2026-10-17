@@ -28,10 +28,10 @@
  *    "visto". L'anteprima conta i titoli visibili, il push copre tutti i record.
  */
 
-const UserLibraryItem = require('../db/models/UserLibraryItem');
-const { stremioClient } = require('../clients/stremio');
+const UserLibraryItem = require('../models/UserLibraryItem');
+const { stremioClient } = require('../../clients/stremio');
 const LibrarySyncService = require('./LibrarySyncService');
-const libraryIdentity = require('../utils/libraryIdentity');
+const libraryIdentity = require('../identity');
 
 /** Stremio accetta `datastorePut` a blocchi: stesso limite già usato dal riordino. */
 const STREMIO_PUSH_CHUNK_SIZE = 100;

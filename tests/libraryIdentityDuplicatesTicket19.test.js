@@ -11,15 +11,15 @@
 const {
     compareLibraryItemsForPrimary,
     electPrimaryLibraryItem
-} = require('../src/services/LibrarySyncService');
+} = require('../src/library/ingestion/LibrarySyncService');
 const {
     resolveItemMediaType,
     resolveMediaTypeFromDb,
     trackUnresolvedType,
     getUnresolvedTypeLog,
     clearUnresolvedTypeLog
-} = require('../src/services/libraryMediaTypeResolution');
-const { planDuplicateMarks } = require('../src/utils/libraryIdentity');
+} = require('../src/library/ingestion/libraryMediaTypeResolution');
+const { planDuplicateMarks } = require('../src/library/identity');
 const duckDbStore = require('../src/db/duckDbStore');
 
 jest.mock('../src/db/duckDbStore', () => ({
@@ -154,20 +154,26 @@ describe('Ticket 19: 2. Risoluzione Tipo da DB e Tracciamento Discordanze', () =
 describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profiles.js)', () => {
     let handler;
     const UserAccount = require('../src/db/models/UserAccount');
-    const UserLibraryItem = require('../src/db/models/UserLibraryItem');
-    const libraryIdentity = require('../src/utils/libraryIdentity');
+    const UserLibraryItem = require('../src/library/models/UserLibraryItem');
+    const libraryIdentity = require('../src/library/identity');
 
     beforeAll(() => {
-        const LibraryConverterService = require('../src/services/LibraryConverterService');
+        const LibraryConverterService = require('../src/library/ingestion/LibraryConverterService');
         jest.spyOn(LibraryConverterService, 'convertAll').mockResolvedValue(0);
         const profilesRouter = require('../src/api/profiles');
         const postLayer = profilesRouter.stack.find(l => l.route?.path === '/:id/library' && l.route?.methods?.post);
-        handler = postLayer.route.stack[0].handle;
+        const rawHandler = postLayer.route.stack[0].handle;
+        handler = (req, res) => {
+            if (!req.utenteId && (req.query?.userId || req.body?.userId)) {
+                req.utenteId = req.query?.userId || req.body?.userId;
+            }
+            return rawHandler(req, res);
+        };
     });
 
     beforeEach(() => {
         jest.clearAllMocks();
-        const LibraryConverterService = require('../src/services/LibraryConverterService');
+        const LibraryConverterService = require('../src/library/ingestion/LibraryConverterService');
         jest.spyOn(LibraryConverterService, 'convertAll').mockResolvedValue(0);
     });
 

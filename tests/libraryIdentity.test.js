@@ -18,7 +18,7 @@ const {
     normalizeTitle,
     normalizeLegacyPosterHost,
     planDuplicateMarks,
-} = require('../src/utils/libraryIdentity');
+} = require('../src/library/identity');
 
 describe('normalizeLibraryId', () => {
     test('normalizza formati legacy e riconduce gli id numerici a tmdb', () => {

@@ -50,7 +50,7 @@ async function migrateLibraryItemIdNull(options = {}) {
     }
     console.log('='.repeat(70));
 
-    const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+    const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 
     const query = {
         itemId: null
