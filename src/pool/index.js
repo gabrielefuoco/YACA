@@ -1,0 +1,502 @@
+// src/pool/index.js
+
+/**
+ * MODULO POOL DI YACA (Ticket 12).
+ *
+ * Incapsula l'intera logica di composizione e gestione del pool dei cataloghi hero:
+ * - Porta unica di accesso per il feed (getHeroPool).
+ * - HERO_PRIORITY e righe additive (SLUG_ADDITIVI) consumati da src/catalog/registry.js.
+ * - Le 4 strategie storiche (trueBlend, seed_network, hiddenGems, trakt_filtered) più
+ *   le righe del grafo sono voci di una lista (HERO_STRATEGIES).
+ *   (Il ticket 08 sostituirà l'entry del grafo con la chiamata al servizio Python).
+ * - Assegnazione esclusiva (pairwise disjoint / claimedIds).
+ * - Limiti per catalogo (HERO_MAX_ITEMS_PER_CATALOG) e soglie di fallback (HERO_MIN_FALLBACK_ITEMS).
+ * - Degrado Trakt (hiddenForInsufficientFallback).
+ * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v12').
+ */
+
+const { hybridRecommendationsCache } = require('../cache/cacheInstances');
+const { normalizeContentId } = require('../utils/contentId');
+const { getHeroPoolSpec } = require('../catalog/registry');
+const { resolveAnimePolicy } = require('../engines/hybrid/animePolicy');
+const {
+    fetchProfileContext,
+    fetchPopularFallbackIds,
+    fetchTopRatedPeriodFallbackIds,
+    fetchUndiscoveredFallbackIds,
+    fetchHiddenGemsFallbackIds,
+    fetchTraktRecommendationsRawDetailed
+} = require('../engines/hybrid/dataFetchers');
+const {
+    buildTopGenresMixCatalog,
+    buildHybridCatalog,
+    buildHiddenGemsCatalog,
+    buildTraktFilteredCatalog,
+    buildTraktFilteredCatalogWithMeta
+} = require('../engines/hybrid/catalogStrategies');
+
+const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
+
+const HERO_CATALOG_IDS = new Map([
+    ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
+        `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`,
+        { slug, mediaType }
+    ]))
+]);
+
+const HERO_CACHE_KEY_VERSION = 'v12';
+const HERO_CACHE_SCHEMA_VERSION = 7;
+const HERO_MIN_FALLBACK_ITEMS = 10;
+const HERO_MAX_ITEMS_PER_CATALOG = 100;
+const activeHeroGroupBuilds = new Map();
+
+function getHeroCatalogInfo(catalogId) {
+    return HERO_CATALOG_IDS.get(catalogId) || null;
+}
+
+function getHeroCatalogId(slug, mediaType) {
+    return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
+}
+
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors }) {
+    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
+    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
+}
+
+function getRecommendationId(item) {
+    const rawId = item && typeof item === 'object' ? item.id : item;
+    const id = normalizeContentId(rawId ?? '');
+    if (!id || ['undefined', 'null', 'nan'].includes(id.toLowerCase())) return '';
+    return id;
+}
+
+function ensurePoolItem(item, mediaType) {
+    const isObj = typeof item === 'object' && item !== null;
+    const rawId = isObj ? (item.id || item.tmdbId) : item;
+    const cleanId = normalizeContentId(rawId);
+    const tmdbId = Number(cleanId);
+    const defaultType = mediaType === 'movie' ? 'movie' : 'series';
+    const defaultMediaType = mediaType === 'movie' ? 'movie' : 'tv';
+    if (isObj) {
+        return {
+            ...item,
+            id: item.id && String(item.id).startsWith('tmdb:') ? item.id : `tmdb:${cleanId}`,
+            tmdbId: Number.isFinite(item.tmdbId) ? item.tmdbId : (Number.isFinite(tmdbId) ? tmdbId : cleanId),
+            type: item.type || defaultType,
+            media_type: item.media_type || (item.type === 'series' ? 'tv' : defaultMediaType),
+            toString() { return this.id; }
+        };
+    }
+    return {
+        id: `tmdb:${cleanId}`,
+        tmdbId: Number.isFinite(tmdbId) ? tmdbId : cleanId,
+        type: defaultType,
+        media_type: defaultMediaType,
+        toString() { return this.id; }
+    };
+}
+
+/**
+ * Assegna in modo esclusivo i candidati dei quattro hero secondo priorità.
+ */
+function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MAX_ITEMS_PER_CATALOG) {
+    const assigned = {};
+    const claimedIds = new Set();
+
+    for (const slug of HERO_PRIORITY) {
+        const catalogId = getHeroCatalogId(slug, mediaType);
+        const pool = Array.isArray(poolsByCatalog?.[catalogId]) ? poolsByCatalog[catalogId] : [];
+        const catalogIds = [];
+        for (const item of pool) {
+            const id = getRecommendationId(item);
+            if (!id || claimedIds.has(id)) continue;
+            claimedIds.add(id);
+            catalogIds.push(ensurePoolItem(item, mediaType));
+            if (catalogIds.length >= maxItemsPerCatalog) break;
+        }
+        assigned[catalogId] = catalogIds;
+    }
+
+    return assigned;
+}
+
+function isSharedHeroCacheEntry(entry, mediaType) {
+    if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
+    if (!['movie', 'series'].includes(mediaType)) return false;
+
+    const claimedIds = new Set();
+    for (const slug of HERO_PRIORITY) {
+        if (SLUG_ADDITIVI.has(slug)) continue; // le righe del grafo non sono disgiunte, per scelta
+        const pool = entry.catalogs[getHeroCatalogId(slug, mediaType)];
+        if (!Array.isArray(pool)) return false;
+        for (const item of pool) {
+            const id = getRecommendationId(item);
+            if (!id || claimedIds.has(id)) return false;
+            claimedIds.add(id);
+        }
+    }
+    return true;
+}
+
+function normalizePoolResult(result) {
+    if (Array.isArray(result)) return result;
+    return Array.isArray(result?.ids) ? result.ids : [];
+}
+
+async function runPoolBuilder(builder, fallbackBuilder, label, args) {
+    try {
+        return await builder(...args);
+    } catch (error) {
+        console.error(`[HeroPool] ${label} builder failed:`, error?.message || error);
+        return fallbackBuilder();
+    }
+}
+
+/**
+ * Definizione a lista delle strategie nel modulo pool.
+ * Le quattro strategie hero producono candidati per l'assegnazione disgiunta.
+ * La voce del grafo aggiunge righe additive DOPO l'assegnazione disgiunta.
+ * (Ticket 08 sostituirà l'entry del grafo con la chiamata al servizio Python).
+ */
+const HERO_STRATEGIES = [
+    {
+        name: 'true_blend',
+        slug: 'true_blend',
+        additive: false,
+        run: async (ctx) => {
+            return await runPoolBuilder(
+                buildTopGenresMixCatalog,
+                () => fetchPopularFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors),
+                'true_blend',
+                [ctx.userId, ctx.context, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.effectiveSelectors, ctx.heroCandidateLimit]
+            );
+        }
+    },
+    {
+        name: 'seed_network',
+        slug: 'seed_network',
+        additive: false,
+        run: async (ctx) => {
+            return await runPoolBuilder(
+                buildHybridCatalog,
+                ctx.seedFallback,
+                'seed_network',
+                [ctx.userId, ctx.context, ctx.traktToken, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.sharedTraktResult, ctx.effectiveSelectors, ctx.heroCandidateLimit]
+            );
+        }
+    },
+    {
+        name: 'hidden_gems',
+        slug: 'hidden_gems',
+        additive: false,
+        run: async (ctx) => {
+            return await runPoolBuilder(
+                buildHiddenGemsCatalog,
+                () => fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors),
+                'hidden_gems',
+                [ctx.userId, ctx.context, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.effectiveSelectors, ctx.heroCandidateLimit]
+            );
+        }
+    },
+    {
+        name: 'trakt_filtered',
+        slug: 'trakt_filtered',
+        additive: false,
+        run: async (ctx) => {
+            const builder = typeof buildTraktFilteredCatalogWithMeta === 'function'
+                ? buildTraktFilteredCatalogWithMeta
+                : buildTraktFilteredCatalog;
+            return await runPoolBuilder(
+                builder,
+                ctx.communityFallbackWithMeta,
+                'trakt_filtered',
+                [ctx.userId, ctx.context, ctx.traktToken, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.sharedTraktResult, ctx.effectiveSelectors, ctx.heroCandidateLimit]
+            );
+        }
+    },
+    {
+        name: 'graph_rows',
+        slug: 'graph_rows',
+        additive: true,
+        // =========================================================================
+        // GANCI DEL GRAFO (Ticket 08 innesta qui il servizio Python persistente)
+        // =========================================================================
+        run: async (ctx, { assigned, rawTraktResult }) => {
+            try {
+                const { righePerStremio } = require('../engines/bolle/raccomanda');
+                const { collectRealSeeds } = require('../library');
+                const { seeds } = await collectRealSeeds({ userId: ctx.userId, context: ctx.context, mediaType: ctx.mediaType, user: ctx.userConfig });
+                const PESO_A_TIPO = { 4: 'loved', 3: 'liked', 2: 'watched', 1: 'library' };
+                const tipoSeeds = ctx.mediaType === 'movie' ? 'movie' : 'tv';
+                const semi = [...seeds.entries()].map(([id, w]) => ({
+                    tmdbId: Number(id),
+                    type: tipoSeeds,
+                    signals: [{ type: PESO_A_TIPO[w] || 'watched' }],
+                }));
+                const visti = new Set(semi.map((s) => s.tmdbId));
+                if (rawTraktResult.traktAvailable) {
+                    for (const voce of (rawTraktResult.ids || [])) {
+                        const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
+                        if (!Number.isFinite(id) || visti.has(id)) continue;
+                        visti.add(id);
+                        semi.push({ tmdbId: id, type: tipoSeeds, signals: [{ type: 'liked' }] });
+                    }
+                }
+                const fuori = righePerStremio(semi, { mediaType: ctx.mediaType });
+                for (const [k, v] of Object.entries(fuori)) {
+                    assigned[k] = (v || []).map((it) => ensurePoolItem(it, ctx.mediaType));
+                }
+                const suffisso = ctx.mediaType === 'movie' ? 'movies' : 'series';
+                const nMondi = (fuori[`yaca_mondi_${suffisso}`] || []).length;
+                const nPasso = (fuori[`yaca_passo_fuori_${suffisso}`] || []).length;
+                console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${seeds.size}, da Trakt ${semi.length - seeds.size}` +
+                    ` · mondi ${nMondi} · passo fuori ${nPasso}`);
+                if (semi.length > 0 && nMondi === 0 && nPasso === 0) {
+                    console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in entrambe le righe ` +
+                        `(${ctx.mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
+                }
+            } catch (e) {
+                console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
+            }
+        }
+    }
+];
+
+/**
+ * Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta.
+ */
+async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors }) {
+    const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
+    const effectiveSelectors = typeSelectors
+        || userConfig?.activeProfileSettings?.typeSelectors
+        || userConfig?.typeSelectors
+        || user?.settings?.typeSelectors;
+    const animePolicy = resolveAnimePolicy(profile, effectiveSelectors, { isKidsMode: kidsMode });
+    const isTightContext = (animePolicy === 'only' || effectiveSelectors?.anime === 'only');
+    const heroCandidateLimit = isTightContext ? 250 : 160;
+
+    const seedFallback = async () => {
+        const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
+            ? fetchTopRatedPeriodFallbackIds
+            : fetchPopularFallbackIds;
+        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
+    };
+    const communityFallback = async () => {
+        const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
+            ? fetchUndiscoveredFallbackIds
+            : fetchPopularFallbackIds;
+        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
+    };
+    const communityFallbackWithMeta = async () => {
+        const fallbackIds = await communityFallback();
+        return {
+            ids: fallbackIds,
+            traktAvailable: false,
+            traktSourcedCount: 0,
+            fallbackTopUpCount: fallbackIds.length,
+            isDegradedFallback: true,
+            fallbackUsed: true
+        };
+    };
+
+    const hasDetailedTraktFetch = typeof fetchTraktRecommendationsRawDetailed === 'function';
+    let sharedTraktResult = hasDetailedTraktFetch
+        ? { items: [], available: false, fallbackUsed: true, reason: 'credentials' }
+        : null;
+    if (traktToken && hasDetailedTraktFetch) {
+        let traktUser = {
+            userId,
+            apiKeys: userConfig?.apiKeys || userConfig?.config?.apiKeys || {}
+        };
+        if (!traktUser.apiKeys?.traktRefreshToken && typeof fetchProfileContext === 'function') {
+            const profileContext = await fetchProfileContext(userId, context).catch(() => ({}));
+            if (profileContext?.user) traktUser = profileContext.user;
+        }
+        sharedTraktResult = await fetchTraktRecommendationsRawDetailed(
+            traktToken,
+            mediaType === 'movie' ? 'movies' : 'shows',
+            100,
+            traktUser
+        ).catch(error => {
+            console.error('[HeroPool] Trakt fetch failed:', error?.message || error);
+            return { items: [], available: false, fallbackUsed: true, reason: 'error' };
+        });
+    }
+
+    const ctx = {
+        userId,
+        context,
+        mediaType,
+        traktToken,
+        tmdbApiKey,
+        kidsMode,
+        userConfig,
+        effectiveSelectors,
+        heroCandidateLimit,
+        seedFallback,
+        communityFallbackWithMeta,
+        sharedTraktResult
+    };
+
+    // Eseguiamo le strategie esclusive in parallelo
+    const exclusiveStrategies = HERO_STRATEGIES.filter(s => !s.additive);
+    const results = await Promise.all(exclusiveStrategies.map(s => s.run(ctx)));
+
+    const pools = {};
+    let rawTraktResult = {
+        ids: [],
+        traktAvailable: false,
+        traktSourcedCount: 0,
+        fallbackTopUpCount: 0,
+        isDegradedFallback: true,
+        fallbackUsed: true
+    };
+
+    exclusiveStrategies.forEach((strat, idx) => {
+        const res = results[idx];
+        const catId = getHeroCatalogId(strat.slug, mediaType);
+        if (strat.slug === 'trakt_filtered') {
+            const traktSourcedCount = res?.traktSourcedCount ?? (Array.isArray(res) ? res.length : 0);
+            const fallbackTopUpCount = res?.fallbackTopUpCount ?? 0;
+            const isDegradedFallback = res?.isDegradedFallback ?? (traktSourcedCount === 0);
+            const traktAvailable = res?.traktAvailable === true;
+            const fallbackUsed = res?.fallbackUsed === true || isDegradedFallback;
+
+            rawTraktResult = {
+                ids: normalizePoolResult(res),
+                traktAvailable,
+                traktSourcedCount,
+                fallbackTopUpCount,
+                isDegradedFallback,
+                fallbackUsed
+            };
+            pools[catId] = rawTraktResult.ids;
+        } else {
+            pools[catId] = normalizePoolResult(res);
+        }
+    });
+
+    // Assegnazione esclusiva
+    const assigned = assignHeroPools(pools, mediaType);
+
+    // Eseguiamo le strategie additive (il grafo) DOPO l'assegnazione disgiunta
+    const additiveStrategies = HERO_STRATEGIES.filter(s => s.additive);
+    for (const strat of additiveStrategies) {
+        await strat.run(ctx, { assigned, rawTraktResult });
+    }
+
+    // Degrado Trakt
+    const traktCatalogId = getHeroCatalogId('trakt_filtered', mediaType);
+    let hiddenForInsufficientFallback = false;
+    console.log(`[HeroPool] Trakt status per ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}, isDegradedFallback=${rawTraktResult.isDegradedFallback}, fallbackUsed=${rawTraktResult.fallbackUsed}`);
+    if (rawTraktResult.isDegradedFallback) {
+        console.warn(`[HeroPool] Degrado Trakt confermato per pool ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}`);
+    }
+    if (rawTraktResult.fallbackUsed && assigned[traktCatalogId].length < HERO_MIN_FALLBACK_ITEMS) {
+        assigned[traktCatalogId] = [];
+        hiddenForInsufficientFallback = true;
+    }
+
+    return {
+        schemaVersion: HERO_CACHE_SCHEMA_VERSION,
+        mediaType,
+        catalogs: assigned,
+        trakt: {
+            available: rawTraktResult.traktAvailable,
+            traktAvailable: rawTraktResult.traktAvailable,
+            traktSourcedCount: rawTraktResult.traktSourcedCount,
+            fallbackTopUpCount: rawTraktResult.fallbackTopUpCount,
+            isDegradedFallback: rawTraktResult.isDegradedFallback,
+            fallbackUsed: rawTraktResult.fallbackUsed,
+            hiddenForInsufficientFallback
+        }
+    };
+}
+
+async function buildAndCacheSharedHeroCatalogs(args, cacheKey) {
+    if (activeHeroGroupBuilds.has(cacheKey)) return activeHeroGroupBuilds.get(cacheKey);
+
+    const promise = (async () => {
+        const group = await buildSharedHeroCatalogs(args);
+        await hybridRecommendationsCache.set(cacheKey, group);
+        return group;
+    })();
+    activeHeroGroupBuilds.set(cacheKey, promise);
+
+    try {
+        return await promise;
+    } finally {
+        if (activeHeroGroupBuilds.get(cacheKey) === promise) activeHeroGroupBuilds.delete(cacheKey);
+    }
+}
+
+async function getSharedHeroCatalogs(args, cacheKey) {
+    const { value, status } = await hybridRecommendationsCache.getWithStatus(cacheKey);
+    if (isSharedHeroCacheEntry(value, args.mediaType)) {
+        if (status === 'stale') {
+            buildAndCacheSharedHeroCatalogs(args, cacheKey)
+                .catch(error => console.error('[Hero-SWR] Error:', error?.message || error));
+        }
+        return value;
+    }
+    return buildAndCacheSharedHeroCatalogs(args, cacheKey);
+}
+
+/**
+ * LA PORTA UNICA DEL MODULO POOL.
+ * Riceve il contesto e restituisce l'assegnato {[catalogId]: items}.
+ * Firma:
+ * getHeroPool({ userId, context, mediaType, kidsMode, typeSelectors, traktToken, tmdbApiKey, userConfig })
+ * -> Promise<Object> dove result[catalogId] = Array<Item>
+ */
+async function getHeroPool(params) {
+    const {
+        userId,
+        context = 'global',
+        mediaType = 'movie',
+        kidsMode = false,
+        typeSelectors = null,
+        traktToken = null,
+        tmdbApiKey = null,
+        userConfig = null
+    } = params;
+
+    const cacheKey = buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors });
+    const sharedGroup = await getSharedHeroCatalogs({
+        userId,
+        context,
+        mediaType,
+        traktToken,
+        tmdbApiKey,
+        kidsMode,
+        userConfig,
+        typeSelectors
+    }, cacheKey);
+
+    const assigned = sharedGroup?.catalogs || {};
+    return {
+        ...assigned,
+        catalogs: assigned,
+        trakt: sharedGroup?.trakt,
+        schemaVersion: sharedGroup?.schemaVersion,
+        mediaType: sharedGroup?.mediaType
+    };
+}
+
+module.exports = {
+    getHeroPool,
+    buildSharedHeroCatalogs,
+    getSharedHeroCatalogs,
+    buildSharedHeroCacheKey,
+    assignHeroPools,
+    ensurePoolItem,
+    getRecommendationId,
+    getHeroCatalogInfo,
+    getHeroCatalogId,
+    isSharedHeroCacheEntry,
+    HERO_CACHE_KEY_VERSION,
+    HERO_CACHE_SCHEMA_VERSION,
+    HERO_PRIORITY,
+    SLUG_ADDITIVI,
+    HERO_STRATEGIES
+};

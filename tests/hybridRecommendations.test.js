@@ -214,8 +214,6 @@ describe('hybridRecommendations module exports', () => {
     it('should export all required functions', () => {
         const engine = require('../src/engines/hybridRecommendations');
         expect(typeof engine.getHybridCatalog).toBe('function');
-        expect(typeof engine.buildHybridCatalog).toBe('function');
-        expect(typeof engine.buildTopGenresMixCatalog).toBe('function');
         expect(typeof engine.calculateHybridScore).toBe('function');
         expect(typeof engine.fetchRecentHistory).toBe('function');
         expect(typeof engine.fetchTraktRecommendationsRaw).toBe('function');

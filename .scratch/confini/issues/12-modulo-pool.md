@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02, 15
 
@@ -71,3 +71,61 @@ Cosa il 38 ha **già** portato in `main` (e che l'estrazione deve **conservare**
 risolto nell'idratazione (`item.media_type || item.type`) e in uscita; la risoluzione della base id
 (`yaca_mondi` + `series` → `yaca_mondi_series`, che prima cadeva nel fallback dei **film**); `annotationKeyFor`
 che normalizza `series → tv`; e `HERO_CACHE_KEY_VERSION` a **v11**.
+
+---
+
+## Esito
+
+**Risolto il 17/10/2026.**
+
+### 1. La porta del modulo pool (`src/pool/index.js`)
+È stato creato il modulo di dominio `src/pool/` (rispettando l'assetto del ticket 06):
+- **Firma della porta unica per il feed**:
+  `getHeroPool({ userId, context, mediaType, kidsMode, typeSelectors, traktToken, tmdbApiKey, userConfig }) -> Promise<Object>`
+  Restituisce un oggetto con `result[catalogId] = Array<Item>`, `result.catalogs = {[catalogId]: items}` e metadati Trakt (`result.trakt`).
+- All'interno del modulo `src/pool/` vivono:
+  - L'assegnazione esclusiva pairwise (`assignHeroPools` con `claimedIds`).
+  - La normalizzazione degli item del pool (`ensurePoolItem`, che garantisce oggetti `{ id, tmdbId, type, media_type, toString() }`).
+  - I limiti di cap (`HERO_MAX_ITEMS_PER_CATALOG = 100`) e soglie di degrado (`HERO_MIN_FALLBACK_ITEMS = 10`).
+  - La gestione del degrado Trakt (`hiddenForInsufficientFallback`).
+  - La cache dei pool condivisi hero con deduplica build concorrenti (`activeHeroGroupBuilds`) e validazione pairwise.
+
+### 2. Il decimo posto diventa uno: registro (`src/catalog/registry.js`)
+`HERO_PRIORITY` e la natura additiva (`additive: boolean`) non sono più cablate nel feed né duplicate in array sparsi:
+- Ogni definizione in `HERO_REGISTRY` ha ora i campi `priority` (1..6) e `additive` (false per gli 8 hero standard, true per i 4 del grafo `mondi` e `passo_fuori`).
+- Nuova funzione esportata `getHeroPoolSpec()` che estrae in ordine:
+  - `heroPriority`: `['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered', 'mondi', 'passo_fuori']`
+  - `slugAdditivi`: `Set(['mondi', 'passo_fuori'])`
+  - `catalogs`: array con metadati per ciascuna riga
+- `src/pool/` consuma `getHeroPoolSpec()` da `registry.js`. Aggiungere o ritirare una riga hero richiede ora la modifica di un solo file.
+
+### 3. Le strategie come voci di una lista (`HERO_STRATEGIES`)
+In `src/pool/index.js`, le 4 strategie di candidate-fetching (`true_blend`, `seed_network`, `hidden_gems`, `trakt_filtered`) e le righe del grafo sono voci dell'array `HERO_STRATEGIES`:
+- Le prime quattro strategie eseguono in parallelo e producono i candidati per `assignHeroPools`.
+- La voce additiva `graph_rows` viene eseguita subito dopo l'assegnazione esclusiva, popola `assigned` da `righePerStremio` (con i semi dalla libreria via `collectRealSeeds`) senza sottrarre candidati al pool hero condiviso.
+- **Cosa resta al ticket 08**: la voce `graph_rows` in `HERO_STRATEGIES` è l'unico punto designato in cui sostituire l'attuale chiamata JS (`righePerStremio`) con la chiamata HTTP al servizio Python persistente (`POST /api/mondi`).
+
+### 4. Il cap dopo i filtri: misura prima e dopo (Ticket 38)
+In `src/engines/hybridRecommendations.js`, `.slice(0, 20)` è stato rimosso dalla fase a monte dell'idratazione:
+- Il feed itera a blocchi sui candidati del pool e risolve i dettagli, applicando i filtri post-fetch (`isKidsMode`, `effectiveTypeSelectors: { anime }`) e accumula card idratate fino a coprire la dimensione della pagina richiesta (`skip + ITEMS_PER_PAGE`).
+- Il taglio (`.slice(skip, skip + ITEMS_PER_PAGE)`) avviene rigorosamente a valle dei filtri.
+- In `src/catalog/providers/HybridProvider.js` è stato eliminato il terzo wrapper ridondante con `.slice(0, 20)`.
+- **Misura prima e dopo** (verificata con suite dedicata `tests/heroPoolAnimeExcludeCap.test.js` su pool misto di 60 candidati con 18 anime nei primi 20):
+  - **Prima del fix**: **2** serie superstiti (18 dei primi 20 ID scartati dal filtro anime, set decimato).
+  - **Dopo il fix**: **20** serie superstiti (tutte serie live-action non-anime, pagina completa servita).
+
+### 5. Bump della chiave di cache
+La versione della chiave cache per i cataloghi hero condivisi è stata alzata:
+`HERO_CACHE_KEY_VERSION`: da **v11** a **v12**.
+
+### 6. Verifica del confine
+- `git grep -E "HERO_PRIORITY|SLUG_ADDITIVI|assignHeroPools|buildTopGenresMixCatalog|buildHybridCatalog|buildHiddenGemsCatalog|buildTraktFilteredCatalog" src/engines/hybridRecommendations.js`: **0 occorrenze**. Il feed non nomina più né le strategie né la priorità.
+- Contratti e test eseguiti:
+  - `tests/bolleParity.test.js`: 4/4 passati
+  - `tests/graphRowsInvariant.test.js`: 4/4 passati
+  - `tests/heroAnimeTypeSelectors.test.js`: 8/8 passati
+  - `tests/diag.recommender.h1.lightMeta.test.js`: 2/2 passati
+  - `tests/heroCacheKeyNoVersion.test.js`: 10/10 passati
+  - `tests/heroPoolAnimeExcludeCap.test.js`: 1/1 passato
+  - `tests/hybridRecommendations.test.js`: 22/22 passati
+
