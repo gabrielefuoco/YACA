@@ -350,18 +350,29 @@ causa vera.
 
 ## Il primo passo, quando si parte
 
-**Eseguito il 17/10/2026** (decisione 15): in `main` sono entrati **05, 06, 15, 38, 07, 12** — più l'IDOR
-chiuso — tutti commit locali, **non ancora pushati** (il deploy parte col push). In corso, in parallelo, su
-worktree isolati: **16**, **08**, **18**.
+**Eseguito il 17/10/2026** (decisioni 14–15): in `main` sono entrati **05, 06, 07, 08, 12, 15, 16**, la parte
+CI/compose del **18**, il **fix dell'IDOR** e la **diagnosi del 38**. Il servizio Python è **acceso e healthy
+sul mate** (108,9 MiB) e il prodotto lo usa davvero: `yaca_mondi_series` è passata da **3 a 20 titoli**.
+In corso, in parallelo: **09**, **10**, **13** e la coda del **38**.
 
-Il resto è a valle loro, e l'ordine non cambia:
+Il resto è a valle loro:
 
 ```
-08 + 12  → 09            (l'artefatto esce dal prodotto)
-16       → 10  → 11  → 17 (la superficie di dominio, il client, l'export statico)
-08 + 12  → 13            (i docs del grafo)
-18       → il servizio acceso sul mate (e la verifica end-to-end dell'08)
+10  → 11 → 17      (il client nomina il dominio; l'export statico del client)
+09  → il mate      (la pubblicazione dell'artefatto, e il clone del modulo sul mate)
 ```
+
+**Le cose aperte che non sono ticket** (perché non lo sono):
+
+- **lo scope `workflow` del token di push**: senza, il workflow che pubblica l'immagine del servizio
+  (`.github/workflows/deploy-graph.yml`, pronto sul ramo `activity/t18-produzione-*`) non entra in `main`.
+  Fino ad allora il servizio si aggiorna con `docker compose build graph` sul mate — che funziona;
+- **la verifica di E5** (guasto transitorio → cache a 60 s, non 7 giorni): il primo tentativo è stato
+  **inconcludente** (la riga dei film ha risposto 20 col motore spento: probabile corsa nella prova). È in coda
+  al ticket 38;
+- **il clone del modulo sul mate** (`/srv/yaca/modulo/`): ha ancora il codice e i dati vecchi, quindi la
+  pipeline notturna scrive un artefatto che **non alimenta più nessuno** (il servizio legge da
+  `/srv/yaca/services/graph/data`). Il suo riallineamento segue la decisione del ticket 09.
 
 I motivi, che sono misure: il **38** prima di 08/12 perché quei ticket si collaudano confrontando i conteggi;
 il **06** prima del **07** perché il 07 scrive percorsi che il 06 sposta; il **15/16** prima del **10** perché
@@ -371,6 +382,6 @@ se no le rotte nuove copiano la logica che il 16 sta spostando.
 /srv/yaca/modulo/services/graph/data` (138 MB non tracciati) e `PYTHONPATH=services` per i cron che
 invocano la pipeline.
 
-**Chiusi**: 01, 02, 03, 04, 14 (grilling e ricerca). **In `main`**: 05, 06, 38 (chiuso col numero: 2-3 → 20
-serie per un profilo `anime: exclude`), 15, 07, 12. **In corso**: 16, 08, 18. **Aperti e non ancora
-prendibili**: 09, 10, 11, 13, 17 (e il 06 per la sua parte sul mate, che aspetta il push).
+**Chiusi**: 01, 02, 03, 04, 14 (grilling e ricerca). **In `main`**: 05, 06, 07, 08, 12, 15, 16, 18 (parte CI,
+compose e primo avvio sul mate). Il **38** ha la sua diagnosi in `main` e la coda in corso. **In corso**: 09,
+10, 13, 38-coda. **Bloccati da loro**: 11, 17.
