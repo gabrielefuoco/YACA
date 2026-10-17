@@ -119,7 +119,14 @@ stati HTTP non-200 sono riservati ai guasti veri (processo giù, richiesta malfo
 
 **Tetto di tempo**: il prodotto aspetta **10 s** al cache-build. Oltre, la riga del motore non compare e il
 resto del feed si costruisce lo stesso. Il motore non ha bisogno di un timeout proprio: il suo costo è il
-**caricamento** (~20 s, una volta, all'avvio del processo — `graph/motore.py:60`), non la risposta.
+**caricamento**, non la risposta.
+
+> **Il caricamento è ~1,3 s, non 20** (misurato il 17/10/2026: `Motore(silenzioso=True)` con gli artefatti
+> pronti carica canone **66.259 titoli** e **3.497 bolle** in **1,30 s**; il servizio del ticket 07, processo e
+> server compresi, in **2,05 s**). Il «~20 s» che stava qui e in `graph/motore.py:60` era una **dichiarazione
+> mai misurata** — e questo contratto l'aveva ripetuta. La regola di E5 non cambia (una cache di 7 giorni su un
+> guasto transitorio è sbagliata comunque), ma la finestra è di **~2 s**, non di 20: un `503` al primo colpo è
+> improbabile, non la norma.
 
 **Il ripiego popolare è escluso**: se la storia non è nel canone, il motore **non** risponde coi titoli
 popolari. Il motivo è già scritto nel prodotto: il fallback popolare *«mostra di nuovo il catalogo generico,
@@ -229,6 +236,7 @@ settimana**, senza un errore da nessuna parte.
 Regola: se la chiamata al motore **fallisce** (503, timeout, connessione rifiutata), le chiavi del grafo
 **non si memorizzano** (o si memorizzano con TTL 60 s): si ricostruisce alla prossima richiesta. Un pool
 parziale è una risposta legittima, una cache di 7 giorni su un guasto transitorio no.
+Regge anche col numero giusto: la finestra è di **~2 s** (il caricamento misurato), non di 20.
 
 ### E6. Nel pool non entrano stringhe (la lezione del ticket 38)
 

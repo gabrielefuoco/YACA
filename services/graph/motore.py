@@ -57,7 +57,11 @@ SLIDER_DEFAULT = {
 
 
 class Motore:
-    """Tutto caricato una volta. Il costo e' il caricamento (~20 s), non la risposta."""
+    """Tutto caricato una volta. Il costo e' il caricamento (~1,3 s misurati il 17/10/2026), non la risposta.
+
+    Il «~20 s» che stava scritto qui era una dichiarazione mai misurata: con gli artefatti pronti il canone
+    (66.259 titoli, 3.497 bolle) entra in 1,30 s. Il servizio del ticket 07, processo e server compresi, 2,05 s.
+    """
 
     def __init__(self, silenzioso=False):
         # LA TRANSIZIONE PRONTA: il triangolo si carica, si simmetrizza e si pota UNA VOLTA, e il

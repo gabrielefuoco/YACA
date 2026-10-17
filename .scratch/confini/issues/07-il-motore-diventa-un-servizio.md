@@ -24,7 +24,7 @@ Oggi `graph/` è una pipeline offline guidata da comandi: `python -m graph.pipel
 decisione di questo ticket** — volume montato (come `/srv/yaca/modulo/` oggi) o dentro l'immagine? — perché è
 ciò che il ticket **09** presuppone quando decide come si pubblica verso il prodotto: se le due risposte si
 contraddicono, il servizio parte rispondendo su un artefatto vecchio, e senza un errore. Criterio: misurare
-(138 MB in `graph/data/`, i parquet TMDB in `.cache/tmdb/`, ~20 s di caricamento del motore). Il lato prodotto
+(138 MB in `graph/data/`, i parquet TMDB in `.cache/tmdb/`, ~1,3 s di caricamento, misurato il 17/10/2026 — era dichiarato ~20 s senza misura). Il lato prodotto
 lo chiude il 09.
 - **Il tempo di risposta misurato**, non stimato: quanto ci mette una richiesta tipica (una storia da ~100
   semi, 4 liste, cap 60) a caldo e a freddo, e quanto pesa in RAM il processo. Il prodotto lo chiama al
