@@ -14,6 +14,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const COOKIE_NAME = 'yaca_session';
 const { stremioClient } = require('../../clients/stremio');
+const { traktClient } = require('../../clients/trakt');
 const UserConfig = require('../../models/UserConfig');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
@@ -297,9 +298,166 @@ async function traktHealthHandler(req, res) {
         return res.json({ success: true, userId, ...health });
     } catch (err) {
         console.error('[Auth] Errore health check Trakt:', err.message);
-        return res.status(500).json({ success: false, error: 'Errore interno controllo stato Trakt.' });
+        return res.status(500).json({ error: { code: 'non_disponibile', message: 'Errore interno controllo stato Trakt.' } });
     }
 }
 
-module.exports = { loginHandler, meHandler, logoutHandler, traktDisconnectHandler, traktHealthHandler, getJwtSecret };
+/**
+ * POST /api/auth/stremio
+ * Autentica su Stremio con email e password, restituendo l'authKey.
+ */
+async function stremioAuthHandler(req, res) {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+        return res.status(400).json({
+            error: {
+                code: 'richiesta_non_valida',
+                message: 'Email e password obbligatorie.'
+            }
+        });
+    }
+    try {
+        const stremioRes = await stremioClient.post('/api/login', { email, password }, { timeout: 10000 });
+        const data = stremioRes.data;
+        if (data && data.result && data.result.authKey) {
+            return res.json({ success: true, authKey: data.result.authKey, email: data.result.user?.email || email });
+        }
+        return res.status(401).json({
+            error: {
+                code: 'non_autenticato',
+                message: data?.result?.error || 'Credenziali non valide.'
+            }
+        });
+    } catch (_err) {
+        return res.status(503).json({
+            error: {
+                code: 'motore_giu',
+                message: 'Errore di connessione al servizio di autenticazione Stremio.'
+            }
+        });
+    }
+}
+
+/**
+ * POST /api/auth/trakt/code
+ * Avvia il device flow di Trakt generando user_code e device_code.
+ */
+async function traktCodeHandler(req, res) {
+    const clientId = process.env.TRAKT_CLIENT_ID;
+    if (!clientId) {
+        return res.status(503).json({
+            error: {
+                code: 'non_disponibile',
+                message: 'TRAKT_CLIENT_ID mancante nel server.'
+            }
+        });
+    }
+    try {
+        const response = await traktClient.post('/oauth/device/code', {
+            client_id: clientId
+        }, { headers: { 'Content-Type': 'application/json' } });
+        return res.json(response.data);
+    } catch (err) {
+        console.error('[Auth] Errore Trakt Code:', err.response?.data || err.message);
+        return res.status(503).json({
+            error: {
+                code: 'motore_giu',
+                message: 'Errore di connessione a Trakt.'
+            }
+        });
+    }
+}
+
+/**
+ * POST /api/auth/trakt/token
+ * Polling del token di Trakt per il device flow.
+ * Quando approvato, il token viene salvato in UserAccount nel database e non esposto al browser.
+ */
+async function traktTokenHandler(req, res) {
+    const { device_code } = req.body || {};
+    const clientId = process.env.TRAKT_CLIENT_ID;
+    const clientSecret = process.env.TRAKT_CLIENT_SECRET;
+
+    if (!device_code) {
+        return res.status(400).json({
+            error: {
+                code: 'richiesta_non_valida',
+                message: 'device_code mancante.'
+            }
+        });
+    }
+    if (!clientId || !clientSecret) {
+        return res.status(503).json({
+            error: {
+                code: 'non_disponibile',
+                message: 'Credenziali Trakt non configurate sul server.'
+            }
+        });
+    }
+
+    try {
+        const response = await traktClient.post('/oauth/device/token', {
+            code: device_code,
+            client_id: clientId,
+            client_secret: clientSecret
+        }, { headers: { 'Content-Type': 'application/json' } });
+
+        const { access_token, refresh_token, expires_in } = response.data;
+        const userId = req.utenteId;
+        if (userId && access_token) {
+            const expiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : null;
+            await UserAccount.findOneAndUpdate(
+                { userId },
+                {
+                    $set: {
+                        'apiKeys.trakt': access_token,
+                        'apiKeys.traktRefreshToken': refresh_token,
+                        'apiKeys.traktExpiresAt': expiresAt
+                    }
+                }
+            );
+        }
+
+        return res.json({ success: true, connected: true });
+    } catch (err) {
+        const status = err.response?.status;
+        if (status === 400 || status === 429) {
+            return res.json({ pending: true });
+        } else if (status === 404 || status === 410) {
+            return res.status(400).json({
+                error: {
+                    code: 'richiesta_non_valida',
+                    message: 'Codice autorizzazione Trakt scaduto o non valido.'
+                }
+            });
+        } else if (status === 409) {
+            return res.status(403).json({
+                error: {
+                    code: 'non_autenticato',
+                    message: "L'utente ha negato l'accesso su Trakt."
+                }
+            });
+        }
+        console.error('[Auth] Errore Trakt Token:', err.response?.data || err.message);
+        return res.status(503).json({
+            error: {
+                code: 'motore_giu',
+                message: 'Errore durante il recupero del token Trakt.'
+            }
+        });
+    }
+}
+
+module.exports = {
+    loginHandler,
+    meHandler,
+    logoutHandler,
+    traktDisconnectHandler,
+    traktHealthHandler,
+    stremioAuthHandler,
+    traktCodeHandler,
+    traktTokenHandler,
+    getJwtSecret
+};
+
 

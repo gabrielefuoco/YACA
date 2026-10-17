@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 03
 
@@ -121,3 +121,101 @@ parsava su quel percorso (`cookieParser` c'era solo su auth e `/api/configure`) 
 Questo ticket **non** tocca il client (lo fa l'11) e non smonta le rotte vecchie: prima si aggiunge la lingua
 nuova, poi si smette di parlare quella vecchia. Smontare per primi significa rompere la dashboard in
 produzione, che è l'unico pezzo che l'utente vede se qualcosa non torna.
+
+---
+
+## Esito — 17/10/2026
+
+Risolto con commit e test di caratterizzazione completi (`tests/domainSurface.test.js`, 29/29 passati in 1.87s).
+
+### 1. Le rotte di dominio implementate e le loro forme
+
+Tutte le rotte di dominio pretendono la sessione tramite `richiedeSessione` (`req.utenteId`) e **nessuna accetta `userId` dal client**.
+
+- **`GET /api/profilo`**: anagrafica, profili, catalogo attivo, chiavi API mascherate, `hasGlobalErdb`, `heroCatalogs`. Omette la coda di sync pesante e la libreria integrale.
+- **`GET /api/profilo/libreria`**: restituisce gli item della libreria dell'utente (deduplicati e con poster normalizzati).
+- **`POST /api/profilo/libreria`**: aggiunge un titolo alla libreria (con duplicate marks e conversione background).
+- **`DELETE /api/profilo/libreria/:itemId`**: rimozione (soft-delete) con allineamento datastore Stremio se configurato.
+- **`PUT /api/profilo/libreria/ordine`**: riordino personalizzato della libreria (`raw_ui_state.libraryOrder`).
+- **`GET /api/profilo/libreria/visti`**: anteprima read-only dei titoli visti da rimuovere.
+- **`POST /api/profilo/libreria/visti`**: esecuzione soft-delete titoli visti e push Stremio.
+- **`GET /api/profilo/sincronizzazione`**: stato di avanzamento e code di sincronizzazione (`isSyncing`, `total`, `current`, `lastSync`, `onboardingCompleted`, `manualDNA`, `suggestedDNA`).
+- **`POST /api/profilo/sincronizzazione`**: orchestrazione interna del sync (`syncAllStremioData` + `LibraryConverterService.convertAll`).
+- **`POST /api/profilo/aggiorna`**: intenzione «ricostruisci i miei suggerimenti» (invalida cache raccomandazioni / AI).
+- **`POST /api/profilo/dna/conferma`**: consolidamento del DNA suggerito in manuale in `AddonConfig`.
+- **`POST /api/configurazione`**: salvataggio configurazione (profili, cataloghi, API keys) e aggiornamento automatico addon Stremio su manifest change.
+- **`POST /api/configurazione/anteprima`**: restituisce le card Stremio (titolo, poster, anno, badge ita, durata) con tetto cap ~20 card e diagnosi filtri (`candidati`, `entrati`, `tagliati`).
+- **`POST /api/configurazione/verifica`**: validazione delle chiavi di dominio (`tmdbKey`, `mistralKey`, `stremioKey`). Risponde `{ valida: true, verificati }` oppure `400 chiave_non_valida`.
+- **`GET /api/configurazione/preset`**: restituisce la lista dei preset catalogo, profile templates, hero catalogs.
+- **`POST /api/configurazione/nome`**: generatore assistito AI per il nome fuso di due cataloghi.
+- **`GET /api/ricerca?tipo=titolo|genere|keyword|persona&q=...`**: unificazione dei quattro endpoint di ricerca in un'unica risorsa parametrizzata.
+- **`POST /api/mondi`**: rinominata da `/api/bolle`, calcola le raccomandazioni del grafo per il profilo.
+- **`POST /api/auth/stremio`**: login credenziali Stremio con rilascio authKey.
+- **`POST /api/auth/trakt/code`**: step 1 device flow OAuth Trakt (`device_code`, `user_code`).
+- **`POST /api/auth/trakt/token`**: step 2 device flow Trakt. Quando il token arriva viene salvato su `UserAccount` nel DB del server e non inviato in chiaro al browser.
+- **`GET /api/auth/trakt`**: heartbeat diagnostico stato connessione Trakt per l'utente in sessione.
+- **`DELETE /api/auth/trakt`**: disconnessione Trakt per l'utente in sessione.
+
+### 2. Il contratto di errore unico
+
+Tutte le rotte di dominio e il middleware `richiedeSessione` rispondono con la forma unificata:
+```json
+{
+  "error": {
+    "code": "non_autenticato",
+    "message": "Sessione assente o scaduta."
+  }
+}
+```
+Codici stabili e coerenti con gli stati HTTP:
+- `non_autenticato` (`401`)
+- `richiesta_non_valida` (`400`)
+- `chiave_non_valida` (`400`)
+- `non_trovato` (`404`)
+- `motore_giu` (`503`)
+- `non_disponibile` (`500` / `503`)
+
+### 3. Misura del payload (GET /api/user/:userId vs GET /api/profilo)
+
+Misurato analiticamente su Express con payload utente rappresentativo:
+- `GET /api/user/:userId`: **5453 byte** (trasportava code interne di sync, lastSync, nextSyncInterval e anagrafica non necessaria).
+- `GET /api/profilo`: **1593 byte** (solo ciò che disegna la dashboard).
+- **Risparmio reale**: **-3860 byte (-70.8%)**.
+
+### 4. `GET /sync-status/:userId`: verifica ed eliminazione IDOR
+
+Verificato per esecuzione:
+- Montato `cookieParser()` sulla rotta `/sync-status/:userId` in `src/api/stremio.js`.
+- Se la richiesta è priva di cookie di sessione, risponde `401 { error: { code: 'non_autenticato', message: 'Sessione assente o scaduta.' } }`.
+- Se la richiesta ha sessione valida, il parametro `:userId` dell'URL viene ignorato e la query AddonConfig interroga unicamente `req.utenteId` dell'utente autenticato.
+- L'IDOR è chiuso; le rotte pubbliche di Stremio (`/manifest.json`, `/catalog/*`, `/meta/*`, `/stream/*`) non sono state toccate.
+
+### 5. Rotte morte spente (con conteggio chiamanti 0)
+
+Verificate con `git grep` su tutto il frontend (comprese stringhe template):
+1. `GET /api/profiles/:id/raw-data`: **0 chiamanti** (presente solo firma in `lib/api.ts`). Spenta e rimossa.
+2. `POST /api/profiles/:id/sync-vectors`: **0 chiamanti** (presente solo firma in `lib/api.ts`). Spenta e rimossa.
+3. `POST /api/tmdb/batch-details`: **0 chiamanti** (presente solo firma in `lib/api.ts`). Spenta e rimossa.
+4. `POST /api/tmdb/batch-keywords`: **0 chiamanti** (presente solo firma in `lib/api.ts`). Spenta e rimossa.
+5. `GET /api/profiles/:id/flatness`: **0 chiamanti** in `frontend/src`. Spenta e rimossa.
+6. `POST /api/trakt/disconnect`: **0 chiamanti** (il client usava `/api/auth/trakt/disconnect`). Spenta la rotta duplicata.
+
+Tutte le altre vecchie rotte rimangono in piedi per non rompere il frontend attuale.
+
+### 6. Cosa resta da cambiare al ticket 11
+
+Il ticket 11 dovrà aggiornare `frontend/src/lib/api.ts` (e i 4 componenti con chiamate residue) per passare alla nuova lingua di dominio:
+- `api.getPresets()` → `GET /api/configurazione/preset`
+- `api.previewCatalog()` → `POST /api/configurazione/anteprima`
+- `api.configure()` → `POST /api/configurazione`
+- `api.stremioAuth()` → `POST /api/auth/stremio`
+- `api.validateTmdbKey()` / `api.validateMistralKey()` → `POST /api/configurazione/verifica`
+- `api.traktDeviceCode()` / `api.traktDeviceToken()` → `POST /api/auth/trakt/code` e `POST /api/auth/trakt/token`
+- `api.disconnectTrakt()` → `DELETE /api/auth/trakt`
+- `api.clearCache()` → `POST /api/profilo/aggiorna`
+- `api.searchTmdb*()` → `GET /api/ricerca?tipo=...&q=...`
+- `api.getLibrary()`, `api.addToLibrary()`, ecc. → `GET|POST|DELETE|PUT /api/profilo/libreria/*`
+- `api.getSyncStatus()`, `api.refreshSync()` → `GET|POST /api/profilo/sincronizzazione`
+- `api.confirmDNA()` → `POST /api/profilo/dna/conferma`
+- Rimozione dal client delle chiamate orfane `getRawProfileData`, `syncVectors`, `batchTmdbDetails`, `batchTmdbKeywords`.
+

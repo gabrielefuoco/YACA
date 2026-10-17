@@ -15,7 +15,17 @@ const UserConfig = require('./src/models/UserConfig');
 const { getPresets, profileTemplates } = require('./src/data/presets');
 const { getCatalogKind } = require('./src/catalog/catalogKind');
 const connectDB = require('./src/db/connection');
-const { loginHandler, meHandler, logoutHandler, traktDisconnectHandler, traktHealthHandler } = require('./src/api/auth/index.js');
+const {
+    loginHandler,
+    meHandler,
+    logoutHandler,
+    traktDisconnectHandler,
+    traktHealthHandler,
+    stremioAuthHandler,
+    traktCodeHandler,
+    traktTokenHandler
+} = require('./src/api/auth/index.js');
+const { richiedeSessione } = require('./src/middleware/sessione');
 const { inputSanitizer } = require('./src/middleware/inputSanitizer');
 const { attachRequestContext } = require('./src/middleware/requestContext');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
@@ -25,6 +35,13 @@ const tmdbRoutes = require('./src/api/tmdb');
 const adminRoutes = require('./src/api/admin');
 const catalogRoutes = require('./src/api/catalog');
 const registerStaticPostersRoute = require('./src/api/staticPosters');
+
+// Rotte di dominio (Ticket 10)
+const profiloRoutes = require('./src/api/profilo');
+const configurazioneRoutes = require('./src/api/configurazione');
+const ricercaRoutes = require('./src/api/ricerca');
+const mondiRoutes = require('./src/api/mondi');
+
 // Connessione MongoDB
 connectDB();
 
@@ -119,9 +136,22 @@ const authLimiter = rateLimit({
 app.post('/api/auth/login', cookieParser(), authLimiter, loginHandler);
 app.get('/api/auth/me', cookieParser(), meHandler);
 app.post('/api/auth/logout', cookieParser(), logoutHandler);
+app.post('/api/auth/stremio', cookieParser(), stremioAuthHandler);
 app.post('/api/auth/trakt/disconnect', cookieParser(), traktDisconnectHandler);
-app.post('/api/trakt/disconnect', cookieParser(), traktDisconnectHandler);
+app.delete('/api/auth/trakt', cookieParser(), richiedeSessione, traktDisconnectHandler);
+app.get('/api/auth/trakt', cookieParser(), richiedeSessione, traktHealthHandler);
+app.post('/api/auth/trakt/code', cookieParser(), richiedeSessione, traktCodeHandler);
+app.post('/api/auth/trakt/token', cookieParser(), richiedeSessione, traktTokenHandler);
+// Retrocompatibilità: rotta vecchia senza prefisso auth
 app.get('/api/trakt/health', cookieParser(), traktHealthHandler);
+
+// --- ROTTE DI DOMINIO (Ticket 10: Superficie di dominio) ---
+const domainLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, standardHeaders: true, legacyHeaders: false });
+app.use('/api/profilo', cookieParser(), domainLimiter, profiloRoutes);
+app.use('/api/configurazione', cookieParser(), domainLimiter, configurazioneRoutes);
+app.use('/api/ricerca', cookieParser(), domainLimiter, ricercaRoutes);
+app.use('/api/mondi', cookieParser(), domainLimiter, mondiRoutes);
+
 
 
 
@@ -165,9 +195,17 @@ app.get('/api/presets', (req, res) => {
         heroCatalogs: getHeroUiGroups()
     });
 });
-
-
-
+// Retrocompatibilità: vecchia rotta clear-cache
+app.post('/api/clear-cache', cookieParser(), async (req, res) => {
+    try {
+        const { hybridRecommendationsCache, aiDiscoveryCache } = require('./src/cache/cacheInstances');
+        await hybridRecommendationsCache.clear();
+        await aiDiscoveryCache.clear();
+        return res.json({ success: true, message: 'Cache svuotata con successo.' });
+    } catch (err) {
+        return res.status(500).json({ error: 'Errore durante lo svuotamento della cache.' });
+    }
+});
 
 
 
