@@ -35,3 +35,13 @@ vecchie, ma perché serve **i provider nuovi**. L'inventario di cosa fa ognuno d
 
 È **lavoro di prodotto**, non pulizia: è il motore che produce i cataloghi che l'utente vede. Va dopo il deploy
 del ticket 30 (così si misura su dati veri) e prima della cancellazione del vecchio stack.
+
+## Handoff e stato (18/10/2026)
+
+Il piano operativo completo è in **`C:\Users\gabri\AppData\Local\Temp\handoff-catena-ibrida.md`**: numeri verificati,
+le cinque cose che mancano, i sei passi con la loro prova, gli invarianti da non rompere e le **11 trappole** pagate
+in un giorno.
+
+Le cifre da usare sono misurate, non stimate: la catena sono **3.169 righe** (`hybridRecommendations` 462 +
+`pool` 693 + `dataFetchers` 416 + `catalogStrategies` 1.598), il serving è **1.717** (`catalogHandler` 1.037 +
+`metaHandler` 680), il vecchio stack intero **5.098**.
