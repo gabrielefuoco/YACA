@@ -3,7 +3,7 @@ const { leggiWatchlist, WATCHLIST_PAGE_SIZE } = require('../../library');
 const LibrarySyncService = require('../../library/ingestion/LibrarySyncService');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
-const duckDbStore = require('../../db/duckDbStore');
+const duckDbStore = require('../../indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('./DuckDbProvider');
 const { normalizeLegacyPosterHost } = require('../../library');
 

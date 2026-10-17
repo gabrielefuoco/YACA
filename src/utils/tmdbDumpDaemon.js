@@ -63,7 +63,7 @@ function isParquetFresh(store, duckDbStore) {
 
 async function buildTier2Index() {
     try {
-        const { buildTier2 } = require('../db/tier2Index');
+        const { buildTier2 } = require('../indice/tier2');
         console.log('[TmdbDump] Ricostruzione indice Tier 2 e SQLite FTS5 su disco...');
         const res = await buildTier2();
         console.log(`[TmdbDump] Indice Tier 2 completato: ${res.count} record in ${res.durationSeconds}s`);
@@ -84,7 +84,7 @@ async function convertAndReloadDuckDb() {
         });
 
         console.log('[TmdbDump] Riavvio modulo DuckDB...');
-        const duckDbStore = require('../db/duckDbStore');
+        const duckDbStore = require('../indice/duckDbStore');
         await duckDbStore.close();
         await duckDbStore.init({ forceRebuild: true });
         console.log('[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet.');
@@ -331,7 +331,7 @@ async function runTmdbDumpDaemon() {
     try {
         const store = new TmdbDumpStore();
         const client = new TmdbDumpClient(apiKey);
-        const duckDbStore = require('../db/duckDbStore');
+        const duckDbStore = require('../indice/duckDbStore');
         
         // Conversione al boot: se i parquet esistono e sono freschi, salta convert_to_parquet.js
         if (isFirstRun) {

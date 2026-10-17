@@ -12,7 +12,7 @@
  * chiamata a TMDB.
  */
 
-const duckDbStore = require('../db/duckDbStore');
+const duckDbStore = require('../indice/duckDbStore');
 const { leggiItemPerStudi } = require('../library');
 const animeMappingStore = require('../data/animeMappingStore');
 

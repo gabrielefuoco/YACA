@@ -7,7 +7,7 @@
  * c'e' o e' rotto. Con l'archivio vuoto la risposta deve essere **identica** a quella di prima.
  */
 
-jest.mock('../src/db/tier2Index', () => ({ Tier2SearchClient: jest.fn() }));
+jest.mock('../src/indice/tier2', () => ({ Tier2SearchClient: jest.fn() }));
 
 /** L'archivio finto: un array di righe, e ogni errore si puo' far explodere a piacere. */
 const mockSearchLearnedNames = jest.fn(async () => []);
@@ -35,7 +35,7 @@ jest.mock('../src/catalog/tier2Enrich', () => ({
     enrichTier2Items: jest.fn(async (items) => items)
 }));
 
-const { Tier2SearchClient } = require('../src/db/tier2Index');
+const { Tier2SearchClient } = require('../src/indice/tier2');
 const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { enrichTier2Items } = require('../src/catalog/tier2Enrich');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');

@@ -74,7 +74,7 @@ jest.mock('../src/utils/tmdbBudget', () => ({
 jest.mock('../src/utils/logger', () => ({ logError: jest.fn() }));
 
 /** L'indice FTS5 non serve qui: non si vuole alcun disco ne' alcuna rete. */
-jest.mock('../src/db/tier2Index', () => ({ Tier2SearchClient: jest.fn() }));
+jest.mock('../src/indice/tier2', () => ({ Tier2SearchClient: jest.fn() }));
 
 jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn(),
@@ -518,7 +518,7 @@ describe('La ricerca standard risponde con i titoli del Tier 2 gia presentabili'
 
     /** L'indice FTS5 restituisce una riga grezza, come in produzione. */
     function stubIndice(righe) {
-        const { Tier2SearchClient } = require('../src/db/tier2Index');
+        const { Tier2SearchClient } = require('../src/indice/tier2');
         Tier2SearchClient.mockImplementation(() => ({
             init: jest.fn(() => true),
             search: jest.fn(() => righe),

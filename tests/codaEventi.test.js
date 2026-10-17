@@ -17,7 +17,7 @@
  * - Redis che lancia: `take` dà `[]`, `push`/`done`/`fail` degradano, nulla propaga.
  */
 
-const codaEventi = require('../src/cache/codaEventi');
+const codaEventi = require('../src/posters/codaEventi');
 const { createCodaEventi, MAX_TENTATIVI, TTL_SECONDS } = codaEventi;
 
 const EVENTO = { tipo: 'doppiato', id: 'kitsu:1234', badge: 'ITA' };

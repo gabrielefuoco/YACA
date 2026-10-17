@@ -1,4 +1,4 @@
-const { erdbIdDaEvento, erdbIdDaNomeFile, erdbIdsDaEvento, eventoDaNomeFile, nomeFileDaEvento, urlDaEvento } = require('../src/cache/posterDaEvento');
+const { erdbIdDaEvento, erdbIdDaNomeFile, erdbIdsDaEvento, eventoDaNomeFile, nomeFileDaEvento, urlDaEvento } = require('../src/posters/posterDaEvento');
 
 /*
  * I nomi file attesi qui sono SCRITTI A MANO, non presi da `posterFileName`.

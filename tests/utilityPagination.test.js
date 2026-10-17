@@ -40,7 +40,7 @@ const {
     WATCHLIST_PAGE_SIZE
 } = require('../src/catalog/providers/WatchlistProvider');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 
 describe('U-03: paginazione utility a 20 item', () => {
     beforeEach(() => {
@@ -96,7 +96,7 @@ describe('U-03: paginazione utility a 20 item', () => {
     });
 
     test('l ordinamento FTS standard mantiene il tie-breaker id prima di LIMIT/OFFSET', async () => {
-        const sql = await buildCatalogQuery({
+        const { sql, params } = await compileQuery({
             type: 'movie',
             where: [{ _fts: 'Spider-Man' }],
             orderBy: '"popularity" DESC NULLS LAST'
@@ -104,6 +104,7 @@ describe('U-03: paginazione utility a 20 item', () => {
 
         // Il ranking FTS è cambiato nel lotto E (boost del titolo esatto prima del BM25),
         // ma il contratto di paginazione resta: tie-breaker `id ASC` e offset reale.
-        expect(sql).toMatch(/ORDER BY .*fts_main_movies\.match_bm25\(id, 'Spider-Man'\) DESC, id ASC LIMIT 20 OFFSET 20$/);
+        expect(sql).toMatch(/ORDER BY .*fts_main_movies\.match_bm25\(id, \?\) DESC, id ASC LIMIT \? OFFSET \?$/);
+        expect(params).toEqual(expect.arrayContaining(['Spider-Man', 20, 20]));
     });
 });

@@ -25,7 +25,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { createCodaEventi } = require('../src/cache/codaEventi');
+const { createCodaEventi } = require('../src/posters/codaEventi');
 const {
     FILE_NAME,
     DEFAULT_ATTESA_REDIS_MS,

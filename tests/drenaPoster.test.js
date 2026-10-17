@@ -29,7 +29,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { drena, classificaMotivo } = require('../src/cache/drenaPoster');
+const { drena, classificaMotivo } = require('../src/posters/drenaPoster');
 
 const BASE = 'http://127.0.0.1:3100/Tk-prova';
 

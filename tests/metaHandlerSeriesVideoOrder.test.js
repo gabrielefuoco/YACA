@@ -27,7 +27,7 @@ const mockEpisodesCache = new Map();
 
 const mockImdbIds = new Map();
 
-jest.mock('../src/db/duckDbStore', () => ({
+jest.mock('../src/indice/duckDbStore', () => ({
     isInitialized: true,
     query: jest.fn(async () => []),
     init: jest.fn(async () => {}),

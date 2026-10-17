@@ -3,7 +3,7 @@
  * deve diventare una sola card, e le copertine servite da host morti devono
  * essere riscritte verso l'host corrente.
  */
-jest.mock('../src/db/duckDbStore', () => ({ query: jest.fn() }));
+jest.mock('../src/indice/duckDbStore', () => ({ query: jest.fn() }));
 jest.mock('../src/data/animeMappingStore', () => ({
     kitsuToTmdb: new Map([['7278', '46004'], ['534', '12477']]),
     // Fribb dichiara il tipo che viaggia con l'id: 7278 (Date A Live) è una serie,
@@ -12,7 +12,7 @@ jest.mock('../src/data/animeMappingStore', () => ({
     init: jest.fn()
 }));
 
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const {
     normalizeLibraryId,
     normalizeTitle,

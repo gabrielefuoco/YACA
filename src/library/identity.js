@@ -18,7 +18,7 @@
  * letture (dashboard e cataloghi watchlist) lo escludono.
  */
 
-const duckDbStore = require('../db/duckDbStore');
+const duckDbStore = require('../indice/duckDbStore');
 const UserLibraryItem = require('./models/UserLibraryItem');
 const { resolveItemMediaType } = require('./ingestion/libraryMediaTypeResolution');
 let animeMappingStore = null;

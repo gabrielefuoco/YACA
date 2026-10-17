@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 28 — L'ultimo miglio dei moduli: i ponti in uso e i residui
@@ -48,3 +48,47 @@ I `grep` a zero: nessun `require` di shim fuori da `scripts/`; nessuna occorrenz
 Il ticket 27 ha i **tre bug** da correggere: questo ticket è il **trasloco**, non la correzione. Se toccano gli
 stessi file, si coordinano — e il trasloco va fatto **dopo**, perché spostare codice mentre si corregge rende
 impossibile attribuire un guasto a una delle due cause.
+
+## Esito
+
+- **Cinque consumatori ripuntati**:
+  - `src/api/staticPosters.js` → `require('../posters/codaEventi')`
+  - `src/catalog/formatters/StremioFormatter.js` → `require('../../posters/erdb/build')` e `require('../../posters/posterDaEvento')`
+  - `src/catalog/tier2Search.js` → `require('../indice/tier2')`
+  - `src/utils/tmdbDumpDaemon.js` → `require('../indice/tier2')`
+  - Altri chiamanti ripuntati ai moduli canonici: `src/library/index.js` (delegato direttamente a `profile.contestoDi`), `src/posters/index.js` (`require('./erdb/build')`), `ops/erdb-legion/costruisci.js`, `ops/timing/probe-missing.js`, `ops/timing/probe-search.js`, e l'aggancio di shutdown in `index.js:279`.
+- **Otto shim rimossi**:
+  - Cancellati: `src/cache/codaEventi.js`, `src/cache/posterDaEvento.js`, `src/cache/drenaPoster.js`, `src/erdb/build.js`, `src/erdb/index.js`, `src/posters/erdb/index.js`, `src/db/tier2Index.js`, `src/library/context.js`.
+  - Mantenuti intatti come prescritto: `scripts/drena-coda-poster.js` e `scripts/erdb-builder/build.js` (entry point host).
+- **DuckDB Store ricollocato**:
+  - `src/db/duckDbStore.js` spostato in `src/indice/duckDbStore.js` via `git mv`. Logica e persistenza preservate identiche. Tutti i moduli consumatori in `src/` e le suite di test pertinenti sono stati ripuntati a `src/indice/duckDbStore`.
+- **Codice morto e QueryBuilder**:
+  - Rimossa la funzione priva di chiamanti `resolveTypeSelectors` da `src/engines/hybrid/catalogStrategies.js`.
+  - Rimosso `src/db/queryBuilder.js` (`git rm`).
+  - *Decisione sui test di queryBuilder*: I 4 file di test fuori dal perimetro di Ticket 29 (`tests/stremioProtocolFixes.test.js`, `tests/donghuaCatalog.test.js`, `tests/presetPagination.test.js`, `tests/utilityPagination.test.js`) sono stati allineati a `compileQuery` (`src/indice/compiler.js`). I rimanenti 4 file (`tests/duckDbAndMatchmaker.test.js`, `tests/duckDbPresetsValidation.test.js`, `tests/presetBurtonOrdering.test.js`, `tests/sottosogliaVisibility.test.js`) appartengono all'insieme delle suite lock di esclusiva competenza del Ticket 29 in parallelo; per evitare conflitti tra agenti, non sono stati modificati in questo worktree.
+- **Regola architetturale documentata**:
+  - Aggiunta in `docs/INDEX.md` sotto `## 🏛️ Architettura Generale di YACA`.
+- **Prove Grep**:
+  - Nessun require di shim residuo:
+    - `git grep -E "require\(.*cache/(codaEventi|posterDaEvento|drenaPoster)" -- ":!scripts/" ":!tests/searchTier2Merge.test.js" ":!.scratch/"` → 0 risultati.
+    - `git grep -E "require\(.*('|\")(\./|\.\./|/)erdb" -- ":!scripts/" ":!tests/searchTier2Merge.test.js" ":!.scratch/"` → Solo `src/posters/erdb/build` e `scripts/erdb-builder/*`.
+    - `git grep -E "require\(.*(posters/erdb/index|db/tier2Index|library/context)" -- ":!scripts/" ":!tests/searchTier2Merge.test.js" ":!.scratch/"` → 0 risultati.
+  - Nessuna occorrenza di `resolveTypeSelectors` nel codice sorgente:
+    - `git grep resolveTypeSelectors -- src/` → 0 risultati.
+  - Assenza del vecchio queryBuilder:
+    - `Test-Path src/db/queryBuilder.js` → `False`.
+  - Spostamento DuckDB Store:
+    - `Test-Path src/db/duckDbStore.js` → `False`.
+    - `Test-Path src/indice/duckDbStore.js` → `True`.
+- **Suite di test eseguite (una alla volta, `--forceExit`)**:
+  - `tests/staticPostersCoda.test.js`: PASS (10/10)
+  - `tests/stremioProtocolFixes.test.js`: PASS (6/6)
+  - `tests/tier2Index.test.js`: PASS (15/15)
+  - `tests/erdbBuilder.test.js`: PASS (27/27)
+  - `tests/moduloPoster.test.js`: PASS (5/5)
+  - `tests/libraryReorder.test.js`: PASS (4/4)
+  - Ulteriori verifiche: `tests/presetPagination.test.js` (4/4) e `tests/utilityPagination.test.js` (3/3) PASS.
+- **Cosa non è stato fatto**:
+  - Nessuna modifica ai file del Ticket 29 (`package.json`, `jest.config`, `ricercaDoor.test.js`, `searchTier2Merge.test.js`, `retireTmdbScoringData.test.js`, e le 7 suite con lock DuckDB).
+  - Nessun `git push`.
+

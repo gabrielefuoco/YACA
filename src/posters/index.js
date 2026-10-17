@@ -13,7 +13,7 @@
 const codaEventi = require('./codaEventi');
 const drenaPoster = require('./drenaPoster');
 const posterDaEvento = require('./posterDaEvento');
-const erdb = require('./erdb');
+const erdb = require('./erdb/build');
 const drenaCodaPoster = require('./drenaCodaPoster');
 
 module.exports = {

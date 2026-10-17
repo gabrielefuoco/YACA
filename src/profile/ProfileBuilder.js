@@ -116,7 +116,7 @@ class ProfileBuilder {
      */
     static async _fetchDnaItemsFromDuckDb(items) {
         if (!items || items.length === 0) return [];
-        const duckDbStore = require('../db/duckDbStore');
+        const duckDbStore = require('../indice/duckDbStore');
 
         const movieItems = items.filter(i => !i.type || i.type === 'movie');
         const tvItems = items.filter(i => i.type === 'tv' || i.type === 'series');
@@ -485,7 +485,7 @@ class ProfileBuilder {
             let duckDbResolved = {};
             if (imdbIds.length > 0) {
                 try {
-                    const duckDbStore = require('../db/duckDbStore');
+                    const duckDbStore = require('../indice/duckDbStore');
                     duckDbResolved = await duckDbStore.resolveImdbIds(imdbIds);
                 } catch (e) {
                     console.warn('[ProfileBuilder] DuckDB resolveImdbIds error:', e.message);

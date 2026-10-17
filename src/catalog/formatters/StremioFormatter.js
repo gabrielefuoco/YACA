@@ -6,7 +6,7 @@ const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
 // La convenzione del nome file NON viene riscritta qui: la produce il costruttore
 // (scripts/erdb-builder/build.js) ed è la stessa che chiede la rotta `/erdb-poster/:file`.
 // Un nome inventato qui produrrebbe file che la rotta non troverebbe mai: poster invisibile, zero errori.
-const { posterFileName } = require('../../erdb/build');
+const { posterFileName } = require('../../posters/erdb/build');
 // Unica fonte di verità sulla cartella dei poster: la stessa che serve la rotta statica e
 // in cui scrive il drenatore. Se le due divergessero, nessun file sarebbe mai servito.
 const { getCacheDir } = require('../../api/staticPosters');
@@ -14,7 +14,7 @@ const { getCacheDir } = require('../../api/staticPosters');
 // unica fonte di verità, così il riallineamento non punta a un numero diverso da quello che
 // il formatter scrive negli URL nuovi.
 const { BADGE_IMG_VERSION, calcolaVersionePoster } = require('./posterBadgeVersion');
-const { erdbIdDaNomeFile } = require('../../cache/posterDaEvento');
+const { erdbIdDaNomeFile } = require('../../posters/posterDaEvento');
 
 // Etichetta del badge "doppiato" nella cache: la stessa costante del costruttore
 // (scripts/erdb-builder/dump-list.js, BADGE_ITA). Non è un'invenzione: se non coincide,

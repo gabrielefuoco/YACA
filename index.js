@@ -276,7 +276,7 @@ const shutdown = (signal) => {
                 console.error('Errore durante la disconnessione:', err.message);
             }
             try {
-                const duckDbStore = require('./src/db/duckDbStore');
+                const duckDbStore = require('./src/indice/duckDbStore');
                 await duckDbStore.close();
                 console.log('DuckDB disconnesso.');
             } catch (err) {

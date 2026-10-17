@@ -6,7 +6,7 @@ const animeMappingStore = require('../data/animeMappingStore');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../db/tier1LazyPromotion');
 const { normalizeAnimeMarker, extractAnimeTmdbId } = require('../utils/animeIdentity');
-const duckDbStore = require('../db/duckDbStore');
+const duckDbStore = require('../indice/duckDbStore');
 const itaAnnotations = require('../data/itaAnnotations');
 const animeAiringState = require('../data/animeAiringState');
 
