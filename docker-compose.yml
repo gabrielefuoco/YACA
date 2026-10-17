@@ -56,8 +56,11 @@ services:
 
   graph:
     build:
-      context: .
-      dockerfile: services/graph/Dockerfile
+      # Il contesto è la cartella del servizio, non la radice: così il .dockerignore di root
+      # (che esclude services/) non entra in gioco, e l'immagine si costruisce anche sul mate
+      # con un semplice `docker compose build graph`.
+      context: services/graph
+      dockerfile: Dockerfile
     image: ghcr.io/gabrielefuoco/yaca-graph:${GRAPH_TAG:-latest}
     container_name: yaca-graph
     restart: unless-stopped

@@ -3,11 +3,12 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Installa dipendenze del modulo
-COPY services/graph/requirements.txt /app/services/graph/
+# Il contesto di build è questa cartella (v. docker-compose.yml): i percorsi sono relativi a services/graph.
+COPY requirements.txt /app/services/graph/
 RUN pip install --no-cache-dir -r /app/services/graph/requirements.txt
 
 # Copia codice del modulo (il volume dati viene montato separatamente in /app/services/graph/data)
-COPY services/graph /app/services/graph
+COPY . /app/services/graph
 
 ENV PYTHONPATH=/app/services
 ENV PORT=7862

@@ -1,0 +1,11 @@
+# Il contesto di build è QUESTA cartella (services/graph): le regole qui sotto tengono fuori
+# ciò che non serve all'immagine. I 138 MB dell'artefatto arrivano da un bind mount read-only
+# (decisione ticket 07/18), non dall'immagine.
+data/
+log/
+.cache/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
