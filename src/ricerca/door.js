@@ -224,12 +224,17 @@ async function cerca({
         // D. Fusione e ordinamento (la ricerca possiede l'ordine dei candidati)
         // Se TMDB ha risposto (es. nel panel creator o multi search), uniamo i risultati
         // mantenendo priorità e deduplicando per ID TMDB.
+        // Il cap NON si applica qui: prima si filtra per contesto, poi si tronca (ticket 27).
+        // Troncare prima del filtro restituisce MENO risultati del richiesto: con 40 candidati
+        // di cui 20 non-adulti, il taglio a 20 scarta parte dei non-adulti e il filtro Kids Mode
+        // ne lascia 5 invece di 20. `fondiEOrdina` tronca solo se riceve un limite: ometterlo
+        // significa "nessun cap", e il taglio finale resta quello di sotto.
         let finalItems = fondiEOrdina({
             locali: localCandidates.length > 0 ? localCandidates : tmdbCandidates,
             tier2: [],
             learned: [],
             altri: localCandidates.length > 0 ? tmdbCandidates : []
-        }, { limit });
+        });
 
         // E. Rispetto del contesto (es. Kids Mode)
         if (contesto.kidsMode) {

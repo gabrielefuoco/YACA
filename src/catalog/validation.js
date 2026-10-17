@@ -110,22 +110,26 @@ function validateCatalogDefinition(rawCatalog, options = {}) {
         warnings.push({ field: 'sort.by', code: 'WARN_UNKNOWN_SORT', message: `Ordinamento non standard: "${sortBy}".` });
     }
 
-    // Filtri: controllo sintattico valori numerici / date
-    const query0 = (Array.isArray(rawCatalog.filters?.queries) && rawCatalog.filters.queries.length > 0)
-        ? rawCatalog.filters.queries[0]
+    // Filtri: controllo sintattico valori numerici / date — su TUTTI i blocchi di query, non solo
+    // il primo: una definizione con `queries[1]` non valida deve fallire (ticket 27).
+    const blocchiQuery = (Array.isArray(rawCatalog.filters?.queries) && rawCatalog.filters.queries.length > 0)
+        ? rawCatalog.filters.queries
         : ((Array.isArray(rawCatalog.queries) && rawCatalog.queries.length > 0)
-            ? rawCatalog.queries[0]
-            : (rawCatalog.filters || {}));
-    if (query0['vote_count.gte'] !== undefined) {
-        const vc = Number(query0['vote_count.gte']);
-        if (isNaN(vc) || vc < 0) {
-            errors.push({ field: 'filters.vote_count.gte', code: 'ERR_INVALID_FILTER_VALUE', message: 'vote_count.gte deve essere un numero non negativo.' });
+            ? rawCatalog.queries
+            : [rawCatalog.filters || {}]);
+    for (const [indiceBlocco, query0] of blocchiQuery.entries()) {
+        const suffisso = blocchiQuery.length > 1 ? `[${indiceBlocco}]` : '';
+        if (query0['vote_count.gte'] !== undefined) {
+            const vc = Number(query0['vote_count.gte']);
+            if (isNaN(vc) || vc < 0) {
+                errors.push({ field: `filters${suffisso}.vote_count.gte`, code: 'ERR_INVALID_FILTER_VALUE', message: 'vote_count.gte deve essere un numero non negativo.' });
+            }
         }
-    }
-    if (query0['vote_average.gte'] !== undefined) {
-        const va = Number(query0['vote_average.gte']);
-        if (isNaN(va) || va < 0 || va > 10) {
-            errors.push({ field: 'filters.vote_average.gte', code: 'ERR_INVALID_FILTER_VALUE', message: 'vote_average.gte deve essere compreso tra 0 e 10.' });
+        if (query0['vote_average.gte'] !== undefined) {
+            const va = Number(query0['vote_average.gte']);
+            if (isNaN(va) || va < 0 || va > 10) {
+                errors.push({ field: `filters${suffisso}.vote_average.gte`, code: 'ERR_INVALID_FILTER_VALUE', message: 'vote_average.gte deve essere compreso tra 0 e 10.' });
+            }
         }
     }
 
@@ -178,15 +182,19 @@ function validateCatalogDefinition(rawCatalog, options = {}) {
         }
     }
 
-    // Verifica dei singoli filtri dichiarati rispetto alle capacità della fonte
-    const filterKeys = Object.keys(query0).filter(k => k !== 'strategy' && k !== 'sort_by' && k !== 'provider' && k !== 'queries' && k !== 'where');
-    for (const key of filterKeys) {
-        if (!sourceCaps.canServeFilter(key)) {
-            errors.push({
-                field: `filters.${key}`,
-                code: 'ERR_SOURCE_UNSUPPORTED_FILTER',
-                message: `Il filtro "${key}" non è supportato dalla fonte "${sourceCaps.name}".`
-            });
+    // Verifica dei singoli filtri dichiarati rispetto alle capacità della fonte — su TUTTI i
+    // blocchi: un filtro non supportato in `queries[1]` deve far fallire la definizione (ticket 27).
+    for (const [indiceBlocco, blocco] of blocchiQuery.entries()) {
+        const suffisso = blocchiQuery.length > 1 ? `[${indiceBlocco}]` : '';
+        const filterKeys = Object.keys(blocco).filter(k => k !== 'strategy' && k !== 'sort_by' && k !== 'provider' && k !== 'queries' && k !== 'where');
+        for (const key of filterKeys) {
+            if (!sourceCaps.canServeFilter(key)) {
+                errors.push({
+                    field: `filters${suffisso}.${key}`,
+                    code: 'ERR_SOURCE_UNSUPPORTED_FILTER',
+                    message: `Il filtro "${key}" non è supportato dalla fonte "${sourceCaps.name}".`
+                });
+            }
         }
     }
 

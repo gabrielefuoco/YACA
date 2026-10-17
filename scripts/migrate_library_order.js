@@ -98,16 +98,20 @@ async function migrateLibraryOrder(options = {}) {
 }
 
 async function main() {
+    let exitCode = 0;
     try {
         await connectMongo();
         await migrateLibraryOrder();
     } catch (err) {
+        // Una migrazione su dato dell'utente che fallisce NON deve uscire 0 (ticket 27):
+        // un exit code 0 dice a chi l'ha lanciata (o a un timer) che è andata bene.
         console.error('Errore critico durante la migrazione:', err);
+        exitCode = 1;
     } finally {
         try {
             await mongoose.disconnect();
         } catch (_e) {}
-        process.exit(0);
+        process.exit(exitCode);
     }
 }
 

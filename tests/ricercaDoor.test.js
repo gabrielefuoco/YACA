@@ -255,6 +255,32 @@ describe('Modulo Ricerca (Ticket 22 — seconda metà)', () => {
 
             expect(res.items.map(i => i.title)).toEqual(['Cartone Kids', 'Avventura Famiglia']);
         });
+
+        test('kidsMode: il cap si applica DOPO il filtro, non prima (ticket 27)', async () => {
+            // 40 candidati con 10 adulti SPARSI fra i 30 non-adulti. Se il cap a 20 scattasse
+            // prima del filtro, i primi 20 conterrebbero 5 adulti e il filtro ne lascerebbe 15:
+            // il vecchio ordine restituiva 15 titoli per un cap di 20.
+            const risultati = [];
+            for (let i = 1; i <= 40; i++) {
+                const adult = i % 4 === 0;
+                risultati.push({ id: i, title: adult ? `Adulto ${i}` : `Kids ${i}`, adult });
+            }
+
+            const mockClient = {
+                get: jest.fn().mockResolvedValue({ data: { results: risultati } })
+            };
+
+            const res = await cerca({
+                q: 'film',
+                tipo: 'titolo',
+                contesto: { kidsMode: true },
+                cap: 20,
+                client: mockClient
+            });
+
+            expect(res.items).toHaveLength(20);
+            expect(res.items.every(i => !i.adult && !(i.rawTMDB && i.rawTMDB.adult))).toBe(true);
+        });
     });
 
     describe('5. Il Registro delle Sei Fonti', () => {
