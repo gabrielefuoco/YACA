@@ -353,7 +353,7 @@ e ognuno con un contratto** — e i confini fra loro hanno un nome.
 | modulo | possiede | non possiede |
 |---|---|---|
 | **profilo** (21) | anagrafica, **lista e singolo profilo**, impostazioni (selettori, `kidsMode`, policy anime, **slider**), i suoi cataloghi, le deduzioni; e **il contesto** che scende a tutti | le chiavi API, l'account, la ui state |
-| **configurazione utente** (nessun ticket ancora) | chiavi API, account, `addonUuid`, ui state | i `profiles[]` (regola: solo il profilo li tocca) |
+| **configurazione utente** (ticket 26) | l'identità (`userId`, `addonUuid`), le **chiavi** (TMDB, Mistral, Stremio — oggi globali, domani BYOK), i **token di Trakt** e le preferenze (ui state). L'autenticazione tiene la **sessione** e i **flussi** che ottengono una credenziale | i `profiles[]` (regola: solo il profilo li tocca) e il `passwordHash` (il segreto che *prova* l'identità sta con chi la verifica) |
 | **libreria** (15/16) | i **fatti** (visto, watchlist, segnali, identità), l'ingestione e la sua macchina a stati | le deduzioni — *il profilo deduce* |
 | **indice** (22) | DuckDB + FTS5 + Tier 2 + il **compilatore** (filtri → query parametrizzata) | le risposte memorizzate |
 | **ricerca** (22) | da una richiesta a una lista **ordinata** (registro delle fonti, fusione, ordinamento); porta unica `cerca({q, tipo, contesto, cap})`, vuoto con `motivi[]` | l'AI, l'indice, i provider |
