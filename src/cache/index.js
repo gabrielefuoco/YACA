@@ -116,7 +116,10 @@ function deriva(descrizione) {
                 }
             }
 
-            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}`;
+            // Nuova catena hidden_gems (Ticket 41): lo switch entra nella chiave per evitare collisioni tra motori
+            const hgSuffix = (varia.nuova_catena_hidden_gems === 'true' || varia.nuova_catena_hidden_gems === true) ? '_hg' : '';
+
+            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}${hgSuffix}`;
             break;
         }
 
