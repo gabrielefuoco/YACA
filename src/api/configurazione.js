@@ -10,6 +10,7 @@ const configureRoute = require('./configure/index');
 const { getPresets, profileTemplates } = require('../data/presets');
 const { getCatalogKind } = require('../catalog/catalogKind');
 const { getHeroUiGroups } = require('../catalog/registry');
+const { formatPreviewResponse } = require('../catalog/previewContract');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { createTmdbClient } = require('../clients/tmdb');
 const { generateTmdbFiltersFromPrompt } = require('../ai/router');
@@ -174,14 +175,15 @@ router.post('/anteprima', async (req, res) => {
             tagliati: esclusiPerCriterio
         };
 
-        return res.json({
+        const payload = formatPreviewResponse({
             name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null,
             type: discoverType,
-            items,
             cards: items,
             diagnosi,
             total: entrati
         });
+
+        return res.json(payload);
     } catch (err) {
         console.error('[ConfigurazioneAPI] Errore anteprima catalogo:', err.message);
         return erroreDominio(res, 500, 'non_disponibile', 'Impossibile generare l\'anteprima del catalogo.');

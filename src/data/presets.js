@@ -2,6 +2,7 @@
 
 const { F, S } = require('./filters');
 const { buildPresetFromFilters } = require('../catalog/providers/DuckDbProvider');
+const { defineCatalog } = require('../catalog/definition');
 
 // Lista dei Cataloghi Pre-Configurati con query API TMDB "Hardcoded"
 // Questo permette di bypassare l'AI per cataloghi perfetti e verificati.
@@ -318,14 +319,14 @@ const getPresets = () => {
     ];
 
     return rawPresets.map(p => {
+        let presetData = p;
         if (p._provider === 'airing_state' || p.queries?.[0]?.provider === 'airing_state' || p.id === 'preset_anime_simulcast') {
-            return {
+            presetData = {
                 ...p,
                 _provider: 'airing_state',
                 sortable: false
             };
-        }
-        if (!p.where) {
+        } else if (!p.where) {
             const q0 = p.queries?.[0];
             const duck = buildPresetFromFilters(q0, p.type);
             let where = duck.where;
@@ -336,14 +337,14 @@ const getPresets = () => {
                 const validClause = `(${crewIds.map(id => F.crew(id)).join(' OR ')})`;
                 where = where.map(w => w === invalidClause ? validClause : w);
             }
-            return {
+            presetData = {
                 ...p,
                 where,
                 orderBy: p.orderBy || duck.orderBy,
                 sortable: p.sortable !== undefined ? p.sortable : true
             };
         }
-        return p;
+        return defineCatalog(presetData);
     });
 };
 
