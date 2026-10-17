@@ -31,6 +31,7 @@ const {
     computeAnimeScoreMultiplier,
     ANIME_POLICY_MODES
 } = require('./animePolicy');
+const { selettoriEffettivi } = require('../../profile');
 
 function matchesTypeSelectors(item, typeSelectors, tipo) {
     if (!typeSelectors) return true;
@@ -780,9 +781,13 @@ async function fetchSmartAndPool(profile, tmdbApiKey, mediaType, baseFilters = [
 
 async function buildFilteredCatalog(userId, context, tmdbApiKey, mediaType, catalogId, baseFilters, fallbackFn, isKidsMode = false, directTypeSelectors = null, targetCandidateSize = 100) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
-    const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
-    const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
+    const effectiveTypeSelectors = (directTypeSelectors && directTypeSelectors.anime)
+        ? directTypeSelectors
+        : selettoriEffettivi(profile, { typeSelectors: directTypeSelectors, isKidsMode });
+    const animePolicy = effectiveTypeSelectors.anime || 'neutral';
+    const typeSelectors = (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.EXCLUDE)
+        ? effectiveTypeSelectors
+        : (directTypeSelectors || null);
     const fallbackLimit = Math.max(160, targetCandidateSize);
     if (!profile) return fallbackFn(tmdbApiKey, mediaType, fallbackLimit, isKidsMode, typeSelectors);
     
@@ -935,8 +940,10 @@ async function buildSeedNetworkFill({ finalItems = [], tmdbApiKey, mediaType, ty
     const target = Math.max(0, (Number(targetSize) || SEED_NETWORK_TARGET_SIZE) - finalItems.length);
     if (target === 0) return [];
 
-    const effectiveSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
-    const policy = animePolicy || resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
+    const effectiveSelectors = (typeSelectors && typeSelectors.anime)
+        ? typeSelectors
+        : selettoriEffettivi(profile, { typeSelectors, isKidsMode });
+    const policy = animePolicy || effectiveSelectors.anime || 'neutral';
     const effectiveMappedTopGenres = (Array.isArray(mappedTopGenres) && mappedTopGenres.length > 0)
         ? mappedTopGenres
         : (profile ? mapGenreIdsToTarget(computeTopGenres(profile, 3)) : []);
@@ -1018,10 +1025,14 @@ async function buildSeedNetworkFill({ finalItems = [], tmdbApiKey, mediaType, ty
 async function buildHybridCatalog(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null, targetCandidateSize = SEED_NETWORK_TARGET_SIZE) {
     const target = Math.max(SEED_NETWORK_TARGET_SIZE, Number(targetCandidateSize) || 0);
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
-    const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
-    const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
-    const fallbackSelectors = (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.EXCLUDE) ? effectiveTypeSelectors : (typeSelectors || null);
+    const effectiveTypeSelectors = (directTypeSelectors && directTypeSelectors.anime)
+        ? directTypeSelectors
+        : selettoriEffettivi(profile, { typeSelectors: directTypeSelectors, isKidsMode });
+    const animePolicy = effectiveTypeSelectors.anime || 'neutral';
+    const rawTypeSelectors = directTypeSelectors || profile?.settings?.typeSelectors || profile?.typeSelectors || null;
+    const fallbackSelectors = (animePolicy === ANIME_POLICY_MODES.ONLY || animePolicy === ANIME_POLICY_MODES.EXCLUDE)
+        ? effectiveTypeSelectors
+        : (rawTypeSelectors || null);
     if (!profile) return fetchSeedFallbackIds(tmdbApiKey, mediaType, Math.max(160, target), isKidsMode, fallbackSelectors);
 
     const types = mediaType === 'movie' ? 'movie' : 'series';
@@ -1385,9 +1396,11 @@ async function buildHiddenGemsCatalog(userId, context, tmdbApiKey, mediaType, is
  */
 async function buildTraktFilteredCatalogWithMeta(userId, context, traktToken, tmdbApiKey, mediaType, isKidsMode = false, providedTraktResult = null, directTypeSelectors = null, targetCandidateSize = 100) {
     const { profile, user, globalProfile } = await fetchProfileContext(userId, context);
-    const typeSelectors = resolveTypeSelectors(user, context, directTypeSelectors);
-    const animePolicy = resolveAnimePolicy(profile, typeSelectors, { isKidsMode });
-    const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
+    const effectiveTypeSelectors = (directTypeSelectors && directTypeSelectors.anime)
+        ? directTypeSelectors
+        : selettoriEffettivi(profile, { typeSelectors: directTypeSelectors, isKidsMode });
+    const animePolicy = effectiveTypeSelectors.anime || 'neutral';
+    const typeSelectors = effectiveTypeSelectors;
 
     // Ticket 16: queste costanti stanno qui perché il fallback le usa prima del ramo caldo.
     // In JavaScript le variabili 'const' risiedono nella Temporal Dead Zone (TDZ) finché la loro

@@ -244,7 +244,8 @@ function buildManifest(userConfig, hostUrl = 'http://localhost:7000', userHandle
     const cv = userConfig.configVersion?.toString().replace(/_/g, '-');
     const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
 
-    const activeProfileId = userConfig.activeProfileId || 'global';
+    const { risolviProfiloAttivo } = require('../profile');
+    const activeProfileId = risolviProfiloAttivo(userConfig);
     const profile = userConfig.profiles?.find(p => p.id === activeProfileId) || (userConfig.profiles?.[0]);
 
     const selectedPresets = profile?.raw_ui_state?.selectedPresets;
@@ -386,6 +387,14 @@ router.get([
     const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
 
     try {
+        const { contestoDi } = require('../profile');
+        userConfig.context = await contestoDi({
+            userId: userConfig.userId,
+            profileId: userConfig.activeProfileId,
+            addonUuid: userConfig.addonUuid,
+            user: userConfig
+        });
+        userConfig.activeProfileId = userConfig.context.profileId;
         const response = await catalogHandler(args, userConfig, hostUrl);
         res.setHeader('Cache-Control', 'max-age=60, public');
         res.json(response);

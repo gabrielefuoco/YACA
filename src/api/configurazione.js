@@ -54,13 +54,20 @@ router.post('/anteprima', async (req, res) => {
         let tmdbKey = req.body.tmdbKey || user.apiKeys?.tmdb || process.env.TMDB_API_KEY;
         let mistralKey = req.body.mistralKey || user.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
 
-        const activeProfileId = req.body.profileId || user.activeProfileId || 'global';
-        const activeProfile = (user.profiles || []).find(p => p.id === activeProfileId) || (user.profiles?.[0] || {});
-        const kidsMode = Boolean(activeProfile.settings?.kidsMode);
+        const { contestoDi } = require('../profile');
+        const profileContext = await contestoDi({
+            userId: req.utenteId,
+            profileId: req.body.profileId || user.activeProfileId,
+            addonUuid: user.addonUuid,
+            user
+        });
+        const activeProfileId = profileContext.profileId;
+        const kidsMode = profileContext.kidsMode;
 
         const fullUserConfig = {
             ...user,
             activeProfileId,
+            context: profileContext,
             apiKeys: {
                 ...user.apiKeys,
                 tmdb: tmdbKey,

@@ -359,11 +359,9 @@ const HERO_STRATEGIES = [
  */
 async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors }) {
     const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
-    const effectiveSelectors = typeSelectors
-        || userConfig?.activeProfileSettings?.typeSelectors
-        || userConfig?.typeSelectors
-        || user?.settings?.typeSelectors;
-    const animePolicy = resolveAnimePolicy(profile, effectiveSelectors, { isKidsMode: kidsMode });
+    const { selettoriEffettivi } = require('../profile');
+    const effectiveSelectors = typeSelectors || selettoriEffettivi(profile, { isKidsMode: kidsMode });
+    const animePolicy = effectiveSelectors?.anime || 'neutral';
     const isTightContext = (animePolicy === 'only' || effectiveSelectors?.anime === 'only');
     const heroCandidateLimit = isTightContext ? 250 : 160;
 

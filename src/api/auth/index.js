@@ -19,6 +19,7 @@ const UserConfig = require('../../models/UserConfig');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
 const { nanoid } = require('nanoid');
+const { risolviProfiloAttivo } = require('../../profile');
 
 const JWT_EXPIRY = '7d';
 const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms — must match JWT_EXPIRY
@@ -149,7 +150,7 @@ async function loginHandler(req, res) {
             email: resolvedEmail,
             isReturningUser,
             profiles: resolvedProfiles,
-            activeProfileId: addonConfig?.config?.activeProfileId || 'global',
+            activeProfileId: risolviProfiloAttivo({ addonConfig, profiles: resolvedProfiles }),
             traktConnected: Boolean(account?.apiKeys?.trakt),
             configVersion: addonConfig?.config?.configVersion || null
         });
@@ -196,7 +197,7 @@ async function meHandler(req, res) {
             userId: account.userId,
             email: account.email,
             profiles: resolvedProfiles,
-            activeProfileId: addonConfig?.config?.activeProfileId || 'global',
+            activeProfileId: risolviProfiloAttivo({ addonConfig, profiles: resolvedProfiles }),
             configVersion: addonConfig?.config?.configVersion || null,
             traktConnected: Boolean(account.apiKeys?.trakt),
             traktStatus: account.traktStatus || null,

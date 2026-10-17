@@ -292,6 +292,77 @@ async function ensureLibraryIndexesSafe() {
     }
 }
 
+/**
+ * Legge l'ordine personalizzato della libreria per un profilo (Ticket 21).
+ *
+ * Spostato nel dominio libreria: legge da UserLibraryOrder.
+ * Fallback transitorio per una release: se assente in UserLibraryOrder, legge da
+ * AddonConfig.profiles.$.raw_ui_state.libraryOrder (dato dell'utente, non si butta).
+ *
+ * @param {{addonUuid: string, profileId?: string}} params
+ * @returns {Promise<string[]>}
+ */
+async function leggiOrdineLibreria({ addonUuid, profileId = 'global' }) {
+    if (!addonUuid) return [];
+
+    try {
+        const UserLibraryOrder = require('./models/UserLibraryOrder');
+        const orderDoc = await UserLibraryOrder.findOne({ addonUuid, profileId }).lean();
+        if (orderDoc && Array.isArray(orderDoc.itemIds) && orderDoc.itemIds.length > 0) {
+            return orderDoc.itemIds;
+        }
+
+        // Fallback per una release: lettura dal vecchio campo AddonConfig
+        const AddonConfig = require('../db/models/AddonConfig');
+        const addonConfig = await AddonConfig.findOne({ uuid: addonUuid }).lean();
+        const profile = (addonConfig?.profiles || []).find(p => (p.id || p._id?.toString()) === profileId)
+            || (profileId === 'global' ? addonConfig?.profiles?.[0] : null);
+
+        if (profile?.raw_ui_state?.libraryOrder && Array.isArray(profile.raw_ui_state.libraryOrder)) {
+            return profile.raw_ui_state.libraryOrder;
+        }
+
+        return orderDoc?.itemIds || [];
+    } catch (_err) {
+        return [];
+    }
+}
+
+/**
+ * Salva l'ordine personalizzato della libreria per un profilo (Ticket 21).
+ *
+ * Scrive primariamente su UserLibraryOrder.
+ * Mantiene la scrittura speculare su AddonConfig durante la release di transizione.
+ *
+ * @param {{addonUuid: string, profileId?: string, itemIds: string[]}} params
+ * @returns {Promise<string[]>}
+ */
+async function salvaOrdineLibreria({ addonUuid, profileId = 'global', itemIds = [] }) {
+    if (!addonUuid) throw new Error('addonUuid obbligatorio per salvare l\'ordine libreria');
+    const cleanOrder = [...new Set((itemIds || []).map(String))];
+
+    try {
+        const UserLibraryOrder = require('./models/UserLibraryOrder');
+        await UserLibraryOrder.findOneAndUpdate(
+            { addonUuid, profileId },
+            { $set: { itemIds: cleanOrder } },
+            { upsert: true, returnDocument: 'after' }
+        );
+    } catch (err) {
+        console.warn('[LibraryReader] Notice on UserLibraryOrder save:', err.message);
+    }
+
+    try {
+        const AddonConfig = require('../db/models/AddonConfig');
+        await AddonConfig.updateOne(
+            { uuid: addonUuid, 'profiles.id': profileId },
+            { $set: { 'profiles.$.raw_ui_state.libraryOrder': cleanOrder } }
+        );
+    } catch (_err) {}
+
+    return cleanOrder;
+}
+
 module.exports = {
     WATCHLIST_PAGE_SIZE,
     leggiWatchlist,
@@ -309,5 +380,8 @@ module.exports = {
     scriviBatchCronologia,
     leggiItemPerStudi,
     leggiLibreriaPerProfilo,
-    ensureLibraryIndexesSafe
+    ensureLibraryIndexesSafe,
+    leggiOrdineLibreria,
+    salvaOrdineLibreria
 };
+

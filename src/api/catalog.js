@@ -53,14 +53,18 @@ router.post('/preview-catalog', async (req, res) => {
         let strategy = null;
         let sanitizedPrompt = null;
         let aiFilters = null;
-        let kidsMode = false;
-
-        const activeProfileId = reqProfileId || fullUserConfig.activeProfileId || 'global';
-        const activeProfile = fullUserConfig.profiles?.find(p => p.id === activeProfileId) || (fullUserConfig.profiles?.[0] || {});
-        kidsMode = activeProfile.settings?.kidsMode || false;
+        const { contestoDi } = require('../profile');
+        const profileContext = await contestoDi({
+            userId: fullUserConfig.userId,
+            profileId: reqProfileId || fullUserConfig.activeProfileId,
+            addonUuid: fullUserConfig.addonUuid
+        });
+        const activeProfileId = profileContext.profileId;
+        kidsMode = profileContext.kidsMode;
         
-        // Override activeProfileId in fullUserConfig so catalogHandler uses it
+        // Imposta activeProfileId e context in fullUserConfig per catalogHandler
         fullUserConfig.activeProfileId = activeProfileId;
+        fullUserConfig.context = profileContext;
 
         if (!sanitizedTmdbKey) {
             return res.status(400).json({ error: 'TMDB API key non configurata sul server' });
