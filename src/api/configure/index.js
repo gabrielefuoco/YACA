@@ -1,5 +1,37 @@
 const UserConfig = require('../../models/UserConfig');
 const { validateAuth, validateKeys, sanitizeCustomCatalogs } = require('./validators');
+// La validazione di DOMINIO delle definizioni di catalogo (decisione 23: il catalogo possiede
+// tipo + validazione + derivazioni). Fino al 18/10/2026 esisteva e non la chiamava nessuno: una
+// definizione con un filtro che la fonte non sa servire veniva accettata e falliva DOPO, al
+// servire — dove nessuno la collegava alla causa (rilievo del ticket 27). Ora si rifiuta al
+// salvataggio, con gli errori che l'utente può leggere. Si applica ai cataloghi DELL'UTENTE:
+// quelli derivati dai preset parlano la lingua SQL nativa, non il vocabolario dell'API.
+const { validateCatalogDefinition } = require('../../catalog');
+
+/**
+ * Valida le definizioni di catalogo scritte dall'utente e solleva un 400 con gli errori.
+ *
+ * @param {Array} definizioni
+ * @throws {Error} con `status: 400` e `errors` (ogni errore porta il catalogo a cui appartiene)
+ */
+function validaDefinizioniCatalogo(definizioni) {
+    const errori = [];
+    for (const def of (Array.isArray(definizioni) ? definizioni : [])) {
+        if (!def || typeof def !== 'object') continue;
+        const esito = validateCatalogDefinition(def);
+        if (!esito.valid) {
+            for (const e of esito.errors) errori.push({ ...e, catalogo: def.id });
+        }
+    }
+    if (errori.length > 0) {
+        const err = new Error(
+            `Definizione di catalogo non valida: ${errori.map(e => `${e.catalogo || '?'} — ${e.message}`).join(' | ')}`
+        );
+        err.status = 400;
+        err.errors = errori;
+        throw err;
+    }
+}
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
 const { updateStremioAddonCollection } = require('../../stremio');
 const { getHeroUiGroups } = require('../../catalog/registry');
@@ -107,7 +139,10 @@ module.exports = async (req, res) => {
 
         if (hasApiKeys) updateData.apiKeys = apiKeys;
         if (parsedProfiles !== undefined) updateData.profiles = parsedProfiles;
-        if (customCatalogs !== undefined) updateData.customCatalogs = sanitizeCustomCatalogs(customCatalogs);
+        if (customCatalogs !== undefined) {
+            validaDefinizioniCatalogo(customCatalogs);
+            updateData.customCatalogs = sanitizeCustomCatalogs(customCatalogs);
+        }
         if (stremioEmail) updateData.email = stremioEmail;
 
         // saveUser now handles both UserAccount + AddonConfig (Two-Table Split)

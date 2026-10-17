@@ -51,6 +51,42 @@ describe('configure route global profile safeguards', () => {
         process.env = originalEnv;
     });
 
+    it('rifiuta un catalogo dell\'utente con una definizione non valida (400)', async () => {
+        const req = {
+            protocol: 'http',
+            get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
+            body: {
+                customCatalogs: [{ id: 'bad id with spaces!', name: 'Test', mediaSet: ['film'] }]
+            }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await configureRoute(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(UserConfig.saveUser).not.toHaveBeenCalled();
+        // e l'errore dice QUALE catalogo e PERCHE': e' tutto il punto di collegare il validatore
+        expect(JSON.stringify(res.json.mock.calls[0][0])).toContain('bad id with spaces!');
+    });
+
+    it('accetta un catalogo dell\'utente valido (la validazione non blocca il caso normale)', async () => {
+        const req = {
+            protocol: 'http',
+            get: jest.fn(() => 'localhost:7000'),
+            user: { userId: 'u1', email: 'user@example.com' },
+            body: {
+                customCatalogs: [{ id: 'mio_catalogo', name: 'Il mio', mediaSet: ['film'], queries: [{ sort_by: 'popularity.desc' }] }]
+            }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await configureRoute(req, res);
+
+        expect(res.status).not.toHaveBeenCalledWith(400);
+        expect(UserConfig.saveUser).toHaveBeenCalled();
+    });
+
     it('injects immutable global profile when missing', async () => {
         const req = {
             protocol: 'http',
