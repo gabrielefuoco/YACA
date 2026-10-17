@@ -426,3 +426,19 @@ invocano la pipeline.
 **Chiusi**: 01, 02, 03, 04, 14 (grilling e ricerca). **In `main`**: 05, 06, 07, 08, 12, 15, 16, 18 (parte CI,
 compose e primo avvio sul mate). Il **38** ha la sua diagnosi in `main` e la coda in corso. **In corso**: 09,
 10, 13, 38-coda. **Bloccati da loro**: 11, 17.
+
+### 17. I rilievi della revisione indipendente
+
+**17/10/2026.** La revisione dell'implementazione (diff `338d7d4..HEAD`) è nel **ticket 27**, classificata: 5 bug
+(2 corretti: la chiave di `recommendations` senza versione né media — la trappola del modulo cache, con un test
+che *difendeva* il bug — e il drenatore che ingoiava i fallimenti di scrittura), **5 confini dichiarati e non
+rispettati** (due chiavi costruite a mano, il pool che risolve ancora i selettori, il *servire* dentro
+`src/catalog/`, i prompt della ricerca dentro `src/ai/`, una cache di lookup dentro il database store), **12
+residui del trasloco** (fra cui `queryBuilder.js` che duplica l'SQL vecchio per non aggiornare 8 test, e
+`profiles.js` **e** `profilo.js` entrambi montati) e **4 buchi di copertura**.
+
+**Il metodo, che vale più dei rilievi**: due letture indipendenti dello stesso codice — i miei `grep` e la
+revisione — e **le divergenze sono l'informazione**. La revisione ha trovato più di me (le due chiavi a mano, il
+servire dentro il tipo, la duplicazione) e ha sbagliato una cosa (l'IDOR: il middleware c'è, 0 accessori vecchi,
+12 `req.utenteId`). Ogni prova è stata **rieseguita** dal committente prima di essere accettata: nessuno dei due
+creduto sulla parola.
