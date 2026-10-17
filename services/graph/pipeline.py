@@ -491,10 +491,20 @@ def parita(args) -> int:
     """
     import numpy as np
     from graph import motore as MO
-    M = MO.Motore(silenzioso=True)
-    p = K.DATA / "bolle.json"
+    try:
+        M = MO.Motore(silenzioso=True)
+    except FileNotFoundError as e:
+        print(f"parita richiede i dati completi del canone (138 MB in {K.DATA}):\n  {e}")
+        return 1
+    p = pathlib.Path(args.artefatto) if getattr(args, "artefatto", None) else (K.DATA / "bolle.json")
     if not p.exists():
         p = K.ROOT / "src" / "data" / "bolle.json"
+    if not p.exists():
+        p = K.ROOT / "tests" / "fixtures" / "bolle_synth.json"
+    if not p.exists():
+        print(f"Nessun artefatto trovato in {K.DATA / 'bolle.json'}, {K.ROOT / 'src/data/bolle.json'} "
+              f"né in tests/fixtures/bolle_synth.json")
+        return 1
     d = json.load(open(p, encoding="utf-8"))
     v = d["versione"]
     riga_P = {int(b): [(int(x), float(w)) for x, w in vv["P"]] for b, vv in d["bolle"].items()}
@@ -814,6 +824,8 @@ def main(argv=None) -> int:
     pex.add_argument("--max", type=int, default=0, help="fermati dopo N collocazioni (prove)")
     pex.set_defaults(fn=esporta)
     ppar = sub.add_parser("parita", help="il golden della parita' Python <-> JavaScript")
+    ppar.add_argument("--artefatto", default=None,
+                      help="l'artefatto bolle.json da usare (default: services/graph/data/bolle.json o fixture)")
     ppar.add_argument("--fuori", default="tests/fixtures/parita.json")
     ppar.set_defaults(fn=parita)
     pbu = sub.add_parser("build", help="il piano della costruzione, e con --esegui anche l'esecuzione")

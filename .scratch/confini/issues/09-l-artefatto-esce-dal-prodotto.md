@@ -63,7 +63,7 @@ misura — non un effetto collaterale di questo.
   - In `services/graph/pipeline.py`:
     - Aggiornato l'argomento di default per il comando `esporta`: `--fuori` ora punta di default a `str(K.DATA / "bolle.json")` (ovvero `services/graph/data/bolle.json`), risolto in modo indipendente dalla working directory corrente.
     - Nel DAG `PASSO`, la voce `esporta` dichiara `"scrive": ["bolle.json"]` all'interno di `K.DATA`.
-    - In `parita()` e nel test `tests/test_graph_pipeline.py`, la lettura verifica prioritariamente `K.DATA / "bolle.json"` con fallback trasparente a `src/data/bolle.json`.
+    - In `parita()` e nel test `tests/test_graph_pipeline.py`, la lettura verifica prioritariamente `K.DATA / "bolle.json"` con fallback a `src/data/bolle.json` e fallback finale alla fixture sintetica `tests/fixtures/bolle_synth.json` (~1 KB tracciata in git), garantendo che un clone pulito privo dei 3,2 MB dell'artefatto o dei 138 MB di dati grezzi esegua con successo tutti i test di contratto dell'artefatto e salti esplicitamente quelli che richiedono i dati completi.
 - **Comando di produzione / esportazione dell'artefatto**:
   ```bash
   cd /srv/yaca && PYTHONPATH=services python -m graph.pipeline esporta --colloca
@@ -105,8 +105,15 @@ Eseguito test reale via SSH sul mate:
    - Modifica artefatto: `sha_file` passa a `914feb3ecc87d720`.
    - Un mock server HTTP su porta scratch restituisce il nuovo `/health` e produce la nuova chiave di cache invalidando quella precedente.
 
-### 5. Cosa resta per il mate (To-Do operativo)
-- Configurare il timer systemd/cron notturno per l'esecuzione automatica di:
-  `cd /srv/yaca && PYTHONPATH=services /srv/yaca/modulo/.venv/bin/python -m graph.pipeline esporta --colloca`
-  seguito da un restart agile del container `docker compose restart graph` (1,3-2,0 s di avvio misurato).
+### 5. Gestione sul mate (procedura manuale attuale e proposta di automazione)
+- **Procedura manuale attuale**:
+  Sul mate **non** è attiva alcuna automazione periodica per il grafo (verificato: `systemctl list-timers` mostra unicamente `yaca-poster-eventi` e `yaca-doppiaggi`, la crontab è vuota e gli script in `ops/` non invocano la pipeline del grafo).
+  L'aggiornamento dell'artefatto è pertanto una procedura **manuale**, eseguibile al bisogno tramite il comando venv già testato:
+  ```bash
+  cd /srv/yaca && PYTHONPATH=services /srv/yaca/modulo/.venv/bin/python -m graph.pipeline esporta --fuori /srv/yaca/services/graph/data/bolle.json --colloca
+  docker compose restart graph
+  ```
+  (il restart di `yaca-graph` richiede ~1,3-2,0 s misurati e rende immediatamente attiva la nuova versione in `/health` con invalidazione automatica della cache del prodotto).
+- **Proposta di automazione futura**:
+  Se vorremo rendere automatica la generazione (ad es. notturna con collocazione dei nuovi titoli), la soluzione naturale sul mate sarà un systemd timer analogo a `yaca-poster-eventi` (es. `yaca-graph-pipeline.service` + `yaca-graph-pipeline.timer`), che invochi il comando sopra riportato e riavvii il servizio container.
 
