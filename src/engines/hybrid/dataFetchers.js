@@ -1,5 +1,5 @@
 const TasteProfile = require('../../models/TasteProfile');
-const UserAccount = require('../../models/UserAccount');
+const { accountDi } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const { traktClient } = require('../../clients/trakt');
 const { normalizeContentId } = require('../../utils/contentId');
@@ -140,7 +140,7 @@ function mapStableFallbackIds(rows, limit, compareRows) {
  * @returns {Promise<{profile: Object|null, user: Object|null, globalProfile: Object|null}>}
  */
 async function fetchProfileContext(userId, context) {
-    const account = await UserAccount.findOne({ userId }).lean();
+    const account = await accountDi(userId);
     const addonConfig = account?.addonUuid
         ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
         : null;

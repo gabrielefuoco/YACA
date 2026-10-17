@@ -16,9 +16,8 @@ const {
     SORT_MAP
 } = require('../stremio');
 const { traktClient } = require('../clients/trakt');
-const getUserConfig = () => require('../models/UserConfig');
 const AddonConfig = require('../models/AddonConfig');
-const UserAccount = require('../models/UserAccount');
+const { accountDi, trovaAccountPerEmailOAuthKey } = require('../configurazione');
 const CacheManager = require('../cache/CacheManager');
 const axios = require('axios');
 const path = require('path');
@@ -63,13 +62,7 @@ router.post('/check-user', async (req, res) => {
         return res.status(400).json({ exists: false, error: 'authKey o email obbligatorio' });
     }
     try {
-        let existingAccount = null;
-        if (email) {
-            existingAccount = await UserAccount.findOne({ email }).lean();
-        }
-        if (!existingAccount && authKey) {
-            existingAccount = await UserAccount.findOne({ 'apiKeys.stremio': authKey }).lean();
-        }
+        const existingAccount = await trovaAccountPerEmailOAuthKey({ email, stremioAuthKey: authKey });
 
         if (existingAccount?.userId) {
             // Read profiles from AddonConfig (Two-Table Split)
@@ -313,7 +306,7 @@ router.get('/sync-status/:userId', cookieParser(), syncStatusLimiter, async (req
     const userId = sessionUserId;
     try {
         // Unidirectional join: find the user's addonUuid, then query AddonConfig by uuid
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         if (!account?.addonUuid) {
             return res.json({ isSyncing: false, total: 0, current: 0, lastSync: null });
         }

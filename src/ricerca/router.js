@@ -73,10 +73,15 @@ function sanitizeSingleQuery(parsed, fallbackPrompt) {
     return clean;
 }
 
-function buildFallbackResponse(originalPrompt, taskType = 'single_query') {
-    const fallbackQuery = { strategy: 'multi_search', text_search: originalPrompt, target: 'tmdb' };
+function buildFallbackResponse(originalPrompt, taskType = 'single_query', motivi = []) {
+    const fallbackQuery = {
+        strategy: 'multi_search',
+        text_search: originalPrompt,
+        target: 'tmdb',
+        ...(motivi && motivi.length > 0 ? { motivi } : {})
+    };
     return taskType === 'multi_query'
-        ? { queries: [fallbackQuery] }
+        ? { queries: [fallbackQuery], ...(motivi && motivi.length > 0 ? { motivi } : {}) }
         : fallbackQuery;
 }
 
@@ -164,7 +169,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'sin
     }
 
     if (!mistralKey) {
-        return buildFallbackResponse(prompt, taskType);
+        return buildFallbackResponse(prompt, taskType, ['chiave_mistral_assente']);
     }
     try {
         const client = createAiClient({ apiKey: mistralKey, timeout: 25000 });

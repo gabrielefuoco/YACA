@@ -3,8 +3,9 @@ const path = require('path');
 const TmdbDumpStore = require('./tmdbDumpStore');
 const TmdbDumpClient = require('./tmdbDumpClient');
 const { loadTrackedAiringIds, isTrackedAiringId } = require('./tmdbIngestPolicy');
+const { chiaveGlobale } = require('../configurazione');
 
-const apiKey = process.env.TMDB_API_KEY;
+const apiKey = chiaveGlobale('tmdb');
 
 // Stato globale esposto per l'admin endpoint
 const dumpStatus = {

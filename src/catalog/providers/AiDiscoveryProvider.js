@@ -282,8 +282,9 @@ async function injectProfilePreferences(filters, userId, profileId) {
 
 // Esegue Deep AI Search, consensus ranking e profilazione
 async function executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, cacheOptions) {
-    const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
-    const mistralKey = userConfig.apiKeys?.mistral || process.env.MISTRAL_API_KEY;
+    const { chiaveEffettiva } = require('../../configurazione');
+    const tmdbApiKey = chiaveEffettiva({ account: userConfig, servizio: 'tmdb' });
+    const mistralKey = chiaveEffettiva({ account: userConfig, servizio: 'mistral' });
     const tmdbClient = createTmdbClient(tmdbApiKey);
     const userId = userConfig.userId;
     const profileId = userConfig.activeProfileId;

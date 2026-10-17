@@ -41,7 +41,7 @@ function projectManifestCatalog(catalog) {
 }
 
 function projectManifestProfile(profile) {
-    const rawUiState = profile?.raw_ui_state || {};
+    const rawUiState = profile?.uiState || profile?.raw_ui_state || {};
     const typeSelectors = profile?.settings?.typeSelectors || {};
 
     return {

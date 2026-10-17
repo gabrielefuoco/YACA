@@ -10,7 +10,7 @@
  * e cache ricevano la medesima istanza senza divergenze per costruzione.
  */
 
-const UserAccount = require('../models/UserAccount');
+const { accountDi, accountPerAddonUuid } = require('../configurazione');
 const { profiloDi, risolviProfiloAttivo } = require('./door');
 const { selettoriEffettivi } = require('./selettoriEffettivi');
 
@@ -41,14 +41,14 @@ async function contestoDi(input = {}) {
 
     if (!resolvedAddonUuid && resolvedUserId) {
         try {
-            const account = await UserAccount.findOne({ userId: resolvedUserId }).lean();
+            const account = await accountDi(resolvedUserId);
             if (account?.addonUuid) {
                 resolvedAddonUuid = account.addonUuid;
             }
         } catch (_err) {}
     } else if (!resolvedUserId && resolvedAddonUuid) {
         try {
-            const account = await UserAccount.findOne({ addonUuid: resolvedAddonUuid }).lean();
+            const account = await accountPerAddonUuid(resolvedAddonUuid);
             if (account?.userId) {
                 resolvedUserId = account.userId;
             }

@@ -1,6 +1,17 @@
 const { createAxiosClient } = require('../utils/axiosClient');
 const { createTmdbClient } = require('./tmdb');
 const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
+const {
+    chiaveGlobale,
+    chiaveEffettiva,
+    traktDi,
+    segnaTraktInRinnovo,
+    segnaTraktOk,
+    segnaTraktDaRiautorizzare,
+    segnaTraktDegradato,
+    segnaTraktNonConfigurato,
+    salvaTraktCredenziali
+} = require('../configurazione');
 
 
 const traktClient = createAxiosClient('https://api.trakt.tv', {
@@ -14,7 +25,7 @@ const traktClient = createAxiosClient('https://api.trakt.tv', {
 // LOCK: Gestione dei refresh in corso per evitare race conditions (invalid_grant)
 const ongoingRefreshes = new Map();
 
-const tmdbEnrichClient = createTmdbClient(process.env.TMDB_API_KEY);
+const tmdbEnrichClient = createTmdbClient(chiaveGlobale('tmdb'));
 
 /**
  * Rigenera i token Trakt usando il refresh_token.
@@ -83,19 +94,11 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken, expi
     if (!userId) return false;
 
     try {
-        const UserAccount = require('../models/UserAccount');
-        const updateSet = {
-            'apiKeys.trakt': newAccessToken,
-            'apiKeys.traktRefreshToken': newRefreshToken
-        };
-        if (expiresAt) {
-            updateSet['apiKeys.traktExpiresAt'] = new Date(expiresAt);
-        }
-        await UserAccount.findOneAndUpdate(
-            { userId },
-            { $set: updateSet },
-            { returnDocument: 'after' }
-        );
+        await salvaTraktCredenziali(userId, {
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+            expiresAt
+        });
         console.log(`Trakt auto-refresh: token aggiornati nel DB per l'utente ${userId}.`);
         return true;
     } catch (err) {
@@ -121,52 +124,36 @@ async function syncTraktTokensToDb(userId, newAccessToken, newRefreshToken, expi
 async function smartTraktRefresh(userId, refreshToken) {
     if (!userId || !refreshToken) return null;
 
-    let UserAccount;
+    // 1. Controllo stato persistito in DB tramite il modulo configurazione
     try {
-        UserAccount = require('../models/UserAccount');
-    } catch (_e) {}
+        const trakt = await traktDi(userId);
+        if (trakt?.status?.status === 'requires_reauth') {
+            console.warn(`[Trakt (smart)] Sessione compromessa per ${userId}: richiede ri-autorizzazione manuale. Refresh annullato.`);
+            return null;
+        }
 
-    // 1. Controllo stato persistito in DB: se richiede già ri-autorizzazione, non tentare
-    if (UserAccount && typeof UserAccount.findOne === 'function') {
-        try {
-            const query = UserAccount.findOne({ userId });
-            const user = query && typeof query.lean === 'function'
-                ? await query.lean()
-                : await query;
-
-            if (user?.traktStatus?.status === 'requires_reauth') {
-                console.warn(`[Trakt (smart)] Sessione compromessa per ${userId}: richiede ri-autorizzazione manuale. Refresh annullato.`);
+        // Lock distribuito/persistito in DB
+        if (trakt?.status?.refreshInProgress) {
+            const lockTime = trakt.status.refreshLockedAt ? new Date(trakt.status.refreshLockedAt).getTime() : 0;
+            if (Date.now() - lockTime < 30000) {
+                console.log(`[Trakt (smart)] Refresh già in corso (DB lock) per l'utente ${userId}...`);
+                if (ongoingRefreshes.has(userId)) {
+                    return await ongoingRefreshes.get(userId);
+                }
                 return null;
             }
-
-            // Lock distribuito/persistito in DB
-            if (user?.traktStatus?.refreshInProgress) {
-                const lockTime = user.traktStatus.refreshLockedAt ? new Date(user.traktStatus.refreshLockedAt).getTime() : 0;
-                if (Date.now() - lockTime < 30000) {
-                    console.log(`[Trakt (smart)] Refresh già in corso (DB lock) per l'utente ${userId}...`);
-                    if (ongoingRefreshes.has(userId)) {
-                        return await ongoingRefreshes.get(userId);
-                    }
-                    return null;
-                }
-            }
-        } catch (_dbErr) {}
-    }
+        }
+    } catch (_dbErr) {}
 
     if (ongoingRefreshes.has(userId)) {
         console.log(`Trakt (smart): refresh già in corso in-process per l'utente ${userId}, attendo il risultato...`);
         return await ongoingRefreshes.get(userId);
     }
 
-    // 2. Acquisisci lock persistito nel DB
-    if (UserAccount && typeof UserAccount.updateOne === 'function') {
-        try {
-            await UserAccount.updateOne(
-                { userId },
-                { $set: { 'traktStatus.refreshInProgress': true, 'traktStatus.refreshLockedAt': new Date() } }
-            );
-        } catch (_lockErr) {}
-    }
+    // 2. Acquisisci lock persistito nel DB tramite configurazione
+    try {
+        await segnaTraktInRinnovo(userId);
+    } catch (_lockErr) {}
 
     console.log(`Trakt (smart): avvio procedura di refresh per ${userId}...`);
     const refreshPromise = (async () => {
@@ -174,37 +161,22 @@ async function smartTraktRefresh(userId, refreshToken) {
             const newTokens = await refreshTraktTokens(refreshToken, { throwOnError: true });
             if (newTokens && newTokens.access_token) {
                 await syncTraktTokensToDb(userId, newTokens.access_token, newTokens.refresh_token, newTokens.expires_at);
-                if (UserAccount && typeof UserAccount.updateOne === 'function') {
-                    try {
-                        await UserAccount.updateOne(
-                            { userId },
-                            {
-                                $set: {
-                                    'traktStatus.status': 'ok',
-                                    'traktStatus.refreshInProgress': false,
-                                    'traktStatus.lastSuccess': new Date(),
-                                    'traktStatus.lastError': null,
-                                    'traktStatus.lastErrorAt': null
-                                }
-                            }
-                        );
-                    } catch (_stErr) {}
-                }
+                await segnaTraktOk(userId);
                 return newTokens;
             } else {
                 // Il refresh token single-use è stato consumato o rigettato da Trakt (risposta senza token)
                 console.warn(`[Trakt (smart)] Refresh fallito per ${userId}: risposta senza token validi. Imposto stato 'requires_reauth'.`);
-                await markRequiresReauth(userId, UserAccount, 'Refresh fallito: risposta non valida. Richiede ri-autorizzazione.');
+                await segnaTraktDaRiautorizzare(userId, 'Refresh fallito: risposta non valida. Richiede ri-autorizzazione.');
                 return null;
             }
         } catch (err) {
             const { status, reason } = classifyRefreshError(err);
             if (status === 'degraded') {
                 console.warn(`[Trakt (smart)] Errore di rete temporaneo durante refresh per ${userId} (${reason}). Imposto stato 'degraded'.`);
-                await markDegraded(userId, UserAccount, reason);
+                await segnaTraktDegradato(userId, reason);
             } else {
                 console.warn(`[Trakt (smart)] Refresh fallito o timeout per ${userId} (${reason}). Imposto stato 'requires_reauth'.`);
-                await markRequiresReauth(userId, UserAccount, reason);
+                await segnaTraktDaRiautorizzare(userId, reason);
             }
             return null;
         } finally {
@@ -277,64 +249,39 @@ function classifyRefreshError(err) {
     };
 }
 
-async function updateTraktStatus(userId, UserAccount, status, errorMsg) {
-    if (!UserAccount) return;
-    const update = {
-        'traktStatus.status': status,
-        'traktStatus.refreshInProgress': false,
-        'traktStatus.lastError': errorMsg,
-        'traktStatus.lastErrorAt': new Date()
-    };
-    try {
-        if (typeof UserAccount.updateOne === 'function') {
-            await UserAccount.updateOne({ userId }, { $set: update });
-        } else if (typeof UserAccount.findOneAndUpdate === 'function') {
-            await UserAccount.findOneAndUpdate({ userId }, { $set: update });
-        }
-    } catch (_err) {}
+async function updateTraktStatus(userId, _unused, status, errorMsg) {
+    if (status === 'ok') return segnaTraktOk(userId);
+    if (status === 'requires_reauth') return segnaTraktDaRiautorizzare(userId, errorMsg);
+    if (status === 'degraded') return segnaTraktDegradato(userId, errorMsg);
+    if (status === 'not_configured') return segnaTraktNonConfigurato(userId);
 }
 
-async function markRequiresReauth(userId, UserAccount, errorMsg) {
-    return updateTraktStatus(userId, UserAccount, 'requires_reauth', errorMsg);
+async function markRequiresReauth(userId, _unused, errorMsg) {
+    return segnaTraktDaRiautorizzare(userId, errorMsg);
 }
 
-async function markDegraded(userId, UserAccount, errorMsg) {
-    return updateTraktStatus(userId, UserAccount, 'degraded', errorMsg);
+async function markDegraded(userId, _unused, errorMsg) {
+    return segnaTraktDegradato(userId, errorMsg);
 }
 
 /**
  * Heartbeat diagnostico per verificare lo stato della connessione Trakt.
- * Esegue GET /sync/last_activities e aggiorna traktStatus in DB.
+ * Esegue GET /sync/last_activities e aggiorna traktStatus in DB tramite il modulo configurazione.
  *
  * @param {string} userId - ID univoco dell'utente
  * @param {string} [token] - Token OAuth opzionale
  * @returns {Promise<{connected: boolean, status: string, lastChecked: Date, lastSuccess?: Date, lastError?: string, data?: any}>}
  */
 async function checkTraktHeartbeat(userId, token = null) {
-    let UserAccount;
+    let trakt = null;
     try {
-        UserAccount = require('../models/UserAccount');
+        trakt = await traktDi(userId);
     } catch (_e) {}
 
-    let user = null;
-    if (UserAccount && typeof UserAccount.findOne === 'function') {
-        try {
-            const query = UserAccount.findOne({ userId });
-            user = query && typeof query.lean === 'function'
-                ? await query.lean()
-                : await query;
-        } catch (_e) {}
-    }
-
-    const traktToken = token || user?.apiKeys?.trakt;
+    const traktToken = token || trakt?.accessToken;
     if (!traktToken) {
-        const result = { connected: false, status: 'not_configured', lastChecked: new Date() };
-        if (UserAccount) {
-            const update = { 'traktStatus.status': 'not_configured', 'traktStatus.lastChecked': new Date() };
-            if (typeof UserAccount.updateOne === 'function') await UserAccount.updateOne({ userId }, { $set: update });
-            else if (typeof UserAccount.findOneAndUpdate === 'function') await UserAccount.findOneAndUpdate({ userId }, { $set: update });
-        }
-        return result;
+        await segnaTraktNonConfigurato(userId);
+        return { connected: false, status: 'not_configured', lastChecked: new Date() };
     }
 
     try {
@@ -348,17 +295,7 @@ async function checkTraktHeartbeat(userId, token = null) {
         });
 
         const now = new Date();
-        const update = {
-            'traktStatus.status': 'ok',
-            'traktStatus.lastChecked': now,
-            'traktStatus.lastSuccess': now,
-            'traktStatus.lastError': null,
-            'traktStatus.lastErrorAt': null
-        };
-        if (UserAccount) {
-            if (typeof UserAccount.updateOne === 'function') await UserAccount.updateOne({ userId }, { $set: update });
-            else if (typeof UserAccount.findOneAndUpdate === 'function') await UserAccount.findOneAndUpdate({ userId }, { $set: update });
-        }
+        await segnaTraktOk(userId);
 
         return {
             connected: true,
@@ -376,15 +313,10 @@ async function checkTraktHeartbeat(userId, token = null) {
 
         console.warn(`[Trakt Heartbeat] Degrado rilevato per utente ${userId}: status=${statusCode}, err=${errorMsg}`);
 
-        const update = {
-            'traktStatus.status': newStatus,
-            'traktStatus.lastChecked': now,
-            'traktStatus.lastError': errorMsg,
-            'traktStatus.lastErrorAt': now
-        };
-        if (UserAccount) {
-            if (typeof UserAccount.updateOne === 'function') await UserAccount.updateOne({ userId }, { $set: update });
-            else if (typeof UserAccount.findOneAndUpdate === 'function') await UserAccount.findOneAndUpdate({ userId }, { $set: update });
+        if (isAuthError) {
+            await segnaTraktDaRiautorizzare(userId, errorMsg);
+        } else {
+            await segnaTraktDegradato(userId, errorMsg);
         }
 
         return {
@@ -435,8 +367,8 @@ async function enhanceTraktItem(traktItem, tmdbApiKey) {
         baseMeta.imdbRating = traktItem.rating.toFixed(1);
     }
 
-    // Arricchimento immagini via TMDB - usa la chiave dell'utente (fallback a env globale)
-    const enrichKey = tmdbApiKey || process.env.TMDB_API_KEY;
+    // Arricchimento immagini via TMDB - usa la chiave dell'utente (fallback a env globale via configurazione)
+    const enrichKey = chiaveEffettiva({ richiesta: tmdbApiKey, servizio: 'tmdb' });
     if (tmdbId && enrichKey) {
         try {
             const tmdbenrich = await tmdbEnrichClient.get(`/${isMovie ? 'movie' : 'tv'}/${tmdbId}`, {

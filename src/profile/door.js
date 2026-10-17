@@ -1,18 +1,20 @@
 /**
  * src/profile/door.js
  *
- * La porta del modulo profilo (Ticket 21).
+ * La porta del modulo profilo (Ticket 21 & Ticket 26).
  *
  * Possiede:
  * - l'anagrafica (crea, rinomina, duplica, elimina, attiva)
  * - la lista dei profili (`profiliDi`) e il singolo profilo grezzo (`profiloDi`)
  * - l'invariante «almeno uno»: `global` è un profilo vero, l'ultimo non può essere eliminato,
  *   e la risoluzione del profilo attivo collassa le copie di `|| 'global'`.
+ * - lo stato UI del profilo (`leggiUiState`, `salvaUiState`, `selectedPresetsDi`) (Ticket 26, Decisione 2)
  */
 
 const { nanoid } = require('nanoid');
 const AddonConfig = require('../models/AddonConfig');
-const UserAccount = require('../models/UserAccount');
+const ProfileUiState = require('./models/ProfileUiState');
+const { accountDi } = require('../configurazione');
 
 function defaultGlobalProfile() {
     return {
@@ -66,11 +68,137 @@ async function resolveAddonUuid(userId, explicitAddonUuid = null) {
     if (explicitAddonUuid) return explicitAddonUuid;
     if (!userId) return null;
     try {
-        const account = await UserAccount.findOne({ userId }).lean();
+        const account = await accountDi(userId);
         return account?.addonUuid || null;
     } catch (_e) {
         return null;
     }
+}
+
+/**
+ * Legge lo stato della UI per un dato profilo (Ticket 26, Decisione 2).
+ * Modello dedicato `ProfileUiState` con fallback di lettura su `raw_ui_state` in AddonConfig.
+ *
+ * @param {Object} params
+ * @param {string} params.addonUuid
+ * @param {string} [params.profileId='global']
+ * @param {Object} [params.fallbackProfile=null]
+ * @returns {Promise<{selectedPresets: string[], catalogOrder: string[], newPrompts: any[], heroPresetsInitialized: boolean}>}
+ */
+async function leggiUiState({ addonUuid, profileId = 'global', fallbackProfile = null } = {}) {
+    const defaultState = {
+        selectedPresets: [],
+        catalogOrder: [],
+        newPrompts: [],
+        heroPresetsInitialized: false
+    };
+
+    if (!addonUuid && !fallbackProfile) {
+        return defaultState;
+    }
+
+    try {
+        // 1. Lettura dal modello proprietario del profilo
+        if (addonUuid && ProfileUiState && typeof ProfileUiState.findOne === 'function') {
+            const doc = await ProfileUiState.findOne({ addonUuid, profileId }).lean();
+            if (doc) {
+                return {
+                    selectedPresets: Array.isArray(doc.selectedPresets) ? doc.selectedPresets : [],
+                    catalogOrder: Array.isArray(doc.catalogOrder) ? doc.catalogOrder : [],
+                    newPrompts: Array.isArray(doc.newPrompts) ? doc.newPrompts : [],
+                    heroPresetsInitialized: Boolean(doc.heroPresetsInitialized)
+                };
+            }
+        }
+
+        // 2. Fallback da fallbackProfile passato
+        const rawUi = fallbackProfile?.raw_ui_state || fallbackProfile?.uiState;
+        if (rawUi && typeof rawUi === 'object') {
+            return {
+                selectedPresets: Array.isArray(rawUi.selectedPresets) ? rawUi.selectedPresets : [],
+                catalogOrder: Array.isArray(rawUi.catalogOrder) ? rawUi.catalogOrder : [],
+                newPrompts: Array.isArray(rawUi.newPrompts) ? rawUi.newPrompts : [],
+                heroPresetsInitialized: Boolean(rawUi.heroPresetsInitialized)
+            };
+        }
+
+        // 3. Fallback per scansione da AddonConfig
+        if (addonUuid && AddonConfig && typeof AddonConfig.findOne === 'function') {
+            const config = await AddonConfig.findOne({ uuid: addonUuid }).lean();
+            const prof = (config?.profiles || []).find(p => (p.id || p._id?.toString()) === profileId)
+                || (profileId === 'global' ? config?.profiles?.[0] : null);
+            if (prof?.raw_ui_state) {
+                return {
+                    selectedPresets: Array.isArray(prof.raw_ui_state.selectedPresets) ? prof.raw_ui_state.selectedPresets : [],
+                    catalogOrder: Array.isArray(prof.raw_ui_state.catalogOrder) ? prof.raw_ui_state.catalogOrder : [],
+                    newPrompts: Array.isArray(prof.raw_ui_state.newPrompts) ? prof.raw_ui_state.newPrompts : [],
+                    heroPresetsInitialized: Boolean(prof.raw_ui_state.heroPresetsInitialized)
+                };
+            }
+        }
+
+        return defaultState;
+    } catch (_err) {
+        return defaultState;
+    }
+}
+
+/**
+ * Salva lo stato UI nel modello ProfileUiState con mirroring transizionale (Ticket 26, Decisione 2).
+ *
+ * @param {Object} params
+ * @param {string} params.addonUuid
+ * @param {string} [params.profileId='global']
+ * @param {Object} params.uiState
+ * @returns {Promise<Object>}
+ */
+async function salvaUiState({ addonUuid, profileId = 'global', uiState = {} } = {}) {
+    if (!addonUuid) throw new Error('addonUuid obbligatorio per salvare uiState.');
+
+    const cleanUiState = {
+        selectedPresets: Array.isArray(uiState.selectedPresets) ? [...new Set(uiState.selectedPresets)] : [],
+        catalogOrder: Array.isArray(uiState.catalogOrder) ? [...new Set(uiState.catalogOrder)] : [],
+        newPrompts: Array.isArray(uiState.newPrompts) ? uiState.newPrompts : [],
+        heroPresetsInitialized: Boolean(uiState.heroPresetsInitialized)
+    };
+
+    if (ProfileUiState && typeof ProfileUiState.updateOne === 'function') {
+        await ProfileUiState.updateOne(
+            { addonUuid, profileId },
+            { $set: cleanUiState },
+            { upsert: true }
+        );
+    }
+
+    // Mirroring transizionale su AddonConfig
+    try {
+        if (AddonConfig && typeof AddonConfig.updateOne === 'function') {
+            await AddonConfig.updateOne(
+                { uuid: addonUuid, 'profiles.id': profileId },
+                { $set: { 'profiles.$.raw_ui_state': cleanUiState } }
+            );
+        }
+    } catch (_err) {}
+
+    return cleanUiState;
+}
+
+/**
+ * Helper sincrono/puro per estrarre selectedPresets da un oggetto profilo (Decisione 2).
+ * Utilizzato da buildManifest e fingerprint per non leggere direttamente raw_ui_state.
+ *
+ * @param {Object} profile
+ * @returns {string[]}
+ */
+function selectedPresetsDi(profile) {
+    if (!profile) return [];
+    if (profile.uiState?.selectedPresets && Array.isArray(profile.uiState.selectedPresets)) {
+        return profile.uiState.selectedPresets;
+    }
+    if (profile.raw_ui_state?.selectedPresets && Array.isArray(profile.raw_ui_state.selectedPresets)) {
+        return profile.raw_ui_state.selectedPresets;
+    }
+    return [];
 }
 
 /**
@@ -254,6 +382,9 @@ module.exports = {
     defaultGlobalProfile,
     risolviProfiloAttivo,
     resolveActiveProfileId: risolviProfiloAttivo,
+    leggiUiState,
+    salvaUiState,
+    selectedPresetsDi,
     profiliDi,
     profiloDi,
     creaProfilo,

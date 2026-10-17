@@ -35,7 +35,8 @@ async function richiediComprensioneAI({
     context = {}
 } = {}) {
     const effectivePrompt = prompt || buildSearchUnderstandingPrompt(query, context);
-    const apiKey = mistralKey || process.env.MISTRAL_API_KEY;
+    const { chiaveEffettiva } = require('../configurazione');
+    const apiKey = chiaveEffettiva({ richiesta: mistralKey, servizio: 'mistral' });
 
     if (!apiKey) {
         return {

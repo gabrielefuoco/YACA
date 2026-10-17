@@ -82,7 +82,8 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
     const activeProfileId = risolviProfiloAttivo(userConfig);
     const profile = userConfig?.profiles?.find(p => p.id === activeProfileId) || (userConfig?.profiles?.[0]);
 
-    const selectedPresets = profile?.raw_ui_state?.selectedPresets;
+    const rawPresets = profile?.uiState?.selectedPresets || profile?.raw_ui_state?.selectedPresets;
+    const selectedPresets = Array.isArray(rawPresets) ? rawPresets : null;
     const heroCatalogs = getManifestHeroCatalogs();
 
     const typeSelectors = profile?.settings?.typeSelectors;

@@ -65,3 +65,64 @@ Il motivo in una riga: *una chiave che l'utente sceglie non è un'autorizzazione
 Minimo: **nessun file fuori dal modulo legge una chiave dall'ambiente** (col `grep` che lo dimostra), la catena
 di ripiego utente → globale ha il suo test, e i consumatori (le sei rotte, la ricerca, il configuratore) chiedono
 la chiave al modulo — con il degrado dichiarato quando non c'è.
+
+## Esito
+
+Completato il 17/10/2026. Tutte le 6 decisioni del grilling e i criteri di accettazione sono stati soddisfatti.
+
+### 1. Forma del modulo e la sua porta (`src/configurazione/`)
+- `src/configurazione/chiavi.js`:
+  - `chiaveEffettiva({ account, servizio, richiesta, env })`: pura, precedenza rigorosa `richiesta -> account.apiKeys[servizio] -> env -> null`.
+  - `chiaveGlobale(servizio)`: per i lavori offline/batch (daemon dump TMDB, script, name resolver).
+  - `motivoAssenzaChiave(servizio)` & `motivoDegradoFeature(feature)`: degrado morbido dichiarato (Decisione 4), es. `chiave_mistral_assente`.
+- `src/configurazione/door.js`:
+  - `accountDi(userId)`: porta grezza per il recupero dell'account (`lean`).
+  - `accountPerAddonUuid(addonUuid)`: risoluzione per uuid addon.
+  - `contaAccount()`: conteggio aggregato per endpoint admin/metriche.
+  - `trovaAccountPerEmailOAuthKey({ email, stremioAuthKey })`: lookup per login/sessione.
+  - Gestione credenziali e salute Trakt (Decisione 5): `traktDi(userId)`, `segnaTraktInRinnovo`, `segnaTraktOk`, `segnaTraktDaRiautorizzare`, `segnaTraktDegradato`, `segnaTraktNonConfigurato`, `salvaTraktCredenziali`, `disconnettiTrakt`.
+- `src/configurazione/index.js`: esportazioni canoniche del modulo.
+
+### 2. Prove di Grep (Accettazione rigorosa)
+- `grep "process.env.*_API_KEY"`: **0 occorrenze** fuori da `src/configurazione/chiavi.js`. I 15 file precedenti (24 occorrenze) chiedono ora la chiave al modulo.
+- Scritture dirette su Trakt (`$set` in `src/clients/trakt.js`): **0 occorrenze**. Il client Trakt non scrive più direttamente su MongoDB, delega al modulo configurazione.
+- Importazioni di `UserAccount` in `src/`: **0 occorrenze** fuori da `src/configurazione/door.js` e dalla definizione del modello `src/models/UserAccount.js`.
+
+### 3. Le tre migrazioni e i loro ripieghi (Pattern libraryOrder)
+1. **PasswordHash -> UserCredentials** (Decisione 1):
+   - Modello: `src/models/UserCredentials.js` (`userId`, `passwordHash`).
+   - Auth (`src/api/auth/index.js`) legge/scrive `UserCredentials` con fallback trasparente di lettura su `UserAccount.passwordHash`.
+   - Script di migrazione: `scripts/migrate_user_credentials.js` (dry-run di default, `--apply` per scrivere).
+2. **raw_ui_state -> ProfileUiState** (Decisione 2):
+   - Modello: `src/profile/models/ProfileUiState.js` (`addonUuid`, `profileId`, `selectedPresets`, `catalogOrder`, `newPrompts`, `heroPresetsInitialized`).
+   - Modulo profilo (`src/profile/door.js`) legge/scrive `ProfileUiState` con fallback trasparente di lettura su `AddonConfig.profiles.$.raw_ui_state`.
+   - Repoint lettori: `src/stremio/manifest.js` e `src/stremio/fingerprint.js` leggono con fallback su `uiState || raw_ui_state`.
+   - Script di migrazione: `scripts/migrate_profile_ui_state.js` (dry-run di default, `--apply` per scrivere).
+3. **Trakt block unificato** (Decisione 5):
+   - `UserAccount.trakt`: `{ accessToken, refreshToken, expiresAt, status: {...} }`.
+   - `traktDi(userId)` legge il blocco unificato con fallback su `apiKeys.trakt*` e `traktStatus`.
+   - Script di migrazione: `scripts/migrate_trakt_credentials.js` (dry-run di default, `--apply` per scrivere).
+
+### 4. Ownership Test & Documentazione (Decisione 6)
+- Test automatico del codice: `tests/proprietaDocumenti.test.js`:
+  1. Verifica che nessun file fuori da `src/configurazione/` importi `UserAccount`.
+  2. Verifica che l'accesso ad `AddonConfig.profiles[]` appartenga unicamente all'allowlist motivata.
+  3. Verifica che nessun file fuori da `src/configurazione/` legga `process.env.*_API_KEY`.
+- Documentazione: aggiornato `docs/INDEX.md` con il modulo configurazione e la regola di confine.
+
+### 5. Suite di Test Verificate (Tutte verdi, eseguite singolarmente con --forceExit)
+- `tests/configurazione.test.js`: 19 passed, 19 total
+- `tests/proprietaDocumenti.test.js`: 3 passed, 3 total
+- `tests/traktAutoRefresh.test.js`: 2 passed, 2 total
+- `tests/traktDisconnect.test.js`: 5 passed, 5 total
+- `tests/traktHardening.test.js`: 22 passed, 22 total
+- `tests/traktIntegration.test.js`: 4 passed, 4 total
+- `tests/profileDoor.test.js`: 12 passed, 12 total
+- `tests/ricercaDoor.test.js`: 20 passed, 20 total
+- `tests/manifestFingerprint.test.js`: 8 passed, 8 total
+- `tests/manifestReconciler.test.js`: 7 passed, 7 total
+Totale: **102 test passati con successo**.
+
+### 6. Cosa non è stato fatto (rimandato)
+- Rimozione fisica dei campi di ripiego legacy (`passwordHash` su `UserAccount`, `raw_ui_state` su `AddonConfig`, `apiKeys.trakt*` su `UserAccount`): conforme al pattern `libraryOrder`, i campi rimangono come ripiego di lettura e verranno eliminati solo dopo l'esecuzione delle migrazioni con `--apply` sul database di produzione.
+

@@ -1,5 +1,5 @@
 const AddonConfig = require('../models/AddonConfig');
-const UserAccount = require('../models/UserAccount');
+const { accountPerAddonUuid } = require('../configurazione');
 const { buildManifestFingerprint } = require('./fingerprint');
 const { updateStremioAddonCollection } = require('./collection');
 const { nanoid } = require('nanoid');
@@ -71,7 +71,7 @@ async function reconcileManifests() {
                 }
 
                 if (pendingResync) {
-                    const account = await UserAccount.findOne({ addonUuid: configDoc.uuid });
+                    const account = await accountPerAddonUuid(configDoc.uuid);
                     const stremioAuthKey = account?.apiKeys?.stremio;
                     const userId = account?.userId;
 

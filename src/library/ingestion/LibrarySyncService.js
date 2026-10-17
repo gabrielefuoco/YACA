@@ -1,4 +1,4 @@
-const UserAccount = require('../../models/UserAccount');
+const { accountDi } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const UserLibraryItem = require('../models/UserLibraryItem');
 const { stremioClient } = require('../../stremio');
@@ -430,7 +430,7 @@ class LibrarySyncService {
      * @param {String} userId - L'ID dell'utente in UserAccount.
      */
     static async syncLibraryForUser(userId) {
-        const user = await UserAccount.findOne({ userId });
+        const user = await accountDi(userId);
         if (!user || !user.apiKeys || !user.apiKeys.stremio) {
             console.warn(`[LibrarySync] No Stremio API key for user ${userId}`);
             return;

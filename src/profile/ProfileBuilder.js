@@ -8,7 +8,7 @@ const {
     scriviBatchCronologia
 } = require('../library');
 const AddonConfig = require('../models/AddonConfig');
-const UserAccount = require('../models/UserAccount');
+const { accountDi } = require('../configurazione');
 const {
     extractActiveDNAFromTmdbData,
     computeFinalDNA,
@@ -29,7 +29,7 @@ class ProfileBuilder {
      */
     static async _resolveAddonUuid(owner) {
         try {
-            const account = await UserAccount.findOne({ userId: owner }).lean();
+            const account = await accountDi(owner);
             return account?.addonUuid || null;
         } catch (err) {
             console.warn('[ProfileBuilder] Failed to resolve addonUuid:', err.message);
@@ -175,7 +175,7 @@ class ProfileBuilder {
     static async _resolveAllContexts(owner) {
         const contexts = new Set(['global']);
         try {
-            const account = await UserAccount.findOne({ userId: owner }).lean();
+            const account = await accountDi(owner);
             if (account?.addonUuid) {
                 const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
                 for (const p of (config?.profiles || [])) {

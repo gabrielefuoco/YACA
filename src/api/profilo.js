@@ -6,7 +6,7 @@ const { richiedeSessione, erroreDominio } = require('../middleware/sessione');
 router.use(richiedeSessione);
 
 const UserConfig = require('../models/UserConfig');
-const UserAccount = require('../models/UserAccount');
+const { accountDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const TasteProfile = require('../models/TasteProfile');
 const { getHeroUiGroups } = require('../catalog/registry');
@@ -70,7 +70,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/libreria', async (req, res) => {
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -112,7 +112,7 @@ router.post('/libreria', async (req, res) => {
     }
 
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -193,7 +193,7 @@ router.delete('/libreria/:itemId', async (req, res) => {
     }
 
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -240,7 +240,7 @@ router.put('/libreria/ordine', async (req, res) => {
     }
 
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -276,7 +276,7 @@ router.put('/libreria/ordine', async (req, res) => {
  */
 router.get('/libreria/visti', async (req, res) => {
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -303,7 +303,7 @@ router.get('/libreria/visti', async (req, res) => {
  */
 router.post('/libreria/visti', async (req, res) => {
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -331,7 +331,7 @@ router.post('/libreria/visti', async (req, res) => {
 router.get('/sincronizzazione', async (req, res) => {
     const profileId = (req.query && req.query.profileId) || 'global';
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         const addonConfig = account?.addonUuid
             ? await AddonConfig.findOne({ uuid: account.addonUuid }).lean()
             : null;
@@ -360,7 +360,7 @@ router.get('/sincronizzazione', async (req, res) => {
 router.post('/sincronizzazione', async (req, res) => {
     const profileId = (req.body && req.body.profileId) || 'global';
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
@@ -421,7 +421,7 @@ router.post('/aggiorna', async (req, res) => {
 router.post('/dna/conferma', async (req, res) => {
     const profileId = (req.body && req.body.profileId) || 'global';
     try {
-        const account = await UserAccount.findOne({ userId: req.utenteId }).lean();
+        const account = await accountDi(req.utenteId);
         if (!account?.addonUuid) {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
