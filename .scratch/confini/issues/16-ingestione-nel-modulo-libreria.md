@@ -159,3 +159,13 @@ Ripuntati tutti gli importatori nel codice applicativo e nei test:
 
 ### 8. Cosa resta aperto
 - `src/services/LibrarySyncService.js`: mantenuto temporaneamente come re-export di una riga verso `../library/ingestion/LibrarySyncService` per non toccare `src/catalog/providers/WatchlistProvider.js`, protetto dal vincolo del brief (`DO NOT TOUCH: ... src/catalog/** (ticket 12, running in parallel)`). Non appena il ticket 12 sarà concluso e mergiato, `WatchlistProvider.js` potrà essere aggiornato a `require('../../library')` e lo shim in `src/services/` potrà essere eliminato definitivamente.
+
+---
+
+## Il ponte `src/services/LibrarySyncService.js` è stato tolto (17/10/2026)
+
+Lo slave l'aveva lasciato come re-export di una riga perché `src/catalog/providers/WatchlistProvider.js` lo
+importava e `src/catalog/**` era vietato (il ticket 12 ci stava lavorando in parallelo). Con il 12 in `main`,
+il ponte è stato rimosso: `WatchlistProvider` ora importa `library/ingestion/LibrarySyncService`, e in
+`src/services/` non resta nessun file di libreria. Verificato con un `grep` (`services/LibrarySyncService` →
+zero occorrenze) e coi test della watchlist.
