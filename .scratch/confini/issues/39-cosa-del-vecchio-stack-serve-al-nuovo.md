@@ -79,3 +79,18 @@ modo, e la differenza è tutta qui:
 **Nessuno di questi ponti è un errore**: sono il prezzo di un refactor fatto per gradi. Ma la differenza fra
 «il vecchio stack serve le rotte vecchie» (atteso, e si sostituisce) e «il vecchio stack serve i moduli nuovi»
 (una dipendenza nascosta, e va tolta) è esattamente la differenza fra un lavoro pianificato e un guasto silenzioso.
+
+## Aggiunta (18/10/2026): un ponte che il primo giro aveva mancato
+
+`src/id_mapping/id_cache.js` (96 righe) — la cache di traduzione **IMDb ↔ TMDB** — è usata da:
+- `src/handlers/metaHandler.js` (**vecchio stack**, muore con lui),
+- `src/api/admin.js` (una rotta),
+- **`src/profile/ProfileBuilder.js`** (modulo **nuovo**).
+
+Quindi è un **quarto ponte**: non è nel vecchio stack, ma è usato *da* un modulo nuovo e da uno vecchio. Quando il
+vecchio stack muore, `ProfileBuilder` continua a volerlo → **va spostato** nel modulo che lo possiede (la cache di
+identità è roba dell'**indice**: traduce id per rispondere). Il primo giro non l'aveva visto perché l'analizzatore
+cercava solo dentro `engines/`, `handlers/`, `pool/`, `db/tier1*` — e questo vive in una cartella sua.
+
+**Lezione**: il confine di un audit è un'ipotesi. Un file fuori dalle cartelle "sospette" può essere un ponte
+esattamente come uno dentro.
