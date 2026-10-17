@@ -237,6 +237,7 @@ function buildCatalogCacheKey({
                 kids: activeProfileSettings?.kidsMode,
                 selettori: activeProfileSettings?.typeSelectors,
                 landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
+                ...(activeProfileSettings?.sliders ? { slider: activeProfileSettings.sliders } : {}),
                 condiviso
             },
             invalida: {
@@ -613,9 +614,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
         ? {
             ...rawSettings,
             typeSelectors: userConfig.context.selettoriEffettivi || rawSettings.typeSelectors,
-            kidsMode: userConfig.context.kidsMode !== undefined ? userConfig.context.kidsMode : rawSettings.kidsMode
+            kidsMode: userConfig.context.kidsMode !== undefined ? userConfig.context.kidsMode : rawSettings.kidsMode,
+            sliders: userConfig.context.sliders || userConfig.context.slider || rawSettings.sliders || rawSettings.slider
         }
-        : rawSettings;
+        : {
+            ...rawSettings,
+            sliders: rawSettings.sliders || rawSettings.slider
+        };
     
     // TMDB Client Initialization
     const { chiaveEffettiva } = require('../configurazione');
@@ -660,6 +665,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 kids: activeProfileSettings?.kidsMode,
                 selettori: activeProfileSettings?.typeSelectors,
                 landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
+                ...(activeProfileSettings?.sliders ? { slider: activeProfileSettings.sliders } : {}),
                 condiviso
             },
             invalida: {

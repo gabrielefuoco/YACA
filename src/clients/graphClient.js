@@ -71,11 +71,12 @@ async function getGraphHealthVersions({ baseUrl = GRAPH_SERVICE_URL, timeout = 2
  *   cap?: number
  * }
  */
-async function raccomanda({ semi = [], medium, opzioni, cap = 60 } = {}, { baseUrl = GRAPH_SERVICE_URL, timeout = GRAPH_TIMEOUT_MS } = {}) {
+async function raccomanda({ semi = [], medium, opzioni, sliders, slider, cap = 60 } = {}, { baseUrl = GRAPH_SERVICE_URL, timeout = GRAPH_TIMEOUT_MS } = {}) {
+    const opts = opzioni || sliders || slider;
     const payload = {
         semi,
         ...(medium ? { medium } : {}),
-        ...(opzioni ? { opzioni } : {}),
+        ...(opts && typeof opts === 'object' && Object.keys(opts).length > 0 ? { opzioni: opts } : {}),
         cap: Number(cap) || 60
     };
 

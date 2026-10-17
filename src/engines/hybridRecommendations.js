@@ -206,6 +206,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const context = ctx.profileId;
     const isKidsMode = ctx.kidsMode;
     const effectiveTypeSelectors = ctx.selettoriEffettivi;
+    const effectiveSliders = ctx.sliders || ctx.slider || userConfig?.activeProfileSettings?.sliders || userConfig?.activeProfileSettings?.slider;
     const profile = await TasteProfile.findOne({ owner: userId, context });
     const isHero = isHeroCatalogId(catalogId);
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
@@ -219,7 +220,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
                 profilo: context,
                 catalogo: catalogId,
                 kids: isKidsMode,
-                selettori: effectiveTypeSelectors
+                selettori: effectiveTypeSelectors,
+                ...(effectiveSliders ? { slider: effectiveSliders } : {})
             }
         },
         ttl: 7 * 24 * 60 * 60 * 1000 // 7 giorni
@@ -245,7 +247,9 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             tmdbApiKey,
             kidsMode: isKidsMode,
             userConfig,
-            typeSelectors: effectiveTypeSelectors
+            typeSelectors: effectiveTypeSelectors,
+            sliders: effectiveSliders,
+            slider: effectiveSliders
         });
         recommendationIds = poolResults[catalogId] || poolResults.catalogs?.[catalogId] || [];
         console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs`);
