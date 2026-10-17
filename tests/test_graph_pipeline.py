@@ -106,7 +106,10 @@ def test_il_ciclo_non_e_duplicato_da_nessuna_parte():
 
 @pytest.fixture(scope="module")
 def bolle():
-    return json.loads((ROOT / "src" / "data" / "bolle.json").read_text(encoding="utf-8"))
+    p = K.DATA / "bolle.json"
+    if not p.exists():
+        p = ROOT / "src" / "data" / "bolle.json"
+    return json.loads(p.read_text(encoding="utf-8"))
 
 
 def test_le_righe_di_transizione_sono_normalizzate(bolle):

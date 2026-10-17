@@ -492,7 +492,10 @@ def parita(args) -> int:
     import numpy as np
     from graph import motore as MO
     M = MO.Motore(silenzioso=True)
-    d = json.load(open("src/data/bolle.json", encoding="utf-8"))
+    p = K.DATA / "bolle.json"
+    if not p.exists():
+        p = K.ROOT / "src" / "data" / "bolle.json"
+    d = json.load(open(p, encoding="utf-8"))
     v = d["versione"]
     riga_P = {int(b): [(int(x), float(w)) for x, w in vv["P"]] for b, vv in d["bolle"].items()}
 
@@ -619,7 +622,7 @@ PASSO = [
     {"nome": "esporta", "cmd": ["-m", "graph.pipeline", "esporta"], "env": {},
      "legge": ["bolle-eterogeneo-subvoti.npy", "mappa-finale-6-2.npz", "05-centroidi*.npz",
                "metadati-canone.npz", "titoli-canone.txt"],
-     "scrive": ["../../../src/data/bolle.json"], "params": [], "tempo": "~5 s"},
+     "scrive": ["bolle.json"], "params": [], "tempo": "~5 s"},
 ]
 MANIFEST = K.DATA / "manifest-build.json"
 
@@ -804,8 +807,8 @@ def main(argv=None) -> int:
     plet.add_argument("--quanti", type=int, default=10)
     plet.add_argument("--fuori", default=".scratch/suggerimenti/lettura.md")
     plet.set_defaults(fn=lettura)
-    pex = sub.add_parser("esporta", help="l'artefatto per il prodotto (src/data/bolle.json)")
-    pex.add_argument("--fuori", default="src/data/bolle.json")
+    pex = sub.add_parser("esporta", help="l'artefatto per il servizio (services/graph/data/bolle.json)")
+    pex.add_argument("--fuori", default=str(K.DATA / "bolle.json"))
     pex.add_argument("--colloca", action="store_true",
                      help="assegna una bolla ai titoli che l'artefatto non conosce (il job notturno)")
     pex.add_argument("--max", type=int, default=0, help="fermati dopo N collocazioni (prove)")
