@@ -73,10 +73,11 @@ async function contestoDi(input = {}) {
         rawProfile?.settings?.kidsMode
     );
 
-    // Calcolo slider Ocean (preferenze motore salvate nel profilo)
-    const slider = rawProfile?.settings?.slider
+    // Calcolo slider del motore (preferenze motore salvate nel profilo: largo, lontano, cozy, canone)
+    const slider = rawProfile?.settings?.sliders
+        || rawProfile?.settings?.slider
         || rawProfile?.settings?.oceanSliders
-        || rawProfile?.settings?.sliders
+        || rawProfile?.sliders
         || {};
 
     // Calcolo dei selettori effettivi tramite funzione pura del modulo
@@ -91,7 +92,8 @@ async function contestoDi(input = {}) {
         addonUuid: resolvedAddonUuid,
         selettoriEffettivi: resolvedSelectors,
         kidsMode,
-        slider
+        slider,
+        sliders: slider
     };
 }
 

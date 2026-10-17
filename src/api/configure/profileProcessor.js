@@ -163,8 +163,10 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                 heroPresetsInitialized: input.heroPresetsInitialized ?? false
             },
             settings: {
-                ...(input.settings || {})
-            }
+                ...(input.settings || {}),
+                ...(input.sliders ? { sliders: input.sliders } : {})
+            },
+            ...(input.sliders || input.settings?.sliders ? { sliders: input.sliders || input.settings?.sliders } : {})
         };
 
         // 2. Resolve Presets to Catalogs (Upsert Logic)
