@@ -14,7 +14,10 @@
       "/node_modules/",
       "services"
     ],
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "setupFiles": [
+      "<rootDir>/tests/setupEnv.js"
+    ]
   },
   "keywords": [],
   "author": "",

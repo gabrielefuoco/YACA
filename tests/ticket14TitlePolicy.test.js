@@ -260,6 +260,8 @@ describe('Ticket 14: Policy IT -> EN -> JA nel dump TMDB e DuckDB Provider', () 
         test('DuckDB store inizializza senza errori da parquet privi di title_en/name_en e garantisce le colonne', async () => {
             // Simuliamo DuckDbStore che carica i file del vecchio parquet
             const testStore = new (duckDbStore.constructor)();
+            testStore.basePath = tempDir;
+            testStore.dbPath = path.join(tempDir, 'catalog.duckdb');
             testStore.moviesParquetPath = path.join(tempDir, 'movies.parquet');
             testStore.tvParquetPath = path.join(tempDir, 'tv.parquet');
 
@@ -276,7 +278,7 @@ describe('Ticket 14: Policy IT -> EN -> JA nel dump TMDB e DuckDB Provider', () 
             expect(tv[0].name).toBe('進撃の巨人');
             expect(tv[0].name_en).toBeNull();
 
-            testStore.close();
+            await testStore.close();
         });
     });
 
