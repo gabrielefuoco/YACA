@@ -28,10 +28,10 @@ const path = require('path');
 const express = require('express');
 
 // La coda è l'unica cosa che qui si osserva: un mock con una `push` che il test comanda.
-jest.mock('../src/cache/codaEventi', () => ({ push: jest.fn() }));
+jest.mock('../src/posters/codaEventi', () => ({ push: jest.fn() }));
 
 const registerStaticPostersRoute = require('../src/api/staticPosters');
-const coda = require('../src/cache/codaEventi');
+const coda = require('../src/posters/codaEventi');
 
 const JPEG_RISPOSTA = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x42, 0x01]);
 
