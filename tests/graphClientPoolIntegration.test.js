@@ -29,7 +29,7 @@ jest.mock('../src/engines/hybrid/catalogStrategies', () => ({
     })
 }));
 
-const graphClient = require('../src/pool/graphClient');
+const graphClient = require('../src/clients/graphClient');
 const {
     buildSharedHeroCacheKey,
     buildSharedHeroCatalogs,

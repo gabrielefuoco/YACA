@@ -19,7 +19,7 @@ const express = require('express');
 const router = express.Router();
 
 const { cronologiaDi } = require('../library');
-const graphClient = require('../pool/graphClient');
+const graphClient = require('../clients/graphClient');
 
 const COOKIE = 'yaca_session';
 const STORIA_MAX = 300;      // il motore e' tarato su storie fino a ~300 voci (i file di Trakt lo erano)

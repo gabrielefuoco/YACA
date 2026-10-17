@@ -1,4 +1,4 @@
-// src/pool/graphClient.js
+// src/clients/graphClient.js
 
 /**
  * CLIENT DEL SERVIZIO GRAFO (Ticket 08).
