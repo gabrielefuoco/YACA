@@ -275,6 +275,13 @@ const shutdown = (signal) => {
             } catch (err) {
                 console.error('Errore durante la disconnessione:', err.message);
             }
+            try {
+                const duckDbStore = require('./src/db/duckDbStore');
+                await duckDbStore.close();
+                console.log('DuckDB disconnesso.');
+            } catch (err) {
+                console.error('Errore chiusura DuckDB:', err.message);
+            }
             process.exit(0);
         });
         const shutdownTimer = setTimeout(() => {
