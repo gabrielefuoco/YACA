@@ -65,50 +65,6 @@ async function refreshTraktTokens(refreshToken, options = {}) {
 }
 
 /**
- * Scambia il device code o authorization code per ottenere i token Trakt e calcola traktExpiresAt.
- *
- * NOTA CRITICA: Il refresh token di Trakt è STRICT SINGLE-USE. Riusarlo invalida la sessione.
- *
- * @param {string} code - Il device_code o authorization code
- * @param {string} [userId] - ID opzionale utente per persistenza automatica
- * @returns {Promise<{access_token: string, refresh_token: string, expires_at: Date}|null>}
- */
-async function exchangeTraktCode(code, userId = null) {
-    const clientId = process.env.TRAKT_CLIENT_ID;
-    const clientSecret = process.env.TRAKT_CLIENT_SECRET;
-    if (!clientId || !clientSecret || !code) return null;
-
-    try {
-        const res = await traktClient.post('/oauth/device/token', {
-            code,
-            client_id: clientId,
-            client_secret: clientSecret
-        }, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-
-        if (res.data && res.data.access_token && res.data.refresh_token) {
-            const createdAtSec = res.data.created_at || Math.floor(Date.now() / 1000);
-            const expiresInSec = res.data.expires_in || 7776000;
-            const expiresAt = new Date((createdAtSec + expiresInSec) * 1000);
-            const tokenResult = {
-                access_token: res.data.access_token,
-                refresh_token: res.data.refresh_token,
-                expires_at: expiresAt,
-                expires_in: res.data.expires_in,
-                created_at: res.data.created_at
-            };
-            if (userId) {
-                await syncTraktTokensToDb(userId, tokenResult.access_token, tokenResult.refresh_token, expiresAt);
-            }
-            return tokenResult;
-        }
-        return null;
-    } catch (err) {
-        console.error('Trakt token exchange failed:', err.response?.data || err.message);
-        return null;
-    }
-}
-
-/**
  * Aggiorna i token Trakt nel database MongoDB dell'utente.
  *
  * NOTA CRITICA SUL REFRESH TOKEN TRAKT:
@@ -714,7 +670,6 @@ module.exports = {
     syncTraktRatings,
     traktClient,
     smartTraktRefresh,
-    exchangeTraktCode,
     checkTraktHeartbeat,
     classifyRefreshError,
     markRequiresReauth,

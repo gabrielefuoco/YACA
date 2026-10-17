@@ -83,7 +83,7 @@ const addonConfigSchema = new mongoose.Schema({
         configVersion: String,
         manifestFingerprint: String,
         pendingStremioResync: { type: Boolean, default: false },
-        // Bookkeeping del sync Stremio scritto da updateSyncTimestamp (src/utils/stremioAddon.js):
+        // Bookkeeping del sync Stremio scritto da updateSyncTimestamp (ora in src/stremio/collection.js):
         // se non sono dichiarati qui, mongoose in strict li elimina dall'update, che resta vuoto,
         // e MongoDB rifiuta l'arrayFilters di `profiles.$[elem]` facendo fallire tutto il sync.
         lastStremioSync: Date,

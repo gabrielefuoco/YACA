@@ -34,3 +34,30 @@ rimasta dov'era quando il suo padrone se n'è andato.**
 Questo è il ticket che **cancella una superficie HTTP viva** (punto 1). Va fatto **per ultimo**, e con la verifica
 del client fatta prima: cancellare una rotta che qualcuno chiama è un guasto silenzioso in produzione, non un
 errore nei test.
+
+## Audit del codice morto (18/10/2026, dopo tutti i merge)
+
+Fatto con due analizzatori statici (raggiungibilità da `index.js`+`scripts/`, e export mai usati altrove), non a
+occhio. **Il risultato che conta è che non c'è quasi niente da pulire** — il refactor è stato completo:
+
+| misura | valore |
+|---|---|
+| `src/` | 154 file, 36.752 righe |
+| vivo (caricato da `index.js` o `scripts/`) | **151 file, 36.370 righe** |
+| **morto per import** | **1 file, 10 righe** → `src/ai/prompts.js` (lo stub che il ticket 27 ha svuotato) |
+| solo-test | 2 file, 372 righe → `src/catalog/index.js` + `validation.js` (l'**isola chiusa**: la porta del modulo catalogo non è la porta che si usa) |
+| **0 importatori** | `src/utils/tmdbIngestPolicy.js` (95 righe) |
+| il vecchio stack | **5.854 righe, ma VIVE**: serve il prodotto adesso (`stremio.js` → `catalogHandler` → `pool`/`engines`) — è sostituzione, non pulizia |
+
+**Fatto in questo giro** (territori liberi):
+- **`src/clients/trakt.js`: cancellata `exchangeTraktCode`** — codice morto (2 occorrenze = definizione + export).
+  Il flusso vero usa il *device code* chiamando Trakt direttamente (`src/api/auth/index.js`), e nessuno la
+  chiamava: né codice né test. Verificato che non facesse cascata (`syncTraktTokensToDb` è usato dal refresh ✓).
+  33 test Trakt verdi dopo la cancellazione.
+- **`src/models/AddonConfig.js`**: corretto un commento che citava `src/utils/stremioAddon.js` (cancellato).
+
+**Da fare nei rispettivi ticket** (territori occupati adesso):
+- `src/ai/prompts.js` (morto) → **`t38-router-ai`**, che sta lavorando proprio lì.
+- `src/utils/tmdbIngestPolicy.js` (0 importatori) → **`t34-daemon`**, che possiede il cluster `tmdb*`.
+- `src/catalog/index.js` + `validation.js` (isola chiusa, 372 righe) → **decisione**, non pulizia: o la porta del
+  catalogo diventa quella che si usa, o si cancella. È il rilievo del ticket 27.
