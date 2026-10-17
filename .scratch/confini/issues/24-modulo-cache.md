@@ -85,3 +85,8 @@ soprattutto una guardia che può essere **senza buchi**: se una cache resta fuor
 Minimo: le tre costruzioni a mano diventano **una** (col `grep` che lo dimostra), il bug del TTL ha il suo test
 (`ttl esplicito → la voce scade a quel TTL, non a quello in RAM`), e una versione alzata **invalida davvero**
 (con la prova su Redis: `redis-cli ttl`).
+
+## Esito
+
+- **Modulo poster scorporato (Ticket 25)**: vedi [25 — Il modulo poster: ERDB, i file composti, la coda e il drenatore](25-modulo-poster.md).
+
