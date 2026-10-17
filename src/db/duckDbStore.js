@@ -17,107 +17,280 @@ class DuckDbStore {
             
         this.moviesParquetPath = path.join(this.basePath, 'movies.parquet');
         this.tvParquetPath = path.join(this.basePath, 'tv.parquet');
+        this.dbPath = process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
+        this.masterMoviesJsonlPath = path.join(this.basePath, 'master_movies.jsonl');
+        this.masterTvJsonlPath = path.join(this.basePath, 'master_tv.jsonl');
 
         // TMDB id → IMDb id letti dal dump: solo i risultati trovati (mai i "non trovato",
         // così un titolo promosso a Tier 1 dopo è visibile subito).
         this.tmdbImdbIdCache = new Map();
     }
 
-    async init() {
-        if (this.isInitialized) return this.initPromise;
-        if (this.initPromise) return this.initPromise;
+    _cleanupDbFiles(filePath) {
+        if (!filePath || filePath === ':memory:') return;
+        const targets = [filePath, `${filePath}.wal`];
+        for (const target of targets) {
+            try {
+                if (fs.existsSync(target)) fs.unlinkSync(target);
+            } catch (_) {}
+        }
+    }
+
+    _isDatabaseFresh() {
+        if (!fs.existsSync(this.dbPath)) return false;
+        try {
+            const dbStat = fs.statSync(this.dbPath);
+            if (dbStat.size === 0) return false;
+
+            // Se esiste movies.parquet, catalog.duckdb deve essere >= movies.parquet
+            if (fs.existsSync(this.moviesParquetPath)) {
+                const moviesStat = fs.statSync(this.moviesParquetPath);
+                if (moviesStat.mtimeMs > dbStat.mtimeMs) return false;
+            }
+
+            // Se esiste tv.parquet, catalog.duckdb deve essere >= tv.parquet
+            if (fs.existsSync(this.tvParquetPath)) {
+                const tvStat = fs.statSync(this.tvParquetPath);
+                if (tvStat.mtimeMs > dbStat.mtimeMs) return false;
+            }
+
+            // Se esistono i JSONL master, catalog.duckdb deve essere >= JSONL
+            if (fs.existsSync(this.masterMoviesJsonlPath)) {
+                const jsonlStat = fs.statSync(this.masterMoviesJsonlPath);
+                if (jsonlStat.mtimeMs > dbStat.mtimeMs) return false;
+            }
+            if (fs.existsSync(this.masterTvJsonlPath)) {
+                const jsonlStat = fs.statSync(this.masterTvJsonlPath);
+                if (jsonlStat.mtimeMs > dbStat.mtimeMs) return false;
+            }
+
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    _openDb(dbFile) {
+        return new Promise((resolve, reject) => {
+            const db = new duckdb.Database(dbFile, { max_memory: '2GB' }, (err) => {
+                if (err) return reject(err);
+                resolve(db);
+            });
+        });
+    }
+
+    _exec(con, sql) {
+        return new Promise((resolve, reject) => {
+            con.exec(sql, (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+    }
+
+    _all(con, sql, params = []) {
+        return new Promise((resolve, reject) => {
+            con.all(sql, ...params, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    }
+
+    _closeCon(con) {
+        if (!con) return Promise.resolve();
+        return new Promise((resolve) => {
+            try {
+                con.close(() => resolve());
+            } catch (_) {
+                resolve();
+            }
+        });
+    }
+
+    _closeDb(db) {
+        if (!db) return Promise.resolve();
+        return new Promise((resolve) => {
+            try {
+                db.close(() => resolve());
+            } catch (_) {
+                resolve();
+            }
+        });
+    }
+
+    async _verifyDatabase(con) {
+        const tables = await this._all(con, "SELECT table_name FROM duckdb_tables WHERE schema_name = 'main';");
+        const tableNames = new Set((tables || []).map(t => t.table_name));
+
+        if (!tableNames.has('movies') || !tableNames.has('tv') || !tableNames.has('anime_mappings')) {
+            throw new Error(`Tabelle obbligatorie mancanti (trovate: ${Array.from(tableNames).join(', ')})`);
+        }
+
+        if (fs.existsSync(this.moviesParquetPath)) {
+            const mRows = await this._all(con, "SELECT count(*) AS n FROM movies;");
+            const count = Number(mRows && mRows[0] ? mRows[0].n : 0);
+            if (count === 0) throw new Error("Tabella movies presente ma vuota nonostante movies.parquet esista");
+            await this._all(con, "SELECT fts_main_movies.match_bm25(id, 'the') FROM movies LIMIT 1;");
+            await this._all(con, "SELECT watch_providers_us, title_en FROM movies LIMIT 1;");
+        }
+
+        if (fs.existsSync(this.tvParquetPath)) {
+            const tvRows = await this._all(con, "SELECT count(*) AS n FROM tv;");
+            const count = Number(tvRows && tvRows[0] ? tvRows[0].n : 0);
+            if (count === 0) throw new Error("Tabella tv presente ma vuota nonostante tv.parquet esista");
+            await this._all(con, "SELECT fts_main_tv.match_bm25(id, 'the') FROM tv LIMIT 1;");
+            await this._all(con, "SELECT watch_providers_us, name_en FROM tv LIMIT 1;");
+        }
+
+        await this._all(con, "SELECT count(*) FROM anime_mappings;");
+        return true;
+    }
+
+    async init(options = {}) {
+        const forceRebuild = Boolean(options && options.forceRebuild);
+        if (this.isInitialized && !forceRebuild) return this.initPromise;
+        if (this.initPromise && !forceRebuild) return this.initPromise;
+
+        if (!fs.existsSync(this.basePath)) {
+            try { fs.mkdirSync(this.basePath, { recursive: true }); } catch (_) {}
+        }
 
         console.log(`[DuckDB Store] Inizializzazione in corso...`);
         if (!fs.existsSync(this.moviesParquetPath) && !fs.existsSync(this.tvParquetPath)) {
             console.warn(`[DuckDB Store] Attenzione: File Parquet non trovati in ${this.basePath}.`);
             console.warn(`[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js`);
         }
-        
-        this.initPromise = new Promise((resolve, reject) => {
-            // Avvio con limite di memoria per sicurezza su HF
-            this.db = new duckdb.Database(':memory:', { max_memory: '2GB' }, (err) => {
-                if (err) {
-                    this.initPromise = null;
-                    return reject(err);
+
+        this.initPromise = (async () => {
+            const isMemory = this.dbPath === ':memory:';
+            let reopened = false;
+
+            // 1. Prova a riaprire il database persistente esistente se fresco e non forzato
+            if (!isMemory && !forceRebuild && this._isDatabaseFresh()) {
+                let testDb = null;
+                let testCon = null;
+                try {
+                    testDb = await this._openDb(this.dbPath);
+                    testCon = testDb.connect();
+                    await this._exec(testCon, "INSTALL fts;");
+                    await this._exec(testCon, "LOAD fts;");
+                    await this._exec(testCon, "SET scalar_subquery_error_on_multiple_rows=false;");
+                    await this._verifyDatabase(testCon);
+
+                    this.db = testDb;
+                    this.con = testCon;
+                    reopened = true;
+                    console.log(`[DuckDB Store] Database persistente valido riaperto con successo da ${this.dbPath}.`);
+                } catch (err) {
+                    console.warn(`[DuckDB Store] Database persistente esistente non valido o corrotto (${err.message}). Ricostruzione da zero...`);
+                    await this._closeCon(testCon);
+                    await this._closeDb(testDb);
+                    this._cleanupDbFiles(this.dbPath);
+                    reopened = false;
                 }
-                
-                this.con = this.db.connect();
-                
-                const execPromise = (sql) => new Promise((resolve, reject) => {
-                    this.con.exec(sql, (err) => {
-                        if (err) reject(err);
-                        else resolve();
-                    });
-                });
+            }
 
-                (async () => {
-                    try {
-                        await execPromise("INSTALL fts;");
-                        await execPromise("LOAD fts;");
-                        await execPromise("SET scalar_subquery_error_on_multiple_rows=false;");
-                        
-                        if (fs.existsSync(this.moviesParquetPath)) {
-                            await execPromise(`DROP TABLE IF EXISTS movies;`);
-                            await execPromise(`CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
-                            await execPromise(`PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
-                        } else {
-                            await execPromise(`CREATE TABLE IF NOT EXISTS movies (id BIGINT, title VARCHAR, original_title VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, release_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN, title_en VARCHAR);`);
-                        }
-                        
-                        if (fs.existsSync(this.tvParquetPath)) {
-                            await execPromise(`DROP TABLE IF EXISTS tv;`);
-                            await execPromise(`CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
-                            await execPromise(`PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
-                        } else {
-                            await execPromise(`CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, number_of_seasons INTEGER, number_of_episodes INTEGER, status VARCHAR, adult BOOLEAN, name_en VARCHAR);`);
-                        }
+            // 2. Se non è stato possibile riaprirlo, procedi con la costruzione completa
+            if (!reopened) {
+                const targetDbPath = isMemory ? ':memory:' : `${this.dbPath}.tmp`;
+                if (!isMemory) {
+                    this._cleanupDbFiles(targetDbPath);
+                }
 
-                        // Ticket 13: Tabella anime_mappings con colonna 'tipo' per separare i namespace film e serie.
-                        // DROP TABLE IF EXISTS prima della CREATE garantisce la pulizia di schemi precedenti al boot.
-                        await execPromise(`DROP TABLE IF EXISTS anime_mappings;`);
-                        await execPromise(`CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));`);
+                let buildDb = null;
+                let buildCon = null;
+                try {
+                    buildDb = await this._openDb(targetDbPath);
+                    buildCon = buildDb.connect();
 
-                        console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
+                    await this._exec(buildCon, "INSTALL fts;");
+                    await this._exec(buildCon, "LOAD fts;");
+                    await this._exec(buildCon, "SET scalar_subquery_error_on_multiple_rows=false;");
 
-                        // I dump di produzione più recenti non contengono ancora la colonna US:
-                        // mantenerla nullable evita query non portabili sui preset regionali.
-                        await execPromise('ALTER TABLE movies ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
-                        await execPromise('ALTER TABLE tv ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
-
-                        // Retrocompatibilità per parquet senza la colonna del titolo inglese (ticket #14)
-                        await execPromise('ALTER TABLE movies ADD COLUMN IF NOT EXISTS title_en VARCHAR;');
-                        await execPromise('ALTER TABLE tv ADD COLUMN IF NOT EXISTS name_en VARCHAR;');
-                        this.isInitialized = true;
-
-                        // Ticket 13: seeding post-init usando i set tipizzati animeTmdbIdsMovie e animeTmdbIdsShow dello store
-                        const animeMappingStore = require('../data/animeMappingStore');
-                        if (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow) {
-                            const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
-                            const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
-                            if (movieIds.length > 0 || tvIds.length > 0) {
-                                await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
-                            }
-                        }
-
-                        // Popola la cache dei Document Frequencies (DF) per la rarità dolce DNA
-                        await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));
-
-                        resolve();
-                    } catch (errExec) {
-                        console.error(`[DuckDB Store] Errore inizializzazione tabelle/FTS:`, errExec);
-                        this.initPromise = null;
-                        reject(errExec);
+                    if (fs.existsSync(this.moviesParquetPath)) {
+                        await this._exec(buildCon, `DROP TABLE IF EXISTS movies;`);
+                        await this._exec(buildCon, `CREATE TABLE movies AS SELECT * FROM read_parquet('${this.moviesParquetPath.replace(/\\/g, '/')}');`);
+                        await this._exec(buildCon, `PRAGMA create_fts_index('movies', 'id', 'title', 'original_title');`);
+                    } else {
+                        await this._exec(buildCon, `CREATE TABLE IF NOT EXISTS movies (id BIGINT, title VARCHAR, original_title VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, release_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, adult BOOLEAN, title_en VARCHAR);`);
                     }
-                })();
-            });
-        });
+
+                    if (fs.existsSync(this.tvParquetPath)) {
+                        await this._exec(buildCon, `DROP TABLE IF EXISTS tv;`);
+                        await this._exec(buildCon, `CREATE TABLE tv AS SELECT * FROM read_parquet('${this.tvParquetPath.replace(/\\/g, '/')}');`);
+                        await this._exec(buildCon, `PRAGMA create_fts_index('tv', 'id', 'name', 'original_name');`);
+                    } else {
+                        await this._exec(buildCon, `CREATE TABLE IF NOT EXISTS tv (id BIGINT, name VARCHAR, original_name VARCHAR, overview VARCHAR, poster_path VARCHAR, backdrop_path VARCHAR, first_air_date VARCHAR, vote_average DOUBLE, vote_count BIGINT, popularity DOUBLE, genres VARCHAR, keywords VARCHAR, watch_providers_it VARCHAR, watch_providers_us VARCHAR, networks VARCHAR, production_companies VARCHAR, production_countries VARCHAR, original_language VARCHAR, number_of_seasons INTEGER, number_of_episodes INTEGER, status VARCHAR, adult BOOLEAN, name_en VARCHAR);`);
+                    }
+
+                    await this._exec(buildCon, `DROP TABLE IF EXISTS anime_mappings;`);
+                    await this._exec(buildCon, `CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));`);
+
+                    await this._exec(buildCon, 'ALTER TABLE movies ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
+                    await this._exec(buildCon, 'ALTER TABLE tv ADD COLUMN IF NOT EXISTS watch_providers_us VARCHAR;');
+                    await this._exec(buildCon, 'ALTER TABLE movies ADD COLUMN IF NOT EXISTS title_en VARCHAR;');
+                    await this._exec(buildCon, 'ALTER TABLE tv ADD COLUMN IF NOT EXISTS name_en VARCHAR;');
+
+                    console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
+
+                    if (!isMemory) {
+                        await this._closeCon(buildCon);
+                        buildCon = null;
+                        await this._closeDb(buildDb);
+                        buildDb = null;
+
+                        this._cleanupDbFiles(this.dbPath);
+                        if (fs.existsSync(this.dbPath)) {
+                            try { fs.unlinkSync(this.dbPath); } catch (_) {}
+                        }
+                        fs.renameSync(targetDbPath, this.dbPath);
+                        if (fs.existsSync(`${targetDbPath}.wal`)) {
+                            if (fs.existsSync(`${this.dbPath}.wal`)) {
+                                try { fs.unlinkSync(`${this.dbPath}.wal`); } catch (_) {}
+                            }
+                            fs.renameSync(`${targetDbPath}.wal`, `${this.dbPath}.wal`);
+                        }
+
+                        this.db = await this._openDb(this.dbPath);
+                        this.con = this.db.connect();
+                        await this._exec(this.con, "INSTALL fts;");
+                        await this._exec(this.con, "LOAD fts;");
+                        await this._exec(this.con, "SET scalar_subquery_error_on_multiple_rows=false;");
+                    } else {
+                        this.db = buildDb;
+                        this.con = buildCon;
+                    }
+                } catch (buildErr) {
+                    await this._closeCon(buildCon);
+                    await this._closeDb(buildDb);
+                    if (!isMemory) this._cleanupDbFiles(targetDbPath);
+                    this.initPromise = null;
+                    throw buildErr;
+                }
+            }
+
+            this.isInitialized = true;
+
+            // Seeding anime mappings post-init se presenti
+            const animeMappingStore = require('../data/animeMappingStore');
+            if (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow) {
+                const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
+                const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
+                if (movieIds.length > 0 || tvIds.length > 0) {
+                    await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
+                }
+            }
+
+            await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));
+        })();
+
         return this.initPromise;
     }
 
     async updateAnimeMapping(idsByType) {
         if (!this.isInitialized) {
-            console.warn('[DuckDB Store] DB non inizializzato, ignoro updateAnimeMapping.');
-            return;
+            await this.init();
         }
         
         // Ticket 13: validazione rigorosa della forma { movie, tv }. Qualsiasi altra forma genera console.warn e no-op (mai indovinare il tipo).
@@ -417,17 +590,18 @@ class DuckDbStore {
         }
     }
 
-    close() {
-        if (this.con) {
-            try { this.con.close(); } catch (e) {}
-            this.con = null;
-        }
-        if (this.db) {
-            try { this.db.close(); } catch (e) {}
-            this.db = null;
-        }
+    async close(callback) {
+        const oldCon = this.con;
+        const oldDb = this.db;
+        this.con = null;
+        this.db = null;
         this.initPromise = null;
         this.isInitialized = false;
+
+        await this._closeCon(oldCon);
+        await this._closeDb(oldDb);
+
+        if (callback) callback();
     }
 }
 
