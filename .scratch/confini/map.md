@@ -350,15 +350,17 @@ causa vera.
 
 ## Il primo passo, quando si parte
 
-**Eseguito il 17/10/2026** (decisione 15): 05, 06, 38 e 15 sono **in `main`** (commit locali, non ancora
-pushati — il deploy parte col push). In corso, in parallelo, su worktree isolati: **07**, **12**, **16**.
+**Eseguito il 17/10/2026** (decisione 15): in `main` sono entrati **05, 06, 15, 38, 07, 12** — più l'IDOR
+chiuso — tutti commit locali, **non ancora pushati** (il deploy parte col push). In corso, in parallelo, su
+worktree isolati: **16**, **08**, **18**.
 
 Il resto è a valle loro, e l'ordine non cambia:
 
 ```
-07 + 12  → 08  → 09            (il prodotto parla col servizio; l'artefatto esce dal prodotto)
-16       → 10  → 11  → 17      (la superficie di dominio, il client, l'export statico)
-08 + 12  → 13                  (i docs del grafo)
+08 + 12  → 09            (l'artefatto esce dal prodotto)
+16       → 10  → 11  → 17 (la superficie di dominio, il client, l'export statico)
+08 + 12  → 13            (i docs del grafo)
+18       → il servizio acceso sul mate (e la verifica end-to-end dell'08)
 ```
 
 I motivi, che sono misure: il **38** prima di 08/12 perché quei ticket si collaudano confrontando i conteggi;
@@ -369,5 +371,6 @@ se no le rotte nuove copiano la logica che il 16 sta spostando.
 /srv/yaca/modulo/services/graph/data` (138 MB non tracciati) e `PYTHONPATH=services` per i cron che
 invocano la pipeline.
 
-**Chiusi**: 01, 02, 03, 04, 14 (grilling e ricerca). **In `main`**: 05, 06, 38, 15. **In corso**: 07, 12, 16.
-**Aperti e non ancora prendibili**: 08, 09, 10, 11, 13, 17 (e il 06 per la sua parte sul mate).
+**Chiusi**: 01, 02, 03, 04, 14 (grilling e ricerca). **In `main`**: 05, 06, 38 (chiuso col numero: 2-3 → 20
+serie per un profilo `anime: exclude`), 15, 07, 12. **In corso**: 16, 08, 18. **Aperti e non ancora
+prendibili**: 09, 10, 11, 13, 17 (e il 06 per la sua parte sul mate, che aspetta il push).

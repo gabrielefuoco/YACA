@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # Le righe del grafo perdono le serie fra il pool e la risposta
@@ -120,6 +120,24 @@ firma è `(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings)`.
 `{ id: 'tmdb:655', tmdbId: 655, type: 'series', media_type: 'tv' }` — o idrata passando esplicitamente il
 medium — la differenza di formato con gli altri otto hero sparisce alla radice, e il guasto non può
 ripresentarsi nel modulo nuovo.
+
+---
+
+## CHIUSO il 17/10/2026, col numero
+
+La parte che restava era il cap applicato **prima** dei filtri, ed è stata chiusa dal ticket 12 della mappa
+`confini` (il modulo pool), che l'aveva ereditata come requisito scritto. Misura:
+
+| | prima | dopo |
+|---|---|---|
+| serie che sopravvivono, profilo con `anime: 'exclude'` | **2-3** | **20** (una pagina intera) |
+
+Il collaudo è `tests/heroPoolAnimeExcludeCap.test.js` (verde in `main`). Cosa era, in una riga: il lettore del
+pool ora scorre i candidati a lotti e applica `cardSurvivesFilters` **prima** di tagliare a `skip + 20`,
+quindi il tetto conta solo ciò che sopravvive.
+
+E l'invariante di questo ticket — *nel pool non entrano stringhe* — è diventata un test che vive nel modulo
+(`tests/graphRowsInvariant.test.js`, ripuntato da ticket 08 quando il ponte JS sarà sostituito dal servizio).
 
 ## Esito
 
