@@ -337,12 +337,11 @@ causa vera.
 
 - **Tre confini candidati, chiesti dal proprietario il 17/10/2026 a mappa quasi chiusa** (non ancora ticket:
   ognuno merita il suo grilling, come la libreria e il pool):
-  - **la gestione dei profili multipli**: il profilo **è già** il `context` con cui tutto è indicizzato
-    (`WatchHistory` e `TasteProfile` per `{owner, context}`, le chiavi di cache, la porta della libreria che
-    chiede `{userId, profileId, addonUuid}`) — **tutti ricevono il contesto, nessuno lo possiede**. Il modulo
-    possiederebbe l'anagrafica (creare/rinominare/duplicare/attivo), i template, le impostazioni
-    (`typeSelectors`, `kidsMode`, la policy anime) e le deduzioni (`TasteProfile`, che la decisione 11 assegna
-    già al profilo). *È il pezzo che la decisione 11 implica e che nessuno ha ancora scritto.*
+  - **la gestione dei profili multipli** → **ticket 21** (il grilling è iniziato il 17/10/2026: deciso cosa il
+    modulo possiede — anagrafica, lista *e* singolo profilo, impostazioni, slider, deduzioni, e la definizione
+    dei suoi cataloghi — e cosa no: chiavi API, account e ui state, che vanno in un modulo configurazione
+    utente. Restano le domande sulla forma della porta, sui selettori effettivi e sul confine col documento
+    condiviso).
   - **la ricerca**: oggi sono quattro cose in una — la comprensione della richiesta (titolo/genere/keyword/
     persona, con l'AI che normalizza), l'indice locale (DuckDB in RAM + FTS5), la fusione dei candidati
     (locali + Tier 2 + AI) e la rotta. La traccia che nessuno le possiede per intero è una delle suite rosse:
@@ -353,6 +352,15 @@ causa vera.
     `profileProcessor.js`, `registry.js`, più `queryBuilder.js`): nessuno possiede il catalogo, ognuno ne conosce
     una fetta. Estrarlo = «un catalogo è una cosa sola» (definizione, validazione, anteprima), mentre il
     *servirlo* resta ai provider e agli handler.
+  - **la gestione della cache** (chiesta il 17/10/2026 subito dopo le altre tre): oggi la cache è **un meccanismo
+    senza proprietario** — `CacheManager` (RAM + Redis, SWR), `cacheInstances` con le sue istanze sparse,
+    `cacheInstances.js` importato da mezza `src/`, la cache dei poster e il drenatore, la coda eventi, e le
+    **chiavi costruite a mano in ogni modulo** (`${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}…`,
+    `catalogRequestCache` a 14 giorni, la raccomandazione a 7). Il sintomo è la **trappola numero uno di questa
+    mappa** — *«la chiave va alzata ogni volta che cambia cosa entra»* — che è esattamente quello che si paga
+    quando nessuno possiede la chiave; e stanotte ne è uscito anche un bug vero (`CacheManager` gonfiava il TTL
+    esplicito con `swrMs`: 60 s → 3660 s). La domanda di confine: **chi possiede le chiavi e i TTL** — il modulo
+    cache le *deriva* da una descrizione della struttura memorizzata, o continua a riceverle come stringhe?
 
 ## Out of scope
 
