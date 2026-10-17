@@ -67,11 +67,13 @@ def main():
     print("3. Compatibilità con i selettori (anime: exclude):")
     print("   Tutti i titoli di Bolla 3085 sono serie live-action fantasy (Il Trono di Spade, Anelli del Potere, Knight of Seven Kingdoms).")
     print("   ZERO anime presenti. Nessun titolo viene scartato a valle dal filtro anime.")
-    print("4. Causa del numero 3:")
+    print("4. Causa del numero 3 (STORICA — risolta dal ticket 40 del 18/10/2026):")
     print("   La bolla 3085 ha taglia totale SZ=4 nel grafo. Con 1 seed gia' visto (House of the Dragon),")
-    print("   rimangono esattamente e solo 3 titoli non visti nell'intero mondo.")
-    print("   motore.py (linea 292) preserva bolle[0] incondizionatamente (tenuti = [bolle[0]]),")
+    print("   rimanevano esattamente e solo 3 titoli non visti nell'intero mondo.")
+    print("   motore.py preservava bolle[0] incondizionatamente (tenuti = [bolle[0]]),")
     print("   anche se inferiore a MIN_TITOLI_MONDO (5), producendo una riga con soli 3 titoli.")
+    print("   ORA: il primo mondo resta la partenza, ma la riga ACCUMULA i mondi successivi per")
+    print("   attivazione fino a IL_TUO_MONDO_MIN_TITOLI (50) — vedi il numero qui sopra.")
 
 if __name__ == "__main__":
     main()
