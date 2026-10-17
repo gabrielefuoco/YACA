@@ -70,7 +70,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
 }));
 
 const stremioRouter = require('../src/api/stremio');
-const itaAnnotations = require('../src/data/itaAnnotations');
+const itaAnnotations = require('../src/catalog/itaAnnotations');
 const { animeAiringState, animeMappingStore } = require('../src/anime');
 
 const HOST_HANDLE = 'prova';

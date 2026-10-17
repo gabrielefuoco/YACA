@@ -1,6 +1,6 @@
 const { animeMappingStore } = require('../src/anime');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { F } = require('../src/data/filters');
+const { F } = require('../src/catalog/filters');
 
 describe('Anime Overrides - Certify & F.anime Integration', () => {
     beforeAll(async () => {

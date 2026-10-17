@@ -97,7 +97,7 @@ dump_una_volta() {
 # Esecuzione dump con RITENTATIVO: un singhiozzo DNS verso Atlas non è un guasto.
 # Il backup delle 03:00 è un giro che non guarda: se ESERVFAIL cade per due secondi
 # sul lookup SRV e il backup salta, il giorno di restore scopre che manca.
-# Qui non si può usare `withRetry` di src/utils/retry.js (è JavaScript e questo è
+# Qui non si può usare `withRetry` di src/infra/retry.js (è JavaScript e questo è
 # un timer bash): la stessa idea in bash è un loop con attesa breve e una riga di log.
 # Stesso tetto del codice (3 tentativi) e stessa attesa breve (10s, non minuti).
 DUMP_TENTATIVI="${DUMP_TENTATIVI:-3}"

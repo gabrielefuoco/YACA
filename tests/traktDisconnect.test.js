@@ -4,7 +4,7 @@ const mockTraktClient = {
     interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } }
 };
 
-jest.mock('../src/utils/axiosClient', () => ({
+jest.mock('../src/infra/axiosClient', () => ({
     createAxiosClient: jest.fn(() => ({
         post: jest.fn(),
         get: jest.fn(),

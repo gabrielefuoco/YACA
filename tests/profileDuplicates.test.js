@@ -13,7 +13,7 @@ jest.mock('../src/models/AddonConfig', () => ({
     findOneAndUpdate: jest.fn()
 }));
 
-jest.mock('../src/data/presets', () => ({
+jest.mock('../src/catalog/presets', () => ({
     getPresets: () => [
         { id: 'preset_pop_movies', name: 'Pop Movies', type: 'movie', emoji: '🎬', category: 'General', queries: [] },
         { id: 'preset_pop_series', name: 'Pop Series', type: 'series', emoji: '📺', category: 'General', queries: [] }

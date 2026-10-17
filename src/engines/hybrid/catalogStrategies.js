@@ -1,11 +1,11 @@
 const tmdb = require('../../clients/tmdb');
-const { getPresets } = require('../../data/presets');
-const { normalizeContentId } = require('../../utils/contentId');
-const { getProfileDnaFilters } = require('../../utils/helpers');
-const { rateLimitedMap } = require('../../utils/rateLimiter');
+const { getPresets } = require('../../catalog/presets');
+const { normalizeContentId } = require('../../catalog/contentId');
+const { getProfileDnaFilters } = require('../../infra/helpers');
+const { rateLimitedMap } = require('../../infra/rateLimiter');
 
 // Import from new modules
-const { applyKidsMode, isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
+const { applyKidsMode, isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../catalog/kidsModeFilters');
 const {
     fetchProfileContext,
     fetchTraktRecommendationsRaw,
@@ -22,7 +22,7 @@ const { computeTopGenres, computeTopKeywords, calculateHybridScore } = require('
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { getDuckDbCatalogFromPreset, getDuckDbMetaDetails } = require('../../catalog/providers/DuckDbProvider');
 const duckDbStore = require('../../indice/duckDbStore');
-const { F, S, G } = require('../../data/filters');
+const { F, S, G } = require('../../catalog/filters');
 const {
     isAnimeContent,
     normalizeAnimeMarker,

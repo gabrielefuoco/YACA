@@ -54,7 +54,7 @@ lo **include**: meglio un dubbio in più che un doppiato in meno.
 ### Come arriva sulla card
 
 Il badge si applica in `catalogHandler.applyPostCacheBadges` leggendo uno **snapshot in RAM** del file delle
-annotazioni (`src/data/itaAnnotations.js`, TTL ~60s, ~1,6 MB), **non** la colonna del parquet: **21 cataloghi**
+annotazioni (`src/catalog/itaAnnotations.js`, TTL ~60s, ~1,6 MB), **non** la colonna del parquet: **21 cataloghi**
 (9 Trakt, 8 hero, 3 watchlist, simulcast) non passano dal parquet e quella colonna non ce l'hanno. La colonna
 resta per i filtri SQL.
 

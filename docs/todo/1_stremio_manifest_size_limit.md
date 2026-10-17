@@ -35,6 +35,6 @@ Ipotesi da verificare: **non è detto che sia un fallimento vero**. Stremio potr
 
 ## Contesto tecnico (per chi lo farà)
 
-- Manifest generato per-utente in `src/api/stremio.js`; cataloghi da `src/data/presets.js` + config utente.
+- Manifest generato per-utente in `src/api/stremio.js`; cataloghi da `src/catalog/presets.js` + config utente.
 - Il costo per preset dipende dai campi della voce catalogo (`extra`, `extraSupported`, `genres`).
 - Riferimenti: `.scratch/stremio-sdk/04-manifest-size.md` (misure e fonti), `.scratch/stremio-sdk/01-sdk-research.md` (documentazione protocollo).

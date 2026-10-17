@@ -4,7 +4,7 @@
  * PERCHÉ QUESTO FILE ESISTE
  * Nel DNA circolano due normalizzazioni con nomi simili e scopi opposti:
  *
- *   - `sanitizeDnaVector` (src/data/keywordIds.js) porta la somma a **100**:
+ *   - `sanitizeDnaVector` (src/indice/keywordIds.js) porta la somma a **100**:
  *     è la scala PERSISTITA, quella che finisce in `compiledVectors` su Mongo;
  *   - `normalizeVector` (src/dna/dnaEngine.js) porta la somma a **1**: è un
  *     passaggio ALGEBRICO INTERNO a `computeFinalDNA`, per fondere
@@ -34,7 +34,7 @@
  * toccato la scala di ciò che si scrive su Mongo?
  */
 const { computeActiveDNA, normalizeVector, sparseUnitNormalize } = require('../src/dna/dnaEngine');
-const { sanitizeDnaVector } = require('../src/data/keywordIds');
+const { sanitizeDnaVector } = require('../src/indice/keywordIds');
 
 const somma = (v) => Object.values(v).reduce((a, b) => a + b, 0);
 

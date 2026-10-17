@@ -12,7 +12,7 @@ const rateLimit = require('express-rate-limit');
 
 const configureRoute = require('./src/api/configure/index');
 const UserConfig = require('./src/models/UserConfig');
-const { getPresets, profileTemplates } = require('./src/data/presets');
+const { getPresets, profileTemplates } = require('./src/catalog/presets');
 const { getCatalogKind } = require('./src/catalog/catalogKind');
 const connectDB = require('./src/db/connection');
 const {

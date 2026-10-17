@@ -16,7 +16,7 @@ const {
     buildPresetFromFilters,
     applyKidsModeToPreset
 } = require('../src/catalog/providers/DuckDbProvider');
-const { applyKidsMode, isItemInappropriateForKids, ADULT_KEYWORD_IDS } = require('../src/utils/kidsModeFilters');
+const { applyKidsMode, isItemInappropriateForKids, ADULT_KEYWORD_IDS } = require('../src/catalog/kidsModeFilters');
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');

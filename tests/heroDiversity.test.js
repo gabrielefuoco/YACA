@@ -28,7 +28,7 @@ const AddonConfig = require('../src/models/AddonConfig');
 jest.mock('../src/profile/ProfileBuilder', () => ({
     syncUserHistory: jest.fn().mockResolvedValue(null)
 }));
-jest.mock('../src/data/presets', () => ({ getPresets: jest.fn(() => []) }));
+jest.mock('../src/catalog/presets', () => ({ getPresets: jest.fn(() => []) }));
 jest.mock('../src/clients/trakt', () => ({
     traktClient: { get: jest.fn() },
     smartTraktRefresh: jest.fn()
@@ -43,7 +43,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn(),
     getDuckDbCatalogFromPreset: jest.fn()
 }));
-jest.mock('../src/utils/rateLimiter', () => ({
+jest.mock('../src/infra/rateLimiter', () => ({
     rateLimitedMap: jest.fn(async (items, mapper) => Promise.all(items.map(mapper)))
 }));
 

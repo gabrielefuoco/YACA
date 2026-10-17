@@ -51,7 +51,7 @@ describe('getSortByValue', () => {
 });
 
 describe('parseExtra with sortBy and genre parameter', () => {
-    const { parseExtra } = require('../src/utils/helpers');
+    const { parseExtra } = require('../src/infra/helpers');
 
     it('should parse sortBy parameter from Stremio extra string', () => {
         const result = parseExtra('sortBy=Popolarit%C3%A0&skip=0');

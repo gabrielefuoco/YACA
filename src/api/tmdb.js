@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { createTmdbClient } = require('../clients/tmdb');
-const { sanitizeString } = require('../utils/helpers');
+const { sanitizeString } = require('../infra/helpers');
 const { chiaveGlobale, chiaveEffettiva } = require('../configurazione');
 
 // TMDB Proxy Search endpoints per Autocomplete

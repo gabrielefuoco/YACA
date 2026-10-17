@@ -24,7 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { snapshotDaArtefatto } = require('../utils/snapshotDaArtefatto');
+const { snapshotDaArtefatto } = require('../infra/snapshotDaArtefatto');
 
 /** TTL dello snapshot: una lettura per finestra, non una per item. */
 const CACHE_TTL_MS = 60 * 1000;

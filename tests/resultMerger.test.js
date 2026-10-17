@@ -1,7 +1,7 @@
 const {
     normalizeToUniversalSchema,
     applyConsensusScoring
-} = require('../src/utils/resultMerger');
+} = require('../src/infra/resultMerger');
 
 describe('resultMerger', () => {
     describe('normalizeToUniversalSchema', () => {

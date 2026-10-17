@@ -1,8 +1,8 @@
-//src/data/presets.js
+// src/catalog/presets.js
 
 const { F, S } = require('./filters');
-const { buildPresetFromFilters } = require('../catalog/providers/DuckDbProvider');
-const { defineCatalog } = require('../catalog/definition');
+const { buildPresetFromFilters } = require('./providers/DuckDbProvider');
+const { defineCatalog } = require('./definition');
 
 // Lista dei Cataloghi Pre-Configurati con query API TMDB "Hardcoded"
 // Questo permette di bypassare l'AI per cataloghi perfetti e verificati.

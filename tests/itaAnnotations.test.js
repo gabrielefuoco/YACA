@@ -8,7 +8,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const itaAnnotations = require('../src/data/itaAnnotations');
+const itaAnnotations = require('../src/catalog/itaAnnotations');
 
 function withFile(content) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'doppiaggi-ita-'));

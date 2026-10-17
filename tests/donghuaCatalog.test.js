@@ -1,4 +1,4 @@
-const { getPresets } = require('../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { compileQuery } = require('../src/indice/compiler');
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');

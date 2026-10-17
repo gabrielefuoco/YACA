@@ -102,7 +102,7 @@ Per i cataloghi generati dall'intelligenza artificiale che compongono più query
 
 ### Strategia Popularity & Consensus (Consenso)
 
-YACA combina i risultati di query multiple premiando la convergenza tramite `applyConsensusScoring` in [resultMerger.js](../src/utils/resultMerger.js):
+YACA combina i risultati di query multiple premiando la convergenza tramite `applyConsensusScoring` in [resultMerger.js](../src/infra/resultMerger.js):
 - Viene mappato ogni elemento tracciando il numero di query in cui appare (`consensusCount`).
 - Viene calcolato un **Consensus Bonus**:
   $$\text{consensusBonus} = (\text{consensusCount}^2) - 1$$
@@ -194,7 +194,7 @@ Per indicare visivamente all'utente la disponibilità del doppiaggio o delle nov
 > `SELECT` finale di `buildConversionSelect` (`scripts/convert_to_parquet.js`), con **`CASE` e mai `COALESCE`**
 > (il `null` è un terzo stato e va conservato).
 >
-> - **Badge**: legge uno **snapshot in RAM** del file delle annotazioni (`src/data/itaAnnotations.js`), non la
+> - **Badge**: legge uno **snapshot in RAM** del file delle annotazioni (`src/catalog/itaAnnotations.js`), non la
 >   colonna, così copre anche i **21 cataloghi** che non passano dal parquet (Trakt, hero, watchlist, simulcast);
 > - **Anime**: fuori dal catalogo novità il badge è **`ITA` secco** (niente numero di episodio, niente stagione);
 >   nel catalogo novità (`preset_anime_simulcast`) restano la card sub `EP n` e il clone `_ita_offset` con `ITA n`,

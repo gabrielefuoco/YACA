@@ -27,8 +27,8 @@ const crypto = require('crypto');
 const { urlPosterDaRottaLegacy } = require('../catalog/formatters/StremioFormatter');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { metaHandler, isMetaDubbed } = require('../handlers/metaHandler');
-const { parseExtra } = require('../utils/helpers');
-const { getPresets } = require('../data/presets');
+const { parseExtra } = require('../infra/helpers');
+const { getPresets } = require('../catalog/presets');
 const { isCatalogConformant } = require('../catalog/catalogKind');
 
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)

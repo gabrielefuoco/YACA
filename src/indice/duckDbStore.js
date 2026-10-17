@@ -579,10 +579,10 @@ class DuckDbStore {
                 idToName.set(id, name);
                 if (!nameToId.has(name)) nameToId.set(name, id);
             }
-            const { setGlobalDfCache } = require('../utils/dnaRarity');
+            const { setGlobalDfCache } = require('../dna/dnaEngine');
             setGlobalDfCache(dfMap);
 
-            const { setKeywordNameMaps } = require('../data/keywordIds');
+            const { setKeywordNameMaps } = require('./keywordIds');
             setKeywordNameMaps({ idToName, nameToId });
             // La mappa cambia ciò che `vectorizeKeywords` può produrre: le cache
             // costruite prima dell'iniezione (es. in un test, o se il dump si

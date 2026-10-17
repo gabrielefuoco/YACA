@@ -107,7 +107,7 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
             'src/handlers/catalogHandler.js',
             'src/engines/hybrid/catalogStrategies.js',
             'src/engines/hybridRecommendations.js',
-            'src/utils/helpers.js',
+            'src/infra/helpers.js',
 
             // Modello libreria per il ripiego transizionale
             'src/library/models/UserLibraryOrder.js',

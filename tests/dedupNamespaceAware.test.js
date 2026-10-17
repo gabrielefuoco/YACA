@@ -1,5 +1,5 @@
-const { applyConsensusScoring } = require('../src/utils/resultMerger');
-const { getBaseId, normalizeContentId } = require('../src/utils/contentId');
+const { applyConsensusScoring } = require('../src/infra/resultMerger');
+const { getBaseId, normalizeContentId } = require('../src/catalog/contentId');
 
 describe('BUG-02: Dedup Namespace-Aware (kitsu vs tmdb collision fix)', () => {
     describe('contentId helper behavior contrast', () => {

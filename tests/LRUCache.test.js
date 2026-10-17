@@ -1,4 +1,4 @@
-const LRUCache = require('../src/utils/LRUCache');
+const LRUCache = require('../src/infra/LRUCache');
 
 describe('LRUCache', () => {
     it('should store and retrieve values', () => {

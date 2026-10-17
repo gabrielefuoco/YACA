@@ -14,11 +14,11 @@ Non è un valore di comodo e non è ridondante.
 
 ## 1. I sette preset (e un ottavo, stagionale)
 
-Tutte le date nascono in `src/data/presets.js`, dentro `getPresets()` (riga 44), calcolate
+Tutte le date nascono in `src/catalog/presets.js`, dentro `getPresets()` (riga 44), calcolate
 **a ogni chiamata** di `getPresets()`:
 
 ```js
-// src/data/presets.js:44-58
+// src/catalog/presets.js:44-58
 const getPresets = () => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];            // riga 46
@@ -38,17 +38,17 @@ const getPresets = () => {
 
 | # | id preset | riga | nome | data usata |
 |---|-----------|------|------|-----------|
-| 1 | `preset_new_movies` | `src/data/presets.js:68` | 🆕 Film: Nuove Uscite | `todayStr` + `twoMonthsAgoStr` |
-| 2 | `preset_new_series` | `src/data/presets.js:69` | 🆕 Serie TV: Novità | `todayStr` + `sixMonthsAgoStr` |
-| 3 | `preset_new_series_eps` | `src/data/presets.js:70` | 🆕 Serie: Episodi Recenti | `todayStr` + `recentEpisodesWindowStr` |
-| 4 | `preset_anime_shonen` | `src/data/presets.js:228` | 🔥 Anime: Battle Shōnen | `recent_since: sixMonthsAgoStr` |
-| 5 | `preset_anime_shoujo` | `src/data/presets.js:230` | 🌸 Anime: Shōjo (Romantico) | `recent_since: sixMonthsAgoStr` |
-| 6 | `preset_anime_mecha` | `src/data/presets.js:232` | 🤖 Anime: Mecha & Robot | `recent_since: sixMonthsAgoStr` |
-| 7 | `preset_anime_isekai` | `src/data/presets.js:233` | 🌀 Anime: Isekai & Fantasy | `recent_since: sixMonthsAgoStr` |
+| 1 | `preset_new_movies` | `src/catalog/presets.js:68` | 🆕 Film: Nuove Uscite | `todayStr` + `twoMonthsAgoStr` |
+| 2 | `preset_new_series` | `src/catalog/presets.js:69` | 🆕 Serie TV: Novità | `todayStr` + `sixMonthsAgoStr` |
+| 3 | `preset_new_series_eps` | `src/catalog/presets.js:70` | 🆕 Serie: Episodi Recenti | `todayStr` + `recentEpisodesWindowStr` |
+| 4 | `preset_anime_shonen` | `src/catalog/presets.js:228` | 🔥 Anime: Battle Shōnen | `recent_since: sixMonthsAgoStr` |
+| 5 | `preset_anime_shoujo` | `src/catalog/presets.js:230` | 🌸 Anime: Shōjo (Romantico) | `recent_since: sixMonthsAgoStr` |
+| 6 | `preset_anime_mecha` | `src/catalog/presets.js:232` | 🤖 Anime: Mecha & Robot | `recent_since: sixMonthsAgoStr` |
+| 7 | `preset_anime_isekai` | `src/catalog/presets.js:233` | 🌀 Anime: Isekai & Fantasy | `recent_since: sixMonthsAgoStr` |
 
 **Ottavo caso, che la misura non ha contato** perché non cambia ogni giorno:
 
-| 8 | `preset_top_current_year` | `src/data/presets.js:261` | Il meglio dell'anno | `primary_release_year: today.getFullYear()` |
+| 8 | `preset_top_current_year` | `src/catalog/presets.js:261` | Il meglio dell'anno | `primary_release_year: today.getFullYear()` |
 
 Cambia una volta all'anno, non ogni giorno. Da tenere d'occhio se il calcolo del ticket 47
 vuole essere completo.
@@ -110,7 +110,7 @@ preset_new_series_eps    2026-10-02 → "first_air_date" >= '2026-08-18' AND "fi
 Il risultato è diverso ogni giorno **per costruzione**: senza la data nella chiave, serviremo
 ieri la finestra di ieri — cioè risultati stantii.
 
-### I quattro preset anime — `src/data/filters.js:68-77`
+### I quattro preset anime — `src/catalog/filters.js:68-77`
 
 ```js
 permissiveFloor: (standardFloor, recentDate, recentFloor = 0, isTv = false) => {

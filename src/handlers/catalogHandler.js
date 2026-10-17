@@ -2,14 +2,14 @@ const { createTmdbClient } = require('../clients/tmdb');
 const cache = require('../cache');
 const { getCacheConfig } = require('../cache/CacheManager');
 const { catalogRequestCache } = require('../cache/cacheInstances');
-const { getPresets } = require('../data/presets');
-const { generateRequestHash } = require('../utils/requestHash');
+const { getPresets } = require('../catalog/presets');
+const { generateRequestHash } = require('../cache/requestHash');
 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
-const itaAnnotations = require('../data/itaAnnotations');
+const itaAnnotations = require('../catalog/itaAnnotations');
 const duckDbStore = require('../indice/duckDbStore');
 const {
     animeAiringState,
@@ -19,7 +19,7 @@ const {
     isItemAnime
 } = require('../anime');
 const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
-const { applyKidsMode } = require('../utils/kidsModeFilters');
+const { applyKidsMode } = require('../catalog/kidsModeFilters');
 
 const extractTmdbId = extractAnimeTmdbId;
 
@@ -881,7 +881,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     //
     //  - I TRE "nuove uscite": la data È il filtro della query
     //    (`primary_release_date.lte`, `first_air_date.lte`, `air_date.lte` =
-    //    `todayStr` in src/data/presets.js). Non si può toglierla: senza,
+    //    `todayStr` in src/catalog/presets.js). Non si può toglierla: senza,
     //    "Film: Nuove Uscite" diventa "tutti i film per popolarità". La finestra
     //    resta giornaliera per definizione, e con lei la chiave.
     //

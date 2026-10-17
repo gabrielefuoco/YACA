@@ -2,9 +2,9 @@ const { stremioClient, stremioLikesClient } = require('./client');
 const { accountDi, traktDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
-const { getPresets } = require('../data/presets');
+const { getPresets } = require('../catalog/presets');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
-const { isAllowedUrl } = require('../utils/helpers');
+const { isAllowedUrl } = require('../infra/helpers');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
 const STREMIO_TIMEOUT = 10000;

@@ -41,7 +41,7 @@ jest.mock('../src/engines/hybrid/scoringEngine', () => ({
     twoTierScore: jest.fn(async (pool) => pool.map(p => ({ data: p, score: 5 })))
 }));
 
-jest.mock('../src/data/presets', () => ({
+jest.mock('../src/catalog/presets', () => ({
     getPresets: jest.fn(() => [
         {
             id: 'preset1',

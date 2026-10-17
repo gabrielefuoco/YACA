@@ -1,4 +1,4 @@
-const { withRetry, isTransientError, RetryLimitError } = require('../src/utils/retry');
+const { withRetry, isTransientError, RetryLimitError } = require('../src/infra/retry');
 
 /** Errore finto con un `code` di sistema (stile DNS/rete di Node) */
 function netError(code, message = code) {

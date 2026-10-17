@@ -25,7 +25,7 @@
  * pavimenti di visibilità dei cataloghi restano quelli di sempre (qui non si tocca niente).
  */
 
-const LRUCache = require('../utils/LRUCache');
+const LRUCache = require('../infra/LRUCache');
 
 /** Tetto delle voci del memo: sono `tipo:id`, interi e stringhe corte, ma il container è finito. */
 const MAX_MEMO_KEYS = 500;

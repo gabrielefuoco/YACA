@@ -1,4 +1,4 @@
-const { getPresets } = require('../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 const { mapSortBy, SUPPORTED_SORT_BY, isMappedSortBy } = require('../src/catalog/providers/DuckDbProvider');
 const {
     FAMILY_SORT_DEFAULTS,
@@ -13,7 +13,7 @@ const {
 } = require('../src/catalog/catalogSorting');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
-const { S } = require('../src/data/filters');
+const { S } = require('../src/catalog/filters');
 const stremioRouter = require('../src/api/stremio');
 const UserConfig = require('../src/models/UserConfig');
 

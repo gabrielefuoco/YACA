@@ -28,7 +28,7 @@ const envPath = fs.existsSync(path.resolve(__dirname, '../.env'))
 require('dotenv').config({ path: envPath });
 
 const mongoose = require('mongoose');
-const { connectMongo } = require('../src/utils/mongoConnect');
+const { connectMongo } = require('../src/infra/mongoConnect');
 
 function normalizeLegacyId(rawId) {
     if (!rawId) return null;

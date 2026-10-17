@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const LRUCache = require('../utils/LRUCache');
-const { keywordNameForId } = require('../data/keywordIds');
+const LRUCache = require('../infra/LRUCache');
+const { keywordNameForId } = require('./keywordIds');
 
 class HierarchicalGraph {
     constructor() {

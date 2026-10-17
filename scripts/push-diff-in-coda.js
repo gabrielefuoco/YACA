@@ -86,7 +86,7 @@ function _dormi(ms) {
 }
 
 /**
- * Stessa risoluzione dei dump di `src/data/itaAnnotations.js`: in produzione `/data/tmdb`,
+ * Stessa risoluzione dei dump di `src/catalog/itaAnnotations.js`: in produzione `/data/tmdb`,
  * in locale la cache del catalogo. Il default non è un dettaglio: se il percorso fosse sbagliato
  * lo script direbbe "file assente" ogni volta e nessuno se ne accorgerebbe.
  */

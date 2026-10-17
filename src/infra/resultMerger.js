@@ -1,4 +1,4 @@
-const { getBaseId } = require('./contentId');
+const { getBaseId } = require('../catalog/contentId');
 
 /**
  * Normalizza qualsiasi catalogMeta (vecchio formato `filters` o nuovo `queries[]`)

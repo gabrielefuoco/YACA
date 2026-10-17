@@ -1,13 +1,13 @@
 const { nanoid } = require('nanoid');
-const { getPresets } = require('../../data/presets');
+const { getPresets } = require('../../catalog/presets');
 const TasteProfile = require('../../models/TasteProfile');
-const { extractStaticDNAFromQueries } = require('../../utils/dnaExtractor');
+const { extractStaticDNAFromQueries } = require('../../dna/dnaEngine');
 const {
     resolveDnaNames,
     getReadableFallback,
     GENRE_ID_TO_NAME
 } = require('../../utils/tmdbNameResolver');
-const { isRetiredTmdbKeywordId } = require('../../data/keywordIds');
+const { isRetiredTmdbKeywordId } = require('../../indice/keywordIds');
 const { sanitizeCustomCatalogs } = require('./validators');
 
 /**
@@ -249,9 +249,7 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                     const vActive = existing?.compiledVectors?.V_active || {};
                     const hasActiveHistory = Object.keys(vActive).length > 0;
                     
-                    // Ricalcola V_final combinando il nuovo V_static con il V_active (o vuoto)
-                    const { computeFinalDNA, calculateWeightedInteractions } = require('../../utils/dnaExtractor');
-                    const { calculateFlatnessMetrics } = require('../../utils/dnaRarity');
+                    const { computeFinalDNA, calculateWeightedInteractions, calculateFlatnessMetrics } = require('../../dna/dnaEngine');
                     const { storiaDi } = require('../../library');
                     const historyDocs = await storiaDi({ userId, profileId: profile.id });
                     const totalInteractions = calculateWeightedInteractions(historyDocs);

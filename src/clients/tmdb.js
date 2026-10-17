@@ -1,4 +1,4 @@
-const { createAxiosClient } = require('../utils/axiosClient');
+const { createAxiosClient } = require('../infra/axiosClient');
 const {
     TMDB_ENDPOINT,
     DEFAULT_LANGUAGE,
@@ -20,9 +20,9 @@ const {
     SLOW_CATALOG_L2_TTL_MS,
     SLOW_CATALOG_SWR_MS
 } = require('../config');
-const { rateLimitedMap } = require('../utils/rateLimiter');
-const { generateRequestHash } = require('../utils/requestHash');
-const { logError } = require('../utils/logger');
+const { rateLimitedMap } = require('../infra/rateLimiter');
+const { generateRequestHash } = require('../cache/requestHash');
+const { logError } = require('../infra/logger');
 const { tmdbBudget, TMDB_CATEGORIES } = require('../utils/tmdbBudget');
 
 

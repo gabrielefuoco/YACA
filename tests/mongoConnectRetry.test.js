@@ -4,8 +4,8 @@
  * e si verifica che una riga di log lo dichiari.
  */
 
-const { connectMongo } = require('../src/utils/mongoConnect');
-const { RetryLimitError } = require('../src/utils/retry');
+const { connectMongo } = require('../src/infra/mongoConnect');
+const { RetryLimitError } = require('../src/infra/retry');
 
 function mongoFinto(comportamento) {
     const stato = { tentativi: 0 };

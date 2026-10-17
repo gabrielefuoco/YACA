@@ -18,7 +18,7 @@
 // Richieste HTTP "verso TMDB" viste dal trasporto finto.
 const mockHttpChiamate = [];
 
-jest.mock('../src/utils/axiosClient', () => ({
+jest.mock('../src/infra/axiosClient', () => ({
     createAxiosClient: jest.fn(() => ({
         interceptors: {
             request: { use: jest.fn() },

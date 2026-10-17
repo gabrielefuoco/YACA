@@ -17,7 +17,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const anime = require('../src/anime');
-const { snapshotDaArtefatto } = require('../src/utils/snapshotDaArtefatto');
+const { snapshotDaArtefatto } = require('../src/infra/snapshotDaArtefatto');
 
 describe('Modulo Anime (Ticket 32)', () => {
     describe('Porta unica ed esposizione verbi', () => {

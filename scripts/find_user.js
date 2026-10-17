@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { connectMongo } = require('../src/utils/mongoConnect');
+const { connectMongo } = require('../src/infra/mongoConnect');
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');

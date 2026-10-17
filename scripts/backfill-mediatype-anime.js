@@ -626,7 +626,7 @@ Opzioni:
     try {
         if (!collection) {
             mongoose = require('mongoose');
-            const { connectMongo } = require('../src/utils/mongoConnect');
+            const { connectMongo } = require('../src/infra/mongoConnect');
             if (mongoose.connection && mongoose.connection.readyState === 1) {
                 collection = mongoose.connection.db.collection(COLLECTION_NAME);
             } else {

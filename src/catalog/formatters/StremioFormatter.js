@@ -10,7 +10,7 @@ const { posterFileName } = require('../../posters/erdb/build');
 // Unica fonte di verità sulla cartella dei poster: la stessa che serve la rotta statica e
 // in cui scrive il drenatore. Se le due divergessero, nessun file sarebbe mai servito.
 const { getCacheDir } = require('../../api/staticPosters');
-// La versione del badge è condivisa col refresh al sync (`src/utils/libraryPosterRefresh.js`):
+// La versione del badge è condivisa col refresh al sync (`src/posters/libraryPosterRefresh.js`):
 // unica fonte di verità, così il riallineamento non punta a un numero diverso da quello che
 // il formatter scrive negli URL nuovi.
 const { BADGE_IMG_VERSION, calcolaVersionePoster } = require('./posterBadgeVersion');

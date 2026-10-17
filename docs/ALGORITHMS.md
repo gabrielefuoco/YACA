@@ -5,10 +5,10 @@ Questo documento illustra nel dettaglio gli algoritmi, i modelli matematici e le
 Le logiche di calcolo e raccomandazione si trovano principalmente in:
 *   [src/profile/ProfileScorer.js](../src/profile/ProfileScorer.js): Core engine di scoring per l'affinità dei contenuti (vettoriale, bayesiano e penalità di rotazione).
 *   [src/profile/ProfileBuilder.js](../src/profile/ProfileBuilder.js): Gestore del ciclo di vita dei profili e aggiornamento incrementale dei vettori.
-*   [src/dna/dnaEngine.js](../src/dna/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path (`src/utils/dnaExtractor.js`, `dnaRarity.js`, `tasteClusters.js`) sono thin-shim verso questo modulo, tenuti perché script e tool esterni continuino a importarli.
+*   [src/dna/dnaEngine.js](../src/dna/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path in utils sono stati rimossi e unificati in questo modulo (ticket 42).
 *   [src/engines/hybrid/scoringEngine.js](../src/engines/hybrid/scoringEngine.js): Score ibrido per co-occorrenza (semi-seed del *Seed Network*) ed estrazione dei top-N generi/keyword dal vettore. **Non** è l'orchestratore Two-Tier: vedi §2.
 *   [src/engines/hybrid/catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js): Strategie di compilazione per i cataloghi speciali (*True Blend*, *Hidden Gems*, ecc.) e i cap di diversità degli hero.
-*   [src/utils/resultMerger.js](../src/utils/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
+*   [src/infra/resultMerger.js](../src/infra/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
 *   Rarità dolce, saturazione logaritmica e decadimento temporale vivono nello stesso motore (vedi sopra).
 *   [src/engines/hybrid/animePolicy.js](../src/engines/hybrid/animePolicy.js): Risoluzione della politica anime e relativi moltiplicatori di score.
 *   [src/utils/animeIdentity.js](../src/utils/animeIdentity.js): Regola canonica di identità anime (unico default del marker `_isAnime`).
@@ -22,7 +22,7 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 YACA modella l'identità cinematografica dell'utente usando un approccio basato sul **Vector Space Model (VSM)**. Le preferenze dell'utente sono rappresentate da un vettore multidimensionale i cui elementi sono coppie chiavi-valore del tipo `prefisso:valore` (es. `g:28` per il genere Action, `k:12984` per la keyword *time travel*, `o:JP` per il Giappone, `L2:t_272` per un topos del grafo gerarchico).
 
 > [!NOTE]
-> **Il motore matematico vive in un modulo solo**: [src/dna/dnaEngine.js](../src/dna/dnaEngine.js) (ticket 22). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi (`src/utils/dnaExtractor.js`, `dnaRarity.js`, `tasteClusters.js`) sono oggi **thin-shim** che riesportano il modulo, così gli script e i tool esistenti continuano a funzionare senza modifiche.
+> **Il motore matematico vive in un modulo solo**: [src/dna/dnaEngine.js](../src/dna/dnaEngine.js) (ticket 22, consolidato in ticket 42). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi in utils sono stati rimossi.
 >
 > Due cose da non rompere se si tocca il modulo:
 > - **`globalDfCache` è una variabile di modulo**, iniettata all'avvio da `src/db/duckDbStore.js:361`. Se il modulo ne istanziasse una propria copia non sincronizzata, la rarità ricadrebbe **in silenzio** sui fallback stimati, alterando i pesi senza errori né log. C'è un test che la verifica per identità.
@@ -139,7 +139,7 @@ Dove:
 Lo score finale fonde l'affinità calcolata dall'utente con la qualità bayesiana dell'opera secondo i pesi definiti nel profilo (es. `traktWeight` per l'affinità, `tmdbWeight` per la qualità globale).
 
 > [!NOTE]  
-> **DuckDB: due formule diverse, non confonderle.** I preset nativi (`DuckDbProvider.js`) non delegano *questa* formula a DuckDB: l'ordinamento `S.BAYESIAN` è un altro prodotto, `vote_average * LOG10(vote_count)`, pensato per ordinare in modo monotono senza sanzione per i titoli poco votati ([filters.js](../src/data/filters.js#L127), `:144`). La forma a media pesata vera e propria è `S.QUALITY`: $$Q = \frac{R \cdot v + m \cdot C}{v + m} \quad (m = 500,\; C = 6.8)$$ con la popolarità come tie-breaker ([filters.js](../src/data/filters.js#L131), `:146`). **I due parametri sono diversi da quelli di Node**: $m = 500$ / $C = 6.8$ in SQL contro $m = 300$ / $C = 6.5$ in `src/config.js`. Il commento nel codice spiega la scelta di `QUALITY`: *un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000*. La formula di Node resta quella di IMDb e gira solo sui candidati già filtrati.
+> **DuckDB: due formule diverse, non confonderle.** I preset nativi (`DuckDbProvider.js`) non delegano *questa* formula a DuckDB: l'ordinamento `S.BAYESIAN` è un altro prodotto, `vote_average * LOG10(vote_count)`, pensato per ordinare in modo monotono senza sanzione per i titoli poco votati ([filters.js](../src/catalog/filters.js#L127), `:144`). La forma a media pesata vera e propria è `S.QUALITY`: $$Q = \frac{R \cdot v + m \cdot C}{v + m} \quad (m = 500,\; C = 6.8)$$ con la popolarità come tie-breaker ([filters.js](../src/catalog/filters.js#L131), `:146`). **I due parametri sono diversi da quelli di Node**: $m = 500$ / $C = 6.8$ in SQL contro $m = 300$ / $C = 6.5$ in `src/config.js`. Il commento nel codice spiega la scelta di `QUALITY`: *un 8.9 con 1.100 voti non deve battere un 8.4 con 24.000*. La formula di Node resta quella di IMDb e gira solo sui candidati già filtrati.
 
 ---
 
@@ -243,7 +243,7 @@ La regola canonica è in [animeIdentity.js](../src/utils/animeIdentity.js#L1-L14
 
 > [!NOTE]
 > Il predicato **SQL** usato nei preset è volutamente più stretto e **non** valuta le keyword:
-> `id IN anime_mappings OR (genres contiene 16 AND original_language = 'ja')` ([filters.js](../src/data/filters.js#L110)). È una divergenza deliberata e commentata nel codice (le keyword in SQL produrrebbero falsi positivi), quindi un preset basato su keyword anime può dare un insieme più piccolo del corrispondente `normalizeAnimeMarker()` sugli stessi item. Non è un bug da correggere: è il motivo per cui i due percorsi vanno tenuti distinti.
+> `id IN anime_mappings OR (genres contiene 16 AND original_language = 'ja')` ([filters.js](../src/catalog/filters.js#L110)). È una divergenza deliberata e commentata nel codice (le keyword in SQL produrrebbero falsi positivi), quindi un preset basato su keyword anime può dare un insieme più piccolo del corrispondente `normalizeAnimeMarker()` sugli stessi item. Non è un bug da correggere: è il motivo per cui i due percorsi vanno tenuti distinti.
 
 ### 7.2 Politica: risoluzione e moltiplicatori
 `resolveAnimePolicy(profile, typeSelectors)` decide in quest'ordine ([animePolicy.js](../src/engines/hybrid/animePolicy.js#L76-L86)):

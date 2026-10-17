@@ -3,9 +3,9 @@ const AddonConfig = require('../../models/AddonConfig');
 const UserLibraryItem = require('../models/UserLibraryItem');
 const { stremioClient } = require('../../stremio');
 const { isAnimeContent } = require('../../anime');
-const { resolvePoster } = require('../../utils/posterResolver');
+const { resolvePoster } = require('../../posters/posterResolver');
 const { normalizeLegacyPosterHost, normalizeLibraryId } = require('../identity');
-const { refreshLibraryPoster } = require('../../utils/libraryPosterRefresh');
+const { refreshLibraryPoster } = require('../../posters/libraryPosterRefresh');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../../anime').animeMappingStore;
@@ -274,7 +274,7 @@ class LibrarySyncService {
      * sarebbe la stessa URL vecchia, con la stessa versione, quindi l'immagine resta ferma
      * per sempre (era il caso degli item a `/ITA/23`). Qui il valore viene ricalcolato:
      * versione corrente nel percorso, sorgenti annidate risolte, `t` dei composti statici
-     * riallineato all'`mtime` del file (vedi `src/utils/libraryPosterRefresh.js`).
+     * riallineato all'`mtime` del file (vedi `src/posters/libraryPosterRefresh.js`).
      *
      * Vale per TUTTI gli item in arrivo, anche per i `mapped: true` che il convertitore
      * non visita più: il sync li rilegge a ogni giro.

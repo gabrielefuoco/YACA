@@ -16,7 +16,7 @@ const {
     refreshComposedPoster,
     refreshStaticPoster,
     unwrapComposedSource
-} = require('../src/utils/libraryPosterRefresh');
+} = require('../src/posters/libraryPosterRefresh');
 const { BADGE_IMG_VERSION } = require('../src/catalog/formatters/posterBadgeVersion');
 
 const HOST = 'https://yaca.test';

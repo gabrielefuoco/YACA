@@ -28,7 +28,7 @@ const envPath = fs.existsSync(path.resolve(__dirname, '../.env'))
 require('dotenv').config({ path: envPath });
 
 const mongoose = require('mongoose');
-const { connectMongo } = require('../src/utils/mongoConnect');
+const { connectMongo } = require('../src/infra/mongoConnect');
 
 async function migrateLibraryOrder(options = {}) {
     const isApply = Boolean(options.apply || process.argv.includes('--apply') || process.argv.includes('--execute'));

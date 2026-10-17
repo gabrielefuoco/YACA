@@ -125,7 +125,7 @@ router.post('/libreria', async (req, res) => {
         const now = new Date();
         let poster = item.poster || '';
         if (!poster) {
-            const { resolvePoster } = require('../utils/posterResolver');
+            const { resolvePoster } = require('../posters/posterResolver');
             const resolved = await resolvePoster({ itemId: normalizedItemId, type: item.type, name: item.name });
             if (resolved) poster = resolved;
         }

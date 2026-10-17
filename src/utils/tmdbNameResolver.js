@@ -1,7 +1,7 @@
 const { createTmdbClient } = require('../clients/tmdb');
 const { leggi, scrivi, deriva } = require('../cache');
 const { dnaNamesCache } = require('../cache/cacheInstances');
-const { isRetiredTmdbKeywordId } = require('../data/keywordIds');
+const { isRetiredTmdbKeywordId } = require('../indice/keywordIds');
 
 /**
  * TMDB genre ID → Italian name lookup.

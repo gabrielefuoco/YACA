@@ -1,4 +1,4 @@
-const { resolveHostUrl } = require('../utils/helpers');
+const { resolveHostUrl } = require('../infra/helpers');
 
 function attachRequestContext(req, _res, next) {
     req.context = req.context || {};

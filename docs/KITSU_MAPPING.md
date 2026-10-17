@@ -33,7 +33,7 @@ I consumatori sono i boundary della pipeline, non i chiamanti sparsi: `DuckDbPro
 > Il suffisso di presentazione `_ita_offset` non cambia l'opera: `extractAnimeTmdbId` e `normalizeAnimeMarker` lo tolgono prima di ogni lookup. Un item che lo porta è già lo stesso titolo della card base, non uno nuovo.
 
 ### 1.3 Lo stesso store scrive la tabella `anime_mappings` di DuckDB
-Lo store non serve solo alle richieste: a ogni sync passa gli id anime a `duckDbStore.updateAnimeMapping`, che popola la tabella `anime_mappings`. È la tabella che rende filtrabile l'animazione **in SQL**: `F.anime` (`src/data/filters.js`) è `"id" IN (SELECT "tmdb_id" FROM anime_mappings) OR (genere 16 AND "original_language" = 'ja')`.
+Lo store non serve solo alle richieste: a ogni sync passa gli id anime a `duckDbStore.updateAnimeMapping`, che popola la tabella `anime_mappings`. È la tabella che rende filtrabile l'animazione **in SQL**: `F.anime` (`src/catalog/filters.js`) è `"id" IN (SELECT "tmdb_id" FROM anime_mappings) OR (genere 16 AND "original_language" = 'ja')`.
 
 Due cose da sapere prima di toccarla:
 - **Le chiavi che arrivano allo store sono `${tmdbId}:${season}`**, non l'id nudo. La sanificazione in `duckDbStore.updateAnimeMapping` deve estrarre la parte prima del `:`, deduplicare (una serie con N stagioni produce N chiavi con lo stesso id, altrimenti `INSERT` duplicati su `PRIMARY KEY`) e scartare i non numerici. Senza questo passaggio la tabella resta **vuota** e `F.anime` non matcha nulla, in silenzio: il sintomo è un filtro anime vuoto, non un errore.

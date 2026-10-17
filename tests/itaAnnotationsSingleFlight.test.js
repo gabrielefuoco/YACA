@@ -13,7 +13,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const itaAnnotations = require('../src/data/itaAnnotations');
+const itaAnnotations = require('../src/catalog/itaAnnotations');
 
 const VALIDO = '{"t":"movie","id":5,"ita":true}\n{"t":"tv","id":1399,"ita":null}\n';
 

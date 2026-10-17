@@ -7,14 +7,14 @@ router.use(richiedeSessione);
 
 const UserConfig = require('../models/UserConfig');
 const configureRoute = require('./configure/index');
-const { getPresets, profileTemplates } = require('../data/presets');
+const { getPresets, profileTemplates } = require('../catalog/presets');
 const { getCatalogKind } = require('../catalog/catalogKind');
 const { getHeroUiGroups } = require('../catalog/registry');
 const { formatPreviewResponse } = require('../catalog/previewContract');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { createTmdbClient } = require('../clients/tmdb');
 const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
-const { sanitizeString } = require('../utils/helpers');
+const { sanitizeString } = require('../infra/helpers');
 
 
 const MAX_PROMPT_LENGTH = 500;
