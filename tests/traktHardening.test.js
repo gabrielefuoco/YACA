@@ -9,16 +9,16 @@ const { safeTraktFetchDetailed, fetchProfileContext } = require('../src/engines/
 const { buildTraktFilteredCatalogWithMeta } = require('../src/engines/hybrid/catalogStrategies');
 const jwt = require('jsonwebtoken');
 const { traktHealthHandler, getJwtSecret } = require('../src/api/auth/index.js');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 const TasteProfile = require('../src/models/TasteProfile');
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
     updateOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue({
             userId: 'user_catalog_deg',

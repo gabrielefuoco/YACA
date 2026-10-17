@@ -7,10 +7,10 @@ const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { executeUniversalPipeline } = require('../src/catalog/providers/AiDiscoveryProvider');
 
 jest.mock('../src/library/models/UserLibraryItem');
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
 jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({

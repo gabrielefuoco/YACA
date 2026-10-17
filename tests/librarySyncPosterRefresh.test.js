@@ -9,14 +9,14 @@
 
 // La risoluzione imdb→tmdb interroga questo modello per gli id `tt…`: senza il mock la
 // query resta in buffering 10 s a ogni test (nessuna connessione Mongo nei test).
-jest.mock('../src/db/models/ImdbToTmdbMapping', () => ({
+jest.mock('../src/models/ImdbToTmdbMapping', () => ({
     find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) }))
 }));
 
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 const { stremioClient } = require('../src/clients/stremio');
 const { BADGE_IMG_VERSION } = require('../src/catalog/formatters/posterBadgeVersion');
 

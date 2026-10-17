@@ -14,7 +14,7 @@ const duckDbStore = require('../src/indice/duckDbStore');
 
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/library/models/WatchHistory');
-jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/models/UserAccount');
 jest.mock('../src/indice/duckDbStore', () => ({
     query: jest.fn()
 }));

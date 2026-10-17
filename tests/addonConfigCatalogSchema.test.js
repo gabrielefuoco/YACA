@@ -1,4 +1,4 @@
-const AddonConfig = require('../src/db/models/AddonConfig');
+const AddonConfig = require('../src/models/AddonConfig');
 
 describe('AddonConfig catalog schema', () => {
     it('tollera configurazioni legacy (catalogo merged e preset modificato) senza errori di validazione', () => {

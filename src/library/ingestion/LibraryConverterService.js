@@ -1,6 +1,6 @@
 const UserLibraryItem = require('../models/UserLibraryItem');
-const UserAccount = require('../../db/models/UserAccount');
-const AddonConfig = require('../../db/models/AddonConfig');
+const UserAccount = require('../../models/UserAccount');
+const AddonConfig = require('../../models/AddonConfig');
 const { stremioClient } = require('../../clients/stremio');
 const { createTmdbClient } = require('../../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../../catalog/formatters/StremioFormatter');

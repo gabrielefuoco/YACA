@@ -21,13 +21,13 @@ jest.mock('../src/models/UserConfig', () => ({
     saveUser: jest.fn()
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
     updateOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn(),
     updateOne: jest.fn()
 }));
@@ -126,8 +126,8 @@ jest.mock('../src/handlers/catalogHandler', () => ({
 }));
 
 const UserConfig = require('../src/models/UserConfig');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 const TasteProfile = require('../src/models/TasteProfile');
 const library = require('../src/library');
 const { getJwtSecret } = require('../src/api/auth/index');

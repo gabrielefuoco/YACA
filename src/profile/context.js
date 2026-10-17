@@ -10,7 +10,7 @@
  * e cache ricevano la medesima istanza senza divergenze per costruzione.
  */
 
-const UserAccount = require('../db/models/UserAccount');
+const UserAccount = require('../models/UserAccount');
 const { profiloDi, risolviProfiloAttivo } = require('./door');
 const { selettoriEffettivi } = require('./selettoriEffettivi');
 

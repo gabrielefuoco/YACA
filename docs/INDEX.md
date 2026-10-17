@@ -15,7 +15,7 @@ YACA è un addon per Stremio progettato con un'architettura **stateful** e modul
 - **Modulo Libreria (`src/library/`)**: Dominio isolato che possiede i fatti oggettivi dell'utente (watchlist, cronologia, preferenze) e governa la macchina a stati di ingestione e conversione verso TMDB.
 
 > [!IMPORTANT]
-> **Regola dei Moduli e Confini (Ticket 28)**: I consumatori passano sempre e solo dalle porte canoniche dei moduli (`src/library/`, `src/indice/`, `src/posters/`, `src/pool/`, `src/ricerca/`, `src/profile/`, ecc.) e mai da shim intermedi o residui storici (`src/cache/`, `src/db/`, `src/erdb/`). Nessun ponte o shim di retrocompatibilità temporaneo è ammesso nel codice di produzione: un confine dichiarato va imposto.
+> **Regola dei Moduli e Confini (Ticket 28 & Ticket 36)**: I consumatori passano sempre e solo dalle porte canoniche dei moduli (`src/library/`, `src/indice/`, `src/posters/`, `src/pool/`, `src/ricerca/`, `src/profile/`, ecc.) e mai da shim intermedi o residui storici (`src/cache/`, `src/db/`, `src/erdb/`). Nessun ponte o shim di retrocompatibilità temporaneo è ammesso nel codice di produzione: un confine dichiarato va imposto. Inoltre, **i modelli vivono solo in `src/models/`** (Ticket 36): `src/db/` resta riservato all'infrastruttura del database (connessione, migrazioni), mentre tutte le entità e i modelli Mongoose risiedono unicamente in `src/models/`.
 
 Sopra questo strato, YACA supporta **Profili Multipli** (es. "Cinema d'Autore", "Anime Fan", "Bambini") ciascuno dotato di un proprio **DNA vettoriale** contestuale e cataloghi dedicati.
 

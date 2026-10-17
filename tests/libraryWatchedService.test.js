@@ -21,12 +21,12 @@ const {
 } = require('../src/library/ingestion/libraryWatchedService');
 
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 const WatchHistory = require('../src/library/models/WatchHistory');
 const { stremioClient } = require('../src/clients/stremio');
 
 jest.mock('../src/library/models/UserLibraryItem');
-jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/models/UserAccount');
 jest.mock('../src/library/models/WatchHistory');
 jest.mock('../src/clients/stremio', () => ({
     stremioClient: {

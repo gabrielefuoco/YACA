@@ -13,12 +13,12 @@ jest.mock('../src/utils/axiosClient', () => ({
 }));
 
 // Mock MongoDB UserAccount Model (Two-Table Split: trakt.js writes tokens to UserAccount)
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOneAndUpdate: jest.fn()
 }));
 
 const { refreshTraktTokens, syncTraktTokensToDb, traktClient } = require('../src/clients/trakt');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 
 describe('Trakt Stateful Auto-Refresh', () => {
     const ORIGINAL_ENV = process.env;

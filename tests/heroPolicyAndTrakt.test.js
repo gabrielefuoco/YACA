@@ -17,8 +17,8 @@ const {
     applyKidsModeToPreset
 } = require('../src/catalog/providers/DuckDbProvider');
 const { applyKidsMode, isItemInappropriateForKids, ADULT_KEYWORD_IDS } = require('../src/utils/kidsModeFilters');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 
 jest.mock('../src/models/TasteProfile', () => ({
@@ -28,8 +28,8 @@ jest.mock('../src/models/TasteProfile', () => ({
 jest.mock('../src/models/RecommendationImpression', () => ({
     bulkWrite: jest.fn().mockResolvedValue(null)
 }));
-jest.mock('../src/db/models/UserAccount');
-jest.mock('../src/db/models/AddonConfig');
+jest.mock('../src/models/UserAccount');
+jest.mock('../src/models/AddonConfig');
 jest.mock('../src/profile/ProfileBuilder', () => ({
     syncUserHistory: jest.fn().mockResolvedValue(null)
 }));

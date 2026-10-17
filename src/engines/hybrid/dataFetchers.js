@@ -1,6 +1,6 @@
 const TasteProfile = require('../../models/TasteProfile');
-const UserAccount = require('../../db/models/UserAccount');
-const AddonConfig = require('../../db/models/AddonConfig');
+const UserAccount = require('../../models/UserAccount');
+const AddonConfig = require('../../models/AddonConfig');
 const { traktClient } = require('../../clients/trakt');
 const { normalizeContentId } = require('../../utils/contentId');
 const { rateLimitedMap } = require('../../utils/rateLimiter');

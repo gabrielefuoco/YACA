@@ -9,7 +9,7 @@ const {
 const { calculateHybridScore } = require('../src/engines/hybrid/scoringEngine');
 const ProfileScorer = require('../src/profile/ProfileScorer');
 const WatchHistory = require('../src/library/models/WatchHistory');
-const UserAccount = require('../src/db/models/UserAccount');
+const UserAccount = require('../src/models/UserAccount');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
 const dataFetchers = require('../src/engines/hybrid/dataFetchers');
@@ -19,7 +19,7 @@ jest.mock('../src/library/models/WatchHistory', () => ({
     find: jest.fn()
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn()
 }));
 

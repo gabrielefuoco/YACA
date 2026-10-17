@@ -1,9 +1,9 @@
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 const router = require('../src/api/profiles');
 
-jest.mock('../src/db/models/UserAccount');
-jest.mock('../src/db/models/AddonConfig');
+jest.mock('../src/models/UserAccount');
+jest.mock('../src/models/AddonConfig');
 jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/clients/stremio', () => ({
     stremioClient: {

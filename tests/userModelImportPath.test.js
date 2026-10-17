@@ -16,8 +16,8 @@ describe('User model cleanup (Two-Table Split complete)', () => {
         expect(fs.existsSync(path.join(__dirname, '../src/models/User.js'))).toBe(false);
     });
 
-    test('src/db/models/User.js should not exist (deleted, clean-slate)', () => {
-        expect(fs.existsSync(path.join(__dirname, '../src/db/models/User.js'))).toBe(false);
+    test('legacy User model file should not exist in db (clean-slate)', () => {
+        expect(fs.existsSync(path.join(__dirname, '../src/db', 'models', 'User.js'))).toBe(false);
     });
 
     test('no src/ files should import models/User', () => {

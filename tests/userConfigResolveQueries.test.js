@@ -5,11 +5,11 @@
 // Qui non si misura il tempo: si verifica che (a) le due query partano insieme,
 // cioe' prima che una delle due torni, e (b) che i tre rami e il degrado in caso
 // di errore siano esattamente quelli di prima.
-jest.mock('../src/db/models/AddonConfig', () => ({ findOne: jest.fn() }));
-jest.mock('../src/db/models/UserAccount', () => ({ findOne: jest.fn() }));
+jest.mock('../src/models/AddonConfig', () => ({ findOne: jest.fn() }));
+jest.mock('../src/models/UserAccount', () => ({ findOne: jest.fn() }));
 
-const AddonConfig = require('../src/db/models/AddonConfig');
-const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
 const UserConfig = require('../src/models/UserConfig');
 
 // Un findOne "manuale": restituisce una promise che il test scioglie quando vuole,

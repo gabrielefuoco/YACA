@@ -6,10 +6,10 @@ const duckDbStore = require('../src/indice/duckDbStore');
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/library/models/WatchHistory');
 jest.mock('../src/indice/duckDbStore');
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) })
 }));
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) })
 }));
 

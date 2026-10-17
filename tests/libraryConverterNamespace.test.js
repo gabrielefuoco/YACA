@@ -111,7 +111,7 @@ jest.mock('../src/library/models/UserLibraryItem', () => ({
     })
 }));
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn().mockResolvedValue({
         userId: 'user-test',
         addonUuid: 'addon-uuid-1',
@@ -119,7 +119,7 @@ jest.mock('../src/db/models/UserAccount', () => ({
     })
 }));
 
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue({})
     })

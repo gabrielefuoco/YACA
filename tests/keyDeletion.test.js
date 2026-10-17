@@ -1,9 +1,9 @@
 const UserConfig = require('../src/models/UserConfig');
-const UserAccount = require('../src/db/models/UserAccount');
-const AddonConfig = require('../src/db/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
 
-jest.mock('../src/db/models/UserAccount');
-jest.mock('../src/db/models/AddonConfig');
+jest.mock('../src/models/UserAccount');
+jest.mock('../src/models/AddonConfig');
 
 describe('UserConfig Key Deletion Regression', () => {
     beforeEach(() => {

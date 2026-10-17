@@ -1,14 +1,14 @@
 const { processProfiles } = require('../src/api/configure/profileProcessor');
 const UserConfig = require('../src/models/UserConfig');
-const AddonConfig = require('../src/db/models/AddonConfig');
-const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/models/AddonConfig');
+const UserAccount = require('../src/models/UserAccount');
 
-jest.mock('../src/db/models/UserAccount', () => ({
+jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn()
 }));
 
-jest.mock('../src/db/models/AddonConfig', () => ({
+jest.mock('../src/models/AddonConfig', () => ({
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn()
 }));

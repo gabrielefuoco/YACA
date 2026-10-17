@@ -313,7 +313,7 @@ async function leggiOrdineLibreria({ addonUuid, profileId = 'global' }) {
         }
 
         // Fallback per una release: lettura dal vecchio campo AddonConfig
-        const AddonConfig = require('../db/models/AddonConfig');
+        const AddonConfig = require('../models/AddonConfig');
         const addonConfig = await AddonConfig.findOne({ uuid: addonUuid }).lean();
         const profile = (addonConfig?.profiles || []).find(p => (p.id || p._id?.toString()) === profileId)
             || (profileId === 'global' ? addonConfig?.profiles?.[0] : null);
@@ -353,7 +353,7 @@ async function salvaOrdineLibreria({ addonUuid, profileId = 'global', itemIds = 
     }
 
     try {
-        const AddonConfig = require('../db/models/AddonConfig');
+        const AddonConfig = require('../models/AddonConfig');
         await AddonConfig.updateOne(
             { uuid: addonUuid, 'profiles.id': profileId },
             { $set: { 'profiles.$.raw_ui_state.libraryOrder': cleanOrder } }

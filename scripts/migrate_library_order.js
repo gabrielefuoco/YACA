@@ -42,7 +42,7 @@ async function migrateLibraryOrder(options = {}) {
     }
     console.log('='.repeat(70));
 
-    const AddonConfig = require('../src/db/models/AddonConfig');
+    const AddonConfig = require('../src/models/AddonConfig');
     const UserLibraryOrder = require('../src/library/models/UserLibraryOrder');
 
     const query = {};

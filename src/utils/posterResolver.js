@@ -1,7 +1,7 @@
 const duckDbStore = require('../indice/duckDbStore');
 let ImdbToTmdbMapping = null;
 try {
-    ImdbToTmdbMapping = require('../db/models/ImdbToTmdbMapping');
+    ImdbToTmdbMapping = require('../models/ImdbToTmdbMapping');
 } catch (_e) {
     ImdbToTmdbMapping = null;
 }
