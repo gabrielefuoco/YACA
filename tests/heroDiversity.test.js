@@ -21,6 +21,10 @@ jest.mock('../src/models/TasteProfile', () => ({
 jest.mock('../src/models/RecommendationImpression', () => ({
     bulkWrite: jest.fn().mockResolvedValue(null)
 }));
+jest.mock('../src/db/models/UserAccount');
+jest.mock('../src/db/models/AddonConfig');
+const UserAccount = require('../src/db/models/UserAccount');
+const AddonConfig = require('../src/db/models/AddonConfig');
 jest.mock('../src/profile/ProfileBuilder', () => ({
     syncUserHistory: jest.fn().mockResolvedValue(null)
 }));
@@ -128,6 +132,24 @@ describe('Ticket 21: shared hero diversity', () => {
     beforeEach(() => {
         mockCacheStore.clear();
         jest.clearAllMocks();
+
+        UserAccount.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({
+                userId: 'sim_user',
+                addonUuid: 'sim_uuid'
+            })
+        });
+        AddonConfig.findOne.mockReturnValue({
+            lean: jest.fn().mockResolvedValue({
+                uuid: 'sim_uuid',
+                userId: 'sim_user',
+                profiles: [
+                    { id: 'sim_profile', settings: { kidsMode: false, typeSelectors: {} } },
+                    { id: 'sim_profile_dna_a', settings: { kidsMode: false, typeSelectors: {} } },
+                    { id: 'sim_profile_dna_b', settings: { kidsMode: false, typeSelectors: {} } }
+                ]
+            })
+        });
 
         TasteProfile.findOne.mockResolvedValue({
             owner: 'sim_user',

@@ -91,7 +91,11 @@ describe('Ticket 12: Hero Policy & Trakt Fixes', () => {
                 apiKeys: {
                     trakt: 'old_token',
                     traktRefreshToken: 'valid_refresh_token'
-                }
+                },
+                profiles: [
+                    { id: 'global', name: 'Generale', settings: { kidsMode: false, typeSelectors: {} } },
+                    { id: 'kids_profile', name: 'Kids', settings: { kidsMode: true, typeSelectors: {} } }
+                ]
             })
         });
         TasteProfile.findOne.mockResolvedValue({
