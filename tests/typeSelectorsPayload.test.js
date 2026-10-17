@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FRONTEND_NODE_MODULES = path.resolve(__dirname, '../frontend/node_modules');
+const FRONTEND_SRC = path.resolve(__dirname, '../frontend/src');
 
 let ts;
 try {
@@ -31,6 +32,24 @@ describe('TypeSelectors Payload & Mapping Regression Tests', () => {
 
         const m = { exports: {} };
         const customRequire = (id) => {
+            // L'alias del frontend (`@/types`) va risolto QUI, e il file va TRASPILATO a mano:
+            // babel-jest non parla TypeScript, ed e' il motivo per cui questo test traspila
+            // `utils.ts` da se'. E' un mini-loader, e deve esserlo fino in fondo.
+            if (typeof id === 'string' && id.startsWith('@/')) {
+                const base = path.join(FRONTEND_SRC, id.slice(2));
+                const candidati = [base + '.ts', path.join(base, 'index.ts')];
+                const trovato = candidati.find(c => fs.existsSync(c));
+                if (!trovato) {
+                    throw new Error(`Alias ${id} non risolto (cercato: ${candidati.join(', ')})`);
+                }
+                const sorgente = fs.readFileSync(trovato, 'utf8');
+                const compilato = ts.transpileModule(sorgente, {
+                    compilerOptions: { module: ts.ModuleKind.CommonJS }
+                }).outputText;
+                const modulo = { exports: {} };
+                new Function('require', 'exports', 'module', compilato)(customRequire, modulo.exports, modulo);
+                return modulo.exports;
+            }
             try {
                 return require(id);
             } catch (e) {
