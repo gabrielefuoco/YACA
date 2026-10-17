@@ -6,9 +6,9 @@
  */
 
 const indice = require('../../indice');
-const { F, S } = require('../../data/filters');
+const { F, S } = require('../filters');
 const { animeMappingStore, normalizeAnimeMarker } = require('../../anime');
-const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../../utils/kidsModeFilters');
+const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../kidsModeFilters');
 
 const {
     SUPPORTED_SORT_BY,

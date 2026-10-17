@@ -31,7 +31,12 @@ const fs = require('fs');
 const path = require('path');
 
 const { BADGE_IMG_VERSION } = require('../catalog/formatters/posterBadgeVersion');
-const { erdbIdDaNomeFile, posterFileName } = require('./index');
+// I moduli CONCRETI, non la porta: `./index` richiede questo file (lo espone come
+// `refreshLibraryPoster`), quindi chiederlo alla porta chiude un ciclo — e Node lo segnala con
+// «Accessing non-existent property ... inside circular dependency» (il test di `erdbList` lo
+// intercettava, ed era un avviso vero, non un test fragile).
+const { erdbIdDaNomeFile } = require('./posterDaEvento');
+const { posterFileName } = require('./erdb/build');
 const { normalizeLegacyPosterHost } = require('../library/identity');
 
 const COMPOSED_PREFIX = '/images/poster/';

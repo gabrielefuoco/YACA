@@ -17,7 +17,7 @@
 
 const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
-const { normalizeContentId } = require('../utils/contentId');
+const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec } = require('../catalog/registry');
 const {
     fetchProfileContext,

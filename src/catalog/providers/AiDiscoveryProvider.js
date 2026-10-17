@@ -1,14 +1,14 @@
 const { getTmdbIdByName, createTmdbClient } = require('../../clients/tmdb');
 const { routeLiveStremioSearch } = require('../../ricerca/router');
-const { getProfileDnaFilters } = require('../../utils/helpers');
+const { getProfileDnaFilters } = require('../../infra');
 
-const { applyConsensusScoring } = require('../../utils/resultMerger');
+const { applyConsensusScoring } = require('../../infra');
 const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
-const { G } = require('../../data/filters');
+const { G } = require('../filters');
 
 function getTmdbVoteScore(item) {
     const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;

@@ -1,4 +1,4 @@
-const LRUCache = require('../../utils/LRUCache');
+const { LRUCache } = require('../../infra');
 
 const RESOLUTION_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const RESOLUTION_CACHE_MAX_ENTRIES = 256;

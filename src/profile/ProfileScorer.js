@@ -9,9 +9,9 @@ const NICHE_FADE_OUT_VOTES = 2000;
 const NICHE_MIN_VOTE_BONUS = 1.0;
 const NICHE_MAX_VOTE_BONUS = 2.5;
 
-const { isItemInappropriateForKids } = require('../utils/kidsModeFilters');
-const { G } = require('../data/filters');
-const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../data/keywordIds');
+const { isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
+const { G } = require('../catalog/filters');
+const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../indice/keywordIds');
 const { resolveAnimePolicy, computeAnimeScoreMultiplier } = require('../anime');
 
 function clampScore(value) {
