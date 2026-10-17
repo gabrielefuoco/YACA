@@ -46,7 +46,7 @@ function matchesTypeSelectors(item, typeSelectors, tipo) {
     return true;
 }
 
-const graph = require('../keywords/HierarchicalGraph');
+const graph = require('../../indice/HierarchicalGraph');
 
 const HERO_DIVERSITY_CAPS = Object.freeze({
     genre: 3,

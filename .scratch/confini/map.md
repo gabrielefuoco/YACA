@@ -627,3 +627,13 @@ test**, e **tre sono ponti veri**:
 
 **La distinzione che vale il ticket**: «il vecchio stack serve le rotte vecchie» (pianificato) contro «il vecchio
 stack serve i moduli nuovi» (dipendenza nascosta, e va tolta) è la differenza fra un lavoro e un guasto silenzioso.
+- **Per trovare chi usa un file, cerca il NOME, non un percorso.** Cancellando lo shim di `HierarchicalGraph` ho
+  rotto **24 suite**: il vecchio stack lo richiedeva con un percorso **relativo** (`require('../keywords/HierarchicalGraph')`)
+  che il mio `grep` — che cercava `engines/keywords/HierarchicalGraph` — non vedeva. È la **seconda volta in un
+  giorno**: lo stesso errore mi aveva fatto dichiarare morto `tmdbIngestPolicy` (importato con `./tmdbIngestPolicy`).
+  La regola che ne esce: `grep -rn "<nome-del-file>"`, e **poi** si guarda la forma del percorso. E il seguito:
+  quando si cancella un file, **il codice interno che lo importa è invisibile alle sonde per percorso** — è lì che
+  si rompe, non nei consumatori che si sono censiti.
+- **`sed` applica il pattern CORTO prima del lungo**: ripuntando `../keywords/X` con due pattern (`../` → `../indice/`
+  e `../../` → `../../indice/`) il primo ha riscritto anche i casi che volevano il secondo, producendo
+  `src/engines/indice/X` (inesistente). Ordina i pattern dal più specifico al più generico.
