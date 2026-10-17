@@ -93,3 +93,108 @@ progettasse «l'app chiede il mapping al servizio» romperebbe la query.
 (che sposta `duckDbStore.js`, consumatore degli id anime). **Verifica**: nessun `require` di `services/` da
 `src/`; nessun file anime fuori da `src/anime/`; i 12 consumatori ripuntati; e le suite che coprono anime e
 cataloghi verdi una alla volta.
+
+## Esito (Lato PRODUTTORE — services/anime-source)
+
+Completato il lato produttore del Ticket 32. Il servizio `services/anime-source` è ora l'unico produttore dell'indice di mapping anime per l'intera applicazione YACA: scarica e memorizza in cache i due dump remoti (AniBridge `mappings.min.json` e Fribb `anime-list-mini.json`), legge gli override curati a mano con il supporto per la nuova chiave `exclude`, e pubblica atomicamente su file JSON l'artefatto pronto per il consumo.
+
+### 1. Elenco dei campi pubblicati (Contratto Produttore-Consumatore)
+File generato: `anime-mappings.json` (risolto da `process.env.ANIME_MAPPINGS_PATH || process.env.ANIME_MAPPING_PATH || path.join(cacheDir, 'anime-mappings.json')`).
+Dimensione totale su disco: **~10.47 MB** (10.475.377 byte).
+
+| Campo | Tipo JSON | Descrizione e Dettaglio | Dimensione / Conteggio misurato |
+|---|---|---|---|
+| `schemaVersion` | `number` | Versione schema dell'indice (valore `1`) | 1 intero |
+| `generatedAt` | `string` (ISO 8601) | Timestamp UTC di generazione dell'artefatto | 24 byte |
+| `sources` | `object` | Provenienza dettagliata per ciascuna sorgente | ~350 byte |
+| `sources.anibridge` | `{ url, fetchedAt, rowCount }` | URL AniBridge, data fetch e 77.735 cluster mappings | ~110 byte |
+| `sources.fribb` | `{ url, fetchedAt, rowCount }` | URL Fribb, data fetch e 39.638 record mini | ~110 byte |
+| `sources.overrides` | `{ path, fetchedAt, rowCount }` | Percorso file locale, data caricamento e 6 entry | ~130 byte |
+| `provenance` | `object` | Alias speculare di `sources` | ~350 byte |
+| `animeTmdbIdsMovie` | `string[]` | Set TMDB ID film anime (Anibridge movie + Fribb movie + certified - excluded) | 2.755 stringhe (~25 KB) |
+| `animeTmdbIdsShow` | `string[]` | Set TMDB ID serie anime (Anibridge show + Fribb tv + certified - excluded) | 4.341 stringhe (~40 KB) |
+| `anibridgeTmdbIds` | `string[]` | Set di tutti i TMDB ID presenti in AniBridge | 7.018 stringhe (~65 KB) |
+| `anibridgeShowTmdbIds` | `string[]` | Set TMDB ID serie (`tmdb_show:`) da AniBridge | 4.341 stringhe (~40 KB) |
+| `anibridgeMovieTmdbIds` | `string[]` | Set TMDB ID film (`tmdb_movie:`) da AniBridge | 2.677 stringhe (~25 KB) |
+| `certifiedTmdbIds` | `string[]` | TMDB ID certificati da `certify` (dopo verifica `exclude`) | 1 stringa (`['286361']`) |
+| `excludedTmdbIds` | `string[]` | TMDB ID certificati come NON anime da `exclude` | 0 stringhe (`[]`) |
+| `certify` | `Array<{ tmdbId, title?, note? }>` | Array oggetti di certificazione manuale (depurato da exclude) | 1 elemento |
+| `exclude` | `Array<{ tmdbId, title?, note? }>` | Array oggetti di esclusione manuale (mirror di certify) | 0 elementi |
+| `tmdbToKitsu` | `Array<[string, number\|string]>` | Map serializzata a coppie: `tmdbId` serie → `kitsuId` | 4.221 coppie (~90 KB) |
+| `tmdbToKitsuMovie` | `Array<[string, number\|string]>` | Map serializzata a coppie: `tmdbId` film → `kitsuId` | 1.326 coppie (~30 KB) |
+| `kitsuToTmdb` | `Array<[string, string]>` | Map serializzata a coppie: `kitsuId` → `primaryTmdbId` | 8.277 coppie (~180 KB) |
+| `kitsuToTmdbType` | `Array<[string, 'movie'\|'tv']>` | Map serializzata a coppie: `kitsuId` → `'movie'\|'tv'` | 8.277 coppie (~180 KB) |
+| `malToTmdb` | `Array<[string, string]>` | Map serializzata a coppie: `malId` → `primaryTmdbId` | 8.248 coppie (~180 KB) |
+| `tmdbToAnimeNode` | `Array<[string, Array<{ bridgeNode: { p, id }, rules: Array<{ start, end, offset }> }>]>` | Map serializzata a coppie: `${tmdbId}:${season}` → regole episodiche Anibridge | 9.466 coppie (~6.5 MB) |
+| `fribbIndex` | `{ anidb, anilist, mal }` | Oggetto coi 3 Map di consensus Kitsu serializzati a coppie | 51.038 coppie totali (~1.2 MB) |
+| `fribbIndex.anidb` | `Array<[string, number\|string]>` | `anidbId` → `kitsuId` | 13.331 coppie (~290 KB) |
+| `fribbIndex.anilist` | `Array<[string, number\|string]>` | `anilistId` → `kitsuId` | 17.628 coppie (~410 KB) |
+| `fribbIndex.mal` | `Array<[string, number\|string]>` | `malId` → `kitsuId` | 20.079 coppie (~480 KB) |
+
+Tutte le Map sono serializzate come array di coppie `[key, value]`: il reader lato app le reidrata con `new Map(data.<field>)` e `new Set(data.<setField>)` in O(1) allocativo senza calcoli né parsing aggiuntivi.
+
+### 2. Prova di Scrittura Atomica
+Implementata in `services/anime-source/src/mappingIndex.js` (`writeMappingIndexAtomic`):
+1. Assicura l'esistenza ricorsiva della directory genitrice (`fs.mkdirSync(dir, { recursive: true })`).
+2. Scrive su file temporaneo univoco `${targetPath}.tmp.${Date.now()}.${process.pid}`.
+3. Rinomina atomicamente tramite `fs.renameSync(tmpPath, targetPath)`.
+4. Gestione fallback trasparente di `EEXIST` ed `EPERM` (unlink del target + rename) per compatibilità su file locking Windows.
+5. Verificato dal test unitario in `tests/mappingIndex.test.js`: nessun file temporaneo residuo, sovrascrittura idempotente e atomica.
+
+### 3. Esecuzione Reale
+Comando:
+`node cli.js --export-mapping`
+Output console:
+```
+[AnimeSource] Avvio servizio sorgente anime...
+[Identity] Download dump Fribb in corso...
+[Identity] Dump Fribb scaricato e memorizzato in cache.
+[Identity] Download dump Anibridge in corso...
+[Identity] Dump Anibridge scaricato e memorizzato in cache.
+[Identity] Indice anime-mappings scritto atomicamente in C:\Users\gabri\APP\.YACA.worktrees\t32-servizio\services\anime-source\.cache\anime-mappings.json (10230.1 KB)
+[Identity] Indice inizializzato: 10114 AniList->TMDB, 10188 MAL->TMDB, 8277 Kitsu->TMDB, 9777 AniList->TVDB, 9813 MAL->TVDB, 11 Overrides
+[AnimeSource] Esportazione mapping completata con successo.
+```
+Head del file generato (`services/anime-source/.cache/anime-mappings.json`):
+```json
+{
+ "schemaVersion": 1,
+ "generatedAt": "2026-10-17T12:54:12.383Z",
+ "sources": {
+  "anibridge": {
+   "url": "https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json",
+   "fetchedAt": "2026-10-17T12:54:02.647Z",
+   "rowCount": 77735
+  },
+  "fribb": {
+   "url": "https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json",
+   "fetchedAt": "2026-10-17T12:54:00.880Z",
+   "rowCount": 39638
+  },
+  "overrides": {
+   "path": "C:\\Users\\gabri\\APP\\.YACA.worktrees\\t32-servizio\\services\\anime-source\\data\\anime-overrides.json",
+   "fetchedAt": "2026-10-17T12:55:05.579Z",
+   "rowCount": 6
+  }
+ },
+ "provenance": { ... },
+ "animeTmdbIdsMovie": [
+  "128",
+  "1390599",
+  "149", ...
+```
+
+### 4. Test Eseguiti
+Suite eseguita con `npm test` in `services/anime-source/`:
+- **115 test passati, 30 suite, 0 falliti** (~600ms).
+- Nuova suite `tests/mappingIndex.test.js` (8 test):
+  - Verifica validità di tutti i campi, tipi e formati dell'artefatto.
+  - Verifica regola di priorità override: se un TMDB ID è in `certify` e `exclude`, `exclude` vince (eliminato da `certify` e dagli insiemi movie/show).
+  - Verifica degrado fail-safe: override assente, vuoto, JSON corrotto o input null/undefined degradano senza lanciare eccezioni.
+  - Verifica scrittura atomica e risoluzione percorsi (`ANIME_MAPPINGS_PATH`).
+  - Verifica integrazione con `IdentityResolver.publishMappingIndex()`.
+- Suite `tests/overrides.test.js` aggiornata per validare la chiave `exclude` e la risoluzione dei conflitti.
+
+### 5. Cosa non si è potuto fare
+Nessun bloccante. L'app-side reader (`src/anime/`) vive nel parallelo worktree ed è intoccato come da vincoli del brief.
+

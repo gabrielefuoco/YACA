@@ -34,7 +34,8 @@ function getEmptyOverrides() {
     return {
         version: 1,
         identities: [],
-        certify: []
+        certify: [],
+        exclude: []
     };
 }
 
@@ -57,6 +58,7 @@ function loadAnimeOverrides(filePath) {
 
         const rawIdentities = Array.isArray(parsed.identities) ? parsed.identities : [];
         const rawCertify = Array.isArray(parsed.certify) ? parsed.certify : [];
+        const rawExclude = Array.isArray(parsed.exclude) ? parsed.exclude : [];
 
         const validIdentities = [];
         for (const item of rawIdentities) {
@@ -77,13 +79,39 @@ function loadAnimeOverrides(filePath) {
             });
         }
 
+        const validExclude = [];
+        const seenExclude = new Set();
+        for (const item of rawExclude) {
+            if (!item || typeof item !== 'object') continue;
+            if (item.tmdbId == null || item.tmdbId === '') continue;
+
+            const cleanId = String(item.tmdbId).trim();
+            if (!cleanId) continue;
+            if (seenExclude.has(cleanId)) continue;
+            seenExclude.add(cleanId);
+
+            validExclude.push({
+                tmdbId: cleanId,
+                title: item.title ? String(item.title) : null,
+                note: item.note ? String(item.note) : null
+            });
+        }
+
         const validCertify = [];
+        const seenCertify = new Set();
         for (const item of rawCertify) {
             if (!item || typeof item !== 'object') continue;
             if (item.tmdbId == null || item.tmdbId === '') continue;
 
+            const cleanId = String(item.tmdbId).trim();
+            if (!cleanId) continue;
+            // Regola ticket 32: se un id compare sia in certify che in exclude, exclude vince.
+            if (seenExclude.has(cleanId)) continue;
+            if (seenCertify.has(cleanId)) continue;
+            seenCertify.add(cleanId);
+
             validCertify.push({
-                tmdbId: String(item.tmdbId).trim(),
+                tmdbId: cleanId,
                 title: item.title ? String(item.title) : null,
                 note: item.note ? String(item.note) : null
             });
@@ -92,7 +120,8 @@ function loadAnimeOverrides(filePath) {
         return {
             version: parsed.version || 1,
             identities: validIdentities,
-            certify: validCertify
+            certify: validCertify,
+            exclude: validExclude
         };
     } catch (err) {
         console.warn(`[AnimeOverrides] Errore lettura/parsing file override "${targetPath}": ${err.message}. Nessun override applicato.`);

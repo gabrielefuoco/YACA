@@ -289,4 +289,32 @@ describe('File Reale anime-overrides.json', () => {
             assert.ok(!certifiedIds.includes(id), `Il donghua ${id} non deve essere in certify`);
         }
     });
+
+    test('carica exclude e se un id compare sia in certify che in exclude, exclude vince', () => {
+        const tmpDir = createTempDir();
+        const testFile = path.join(tmpDir, 'conflict-overrides.json');
+        fs.writeFileSync(testFile, JSON.stringify({
+            version: 1,
+            identities: [],
+            certify: [
+                { tmdbId: 111, title: 'Solo certificato' },
+                { tmdbId: 222, title: 'In conflitto' }
+            ],
+            exclude: [
+                { tmdbId: 222, title: 'Escluso vince' },
+                { tmdbId: 333, title: 'Solo escluso' },
+                { title: 'Invalido senza tmdbId' }
+            ]
+        }));
+
+        const overrides = loadAnimeOverrides(testFile);
+        assert.strictEqual(overrides.certify.length, 1);
+        assert.strictEqual(overrides.certify[0].tmdbId, '111');
+        assert.strictEqual(overrides.exclude.length, 2);
+        assert.strictEqual(overrides.exclude[0].tmdbId, '222');
+        assert.strictEqual(overrides.exclude[1].tmdbId, '333');
+
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
 });
+

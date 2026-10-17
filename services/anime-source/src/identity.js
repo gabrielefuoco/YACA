@@ -12,6 +12,7 @@ const { TmdbFallbackResolver } = require('./tmdbFallback');
 const { TvdbBridgeResolver } = require('./tvdbBridge');
 const { loadAnimeOverrides } = require('./overrides');
 const { normalizeMediaType } = require('./aggregate');
+const { produceMappingIndex, resolveMappingIndexPath } = require('./mappingIndex');
 
 const ANIBRIDGE_URL = 'https://github.com/anibridge/anibridge-mappings/releases/download/v3/mappings.min.json';
 const FRIBB_MINI_URL = 'https://raw.githubusercontent.com/Fribb/anime-lists/master/anime-list-mini.json';
@@ -66,6 +67,11 @@ class IdentityResolver {
         this.officialMal = new Set();
         this.resolutionLevelMap = new Map(); // 'anilist:X' | 'mal:Y' -> 'official' | 'override' | 'bridge_tvdb' | 'title_fallback'
 
+        this.mappingIndexPath = options.mappingIndexPath;
+        this.publishIndex = options.publishIndex !== false;
+        this._lastFribbData = null;
+        this._lastAnibridgeData = null;
+
         this.isReady = false;
     }
 
@@ -78,9 +84,11 @@ class IdentityResolver {
      */
     loadFromData({ fribbData, anibridgeData, overridesData } = {}) {
         if (fribbData && Array.isArray(fribbData)) {
+            this._lastFribbData = fribbData;
             this._buildFribbIndex(fribbData);
         }
         if (anibridgeData && typeof anibridgeData === 'object') {
+            this._lastAnibridgeData = anibridgeData;
             this._buildAnibridgeIndex(anibridgeData);
         }
         if (overridesData !== undefined) {
@@ -401,7 +409,70 @@ class IdentityResolver {
         if (!this.overridesData && !this.overridesPath) {
             this.loadOverrides();
         }
+
+        if (this.publishIndex) {
+            try {
+                this.publishMappingIndex({ fribbData, anibridgeData });
+            } catch (publishErr) {
+                console.warn(`[Identity] Warning pubblicazione indice mapping: ${publishErr.message}`);
+            }
+        }
+
         console.log(`[Identity] Indice inizializzato: ${this.anilistToTmdb.size} AniList->TMDB, ${this.malToTmdb.size} MAL->TMDB, ${this.kitsuToTmdb.size} Kitsu->TMDB, ${this.anilistToTvdb.size} AniList->TVDB, ${this.malToTvdb.size} MAL->TVDB, ${this.overrideByAnilist.size + this.overrideByMal.size + this.overrideByTvdb.size} Overrides`);
+    }
+
+    /**
+     * Pubblica l'artefatto anime-mappings.json in modo atomico.
+     * @param {Object} [params]
+     * @param {Array<Object>} [params.fribbData]
+     * @param {Object} [params.anibridgeData]
+     * @param {string} [params.targetPath]
+     * @returns {{ artifact: Object, meta: { path: string, size: number, generatedAt: string } }}
+     */
+    publishMappingIndex({ fribbData, anibridgeData, targetPath } = {}) {
+        const dataFribb = fribbData || this._lastFribbData || [];
+        const dataAnibridge = anibridgeData || this._lastAnibridgeData || {};
+        const dest = resolveMappingIndexPath(targetPath || this.mappingIndexPath, this.cacheDir);
+
+        const fribbPath = path.join(this.cacheDir, 'fribb-mini.json');
+        const anibridgePath = path.join(this.cacheDir, 'anibridge-mappings.json');
+
+        let fribbFetchedAt = new Date().toISOString();
+        if (fs.existsSync(fribbPath)) {
+            try { fribbFetchedAt = fs.statSync(fribbPath).mtime.toISOString(); } catch (_) {}
+        }
+
+        let anibridgeFetchedAt = new Date().toISOString();
+        if (fs.existsSync(anibridgePath)) {
+            try { anibridgeFetchedAt = fs.statSync(anibridgePath).mtime.toISOString(); } catch (_) {}
+        }
+
+        const sources = {
+            anibridge: {
+                url: ANIBRIDGE_URL,
+                fetchedAt: anibridgeFetchedAt
+            },
+            fribb: {
+                url: FRIBB_MINI_URL,
+                fetchedAt: fribbFetchedAt
+            },
+            overrides: {
+                path: this.overridesPath || null,
+                fetchedAt: new Date().toISOString()
+            }
+        };
+
+        const result = produceMappingIndex({
+            fribbData: dataFribb,
+            anibridgeData: dataAnibridge,
+            overridesDataOrPath: this.overridesData || this.overridesPath,
+            sources,
+            targetPath: dest,
+            cacheDir: this.cacheDir
+        });
+
+        console.log(`[Identity] Indice anime-mappings scritto atomicamente in ${result.meta.path} (${(result.meta.size / 1024).toFixed(1)} KB)`);
+        return result;
     }
 
     /**

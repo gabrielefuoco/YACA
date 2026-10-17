@@ -55,6 +55,8 @@ function parseArgs(args) {
         home: false,
         homeFull: false,
         homeWindowDays: HOME_WINDOW_DAYS,
+        exportMapping: false,
+        exportMappingPath: null,
         help: false
     };
 
@@ -96,6 +98,11 @@ function parseArgs(args) {
         } else if (arg === '--home-window') {
             const parsedWindow = parseInt(args[++i], 10);
             if (!isNaN(parsedWindow) && parsedWindow > 0) opts.homeWindowDays = parsedWindow;
+        } else if (arg === '--export-mapping') {
+            opts.exportMapping = true;
+            if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+                opts.exportMappingPath = args[++i];
+            }
         } else if (arg === '--help' || arg === '-h') {
             opts.help = true;
         }
@@ -125,6 +132,7 @@ Opzioni:
   --home                Passata INCREMENTALE della home: la prima pagina (le ultime uscite). È il giro da 15 minuti
   --home-full           Passata COMPLETA della home: tutte le pagine fino a coprire le due settimane. È il giro giornaliero
   --home-window <n>     Finestra della passata home in giorni (default: ${HOME_WINDOW_DAYS})
+  --export-mapping [p]  Esporta l'artefatto anime-mappings.json ed esce (opzionale percorso destinazione)
   --mongo-uri <uri>     URI MongoDB (default: env MONGODB_URI o mongodb://localhost:27017/yaca)
   --help, -h            Mostra questo messaggio di aiuto
 
@@ -402,9 +410,16 @@ async function main() {
 
     console.log('[AnimeSource] Avvio servizio sorgente anime...');
     const animeClient = new AnimeUnityClient();
-    const identityResolver = new IdentityResolver();
+    const identityResolver = new IdentityResolver({
+        mappingIndexPath: opts.exportMappingPath
+    });
 
     await identityResolver.init();
+
+    if (opts.exportMapping) {
+        console.log('[AnimeSource] Esportazione mapping completata con successo.');
+        process.exit(0);
+    }
 
     let store = null;
     if (!opts.dryRun) {
