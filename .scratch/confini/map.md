@@ -370,9 +370,12 @@ Il resto è a valle loro:
 - **la verifica di E5** (guasto transitorio → cache a 60 s, non 7 giorni): il primo tentativo è stato
   **inconcludente** (la riga dei film ha risposto 20 col motore spento: probabile corsa nella prova). È in coda
   al ticket 38;
-- **il clone del modulo sul mate** (`/srv/yaca/modulo/`): ha ancora il codice e i dati vecchi, quindi la
-  pipeline notturna scrive un artefatto che **non alimenta più nessuno** (il servizio legge da
-  `/srv/yaca/services/graph/data`). Il suo riallineamento segue la decisione del ticket 09.
+- **il clone del modulo sul mate** (`/srv/yaca/modulo/`, fermo a `ed402f5a`, con la struttura vecchia): è
+  l'**officina manuale** dove vivono il venv e i 138 MB di dati. **Non c'è nessun timer né cron che esegue la
+  pipeline** — verificato il 17/10/2026: `systemctl list-timers` mostra solo `yaca-poster-eventi` e
+  `yaca-doppiaggi`, il crontab è vuoto, e `ops/` non la invoca. Quindi non c'è niente di rotto: c'è che
+  **rigenerare l'artefatto è oggi un gesto a mano**, e chi lo fa deve allineare quel clone (pull, dati in
+  `services/graph/data`, `PYTHONPATH=services`). Dove l'artefatto finisca è la decisione del ticket 09.
 
 I motivi, che sono misure: il **38** prima di 08/12 perché quei ticket si collaudano confrontando i conteggi;
 il **06** prima del **07** perché il 07 scrive percorsi che il 06 sposta; il **15/16** prima del **10** perché
