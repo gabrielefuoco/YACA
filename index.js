@@ -220,10 +220,6 @@ app.post('/api/clear-cache', cookieParser(), async (req, res) => {
 const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 app.post('/api/configure', cookieParser(), configureLimiter, configureRoute);
 
-// Unified Profiles API (DNA, Sync Status)
-const profileRoutes = require('./src/api/profiles');
-const profileLimiter = rateLimit({ windowMs: 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
-app.use('/api/profiles', cookieParser(), profileLimiter, inputSanitizer, profileRoutes);
 
 // Catch-all route per gestire il routing lato client di Next.js
 // Catch-all route per gestire il routing lato client di Next.js (Solo per richieste che sembrano pagine)

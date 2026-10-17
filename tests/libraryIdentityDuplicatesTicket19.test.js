@@ -151,17 +151,17 @@ describe('Ticket 19: 2. Risoluzione Tipo da DB e Tracciamento Discordanze', () =
     });
 });
 
-describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profiles.js)', () => {
+describe('Ticket 19: 3. Normalizzazione e _ctime in POST /libreria (src/api/profilo.js)', () => {
     let handler;
     const UserAccount = require('../src/models/UserAccount');
     const UserLibraryItem = require('../src/library/models/UserLibraryItem');
     const libraryIdentity = require('../src/library/identity');
+    const LibraryConverterService = require('../src/library/ingestion/LibraryConverterService');
 
     beforeAll(() => {
-        const LibraryConverterService = require('../src/library/ingestion/LibraryConverterService');
         jest.spyOn(LibraryConverterService, 'convertAll').mockResolvedValue(0);
-        const profilesRouter = require('../src/api/profiles');
-        const postLayer = profilesRouter.stack.find(l => l.route?.path === '/:id/library' && l.route?.methods?.post);
+        const profiloRouter = require('../src/api/profilo');
+        const postLayer = profiloRouter.stack.find(l => l.route?.path === '/libreria' && l.route?.methods?.post);
         const rawHandler = postLayer.route.stack[0].handle;
         handler = (req, res) => {
             if (!req.utenteId && (req.query?.userId || req.body?.userId)) {
@@ -173,11 +173,10 @@ describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profi
 
     beforeEach(() => {
         jest.clearAllMocks();
-        const LibraryConverterService = require('../src/library/ingestion/LibraryConverterService');
         jest.spyOn(LibraryConverterService, 'convertAll').mockResolvedValue(0);
     });
 
-    test('3.1. POST /library normalizza l itemId prima di salvare (tmdb: 12477  -> tmdb:12477)', async () => {
+    test('3.1. POST /libreria normalizza l itemId prima di salvare (tmdb: 12477  -> tmdb:12477)', async () => {
         jest.spyOn(UserAccount, 'findOne').mockReturnValue({
             lean: jest.fn().mockResolvedValue({ userId: 'u1', addonUuid: 'mock-uuid' })
         });
@@ -190,9 +189,8 @@ describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profi
         const applyMarksSpy = jest.spyOn(libraryIdentity, 'applyDuplicateMarks').mockResolvedValue({ duplicates: 0, cleared: 0 });
 
         const req = {
-            params: { id: 'prof1' },
+            utenteId: 'u1',
             body: {
-                userId: 'u1',
                 item: { id: 'tmdb: 12477 ', type: 'movie', name: 'La tomba delle lucciole' }
             },
             headers: {},
@@ -212,7 +210,7 @@ describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profi
         expect(applyMarksSpy).toHaveBeenCalledWith('mock-uuid');
     });
 
-    test('3.2. POST /library NON sovrascrive _ctime se il documento esiste già in archivio', async () => {
+    test('3.2. POST /libreria NON sovrascrive _ctime se il documento esiste già in archivio', async () => {
         jest.spyOn(UserAccount, 'findOne').mockReturnValue({
             lean: jest.fn().mockResolvedValue({ userId: 'u1', addonUuid: 'mock-uuid' })
         });
@@ -228,9 +226,8 @@ describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profi
         jest.spyOn(libraryIdentity, 'applyDuplicateMarks').mockResolvedValue({ duplicates: 0, cleared: 0 });
 
         const req = {
-            params: { id: 'prof1' },
+            utenteId: 'u1',
             body: {
-                userId: 'u1',
                 item: { id: 'tt0095327', type: 'movie', name: 'La tomba delle lucciole' }
             },
             headers: {},
@@ -248,6 +245,7 @@ describe('Ticket 19: 3. Normalizzazione e _ctime in POST /library (src/api/profi
         expect(existingDoc._ctime).toEqual(originalCtime); // Intatto! Non sovrascritto da now
     });
 });
+
 
 describe('Ticket 19: 4. Dedup UI su Chiave Canonica (frontend/src/lib/libraryCanonical.ts)', () => {
     let getCanonicalLibraryKey;

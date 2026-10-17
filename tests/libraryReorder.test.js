@@ -1,6 +1,6 @@
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
-const router = require('../src/api/profiles');
+const router = require('../src/api/profilo');
 
 jest.mock('../src/models/UserAccount');
 jest.mock('../src/models/AddonConfig');
@@ -11,12 +11,12 @@ jest.mock('../src/stremio/client', () => ({
     }
 }));
 
-describe('PUT /api/profiles/:id/library/reorder', () => {
+describe('PUT /api/profilo/libreria/ordine', () => {
     let reorderHandler;
 
     beforeAll(() => {
         const routeLayer = router.stack.find(
-            s => s.route && s.route.path === '/:id/library/reorder' && s.route.methods.put
+            s => s.route && s.route.path === '/libreria/ordine' && s.route.methods.put
         );
         expect(routeLayer).toBeDefined();
         const rawHandler = routeLayer.route.stack[0].handle;
@@ -33,7 +33,7 @@ describe('PUT /api/profiles/:id/library/reorder', () => {
     });
 
     it('rejects invalid payload', async () => {
-        const req = { params: { id: 'prof-1' }, body: {} };
+        const req = { utenteId: 'u1', body: { profileId: 'prof-1' } };
         const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
         await reorderHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(400);
@@ -43,7 +43,7 @@ describe('PUT /api/profiles/:id/library/reorder', () => {
         UserAccount.findOne.mockReturnValue({
             lean: jest.fn().mockResolvedValue(null)
         });
-        const req = { params: { id: 'prof-1' }, body: { userId: 'u1', itemIds: ['tt1', 'tt2'] } };
+        const req = { utenteId: 'u1', body: { profileId: 'prof-1', itemIds: ['tt1', 'tt2'] } };
         const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
         await reorderHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(404);
@@ -57,11 +57,16 @@ describe('PUT /api/profiles/:id/library/reorder', () => {
             uuid: 'uuid-1',
             profiles: [{ id: 'prof-other', raw_ui_state: {} }]
         });
-        const req = { params: { id: 'prof-1' }, body: { userId: 'u1', itemIds: ['tt1', 'tt2'] } };
+        const req = { utenteId: 'u1', body: { profileId: 'prof-1', itemIds: ['tt1', 'tt2'] } };
         const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
         await reorderHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ error: 'Profile not found' });
+        expect(res.json).toHaveBeenCalledWith({
+            error: {
+                code: 'non_trovato',
+                message: 'Profilo specificato non trovato.'
+            }
+        });
     });
 
     it('persists libraryOrder into AddonConfig profile raw_ui_state without touching _ctime/_mtime or pushing to Stremio', async () => {
@@ -83,8 +88,8 @@ describe('PUT /api/profiles/:id/library/reorder', () => {
         AddonConfig.updateOne.mockResolvedValue({ modifiedCount: 1 });
 
         const req = {
-            params: { id: 'prof-1' },
-            body: { userId: 'u1', itemIds: ['tt1', 'tt2', 'tt1'] }
+            utenteId: 'u1',
+            body: { profileId: 'prof-1', itemIds: ['tt1', 'tt2', 'tt1'] }
         };
         const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 

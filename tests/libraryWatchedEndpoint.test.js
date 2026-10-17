@@ -2,8 +2,8 @@
  * tests/libraryWatchedEndpoint.test.js
  *
  * Ticket 20: endpoint dedicato per "Rimuovi titoli visti".
- * GET  /api/profiles/:id/library/watched  → anteprima read-only (conteggio)
- * POST /api/profiles/:id/library/watched  → soft-delete + push Stremio
+ * GET  /api/profilo/libreria/visti  → anteprima read-only (conteggio)
+ * POST /api/profilo/libreria/visti  → soft-delete + push Stremio
  *
  * Criteri coperti qui:
  * - l'anteprima dichiara N e l'esecuzione rimuove esattamente quelle N card visibili;
@@ -14,7 +14,8 @@
 const UserAccount = require('../src/models/UserAccount');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { stremioClient } = require('../src/stremio');
-const router = require('../src/api/profiles');
+const router = require('../src/api/profilo');
+const { richiedeSessione } = require('../src/middleware/sessione');
 
 jest.mock('../src/models/UserAccount');
 jest.mock('../src/models/AddonConfig');
@@ -29,9 +30,14 @@ function findHandler(path, method) {
     const layer = router.stack.find(s => s.route && s.route.path === path && s.route.methods[method]);
     expect(layer).toBeDefined();
     const rawHandler = layer.route.stack[0].handle;
-    return (req, res) => {
+    return async (req, res) => {
         if (!req.utenteId && (req.query?.userId || req.body?.userId)) {
             req.utenteId = req.query?.userId || req.body?.userId;
+        }
+        if (!req.utenteId) {
+            let nextCalled = false;
+            richiedeSessione(req, res, () => { nextCalled = true; });
+            if (!nextCalled) return;
         }
         return rawHandler(req, res);
     };
@@ -44,29 +50,29 @@ function makeRes() {
     return res;
 }
 
-const PREVIEW_PATH = '/:id/library/watched';
+const WATCHED_PATH = '/libreria/visti';
 
-describe('Ticket 20: endpoint /library/watched', () => {
+describe('Ticket 20: endpoint /api/profilo/libreria/visti', () => {
     let previewHandler;
     let removeHandler;
 
     beforeAll(() => {
-        previewHandler = findHandler(PREVIEW_PATH, 'get');
-        removeHandler = findHandler(PREVIEW_PATH, 'post');
+        previewHandler = findHandler(WATCHED_PATH, 'get');
+        removeHandler = findHandler(WATCHED_PATH, 'post');
     });
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    test('GET richiede userId e risolve l addonUuid dell utente', async () => {
+    test('GET richiede sessione e risolve l addonUuid dell utente', async () => {
         const badRes = makeRes();
-        await previewHandler({ params: { id: 'prof-1' }, query: {} }, badRes);
-        expect(badRes.status).toHaveBeenCalledWith(400);
+        await previewHandler({ query: {} }, badRes);
+        expect(badRes.status).toHaveBeenCalledWith(401);
 
         UserAccount.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
         const missingRes = makeRes();
-        await previewHandler({ params: { id: 'prof-1' }, query: { userId: 'u1' } }, missingRes);
+        await previewHandler({ utenteId: 'u1' }, missingRes);
         expect(missingRes.status).toHaveBeenCalledWith(404);
     });
 
@@ -85,7 +91,7 @@ describe('Ticket 20: endpoint /library/watched', () => {
         UserLibraryItem.updateMany = jest.fn();
 
         const res = makeRes();
-        await previewHandler({ params: { id: 'prof-1' }, query: { userId: 'u1' } }, res);
+        await previewHandler({ utenteId: 'u1' }, res);
 
         expect(res.status).not.toHaveBeenCalledWith(500);
         expect(res.body.count).toBe(1);
@@ -110,11 +116,11 @@ describe('Ticket 20: endpoint /library/watched', () => {
         UserLibraryItem.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 3 });
 
         const previewRes = makeRes();
-        await previewHandler({ params: { id: 'prof-1' }, query: { userId: 'u1' } }, previewRes);
+        await previewHandler({ utenteId: 'u1' }, previewRes);
         expect(previewRes.body.count).toBe(2);
 
         const removeRes = makeRes();
-        await removeHandler({ params: { id: 'prof-1' }, body: { userId: 'u1' } }, removeRes);
+        await removeHandler({ utenteId: 'u1' }, removeRes);
 
         expect(removeRes.body).toEqual({ success: true, count: 2, removedItemsCount: 3 });
         expect(removeRes.body.count).toBe(previewRes.body.count);
@@ -154,7 +160,7 @@ describe('Ticket 20: endpoint /library/watched', () => {
         UserLibraryItem.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 1 });
 
         const res = makeRes();
-        await removeHandler({ params: { id: 'prof-1' }, body: { userId: 'u1' } }, res);
+        await removeHandler({ utenteId: 'u1' }, res);
 
         const localMtime = UserLibraryItem.updateMany.mock.calls[0][1].$set._mtime;
         const pushedMtime = stremioClient.post.mock.calls[0][1].changes[0]._mtime;
@@ -170,7 +176,7 @@ describe('Ticket 20: endpoint /library/watched', () => {
         UserLibraryItem.updateMany = jest.fn();
 
         const res = makeRes();
-        await removeHandler({ params: { id: 'prof-1' }, body: { userId: 'u1' } }, res);
+        await removeHandler({ utenteId: 'u1' }, res);
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(stremioClient.post).not.toHaveBeenCalled();
@@ -189,7 +195,7 @@ describe('Ticket 20: endpoint /library/watched', () => {
         UserLibraryItem.updateMany = jest.fn();
 
         const res = makeRes();
-        await removeHandler({ params: { id: 'prof-1' }, body: { userId: 'u1' } }, res);
+        await removeHandler({ utenteId: 'u1' }, res);
 
         expect(res.body).toEqual({ success: true, count: 0, removedItemsCount: 0 });
         expect(UserLibraryItem.updateMany).not.toHaveBeenCalled();
