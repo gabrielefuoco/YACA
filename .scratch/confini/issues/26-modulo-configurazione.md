@@ -1,6 +1,5 @@
 Status: ready-for-agent
 Type: grilling
-
 # 26 — Il modulo configurazione utente: le cose di un utente
 
 ## Perché
@@ -34,25 +33,32 @@ alla configurazione, chi usa una chiave la **chiede** a lei.
 Il motivo in una riga: *una chiave che l'utente sceglie non è un'autorizzazione che l'utente ottiene* — e
 «le cose di un utente» devono stare in un posto solo, se no auth diventa anche un magazzino.
 
-## Le domande che restano (per il prossimo grilling)
+## Le decisioni (grilling del 18/10/2026)
 
-1. **`passwordHash`**: è del modulo configurazione (è un dato dell'account) o dell'autenticazione (è il segreto
-   che *prova* l'identità)? *(La raccomandazione da discutere: la configurazione tiene l'identità, auth il
-   segreto che la prova — quindi `passwordHash` resta di auth, che è l'unico che lo legge.)*
-2. **`selectedPresets`**: è una preferenza **del profilo** (i cataloghi che quel profilo ha scelto) o
-   dell'utente? Se è del profilo, esce da `AddonConfig` come è uscito `libraryOrder` — e va con la sua
-   migrazione e il suo fallback.
-3. **La porta**: `chiaveDi(userId, 'tmdb') → chiave | null`, `accountDi(userId)`, `preferenzeDi(userId)`. E la
-   **catena di ripiego** delle chiavi (utente → ambiente globale) la decide il modulo, una volta: i sei file che
-   oggi leggono `process.env` direttamente devono **passare da lui** — è l'accettazione di questo ticket, col
-   `grep` che lo dimostra.
-4. **Il BYOK**: quando un utente porta la sua chiave, cosa cambia? (La forma: una chiave per utente e per
-   servizio, con l'ambiente come ripiego; e il degrado quando la chiave non c'è — cosa funziona e cosa no.)
-5. **`traktStatus`**: è lo stato di una credenziale → configurazione, o lo stato di una connessione → auth?
-   (Deciso che i token sono della configurazione, lo stato segue i token: ma va scritto.)
-6. **`AddonConfig` e `UserAccount`**: dopo questo ticket restano due documenti con due proprietari
-   (configurazione e profilo) — la regola di proprietà del 21 (*solo il profilo tocca `profiles[]`*) va estesa a
-   questo modulo, e difesa.
+| # | decisione | perché |
+|---|---|---|
+| 1 | **`passwordHash` esce da `UserAccount`** e va in un documento di auth (`UserCredentials`: `userId` + `passwordHash`), collegato per `userId`. | Un documento, un padrone (regola del 21). E il precedente è `libraryOrder`: quando un dato è di un altro modulo **si sposta**, non si lascia con una regola di campo. Verificato: nessuno legge quel campo tranne il login. |
+| 2 | **Tutto `raw_ui_state` è del profilo** (`selectedPresets`, `catalogOrder`, `newPrompts`, `heroPresetsInitialized`): diventa un modello del modulo profilo, con **UNA** migrazione e il **ripiego** sul vecchio posto. | È per-profilo per costruzione: sta dentro `profiles[]`, e lo legge il manifest (`src/api/stremio.js:251`). Il trattamento di `libraryOrder` (`src/library/models/UserLibraryOrder.js` + ripiego in `library/reader.js:321`) applicato una volta invece di quattro. |
+| 3 | **La porta delle chiavi è pura + una porta grezza**: `chiaveEffettiva({ account, servizio, richiesta })` (pura: richiesta → utente → globale → `null`), `accountDi(userId)`, `chiaveGlobale(servizio)` per i lavori offline. | La catena è **già scritta a mano in 15 file**, in tre ordini diversi: non la introduciamo, la togliamo da 15 posti. Pura = testabile senza Mongo, e nessun `async` nuovo (tutti i 24 punti leggono dentro una funzione, nessuno al caricamento del modulo). |
+| 4 | **Il degrado è DICHIARATO col motivo**: il modulo torna `null` e dichiara in un posto quali funzioni dipendono da quale servizio; chi chiama degrada col motivo nella risposta (`motivi: ['chiave_mistral_assente']`). | È la regola della mappa («vuoto + motivi, mai un errore») applicata alle chiavi, e la stessa scelta della decisione 7 del modulo anime. Oggi la ricerca AI «degrada in silenzio» (`src/ai/router.js:154`) — e un degrado che non si vede è un guasto che nessuno scopre. |
+| 5 | **La credenziale Trakt è UN blocco** (`trakt: { accessToken, refreshToken, expiresAt, status: {...} }`) e **il client non scrive più il documento**: chiede al modulo (`segnaTraktInRinnovo(userId)`, `segnaTraktOk`, `segnaTraktDaRiautorizzare`). | Oggi il client fa un `$set` diretto (`src/clients/trakt.js:210`): **tre scrittori** su `UserAccount` (configurazione, auth, client). La credenziale e il suo stato di salute sono la stessa cosa vista da due lati. |
+| 6 | **La proprietà si difende con un test** che legge il codice (`tests/proprietaDocumenti.test.js`): fallisce se un file fuori dal modulo proprietario importa `UserAccount`, o se qualcosa fuori dal profilo tocca `profiles[]`. Più la riga in `docs/INDEX.md`. | «Un confine dichiarato non è un confine imposto» — è il rilievo 2 del ticket 27 e la lezione del client ricresciuto in orchestratore. Il grep che i ticket usano per verificare, qui diventa un test che resta. |
+
+## Conseguenze (derivate)
+
+- **Tre migrazioni nello stesso giro** (la password, l'ui state, la forma di Trakt), ognuna col pattern di
+  `libraryOrder`: si scrive il nuovo posto, si legge ancora il vecchio come ripiego, e il ripiego si toglie
+  quando il dato è migrato.
+- **L'accettazione resta quella scritta**: `grep` a zero di `process.env.*_API_KEY` fuori dal modulo (oggi sono
+  **24 occorrenze in 15 file**), la catena di ripiego col suo test, e i consumatori che chiedono la chiave al
+  modulo.
+- **Le eccezioni del test di proprietà**: vanno enumerate nell'allowlist, non lasciate implicite. Se auth legge
+  `UserAccount` per il login, quell'accesso va dichiarato lì — o, meglio, tolto facendo passare auth dal modulo.
+- **L'ordine**: questo ticket tocca i consumatori che altri ticket stanno muovendo adesso (`src/ai/**`,
+  `src/ricerca/**` e `src/utils/tmdbNameResolver.js` sono del ticket 27; i consumatori anime sono del 32; il
+  cluster del daemon è del 34). Va fatto **dopo** che quelli sono atterrati, se no si litiga sugli stessi file.
+- **La forma del modulo**: `src/configurazione/index.js` (la porta), `chiavi.js` (pura + grezza), e i modelli
+  (`UserAccount` senza la password e senza l'ui state, con il blocco `trakt` unico).
 
 ## Come si verifica (da completare in grilling)
 

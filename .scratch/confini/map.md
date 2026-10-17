@@ -582,3 +582,20 @@ assegnabili. Ora lo sono, e i due rapporti passano a `resolved`:
   lavoro solo; `data/` che tiene solo asset; `utils/` che smette di esistere (impianto condiviso in `src/infra/`,
   pezzi poster nel modulo poster, il resto assegnato o cancellato). ⚠️ Cancella una **superficie HTTP viva**: va
   fatto per ultimo, con la verifica del client prima.
+
+### 23. Il modulo configurazione, deciso (grilling del 18/10/2026)
+
+Sei decisioni nel ticket 26. **`passwordHash` esce da `UserAccount`** e va in un documento di auth
+(`UserCredentials`) — un documento, un padrone, e il precedente è `libraryOrder` (si sposta, non si regola per
+campo). **Tutto `raw_ui_state` è del profilo** (è per-profilo per costruzione: sta dentro `profiles[]` e lo legge
+il manifest) → un modello del profilo, con UNA migrazione e il ripiego. **La porta delle chiavi è pura**
+(`chiaveEffettiva({account, servizio, richiesta})`: richiesta → utente → globale → `null`) più una porta grezza e
+`chiaveGlobale` per i lavori offline — la catena è già scritta a mano in **15 file in tre ordini diversi**:
+non la introduciamo, la togliamo da 15 posti. **Il degrado è dichiarato col motivo** (`motivi:
+['chiave_mistral_assente']`), perché oggi la ricerca AI «degrada in silenzio». **La credenziale Trakt è un blocco
+solo** e **il client non scrive più il documento** (oggi è il terzo scrittore di `UserAccount`): chiede al modulo
+(`segnaTraktInRinnovo`, `segnaTraktOk`). **La proprietà si difende con un test** che legge i `require` — perché un
+confine dichiarato non è un confine imposto (rilievo 2 del ticket 27).
+
+**Le tre migrazioni** (password, ui state, Trakt) vanno nello stesso giro, ognuna col pattern di `libraryOrder`.
+**L'ordine**: dopo il 27, il 32 e il 34, che stanno muovendo proprio i consumatori di questo modulo.
