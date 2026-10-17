@@ -24,6 +24,12 @@ sono tre file (`catalog/tier2Enrich.js`, `catalog/tier2Search.js`, `db/tier2Inde
   cataloghi i loro). È la regola della libreria applicata ai modelli: *fornisce il meccanismo, non le decisioni*.
 - Il collaudo che il modulo eredita è **`searchTier2Merge`**: l'ordine fra locali e Tier 2 è suo, e il test
   rosso è la sua prima verifica.
+- **Le sei fonti diventano un registro** (come `registry.js` per le righe hero): ognuna dichiara il suo contratto
+  — chi è, che specie di fonte è, quando si applica, come si interroga — e **due consumatori** lo consultano: la
+  **ricerca** (che possiede la fusione e l'ordinamento) e il **servire** (che possiede «un catalogo → una fonte»).
+  Nessuno dei due possiede l'altro, e aggiungere una fonte è una voce nel registro invece di un import in più nel
+  router. Il router fa **due mestieri** (serve un catalogo *e* alimenta la ricerca): è il motivo per cui la scelta
+  non era «dentro o fuori», ma *chi possiede le fonti*.
 
 ## Le domande che restano (per il prossimo grilling)
 
