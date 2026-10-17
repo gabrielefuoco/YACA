@@ -528,3 +528,20 @@ Tre difetti trovati, che valgono più della proposta:
 produce, e la cucitura è già un contratto vero (Mongo `anime_airing_state`). **Il vincolo che decide la cucitura**:
 gli id anime finiscono **dentro l'SQL** (`duckDbStore.js:276-279`), quindi il mapping deve restare **locale al
 processo** — chi progettasse «l'app chiede il mapping al servizio» romperebbe la query.
+
+### 20. Il modulo anime, deciso (grilling del 18/10/2026)
+
+Sette decisioni nel ticket 32: **(1)** `src/anime/` nell'app, una porta sola, servizio intoccato; **(2)** il
+mapping lo produce il **servizio** (indice su Mongo), l'app legge e deriva — un solo download, un solo parser;
+**(3)** gli override restano in git nella cartella del servizio e il servizio **pubblica `certify` su Mongo**
+(l'app non entra più nel servizio con un `require` dal ripiego muto); **(4)** il confine è **l'anime-ness**, le
+annotazioni italiane restano una cosa loro; **(5)** il **meccanismo** dello snapshot (TTL, dedup, politica
+d'errore) si estrae in un aiutante, perché oggi è scritto a mano **due volte con politiche opposte** e ne stava
+nascendo una terza; **(6)** lo store risponde **tre stati** (`sì`/`non-lo-so`/`no`) e si aggiunge `exclude`, il
+gemello di `certify`, perché `false` significa «assente dalla lista», non «non è anime»; **(7)** il verdetto
+dell'euristica sui «non lo so» **si vede** (una riga coi candidati da certificare).
+
+**La lezione del grilling**: la domanda dell'utente («l'euristica può vincere solo quando il certificato è
+falso?») ha smontato un'assunzione che nessuno aveva scritto — che l'indice sapesse dire **no**. Non lo sa: è una
+lista positiva, e il codice lo sapeva già in un commento (`animeMappingStore.js:570`, gli 8.263 poster). Una
+domanda sul *comportamento* ha trovato un buco **nell'API**.

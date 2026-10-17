@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: ready-for-agent
 Type: research
 
 # 32 — La logica anime: due metà, tre cartelle, un confine attraversato
@@ -61,16 +61,31 @@ modulo legge, e non si toccano per `require`.
 **locale al processo** — un file o una tabella letta all'avvio, **non** una chiamata HTTP al servizio. Chi
 progettasse «l'app chiede il mapping al servizio» romperebbe la query.
 
-## Le domande aperte (da grigliare prima di implementare)
+## Le decisioni (grilling del 18/10/2026)
 
-1. **Chi possiede «che cos'è un anime»**: l'app (280 righe) o il servizio (756)? O è un pacchetto condiviso?
-   Se restano due, va scritto **quale vince** quando divergono.
-2. **Il mapping (Anibridge/Fribb) lo scarica ancora l'app** o diventa un artefatto del servizio? Il vincolo sopra
-   dice che deve restare locale: la scelta è *chi lo produce*, non *dove vive*.
-3. **Gli override** (`data/anime-overrides.json` + `overrides.js`): artefatto su Mongo, file copiato
-   deliberatamente nell'immagine, o pacchetto? Oggi sono un `require` attraverso il confine con un ripiego muto.
-4. **`animeAiringState` legge Mongo direttamente** con `mongoose.connection.db` senza un model: nel modulo anime
-   va tenuto così (niente model) o diventa un documento con lo schema dichiarato?
+| # | decisione | perché |
+|---|---|---|
+| 1 | **`src/anime/` nell'app**, una porta sola. Il servizio resta chi **produce** e non si tocca. | Gli id anime finiscono **dentro l'SQL** (`duckDbStore.js:276-279`) e la policy gira nel servizio delle richieste: fuori sarebbe un salto di rete su ogni richiesta. |
+| 2 | **Il mapping lo produce il servizio**: scarica Anibridge+Fribb (lo fa già, 756 righe) e scrive l'indice su Mongo. L'app legge e **deriva** i suoi insiemi. | Uccide la doppia verità (due download, due parser). Confine: il servizio produce il **dato**, il modulo fa le sue **derivazioni**. |
+| 3 | **Gli override**: il file resta in git nella cartella del servizio (curato a mano); il servizio pubblica `certify` su Mongo; l'app non entra più nella cartella del servizio. | Oggi l'app ci arriva con un `require` attraverso il confine e un **ripiego muto**; e basta escludere `services/` dal `.dockerignore` per spegnere gli override senza un errore. |
+| 4 | **Il confine è l'anime-ness**: identità, decisione, mapping, airing. Le annotazioni italiane restano una cosa loro (servizio, contratto e chiave propri). | Sono una dimensione diversa del catalogo. |
+| 5 | **Il meccanismo si estrae**: `snapshotDaArtefatto({leggi, ttlMs, suErrore})` → TTL, dedup delle chiamate in volo e **politica d'errore scritte una volta**. | Oggi è scritto a mano due volte con **politiche opposte** (ita: snapshot vuoto e ritenta; airing: tiene l'ultimo noto), e ne stava nascendo una terza. La domanda «se Mongo è giù, gli insiemi anime sono vuoti o gli ultimi noti?» va decisa **una volta**. |
+| 6 | **Lo store risponde tre stati**: `sì` / `non-lo-so` / `no`. L'euristica vince **solo** su `non-lo-so`. Si aggiunge `exclude` negli override (gemello di `certify`, 0 voci oggi) per correggere i falsi positivi dell'indice. | `false` oggi significa «assente dalla lista», non «non è anime»: la lista è **positiva** (Fribb/AniBridge) e un segnale negativo non esiste (verificato). La prova: LuluttoLilly, anime **assente** dall'indice, dovette essere certificato a mano. E il codice conosce già l'ambiguità (`animeMappingStore.js:570`: *«non è un anime» e «la mappa non è ancora caricata» diventerebbero la stessa cosa — con 8.263 poster dimenticati in silenzio*). |
+| 7 | **Il verdetto dell'euristica si vede**: quando decide su un `non-lo-so` e dice sì, una riga aggregata (id + titolo). | Chiude il ciclo: euristica → visibile → `certify` → autorevole. Costo: un log. |
+
+## Conseguenze (derivate, non decise a parte)
+
+- **La policy riceve il contesto risolto**, non i selettori grezzi: la risoluzione sta al bordo (decisione 21 della
+  mappa) e il modulo anime **non** ripiega su `selettoriEffettivi` — è anche il rilievo 2 del ticket 27.
+- **`airing` tiene la lettura senza model** (`mongoose.connection.db` + `SUPPORTED_SCHEMA_VERSION`): lo schema è
+  del **produttore**, e un model nell'app sarebbe una seconda definizione dello stesso documento.
+- **La porta** (`src/anime/index.js`) espone i **verbi dei consumatori** (chi è anime, il marcatore, l'alias di
+  tipo, la policy, i due snapshot) e non i file interni: i 12 consumatori non entrano in `mapping.js`.
+- **Ordine**: il modulo anime **prima** di cancellare il vecchio stack (se no `animePolicy` muore con lui, e in
+  silenzio) e **dopo** il ticket 28 (che sposta `duckDbStore.js`, consumatore degli id anime).
+- **Verifica**: nessun `require` di `services/` da `src/`; nessun file anime fuori da `src/anime/`; i 12
+  consumatori ripuntati; le suite di anime, cataloghi e libreria verdi **una alla volta** (ticket 29 ha reso
+  l'ambiente della suite ripetibile: usarlo per la verifica finale).
 
 ## Ordine e verifica
 
