@@ -44,7 +44,13 @@ COPY --from=backend-deps /app/node_modules ./node_modules
 # Copia il resto dell'applicazione backend
 COPY . .
 
-# Copia il frontend buildato dalla cartella 'out' generata nel primo stage
+# Copia il frontend buildato dalla cartella 'out' generata nel primo stage.
+# Decisione architetturale (ticket 17): l'export statico del frontend viene servito direttamente
+# da Express nello stesso processo e sulla stessa porta del backend/addon Stremio.
+# Questa scelta garantisce:
+# 1. Cookie di sessione (yaca_session) HttpOnly same-origin senza complessità CORS o cookie cross-site
+# 2. Singola immagine Docker in CI (GHCR) e singolo container deployato/aggiornato da Watchtower
+# 3. Overhead statico trascurabile per Express (asset pre-compilati con cache HTTP)
 COPY --from=frontend-builder /app/frontend/out ./frontend/out
 
 # Rendi lo script di avvio eseguibile
