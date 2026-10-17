@@ -1,4 +1,4 @@
-const LRUCache = require('../utils/LRUCache');
+const LRUCache = require('../infra/LRUCache');
 const redisClient = require('./redisClient');
 
 const NEGATIVE_CACHE_MARKER = '__NULL__';

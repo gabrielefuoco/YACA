@@ -40,7 +40,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
 
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
 
-jest.mock('../src/data/presets', () => ({
+jest.mock('../src/catalog/presets', () => ({
     getPresets: jest.fn(() => [])
 }));
 

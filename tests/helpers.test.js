@@ -1,4 +1,4 @@
-const { parseExtra, getProfileDnaFilters, resolveHostUrl } = require('../src/utils/helpers');
+const { parseExtra, getProfileDnaFilters, resolveHostUrl } = require('../src/infra/helpers');
 
 describe('parseExtra', () => {
     it('should return empty object for falsy input', () => {

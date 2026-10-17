@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
-const { connectMongo } = require('../src/utils/mongoConnect');
+const { connectMongo } = require('../src/infra/mongoConnect');
 
 async function getLocalConfig() {
     try {

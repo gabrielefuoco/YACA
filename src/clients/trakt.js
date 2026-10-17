@@ -1,6 +1,6 @@
-const { createAxiosClient } = require('../utils/axiosClient');
+const { createAxiosClient } = require('../infra/axiosClient');
 const { createTmdbClient } = require('./tmdb');
-const { rateLimitedMapFiltered } = require('../utils/rateLimiter');
+const { rateLimitedMapFiltered } = require('../infra/rateLimiter');
 const {
     chiaveGlobale,
     chiaveEffettiva,

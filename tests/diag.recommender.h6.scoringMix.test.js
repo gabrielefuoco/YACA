@@ -37,7 +37,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
     buildPresetFromFilters: jest.fn()
 }));
 
-jest.mock('../src/data/presets', () => ({
+jest.mock('../src/catalog/presets', () => ({
     getPresets: jest.fn(() => [])
 }));
 

@@ -115,7 +115,7 @@ function getHeroCatalogs() {
 
 function getPresetDefinitions() {
     try {
-        const { getPresets } = require('../data/presets');
+        const { getPresets } = require('../catalog/presets');
         if (typeof getPresets === 'function') {
             const presets = getPresets();
             if (Array.isArray(presets)) {

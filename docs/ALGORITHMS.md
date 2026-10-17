@@ -8,7 +8,7 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 *   [src/dna/dnaEngine.js](../src/dna/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path (`src/utils/dnaExtractor.js`, `dnaRarity.js`, `tasteClusters.js`) sono thin-shim verso questo modulo, tenuti perché script e tool esterni continuino a importarli.
 *   [src/engines/hybrid/scoringEngine.js](../src/engines/hybrid/scoringEngine.js): Score ibrido per co-occorrenza (semi-seed del *Seed Network*) ed estrazione dei top-N generi/keyword dal vettore. **Non** è l'orchestratore Two-Tier: vedi §2.
 *   [src/engines/hybrid/catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js): Strategie di compilazione per i cataloghi speciali (*True Blend*, *Hidden Gems*, ecc.) e i cap di diversità degli hero.
-*   [src/utils/resultMerger.js](../src/utils/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
+*   [src/infra/resultMerger.js](../src/infra/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
 *   Rarità dolce, saturazione logaritmica e decadimento temporale vivono nello stesso motore (vedi sopra).
 *   [src/engines/hybrid/animePolicy.js](../src/engines/hybrid/animePolicy.js): Risoluzione della politica anime e relativi moltiplicatori di score.
 *   [src/utils/animeIdentity.js](../src/utils/animeIdentity.js): Regola canonica di identità anime (unico default del marker `_isAnime`).

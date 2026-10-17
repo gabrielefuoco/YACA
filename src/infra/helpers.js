@@ -1,4 +1,4 @@
-const { isRetiredTmdbKeywordId } = require('../data/keywordIds');
+const { isRetiredTmdbKeywordId } = require('../indice/keywordIds');
 
 /**
  * Parsa i parametri "extra" stile Stremio (es. "search=avengers&skip=20")

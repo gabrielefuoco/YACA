@@ -29,7 +29,7 @@
  * -----------------------------------------------------------------------------
  */
 
-const { S } = require('../data/filters');
+const { S } = require('./filters');
 const { isHeroCatalogId } = require('./registry');
 
 /**

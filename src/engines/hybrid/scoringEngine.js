@@ -1,6 +1,6 @@
-const { getProfileDnaFilters } = require('../../utils/helpers');
-const { G } = require('../../data/filters');
-const { isRetiredTmdbKeywordId, keywordIdForName } = require('../../data/keywordIds');
+const { getProfileDnaFilters } = require('../../infra/helpers');
+const { G } = require('../../catalog/filters');
+const { isRetiredTmdbKeywordId, keywordIdForName } = require('../../indice/keywordIds');
 
 function extractVectorByPrefix(vFinal, prefix) {
     if (!vFinal || typeof vFinal !== 'object') return {};

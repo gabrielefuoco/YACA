@@ -69,7 +69,7 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
 
     // 4. DuckDB SQL Substring Prefix Collision in filters.js
     describe('4. DuckDB SQL Substring Prefix Collision in filters.js', () => {
-        const { F } = require('../src/data/filters');
+        const { F } = require('../src/catalog/filters');
 
         test('jsonHas uses boundary delimiters preventing prefix collision (e.g. 28 matching 28123)', () => {
             const genreFilter = F.genre(28);

@@ -19,9 +19,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const store = require('../../src/indice/duckDbStore');
-const { getPresets } = require('../../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 const { getDuckDbCatalogFromPreset, buildPresetFromFilters } = require('../../src/catalog/providers/DuckDbProvider');
-const { F, S, G } = require('../../src/data/filters');
+const { F, S, G } = require('../src/catalog/filters');
 
 // --- Helper numerici e statistici ---
 const norm = v => (typeof v === 'bigint' ? Number(v) : v);

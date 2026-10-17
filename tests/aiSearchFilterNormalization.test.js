@@ -3,7 +3,7 @@ const {
     normalizeAiDiscoveryQueries
 } = require('../src/catalog/providers/AiQueryNormalizer');
 const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-const { F } = require('../src/data/filters');
+const { F } = require('../src/catalog/filters');
 
 function makeTmdbClient() {
     const keywordIds = {

@@ -102,7 +102,7 @@ Per i cataloghi generati dall'intelligenza artificiale che compongono più query
 
 ### Strategia Popularity & Consensus (Consenso)
 
-YACA combina i risultati di query multiple premiando la convergenza tramite `applyConsensusScoring` in [resultMerger.js](../src/utils/resultMerger.js):
+YACA combina i risultati di query multiple premiando la convergenza tramite `applyConsensusScoring` in [resultMerger.js](../src/infra/resultMerger.js):
 - Viene mappato ogni elemento tracciando il numero di query in cui appare (`consensusCount`).
 - Viene calcolato un **Consensus Bonus**:
   $$\text{consensusBonus} = (\text{consensusCount}^2) - 1$$

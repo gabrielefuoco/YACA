@@ -1,7 +1,7 @@
 const duckdb = require('duckdb');
 const path = require('path');
 const fs = require('fs');
-const itaAnnotations = require('../src/data/itaAnnotations');
+const itaAnnotations = require('../src/catalog/itaAnnotations');
 
 const DEFAULT_TYPES = ['movies', 'tv'];
 

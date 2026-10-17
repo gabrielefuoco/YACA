@@ -29,7 +29,7 @@ const duckdb = require('duckdb');
 const TmdbDumpStore = require('../src/utils/tmdbDumpStore');
 const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
 const { animeAiringState } = require('../src/anime');
-const { connectMongo } = require('../src/utils/mongoConnect');
+const { connectMongo } = require('../src/infra/mongoConnect');
 const { convert } = require('./convert_to_parquet');
 
 function sleep(ms) {

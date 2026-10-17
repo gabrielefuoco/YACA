@@ -2,11 +2,11 @@ const TasteProfile = require('../../models/TasteProfile');
 const { accountDi } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const { traktClient } = require('../../clients/trakt');
-const { normalizeContentId } = require('../../utils/contentId');
-const { rateLimitedMap } = require('../../utils/rateLimiter');
+const { normalizeContentId } = require('../../catalog/contentId');
+const { rateLimitedMap } = require('../../infra/rateLimiter');
 const DuckDbProvider = require('../../catalog/providers/DuckDbProvider');
-const { F } = require('../../data/filters');
-const { applyKidsMode } = require('../../utils/kidsModeFilters');
+const { F } = require('../../catalog/filters');
+const { applyKidsMode } = require('../../catalog/kidsModeFilters');
 const { isItemAnime } = require('../../anime');
 
 // Ticket 21: ampliato a 260 per consentire il pool allargato a monte (250) nei contesti stretti

@@ -32,7 +32,7 @@
  */
 
 const mongoose = require('mongoose');
-const { snapshotDaArtefatto } = require('../utils/snapshotDaArtefatto');
+const { snapshotDaArtefatto } = require('../infra/snapshotDaArtefatto');
 
 const COLLECTION_NAME = 'anime_airing_state';
 const SUPPORTED_SCHEMA_VERSION = 1;

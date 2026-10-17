@@ -14,7 +14,7 @@ const mockCacheKeys = [];
 let mockResponses = {};
 
 /** Il client HTTP di TMDB: conta ogni richiesta e risponde dalla mappa `mockResponses`. */
-jest.mock('../src/utils/axiosClient', () => ({
+jest.mock('../src/infra/axiosClient', () => ({
     createAxiosClient: jest.fn(() => ({
         interceptors: { request: { use: () => {} }, response: { use: () => {} } },
         request: jest.fn(),
@@ -71,7 +71,7 @@ jest.mock('../src/utils/tmdbBudget', () => ({
 }));
 
 /** Il log degli errori non deve sporcare l'output dei test. */
-jest.mock('../src/utils/logger', () => ({ logError: jest.fn() }));
+jest.mock('../src/infra/logger', () => ({ logError: jest.fn() }));
 
 /** L'indice FTS5 non serve qui: non si vuole alcun disco ne' alcuna rete. */
 jest.mock('../src/indice/tier2', () => ({ Tier2SearchClient: jest.fn() }));

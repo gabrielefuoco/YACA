@@ -294,7 +294,7 @@ const aiDiscoverySourceEntry = defineSourceEntry({
 
     async serveCatalog(ctx) {
         const { executeCombinedSearch, executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
-        const { normalizeToUniversalSchema } = require('../utils/resultMerger');
+        const { normalizeToUniversalSchema } = require('../infra/resultMerger');
 
         if (ctx.search) {
             return await executeCombinedSearch(

@@ -9,7 +9,7 @@ jest.mock('../src/profile/ProfileScorer', () => ({
     calculateItemMatch: jest.fn(() => 8)
 }));
 
-jest.mock('../src/utils/helpers', () => ({
+jest.mock('../src/infra/helpers', () => ({
     getProfileDnaFilters: jest.fn(() => [])
 }));
 
@@ -39,7 +39,7 @@ describe('scoringEngine', () => {
 
         it('should boost genres from dnaFilters as fallback or tie-breaker', () => {
             const profile = { compiledVectors: { V_final: { 'g:28': 100 } } };
-            const helpers = require('../src/utils/helpers');
+            const helpers = require('../src/infra/helpers');
             helpers.getProfileDnaFilters.mockReturnValueOnce([{ type: 'genre', id: '16' }]);
             
             const result = scoringEngine.computeTopGenres(profile, 2);
@@ -52,7 +52,7 @@ describe('scoringEngine', () => {
                     V_final: { 'g:28': 10, 'g:12': 5 }
                 }
             };
-            const helpers = require('../src/utils/helpers');
+            const helpers = require('../src/infra/helpers');
             helpers.getProfileDnaFilters.mockReturnValueOnce([{ type: 'genre', id: '16' }]);
             const result = scoringEngine.computeTopGenres(profile, 2);
             expect(result).toEqual(['28', '12']);

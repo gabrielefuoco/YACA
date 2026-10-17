@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
-const { getPresets } = require('../src/data/presets');
+const { getPresets } = require('../src/catalog/presets');
 const { buildPresetFromFilters, mapDuckDbRowToMeta } = require('../src/catalog/providers/DuckDbProvider');
 
 describe('Watch provider region', () => {
