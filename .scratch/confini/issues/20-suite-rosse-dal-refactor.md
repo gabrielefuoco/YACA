@@ -63,3 +63,24 @@ passare queste), e per ogni suite toccata il fallimento citato **con la sua riga
 Questo ticket esiste perché la revisione di fine lavori ha fatto la cosa che l'anello veloce non fa: **la suite
 intera**. Le prove per-file sono giuste per lavorare e insufficienti per chiudere: dieci ticket integrati in fila
 si vedono solo insieme.
+
+---
+
+## La domanda sulla risorsa `stream`: RISOLTA (17/10/2026) — non è una decisione da riprendere
+
+Verificata col proprietario e **con la documentazione della repo stessa**:
+
+- `docs/STREMIO_INTERNALS.md:80` → *«**YACA non fa più da proxy ai flussi** (commit `6443a87`). `streamHandler.js` è
+  oggi un guscio di 31 righe che ritorna `{ streams: [] }`»*. La dichiarazione `{ name: 'stream', types:
+  ['movie','series','anime','other'], idPrefixes: ['tt','tmdb:','kitsu:'] }` è **il residuo di quell'epoca**: quei
+  prefissi servivano a far arrivare al proxy le richieste di flusso in tutte le forme che sapeva leggere;
+- **non serve agli anime**: il routing dei metadati anime passa dal **`meta`** (dichiarato con `anime`/`other` e il
+  prefisso `kitsu:`, `docs/STREMIO_INTERNALS.md:139`), e gli stream anime li servono **altri addon** (Anime Kitsu,
+  Torrentio) sulle loro richieste, coi prefissi del provider (`§2`). La risposta di YACA è vuota per costruzione;
+- il test che la difendeva è una **regex sul testo del sorgente**, aggiunta in `6a614e6` (*«snapshot del lavoro in
+  corso prima del merge dei fix»*): fotografa com'era, non dice perché.
+
+**Quindi**: il ticket 05 ha fatto bene, non c'è niente da rimettere, e il lavoro di questo ticket su quella voce è
+**allineare il test** citando `6443a87` e `docs/STREMIO_INTERNALS.md:80` — altrimenti il prossimo che lo legge crede
+che sia stata tolta una cosa viva. La rotta resta (tre righe inline, `{streams: []}`): è la regola della doc,
+*payload vuoto con 200, mai un errore*.
