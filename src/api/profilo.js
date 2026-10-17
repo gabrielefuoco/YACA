@@ -18,6 +18,7 @@ const {
     applyDuplicateMarks,
     previewWatchedLibrary,
     removeWatchedLibrary,
+    salvaOrdineLibreria,
     LibraryConverterService,
     LibrarySyncService
 } = require('../library');
@@ -256,10 +257,11 @@ router.put('/libreria/ordine', async (req, res) => {
 
         const cleanOrder = [...new Set(itemIds.map(String))];
 
-        await AddonConfig.updateOne(
-            { uuid: account.addonUuid, 'profiles.id': profileId },
-            { $set: { 'profiles.$.raw_ui_state.libraryOrder': cleanOrder } }
-        );
+        // L'ordine e' della LIBRERIA (ticket 21): si scrive dal suo writer, che scrive il modello
+        // nuovo (UserLibraryOrder) E lo specchio di transizione su AddonConfig. Scrivendo qui il
+        // solo posto vecchio, la migrazione restava FERMA: il modello nuovo non veniva mai
+        // popolato, il ripiego in lettura si attivava sempre, e il ticket 21 non si chiudeva mai.
+        await salvaOrdineLibreria({ addonUuid: account.addonUuid, profileId, itemIds: cleanOrder });
 
         return res.json({ success: true, libraryOrder: cleanOrder });
     } catch (err) {

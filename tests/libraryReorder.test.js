@@ -73,6 +73,11 @@ describe('PUT /api/profilo/libreria/ordine', () => {
         const { stremioClient } = require('../src/stremio');
         const UserLibraryItem = require('../src/library/models/UserLibraryItem');
         UserLibraryItem.findOneAndUpdate = jest.fn();
+        // Il modello della LIBRERIA e' la scrittura primaria (ticket 21): senza questo stub la
+        // rotta chiamerebbe un modello vero. Lo specchio su AddonConfig resta, ed e' la
+        // transizione che tiene in piedi i lettori vecchi.
+        const UserLibraryOrder = require('../src/library/models/UserLibraryOrder');
+        UserLibraryOrder.findOneAndUpdate = jest.fn().mockResolvedValue({ itemIds: ['tt1', 'tt2'] });
 
         UserAccount.findOne.mockReturnValue({
             lean: jest.fn().mockResolvedValue({
@@ -95,7 +100,15 @@ describe('PUT /api/profilo/libreria/ordine', () => {
 
         await reorderHandler(req, res);
 
-        // Expect AddonConfig update with deduplicated IDs
+        // La scrittura PRIMARIA e' il modello della libreria: era il pezzo mancante della
+        // migrazione (la rotta scriveva il solo posto vecchio).
+        expect(UserLibraryOrder.findOneAndUpdate).toHaveBeenCalledWith(
+            { addonUuid: 'uuid-1', profileId: 'prof-1' },
+            { $set: { itemIds: ['tt1', 'tt2'] } },
+            { upsert: true, returnDocument: 'after' }
+        );
+
+        // E lo specchio di transizione su AddonConfig resta, coi soli ID deduplicati
         expect(AddonConfig.updateOne).toHaveBeenCalledWith(
             { uuid: 'uuid-1', 'profiles.id': 'prof-1' },
             { $set: { 'profiles.$.raw_ui_state.libraryOrder': ['tt1', 'tt2'] } }

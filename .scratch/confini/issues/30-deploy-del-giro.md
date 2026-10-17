@@ -82,3 +82,19 @@ E la verifica, dopo il deploy: `docker exec yaca-app ls -la /data/anime-source/`
   `src/posters/drenaCodaPoster.js` è **opzionale**, non necessario.
 - **La verifica che conta**: boot ~1,6 s, RAM ~284 MiB a freddo, i conteggi delle righe del grafo, e il file
   dell'artefatto dentro l'app (sopra). Più `docker stats`: l'app non deve fare il giro del daemon (ticket 34).
+
+## Passo aggiunto (18/10/2026): la migrazione dell'ordine libreria
+
+La rotta `PUT /api/profilo/libreria/ordine` scriveva il **solo** posto vecchio
+(`AddonConfig.profiles[].raw_ui_state.libraryOrder`), bypassando il writer della libreria: la migrazione del
+ticket 21 era **ferma** — `UserLibraryOrder` non veniva mai popolato e il ripiego in lettura si attivava sempre.
+Ora la rotta chiama `salvaOrdineLibreria`, che scrive **primariamente** il modello nuovo **e** mantiene lo
+specchio di transizione.
+
+**Dopo il deploy, una volta**: `ssh mate` → `docker exec --workdir /app yaca-app node scripts/migrate_library_order.js --apply`
+(il copione esce **1** se fallisce: il ticket 27 gli ha tolto il `process.exit(0)` nel `finally`). Poi si verifica:
+
+```bash
+docker exec yaca-app node -e "require('/app/src/models/UserLibraryOrder')" # il modello esiste
+# e nei log dell'app: nessuna riga di fallback su raw_ui_state.libraryOrder durante un riordino
+```
