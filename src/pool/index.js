@@ -15,6 +15,7 @@
  * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v12').
  */
 
+const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../utils/contentId');
 const { getHeroPoolSpec } = require('../catalog/registry');
@@ -61,12 +62,25 @@ function getHeroCatalogId(slug, mediaType) {
 }
 
 function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions }) {
-    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
     const versions = graphVersions !== undefined ? graphVersions : graphClient.getGraphHealthVersionsCached();
-    const gSuffix = versions?.artefatto
-        ? `_art_${versions.artefatto}${versions.ricetta ? `_ric_${versions.ricetta}` : ''}`
-        : '';
-    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}${gSuffix}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
+    const { chiave } = cache.deriva({
+        nome: 'heroes',
+        versione: HERO_CACHE_KEY_VERSION,
+        dipendenze: {
+            varia: {
+                utente: userId,
+                profilo: context,
+                media: mediaType,
+                kids: kidsMode,
+                selettori: typeSelectors
+            },
+            invalida: {
+                artefatto: versions?.artefatto,
+                ricetta: versions?.ricetta
+            }
+        }
+    });
+    return chiave;
 }
 
 function getRecommendationId(item) {
@@ -494,39 +508,66 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     };
 }
 
-async function buildAndCacheSharedHeroCatalogs(args, cacheKey) {
-    if (activeHeroGroupBuilds.has(cacheKey)) return activeHeroGroupBuilds.get(cacheKey);
+function toHeroDesc(args, keyOrDesc) {
+    if (keyOrDesc && typeof keyOrDesc === 'object' && keyOrDesc.nome) {
+        return keyOrDesc;
+    }
+    return {
+        nome: 'heroes',
+        versione: HERO_CACHE_KEY_VERSION,
+        dipendenze: {
+            varia: {
+                utente: args?.userId,
+                profilo: args?.context,
+                media: args?.mediaType,
+                kids: args?.kidsMode,
+                selettori: args?.typeSelectors
+            },
+            invalida: {
+                artefatto: args?.graphVersions?.artefatto,
+                ricetta: args?.graphVersions?.ricetta
+            }
+        },
+        ttl: 7 * 24 * 60 * 60 * 1000
+    };
+}
+
+async function buildAndCacheSharedHeroCatalogs(args, keyOrDesc) {
+    const heroDesc = toHeroDesc(args, keyOrDesc);
+    const { chiave } = cache.deriva(heroDesc);
+    if (activeHeroGroupBuilds.has(chiave)) return activeHeroGroupBuilds.get(chiave);
 
     const promise = (async () => {
         const group = await buildSharedHeroCatalogs(args);
-        if (group && group.graphCallFailed) {
-            // E5: un guasto transitorio (timeout, 503, connessione rifiutata) non deve avvelenare
-            // la cache di 7 giorni. Memorizziamo con TTL breve di 60 s.
-            await hybridRecommendationsCache.set(cacheKey, group, 60 * 1000);
-        } else {
-            await hybridRecommendationsCache.set(cacheKey, group);
-        }
+        // E5: un guasto transitorio (timeout, 503, connessione rifiutata) non deve avvelenare
+        // la cache di 7 giorni. Memorizziamo con TTL breve di 60 s.
+        const descToWrite = {
+            ...heroDesc,
+            ttl: group && group.graphCallFailed ? (60 * 1000) : (7 * 24 * 60 * 60 * 1000)
+        };
+        await cache.scrivi(descToWrite, group);
         return group;
     })();
-    activeHeroGroupBuilds.set(cacheKey, promise);
+    activeHeroGroupBuilds.set(chiave, promise);
 
     try {
         return await promise;
     } finally {
-        if (activeHeroGroupBuilds.get(cacheKey) === promise) activeHeroGroupBuilds.delete(cacheKey);
+        if (activeHeroGroupBuilds.get(chiave) === promise) activeHeroGroupBuilds.delete(chiave);
     }
 }
 
-async function getSharedHeroCatalogs(args, cacheKey) {
-    const { value, status } = await hybridRecommendationsCache.getWithStatus(cacheKey);
+async function getSharedHeroCatalogs(args, keyOrDesc) {
+    const heroDesc = toHeroDesc(args, keyOrDesc);
+    const { value, status } = await cache.leggi(heroDesc);
     if (isSharedHeroCacheEntry(value, args.mediaType)) {
         if (status === 'stale') {
-            buildAndCacheSharedHeroCatalogs(args, cacheKey)
+            buildAndCacheSharedHeroCatalogs(args, heroDesc)
                 .catch(error => console.error('[Hero-SWR] Error:', error?.message || error));
         }
         return value;
     }
-    return buildAndCacheSharedHeroCatalogs(args, cacheKey);
+    return buildAndCacheSharedHeroCatalogs(args, heroDesc);
 }
 
 /**
@@ -549,7 +590,24 @@ async function getHeroPool(params) {
     } = params;
 
     const graphVersions = await graphClient.getGraphHealthVersions();
-    const cacheKey = buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions });
+    const heroDesc = {
+        nome: 'heroes',
+        versione: HERO_CACHE_KEY_VERSION,
+        dipendenze: {
+            varia: {
+                utente: userId,
+                profilo: context,
+                media: mediaType,
+                kids: kidsMode,
+                selettori: typeSelectors
+            },
+            invalida: {
+                artefatto: graphVersions?.artefatto,
+                ricetta: graphVersions?.ricetta
+            }
+        },
+        ttl: 7 * 24 * 60 * 60 * 1000
+    };
     const sharedGroup = await getSharedHeroCatalogs({
         userId,
         context,
@@ -558,8 +616,9 @@ async function getHeroPool(params) {
         tmdbApiKey,
         kidsMode,
         userConfig,
-        typeSelectors
-    }, cacheKey);
+        typeSelectors,
+        graphVersions
+    }, heroDesc);
 
     const assigned = sharedGroup?.catalogs || {};
     const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;

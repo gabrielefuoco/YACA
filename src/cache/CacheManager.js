@@ -69,7 +69,8 @@ class CacheManager {
                 if (age <= effectiveRamTtl) {
                     return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'fresh' };
                 }
-                if (this.swrMs > 0 && age <= effectiveRamTtl + this.swrMs) {
+                const effectiveSwr = envelope.ttl ? 0 : this.swrMs;
+                if (effectiveSwr > 0 && age <= effectiveRamTtl + effectiveSwr) {
                     return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'stale' };
                 }
             } else {
