@@ -599,3 +599,11 @@ confine dichiarato non è un confine imposto (rilievo 2 del ticket 27).
 
 **Le tre migrazioni** (password, ui state, Trakt) vanno nello stesso giro, ognuna col pattern di `libraryOrder`.
 **L'ordine**: dopo il 27, il 32 e il 34, che stanno muovendo proprio i consumatori di questo modulo.
+- **Dopo un merge, cerca i marcatori**: `git add -A` **committa anche i conflitti di rename** che git non segnala
+  come `UU` (`utils/stremioAddon.js` → `stremio/collection.js` è arrivato con `<<<<<<<` dentro, e il modulo nuovo
+  non si caricava). Il controllo costa una riga: `grep -rn "^<<<<<<< " --include=*.js src/ tests/` — e va fatto
+  **prima** di committare, non dopo.
+- **Una fonte registrata non entrava nell'ordine di valutazione**: `registerSource` aggiornava la mappa, ma
+  `findSourceForCatalog` legge l'array `CATALOG_EVALUATION_ORDER` → la sostituzione non aveva effetto. L'ha
+  rivelato un test che **passava per il motivo sbagliato** (veniva servito dalla fonte vera, che in quel worktree
+  rispondeva `[]` per caso): un test verde per caso è peggio di un test rosso, perché nessuno lo guarda.

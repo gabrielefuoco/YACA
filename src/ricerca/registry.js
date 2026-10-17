@@ -378,6 +378,16 @@ const CATALOG_EVALUATION_ORDER = [
 function registerSource(sourceEntry) {
     if (!sourceEntry || !sourceEntry.id) throw new TypeError('Voce fonte non valida');
     SOURCES_MAP.set(sourceEntry.id, sourceEntry);
+    // Sostituisce la voce ANCHE nell'ordine di valutazione: `findSourceForCatalog` legge
+    // l'array, non la mappa, quindi senza questo una fonte registrata resta invisibile al
+    // dispatch dei cataloghi — ed e' il motivo per cui un test che registrava una fonte
+    // «che solleva» passava per il motivo sbagliato: veniva servito dalla fonte vera.
+    for (let i = 0; i < CATALOG_EVALUATION_ORDER.length; i++) {
+        const corrente = CATALOG_EVALUATION_ORDER[i];
+        if (corrente && corrente.id === sourceEntry.id) {
+            CATALOG_EVALUATION_ORDER[i] = sourceEntry;
+        }
+    }
 }
 
 function getSource(sourceId) {
