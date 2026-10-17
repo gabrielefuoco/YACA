@@ -1,9 +1,15 @@
-const HybridRec = require('../../engines/hybridRecommendations');
+// src/catalog/providers/HybridProvider.js
 
+const HybridRec = require('../../engines/hybridRecommendations');
 const { HERO_CATALOG_IDS_SET } = require('../registry');
 
 const TASTE_BASED_IDS = HERO_CATALOG_IDS_SET;
 
+/**
+ * Provider dei cataloghi basati sul profilo (Taste-based / Hero).
+ * Delega direttamente alla porta delle raccomandazioni senza wrapper ridondanti
+ * o cap arbitrari premontati (Ticket 12 & Ticket 38).
+ */
 async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings) {
     const traktToken = userConfig.apiKeys?.trakt;
     const effectiveConfig = {
@@ -19,7 +25,7 @@ async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey
         }
     }
     const pageResults = await HybridRec.getHybridCatalog(targetCatalogId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, effectiveConfig);
-    return (pageResults || []).slice(0, 20);
+    return pageResults || [];
 }
 
 module.exports = {

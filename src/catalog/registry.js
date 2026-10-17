@@ -22,7 +22,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: 'trueBlend',
-        uiType: 'ai'
+        uiType: 'ai',
+        priority: 1,
+        additive: false
     },
     {
         id: 'yaca_true_blend_series',
@@ -36,7 +38,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: 'trueBlend',
-        uiType: 'ai'
+        uiType: 'ai',
+        priority: 1,
+        additive: false
     },
     {
         id: 'yaca_seed_network_movies',
@@ -50,7 +54,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 2,
+        additive: false
     },
     {
         id: 'yaca_seed_network_series',
@@ -64,7 +70,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 2,
+        additive: false
     },
     {
         id: 'yaca_hidden_gems_movies',
@@ -78,7 +86,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: 'hiddenGems',
-        uiType: 'ai'
+        uiType: 'ai',
+        priority: 3,
+        additive: false
     },
     {
         id: 'yaca_hidden_gems_series',
@@ -92,7 +102,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: 'hiddenGems',
-        uiType: 'ai'
+        uiType: 'ai',
+        priority: 3,
+        additive: false
     },
     {
         id: 'yaca_trakt_filtered_movies',
@@ -106,7 +118,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 4,
+        additive: false
     },
     {
         id: 'yaca_trakt_filtered_series',
@@ -120,7 +134,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 4,
+        additive: false
     },
     {
         id: 'yaca_mondi_movies',
@@ -134,7 +150,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 5,
+        additive: true
     },
     {
         id: 'yaca_mondi_series',
@@ -148,7 +166,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 5,
+        additive: true
     },
     {
         id: 'yaca_passo_fuori_movies',
@@ -162,7 +182,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 6,
+        additive: true
     },
     {
         id: 'yaca_passo_fuori_series',
@@ -176,7 +198,9 @@ const HERO_REGISTRY = [
         anime: 'agnostic',
         alwaysVisible: false,
         strategy: null,
-        uiType: 'algo'
+        uiType: 'algo',
+        priority: 6,
+        additive: true
     }
 ];
 
@@ -270,6 +294,43 @@ function getHeroUiGroups() {
 }
 
 /**
+ * Specifiche del pool hero: priorità e righe additive per il modulo pool (Ticket 12).
+ * L'unico posto di verità per priorità e natura additiva degli hero.
+ */
+function getHeroPoolSpec() {
+    const slugMap = new Map();
+    const sorted = [...HERO_REGISTRY].sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
+    for (const r of sorted) {
+        const slug = r.idBase.replace(/^yaca_/, '');
+        if (!slugMap.has(slug)) {
+            slugMap.set(slug, {
+                slug,
+                idBase: r.idBase,
+                priority: r.priority,
+                additive: Boolean(r.additive)
+            });
+        }
+    }
+    const slugs = Array.from(slugMap.values());
+    const heroPriority = Object.freeze(slugs.map(s => s.slug));
+    const slugAdditivi = Object.freeze(new Set(slugs.filter(s => s.additive).map(s => s.slug)));
+    const catalogs = HERO_REGISTRY.map(r => ({
+        id: r.id,
+        idBase: r.idBase,
+        slug: r.idBase.replace(/^yaca_/, ''),
+        type: r.type,
+        priority: r.priority,
+        additive: Boolean(r.additive)
+    }));
+    return {
+        heroPriority,
+        slugAdditivi,
+        slugs,
+        catalogs
+    };
+}
+
+/**
  * Deterministic hash of the hero catalog registry.
  */
 function getRegistryHash() {
@@ -291,5 +352,6 @@ module.exports = {
     isHeroCatalogId,
     getHeroCatalogKindMap,
     getHeroUiGroups,
+    getHeroPoolSpec,
     getRegistryHash
 };

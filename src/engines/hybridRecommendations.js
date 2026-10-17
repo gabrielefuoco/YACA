@@ -14,6 +14,15 @@ const mongoose = require('mongoose');
 const { applyKidsMode, isItemInappropriateForKids } = require('../utils/kidsModeFilters');
 const { resolveAnimePolicy, getEffectiveTypeSelectors, isItemAnime } = require('./hybrid/animePolicy');
 const { isProfileSyncDue, isStremioSyncDue } = require('./profileStaleness');
+const { isHeroCatalogId } = require('../catalog/registry');
+
+// Modulo pool (Ticket 12): il feed consuma la porta unica e non gestisce più le strategie né l'assegnazione
+const {
+    getHeroPool,
+    buildSharedHeroCatalogs,
+    getSharedHeroCatalogs,
+    buildSharedHeroCacheKey
+} = require('../pool');
 
 function getActiveTypeSelectors(userConfig, context) {
     if (userConfig?.activeProfileSettings?.typeSelectors) {
@@ -27,28 +36,17 @@ function getActiveTypeSelectors(userConfig, context) {
     return activeProfile?.settings?.typeSelectors || activeProfile?.typeSelectors || null;
 }
 
-// Import from the new hybrid layer
+// Data fetchers per sync e preset
 const {
     fetchProfileContext,
     fetchRecentHistory,
     fetchRecentRatings,
     fetchTraktRecommendationsRaw,
-    fetchTraktRecommendationsRawDetailed,
     fetchTmdbSimilarCounts,
-    fetchPopularFallbackIds,
-    fetchTopRatedPeriodFallbackIds,
-    fetchUndiscoveredFallbackIds,
-    fetchHiddenGemsFallbackIds
+    fetchPopularFallbackIds
 } = require('./hybrid/dataFetchers');
 const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
-const {
-    buildDirectPresetCatalog,
-    buildTopGenresMixCatalog,
-    buildHybridCatalog,
-    buildHiddenGemsCatalog,
-    buildTraktFilteredCatalog,
-    buildTraktFilteredCatalogWithMeta
-} = require('./hybrid/catalogStrategies');
+const { buildDirectPresetCatalog } = require('./hybrid/catalogStrategies');
 
 function getActiveKidsMode(userConfig, context) {
     if (typeof userConfig?.activeProfileSettings?.kidsMode === 'boolean') {
@@ -62,399 +60,119 @@ function getActiveKidsMode(userConfig, context) {
     return (activeProfile?.settings?.kidsMode ?? activeProfile?.kidsMode) === true;
 }
 
-// I DUE SLUG DEL GRAFO SONO ADDITIVI. Entrano nel gruppo DOPO l'assegnazione disgiunta, portano i loro id
-// da `bolle.json` e possono ripetere un titolo che un'altra riga ha gia' preso: e' una scelta del
-// proprietario — sono due motori diversi che dicono cose diverse, e la riga del grafo si spiega da sola.
-// Stanno qui perche' da questa lista derivano `HERO_CATALOG_IDS` (quindi il PERCORSO hero e la sua chiave
-// di cache) e il controllo di validita' della cache: senza l'eccezione `SLUG_ADDITIVI` quel controllo,
-// che pretende la disgiunzione, scarterebbe il gruppo a ogni richiesta e lo ricostruirebbe da capo.
-const SLUG_ADDITIVI = new Set(['mondi', 'passo_fuori']);
-const HERO_PRIORITY = Object.freeze(['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered',
-                                     'mondi', 'passo_fuori']);
-const HERO_CATALOG_IDS = new Map([
-    ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
-        `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`,
-        { slug, mediaType }
-    ]))
-]);
-// Il nome della chiave `heroes_v1` fa parte del contratto del ticket 21.
-// Lo schema interno versiona l'allocazione: 4 invalida i blocchi schema 3
-// prodotti prima della garanzia pairwise verificata sul dataset completo.
-// Bump v1 -> v2 (ticket 17): i pool dei hero cambiano composizione (quota anime
-// dal ~10% all'80%+), ma senza il bump la cache servirebbe i risultati vecchi per
-// tutto il TTL delle raccomandazioni (7 giorni).
-// CAMBIARE COSA ENTRA NEL GRUPPO RICHIEDE DI ALZARE QUESTA VERSIONE.
-// Le due modifiche di oggi — `SLUG_ADDITIVI` (l'esclusione dal controllo di disgiunzione) e il gancio che
-// aggiunge le righe del grafo — hanno cambiato il CONTENUTO del gruppo senza cambiare la chiave, e la
-// cache ha continuato a servire il gruppo vecchio: `cache=hit ms=2 titles=0`, con il codice nuovo che non
-// girava mai. Un bump di una lettera e' tutto quello che serve; il costo di dimenticarlo e' un fix
-// deployato che non produce nessun effetto, e nessun errore che lo dica.
-const HERO_CACHE_KEY_VERSION = 'v11';
-const HERO_CACHE_SCHEMA_VERSION = 7;
-const HERO_MIN_FALLBACK_ITEMS = 10;
-const HERO_MAX_ITEMS_PER_CATALOG = 100;
-const activeHeroGroupBuilds = new Map();
-
-function getHeroCatalogInfo(catalogId) {
-    return HERO_CATALOG_IDS.get(catalogId) || null;
-}
-
-function getHeroCatalogId(slug, mediaType) {
-    return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
-}
-
-// La chiave NON contiene `configVersion`, ed è una decisione misurata, non un'omissione.
-// `configVersion` è un nanoid rigenerato a ogni salvataggio della configurazione: rimetterlo qui
-// significa orfanare TUTTA la cache hero a ogni salvataggio che non c'entra niente. In produzione
-// il 02/10/2026: 18 tasti su 23 erano orfani, la stessa coppia utente+profilo+tipo ricostruita 9
-// volte — ognuna da 21-42 secondi.
-// A proteggere la cache bastano: il `context` (l'id del profilo attivo, che cambia quando cambia
-// il profilo), `kidsMode`, i `typeSelectors` e `HERO_CACHE_KEY_VERSION` per i hero — che è
-// l'interruttore giusto da alzare a mano quando cambia il modo in cui si costruiscono.
 function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
     const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
     return `${userId}_${context}_${catalogId}${kidsMode ? '_kids' : ''}${animeSuffix}`;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors }) {
-    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
-    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
-}
-
-function getRecommendationId(item) {
-    const rawId = item && typeof item === 'object' ? item.id : item;
-    const id = normalizeContentId(rawId ?? '');
-    if (!id || ['undefined', 'null', 'nan'].includes(id.toLowerCase())) return '';
-    return id;
-}
-
-function ensurePoolItem(item, mediaType) {
-    const isObj = typeof item === 'object' && item !== null;
-    const rawId = isObj ? (item.id || item.tmdbId) : item;
-    const cleanId = normalizeContentId(rawId);
-    const tmdbId = Number(cleanId);
-    const defaultType = mediaType === 'movie' ? 'movie' : 'series';
-    const defaultMediaType = mediaType === 'movie' ? 'movie' : 'tv';
-    if (isObj) {
-        return {
-            ...item,
-            id: item.id && String(item.id).startsWith('tmdb:') ? item.id : `tmdb:${cleanId}`,
-            tmdbId: Number.isFinite(item.tmdbId) ? item.tmdbId : (Number.isFinite(tmdbId) ? tmdbId : cleanId),
-            type: item.type || defaultType,
-            media_type: item.media_type || (item.type === 'series' ? 'tv' : defaultMediaType),
-            toString() { return this.id; }
-        };
-    }
-    return {
-        id: `tmdb:${cleanId}`,
-        tmdbId: Number.isFinite(tmdbId) ? tmdbId : cleanId,
-        type: defaultType,
-        media_type: defaultMediaType,
-        toString() { return this.id; }
-    };
-}
-
-/**
- * Assegna in modo esclusivo i candidati dei quattro hero. L'ordine dei blocchi
- * è il requisito di priorità, non l'ordine delle richieste HTTP.
- */
-function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MAX_ITEMS_PER_CATALOG) {
-    const assigned = {};
-    const claimedIds = new Set();
-
-    for (const slug of HERO_PRIORITY) {
-        const catalogId = getHeroCatalogId(slug, mediaType);
-        const pool = Array.isArray(poolsByCatalog?.[catalogId]) ? poolsByCatalog[catalogId] : [];
-        const catalogIds = [];
-        for (const item of pool) {
-            const id = getRecommendationId(item);
-            if (!id || claimedIds.has(id)) continue;
-            claimedIds.add(id);
-            catalogIds.push(ensurePoolItem(item, mediaType));
-            if (catalogIds.length >= maxItemsPerCatalog) break;
-        }
-        assigned[catalogId] = catalogIds;
-    }
-
-    return assigned;
-}
-
-function isSharedHeroCacheEntry(entry, mediaType) {
-    if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
-    if (!['movie', 'series'].includes(mediaType)) return false;
-
-    // Il numero di schema garantisce la forma del payload, non la sua correttezza.
-    // Un blocco allocato da una versione precedente può infatti contenere lo
-    // stesso ID in due hero. Non deve mai essere servito né invalidare le pagine
-    // già servite con un nuovo snapshot: lo scartiamo per ricostruire un solo
-    // gruppo coerente e verificabile.
-    const claimedIds = new Set();
-    for (const slug of HERO_PRIORITY) {
-        if (SLUG_ADDITIVI.has(slug)) continue;      // le righe del grafo non sono disgiunte, per scelta
-        const pool = entry.catalogs[getHeroCatalogId(slug, mediaType)];
-        if (!Array.isArray(pool)) return false;
-        for (const item of pool) {
-            const id = getRecommendationId(item);
-            if (!id || claimedIds.has(id)) return false;
-            claimedIds.add(id);
-        }
-    }
-    return true;
-}
-
-function normalizePoolResult(result) {
-    if (Array.isArray(result)) return result;
-    return Array.isArray(result?.ids) ? result.ids : [];
-}
-
-async function runPoolBuilder(builder, fallbackBuilder, label, args) {
+async function resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder) {
     try {
-        return await builder(...args);
-    } catch (error) {
-        console.error(`[HeroPool] ${label} builder failed:`, error?.message || error);
-        return fallbackBuilder();
-    }
-}
+        const isObj = typeof recItem === 'object' && recItem !== null;
+        const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
+        const matchScore = isObj ? recItem.matchScore : null;
+        const itemFallbackUsed = isObj ? recItem.fallbackUsed : undefined;
+        const itemTraktAvailable = isObj ? recItem.traktAvailable : undefined;
 
-/** Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta. */
-async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors }) {
-    // Ticket 21: Determinazione del "contesto stretto".
-    // Nei contesti ampi (generali), il bacino complessivo di titoli TMDB/DuckDB conta decine di migliaia di voci,
-    // rendendo sufficiente un pool a monte di 160 candidati per catalogo hero: 4 x 50 = 200 titoli disgiunti
-    // vengono raggiunti senza problemi di sovrapposizione e senza sprecare latenza TMDB/DuckDB.
-    // Nei contesti stretti (es. profilo Otaku o quando animePolicy === 'only'), l'intero universo di anime TV
-    // che superano il pavimento di qualità è ridotto a sole poche centinaia di titoli (~150-250 serie in DuckDB).
-    // Con un pool a monte di 160, true_blend (primo nella priorità) consuma 50 item, impoverendo a cascata
-    // seed_network, hidden_gems e trakt_filtered (che precipitavano a 17-19 item).
-    // Allargando il pool di candidati a monte a 250 ESCLUSIVAMENTE nei contesti stretti, ciascun hero può servire ~50 titoli
-    // preservando al 100% l'invariante di disgiunzione (0 sovrapposizioni tra i 4 cataloghi).
-    const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
-    const effectiveSelectors = typeSelectors
-        || getActiveTypeSelectors(userConfig, context)
-        || getActiveTypeSelectors(user, context);
-    const animePolicy = resolveAnimePolicy(profile, effectiveSelectors, { isKidsMode: kidsMode });
-    const isTightContext = (animePolicy === 'only' || effectiveSelectors?.anime === 'only');
-    const heroCandidateLimit = isTightContext ? 250 : 160;
+        const normalizedId = normalizeContentId(tmdbId);
+        const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
+        const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
+        let item = null;
+        try {
+            const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
+            if (duckMeta && duckMeta.rawTMDB) {
+                item = duckMeta.rawTMDB;
+            }
+        } catch (_e) {}
 
-    const seedFallback = async () => {
-        const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
-            ? fetchTopRatedPeriodFallbackIds
-            : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
-    };
-    const communityFallback = async () => {
-        const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
-            ? fetchUndiscoveredFallbackIds
-            : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
-    };
-    const communityFallbackWithMeta = async () => {
-        const fallbackIds = await communityFallback();
-        return {
-            ids: fallbackIds,
-            traktAvailable: false,
-            traktSourcedCount: 0,
-            fallbackTopUpCount: fallbackIds.length,
-            isDegradedFallback: true,
-            fallbackUsed: true
-        };
-    };
-
-    const hasDetailedTraktFetch = typeof fetchTraktRecommendationsRawDetailed === 'function';
-    let sharedTraktResult = hasDetailedTraktFetch
-        ? { items: [], available: false, fallbackUsed: true, reason: 'credentials' }
-        : null;
-    if (traktToken && hasDetailedTraktFetch) {
-        let traktUser = {
-            userId,
-            apiKeys: userConfig?.apiKeys || userConfig?.config?.apiKeys || {}
-        };
-        if (!traktUser.apiKeys?.traktRefreshToken && typeof fetchProfileContext === 'function') {
-            const profileContext = await fetchProfileContext(userId, context).catch(() => ({}));
-            if (profileContext?.user) traktUser = profileContext.user;
+        if (!item) {
+            item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
         }
-        sharedTraktResult = await fetchTraktRecommendationsRawDetailed(
-            traktToken,
-            mediaType === 'movie' ? 'movies' : 'shows',
-            100,
-            traktUser
-        ).catch(error => {
-            console.error('[HeroPool] Trakt fetch failed:', error?.message || error);
-            return { items: [], available: false, fallbackUsed: true, reason: 'error' };
-        });
-    }
 
-    const [trueBlendResult, seedResult, hiddenResult, traktResult] = await Promise.all([
-        runPoolBuilder(
-            buildTopGenresMixCatalog,
-            () => fetchPopularFallbackIds(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors),
-            'true_blend',
-            [userId, context, tmdbApiKey, mediaType, kidsMode, effectiveSelectors, heroCandidateLimit]
-        ),
-        runPoolBuilder(
-            buildHybridCatalog,
-            seedFallback,
-            'seed_network',
-            [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, effectiveSelectors, heroCandidateLimit]
-        ),
-        runPoolBuilder(
-            buildHiddenGemsCatalog,
-            () => fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors),
-            'hidden_gems',
-            [userId, context, tmdbApiKey, mediaType, kidsMode, effectiveSelectors, heroCandidateLimit]
-        ),
-        typeof buildTraktFilteredCatalogWithMeta === 'function'
-            ? runPoolBuilder(
-                buildTraktFilteredCatalogWithMeta,
-                communityFallbackWithMeta,
-                'trakt_filtered',
-                [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, effectiveSelectors, heroCandidateLimit]
-            )
-            : runPoolBuilder(
-                buildTraktFilteredCatalog,
-                communityFallbackWithMeta,
-                'trakt_filtered',
-                [userId, context, traktToken, tmdbApiKey, mediaType, kidsMode, sharedTraktResult, effectiveSelectors, heroCandidateLimit]
-            )
-    ]);
+        if (!item) {
+            if (!tmdbClientHolder.client) tmdbClientHolder.client = tmdb.createTmdbClient(tmdbApiKey);
+            const endpoint = tmdbType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
+            const res = await tmdbClientHolder.client.get(endpoint, {
+                params: {
+                    append_to_response: 'images,keywords',
+                    include_image_language: 'it,en,null'
+                }
+            });
+            item = res.data;
+        }
 
-    const traktCatalogId = getHeroCatalogId('trakt_filtered', mediaType);
-    const traktSourcedCount = traktResult?.traktSourcedCount ?? (Array.isArray(traktResult) ? traktResult.length : 0);
-    const fallbackTopUpCount = traktResult?.fallbackTopUpCount ?? 0;
-    const isDegradedFallback = traktResult?.isDegradedFallback ?? (traktSourcedCount === 0);
-    const traktAvailable = traktResult?.traktAvailable === true;
-    const fallbackUsed = traktResult?.fallbackUsed === true || isDegradedFallback;
+        if (!item) return null;
 
-    const rawTraktResult = {
-        ids: normalizePoolResult(traktResult),
-        traktAvailable,
-        traktSourcedCount,
-        fallbackTopUpCount,
-        isDegradedFallback,
-        fallbackUsed
-    };
-    const pools = {
-        [getHeroCatalogId('true_blend', mediaType)]: normalizePoolResult(trueBlendResult),
-        [getHeroCatalogId('seed_network', mediaType)]: normalizePoolResult(seedResult),
-        [getHeroCatalogId('hidden_gems', mediaType)]: normalizePoolResult(hiddenResult),
-        [traktCatalogId]: rawTraktResult.ids
-    };
-    const assigned = assignHeroPools(pools, mediaType);
-    // LE RIGHE DEL GRAFO — DOPO l'assegnazione, non dentro.
-    // Non consumano il bacino degli hero (160 candidati per 4 righe x 50 = 200 titoli disgiunti) e non
-    // tolgono niente a nessuno: portano i loro id, presi da `src/data/bolle.json`. Possono ripetere un
-    // titolo che un'altra riga ha gia' preso, ed e' una scelta: sono due motori diversi che dicono cose
-    // diverse, e la riga del grafo si spiega da sola (i mondi hanno un nome, i termini, gli esempi).
-    // Se il grafo manca o la storia e' vuota, le due righe restano vuote e il resto del feed non se ne
-    // accorge: `righePerStremio` non solleva mai.
-    try {
-        // IL REQUIRE C'ERA, E L'HO PERSO riscrivendo questo blocco: ogni chiamata lanciava
-        // `righePerStremio is not defined`, finiva nel catch, e le righe restavano vuote. Il log lo
-        // diceva chiaramente («[Mondi] righe del grafo non disponibili: righePerStremio is not defined»)
-        // e per due deploy ho guardato solo il conteggio finale invece del messaggio.
-        const { righePerStremio } = require('./bolle/raccomanda');
-        const { collectRealSeeds } = require('../library');
-        // LA STORIA HA DUE SORGENTI. `collectRealSeeds` legge quello che il prodotto ha in casa
-        // (WatchHistory, libreria, gli array legacy): per un utente il cui profilo non e' mai stato
-        // sincronizzato in mongo quella e' vuota — verificato, 0 seed — e la sua storia vera sta in
-        // **Trakt**, che e' gia' stato scaricato qui sopra (`rawTraktResult`, condiviso fra gli hero).
-        // Usare solo la prima lasciava le righe vuote proprio per gli utenti che usano l'addon.
-        const { seeds } = await collectRealSeeds({ userId, context, mediaType, user: userConfig });
-        const PESO_A_TIPO = { 4: 'loved', 3: 'liked', 2: 'watched', 1: 'library' };
-        const tipoSeeds = mediaType === 'movie' ? 'movie' : 'tv';
-        const semi = [...seeds.entries()].map(([id, w]) => ({
-            tmdbId: Number(id),
-            type: tipoSeeds,
-            signals: [{ type: PESO_A_TIPO[w] || 'watched' }],
-        }));
-        // Gli id di Trakt si aggiungono SOLO se sono numeri TMDB: `raccomanda` lavora sulle chiavi del
-        // canone, e un id `tt…` non troverebbe nessuna bolla (verrebbe scartato in silenzio, che qui e'
-        // peggio che non aggiungerlo).
-        const visti = new Set(semi.map((s) => s.tmdbId));
-        // SOLO SE TRAKT E' DAVVERO DISPONIBILE. Quando il token manca o Trakt non risponde, il motore
-        // «degrada» e riempie il risultato col FALLBACK POPOLARE (160 id generici). Usarli come storia
-        // significherebbe accendere le bolle dei titoli popolari e mostrare di nuovo il catalogo generico
-        // — cioe' esattamente il sintomo che si stava cercando di togliere. Il log del degrado c'e' gia'.
-        if (rawTraktResult.traktAvailable) {
-            for (const voce of (rawTraktResult.ids || [])) {
-                const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
-                if (!Number.isFinite(id) || visti.has(id)) continue;
-                visti.add(id);
-                semi.push({ tmdbId: id, type: tipoSeeds, signals: [{ type: 'liked' }] });
+        let logoUrl = null;
+        if (item.images && item.images.logos && item.images.logos.length > 0) {
+            const bestLogoArray = prioritizeLocalizedImages(item.images.logos);
+            const bestLogoObj = bestLogoArray.length > 0 ? bestLogoArray[0] : null;
+            if (bestLogoObj && bestLogoObj.file_path) {
+                logoUrl = `https://image.tmdb.org/t/p/w500${bestLogoObj.file_path}`;
             }
         }
-        const fuori = righePerStremio(semi, { mediaType });
-        for (const [k, v] of Object.entries(fuori)) {
-            assigned[k] = (v || []).map((it) => ensurePoolItem(it, mediaType));
+
+        let releaseYear = '';
+        try {
+            const rawDate = item.release_date || item.first_air_date;
+            if (rawDate instanceof Date) {
+                releaseYear = !isNaN(rawDate.getTime()) ? rawDate.toISOString().substring(0, 4) : '';
+            } else if (typeof rawDate === 'string') {
+                releaseYear = rawDate.substring(0, 4);
+            } else if (rawDate !== null && rawDate !== undefined) {
+                releaseYear = String(rawDate).substring(0, 4);
+            }
+        } catch (_e) {
+            releaseYear = '';
         }
-        const suffisso = mediaType === 'movie' ? 'movies' : 'series';
-        const nMondi = (fuori[`yaca_mondi_${suffisso}`] || []).length;
-        const nPasso = (fuori[`yaca_passo_fuori_${suffisso}`] || []).length;
-        console.log(`[Mondi] ${mediaType}: seed da archivio ${seeds.size}, da Trakt ${semi.length - seeds.size}` +
-            ` · mondi ${nMondi} · passo fuori ${nPasso}`);
-        // GUARDIANO: se ci sono seed e le righe restano vuote, il guasto e' DENTRO questo blocco o sotto,
-        // non nella storia. E' il caso che ha bruciato tre deploy: il gruppo veniva memorizzato vuoto e poi
-        // servito per sempre, senza un errore. Un avviso qui lo avrebbe detto alla prima richiesta.
-        if (semi.length > 0 && nMondi === 0 && nPasso === 0) {
-            console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in entrambe le righe ` +
-                `(${mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
+
+        let imdbRating;
+        if (item.vote_average !== null && item.vote_average !== undefined) {
+            const num = Number(item.vote_average);
+            if (!isNaN(num)) imdbRating = num.toFixed(1);
         }
-    } catch (e) {
-        console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
-    }
-    let hiddenForInsufficientFallback = false;
-    console.log(`[HeroPool] Trakt status per ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}, isDegradedFallback=${rawTraktResult.isDegradedFallback}, fallbackUsed=${rawTraktResult.fallbackUsed}`);
-    if (rawTraktResult.isDegradedFallback) {
-        console.warn(`[HeroPool] Degrado Trakt confermato per pool ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}`);
-    }
-    if (rawTraktResult.fallbackUsed && assigned[traktCatalogId].length < HERO_MIN_FALLBACK_ITEMS) {
-        assigned[traktCatalogId] = [];
-        hiddenForInsufficientFallback = true;
-    }
 
-    return {
-        schemaVersion: HERO_CACHE_SCHEMA_VERSION,
-        mediaType,
-        catalogs: assigned,
-        trakt: {
-            available: rawTraktResult.traktAvailable,
-            traktAvailable: rawTraktResult.traktAvailable,
-            traktSourcedCount: rawTraktResult.traktSourcedCount,
-            fallbackTopUpCount: rawTraktResult.fallbackTopUpCount,
-            isDegradedFallback: rawTraktResult.isDegradedFallback,
-            fallbackUsed: rawTraktResult.fallbackUsed,
-            hiddenForInsufficientFallback
-        }
-    };
-}
+        const genre_ids = Array.isArray(item.genre_ids)
+            ? item.genre_ids
+            : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id !== null && id !== undefined) : []);
+        const keywords = Array.isArray(item.keywords)
+            ? item.keywords
+            : (item.keywords?.results || item.keywords?.keywords || []);
 
-async function buildAndCacheSharedHeroCatalogs(args, cacheKey) {
-    if (activeHeroGroupBuilds.has(cacheKey)) return activeHeroGroupBuilds.get(cacheKey);
+        const cardType = (tmdbType === 'tv' || tmdbType === 'series') ? 'series' : 'movie';
+        const cardMediaType = tmdbType === 'movie' ? 'movie' : 'tv';
 
-    const promise = (async () => {
-        const group = await buildSharedHeroCatalogs(args);
-        await hybridRecommendationsCache.set(cacheKey, group);
-        return group;
-    })();
-    activeHeroGroupBuilds.set(cacheKey, promise);
-
-    try {
-        return await promise;
-    } finally {
-        if (activeHeroGroupBuilds.get(cacheKey) === promise) activeHeroGroupBuilds.delete(cacheKey);
+        return {
+            id: `tmdb:${normalizedId}`,
+            type: cardType,
+            media_type: cardMediaType,
+            name: item.title || item.name || 'Unknown',
+            poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+            posterShape: 'poster',
+            background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
+            logo: logoUrl,
+            description: item.overview || '',
+            releaseInfo: releaseYear,
+            imdbRating,
+            genre_ids,
+            original_language: item.original_language || item.originalLanguage || null,
+            keywords,
+            _yacaMatch: matchScore,
+            ...(itemFallbackUsed !== undefined ? { fallbackUsed: itemFallbackUsed } : {}),
+            ...(itemTraktAvailable !== undefined ? { traktAvailable: itemTraktAvailable } : {}),
+            rawTMDB: item
+        };
+    } catch (err) {
+        console.error(`[Hybrid] Errore risoluzione item ${recItem?.id || recItem}:`, err?.message || err);
+        return null;
     }
 }
 
-async function getSharedHeroCatalogs(args, cacheKey) {
-    const { value, status } = await hybridRecommendationsCache.getWithStatus(cacheKey);
-    if (isSharedHeroCacheEntry(value, args.mediaType)) {
-        if (status === 'stale') {
-            buildAndCacheSharedHeroCatalogs(args, cacheKey)
-                .catch(error => console.error('[Hero-SWR] Error:', error?.message || error));
-        }
-        return value;
-    }
-    return buildAndCacheSharedHeroCatalogs(args, cacheKey);
+function cardSurvivesFilters(card, { isKidsMode, effectiveTypeSelectors }) {
+    if (!card) return false;
+    if (isKidsMode && isItemInappropriateForKids(card)) return false;
+    if (effectiveTypeSelectors?.anime === 'only' && !isItemAnime(card)) return false;
+    if (effectiveTypeSelectors?.anime === 'exclude' && isItemAnime(card)) return false;
+    return true;
 }
 
 /**
@@ -469,12 +187,11 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     }
     const context = activeProfileId || 'global';
     const profile = await TasteProfile.findOne({ owner: userId, context });
-    // kidsMode è un'impostazione del profilo YACA (AddonConfig), non del TasteProfile.
     const isKidsMode = getActiveKidsMode(userConfig, context);
     const typeSelectors = getActiveTypeSelectors(userConfig, context);
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
-    const heroInfo = getHeroCatalogInfo(catalogId);
-    const cacheKey = heroInfo
+    const isHero = isHeroCatalogId(catalogId);
+    const cacheKey = isHero
         ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, typeSelectors })
         : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, typeSelectors });
 
@@ -483,7 +200,6 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
     if (profile) {
         if (isProfileSyncDue(profile.lastUpdated, new Date())) {
-            // console.log(`[Hybrid] Sincronizzazione profilo per ${userId} (${context})...`);
             syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context, userConfig).then(async (synced) => {
                 if (synced) {
                     await hybridRecommendationsCache.delete(cacheKey);
@@ -493,8 +209,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     }
 
     let recommendationIds;
-    if (heroInfo) {
-        const sharedGroup = await getSharedHeroCatalogs({
+    if (isHero) {
+        const poolResults = await getHeroPool({
             userId,
             context,
             mediaType,
@@ -503,8 +219,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             kidsMode: isKidsMode,
             userConfig,
             typeSelectors: effectiveTypeSelectors
-        }, cacheKey);
-        recommendationIds = sharedGroup.catalogs[catalogId] || [];
+        });
+        recommendationIds = poolResults[catalogId] || poolResults.catalogs?.[catalogId] || [];
         console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs (group=${cacheKey})`);
     } else {
         const buildRecommendIds = async () => {
@@ -544,121 +260,38 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         }
     }
 
-    const pageIds = recommendationIds.slice(skip, skip + ITEMS_PER_PAGE);
-    if (pageIds.length === 0) return [];
+    if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
+        return [];
+    }
 
-    let tmdbClient;
-    const results = await rateLimitedMap(
-        pageIds,
-        async (recItem) => {
-            try {
-                const isObj = typeof recItem === 'object' && recItem !== null;
-                const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
-                const matchScore = isObj ? recItem.matchScore : null;
-                const itemFallbackUsed = isObj ? recItem.fallbackUsed : undefined;
-                const itemTraktAvailable = isObj ? recItem.traktAvailable : undefined;
+    // Ticket 12 / Ticket 38: Il cap (ITEMS_PER_PAGE) si applica DOPO i filtri, MAI prima.
+    // Iteriamo sui candidati del pool a blocchi e raccogliamo solo ciò che sopravvive
+    // ai filtri post-fetch (kidsMode, animePolicy / effectiveTypeSelectors) fino a
+    // soddisfare la pagina richiesta (skip + ITEMS_PER_PAGE).
+    const targetCount = skip + ITEMS_PER_PAGE;
+    const cleanResults = [];
+    const tmdbClientHolder = { client: null };
+    const BATCH_SIZE = ITEMS_PER_PAGE;
+    let processedIndex = 0;
 
-                const normalizedId = normalizeContentId(tmdbId);
-                const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
-                const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
-                let item = null;
-                try {
-                    const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
-                    if (duckMeta && duckMeta.rawTMDB) {
-                        item = duckMeta.rawTMDB;
-                    }
-                } catch (_e) {}
-
-                if (!item) {
-                    item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
-                }
-
-                if (!item) {
-                    if (!tmdbClient) tmdbClient = tmdb.createTmdbClient(tmdbApiKey);
-                    const endpoint = tmdbType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
-                    const res = await tmdbClient.get(endpoint, {
-                        params: {
-                            append_to_response: 'images,keywords',
-                            include_image_language: 'it,en,null'
-                        }
-                    });
-                    item = res.data;
-                }
-
-                if (!item) return null;
-                if (isKidsMode && isItemInappropriateForKids(item)) return null;
-
-                let logoUrl = null;
-                if (item.images && item.images.logos && item.images.logos.length > 0) {
-                    const bestLogoArray = prioritizeLocalizedImages(item.images.logos);
-                    const bestLogoObj = bestLogoArray.length > 0 ? bestLogoArray[0] : null;
-                    if (bestLogoObj && bestLogoObj.file_path) {
-                        logoUrl = `https://image.tmdb.org/t/p/w500${bestLogoObj.file_path}`;
-                    }
-                }
-
-                let releaseYear = '';
-                try {
-                    const rawDate = item.release_date || item.first_air_date;
-                    if (rawDate instanceof Date) {
-                        releaseYear = !isNaN(rawDate.getTime()) ? rawDate.toISOString().substring(0, 4) : '';
-                    } else if (typeof rawDate === 'string') {
-                        releaseYear = rawDate.substring(0, 4);
-                    } else if (rawDate !== null && rawDate !== undefined) {
-                        releaseYear = String(rawDate).substring(0, 4);
-                    }
-                } catch (_e) {
-                    releaseYear = '';
-                }
-
-                let imdbRating;
-                if (item.vote_average !== null && item.vote_average !== undefined) {
-                    const num = Number(item.vote_average);
-                    if (!isNaN(num)) imdbRating = num.toFixed(1);
-                }
-
-                const genre_ids = Array.isArray(item.genre_ids)
-                    ? item.genre_ids
-                    : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id !== null && id !== undefined) : []);
-                const keywords = Array.isArray(item.keywords)
-                    ? item.keywords
-                    : (item.keywords?.results || item.keywords?.keywords || []);
-
-                const cardType = (tmdbType === 'tv' || tmdbType === 'series') ? 'series' : 'movie';
-                const cardMediaType = tmdbType === 'movie' ? 'movie' : 'tv';
-
-                return {
-                    id: `tmdb:${normalizedId}`,
-                    type: cardType,
-                    media_type: cardMediaType,
-                    name: item.title || item.name || 'Unknown',
-                    poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-                    posterShape: 'poster',
-                    background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
-                    logo: logoUrl,
-                    description: item.overview || '',
-                    releaseInfo: releaseYear,
-                    imdbRating,
-                    genre_ids,
-                    // Il boundary catalogo classifica `_isAnime`: conservare le
-                    // prove evita che il ramo hero classifichi come non-anime un
-                    // payload Animazione + keyword "anime*" (es. animesque).
-                    original_language: item.original_language || item.originalLanguage || null,
-                    keywords,
-                    _yacaMatch: matchScore,
-                    ...(itemFallbackUsed !== undefined ? { fallbackUsed: itemFallbackUsed } : {}),
-                    ...(itemTraktAvailable !== undefined ? { traktAvailable: itemTraktAvailable } : {})
-                };
-            } catch (err) {
-                console.error(`[Hybrid] Errore risoluzione item ${recItem?.id || recItem}:`, err?.message || err);
-                return null;
+    for (let i = 0; i < recommendationIds.length && cleanResults.length < targetCount; i += BATCH_SIZE) {
+        const chunk = recommendationIds.slice(i, i + BATCH_SIZE);
+        processedIndex = i + chunk.length;
+        const resolved = await rateLimitedMap(
+            chunk,
+            recItem => resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder),
+            { batchSize: 3, delayMs: 150 }
+        );
+        for (const card of resolved) {
+            if (cardSurvivesFilters(card, { isKidsMode, effectiveTypeSelectors })) {
+                cleanResults.push(card);
+                if (cleanResults.length >= targetCount) break;
             }
-        },
-        { batchSize: 3, delayMs: 150 }
-    );
+        }
+    }
 
-    // Warm-up subsequent pages in the background (limit to next page slice to avoid N+1 hammering)
-    const nextBatchIds = recommendationIds.slice(skip + ITEMS_PER_PAGE, skip + (ITEMS_PER_PAGE * 2));
+    // Warm-up dei successivi elementi in background
+    const nextBatchIds = recommendationIds.slice(processedIndex, processedIndex + ITEMS_PER_PAGE);
     if (nextBatchIds.length > 0) {
         global.setImmediate(() => {
             rateLimitedMap(
@@ -681,20 +314,11 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         });
     }
 
-    let cleanResults = results.filter(Boolean);
-    if (isKidsMode) {
-        cleanResults = applyKidsMode(cleanResults);
-    }
-    if (effectiveTypeSelectors?.anime === 'only') {
-        cleanResults = cleanResults.filter(isItemAnime);
-    } else if (effectiveTypeSelectors?.anime === 'exclude') {
-        cleanResults = cleanResults.filter(item => !isItemAnime(item));
-    }
-    if (skip === 0 && cleanResults.length > 0) {
+    const pageResults = cleanResults.slice(skip, skip + ITEMS_PER_PAGE);
+
+    if (skip === 0 && pageResults.length > 0) {
         const currentDateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const RecommendationImpression = require('../models/RecommendationImpression');
-        
-        const ops = cleanResults.map(item => {
+        const ops = pageResults.map(item => {
             const normalizedId = item.id.replace('tmdb:', '');
             return {
                 updateOne: {
@@ -721,15 +345,12 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         }
     }
 
-    return cleanResults;
+    return pageResults;
 }
 
 /**
  * La parte Stremio (likes/loved) ha una cadenza PROPRIA, scritta sulla configurazione a
  * ogni sync (`config.lastStremioSync` + `config.nextSyncInterval`, 8 ore ± jitter).
- * Prima veniva governata dalla staleness del profilo, che è mossa anche dal sync Trakt:
- * il campo si scriveva e nessuno lo leggeva. Qui la decisione è isolata e si legge il
- * campo. Intervallo assente o non sensato → default di 8 ore.
  *
  * @param {object|null} userConfig configurazione risolta che porta il bookkeeping del sync
  * @returns {boolean} true se il sync Stremio è dovuto adesso
@@ -746,8 +367,6 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
     if (!userId || !traktToken || !tmdbApiKey) return false;
 
     try {
-        // La parte Stremio non è più legata alla staleness del profilo: la chiama la sua
-        // stessa cadenza. Dopo un sync, la richiesta successiva non la riaccende.
         const stremioKey = userConfig?.apiKeys?.stremio || userConfig?.stremioKey;
         let stremioKeyToUse = stremioKey;
         if (!stremioKeyToUse) {
@@ -773,9 +392,6 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
         ]);
         const combined = [...(history || []), ...(ratings || [])];
 
-        // Se non ci sono nuove interazioni (es. Trakt vuoto o errore 403),
-        // aggiorniamo comunque lastUpdated per non ripetere il check ad ogni richiesta
-        // ed evitiamo di invalidare inutilmente la cache delle raccomandazioni (BUG-3)
         if (combined.length === 0) {
             if (typeof TasteProfile.updateOne === 'function') {
                 await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
@@ -800,7 +416,6 @@ module.exports = {
     getActiveKidsMode,
     buildRecommendationCacheKey,
     buildSharedHeroCacheKey,
-    assignHeroPools,
     buildSharedHeroCatalogs,
     getSharedHeroCatalogs,
     syncIncrementalRecommendations,
@@ -812,7 +427,5 @@ module.exports = {
     computeTopKeywords,
     fetchPopularFallbackIds,
     buildDirectPresetCatalog,
-    buildHybridCatalog,
-    buildTopGenresMixCatalog,
     recommendationsCache: hybridRecommendationsCache
 };
