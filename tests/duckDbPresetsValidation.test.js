@@ -3,7 +3,7 @@ const { buildCatalogQuery } = require('../src/db/queryBuilder');
 const duckDbStore = require('../src/db/duckDbStore');
 const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
 const { aiPromptCache, catalogRequestCache, catalogFallbackCache, simulcastDatesCache } = require('../src/cache/cacheInstances');
-const LibrarySyncService = require('../src/services/LibrarySyncService');
+const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const CacheManager = require('../src/cache/CacheManager');
 
 describe('DuckDB Native Presets & Architectural Optimizations', () => {

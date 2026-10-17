@@ -8,14 +8,14 @@ const {
 } = catalogStrategies;
 const { calculateHybridScore } = require('../src/engines/hybrid/scoringEngine');
 const ProfileScorer = require('../src/profile/ProfileScorer');
-const WatchHistory = require('../src/models/WatchHistory');
+const WatchHistory = require('../src/library/models/WatchHistory');
 const UserAccount = require('../src/db/models/UserAccount');
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
 const dataFetchers = require('../src/engines/hybrid/dataFetchers');
 
 // Mock Mongoose models to avoid buffering timeouts (~10s per suite)
-jest.mock('../src/models/WatchHistory', () => ({
+jest.mock('../src/library/models/WatchHistory', () => ({
     find: jest.fn()
 }));
 
@@ -23,7 +23,7 @@ jest.mock('../src/db/models/UserAccount', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/db/models/UserLibraryItem', () => ({
+jest.mock('../src/library/models/UserLibraryItem', () => ({
     find: jest.fn()
 }));
 

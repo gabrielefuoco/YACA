@@ -13,8 +13,8 @@ jest.mock('../src/db/models/ImdbToTmdbMapping', () => ({
     find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) }))
 }));
 
-const LibrarySyncService = require('../src/services/LibrarySyncService');
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
 const { stremioClient } = require('../src/clients/stremio');

@@ -31,15 +31,6 @@ watchHistorySchema.index({ owner: 1, context: 1, lastWatchedAt: -1 });
 
 const CanonicalWatchHistory = mongoose.models.WatchHistory || mongoose.model('WatchHistory', watchHistorySchema);
 
-function getWatchHistoryModel() {
-    try {
-        const legacy = require('../../models/WatchHistory');
-        if (legacy && legacy !== CanonicalWatchHistory && Object.keys(legacy).length > 0) {
-            return legacy;
-        }
-    } catch (_) {}
-    return CanonicalWatchHistory;
-}
-
-CanonicalWatchHistory.getModel = getWatchHistoryModel;
+CanonicalWatchHistory.getModel = () => CanonicalWatchHistory;
 module.exports = CanonicalWatchHistory;
+

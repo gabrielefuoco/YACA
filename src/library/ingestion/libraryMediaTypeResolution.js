@@ -21,7 +21,7 @@
 
 let duckDbStore = null;
 try {
-    duckDbStore = require('../db/duckDbStore');
+    duckDbStore = require('../../db/duckDbStore');
 } catch (_e) {
     duckDbStore = null;
 }

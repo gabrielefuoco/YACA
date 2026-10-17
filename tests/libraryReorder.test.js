@@ -4,7 +4,7 @@ const router = require('../src/api/profiles');
 
 jest.mock('../src/db/models/UserAccount');
 jest.mock('../src/db/models/AddonConfig');
-jest.mock('../src/db/models/UserLibraryItem');
+jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/clients/stremio', () => ({
     stremioClient: {
         post: jest.fn().mockResolvedValue({ data: {} })
@@ -19,7 +19,13 @@ describe('PUT /api/profiles/:id/library/reorder', () => {
             s => s.route && s.route.path === '/:id/library/reorder' && s.route.methods.put
         );
         expect(routeLayer).toBeDefined();
-        reorderHandler = routeLayer.route.stack[0].handle;
+        const rawHandler = routeLayer.route.stack[0].handle;
+        reorderHandler = (req, res) => {
+            if (!req.utenteId && (req.query?.userId || req.body?.userId)) {
+                req.utenteId = req.query?.userId || req.body?.userId;
+            }
+            return rawHandler(req, res);
+        };
     });
 
     beforeEach(() => {
@@ -60,7 +66,7 @@ describe('PUT /api/profiles/:id/library/reorder', () => {
 
     it('persists libraryOrder into AddonConfig profile raw_ui_state without touching _ctime/_mtime or pushing to Stremio', async () => {
         const { stremioClient } = require('../src/clients/stremio');
-        const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+        const UserLibraryItem = require('../src/library/models/UserLibraryItem');
         UserLibraryItem.findOneAndUpdate = jest.fn();
 
         UserAccount.findOne.mockReturnValue({

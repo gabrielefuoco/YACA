@@ -4,7 +4,7 @@
  * nel vettore DNA: servono solo alla vista.
  */
 jest.mock('../src/db/duckDbStore', () => ({ query: jest.fn() }));
-jest.mock('../src/db/models/UserLibraryItem', () => ({
+jest.mock('../src/library/models/UserLibraryItem', () => ({
     collection: { find: jest.fn() }
 }));
 jest.mock('../src/data/animeMappingStore', () => ({
@@ -12,7 +12,7 @@ jest.mock('../src/data/animeMappingStore', () => ({
 }));
 
 const duckDbStore = require('../src/db/duckDbStore');
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { computeStudioProfile, parseLibraryId } = require('../src/profile/studioProfile');
 
 const libraryDocs = (docs) => ({

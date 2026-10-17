@@ -25,7 +25,7 @@ jest.mock('../src/models/RecommendationImpression', () => ({
 
 // WatchHistory/UserLibraryItem: senza mock il buffer di mongoose fa attendere ~10s
 // per suite e svuota i pool (i seed reali non trovano nulla).
-jest.mock('../src/models/WatchHistory', () => {
+jest.mock('../src/library/models/WatchHistory', () => {
     const emptyQuery = () => {
         const q = {};
         q.sort = () => q;
@@ -38,7 +38,7 @@ jest.mock('../src/models/WatchHistory', () => {
     return { find: jest.fn(emptyQuery), findOne: jest.fn(emptyQuery), countDocuments: jest.fn().mockResolvedValue(0) };
 });
 
-jest.mock('../src/db/models/UserLibraryItem', () => ({
+jest.mock('../src/library/models/UserLibraryItem', () => ({
     find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([]) })),
     countDocuments: jest.fn().mockResolvedValue(0)
 }));

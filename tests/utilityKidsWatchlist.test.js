@@ -1,12 +1,12 @@
-jest.mock('../src/db/models/UserLibraryItem', () => ({
+jest.mock('../src/library/models/UserLibraryItem', () => ({
     find: jest.fn()
 }));
 
-jest.mock('../src/services/LibrarySyncService', () => ({
+jest.mock('../src/library/ingestion/LibrarySyncService', () => ({
     syncLibraryForUser: jest.fn()
 }));
 
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const duckDbStore = require('../src/db/duckDbStore');
 const { getWatchlistCatalog } = require('../src/catalog/providers/WatchlistProvider');
 const { applyKidsMode, isItemInappropriateForKids } = require('../src/utils/kidsModeFilters');

@@ -287,7 +287,7 @@ describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
     describe('WatchlistProvider & Custom Catalogs', () => {
         test('WatchlistProvider uses addonUuid and does not query with undefined', async () => {
             const { getWatchlistCatalog } = require('../src/catalog/providers/WatchlistProvider');
-            const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+            const UserLibraryItem = require('../src/library/models/UserLibraryItem');
             const findSpy = jest.spyOn(UserLibraryItem, 'find').mockReturnValue({
                 sort: jest.fn().mockReturnValue({
                     skip: jest.fn().mockReturnValue({

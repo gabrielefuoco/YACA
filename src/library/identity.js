@@ -20,7 +20,7 @@
 
 const duckDbStore = require('../db/duckDbStore');
 const UserLibraryItem = require('./models/UserLibraryItem');
-const { resolveItemMediaType } = require('../services/libraryMediaTypeResolution');
+const { resolveItemMediaType } = require('./ingestion/libraryMediaTypeResolution');
 let animeMappingStore = null;
 try {
     animeMappingStore = require('../data/animeMappingStore');

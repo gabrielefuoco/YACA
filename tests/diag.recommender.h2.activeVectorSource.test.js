@@ -9,11 +9,11 @@
 
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const TasteProfile = require('../src/models/TasteProfile');
-const WatchHistory = require('../src/models/WatchHistory');
+const WatchHistory = require('../src/library/models/WatchHistory');
 const duckDbStore = require('../src/db/duckDbStore');
 
 jest.mock('../src/models/TasteProfile');
-jest.mock('../src/models/WatchHistory');
+jest.mock('../src/library/models/WatchHistory');
 jest.mock('../src/db/models/UserAccount');
 jest.mock('../src/db/duckDbStore', () => ({
     query: jest.fn()

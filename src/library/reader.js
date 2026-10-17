@@ -7,8 +7,8 @@
 
 const { WatchHistory, UserLibraryItem } = require('./models');
 
-const getLibraryModel = () => (UserLibraryItem.getModel ? UserLibraryItem.getModel() : UserLibraryItem);
-const getHistoryModel = () => (WatchHistory.getModel ? WatchHistory.getModel() : WatchHistory);
+const getLibraryModel = () => (UserLibraryItem.getModel && UserLibraryItem.getModel()) || UserLibraryItem;
+const getHistoryModel = () => (WatchHistory.getModel && WatchHistory.getModel()) || WatchHistory;
 
 const WATCHLIST_PAGE_SIZE = 20;
 

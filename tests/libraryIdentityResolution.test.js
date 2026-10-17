@@ -8,7 +8,7 @@
 const {
     RESOLUTION_REASONS,
     resolveTmdbIdentity
-} = require('../src/services/libraryIdentityResolution');
+} = require('../src/library/ingestion/libraryIdentityResolution');
 
 /** Ricerca esterna finta: risponde solo di ciò che il test le ha insegnato. */
 function fakeLookup(byImdbId = {}) {

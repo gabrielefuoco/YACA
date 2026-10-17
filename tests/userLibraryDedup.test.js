@@ -1,6 +1,6 @@
 const { resolvePoster } = require('../src/utils/posterResolver');
-const LibrarySyncService = require('../src/services/LibrarySyncService');
-const UserLibraryItem = require('../src/db/models/UserLibraryItem');
+const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
+const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { stremioClient } = require('../src/clients/stremio');
 const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');

@@ -12,10 +12,10 @@ const {
     isParked,
     readConversionAttempts,
     summarizeParkedRun
-} = require('../src/services/libraryConversionRetry');
-const { applyConversionOutcome } = require('../src/services/libraryConversionOutcome');
-const { evaluateConversionAdmission, selectConvertibleItems } = require('../src/services/libraryConversionAdmission');
-const { RESOLUTION_REASONS } = require('../src/services/libraryIdentityResolution');
+} = require('../src/library/ingestion/libraryConversionRetry');
+const { applyConversionOutcome } = require('../src/library/ingestion/libraryConversionOutcome');
+const { evaluateConversionAdmission, selectConvertibleItems } = require('../src/library/ingestion/libraryConversionAdmission');
+const { RESOLUTION_REASONS } = require('../src/library/ingestion/libraryIdentityResolution');
 
 const NOT_FOUND_OUTCOME = { resolved: false, tmdbId: null, reason: RESOLUTION_REASONS.NOT_FOUND };
 const FOUND_OUTCOME = { resolved: true, tmdbId: 128, reason: RESOLUTION_REASONS.FOUND_VIA_KITSU_MAP };

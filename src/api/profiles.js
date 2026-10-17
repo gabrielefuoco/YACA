@@ -11,7 +11,7 @@ const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { syncAllStremioData } = require('../utils/stremioAddon');
 const { aiDiscoveryCache } = require('../cache/cacheInstances');
-const LibraryConverterService = require('../services/LibraryConverterService');
+const { LibraryConverterService } = require('../library');
 const {
     storiaDi,
     leggiLibreria,
@@ -419,7 +419,7 @@ router.post('/:id/library', async (req, res) => {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
-        const LibrarySyncService = require('../services/LibrarySyncService');
+        const { LibrarySyncService } = require('../library');
         const normalizedItemId = LibrarySyncService.normalizeSyncItemId(item.id);
         if (!normalizedItemId) {
             return res.status(400).json({ error: 'Invalid item id' });
@@ -546,7 +546,7 @@ router.get('/:id/library/watched', async (req, res) => {
         const account = await UserAccount.findOne({ userId }).lean();
         if (!account?.addonUuid) return res.status(404).json({ error: 'User not found' });
 
-        const { previewWatchedLibrary } = require('../services/libraryWatchedService');
+        const { previewWatchedLibrary } = require('../library');
         const preview = await previewWatchedLibrary({ addonUuid: account.addonUuid });
 
         res.json({
@@ -582,7 +582,7 @@ router.post('/:id/library/watched', async (req, res) => {
         // sync successivo: meglio rifiutare l'azione che fingere una rimozione.
         if (!account.apiKeys?.stremio) return res.status(400).json({ error: 'Stremio API Key missing' });
 
-        const { removeWatchedLibrary } = require('../services/libraryWatchedService');
+        const { removeWatchedLibrary } = require('../library');
         const result = await removeWatchedLibrary({
             addonUuid: account.addonUuid,
             stremioAuthKey: account.apiKeys.stremio
