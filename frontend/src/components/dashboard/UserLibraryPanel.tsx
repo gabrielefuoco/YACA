@@ -43,7 +43,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
   const fetchLibrary = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getLibrary(profileId, userId);
+      const data = await api.getLibrary();
       setItems(data || []);
     } catch (e) {
       console.error(e);
@@ -54,13 +54,13 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
 
   useEffect(() => {
     fetchLibrary();
-  }, [profileId, userId]);
+  }, [profileId]);
 
   const handleSyncConfirm = async () => {
-    if (!userId) return;
+    if (isSyncProcessing) return;
     setIsSyncProcessing(true);
     try {
-      const res = await api.convertLibrary(profileId, userId);
+      const res = await api.convertLibrary(profileId);
       if (res && typeof res.processingCount === 'number') {
         setSyncProcessingCount(res.processingCount);
         // We wait a few seconds before closing to let the user read the count
@@ -88,7 +88,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
       poster: tmdbItem.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}` : tmdbItem.poster,
     };
     try {
-      await api.addToLibrary(profileId, userId, libraryItem);
+      await api.addToLibrary(libraryItem);
       fetchLibrary();
     } catch (e) {
       console.error(e);
@@ -98,7 +98,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
   const handleRemove = async (itemId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
-      await api.removeFromLibrary(profileId, userId, itemId);
+      await api.removeFromLibrary(itemId);
       setItems(items.filter(i => i._id !== itemId));
       const newSel = new Set(selectedIds);
       newSel.delete(itemId);
@@ -114,10 +114,10 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
    * Il conteggio è obbligatorio: nessuna azione parte senza conferma esplicita.
    */
   const handleRemoveWatched = async () => {
-    if (!userId || isRemovingWatched) return;
+    if (isRemovingWatched) return;
     setIsRemovingWatched(true);
     try {
-      const preview = await api.getWatchedLibraryPreview(profileId, userId);
+      const preview = await api.getWatchedLibraryPreview(profileId);
       const previewCount = Number(preview?.count) || 0;
       if (previewCount === 0) {
         alert('Nessun titolo visto da rimuovere.');
@@ -129,7 +129,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
       );
       if (!confirmed) return;
 
-      const result = await api.removeWatchedLibrary(profileId, userId);
+      const result = await api.removeWatchedLibrary(profileId);
       await fetchLibrary();
       alert(`Rimossi ${result?.count ?? previewCount} titoli visti.`);
     } catch (e) {
@@ -157,7 +157,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
     }
 
     try {
-      await api.reorderLibrary(profileId, userId, newOrder);
+      await api.reorderLibrary(newOrder, profileId);
     } catch (e) {
       console.error('[UserLibraryPanel] Error reordering library, rolling back:', e);
       setItems(previousItems);
@@ -336,7 +336,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
         <AutocompleteSearch 
           placeholder="Cerca film o serie TV su TMDB..."
           searchFn={async (query) => {
-            const res = await fetch(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`).then(r => r.json());
+            const res = await api.searchTmdbMulti(query);
             return {
               results: (res.results || []).map((r: any) => ({
                 id: String(r.id),
