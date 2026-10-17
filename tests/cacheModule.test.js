@@ -209,7 +209,10 @@ describe('Modulo Cache (Ticket 24)', () => {
                 dipendenze: { varia: { utente: 'u', profilo: 'p', catalogo: 'cat' } }
             });
             expect(res.ttl).toBe(7 * 24 * 60 * 60 * 1000);
-            expect(res.chiave).toBe('u_p_cat');
+            // LA CHIAVE PORTA LA VERSIONE E IL MEDIA (revisione del 17/10/2026): questo test
+            // asseriva la forma vecchia, che ometteva entrambi — e la forma vecchia era il bug:
+            // la versione non invalidava niente e film e serie collidevano sullo stesso catalogo.
+            expect(res.chiave).toBe('u_p_cat_v14_');
         });
 
         test('catalog_page: default TTL 14 giorni e hash deterministico', () => {

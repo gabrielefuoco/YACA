@@ -47,7 +47,12 @@ describe('chiave della cache dei cataloghi hero', () => {
                 kidsMode: false,
                 typeSelectors: {}
             });
-            expect(key).toBe('utente1_profiloA_preset_nolan');
+            // QUESTA ASSERZIONE DIFENDEVA UN BUG, e il nome del test lo diceva senza saperlo: la
+            // chiave delle raccomandazioni *non* doveva contenere la versione. La revisione del
+            // 17/10/2026 ha dimostrato con una prova eseguibile che senza la versione e senza il
+            // media (a) alzare la versione non invalida niente e (b) film e serie collidono sullo
+            // stesso catalogo — cioè la trappola che il ticket 24 esiste per rendere impossibile.
+            expect(key).toBe('utente1_profiloA_preset_nolan_v14_');
             expect(key).not.toContain('_cv');
         });
     });

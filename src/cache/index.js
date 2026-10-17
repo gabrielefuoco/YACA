@@ -118,10 +118,23 @@ function deriva(descrizione) {
             const kids = Boolean(varia.kids ?? varia.kidsMode);
             const selettori = varia.selettori ?? varia.typeSelectors ?? null;
 
+            // LA VERSIONE E IL MEDIA ENTRANO NELLA CHIAVE. La revisione del 17/10/2026 ha trovato che
+            // qui mancavano: senza, alzare la versione NON invalidava niente e i film si
+            // sovrapponevano alle serie per lo stesso catalogo — una collisione silenziosa, che e'
+            // esattamente la trappola che questo modulo esiste per rendere impossibile.
+            const vRaw = invalida.versione ?? versione ?? 14;
+            const vNorm = String(vRaw).startsWith('v') ? String(vRaw) : `v${vRaw}`;
+            const artefatto = invalida.artefatto ?? varia.artefatto ?? varia.graphVersions?.artefatto;
+            const ricetta = invalida.ricetta ?? varia.ricetta ?? varia.graphVersions?.ricetta;
+            const gSuffix = artefatto
+                ? `_art_${artefatto}${ricetta ? `_ric_${ricetta}` : ''}`
+                : '';
+            const media = varia.media ?? varia.mediaType ?? '';
+
             const kidsSuffix = kids ? '_kids' : '';
             const animeSuffix = selettori?.anime ? `_a_${selettori.anime}` : '';
 
-            chiave = `${utente}_${profilo}_${catalogo}${kidsSuffix}${animeSuffix}`;
+            chiave = `${utente}_${profilo}_${catalogo}_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}`;
             break;
         }
 
