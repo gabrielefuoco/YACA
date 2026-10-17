@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: research
 
 # 31 — Cosa si estrae e cosa si cancella: la ricognizione col metro in mano

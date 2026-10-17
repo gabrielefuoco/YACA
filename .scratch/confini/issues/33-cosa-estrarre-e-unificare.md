@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: research
 
 # 33 — Cosa estrarre e cosa unificare dentro `src/`

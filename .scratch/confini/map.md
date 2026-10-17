@@ -565,3 +565,20 @@ implementazione), `library/ingestion/` (sotto-modulo di scrittura), `src/profile
 
 **Metodo**: due sospetti su cinque sono caduti verificandoli, e il pezzo più grosso — il daemon — non l'avrebbe
 trovato nessuna analisi di duplicazione: l'ha trovato **seguire chi avvia cosa**.
+
+### 22. I rapporti diventano lavoro (ticket 34–37)
+
+**18/10/2026.** I ticket 31 e 33 erano **rapporti**: le cose concrete che contenevano non erano ancora
+assegnabili. Ora lo sono, e i due rapporti passano a `resolved`:
+
+- **34 — Il daemon TMDB fuori dal processo che serve**: 1.763 righe di ingestione e un ciclo orario dentro il web
+  server (`index.js:249`); l'artefatto è già il volume `yaca_tmdb`, e `admin.js` deve leggere lo stato
+  dall'artefatto invece che dal processo.
+- **35 — Il protocollo Stremio in un modulo solo**: 1.327 righe in tre cartelle; le rotte restano il bordo, si
+  sposta il protocollo. La prova che conta: **l'impronta del manifest identica** prima e dopo.
+- **36 — I sette modelli in una casa sola**: 7 modelli mongoose in `src/models/` **e** `src/db/models/`, divisione
+  senza criterio (`UserAccount` in `db/models`, `UserConfig` in `models`).
+- **37 — Le pulizie piccole**: `profiles.js` (514) e `profilo.js` (471) **entrambi montati** — 985 righe per un
+  lavoro solo; `data/` che tiene solo asset; `utils/` che smette di esistere (impianto condiviso in `src/infra/`,
+  pezzi poster nel modulo poster, il resto assegnato o cancellato). ⚠️ Cancella una **superficie HTTP viva**: va
+  fatto per ultimo, con la verifica del client prima.
