@@ -45,3 +45,13 @@ in un giorno.
 Le cifre da usare sono misurate, non stimate: la catena sono **3.169 righe** (`hybridRecommendations` 462 +
 `pool` 693 + `dataFetchers` 416 + `catalogStrategies` 1.598), il serving è **1.717** (`catalogHandler` 1.037 +
 `metaHandler` 680), il vecchio stack intero **5.098**.
+
+## Stato aggiornato (18/10/2026, dopo il ticket 42)
+
+`src/` = **157 file, 37.193 righe**. Il vecchio stack è **5.098** (invariato: il 42 ha distribuito, non tolto
+motore), la catena ibrida è **3.169**. `src/data/` non ha più file `.js` (solo asset), `src/utils/` è sceso a
+**6 file** (solo il cluster `tmdb*`, vivo), e la casa nuova è `src/infra/` (10 file, 854 righe).
+
+Due note di integrazione che il prossimo deve conoscere: la porta di `src/infra` **spalma** gli export (per un
+costruttore serve `const { LRUCache } = require('../infra')`), e la porta del **catalogo** non riesporta
+`filters`/`presets`/`kidsModeFilters`/`contentId` — debito aperto.
