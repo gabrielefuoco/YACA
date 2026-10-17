@@ -55,10 +55,10 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             typeSelectors: {}
         };
 
-        test('senza health version, la chiave usa solo HERO_CACHE_KEY_VERSION (v13)', () => {
+        test('senza health version, la chiave usa solo HERO_CACHE_KEY_VERSION (v14)', () => {
             const key = buildSharedHeroCacheKey(baseParams);
             expect(key).toBe(`utente_test_profilo_test_heroes_${HERO_CACHE_KEY_VERSION}_movie`);
-            expect(key).toContain('_v13_');
+            expect(key).toContain('_v14_');
         });
 
         test('con versioni da health, concatena artefatto e ricetta nella chiave', () => {

@@ -192,8 +192,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
     const isHero = isHeroCatalogId(catalogId);
     const cacheKey = isHero
-        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, typeSelectors })
-        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, typeSelectors });
+        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors })
+        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors });
 
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);

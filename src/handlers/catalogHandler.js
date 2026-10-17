@@ -944,6 +944,10 @@ async function catalogHandler(args, userConfig, hostUrl) {
         });
     }
 
+    if (baseId.startsWith('yaca_mondi_') || baseId.startsWith('yaca_passo_fuori_')) {
+        console.log(`[Mondi] catalogo ${baseId}: serviti ${responseData?.metas?.length || 0} titoli (cache=${builds === 0 ? 'hit' : 'miss'})`);
+    }
+
     return allineaIdFilm(await applyPostCacheBadges(responseData, userConfig, hostUrl, catalogMeta, type, baseId));
 }
 
