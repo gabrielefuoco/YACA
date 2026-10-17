@@ -19,8 +19,6 @@
 
 const compiler = require('./compiler');
 const duckDbStore = require('./duckDbStore');
-const ProfileScorer = require('../profile/ProfileScorer');
-const { semiDi } = require('../library');
 const { isItemAnime, ANIME_POLICY_MODES, isAnimeContent } = require('../anime');
 const { F, S } = require('../catalog/filters');
 const { isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../catalog/kidsModeFilters');
@@ -29,8 +27,6 @@ const HIDDEN_GEMS_MAX_POPULARITY = 20;
 const HIDDEN_GEMS_MIN_SCORE = 6.5;
 const HIDDEN_GEMS_MIN_VOTES = 50;
 const HIDDEN_GEMS_MAX_VOTES = 1000;
-const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
-const HIDDEN_MUSIC_GENRE_ID = 10402;
 
 const BOX_SET_YEAR_RANGE_REGEX = /\b(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}\b/;
 const BOX_SET_KEYWORD_REGEX = /\b(trilogy|trilogia|collection|collezione|anthology|antologia|complete)\b/i;
@@ -79,57 +75,6 @@ function passesQualityFloor(item, mediaType = 'movie', isHiddenGems = false) {
             || /special|abominevole sposa/i.test(title);
         if (isSpecialOrEpisode) return false;
     }
-    return true;
-}
-
-function getVectorAffinity(vector, prefix, id) {
-    if (!vector || id === null || id === undefined) return 0;
-    if (typeof ProfileScorer.getVectorScore === 'function') {
-        return ProfileScorer.getVectorScore(vector, prefix, id);
-    }
-    return Number(vector[`${prefix}:${String(id)}`]) || 0;
-}
-
-function hasAffinityForAny(vector, prefix, ids) {
-    return ids.some(id => getVectorAffinity(vector, prefix, id) > 0);
-}
-
-function isHiddenGemAlignedWithProfile(item, profile, tipo) {
-    const vector = profile?.compiledVectors?.V_final;
-    if (!vector || typeof vector !== 'object' || Object.keys(vector).length === 0) return true;
-
-    const genreIds = (item.genre_ids || (item.genres ? item.genres.map(g => String(g.id || g)) : [])).map(String);
-    const keywordItems = Array.isArray(item.keywords)
-        ? item.keywords
-        : (item.keywords?.results || item.keywords?.keywords || []);
-    const keywordIds = [...new Set(keywordItems.map(k => {
-        const id = typeof k === 'object' && k !== null ? (k.id ?? k.name) : k;
-        return id !== null && id !== undefined ? String(id) : null;
-    }).filter(Boolean))];
-
-    const hasDnaAffinity = hasAffinityForAny(vector, 'g', genreIds)
-        || hasAffinityForAny(vector, 'k', keywordIds);
-    if (!hasDnaAffinity) return false;
-
-    const childGenreIds = genreIds.filter(id => HIDDEN_CHILD_ORIENTED_GENRE_IDS.has(id));
-    const hasChildGenreAffinity = hasAffinityForAny(vector, 'g', childGenreIds);
-    if (childGenreIds.length > 0 && !hasChildGenreAffinity) return false;
-
-    const isAnime = isAnimeContent({
-        tmdbId: item.id ?? item._tmdbId,
-        genreIds,
-        originalLanguage: item.original_language,
-        keywords: keywordItems,
-        tipo
-    });
-    const isMangaAdaptation = keywordItems.some(k => (
-        typeof k?.name === 'string' && /based on manga/i.test(k.name)
-    ));
-    if ((isAnime || isMangaAdaptation) && !hasChildGenreAffinity) return false;
-
-    if (genreIds.includes(String(HIDDEN_MUSIC_GENRE_ID))
-        && getVectorAffinity(vector, 'g', HIDDEN_MUSIC_GENRE_ID) <= 0) return false;
-
     return true;
 }
 
@@ -233,13 +178,13 @@ async function candidati(contesto, opzioni = {}) {
         const kidsMode = Boolean(ctx.kidsMode);
         const animePolicy = effectiveSelectors.anime || 'neutral';
 
-        // 1. Lettura Semi dalla Libreria (src/library/semiDi)
-        const userSeeds = new Map();
-        const mongoose = require('mongoose');
-        const isMongoConnected = Boolean(mongoose?.connection && mongoose.connection.readyState === 1);
+        const { ProfileScorer } = require('../profile');
 
-        if (ctx.userId && isMongoConnected) {
+        // 1. Lettura Semi dalla Libreria (src/library/semiDi caricato dalla porta)
+        const userSeeds = new Map();
+        if (ctx.userId) {
             try {
+                const { semiDi } = require('../library');
                 const seedResult = await semiDi({
                     userId: ctx.userId,
                     profileId: ctx.profileId || 'global',
@@ -255,18 +200,13 @@ async function candidati(contesto, opzioni = {}) {
             }
         }
 
-        // 2. Lettura del profilo di gusto (TasteProfile)
-        let tasteProfile = ctx.tasteProfile || ctx.profile || null;
-        if (!tasteProfile && ctx.userId && isMongoConnected) {
-            try {
-                const TasteProfile = mongoose.models.TasteProfile || require('../models/TasteProfile');
-                tasteProfile = await TasteProfile.findOne({
-                    owner: ctx.userId,
-                    context: ctx.profileId || 'global'
-                }).lean();
-            } catch (_e) {
-                // MongoDB non disponibile o contesto in-memory: safe fallback
-            }
+        // 2. Lettura del profilo di gusto (passato nel contesto dal chiamante)
+        const tasteProfile = ctx.tasteProfile || ctx.profile || null;
+        if (!tasteProfile) {
+            motivi.push('taste_profile_non_disponibile');
+        }
+        if (ctx.isMongoConnected === false || ctx.databaseConnected === false || ctx.dbConnected === false) {
+            motivi.push('database_profilo_non_connesso');
         }
 
         // 3. Costruzione filtri dichiarativi per DuckDB (compiler)
@@ -335,7 +275,7 @@ async function candidati(contesto, opzioni = {}) {
             if (animePolicy === ANIME_POLICY_MODES.EXCLUDE && isAnime) continue;
 
             if (strategia === 'hidden_gems' && tasteProfile) {
-                if (!isHiddenGemAlignedWithProfile(raw, tasteProfile, contentTipo)) continue;
+                if (!ProfileScorer.isHiddenGemAlignedWithProfile(raw, tasteProfile, contentTipo)) continue;
             }
 
             const score = ProfileScorer.calculateItemMatch(raw, tasteProfile, {
@@ -343,7 +283,7 @@ async function candidati(contesto, opzioni = {}) {
                 animePolicy,
                 typeSelectors: effectiveSelectors
             });
-            if (kidsMode && score <= 0) continue;
+            if (kidsMode && tasteProfile && score <= 0) continue;
 
             // Spiegazione del candidato
             let motivo = 'gemma_nascosta:qualita_bayesiana';
