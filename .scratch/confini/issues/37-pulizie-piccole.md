@@ -61,3 +61,14 @@ occhio. **Il risultato che conta è che non c'è quasi niente da pulire** — il
 - `src/utils/tmdbIngestPolicy.js` (0 importatori) → **`t34-daemon`**, che possiede il cluster `tmdb*`.
 - `src/catalog/index.js` + `validation.js` (isola chiusa, 372 righe) → **decisione**, non pulizia: o la porta del
   catalogo diventa quella che si usa, o si cancella. È il rilievo del ticket 27.
+
+## Correzione dell'audit (18/10/2026): `tmdbIngestPolicy` NON era morto
+
+L'audit diceva «`src/utils/tmdbIngestPolicy.js` (95 righe) — **0 importatori**». **Falso**: lo importano
+`src/utils/tmdbDumpClient.js` e `src/utils/tmdbDumpDaemon.js` — con il percorso **relativo**
+(`require('./tmdbIngestPolicy')`), mentre il mio `grep` cercava il prefisso `utils/` (`utils/tmdbIngestPolicy`).
+Il file è vivo, ha 9 test suoi, e `t34-daemon` ha fatto bene a verificare prima di cancellarlo.
+
+**Quarta sonda sbagliata della giornata, sempre della stessa famiglia**: un `grep` che assume la *forma* di un
+percorso (`utils/x`) e non vede l'altra (`./x`). La regola che ne esce: per contare gli importatori, cerca il
+**nome del file**, non un percorso.
