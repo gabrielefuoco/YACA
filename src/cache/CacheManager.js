@@ -65,10 +65,11 @@ class CacheManager {
         if (envelope !== undefined && envelope !== null) {
             if (typeof envelope === 'object' && 't' in envelope && 'v' in envelope) {
                 const age = Date.now() - envelope.t;
-                if (age <= this.ramTtlMs) {
+                const effectiveRamTtl = envelope.ttl || this.ramTtlMs;
+                if (age <= effectiveRamTtl) {
                     return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'fresh' };
                 }
-                if (this.swrMs > 0 && age <= this.ramTtlMs + this.swrMs) {
+                if (this.swrMs > 0 && age <= effectiveRamTtl + this.swrMs) {
                     return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'stale' };
                 }
             } else {
@@ -151,11 +152,11 @@ class CacheManager {
         const effectiveTtl = ttlMs || this.redisTtlMs;
         const useRam = options.useRam !== false;
         const storageValue = value === null ? NEGATIVE_CACHE_MARKER : value;
-        const envelope = { v: storageValue, t: Date.now() };
+        const envelope = { v: storageValue, t: Date.now(), ttl: effectiveTtl };
 
         // 1. L1 (RAM)
         if (useRam) {
-            const l1Ttl = this.ramTtlMs + this.swrMs;
+            const l1Ttl = effectiveTtl + this.swrMs;
             await this._l1Set(key, envelope, l1Ttl);
         }
 

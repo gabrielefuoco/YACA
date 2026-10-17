@@ -36,6 +36,7 @@ const {
 } = require('../engines/hybrid/catalogStrategies');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
+const graphClient = require('./graphClient');
 
 const HERO_CATALOG_IDS = new Map([
     ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
@@ -44,7 +45,7 @@ const HERO_CATALOG_IDS = new Map([
     ]))
 ]);
 
-const HERO_CACHE_KEY_VERSION = 'v12';
+const HERO_CACHE_KEY_VERSION = 'v13';
 const HERO_CACHE_SCHEMA_VERSION = 7;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
@@ -58,9 +59,13 @@ function getHeroCatalogId(slug, mediaType) {
     return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors }) {
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions }) {
     const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
-    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
+    const versions = graphVersions !== undefined ? graphVersions : graphClient.getGraphHealthVersionsCached();
+    const gSuffix = versions?.artefatto
+        ? `_art_${versions.artefatto}${versions.ricetta ? `_ric_${versions.ricetta}` : ''}`
+        : '';
+    return `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}${gSuffix}_${mediaType}${kidsMode ? '_kids' : ''}${animeSuffix}`;
 }
 
 function getRecommendationId(item) {
@@ -219,36 +224,79 @@ const HERO_STRATEGIES = [
         slug: 'graph_rows',
         additive: true,
         // =========================================================================
-        // GANCI DEL GRAFO (Ticket 08 innesta qui il servizio Python persistente)
+        // GANCI DEL GRAFO (Ticket 08: servizio Python persistente via HTTP)
         // =========================================================================
-        run: async (ctx, { assigned, rawTraktResult }) => {
+        run: async (ctx, { assigned, rawTraktResult, sharedState }) => {
+            const med = ctx.mediaType === 'movie' ? 'movie' : 'series';
+            const suffisso = ctx.mediaType === 'movie' ? 'movies' : 'series';
+            const catMondi = `yaca_mondi_${suffisso}`;
+            const catPasso = `yaca_passo_fuori_${suffisso}`;
+
             try {
-                const { righePerStremio } = require('../engines/bolle/raccomanda');
-                const { collectRealSeeds } = require('../library');
-                const { seeds } = await collectRealSeeds({ userId: ctx.userId, context: ctx.context, mediaType: ctx.mediaType, user: ctx.userConfig });
-                const PESO_A_TIPO = { 4: 'loved', 3: 'liked', 2: 'watched', 1: 'library' };
-                const tipoSeeds = ctx.mediaType === 'movie' ? 'movie' : 'tv';
-                const semi = [...seeds.entries()].map(([id, w]) => ({
-                    tmdbId: Number(id),
-                    type: tipoSeeds,
-                    signals: [{ type: PESO_A_TIPO[w] || 'watched' }],
-                }));
+                const { semiDi } = require('../library');
+                const { seeds } = await semiDi({
+                    userId: ctx.userId,
+                    context: ctx.context,
+                    mediaType: ctx.mediaType,
+                    user: ctx.userConfig
+                });
+                const semi = [...seeds.entries()].map(([id, w]) => {
+                    const tmdbId = Number(id);
+                    let tipo = 'watched';
+                    if (w >= 4) tipo = 'loved';
+                    else if (w >= 3) tipo = 'liked';
+                    else if (w === 1) tipo = 'library';
+                    return {
+                        tmdbId,
+                        medium: med,
+                        tipo,
+                        peso: w
+                    };
+                });
                 const visti = new Set(semi.map((s) => s.tmdbId));
-                if (rawTraktResult.traktAvailable) {
+                if (rawTraktResult?.traktAvailable) {
                     for (const voce of (rawTraktResult.ids || [])) {
                         const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
                         if (!Number.isFinite(id) || visti.has(id)) continue;
                         visti.add(id);
-                        semi.push({ tmdbId: id, type: tipoSeeds, signals: [{ type: 'liked' }] });
+                        semi.push({ tmdbId: id, medium: med, tipo: 'liked', peso: 3 });
                     }
                 }
-                const fuori = righePerStremio(semi, { mediaType: ctx.mediaType });
-                for (const [k, v] of Object.entries(fuori)) {
-                    assigned[k] = (v || []).map((it) => ensurePoolItem(it, ctx.mediaType));
-                }
-                const suffisso = ctx.mediaType === 'movie' ? 'movies' : 'series';
-                const nMondi = (fuori[`yaca_mondi_${suffisso}`] || []).length;
-                const nPasso = (fuori[`yaca_passo_fuori_${suffisso}`] || []).length;
+
+                const opzioni = ctx.userConfig?.activeProfileSettings?.graphOptions
+                    || ctx.userConfig?.graphOptions
+                    || undefined;
+                const cap = ctx.cap || 60;
+
+                const resGraph = await graphClient.raccomanda({
+                    semi,
+                    medium: med,
+                    opzioni,
+                    cap
+                });
+
+                const liste = resGraph?.liste || [];
+                const listaMondi = liste.find((l) => l.ruolo === 'il_tuo_mondo');
+                const listaPasso = liste.find((l) => l.ruolo === 'un_passo_fuori');
+
+                assigned[catMondi] = (listaMondi?.titoli || []).map((t) => ensurePoolItem({
+                    id: `tmdb:${t.tmdbId}`,
+                    tmdbId: Number(t.tmdbId),
+                    type: t.medium === 'movie' ? 'movie' : 'series',
+                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
+                    punteggio: t.punteggio
+                }, ctx.mediaType));
+
+                assigned[catPasso] = (listaPasso?.titoli || []).map((t) => ensurePoolItem({
+                    id: `tmdb:${t.tmdbId}`,
+                    tmdbId: Number(t.tmdbId),
+                    type: t.medium === 'movie' ? 'movie' : 'series',
+                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
+                    punteggio: t.punteggio
+                }, ctx.mediaType));
+
+                const nMondi = (assigned[catMondi] || []).length;
+                const nPasso = (assigned[catPasso] || []).length;
                 console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${seeds.size}, da Trakt ${semi.length - seeds.size}` +
                     ` · mondi ${nMondi} · passo fuori ${nPasso}`);
                 if (semi.length > 0 && nMondi === 0 && nPasso === 0) {
@@ -256,7 +304,10 @@ const HERO_STRATEGIES = [
                         `(${ctx.mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
                 }
             } catch (e) {
-                console.error('[Mondi] righe del grafo non disponibili:', e && e.message);
+                assigned[catMondi] = [];
+                assigned[catPasso] = [];
+                if (sharedState) sharedState.graphCallFailed = true;
+                console.warn(`[Mondi] motore non raggiungibile: ${e?.message || e}`);
             }
         }
     }
@@ -380,9 +431,10 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     const assigned = assignHeroPools(pools, mediaType);
 
     // Eseguiamo le strategie additive (il grafo) DOPO l'assegnazione disgiunta
+    const sharedState = { graphCallFailed: false };
     const additiveStrategies = HERO_STRATEGIES.filter(s => s.additive);
     for (const strat of additiveStrategies) {
-        await strat.run(ctx, { assigned, rawTraktResult });
+        await strat.run(ctx, { assigned, rawTraktResult, sharedState });
     }
 
     // Degrado Trakt
@@ -401,6 +453,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         schemaVersion: HERO_CACHE_SCHEMA_VERSION,
         mediaType,
         catalogs: assigned,
+        graphCallFailed: !!sharedState.graphCallFailed,
         trakt: {
             available: rawTraktResult.traktAvailable,
             traktAvailable: rawTraktResult.traktAvailable,
@@ -418,7 +471,13 @@ async function buildAndCacheSharedHeroCatalogs(args, cacheKey) {
 
     const promise = (async () => {
         const group = await buildSharedHeroCatalogs(args);
-        await hybridRecommendationsCache.set(cacheKey, group);
+        if (group && group.graphCallFailed) {
+            // E5: un guasto transitorio (timeout, 503, connessione rifiutata) non deve avvelenare
+            // la cache di 7 giorni. Memorizziamo con TTL breve di 60 s.
+            await hybridRecommendationsCache.set(cacheKey, group, 60 * 1000);
+        } else {
+            await hybridRecommendationsCache.set(cacheKey, group);
+        }
         return group;
     })();
     activeHeroGroupBuilds.set(cacheKey, promise);
@@ -461,7 +520,8 @@ async function getHeroPool(params) {
         userConfig = null
     } = params;
 
-    const cacheKey = buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors });
+    const graphVersions = await graphClient.getGraphHealthVersions();
+    const cacheKey = buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions });
     const sharedGroup = await getSharedHeroCatalogs({
         userId,
         context,
@@ -498,5 +558,6 @@ module.exports = {
     HERO_CACHE_SCHEMA_VERSION,
     HERO_PRIORITY,
     SLUG_ADDITIVI,
-    HERO_STRATEGIES
+    HERO_STRATEGIES,
+    graphClient
 };
