@@ -503,3 +503,28 @@ stack basandomi sulla *raggiungibilità* invece che sull'**uso** (la raggiungibi
 serve); i log **non registrano le richieste**, quindi «0 richieste» non è una misura; e il primo probe nel
 container è caduto perché **la produzione ha ancora il codice pre-refactor** — ogni misura nel container misura il
 vecchio, finché non si fa il ticket 30.
+
+### 19. Il modulo anime: due metà e tre cartelle (ticket 32)
+
+**18/10/2026.** La materia anime è **~5.000 righe (13% del codice) per una dimensione del catalogo**, e oggi sta
+in due metà: il **servizio** (`services/anime-source/`, 3.133 righe, con `animeunity.js` = lo scraper del
+simulcast, e `store.js` che scrive lo snapshot su Mongo `anime_airing_state`) e **l'app**, dove leggere e decidere
+sta in **tre cartelle** — `data/animeMappingStore.js` (688), `data/animeAiringState.js` (746),
+`utils/animeIdentity.js` (280), `engines/hybrid/animePolicy.js` (151) — consumate da **12 file in ogni modulo**.
+
+Tre difetti trovati, che valgono più della proposta:
+
+1. **La decisione anime (`animePolicy`) vive dentro `src/engines/hybrid/`**, cioè fra le 6.278 righe del vecchio
+   stack da cancellare, mentre la chiamano i moduli **nuovi** (`profile`, `catalog`, `pool`). Chi cancella senza
+   spostarla prima cancella la decisione, e non fa un errore: cambia comportamento in silenzio.
+2. **L'app entra nel servizio con un `require`**, non con un contratto: `animeMappingStore.js:10-18` carica
+   `services/anime-source/src/overrides` con un secondo tentativo e un **ripiego muto** (override vuoti).
+   Funziona solo perché il Dockerfile fa `COPY . .` e il `.dockerignore` esclude `services/graph/` ma non
+   `services/anime-source/`: aggiungere `services/` al `.dockerignore` spegnerebbe gli override senza un errore.
+3. **Il mapping è fatto due volte**: l'app scarica Anibridge+Fribb da sé, e il servizio ha `identity.js` (756),
+   `tvdbBridge.js`, `tmdbFallback.js`. Due verità su «che cos'è questo anime», e nessuna che vinca.
+
+**La forma**: un modulo `src/anime/` con una porta sola (identità + decisione + i due store), il servizio resta chi
+produce, e la cucitura è già un contratto vero (Mongo `anime_airing_state`). **Il vincolo che decide la cucitura**:
+gli id anime finiscono **dentro l'SQL** (`duckDbStore.js:276-279`), quindi il mapping deve restare **locale al
+processo** — chi progettasse «l'app chiede il mapping al servizio» romperebbe la query.
