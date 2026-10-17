@@ -74,8 +74,8 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => {
     };
 });
 
-jest.mock('../src/engines/keywords/HierarchicalGraph', () => {
-    const actual = jest.requireActual('../src/engines/keywords/HierarchicalGraph');
+jest.mock('../src/indice/HierarchicalGraph', () => {
+    const actual = jest.requireActual('../src/indice/HierarchicalGraph');
     return {
         ...actual,
         loadData: jest.fn().mockResolvedValue(true),

@@ -7,7 +7,7 @@ const {
     getDuckDbMetaDetails 
 } = require('../src/catalog/providers/DuckDbProvider');
 const duckDbStore = require('../src/indice/duckDbStore');
-const graph = require('../src/engines/keywords/HierarchicalGraph');
+const graph = require('../src/indice/HierarchicalGraph');
 
 describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
     beforeAll(async () => {

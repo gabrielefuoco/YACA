@@ -1,7 +1,7 @@
 const ProfileScorer = require('../src/profile/ProfileScorer');
 const { G, F } = require('../src/data/filters');
 const { computeTopGenres, computeTopKeywords } = require('../src/engines/hybrid/scoringEngine');
-const HierarchicalGraph = require('../src/engines/keywords/HierarchicalGraph');
+const HierarchicalGraph = require('../src/indice/HierarchicalGraph');
 
 describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
 

@@ -499,7 +499,7 @@ describe('DNA characterization — scala di V_active (corretta nel passo 3, tick
 
 describe('DNA characterization — scoring VSM (golden master)', () => {
     it('_computeThematicScoreForVector congela il prodotto scalare DNA x item', () => {
-        const HierarchicalGraph = require('../../src/engines/keywords/HierarchicalGraph');
+        const HierarchicalGraph = require('../../src/indice/HierarchicalGraph');
         const hVector = HierarchicalGraph.vectorizeKeywords([{ id: 'isekai' }, { id: 123 }]);
         expect(ProfileScorer._computeThematicScoreForVector(V_FINAL, [18, 878], hVector)).toBeCloseTo(57.335181368, 9);
     });

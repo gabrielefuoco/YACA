@@ -12,7 +12,7 @@
  * devono restituire lo STESSO set di keyword. Oggi fallisce.
  */
 
-const graph = require('../src/engines/keywords/HierarchicalGraph');
+const graph = require('../src/indice/HierarchicalGraph');
 
 // Espansione deterministica del nodo (stessa logica di getKeywordsForNodes, senza il cap).
 function fullKeywordUnion(nodeId, level = 'L2') {
