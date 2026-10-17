@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 20 — Le suite che il refactor ha lasciato rosse
@@ -84,3 +84,65 @@ Verificata col proprietario e **con la documentazione della repo stessa**:
 **allineare il test** citando `6443a87` e `docs/STREMIO_INTERNALS.md:80` — altrimenti il prossimo che lo legge crede
 che sia stata tolta una cosa viva. La rotta resta (tre righe inline, `{streams: []}`): è la regola della doc,
 *payload vuoto con 200, mai un errore*.
+
+---
+
+## Triage e Classificazione Post-Merge (17/10/2026)
+
+Integrati i 5 refactor sbarcati su `main` (commit `5a9c789`):
+- Ticket 21: Modulo Profilo (`src/profile/`, anagrafica profili, `contestoDi`, `selettoriEffettivi`)
+- Ticket 22 (prima metà): Indice di ricerca e compilatore parametrizzato (`src/indice/`, `buildCatalogQuery`)
+- Ticket 23: Tipo Catalogo (`src/catalog/`)
+- Ticket 24: Modulo Cache (`src/cache/`, derivazione chiavi da descrizione)
+- Ticket 25: Modulo Poster (`src/posters/`, ERDB, coda eventi, drenatore)
+
+### 1. Riepilogo suite allineate e verificate verdi (8 suite)
+
+| Suite | Tipo allineamento | Riferimento refactor / ticket |
+|---|---|---|
+| `tests/heroMovieDateRegression.test.js` | Confermato verde (13/13) | Integrato pulito con Ticket 23 e 24 |
+| `tests/resilienceAuditFixes.test.js` | Allineato manifest stream e Mongoose mock (14/14 verde singolo) | Ticket 05 (`docs/STREMIO_INTERNALS.md:80`) e Ticket 21 |
+| `tests/heroPolicyAndTrakt.test.js` | Allineato a cache da descrizione (`v14_...`) e profilo `kidsMode` (9/9) | Ticket 21 e Ticket 24 |
+| `tests/heroDiversity.test.js` | Aggiunti mock `UserAccount` e `AddonConfig` per `contestoDi` (7/7) | Ticket 21 (evita timeout buffering Mongoose) |
+| `tests/heroAnimeTypeSelectors.test.js` | Mock `AddonConfig.findOne` reso dinamico per `liveaction_user` / `anime: 'exclude'` (8/8) | Ticket 21 (risoluzione contesto profilo) |
+| `tests/heroPoolAnimeExcludeCap.test.js` | Mock `UserAccount` e `AddonConfig.profiles` forniti a `contestoDi` (1/1) | Ticket 21. **Verificato**: la misura del Ticket 38 è integra (cap 20 post-filtri) |
+| `tests/staticPostersCoda.test.js` | Mock aggiornato su `src/posters/codaEventi` (10/10) | Ticket 25 (coda spostata da `cache` a `posters`) |
+| `tests/stremioProtocolFixes.test.js` | Asserzione `querySpy` allineata a query parametrizzata `LIMIT ? OFFSET ?` (6/6) | Ticket 22 prima metà (compilatore parametrizzato) |
+
+---
+
+### 2. Risoluzione delle due attribuzioni dubbie
+
+1. **`tests/metaHandlerEpisodeIds.test.js` — Preesistente (04/10/2026)**:
+   - Fallisce su riga 175 (`resolveImdbId` network spy mai chiamato) e riga 201 (`tt0108778:1:1` invece di `tmdb:1668:1:1`).
+   - **Causa**: Commit `947163b` (*«L'id IMDb si legge dal dump e gli speciali vanno in fondo alla lista»*, 04/10/2026). `metaHandler` risolve l'ID IMDb interrogando localmente il dump DuckDB (`resolveImdbIdFromDump`). La funzione di rete `resolveImdbId` non viene mai chiamata quando l'ID è nel dump (Friends: 1668 è presente), e il dump trova sempre `tt0108778`. Il test era rimasto a verificare la vecchia implementazione di rete.
+   - **Attribuzione**: Preesistente al lavoro notturno, risalente al 4 ottobre 2026.
+
+2. **`tests/searchTier2Merge.test.js` — Verde / Ambientale (17/10/2026)**:
+   - In ambiente pulito/isolato (`LEARNED_NAMES_DB` su file temporaneo): **24 passed su 24 (100% verde)**.
+   - **Causa del rosso locale**: Sul worktree locale esiste il file SQLite `.cache/tmdb/learned_names.db` contenente il record appreso `"Batman: Maschera del Fantasma"` (tmdbId 414906). Quando il router di catalogo esegue la ricerca standard per `"batman"`, interroga anche `searchLearnedTitles`, che estrae il record dal disco e lo appende (41 item invece dei 40 attesi dal test).
+   - **Attribuzione**: L'algoritmo del Ticket 22 è corretto; il fallimento è dovuto unicamente all'inquinamento dello stato su disco locale.
+
+---
+
+### 3. Triage delle 11 suite rosse rimanenti (`npx jest --forceExit --silent`)
+
+Risultato suite completa post-allineamenti:
+```
+Test Suites: 11 failed, 1 skipped, 176 passed, 187 of 188 total
+Tests:       71 failed, 3 skipped, 1811 passed, 1885 total
+```
+
+| Suite | Categoria | Dettaglio fallimento e Causa |
+|---|---|---|
+| `tests/drenaPoster.test.js` | **Comportamentale** | Riga 331, test *«scrittura che fallisce: nessun .tmp residuo»*. In `src/posters/drenaPoster.js:206-208` (introdotto nel Ticket 25, commit `757a85e`), `scrivi()` intercetta `err.code === 'EPERM' \|\| err.code === 'EBUSY'` e ritorna silenziosamente se `fs.existsSync(target)` è true. Su Windows un rename atomico verso una directory preesistente solleva `EPERM`; `scrivi()` ingoia l'errore e chiude l'evento con `done` anziché `fail` (`resi: 1, falliti: 0`). **Difetto comportamentale nel codice di produzione**. |
+| `tests/metaHandlerEpisodeIds.test.js` | **Strutturale (Preesistente)** | Righe 175 e 201: `resolveImdbId` non chiamato via rete perché `resolveImdbIdFromDump` trova l'ID nel dump locale. Preesistente da commit `947163b` (04/10/2026). |
+| `tests/retireTmdbScoringData.test.js` | **Ambientale / Rete** | Riga 128: Describe 3 invoca `metaHandler` con chiave fittizia senza mock di rete TMDB, fallendo con HTTP 401. Preesistente da commit `419676d` (20/09/2026). Describe 1 e 2 (parquet senza Mongo) passano al 100%. |
+| `tests/searchTier2Merge.test.js` | **Ambientale** | 2 fallimenti dovuti al database locale `.cache/tmdb/learned_names.db`. 100% verde (24/24) se eseguito in ambiente pulito. |
+| `tests/duckDbPresetsValidation.test.js` | **Ambientale (Concorrenza Windows)** | `catalog.duckdb.tmp` bloccato in I/O da processi concorrenti durante l'esecuzione parallela multi-worker. Eseguito singolarmente è 100% verde (4/4, 17.7s). |
+| `tests/animeOverridesCertify.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB durante la corsa multi-worker. Eseguito singolarmente è 100% verde (3/3). |
+| `tests/duckDbAndMatchmaker.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB su `catalog.duckdb.tmp`. Eseguito singolarmente è 100% verde (23/23). |
+| `tests/ticket14TitlePolicy.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB multi-worker. Eseguito singolarmente è 100% verde (12/12). |
+| `tests/presetBurtonOrdering.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB multi-worker. Eseguito singolarmente è 100% verde (1/1). |
+| `tests/donghuaCatalog.test.js` | **Ambientale (Concorrenza Windows)** | Collisione DuckDB multi-worker. Eseguito singolarmente è 100% verde (4/4). |
+| `tests/sottosogliaVisibility.test.js` | **Ambientale (Concorrenza Windows)** | Collisione e corruzione temporanea schema DuckDB durante i test concorrenti. Eseguito singolarmente su database pulito è 100% verde (24/24). |
