@@ -3,6 +3,7 @@ const TasteProfile = require('../models/TasteProfile');
 const ProfileBuilder = require('../profile/ProfileBuilder');
 const tmdb = require('../clients/tmdb');
 const { prioritizeLocalizedImages } = require('../clients/tmdb');
+const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../utils/contentId');
 const { rateLimitedMap } = require('../utils/rateLimiter');
@@ -61,8 +62,19 @@ function getActiveKidsMode(userConfig, context) {
 }
 
 function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
-    const animeSuffix = typeSelectors?.anime ? `_a_${typeSelectors.anime}` : '';
-    return `${userId}_${context}_${catalogId}${kidsMode ? '_kids' : ''}${animeSuffix}`;
+    const { chiave } = cache.deriva({
+        nome: 'recommendations',
+        dipendenze: {
+            varia: {
+                utente: userId,
+                profilo: context,
+                catalogo: catalogId,
+                kids: kidsMode,
+                selettori: typeSelectors
+            }
+        }
+    });
+    return chiave;
 }
 
 async function resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder) {
@@ -185,24 +197,39 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     if (matchedPreset && matchedPreset.type) {
         mediaType = matchedPreset.type === 'series' ? 'series' : 'movie';
     }
-    const context = activeProfileId || 'global';
+    const { contestoDi } = require('../profile');
+    const ctx = userConfig?.context || await contestoDi({
+        userId,
+        profileId: activeProfileId,
+        user: userConfig
+    });
+    const context = ctx.profileId;
+    const isKidsMode = ctx.kidsMode;
+    const effectiveTypeSelectors = ctx.selettoriEffettivi;
     const profile = await TasteProfile.findOne({ owner: userId, context });
-    const isKidsMode = getActiveKidsMode(userConfig, context);
-    const typeSelectors = getActiveTypeSelectors(userConfig, context);
-    const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
     const isHero = isHeroCatalogId(catalogId);
-    const cacheKey = isHero
-        ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors })
-        : buildRecommendationCacheKey({ userId, context, catalogId, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors });
-
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
-    console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}, cacheKey=${cacheKey}`);
+    console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}`);
+
+    const recDesc = {
+        nome: 'recommendations',
+        dipendenze: {
+            varia: {
+                utente: userId,
+                profilo: context,
+                catalogo: catalogId,
+                kids: isKidsMode,
+                selettori: effectiveTypeSelectors
+            }
+        },
+        ttl: 7 * 24 * 60 * 60 * 1000 // 7 giorni
+    };
 
     if (profile) {
         if (isProfileSyncDue(profile.lastUpdated, new Date())) {
             syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context, userConfig).then(async (synced) => {
                 if (synced) {
-                    await hybridRecommendationsCache.delete(cacheKey);
+                    await cache.cancella(recDesc);
                 }
             }).catch(err => console.error("Errore check stale profile:", err.message));
         }
@@ -221,23 +248,23 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             typeSelectors: effectiveTypeSelectors
         });
         recommendationIds = poolResults[catalogId] || poolResults.catalogs?.[catalogId] || [];
-        console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs (group=${cacheKey})`);
+        console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs`);
     } else {
         const buildRecommendIds = async () => {
             if (matchedPreset) {
                 const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode, effectiveTypeSelectors);
                 if (ids.length > 0) {
-                    await hybridRecommendationsCache.set(cacheKey, { ids });
+                    await cache.scrivi(recDesc, { ids });
                     return ids;
                 }
             }
             const ids = [];
-            await hybridRecommendationsCache.set(cacheKey, { ids });
+            await cache.scrivi(recDesc, { ids });
             return ids;
         };
 
-        const { value: cachedEntry, status: cacheStatus } = await hybridRecommendationsCache.getWithStatus(cacheKey);
-        console.log(`[Hybrid Debug] cache status for ${cacheKey}: ${cacheStatus}`);
+        const { value: cachedEntry, status: cacheStatus } = await cache.leggi(recDesc);
+        console.log(`[Hybrid Debug] cache status for ${catalogId}: ${cacheStatus}`);
         if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
             recommendationIds = cachedEntry.ids;
             console.log(`[Hybrid Debug] returning ${recommendationIds.length} IDs from cache`);
@@ -255,7 +282,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
             recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
             if (recommendationIds.length > 0) {
-                await hybridRecommendationsCache.set(cacheKey, { ids: recommendationIds });
+                await cache.scrivi(recDesc, { ids: recommendationIds });
             }
         }
     }

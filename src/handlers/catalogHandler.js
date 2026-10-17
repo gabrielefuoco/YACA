@@ -1,4 +1,5 @@
 const { createTmdbClient } = require('../clients/tmdb');
+const cache = require('../cache');
 const { getCacheConfig } = require('../cache/CacheManager');
 const { catalogRequestCache } = require('../cache/cacheInstances');
 const { getPresets } = require('../data/presets');
@@ -215,28 +216,33 @@ function buildCatalogCacheKey({
     activeProfileSettings,
     badgeVersion = BADGE_CATALOG_VERSION
 } = {}) {
-    // Un **preset** non porta niente dell'utente: i campi per-utente (`_yacaMatch`,
-    // `traktAvailable`) nascono solo nel motore ibrido, che costruisce hero e Trakt
-    // (`hybridRecommendations.js:496`, `catalogStrategies.js:1440`). Quindi la sua chiave non deve
-    // contenere `user`/`profile` — sono pura frammentazione, ed è da lì che nascono le **20 chiavi**
-    // di `preset_adult_animation` e le 11 di `preset_ghibli` che contengono la stessa lista.
-    //
-    // Per tutto il resto la chiave resta per profilo, e non per prudenza: la watchlist è la
-    // libreria personale, gli hero hanno il DNA, i custom e i merged possono avere come sorgente
-    // una watchlist.
     const condiviso = PRESET_IDS.has(baseId);
-
-    return generateRequestHash(id, {
-        ...catalogContentParams({ type, extra, directFilters, catalogMeta, activeProfileSettings }),
-        ...(condiviso ? {} : {
-            user: userConfig?.userId,
-            profile: userConfig?.activeProfileId
-        }),
-        // Il formatter sceglie poster orizzontale o verticale: è un interruttore del
-        // profilo, quindi resta in chiave come `kidsMode` e `typeSelectors`.
-        landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
-        badgeV: badgeVersion
-    }, skip, type);
+    const { chiave } = cache.deriva({
+        nome: 'catalog_page',
+        versione: badgeVersion,
+        dipendenze: {
+            varia: {
+                id,
+                baseId,
+                type,
+                extra,
+                directFilters,
+                skip,
+                catalogMeta,
+                utente: condiviso ? null : userConfig?.userId,
+                profilo: condiviso ? null : userConfig?.activeProfileId,
+                kids: activeProfileSettings?.kidsMode,
+                selettori: activeProfileSettings?.typeSelectors,
+                landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
+                condiviso
+            },
+            invalida: {
+                badgeVersion,
+                catalogDef: canonicalCatalogDefinition(catalogMeta)
+            }
+        }
+    });
+    return chiave;
 }
 
 /**
@@ -598,8 +604,15 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { id, type, extra, filters: directFilters } = args;
     const skip = extra?.skip || 0;
     
-    // Resolve active profile settings directly from userConfig (instead of phantom SettingsManager)
-    const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+    // Resolve active profile settings directly from userConfig (prioritizing context if resolved at edge)
+    const rawSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+    const activeProfileSettings = userConfig?.context
+        ? {
+            ...rawSettings,
+            typeSelectors: userConfig.context.selettoriEffettivi || rawSettings.typeSelectors,
+            kidsMode: userConfig.context.kidsMode !== undefined ? userConfig.context.kidsMode : rawSettings.kidsMode
+        }
+        : rawSettings;
     
     // TMDB Client Initialization
     const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
@@ -625,18 +638,32 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
     // Check Full CACHE Request. La chiave nasce DOPO la risoluzione del catalogo,
     // perché la sua definizione è uno degli ingredienti.
-    const requestCacheKey = buildCatalogCacheKey({
-        id,
-        baseId,
-        type,
-        extra,
-        directFilters,
-        skip,
-        catalogMeta,
-        userConfig,
-        activeProfileSettings,
-        badgeVersion: BADGE_CATALOG_VERSION
-    });
+    const condiviso = PRESET_IDS.has(baseId);
+    const catalogDesc = {
+        nome: 'catalog_page',
+        versione: BADGE_CATALOG_VERSION,
+        dipendenze: {
+            varia: {
+                id,
+                baseId,
+                type,
+                extra,
+                directFilters,
+                skip,
+                catalogMeta,
+                utente: condiviso ? null : userConfig?.userId,
+                profilo: condiviso ? null : userConfig?.activeProfileId,
+                kids: activeProfileSettings?.kidsMode,
+                selettori: activeProfileSettings?.typeSelectors,
+                landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
+                condiviso
+            },
+            invalida: {
+                badgeVersion: BADGE_CATALOG_VERSION,
+                catalogDef: canonicalCatalogDefinition(catalogMeta)
+            }
+        }
+    };
 
     // managed SWR: Fetch or Revalidate
     const { ttl } = getCacheConfig(userConfig.ttl);
@@ -902,6 +929,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
     if (isDailyWindowCatalog) effectiveTtl = Math.min(effectiveTtl, DAILY_WINDOW_TTL_MS);
     if (isAiringStateCatalogId) effectiveTtl = Math.min(effectiveTtl, SIMULCAST_TTL_MS);
 
+    catalogDesc.ttl = effectiveTtl;
+
     // SWR handling. Il cronometro copre la sola parte costosa (cache + eventuale
     // costruzione), non i badge post-cache né la risposta HTTP.
     const requestStartedAt = Date.now();
@@ -909,7 +938,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
     if (extra?.search || baseId === 'yaca_search_history') {
         responseData = await fetchCatalog();
     } else if (extra?.warmupMode) {
-        const cachedStatus = await catalogRequestCache.getWithStatus(requestCacheKey);
+        const cachedStatus = await cache.leggi(catalogDesc);
         if (cachedStatus.status === 'fresh') {
             // [OTTIMIZZAZIONE] Se il catalogo è intatto (fresh) e il demone sta solo riscaldando,
             // non ci serve eseguire applyPostCacheBadges (che costa migliaia di letture/scritture al DB).
@@ -924,11 +953,11 @@ async function catalogHandler(args, userConfig, hostUrl) {
             return cachedStatus.value;
         } else {
             const freshData = await fetchCatalog();
-            await catalogRequestCache.set(requestCacheKey, freshData, effectiveTtl);
+            await cache.scrivi(catalogDesc, freshData);
             responseData = freshData;
         }
     } else {
-        responseData = await catalogRequestCache.getOrFetch(requestCacheKey, fetchCatalog, effectiveTtl);
+        responseData = await cache.leggi(catalogDesc, fetchCatalog);
     }
 
     // `fetchCatalog` non è mai partita: la cache ha servito il catalogo. Il costo

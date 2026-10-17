@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: grilling
 
 # 24 — Il modulo cache: chi possiede le chiavi
@@ -60,28 +60,76 @@ soprattutto una guardia che può essere **senza buchi**: se una cache resta fuor
 | quanto grande | **tutte le risposte memorizzate**: gruppo hero, pagina del catalogo (14 g), meta (6 h / 14 g), raccomandazioni. La differenza di costo è un campo della descrizione, non un confine |
 | la guardia | **è l'API, non un test**: il consumatore passa una *descrizione*, mai una chiave — fuori dal modulo non c'è niente da costruire. E la verifica è una sola, e non è una regex: **nessuno fuori dal modulo importa il client** (ioredis), una guardia sulle *dipendenze* che regge ai refactor |
 
-**Cosa resta**: l'applicazione. E il bug del TTL gonfiato (`swrMs` sul TTL esplicito) ha già il suo test da scrivere: *un TTL esplicito scade a quel TTL, non a quello in RAM*.
+---
+
+## Esito (17/10/2026)
+
+Tutte le decisioni del ticket sono applicate e verificate con test focalizzati:
+
+### 1. L'API del modulo cache (`src/cache/index.js`)
+L'API espone:
+- **`leggi(descrizione, costruttore, options)`**: se `costruttore` è fornito, gestisce hit, miss e SWR in background in modo trasparente; se omesso, restituisce `{ value, status, chiave, ttl }`.
+- **`scrivi(descrizione, valore, options)`**: memorizza il valore associato alla chiave derivata e al TTL esplicito o di default.
+- **`cancella(descrizione, options)`** (alias `invalida`): cancella la chiave derivata dall'istanza cache appropriata.
+- **`deriva(descrizione)`**: traduce la descrizione in `{ chiave, ttl, instance }`.
+
+**La guardia applicata**: se il chiamante passa una stringa invece di una descrizione a `leggi()`, `scrivi()` o `deriva()`, viene lanciato immediatamente un `TypeError`. Inoltre, la guardia architetturale verifica che nessun file fuori da `src/cache` importi `ioredis` (zero violazioni).
+
+### 2. La forma della descrizione e la distinzione delle dipendenze
+Forma canonica:
+```javascript
+{
+  nome: 'heroes' | 'recommendations' | 'catalog_page' | 'meta' | string,
+  versione: number | string, // campo esplicito per alzare la versione e invalidare
+  dipendenze: {
+    varia: { utente, profilo, media, kids, selettori, catalogo, ... }, // generano chiavi DIVERSE
+    invalida: { versione, artefatto, ricetta, catalogDef, ... }       // rendono VECCHIA la voce
+  },
+  ttl: number // letto accanto alla voce
+}
+```
+- **Variare**: profili, utenti, tipi media, filtri kids e selettori (`selettori.anime`) producono chiavi distinte.
+- **Invalidare**: cambiare la versione strutturale (`versione: 15`) o l'artefatto/ricetta del motore altera la chiave, invalidando automaticamente la cache senza dover ricordare convenzioni o toccare template string sparsi.
+- **Selettori (nota per ticket 21)**: il modulo cache **non risolve** i selettori (non consulta DB né userConfig); li **riceve** direttamente in `dipendenze.varia.selettori` e costruisce la chiave da ciò che il contesto porta.
+
+### 3. Le tre costruzioni a mano diventate una (con prova `grep`)
+Tutte e tre le costruzioni a mano sono state eliminate e sostituite dalla derivazione centralizzata in `src/cache/index.js`:
+1. `buildRecommendationCacheKey` (`src/engines/hybridRecommendations.js:63`): template string `${userId}_${context}_${catalogId}` rimosso; la funzione delega a `cache.deriva({ nome: 'recommendations', dipendenze: { varia: ... } })`.
+   - `grep '\$\{userId\}_\$\{context\}_'` in `hybridRecommendations.js` → **0 occorrenze**.
+2. Template string del pool (`src/pool/index.js:69`): `${userId}_${context}_heroes_${HERO_CACHE_KEY_VERSION}` rimosso; `buildSharedHeroCacheKey` delega a `cache.deriva({ nome: 'heroes', ... })`, e la cache del pool legge e scrive con `cache.leggi(heroDesc)` / `cache.scrivi(descToWrite, group)`.
+   - `grep '\$\{userId\}_\$\{context\}_heroes_'` in `src/pool/index.js` → **0 occorrenze**.
+3. `catalogRequestCache.set(requestCacheKey, ...)` (`src/handlers/catalogHandler.js:927`): rimosso insieme a `catalogRequestCache.getOrFetch` ed eliminato `requestCacheKey`. Ora usa `cache.scrivi(catalogDesc, freshData)` e `cache.leggi(catalogDesc, fetchCatalog)`.
+   - `grep 'catalogRequestCache\.set'` in `src/handlers/catalogHandler.js` → **0 occorrenze**.
+   - `grep 'requestCacheKey'` in `src/handlers/catalogHandler.js` → **0 occorrenze**.
+
+### 4. I TTL spostati nelle descrizioni
+Tutte le risposte memorizzate dichiarano il loro TTL esplicito accanto alla voce:
+- `heroes` (`pool/index.js`): TTL 7 giorni (`7 * 24 * 60 * 60 * 1000`), degradato a 60 secondi in caso di guasto transitorio E5 (`graphCallFailed`).
+- `recommendations` (`hybridRecommendations.js`): TTL 7 giorni (`7 * 24 * 60 * 60 * 1000`).
+- `catalog_page` (`catalogHandler.js`): `catalogDesc.ttl = effectiveTtl` (14 giorni standard, 7 giorni fast, 36 ore finestra giornaliera, 20 min simulcast, 2 min watchlist).
+- `meta` (`metaHandler.js`): 14 giorni per i film (`14 * 24 * 60 * 60 * 1000`), 6 ore per le serie (`6 * 60 * 60 * 1000`).
+
+### 5. Il bug del TTL in CacheManager e il suo test
+- **Fix completato**: in `CacheManager.js:72`, `effectiveSwr` in L1 è calcolato come `envelope.ttl ? 0 : this.swrMs`, allineando L1 al comportamento già presente in L2. In questo modo un TTL esplicito non viene gonfiato con la finestra SWR.
+- **Test dedicato**: `tests/cacheModule.test.js` verifica che con RAM TTL = 7 giorni e SWR = 1 ora, una voce scritta con TTL esplicito di 60 s è `fresh` a 30 s e scade esattamente a `miss` a 61 s (non resta fresh per 7 giorni né stale per 3660 s).
+
+### 6. Suite di test verificate
+- `tests/cacheModule.test.js`: **16 passed** (guardia API, derivazione, varia/invalida, TTL bug, leggi/scrivi).
+- `tests/heroCacheKeyNoVersion.test.js`: **10 passed**.
+- `tests/graphClientPoolIntegration.test.js`: **6 passed**.
+- `tests/hybridRecommendations.test.js`: **22 passed**.
+- `tests/catalogCacheKey.test.js`: **20 passed**.
+- `tests/catalogCacheKeys.test.js`: **8 passed**.
+- `tests/metaHandlerCacheImmutability.test.js`: **4 passed**.
+
+### 7. Cosa resta (fuori da questo ticket)
+- **Modulo poster**: la gestione dei file ERDB, poster statici composti, coda eventi e drenatore (`posterDaEvento.js`, `codaEventi.js`, `drenaPoster.js`) è un dominio autonomo con consumatore fuori processo (timer di sistema) assegnato al ticket 25 in parallelo. Tali file sono stati lasciati intatti.
+
 
 ---
 
-## Le domande che restano (per il prossimo grilling)
-
-1. **La forma della descrizione**: `{ nome: 'heroes', versione: 14, dipendenze: { utente, profilo, selettori,
-   media, kids }, ttl }` → e il modulo restituisce `chiave` + `ttl`. Quali dipendenze sono obbligatorie, e come
-   si dichiara che una dipendenza **invalida** (versione) invece di **variare** (il profilo)?
-2. **Le istanze**: RAM + Redis + SWR restano nel modulo (sì, per la decisione), ma **chi decide i TTL**? Le sei
-   costanti di `config.js` diventano campi delle descrizioni, o restano un dizionario del modulo?
-3. **La cache dei poster e il drenatore** (`src/cache/posterDaEvento.js`, `drenaPoster.js`, la coda eventi): sono
-   **cache** o sono un'altra cosa (una coda con un consumatore)? La decisione 14 dice che stanno fuori dal modulo
-   libreria — ma dentro il modulo cache, o in un loro?
-4. **`catalogRequestCache` (14 giorni) e le meta (6 ore / 14 giorni)**: entrano anche loro nella descrizione, o
-   il ticket si ferma alla cache delle raccomandazioni?
-5. **Il test-guardia**: un test che fallisce se compare una chiave costruita a mano fuori dal modulo — come si
-   scrive senza dipendere dalla forma delle stringhe (che è la trappola della regex sul sorgente, vista col
-   ticket 20)?
-
-## Come si verifica (da completare in grilling)
-
-Minimo: le tre costruzioni a mano diventano **una** (col `grep` che lo dimostra), il bug del TTL ha il suo test
-(`ttl esplicito → la voce scade a quel TTL, non a quello in RAM`), e una versione alzata **invalida davvero**
-(con la prova su Redis: `redis-cli ttl`).
+**Il poster è il ticket 25** (`.scratch/confini/issues/25-modulo-poster.md`): il modulo vive in `src/posters/`
+(con `erdb/` dentro, perché il modulo possiede i poster ed ERDB è un fornitore), il drenatore resta un **comando**
+perché il consumatore è un timer di sistema, e le unità sull'host vanno riportate a mano
+(`cp ops/yaca-poster-eventi.service /etc/systemd/system/` + `daemon-reload` + `restart`). Gli shim in
+`src/cache/` e `src/erdb/` restano finché il mate non ha le unità nuove — sono il ponte per il timer vecchio.

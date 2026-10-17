@@ -1,6 +1,7 @@
 const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient, resolveImdbId } = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../id_mapping/id_cache');
 const CacheManager = require('../cache/CacheManager');
+const cache = require('../cache');
 const animeMappingStore = require('../data/animeMappingStore');
 const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../db/tier1LazyPromotion');
@@ -559,12 +560,18 @@ async function metaHandler(args, userConfig) {
             }
 
             if (tmdbId) {
-                const cacheKey = `meta_${tmdbId}_${type}`;
+                const metaDesc = {
+                    nome: 'meta',
+                    dipendenze: {
+                        varia: { id: tmdbId, type }
+                    },
+                    ttl: type === 'movie' ? (14 * 24 * 60 * 60 * 1000) : (6 * 60 * 60 * 1000)
+                };
 
-                // Use getWithStatus for SWR support
-                const { value: cachedMeta, status: cacheStatus } = await finalMetaCache.getWithStatus(cacheKey);
-
-
+                // Use cache.leggi for SWR support
+                const cached = await cache.leggi(metaDesc, null, { instance: finalMetaCache });
+                const cacheStatus = cached.status;
+                const cachedMeta = cached.value;
 
                 if (cacheStatus === 'fresh') {
                     meta = cachedMeta;
@@ -593,7 +600,7 @@ async function metaHandler(args, userConfig) {
                                     delete finalBgMeta._keywordNames;
                                     delete finalBgMeta._numberOfSeasons;
                                     delete finalBgMeta._originalLanguage;
-                                    await finalMetaCache.set(cacheKey, finalBgMeta);
+                                    await cache.scrivi(metaDesc, finalBgMeta, { instance: finalMetaCache });
                                 }
                             } catch (_e) { /* silent background revalidation */ }
                         })();
@@ -628,7 +635,7 @@ async function metaHandler(args, userConfig) {
                             delete meta._numberOfSeasons;
                             delete meta._originalLanguage;
 
-                            await finalMetaCache.set(cacheKey, meta);
+                            await cache.scrivi(metaDesc, meta, { instance: finalMetaCache });
                         }
                     }
                 }

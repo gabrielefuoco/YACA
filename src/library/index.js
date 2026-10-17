@@ -44,7 +44,9 @@ const {
     scriviBatchCronologia,
     leggiItemPerStudi,
     leggiLibreriaPerProfilo,
-    ensureLibraryIndexesSafe
+    ensureLibraryIndexesSafe,
+    leggiOrdineLibreria,
+    salvaOrdineLibreria
 } = require('./reader');
 
 const identity = require('./identity');
@@ -120,6 +122,8 @@ module.exports = {
     leggiItemPerStudi,
     leggiLibreriaPerProfilo,
     ensureLibraryIndexesSafe,
+    leggiOrdineLibreria,
+    salvaOrdineLibreria,
 
     // Regole d'identità di dominio (delega dinamica a identity per preservare spy/mock)
     normalizeLibraryId: (...args) => identity.normalizeLibraryId(...args),

@@ -1,214 +1,304 @@
 // src/catalog/registry.js
 
 /**
- * UNICO REGISTRO DI VERITÀ PER I CATALOGHI HERO DI YACA (Ticket 37).
+ * UNICO REGISTRO DI VERITÀ PER I CATALOGHI HERO DI YACA (Ticket 23 & Ticket 37).
  *
- * Mantiene la definizione unificata delle righe hero per Stremio, UI di configurazione,
- * engine di raccomandazione, fingerprints e filtri kind.
+ * Tutte le righe hero sono ora DEFINIZIONI DICHIARATIVE DI SISTEMA (System Presets),
+ * e tutte le 10 proiezioni del prodotto discendono da queste definizioni:
+ * - Manifest Stremio (getManifestHeroCatalogs)
+ * - Fingerprint cache (getHeroCatalogFingerprintRows)
+ * - Mappe kind per selettori (getHeroCatalogKindMap)
+ * - Specifiche del pool (getHeroPoolSpec)
+ * - Gruppi UI della dashboard (getHeroUiGroups)
+ * - Strategie motore (getHeroCatalogModes)
+ * - Prefissi hero (getHeroPrefixes, isHeroCatalogId)
+ * - Hash del registro (getRegistryHash)
  */
 
 const crypto = require('crypto');
+const { defineCatalog } = require('./definition');
 
-const HERO_REGISTRY = [
+/**
+ * Le 12 definizioni dei cataloghi hero di sistema.
+ * Una sola natura: la riga hero è un preset di sistema con la stessa forma del preset utente.
+ */
+const RAW_HERO_DEFINITIONS = [
     {
         id: 'yaca_true_blend_movies',
-        idBase: 'yaca_true_blend',
-        type: 'movie',
         name: '⭐ Scelti per Te',
         emoji: '⭐',
-        label: 'Scelti per Te',
-        desc: 'Ricerca semantica AI + Scoring algoritmico.',
         mediaSet: ['film'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: 'trueBlend',
-        uiType: 'ai',
-        priority: 1,
-        additive: false
+        filters: { strategy: 'trueBlend' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 1,
+            additive: false,
+            alwaysVisible: false,
+            strategy: 'trueBlend',
+            uiType: 'ai',
+            idBase: 'yaca_true_blend',
+            label: 'Scelti per Te',
+            desc: 'Ricerca semantica AI + Scoring algoritmico.',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_true_blend_series',
-        idBase: 'yaca_true_blend',
-        type: 'series',
         name: '⭐ Scelti per Te',
         emoji: '⭐',
-        label: 'Scelti per Te',
-        desc: 'Ricerca semantica AI + Scoring algoritmico.',
         mediaSet: ['serie'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: 'trueBlend',
-        uiType: 'ai',
-        priority: 1,
-        additive: false
+        filters: { strategy: 'trueBlend' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 1,
+            additive: false,
+            alwaysVisible: false,
+            strategy: 'trueBlend',
+            uiType: 'ai',
+            idBase: 'yaca_true_blend',
+            label: 'Scelti per Te',
+            desc: 'Ricerca semantica AI + Scoring algoritmico.',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_seed_network_movies',
-        idBase: 'yaca_seed_network',
-        type: 'movie',
         name: '🕸️ La Rete dei tuoi Preferiti',
         emoji: '🕸️',
-        label: 'La Rete dei tuoi Preferiti',
-        desc: 'Espande la rete dei titoli amati (Stacking).',
         mediaSet: ['film'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 2,
-        additive: false
+        filters: { strategy: 'stacking' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 2,
+            additive: false,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_seed_network',
+            label: 'La Rete dei tuoi Preferiti',
+            desc: 'Espande la rete dei titoli amati (Stacking).',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_seed_network_series',
-        idBase: 'yaca_seed_network',
-        type: 'series',
         name: '🕸️ La Rete dei tuoi Preferiti',
         emoji: '🕸️',
-        label: 'La Rete dei tuoi Preferiti',
-        desc: 'Espande la rete dei titoli amati (Stacking).',
         mediaSet: ['serie'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 2,
-        additive: false
+        filters: { strategy: 'stacking' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 2,
+            additive: false,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_seed_network',
+            label: 'La Rete dei tuoi Preferiti',
+            desc: 'Espande la rete dei titoli amati (Stacking).',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_hidden_gems_movies',
-        idBase: 'yaca_hidden_gems',
-        type: 'movie',
         name: '💎 Gemme Nascoste',
         emoji: '💎',
-        label: 'Gemme Nascoste',
-        desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.',
         mediaSet: ['film'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: 'hiddenGems',
-        uiType: 'ai',
-        priority: 3,
-        additive: false
+        filters: { strategy: 'hiddenGems' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 3,
+            additive: false,
+            alwaysVisible: false,
+            strategy: 'hiddenGems',
+            uiType: 'ai',
+            idBase: 'yaca_hidden_gems',
+            label: 'Gemme Nascoste',
+            desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_hidden_gems_series',
-        idBase: 'yaca_hidden_gems',
-        type: 'series',
         name: '💎 Gemme Nascoste',
         emoji: '💎',
-        label: 'Gemme Nascoste',
-        desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.',
         mediaSet: ['serie'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: 'hiddenGems',
-        uiType: 'ai',
-        priority: 3,
-        additive: false
+        filters: { strategy: 'hiddenGems' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 3,
+            additive: false,
+            alwaysVisible: false,
+            strategy: 'hiddenGems',
+            uiType: 'ai',
+            idBase: 'yaca_hidden_gems',
+            label: 'Gemme Nascoste',
+            desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_trakt_filtered_movies',
-        idBase: 'yaca_trakt_filtered',
-        type: 'movie',
         name: '🌐 Suggeriti dalla Community',
         emoji: '🌐',
-        label: 'Suggeriti dalla Community',
-        desc: 'Suggerimenti community filtrati col tuo DNA.',
         mediaSet: ['film'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 4,
-        additive: false
+        filters: { strategy: 'trakt_filtered' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 4,
+            additive: false,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_trakt_filtered',
+            label: 'Suggeriti dalla Community',
+            desc: 'Suggerimenti community filtrati col tuo DNA.',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_trakt_filtered_series',
-        idBase: 'yaca_trakt_filtered',
-        type: 'series',
         name: '🌐 Suggeriti dalla Community',
         emoji: '🌐',
-        label: 'Suggeriti dalla Community',
-        desc: 'Suggerimenti community filtrati col tuo DNA.',
         mediaSet: ['serie'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 4,
-        additive: false
+        filters: { strategy: 'trakt_filtered' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 4,
+            additive: false,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_trakt_filtered',
+            label: 'Suggeriti dalla Community',
+            desc: 'Suggerimenti community filtrati col tuo DNA.',
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_mondi_movies',
-        idBase: 'yaca_mondi',
-        type: 'movie',
         name: '🌍 Il tuo mondo',
         emoji: '🌍',
-        label: 'Il tuo mondo',
-        desc: "La bolla che la tua storia accende di piu': il tuo mondo, coi suoi titoli.",
         mediaSet: ['film'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 5,
-        additive: true
+        filters: { strategy: 'mondi' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 5,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_mondi',
+            label: 'Il tuo mondo',
+            desc: "La bolla che la tua storia accende di piu': il tuo mondo, coi suoi titoli.",
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_mondi_series',
-        idBase: 'yaca_mondi',
-        type: 'series',
         name: '🌍 Il tuo mondo',
         emoji: '🌍',
-        label: 'Il tuo mondo',
-        desc: "La bolla che la tua storia accende di piu': il tuo mondo, coi suoi titoli.",
         mediaSet: ['serie'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 5,
-        additive: true
+        filters: { strategy: 'mondi' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 5,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_mondi',
+            label: 'Il tuo mondo',
+            desc: "La bolla che la tua storia accende di piu': il tuo mondo, coi suoi titoli.",
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_passo_fuori_movies',
-        idBase: 'yaca_passo_fuori',
-        type: 'movie',
         name: '🔭 Un passo fuori',
         emoji: '🔭',
-        label: 'Un passo fuori',
-        desc: "I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.",
         mediaSet: ['film'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 6,
-        additive: true
+        filters: { strategy: 'passo_fuori' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 6,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_passo_fuori',
+            label: 'Un passo fuori',
+            desc: "I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.",
+            provider: 'hybrid'
+        }
     },
     {
         id: 'yaca_passo_fuori_series',
-        idBase: 'yaca_passo_fuori',
-        type: 'series',
         name: '🔭 Un passo fuori',
         emoji: '🔭',
-        label: 'Un passo fuori',
-        desc: "I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.",
         mediaSet: ['serie'],
         anime: 'agnostic',
-        alwaysVisible: false,
-        strategy: null,
-        uiType: 'algo',
-        priority: 6,
-        additive: true
+        filters: { strategy: 'passo_fuori' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 6,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_passo_fuori',
+            label: 'Un passo fuori',
+            desc: "I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.",
+            provider: 'hybrid'
+        }
     }
 ];
+
+const HERO_SYSTEM_CATALOGS = Object.freeze(RAW_HERO_DEFINITIONS.map(defineCatalog));
+const HERO_REGISTRY = HERO_SYSTEM_CATALOGS;
+
+// --- DERIVAZIONI DALLE DEFINIZIONI ---
 
 /**
  * Manifest hero rows for Stremio manifest builder.
  */
 function getManifestHeroCatalogs() {
-    return HERO_REGISTRY.map(r => ({
+    return HERO_SYSTEM_CATALOGS.map(r => ({
         id: r.id,
         type: r.type,
         name: r.name,
@@ -220,7 +310,7 @@ function getManifestHeroCatalogs() {
  * Hero rows projected for cache fingerprint signature.
  */
 function getHeroCatalogFingerprintRows() {
-    return HERO_REGISTRY.map(r => ({
+    return HERO_SYSTEM_CATALOGS.map(r => ({
         id: r.id,
         type: r.type,
         name: r.name
@@ -232,7 +322,7 @@ function getHeroCatalogFingerprintRows() {
  */
 function getHeroCatalogModes() {
     const modes = {};
-    for (const r of HERO_REGISTRY) {
+    for (const r of HERO_SYSTEM_CATALOGS) {
         modes[r.id] = r.strategy;
     }
     return modes;
@@ -243,7 +333,7 @@ function getHeroCatalogModes() {
  */
 function getHeroPrefixes() {
     const prefixes = new Set();
-    for (const r of HERO_REGISTRY) {
+    for (const r of HERO_SYSTEM_CATALOGS) {
         const prefix = r.id.replace(/(movies|series)$/, '');
         prefixes.add(prefix);
     }
@@ -262,7 +352,7 @@ function isHeroCatalogId(id) {
  */
 function getHeroCatalogKindMap() {
     const map = {};
-    for (const r of HERO_REGISTRY) {
+    for (const r of HERO_SYSTEM_CATALOGS) {
         map[r.id] = {
             mediaSet: [...r.mediaSet],
             anime: r.anime,
@@ -278,7 +368,7 @@ function getHeroCatalogKindMap() {
 function getHeroUiGroups() {
     const groups = [];
     const seen = new Set();
-    for (const r of HERO_REGISTRY) {
+    for (const r of HERO_SYSTEM_CATALOGS) {
         if (!seen.has(r.idBase)) {
             seen.add(r.idBase);
             groups.push({
@@ -299,7 +389,7 @@ function getHeroUiGroups() {
  */
 function getHeroPoolSpec() {
     const slugMap = new Map();
-    const sorted = [...HERO_REGISTRY].sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
+    const sorted = [...HERO_SYSTEM_CATALOGS].sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
     for (const r of sorted) {
         const slug = r.idBase.replace(/^yaca_/, '');
         if (!slugMap.has(slug)) {
@@ -314,7 +404,7 @@ function getHeroPoolSpec() {
     const slugs = Array.from(slugMap.values());
     const heroPriority = Object.freeze(slugs.map(s => s.slug));
     const slugAdditivi = Object.freeze(new Set(slugs.filter(s => s.additive).map(s => s.slug)));
-    const catalogs = HERO_REGISTRY.map(r => ({
+    const catalogs = HERO_SYSTEM_CATALOGS.map(r => ({
         id: r.id,
         idBase: r.idBase,
         slug: r.idBase.replace(/^yaca_/, ''),
@@ -334,14 +424,31 @@ function getHeroPoolSpec() {
  * Deterministic hash of the hero catalog registry.
  */
 function getRegistryHash() {
-    return crypto.createHash('sha256').update(JSON.stringify(HERO_REGISTRY)).digest('hex').slice(0, 16);
+    const canonicalPayload = HERO_SYSTEM_CATALOGS.map(r => ({
+        id: r.id,
+        idBase: r.idBase,
+        type: r.type,
+        name: r.name,
+        emoji: r.emoji,
+        label: r.label,
+        desc: r.desc,
+        mediaSet: r.mediaSet,
+        anime: r.anime,
+        alwaysVisible: r.alwaysVisible,
+        strategy: r.strategy,
+        uiType: r.uiType,
+        priority: r.priority,
+        additive: r.additive
+    }));
+    return crypto.createHash('sha256').update(JSON.stringify(canonicalPayload)).digest('hex').slice(0, 16);
 }
 
-const HERO_IDS = Object.freeze(HERO_REGISTRY.map(r => r.id));
+const HERO_IDS = Object.freeze(HERO_SYSTEM_CATALOGS.map(r => r.id));
 const HERO_CATALOG_IDS_SET = new Set(HERO_IDS);
 
 module.exports = {
     HERO_REGISTRY,
+    HERO_SYSTEM_CATALOGS,
     HERO_PREFIXES,
     HERO_IDS,
     HERO_CATALOG_IDS_SET,
