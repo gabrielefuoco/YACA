@@ -271,3 +271,71 @@ profilo**, non il più acceso in assoluto.
 
 La verifica è la stessa sonda a quattro bordi (servizio → pool → `cardSurvivesFilters` → risposta HTTP), per
 `yaca_mondi_series`, col profilo `anime: exclude`.
+
+---
+
+## Esito della diagnosi del 17/10/2026 (Ticket 38 — Scelta del Mondo)
+
+### 1. Cosa ha mostrato la sonda (eseguita con dati reali)
+La sonda diagnostica (`.scratch/suggerimenti/probe-ticket-38.py`) ha riprodotto l'esecuzione del motore sulle serie per l'utente reale `REOZrGNRr3` (profilo `4159713d`, con `effectiveTypeSelectors: { anime: 'exclude' }`).
+
+I semi non-anime passati al motore Python (`POST /raccomanda`):
+- `tv:94997` (House of the Dragon, peso 4.28)
+- `tv:295778` (Scrubs, peso 4.0)
+- `tv:246` (Avatar - La leggenda di Aang, peso 3.0)
+- `tv:198178` (Wonder Man, peso 3.0)
+- `tv:213306` (Alex Cross, peso 3.0)
+- `tv:4556` (Scrubs - Medici ai primi ferri, peso 0.2)
+- `tv:1100` (How I Met Your Mother, peso 0.2)
+- `tv:30669` (Yu degli spettri, peso 1.0)
+
+La diffusione e modulazione in `services/graph/motore.py` (`self.scegli_mondi(att_s, slider)`) accende i seguenti mondi candidati:
+- `[0] Bolla 3085`: `att_s = 0.1901`, taglia totale `sz = 4`, serie non viste = **3**, `votmed = 5568.5`, `quota_tv = 1.00`.
+  Titoli nel mondo: *Il Trono di Spade*, *House of the Dragon* (seme visto), *Il Signore degli Anelli: Gli Anelli del Potere*, *A Knight of the Seven Kingdoms*.
+- `[1] Bolla 3015`: `att_s = 0.1294`, taglia totale `sz = 17`, serie non viste = **16**, `votmed = 1479.0`, `quota_tv = 1.00`.
+  Titoli nel mondo: *Loki*, *What If...?*, *Hawkeye*, *Moon Knight*, *WandaVision*, *Spider-Noir*, *Ironheart*, *Daredevil: Rinascita*, ecc.
+- `[2] Bolla 1981`: `att_s = 0.0322`, taglia totale `sz = 9`, serie non viste = **7**, `votmed = 46.0`, `quota_tv = 0.89`.
+  Titoli nel mondo (anime): *Beelzebub*, *Letter Bee*, *Hakkenden*, ecc.
+
+Il motore (`motore.py:297`) elegge come `primo` (assegnato al ruolo `"il_tuo_mondo"`):
+`primo = bolle[0] = 3085`
+
+E la risposta di `servizio.py` (`POST /raccomanda`) produce:
+- `ruolo: "il_tuo_mondo"`, `mondo: 3085`: esattamente **3 titoli** (`[1399, 224372, 84773]`)
+- `ruolo: "un_passo_fuori"`, `mondo: null`: esattamente **47 titoli** (dai vicini di 3085: 3086, 88, 785)
+
+### 2. Perché l'ipotesi del ticket era SBAGLIATA
+L'ipotesi registrata nel ticket era:
+*«la riga `il_tuo_mondo` sceglie il mondo più acceso, e con i semi filtrati quel mondo è ancora un mondo anime — che il filtro a valle riduce a 3»*.
+
+I numeri dimostrano che l'ipotesi è **falsa**:
+1. La Bolla 3085 **NON è un mondo anime**: è 100% fantasy live-action (*Il Trono di Spade*, *Gli Anelli del Potere*, *A Knight of the Seven Kingdoms*).
+2. È **perfettamente compatibile** con i selettori del profilo (`anime: 'exclude'`).
+3. Il filtro a valle `cardSurvivesFilters` **non scarta alcun titolo**: tutti e 3 i titoli superano i filtri.
+4. La causa esatta dei 3 superstiti è strutturale nel grafo: **la Bolla 3085 contiene solo 4 titoli in totale nell'intero grafo** (`sz = 4`). Avendo l'utente già visto *House of the Dragon* (seme di partenza), restano solo 3 titoli non visti in tutto il mondo.
+5. In `services/graph/motore.py:288-296`, il codice scarta i mondi con meno di `P.MIN_TITOLI_MONDO (5)` titoli non visti per tutti i mondi successivi, ma **esenta incondizionatamente il primo mondo**:
+   `if bolle: tenuti = [bolle[0]]` con la nota esplicita: *«Il PRIMO resta sempre, anche se e' piccolo: e' il mondo del profilo»*.
+
+### 3. Conteggi prima e dopo
+- **Prima del fix dei semi** (confini del ticket 38):
+  - `yaca_passo_fuori_series`: pool = 42 (41 anime, 1 non-anime) → risposta HTTP = **1 titolo**
+  - `yaca_mondi_series`: pool = 60 (mix anime) → risposta HTTP = **3 titoli**
+- **Dopo il fix dei semi in `src/pool/index.js`** (stato attuale):
+  - `yaca_passo_fuori_series`: pool = 47 (tutte non-anime) → risposta HTTP = **20 titoli** (pagina piena ✓)
+  - `yaca_mondi_series`: pool = 3 (Bolla 3085, tutte non-anime) → risposta HTTP = **3 titoli** (la perdita è a monte, nella dimensione del mondo scelto).
+
+### 4. Suite eseguite
+- `tests/graphRowsInvariant.test.js`: 4 test passati (3.28 s)
+- `tests/heroPoolAnimeExcludeCap.test.js`: 1 test passato (9.07 s)
+- `tests/graphClientPoolIntegration.test.js`: 6 test passati (1.28 s)
+- `tests/test_contratto_servizio.py` (pytest Python): 10 test passati (2.61 s)
+
+### 5. Blocker e cosa non è stato possibile fare (Regola 4)
+In conformità alla Regola 4 del brief (*«If the fix requires touching the Python engine (`services/graph/`), STOP and report: that is another module's contract and it needs the integrator»*):
+- **DOVE viene scelto il mondo**: La scelta del mondo per `il_tuo_mondo` avviene esclusivamente dentro il motore Python (`services/graph/motore.py:281-297`).
+- **PERCHÉ non si può risolvere in `src/pool/index.js`**:
+  Il servizio Python via HTTP (`POST /raccomanda`, `services/graph/servizio.py`) restituisce la lista intera (`cap = 60`) SOLO per `il_tuo_mondo` (`primo = bolle[0]`), mentre tutte le altre liste mondi (`mondo_b`) sono hard-cappate in Python a `min(8, cap_main) = 8` titoli (`motore.py:336`).
+  Inoltre il contratto di `POST /raccomanda` non accetta parametri per la scelta della bolla o per una taglia minima di titoli non visti.
+  Di conseguenza, `src/pool/index.js` non può estrarre 20 titoli da un'altra bolla senza che il motore Python restituisca un `il_tuo_mondo` con capacità sufficiente (es. applicando `unseen >= 20` o `len(unseen) >= MIN_TITOLI_MONDO` anche a `bolle[0]`).
+- Il lavoro viene quindi fermato e riportato all'orchestratore/integratore per la decisione contrattuale su `services/graph/`.
+
