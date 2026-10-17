@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { catalogHandler } = require('../handlers/catalogHandler');
-const { generateTmdbFiltersFromPrompt } = require('../ai/router');
+const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
 const { getPresets } = require('../data/presets');
+
 const { sanitizeString } = require('../utils/helpers');
 
 const PREVIEW_TIMEOUT_MS = 8000;

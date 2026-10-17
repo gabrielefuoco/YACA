@@ -1,6 +1,7 @@
 const { getTmdbIdByName, createTmdbClient } = require('../../clients/tmdb');
-const { routeLiveStremioSearch } = require('../../ai/router');
+const { routeLiveStremioSearch } = require('../../ricerca/router');
 const { getProfileDnaFilters } = require('../../utils/helpers');
+
 const { applyConsensusScoring } = require('../../utils/resultMerger');
 const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
 const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
