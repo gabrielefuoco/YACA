@@ -1,5 +1,5 @@
 const { getPresets } = require('../src/data/presets');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
 const { aiPromptCache, catalogRequestCache, catalogFallbackCache, simulcastDatesCache } = require('../src/cache/cacheInstances');
@@ -29,15 +29,15 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
                 expect(preset.queries.length).toBeGreaterThan(0);
 
                 // Build catalog query and verify it is valid SQL for DuckDB
-                const sql = await buildCatalogQuery({
+                const query = await compileQuery({
                     type: preset.type || 'movie',
                     where: preset.where,
                     orderBy: preset.orderBy
                 }, 0, 10);
 
-                expect(sql).toContain('SELECT * FROM');
+                expect(query.sql).toContain('SELECT * FROM');
                 // Execute against in-memory DuckDB
-                await expect(duckDbStore.query(sql)).resolves.toBeDefined();
+                await expect(duckDbStore.query(query)).resolves.toBeDefined();
             }
         }
     }, 30000);

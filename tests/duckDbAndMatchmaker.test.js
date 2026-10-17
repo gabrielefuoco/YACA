@@ -1,4 +1,4 @@
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 const { F, S } = require('../src/data/filters');
 const { getPresets } = require('../src/data/presets');
 const { 
@@ -19,48 +19,52 @@ describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
 
     describe('queryBuilder', () => {
         test('BM25 FTS usa match esatto, copertura dei termini e ordinamento per rilevanza', async () => {
-            const query = await buildCatalogQuery({
+            const { sql, params } = await compileQuery({
                 type: 'movie',
                 where: [{ _fts: 'The Matrix' }]
             }, 0, 10);
-            expect(query).toContain("fts_main_movies.match_bm25(id, 'The Matrix')");
-            expect(query).toContain("concat_ws(' ', coalesce(title, ''), coalesce(original_title, '')) ILIKE '%the%'");
-            expect(query).toContain("concat_ws(' ', coalesce(title, ''), coalesce(original_title, '')) ILIKE '%matrix%'");
-            expect(query).toContain("lower(trim(coalesce(title, ''))) = lower(trim('The Matrix'))");
-            expect(query).toContain("fts_main_movies.match_bm25(id, 'The Matrix') DESC, id ASC");
+            // Il compilatore parametrizzato non interpola più i valori: il testo cercato e i
+            // termini viaggiano in `params`, e l'SQL porta i segnaposto.
+            expect(sql).toContain('fts_main_movies.match_bm25(id, ?)');
+            expect(sql).toContain("concat_ws(' ', coalesce(title, ''), coalesce(original_title, '')) ILIKE ?");
+            expect(sql).toContain("lower(trim(coalesce(title, ''))) = lower(trim(?))");
+            expect(sql).toContain('match_bm25(id, ?) DESC, id ASC');
+            expect(params).toEqual(expect.arrayContaining(['The Matrix', '%the%', '%matrix%']));
         });
 
         test('BM25 FTS clause escapes single quotes safely', async () => {
-            const query = await buildCatalogQuery({
+            const { sql, params } = await compileQuery({
                 type: 'movie',
                 where: [{ _fts: "d'azione" }]
             }, 0, 10);
-            expect(query).toContain("match_bm25(id, 'd''azione')");
-            expect(query).toContain("ILIKE '%azione%'");
-            expect(query).not.toContain("ILIKE '%d'''action%'");
+            // L'apostrofo non va più "scappato": il valore viaggia come parametro e non è
+            // interpolato nell'SQL. La proprietà di sicurezza è più forte, non più debole.
+            expect(params).toContain("d'azione");
+            expect(sql).not.toContain("d'azione");
+            expect(params).toContain('%azione%');
         });
 
         test('BM25 FTS clause ignores non-string query values', async () => {
-            const query = await buildCatalogQuery({
+            const { sql } = await compileQuery({
                 type: 'movie',
                 where: [{ _fts: 12345 }]
             }, 0, 10);
-            expect(query).not.toContain("fts_main_movies.match_bm25");
+            expect(sql).not.toContain('fts_main_movies.match_bm25');
         });
 
         test('Similarity clause safely handles valid and invalid IDs', async () => {
-            const validQuery = await buildCatalogQuery({
+            const validQuery = await compileQuery({
                 type: 'movie',
                 where: [{ _similar: true, tmdbId: 603 }]
             }, 0, 10);
-            expect(validQuery).toBeDefined();
-            expect(typeof validQuery).toBe('string');
+            expect(validQuery.sql).toBeDefined();
+            expect(typeof validQuery.sql).toBe('string');
 
-            const invalidQuery = await buildCatalogQuery({
+            const invalidQuery = await compileQuery({
                 type: 'movie',
                 where: [{ _similar: true, tmdbId: 'not_a_number' }]
             }, 0, 10);
-            expect(invalidQuery).toContain('1=0');
+            expect(invalidQuery.sql).toContain('1=0');
         });
 
         test('Case-insensitive filters use ILIKE', () => {
@@ -74,7 +78,7 @@ describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
         });
 
         test('buildCatalogQuery deduplica ID prima di applicare LIMIT e OFFSET', async () => {
-            const sql = await buildCatalogQuery({
+            const { sql, params } = await compileQuery({
                 type: 'movie',
                 uniqueById: true,
                 where: ['"id" IN (1,2,3)']
@@ -82,11 +86,12 @@ describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
 
             expect(sql).toContain('row_number() OVER (PARTITION BY id)');
             expect(sql).toContain('WHERE __yaca_unique_row = 1');
-            expect(sql).toContain('LIMIT 20 OFFSET 20');
+            expect(sql).toContain('LIMIT ? OFFSET ?');
+            expect(params).toEqual(expect.arrayContaining([20, 20]));
         });
 
         test('buildCatalogQuery combines multiple WHERE clauses with AND', async () => {
-            const sql = await buildCatalogQuery({
+            const { sql, params } = await compileQuery({
                 type: 'movie',
                 where: ['"vote_count" >= 100', '"vote_average" >= 7.0'],
                 orderBy: S.POPULAR
@@ -94,7 +99,8 @@ describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
             expect(sql).toContain('"vote_count" >= 100');
             expect(sql).toContain('"vote_average" >= 7.0');
             expect(sql).toContain('WHERE adult = false AND "vote_count" >= 100 AND "vote_average" >= 7.0');
-            expect(sql).toContain('LIMIT 20 OFFSET 0');
+            expect(sql).toContain('LIMIT ? OFFSET ?');
+            expect(params).toEqual(expect.arrayContaining([20, 0]));
         });
     });
 
@@ -219,7 +225,7 @@ describe('DuckDB & HierarchicalGraph Suite (Phases 4 & 5)', () => {
         });
 
         test('buildCatalogQuery safely ignores null, undefined, and empty string clauses', async () => {
-            const sql = await buildCatalogQuery({
+            const { sql } = await compileQuery({
                 type: 'movie',
                 where: ['"vote_count" >= 100', null, undefined, '', '   ', { _fts: '   ' }]
             }, 0, 10);

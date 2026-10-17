@@ -1,5 +1,5 @@
 const { getPresets } = require('../src/data/presets');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { F } = require('../src/data/filters');
@@ -240,14 +240,14 @@ describe('Ticket 35: Pavimenti di visibilità dei sottosoglia', () => {
             const preset = presets.find(p => p.id === presetId);
             expect(preset).toBeDefined();
 
-            const sql = await buildCatalogQuery({
+            const query = await compileQuery({
                 type: preset.type || 'series',
                 where: preset.where,
                 orderBy: preset.orderBy
             }, 0, 10);
 
-            expect(sql).toContain('SELECT * FROM');
-            const rows = await duckDbStore.query(sql);
+            expect(query.sql).toContain('SELECT * FROM');
+            const rows = await duckDbStore.query(query);
             expect(Array.isArray(rows)).toBe(true);
         });
     });

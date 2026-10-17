@@ -1,5 +1,5 @@
 const { getPresets } = require('../src/data/presets');
-const { buildCatalogQuery } = require('../src/db/queryBuilder');
+const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
 
 describe('preset_burton popularity ordering', () => {
@@ -7,9 +7,9 @@ describe('preset_burton popularity ordering', () => {
         const preset = getPresets().find(({ id }) => id === 'preset_burton');
         expect(preset.orderBy).toBe('"popularity" DESC NULLS LAST, "vote_count" DESC, "id" ASC');
 
-        const sql = await buildCatalogQuery(preset, 0, 100);
-        expect((sql.match(/"id" ASC/g) || []).length).toBe(1);
-        const rows = await duckDbStore.query(sql);
+        const query = await compileQuery(preset, 0, 100);
+        expect((query.sql.match(/"id" ASC/g) || []).length).toBe(1);
+        const rows = await duckDbStore.query(query);
         const popularity = rows.map(row => Number(row.popularity));
 
         expect(popularity.length).toBeGreaterThanOrEqual(10);
@@ -31,7 +31,7 @@ describe('preset_burton popularity ordering', () => {
         }
 
         // Determinismo: la stessa query deve produrre lo stesso ordine
-        const rowsAgain = await duckDbStore.query(sql);
+        const rowsAgain = await duckDbStore.query(query);
         expect(rowsAgain.map(row => String(row.id))).toEqual(rows.map(row => String(row.id)));
     }, 30000);
 });
