@@ -345,6 +345,34 @@ causa vera.
   il 17/10/2026 che *non* stanno nel profilo (oggi non ci sono chiavi per-utente; domani, con un BYOK Mistral, è
   lì che stanno). Non ha ancora un ticket: nasce quando il 21 decide il confine col documento condiviso.
 
+### 16. I quattro confini nuovi, e l'architettura che ne esce
+
+**Grillati il 17/10/2026** (ticket 21–24), 20 domande in quattro giri. In una riga: **YACA diventa otto moduli,
+e ognuno con un contratto** — e i confini fra loro hanno un nome.
+
+| modulo | possiede | non possiede |
+|---|---|---|
+| **profilo** (21) | anagrafica, **lista e singolo profilo**, impostazioni (selettori, `kidsMode`, policy anime, **slider**), i suoi cataloghi, le deduzioni; e **il contesto** che scende a tutti | le chiavi API, l'account, la ui state |
+| **configurazione utente** (nessun ticket ancora) | chiavi API, account, `addonUuid`, ui state | i `profiles[]` (regola: solo il profilo li tocca) |
+| **libreria** (15/16) | i **fatti** (visto, watchlist, segnali, identità), l'ingestione e la sua macchina a stati | le deduzioni — *il profilo deduce* |
+| **indice** (22) | DuckDB + FTS5 + Tier 2 + il **compilatore** (filtri → query parametrizzata) | le risposte memorizzate |
+| **ricerca** (22) | da una richiesta a una lista **ordinata** (registro delle fonti, fusione, ordinamento); porta unica `cerca({q, tipo, contesto, cap})`, vuoto con `motivi[]` | l'AI, l'indice, i provider |
+| **catalogo** (23) | il **tipo** (una natura sola: anche la riga hero è un preset di sistema), la validazione (lingua × capacità dichiarate), le **derivazioni** (manifest, impronte, `getHeroPoolSpec`) | produrre titoli: *il catalogo è un tipo, il feed è chi lo serve* |
+| **cache** (24) | le risposte memorizzate, con la chiave **derivata** da una descrizione | i dataset (l'indice) e la coda dei poster |
+| **poster** (24) | ERDB, i file composti, la coda e il drenatore (pilotato da un timer di sistema) | — |
+| **AI** (22) | il **meccanismo** (client, budget, tempi) | i **prompt**: ogni modulo tiene i suoi |
+| **motore** (07/08) | il grafo e il suo portafoglio; è già un **processo a sé** | la composizione, la lingua, i poster, l'ita |
+
+**I confini, in una riga ciascuno** — perché sono la cosa che si dimentica:
+
+- **dato vs risposta**: l'indice possiede i file e la freschezza, la cache le risposte. Buttare la cache costa
+tempo, buttare l'indice costa il prodotto.
+- **fatti vs deduzioni**: la libreria fornisce i fatti, il profilo deduce.
+- **meccanismo vs prompt**: l'AI fornisce il come, i moduli il cosa chiedere.
+- **tipo vs servire**: il catalogo dice cosa è, il feed lo produce.
+- **offerta vs richiesta**: le righe di sistema e i preset dell'utente sono la **stessa specie**, e la differenza è
+  una proprietà della definizione, non un registro in più.
+
 ## Out of scope
 
 - **La misura «il grafo batte il vecchio stack?» e il ritiro progressivo delle righe** (`trakt_filtered`,

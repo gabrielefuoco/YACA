@@ -49,6 +49,20 @@ filtro), e i **conteggi** li produce il servire, che è l'unico che sa *perché*
 per cui è così e non «l'anteprima dentro il modulo»: l'anteprima **deve eseguire il catalogo**, e un tipo che
 esegue diventa il feed.
 
+## Tutte le domande decise (17/10/2026)
+
+| domanda | decisione |
+|---|---|
+| le specie | **una sola**: la riga hero è un **preset di sistema**, e il tipo copre tutto — così manifest, impronte, kind e `getHeroPoolSpec()` sono **derivati dal tipo**, e la trappola dei «dieci posti» non si tiene allineata: **c'è un posto solo da cui tutto discende** |
+| la forma | **oggetto dichiarativo** (nome, emoji, `mediaSet`, asse anime, filtri, ordinamento, proprietà di sistema); la parte filtri è l'**ingresso del compilatore** dell'indice; `presets.js` e le 12 righe hero diventano **dati del modulo** (di sistema e dell'utente) |
+| la validazione | **intersezione di due dichiarazioni**: la lingua (il tipo) × le capacità (dichiarate dal servire nel **registro delle fonti** del 22) — senza che il tipo importi i provider |
+| l'anteprima | **contratto nel tipo, numeri nel servire**: la forma della diagnosi è dichiarata, i conteggi li produce chi sa perché un titolo è stato scartato |
+| i consumatori | dentro: tipo, `catalogKind`, `catalogSorting`, `filters.js` e le **derivazioni** (manifest, impronte, `getHeroPoolSpec`). Fuori: il servire (router, provider, handler, formatter) e le rotte |
+
+**Cosa resta**: l'applicazione — e la migrazione dei **due dataset** alla forma nuova (543 righe di preset + 12 righe hero), che è il pezzo delicato: è dato che l'utente vede.
+
+---
+
 ## Le domande che restano (per il prossimo grilling)
 
 1. **Ci sono due specie di catalogo, e il tipo deve dirlo**: le righe **hero** (`registry.js`: 12 righe coi loro
