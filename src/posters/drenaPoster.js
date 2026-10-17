@@ -203,8 +203,22 @@ async function scrivi(target, buffer) {
         try {
             await fs.promises.unlink(tmp);
         } catch (_) { /* non c'era: niente da dire */ }
-        if ((err.code === 'EPERM' || err.code === 'EBUSY') && fs.existsSync(target)) {
-            return;
+        // Su Windows il rename può fallire con EPERM/EBUSY se un altro processo ha il file
+        // aperto (es. servito via HTTP). Se il file di destinazione è un file regolare che ha
+        // GIÀ esattamente lo stesso contenuto (concorrenza sullo stesso poster), la scrittura
+        // è andata a buon fine. Se è una cartella, un file diverso o non verificabile, è un guasto vero.
+        if (err.code === 'EPERM' || err.code === 'EBUSY') {
+            try {
+                const stat = await fs.promises.stat(target);
+                if (stat.isFile() && stat.size === buffer.length) {
+                    const existing = await fs.promises.readFile(target);
+                    if (existing.equals(buffer)) {
+                        return;
+                    }
+                }
+            } catch (_) {
+                /* non verificabile o errore di lettura: propaga il guasto originale */
+            }
         }
         throw guasto('scrittura', err && err.message ? err.message : String(err), err);
     }
