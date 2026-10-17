@@ -207,3 +207,6 @@ digest*.txt
 # I dati del modulo (spostato in services/ il 17/10/2026): 666 MB di artefatti e i log delle corse
 services/graph/data/
 services/graph/log/
+
+# L'artefatto non vive più nel prodotto (ticket 09)
+src/data/bolle.json

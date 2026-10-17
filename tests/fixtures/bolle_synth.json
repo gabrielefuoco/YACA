@@ -1,0 +1,70 @@
+{
+  "versione": {
+    "artefatto": "cf1d80dcba3eddce",
+    "ricetta": "8b2d793220fd2e65",
+    "alpha": 0.6,
+    "iterazioni": 20,
+    "peso_film_max": 3.0,
+    "peso_serie": [1.0, 2.0],
+    "fattore_tipo": {
+      "loved": 3.0,
+      "liked": 2.0,
+      "library": 1.5,
+      "watched": 1.0
+    },
+    "freddo_sotto": 3,
+    "min_titoli_mondo": 5
+  },
+  "titoli": {
+    "movie:1": 0,
+    "movie:2": 0,
+    "tv:1": 0,
+    "movie:3": 1,
+    "tv:2": 1,
+    "movie:4": 2,
+    "movie:5": 2,
+    "movie:6": 3,
+    "movie:7": 4
+  },
+  "bolle": {
+    "0": {
+      "n": 3,
+      "voti": 15,
+      "termini": ["ge:drama", "ge:crime"],
+      "esempi": ["The Godfather"],
+      "P": [[0, 0.5], [1, 0.3], [2, 0.2]]
+    },
+    "1": {
+      "n": 2,
+      "voti": 12,
+      "termini": ["ge:comedy"],
+      "esempi": ["Superbad"],
+      "P": [[0, 0.4], [1, 0.6]]
+    },
+    "2": {
+      "n": 2,
+      "voti": 8,
+      "termini": ["ge:action"],
+      "esempi": ["The Dark Knight"],
+      "P": [[0, 0.1], [1, 0.2], [2, 0.7]]
+    },
+    "3": {
+      "n": 1,
+      "voti": 5,
+      "termini": ["ge:sci-fi"],
+      "esempi": ["Inception"],
+      "P": [[0, 0.3], [3, 0.7]]
+    },
+    "4": {
+      "n": 1,
+      "voti": 2,
+      "termini": [],
+      "esempi": ["Short Indie"],
+      "P": [[0, 0.5], [4, 0.5]]
+    }
+  },
+  "episodi": {
+    "tv:1": 10,
+    "tv:2": 24
+  }
+}
