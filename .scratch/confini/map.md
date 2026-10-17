@@ -545,3 +545,23 @@ dell'euristica sui «non lo so» **si vede** (una riga coi candidati da certific
 falso?») ha smontato un'assunzione che nessuno aveva scritto — che l'indice sapesse dire **no**. Non lo sa: è una
 lista positiva, e il codice lo sapeva già in un commento (`animeMappingStore.js:570`, gli 8.263 poster). Una
 domanda sul *comportamento* ha trovato un buco **nell'API**.
+
+### 21. Cosa estrarre e cosa unificare dentro src (ticket 33)
+
+**18/10/2026.** Il ticket 31 aveva risposto per i servizi (nessun altro). Dentro l'app il pezzo grosso è un
+**daemon a lotti nel processo che serve**: `index.js:249` avvia `runTmdbDumpDaemon()`, che è un ciclo **orario**
+che pagina i dump TMDB — **1.763 righe** di ingestione (`tmdbDumpDaemon`, `tmdbBudget`, `tmdbDumpClient`,
+`tmdbNameResolver`, `tmdbDumpStore`, `tmdbIngestPolicy`) accese in produzione. Stessa forma del drenatore dei
+poster: **si estrae come lavoro a lotti**, e la cucitura esiste già (il volume `yaca_tmdb`).
+
+Le unificazioni: il **protocollo Stremio** è 1.327 righe in **tre cartelle**; i **7 modelli mongoose** stanno in
+**due** cartelle (`src/models/` e `src/db/models/`); `api/profiles.js` **e** `api/profilo.js` sono **985 righe per
+un lavoro solo**, entrambe montate; i pezzi poster in `utils/` (340) vanno nel modulo poster; `data/` dopo il
+ticket 32 tiene solo asset; e l'impianto condiviso di `utils/` (~580: retry, axiosClient, rateLimiter, logger,
+LRUCache, mongoConnect, resultMerger) va **nominato** (`src/infra/`), se no `utils/` resta un cassetto.
+
+**Assolti verificandoli**: `src/cache/` (sono strati), `api/configure/` vs `configurazione.js` (router +
+implementazione), `library/ingestion/` (sotto-modulo di scrittura), `src/profile/` (coeso).
+
+**Metodo**: due sospetti su cinque sono caduti verificandoli, e il pezzo più grosso — il daemon — non l'avrebbe
+trovato nessuna analisi di duplicazione: l'ha trovato **seguire chi avvia cosa**.
