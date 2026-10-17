@@ -148,7 +148,7 @@ const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS 
 #### Comportamento a Runtime
 1. **Navigazione Normale**: Quando un utente apre un catalogo preset su Stremio senza selezionare alcun filtro di ordinamento, la richiesta non include `sortBy`. Il backend esegue la query SQL utilizzando il default curato `catalogMeta.orderBy`.
 2. **Selezione Utente**: Se l'utente seleziona una voce nel menu a tendina di Stremio (es. "Voto Medio"):
-   - L'endpoint estrae `extra.sortBy` e lo traduce in formato TMDB tramite `getSortByValue()` (`stremio.js:62`, chiamata a riga 427).
+   - L'endpoint estrae `extra.sortBy` e lo traduce in formato TMDB tramite `getSortByValue()` (`src/api/stremio.js:28`, chiamata a riga 379).
    - Il [CatalogRouter](../src/catalog/CatalogRouter.js#L79-L82) rileva `sortBy` e sovrascrive temporaneamente l'ordinamento:
      ```javascript
      if (sortBy) {

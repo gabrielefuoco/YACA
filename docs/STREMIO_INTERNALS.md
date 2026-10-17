@@ -128,7 +128,7 @@ La regola operativa: **oltre ~25 preset selezionati il manifest va tenuto sotto 
 
 Un catalogo, un meta o uno stream senza risultati si rispondono **sempre con 200** e il payload vuoto (`{metas: []}`, `{meta: null}`, `{streams: []}`). Un 4xx/5xx viene interpretato dal client come *addon rotto* e mostra un banner rosso, disaccoppiando l'addon per qualche tempo.
 
-YACA è conforme: `handle` sconosciuto, contenuto assente ed eccezione runtime producono tutti 200 con payload vuoto ([stremio.js](../src/api/stremio.js#L413), `:447`, `:486`, e il `catch` del catalogo). L'unica risposta non-200 del protocollo è il **manifest** con handle sconosciuto (400, `stremio.js:389`).
+YACA è conforme: `handle` sconosciuto, contenuto assente ed eccezione runtime producono tutti 200 con payload vuoto ([stremio.js](../src/api/stremio.js#L365), `:399`, `:436`, e i `catch` a `:391`, `:430`). L'unica risposta non-200 del protocollo è il **manifest** con handle sconosciuto (400, `src/api/stremio.js:341`).
 
 Lo stesso vale per la cache: i valori di `Cache-Control` sono in **secondi** (`max-age=60` = un minuto), e `stale-while-revalidate` / `stale-if-error` **non vengono mai emessi**: lo SWR di YACA è interamente interno (L1 RAM + L2 Redis), il client e i proxy davanti non lo vedono.
 

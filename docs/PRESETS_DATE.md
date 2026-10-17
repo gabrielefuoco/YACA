@@ -165,7 +165,7 @@ diventerebbe "tutte le serie per popolarità". Non è una cache stantia: è **un
    where ORIGINALE                   : ("vote_count" >= 50 OR ("first_air_date" IS NOT NULL AND "first_air_date" >= '2026-04-03'))
 ```
 
-**Identiche.** Perché `DuckDbProvider.js:72-80` ricalcola da sé la data se manca:
+**Identiche.** Perché `src/catalog/providers/DuckDbProvider.js:48-57` ricalcola da sé la data se manca:
 
 ```js
 let recentDate = q.recent_since;
