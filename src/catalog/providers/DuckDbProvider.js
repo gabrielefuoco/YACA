@@ -5,8 +5,7 @@
  * Utilizza duckDbStore e il traduttore SQL per generare i cataloghi locali a latenza zero.
  */
 
-const duckDbStore = require('../../db/duckDbStore');
-const { buildCatalogQuery } = require('../../db/queryBuilder');
+const indice = require('../../indice');
 const { F, S } = require('../../data/filters');
 const animeMappingStore = require('../../data/animeMappingStore');
 const { normalizeAnimeMarker } = require('../../utils/animeIdentity');
@@ -335,8 +334,7 @@ function applyKidsModeToPreset(preset, options = {}) {
 async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100, options = {}) {
     try {
         const safePreset = applyKidsModeToPreset(preset, options);
-        const sql = await buildCatalogQuery(safePreset, skip, limit);
-        const rows = await duckDbStore.query(sql);
+        const rows = await indice.getTitles(safePreset, { skip, limit });
         return rows.map(item => mapDuckDbRowToMeta(item, safePreset.type === 'movie'));
     } catch (e) {
         console.error('[DuckDbProvider] Error in getDuckDbCatalogFromPreset:', e);
@@ -347,8 +345,7 @@ async function getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100, options
 async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 100, options = {}) {
     try {
         const preset = buildPresetFromFilters(filters, type, options);
-        const sql = await buildCatalogQuery(preset, skip, limit);
-        const rows = await duckDbStore.query(sql);
+        const rows = await indice.getTitles(preset, { skip, limit });
         return rows.map(item => mapDuckDbRowToMeta(item, type === 'movie'));
     } catch (err) {
         console.error(`[DuckDbProvider] Errore nella generazione del catalogo:`, err);
@@ -358,12 +355,8 @@ async function getDuckDbCatalogFromFilters(filters, type = 'movie', skip = 0, li
 
 async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
     try {
-        const sql = `SELECT * FROM ${type === 'movie' ? 'movies' : 'tv'} WHERE id = ${Number(tmdbId)}`;
-        const rows = await duckDbStore.query(sql);
-
-        if (rows.length === 0) return null;
-        
-        const item = rows[0];
+        const item = await indice.getById(tmdbId, type);
+        if (!item) return null;
         const isMovie = type === 'movie';
         let name = item.title || item.name || item.original_title || item.original_name || 'Unknown';
         let poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;

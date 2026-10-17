@@ -375,6 +375,11 @@ class DuckDbStore {
             await this.init();
         }
 
+        if (typeof sql === 'object' && sql !== null && typeof sql.sql === 'string') {
+            params = sql.params || [];
+            sql = sql.sql;
+        }
+
         return new Promise((resolve, reject) => {
             // Protezione query a tabelle vuote
             if (/\bFROM\s+movies\b/i.test(sql) && !fs.existsSync(this.moviesParquetPath)) {
