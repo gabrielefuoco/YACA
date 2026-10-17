@@ -6,7 +6,12 @@ L'interfaccia utente di YACA (Yet Another Catalog Addon) è progettata come una 
 
 ## 🏗️ Architettura Generale
 
-Il frontend è strutturato per essere compilato in modalità statica (`output: 'export'` definito in [next.config.ts](../frontend/next.config.ts)). Gli asset generati nella cartella `frontend/out` vengono serviti direttamente dal server Express del backend Node.js. Questo approccio elimina il sovraccarico di un server Node.js separato per il frontend e semplifica il deployment su piattaforme come Hugging Face Spaces.
+Il frontend è strutturato per essere compilato in modalità statica (`output: 'export'` definito in [next.config.ts](../frontend/next.config.ts)). Gli asset generati nella cartella `frontend/out` vengono serviti direttamente dal server Express del backend Node.js (`express.static(path.join(__dirname, 'frontend', 'out'))`).
+
+Questa non è una scelta di ripiego né un residuo storico, ma una **decisione architetturale consapevole di confine** (Ticket 17):
+1. **Autenticazione same-origin**: il cookie di sessione (`yaca_session`) è `HttpOnly` e opera sulla stessa identica origine di backend e addon Stremio, azzerando qualsiasi attrito di cookie cross-site, header CORS o proxy intermedi.
+2. **Ciclo di vita e deploy atomico**: la CI produce una singola immagine Docker unificata; non sussiste disallineamento di versioni o orchestrazione multi-immagine in produzione (Watchtower aggiorna un solo servizio `app`).
+3. **Overhead statico trascurabile**: l'export statico è leggero e servito con header di cache HTTP ottimali; il carico sul processo Node.js è praticamente nullo.
 
 La comunicazione con il backend avviene esclusivamente tramite API REST esposte sullo stesso host.
 

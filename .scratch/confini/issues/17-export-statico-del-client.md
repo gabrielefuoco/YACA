@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: grilling
 Blocked by: 11
 
@@ -60,3 +60,55 @@ TMDB e DuckDB in RAM). Quel fastidio si cura in un altro modo, che vale per *tut
 frontend: **persistere il file `.duckdb` già inizializzato sul volume** (`/data/tmdb`, quello di `yaca_tmdb`) e
 ricostruirlo solo quando i parquet cambiano. Se quella strada funziona, questo ticket si chiude con «resta
 com'è, ed ecco perché» — che è comunque una risposta, ed è quella che mi aspetto.
+
+## Esito (17/10/2026)
+
+### 1. La Decisione: Resta dentro Express
+Si accoglie pienamente la raccomandazione: **l'export statico del frontend resta servito da Express**, all'interno dello stesso processo e sullo stesso container dell'addon Stremio.
+
+**I motivi che hanno vinto**:
+1. **Autenticazione same-origin priva di attriti**: il cookie `yaca_session` è `HttpOnly` e opera sulla stessa identica origine. Separare il client imporrebbe `SameSite=None; Secure`, gestione del blocco dei cookie di terze parti sui browser moderni (Safari ITP, Brave) oppure l'introduzione di un reverse proxy dedicato (Nginx/Caddy), introducendo un ulteriore elemento di fragilità infrastrutturale.
+2. **Deploy atomico e singolo artefatto CI**: oggi un commit su `main` genera una singola immagine Docker `yaca` su GHCR, aggiornata atomicamente da Watchtower sul `mate`. Separare il client richiederebbe una seconda immagine (`yaca-frontend`), un secondo workflow GitHub Actions e coordinamento di versioning per evitare disallineamenti tra schema API e dashboard.
+3. **Overhead statico trascurabile**: `frontend/out` è un export statico leggero (<15 MB), servito con caching HTTP (`max-age`). Il consumo di CPU e memoria del server Express per la consegna degli asset è irrilevante rispetto al resto del runtime.
+4. **Il vero problema è ortogonale al client**: la tentazione di separare il frontend nasceva dal boot pesante del container `yaca-app`. Ma separare il client per velocizzarne i rilasci è una soluzione palliativa al problema sbagliato: il boot lento va risolto alla radice ottimizzando la persistenza del catalogo TMDB/DuckDB sul volume.
+
+### 2. La Misura del Boot in Produzione
+Misurazione effettuata senza riavvii né perturbazioni dell'ambiente di produzione, interrogando i log temporizzati del container `yaca-app` sul server `mate`:
+
+```bash
+ssh mate 'docker logs -t yaca-app 2>&1 | grep -E "DuckDB|Tier2|YACA Server in esecuzione|TmdbDump" | head -20'
+```
+
+Dall'ispezione dello stato del container (`StartedAt: 2026-10-17T07:34:06.824Z`):
+- **07:34:07.993Z (+1,17 s)**: `🚀 YACA Server in esecuzione su http://localhost:7860`. Il socket HTTP Express apre l'ascolto in poco più di 1 secondo.
+- **07:34:08.082Z – 07:34:22.395Z (+14,31 s)**: Conversione JSONL in Parquet (`[DuckDB Convert]` elabora 97.876 movie in 11,9 s e 19.651 serie in 2,4 s). In questa fase DuckDB non è ancora pronto (`[DuckDB Store] DB non inizializzato`).
+- **07:34:22.413Z – 07:34:25.576Z (+3,16 s)**: Inizializzazione modulo DuckDB in RAM, caricamento tabelle da parquet, creazione indici FTS e tabella `anime_mappings`.
+- **07:34:25.576Z (+18,75 s)**: `[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet`. **A 18,8 secondi dal boot DuckDB è pienamente operativo** (perfettamente coerente con lo `start_period: 25s` configurato nell'healthcheck di Docker Compose).
+- **07:34:25.576Z – 07:34:57.542Z (+31,97 s)**: Ricostruzione indice Tier 2 su SQLite FTS5 (`titles_fts5.db`, 1.494.167 record analizzati in 31,97 s).
+- **07:34:57.542Z (+50,72 s)**: Indice Tier 2 completato, avvio sync giornaliero TMDB Changes.
+
+**Sintesi numerica del boot attuale**:
+- **Socket HTTP / Static Server**: pronto in **1,2 s**.
+- **Cataloghi DuckDB in RAM**: pronti in **18,8 s**.
+- **Indice Tier 2 SQLite**: pronto in **50,7 s**.
+
+### 3. Cosa è stato Documentato e Dove
+La scelta è stata esplicitata nei punti nevralgici del progetto per certificarla come confine architetturale permanente:
+- **`Dockerfile`** (riga 47): commentato il passo `COPY --from=frontend-builder /app/frontend/out ./frontend/out` evidenziando i tre pilastri (cookie same-origin, singola immagine Docker, overhead trascurabile).
+- **`README.md`**: annotata la riga dell'Architettura Frontend SPA nei Documenti Chiave e aggiornato lo schema ASCII dell'Architettura di Sistema per esplicitare che `app` serve anche l'export statico.
+- **`docs/FRONTEND.md`**: espansa la sezione *Architettura Generale* indicando la decisione consapevole di confine del ticket 17.
+
+### 4. Proposta: Persistenza di `.duckdb` su Volume (Ticket Dedicato)
+Il collo di bottiglia del boot (18,8 s per DuckDB, 50,7 s per Tier 2) non dipende dal frontend ma dal ciclo di `TmdbDumpDaemon` che, riscontrando `isFirstRun`, ricompila i Parquet da JSONL e rigenera le tabelle `:memory:` e gli indici FTS anche quando i dati su disco non sono variati.
+
+**Cosa cambierebbe**:
+1. **Database su file persistente**: DuckDB non viene aperto con `:memory:`, bensì su file persistente `/data/tmdb/catalog.duckdb` situato nel named volume `yaca_tmdb` (accanto a `movies.parquet`, `tv.parquet` e `cursor.json`).
+2. **Bypass della conversione al boot**: `isFirstRun` controlla l'esistenza di `catalog.duckdb` e la freschezza rispetto ai JSONL. Se il database è integro e aggiornato, DuckDB si connette immediatamente senza invocare `scripts/convert_to_parquet.js` né ricreare gli indici FTS da zero.
+3. **Bypass Tier 2 se invariato**: `titles_fts5.db` (176 MB) non viene rigenerato se il daily export TMDB `.json.gz` ha la stessa data dell'ultimo run registrato in un file di metadati.
+
+**Dove vivrebbe**:
+- File `/data/tmdb/catalog.duckdb` nel volume `yaca_tmdb`.
+
+**Criterio di accettazione numerico**:
+- Al riavvio del container (`docker restart yaca-app`), delta timestamp da `StartedAt` a `[DuckDB Store] Inizializzazione completata`: **< 2,0 secondi** (rispetto agli attuali **18,75 s**, una riduzione >89%).
+- Zero secondi spesi in `[DuckDB Convert]` all'avvio su dataset preesistente.

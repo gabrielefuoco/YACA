@@ -17,7 +17,7 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 - [🦆 Architettura DuckDB In-Memory](docs/DUCKDB_ARCHITECTURE.md): Pre-filtraggio a zero chiamate TMDB tramite dataset Parquet ZSTD.
 - [🧬 Algoritmi di Scoring e VSM](docs/ALGORITHMS.md): Taste Profile pesato, Bayesian Rating IMDb e rotazione delle impression.
 - [🤖 Motore AI & Live Search Router](docs/AI_ENGINE.md): Mappatura del linguaggio naturale da barra di ricerca Stremio a parametri strutturati.
-- [🖥️ Architettura Frontend SPA](docs/FRONTEND.md): Dashboard React 19 + Next.js (Static Export), sessioni cookie e visualizzazione DNA.
+- [🖥️ Architettura Frontend SPA](docs/FRONTEND.md): Dashboard React 19 + Next.js (Static Export), sessioni cookie e visualizzazione DNA. L'export statico è servito direttamente da Express nello stesso processo: è una scelta architetturale consapevole (ticket 17: same-origin, cookie HttpOnly, singolo deploy senza CORS), non un residuo.
 - [🔀 Logica Cataloghi](docs/CATALOG_LOGIC.md): Lifecycle delle richieste, caching a due livelli (RAM L1 + Redis L2) e gestione badge ITA.
 - [⚙️ Internals Stremio](docs/STREMIO_INTERNALS.md): profili configurabili, manifest dinamici e mapping ibrido Anime (Kitsu/TMDB).
 - [🔄 Integrazioni](docs/INTEGRATIONS.md): Device Auth Flow Trakt.tv e sincronizzazione bidirezionale.
@@ -44,7 +44,7 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 
 ```
 Internet ──HTTPS──> Tailscale Funnel ──> 127.0.0.1:7860
-                                                    ├─> container app (Node.js + DuckDB, RAM cap 1.5 GB)
+                                                    ├─> container app (Node.js + DuckDB + export statico client, RAM cap 1.5 GB)
                                                     ├─> container redis (Cache L2, cap 300 MB)
                                                     ├─> container graph (Motore raccomandazioni Python :7862, cap 512 MB)
                                                     ├─> container anime-source (Worker sincronizzazione)
