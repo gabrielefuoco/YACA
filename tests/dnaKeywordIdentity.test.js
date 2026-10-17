@@ -28,7 +28,7 @@
  * toglie la risoluzione del nome perché «tanto a caldo funziona», questo file
  * prende un rosso e spiega perché.
  */
-const HierarchicalGraph = require('../src/engines/keywords/HierarchicalGraph');
+const HierarchicalGraph = require('../src/indice/HierarchicalGraph');
 const {
     setKeywordNameMaps,
     keywordNameForId,

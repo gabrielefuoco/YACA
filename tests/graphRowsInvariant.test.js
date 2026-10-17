@@ -4,7 +4,7 @@
  * del grafo è un oggetto strutturato con id, tmdbId, type e media_type coerenti col medium.
  */
 const { HERO_STRATEGIES } = require('../src/pool');
-const graphClient = require('../src/pool/graphClient');
+const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const { annotationKeyFor } = require('../src/handlers/catalogHandler');
 

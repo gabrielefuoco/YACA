@@ -36,7 +36,7 @@ const {
 } = require('../engines/hybrid/catalogStrategies');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
-const graphClient = require('./graphClient');
+const graphClient = require('../clients/graphClient');
 const { resolveAnimePolicy, isAnimeContent } = require('../anime');
 
 const HERO_CATALOG_IDS = new Map([

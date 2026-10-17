@@ -66,7 +66,7 @@ jest.mock('../src/catalog/tier2Search', () => ({
     closeTier2Search: jest.fn()
 }));
 
-jest.mock('../src/pool/graphClient', () => ({
+jest.mock('../src/clients/graphClient', () => ({
     raccomanda: jest.fn().mockResolvedValue({
         versioni: { artefatto: 'art-1', ricetta: 'ric-1' },
         liste: [
