@@ -1,5 +1,5 @@
-const AddonConfig = require('../db/models/AddonConfig');
-const UserAccount = require('../db/models/UserAccount');
+const AddonConfig = require('../models/AddonConfig');
+const UserAccount = require('../models/UserAccount');
 const { buildManifestFingerprint } = require('./manifestFingerprint');
 const { updateStremioAddonCollection } = require('./stremioAddon');
 const { nanoid } = require('nanoid');
