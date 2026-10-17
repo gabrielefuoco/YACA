@@ -34,7 +34,7 @@
  * toccato la scala di ciò che si scrive su Mongo?
  */
 const { computeActiveDNA, normalizeVector, sparseUnitNormalize } = require('../src/dna/dnaEngine');
-const { sanitizeDnaVector } = require('../src/data/keywordIds');
+const { sanitizeDnaVector } = require('../src/indice/keywordIds');
 
 const somma = (v) => Object.values(v).reduce((a, b) => a + b, 0);
 

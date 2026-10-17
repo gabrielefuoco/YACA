@@ -17,12 +17,11 @@
  * della matematica L1-L5). Il call graph resta aciclico.
  *
  * ATTENZIONE: `globalDfCache` è stato di modulo e deve restare **una sola
- * istanza**. `src/indice/duckDbStore.js` la inietta attraverso il thin-shim
- * `src/utils/dnaRarity.js`, che punta a questo modulo: se nascesse una seconda
+ * istanza**. `src/indice/duckDbStore.js` la inietta direttamente: se nascesse una seconda
  * cache, la rarità ricadrebbe in silenzio sui fallback stimati.
  */
 
-const { isRetiredTmdbKeywordId, sanitizeDnaVector } = require('../data/keywordIds');
+const { isRetiredTmdbKeywordId, sanitizeDnaVector } = require('../indice/keywordIds');
 const HierarchicalGraph = require('../indice/HierarchicalGraph');
 
 // ============================================================================

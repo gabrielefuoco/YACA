@@ -1,13 +1,11 @@
 /**
- * Estrazione DNA — verifica del confine (passo 2, ticket 22).
+ * Estrazione DNA — verifica del confine (passo 2, ticket 22; consolidato ticket 42).
  *
- * Il motore matematico vive in `src/dna/dnaEngine.js`; i vecchi path
- * (`src/utils/dnaExtractor.js`, `src/utils/dnaRarity.js`)
- * sono thin-shim di riesportazione.
+ * Il motore matematico vive unicamente in `src/dna/dnaEngine.js`.
+ * I vecchi path in utils sono stati rimossi.
  *
  * Qui si verificano le due trappole silenziose dichiarate dal ticket:
- *  - `globalDfCache` deve restare **la stessa istanza** anche quando
- *    `duckDbStore` inietta attraverso `src/utils/dnaRarity.js`;
+ *  - `globalDfCache` deve restare **la stessa istanza**;
  *  - il modulo è puro (nessun require di Mongo/DuckDB/HTTP).
  * E si blinda il contratto dei consumatori esterni (script e tool).
  */
@@ -16,9 +14,9 @@ const fs = require('fs');
 const path = require('path');
 
 const dnaEngine = require('../../src/dna/dnaEngine');
-const dnaRarity = require('../../src/utils/dnaRarity');
-const dnaExtractor = require('../../src/utils/dnaExtractor');
-const keywordIds = require('../../src/data/keywordIds');
+const dnaRarity = require('../../src/dna/dnaEngine');
+const dnaExtractor = require('../../src/dna/dnaEngine');
+const keywordIds = require('../../src/indice/keywordIds');
 
 describe('estrazione DNA — thin-shim e identità del modulo', () => {
     it('i vecchi path riesportano le stesse funzioni di dnaEngine (identità referenziale)', () => {
@@ -39,12 +37,12 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
         expect(dnaExtractor.calculateWeightedInteractions).toBe(dnaEngine.calculateWeightedInteractions);
     });
 
-    it('globalDfCache: la stessa istanza anche iniettando via src/utils/dnaRarity (path di duckDbStore)', () => {
+    it('globalDfCache: la stessa istanza anche iniettando via dnaEngine', () => {
         const injected = new Map([['k:extra', 5]]);
         const previous = dnaEngine.getGlobalDfCache();
         try {
             // È esattamente ciò che fa duckDbStore._buildDfCache.
-            const { setGlobalDfCache } = require('../../src/utils/dnaRarity');
+            const { setGlobalDfCache } = require('../../src/dna/dnaEngine');
             setGlobalDfCache(injected);
 
             expect(dnaEngine.getGlobalDfCache()).toBe(injected);
@@ -59,10 +57,9 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
         }
     });
 
-    it('scrive la cache una sola volta: dnaRarity non istanzia una propria variabile', () => {
-        const source = fs.readFileSync(path.join(__dirname, '../../src/utils/dnaRarity.js'), 'utf8');
-        expect(source).not.toMatch(/globalDfCache\s*=/);
-        expect(source).toMatch(/require\(['"]\.\.\/dna\/dnaEngine['"]\)/);
+    it('scrive la cache una sola volta: la cache risiede unicamente in dnaEngine', () => {
+        const source = fs.readFileSync(path.join(__dirname, '../../src/dna/dnaEngine.js'), 'utf8');
+        expect(source).toMatch(/let globalDfCache = null/);
     });
 
     it('il modulo è puro: nessun require di I/O (Mongo, DuckDB, HTTP, express)', () => {
@@ -75,7 +72,7 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
             }
         }
         expect(requires).toEqual(
-            expect.arrayContaining(['../data/keywordIds', '../indice/HierarchicalGraph'])
+            expect.arrayContaining(['../indice/keywordIds', '../indice/HierarchicalGraph'])
         );
     });
 });

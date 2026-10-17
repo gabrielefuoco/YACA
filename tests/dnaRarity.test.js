@@ -5,7 +5,7 @@ const {
     applySoftRarity,
     DF_MIN_DEFAULT,
     RARITY_MAX_WEIGHT
-} = require('../src/utils/dnaRarity');
+} = require('../src/dna/dnaEngine');
 
 describe('dnaRarity utilities', () => {
     describe('computeTimeDecay', () => {
@@ -114,7 +114,7 @@ describe('dnaRarity utilities', () => {
     });
 
     describe('calculateProfileRelevance', () => {
-        const { calculateProfileRelevance } = require('../src/utils/dnaRarity');
+        const { calculateProfileRelevance } = require('../src/dna/dnaEngine');
 
         it('should return 1.0 for global context or empty static prior', () => {
             const itemDna = { 'g:28': 100, 'k:123': 100 };

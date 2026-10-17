@@ -1,4 +1,4 @@
-const { calculateFlatnessMetrics } = require('../src/utils/dnaRarity');
+const { calculateFlatnessMetrics } = require('../src/dna/dnaEngine');
 
 describe('calculateFlatnessMetrics', () => {
     it('should calculate entropy, top10Share, sum and dimensions', () => {

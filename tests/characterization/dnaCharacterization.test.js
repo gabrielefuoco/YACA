@@ -19,7 +19,7 @@ const {
     computeFinalDNA,
     calculateWeightedInteractions,
     normalizeVector,
-} = require('../../src/utils/dnaExtractor');
+} = require('../../src/dna/dnaEngine');
 const {
     computeTimeDecay,
     applyLogSaturation,
@@ -28,7 +28,7 @@ const {
     computeActiveDNA,
     getGlobalDfCache,
     setGlobalDfCache,
-} = require('../../src/utils/dnaRarity');
+} = require('../../src/dna/dnaEngine');
 const {
     cosineSimilarity,
     sparseNorm,
@@ -37,7 +37,7 @@ const {
     clusterTasteSignals,
     shouldRecomputeClusters,
 } = require('../../src/dna/dnaEngine');
-const { sanitizeDnaVector } = require('../../src/data/keywordIds');
+const { sanitizeDnaVector } = require('../../src/indice/keywordIds');
 const ProfileScorer = require('../../src/profile/ProfileScorer');
 
 // --- helper -----------------------------------------------------------------

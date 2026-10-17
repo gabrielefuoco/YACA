@@ -5,7 +5,7 @@ Questo documento illustra nel dettaglio gli algoritmi, i modelli matematici e le
 Le logiche di calcolo e raccomandazione si trovano principalmente in:
 *   [src/profile/ProfileScorer.js](../src/profile/ProfileScorer.js): Core engine di scoring per l'affinità dei contenuti (vettoriale, bayesiano e penalità di rotazione).
 *   [src/profile/ProfileBuilder.js](../src/profile/ProfileBuilder.js): Gestore del ciclo di vita dei profili e aggiornamento incrementale dei vettori.
-*   [src/dna/dnaEngine.js](../src/dna/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path (`src/utils/dnaExtractor.js`, `dnaRarity.js`, `tasteClusters.js`) sono thin-shim verso questo modulo, tenuti perché script e tool esterni continuino a importarli.
+*   [src/dna/dnaEngine.js](../src/dna/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path in utils sono stati rimossi e unificati in questo modulo (ticket 42).
 *   [src/engines/hybrid/scoringEngine.js](../src/engines/hybrid/scoringEngine.js): Score ibrido per co-occorrenza (semi-seed del *Seed Network*) ed estrazione dei top-N generi/keyword dal vettore. **Non** è l'orchestratore Two-Tier: vedi §2.
 *   [src/engines/hybrid/catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js): Strategie di compilazione per i cataloghi speciali (*True Blend*, *Hidden Gems*, ecc.) e i cap di diversità degli hero.
 *   [src/infra/resultMerger.js](../src/infra/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
@@ -22,7 +22,7 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 YACA modella l'identità cinematografica dell'utente usando un approccio basato sul **Vector Space Model (VSM)**. Le preferenze dell'utente sono rappresentate da un vettore multidimensionale i cui elementi sono coppie chiavi-valore del tipo `prefisso:valore` (es. `g:28` per il genere Action, `k:12984` per la keyword *time travel*, `o:JP` per il Giappone, `L2:t_272` per un topos del grafo gerarchico).
 
 > [!NOTE]
-> **Il motore matematico vive in un modulo solo**: [src/dna/dnaEngine.js](../src/dna/dnaEngine.js) (ticket 22). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi (`src/utils/dnaExtractor.js`, `dnaRarity.js`, `tasteClusters.js`) sono oggi **thin-shim** che riesportano il modulo, così gli script e i tool esistenti continuano a funzionare senza modifiche.
+> **Il motore matematico vive in un modulo solo**: [src/dna/dnaEngine.js](../src/dna/dnaEngine.js) (ticket 22, consolidato in ticket 42). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi in utils sono stati rimossi.
 >
 > Due cose da non rompere se si tocca il modulo:
 > - **`globalDfCache` è una variabile di modulo**, iniettata all'avvio da `src/db/duckDbStore.js:361`. Se il modulo ne istanziasse una propria copia non sincronizzata, la rarità ricadrebbe **in silenzio** sui fallback stimati, alterando i pesi senza errori né log. C'è un test che la verifica per identità.
