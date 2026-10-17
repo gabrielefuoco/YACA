@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: research
 
 # 32 — La logica anime: due metà, tre cartelle, un confine attraversato

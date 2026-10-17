@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 37 — Le pulizie piccole: `profiles.js` fuori, `data/` distribuito, `utils/` nominato

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 35 — Il protocollo Stremio in un modulo solo

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: grilling
 # 26 — Il modulo configurazione utente: le cose di un utente
 

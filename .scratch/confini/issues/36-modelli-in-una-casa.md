@@ -1,4 +1,4 @@
-Status: done
+Status: resolved
 Type: task
 
 # 36 — I sette modelli in una casa sola
