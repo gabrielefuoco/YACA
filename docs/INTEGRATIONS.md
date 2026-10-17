@@ -92,7 +92,7 @@ graph LR
 ### 1. Da Stremio a Trakt.tv (Push Ratings)
 
 Quando l'utente avvia la sincronizzazione dei propri dati Stremio, YACA scarica la lista di elementi piaciuti ("Liked") e preferiti ("Loved") di Stremio.
-La funzione `pushToTrakt` in [src/utils/stremioAddon.js](../src/utils/stremioAddon.js) mappa queste interazioni in valutazioni numeriche (ratings) compatibili con Trakt:
+La funzione `pushToTrakt` in [src/stremio/collection.js](../src/stremio/collection.js) mappa queste interazioni in valutazioni numeriche (ratings) compatibili con Trakt:
 *   Gli elementi **Loved** di Stremio vengono inviati come valutazione **10/10** su Trakt.
 *   Gli elementi **Liked** di Stremio vengono inviati come valutazione **8/10** su Trakt.
 
@@ -116,7 +116,7 @@ YACA importa la cronologia di visione e le valutazioni dell'utente da Trakt per 
 Per evitare di superare i limiti di rate limit delle API di Trakt.tv e Stremio, YACA adotta strategie di scheduling e throttling intelligenti:
 
 ### 1. Throttling Temporale Casuale (8h ± 2h)
-Al termine di ogni sincronizzazione riuscita dei dati di Stremio, la funzione `updateSyncTimestamp` in [src/utils/stremioAddon.js](../src/utils/stremioAddon.js) aggiorna nel database la data dell'ultima sincronizzazione (`lastStremioSync`) e imposta l'intervallo consentito per la successiva sincronizzazione:
+Al termine di ogni sincronizzazione riuscita dei dati di Stremio, la funzione `updateSyncTimestamp` in [src/stremio/collection.js](../src/stremio/collection.js) aggiorna nel database la data dell'ultima sincronizzazione (`lastStremioSync`) e imposta l'intervallo consentito per la successiva sincronizzazione:
 ```javascript
 const randomOffsetMs = (Math.floor(Math.random() * 241) - 120) * 60 * 1000; // Oscilla tra -120 e +120 minuti
 const nextSyncInterval = (8 * 60 * 60 * 1000) + randomOffsetMs; // 8 ore ± 2 ore

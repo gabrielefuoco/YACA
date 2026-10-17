@@ -29,7 +29,7 @@
  */
 
 const UserLibraryItem = require('../models/UserLibraryItem');
-const { stremioClient } = require('../../clients/stremio');
+const { stremioClient } = require('../../stremio');
 const LibrarySyncService = require('./LibrarySyncService');
 const libraryIdentity = require('../identity');
 

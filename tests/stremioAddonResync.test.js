@@ -4,17 +4,17 @@
  * (ENOTFOUND) e il resync falliva in silenzio: la URL installata restava vecchia e Stremio
  * continuava a mostrare il manifest in cache (cataloghi mancanti).
  */
-jest.mock('../src/clients/stremio', () => ({
+jest.mock('../src/stremio/client', () => ({
     stremioClient: { post: jest.fn(), get: jest.fn() },
     stremioLikesClient: { get: jest.fn() }
 }));
 jest.mock('../src/models/UserConfig', () => ({ resolveUserConfig: jest.fn() }));
-jest.mock('../src/api/stremio', () => ({ buildManifest: jest.fn() }));
+jest.mock('../src/stremio/manifest', () => ({ buildManifest: jest.fn() }));
 
-const { stremioClient } = require('../src/clients/stremio');
+const { stremioClient } = require('../src/stremio/client');
 const UserConfig = require('../src/models/UserConfig');
-const { buildManifest } = require('../src/api/stremio');
-const { updateStremioAddonCollection } = require('../src/utils/stremioAddon');
+const { buildManifest } = require('../src/stremio/manifest');
+const { updateStremioAddonCollection } = require('../src/stremio');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
 const HOST = 'https://mate.example.ts.net';

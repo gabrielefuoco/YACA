@@ -17,7 +17,7 @@ const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService'
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const UserAccount = require('../src/db/models/UserAccount');
 const AddonConfig = require('../src/db/models/AddonConfig');
-const { stremioClient } = require('../src/clients/stremio');
+const { stremioClient } = require('../src/stremio');
 const { BADGE_IMG_VERSION } = require('../src/catalog/formatters/posterBadgeVersion');
 
 const HOST = 'https://yaca.test';

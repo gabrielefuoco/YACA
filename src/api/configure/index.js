@@ -1,7 +1,7 @@
 const UserConfig = require('../../models/UserConfig');
 const { validateAuth, validateKeys, sanitizeCustomCatalogs } = require('./validators');
 const { processProfiles, createGlobalProfileInput } = require('./profileProcessor');
-const { updateStremioAddonCollection } = require('../../utils/stremioAddon');
+const { updateStremioAddonCollection } = require('../../stremio');
 const { getHeroUiGroups } = require('../../catalog/registry');
 
 /**

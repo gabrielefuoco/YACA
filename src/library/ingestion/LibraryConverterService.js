@@ -1,10 +1,9 @@
 const UserLibraryItem = require('../models/UserLibraryItem');
 const UserAccount = require('../../db/models/UserAccount');
 const AddonConfig = require('../../db/models/AddonConfig');
-const { stremioClient } = require('../../clients/stremio');
+const { stremioClient, buildStremioLibraryPayload } = require('../../stremio');
 const { createTmdbClient } = require('../../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../../catalog/formatters/StremioFormatter');
-const { buildStremioLibraryPayload } = require('../../utils/stremioAddon');
 const duckDbStore = require('../../indice/duckDbStore');
 const { resolvePoster, TMDB_IMAGE_BASE } = require('../../utils/posterResolver');
 const LibrarySyncService = require('./LibrarySyncService');

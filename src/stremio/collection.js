@@ -1,10 +1,10 @@
-const { stremioClient, stremioLikesClient } = require('../clients/stremio');
+const { stremioClient, stremioLikesClient } = require('./client');
 const UserAccount = require('../db/models/UserAccount');
 const AddonConfig = require('../db/models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
-const { isAllowedUrl } = require('./helpers');
+const { isAllowedUrl } = require('../utils/helpers');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
 const STREMIO_TIMEOUT = 10000;
@@ -91,8 +91,7 @@ async function updateStremioAddonCollection(authKey, manifestUrl) {
         const userHandle = parsedManifestUrl.pathname.split('/').filter(Boolean)[0];
         if (userHandle) {
             const UserConfig = require('../models/UserConfig');
-            // Lazy require: evita la dipendenza circolare a load-time con src/api/stremio.js
-            const { buildManifest } = require('../api/stremio');
+            const { buildManifest } = require('./manifest');
             const userConfig = await UserConfig.resolveUserConfig(userHandle);
             if (userConfig && typeof buildManifest === 'function') {
                 manifest = buildManifest(userConfig, parsedManifestUrl.origin, userHandle);
@@ -373,5 +372,6 @@ module.exports = {
     syncAllStremioData,
     fetchStremioLibrary,
     pushToStremioLibrary,
-    buildStremioLibraryPayload
+    buildStremioLibraryPayload,
+    validateManifestUrl
 };

@@ -405,7 +405,7 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
         }
         if (stremioKeyToUse && isStremioSyncDueForUser(userConfig)) {
             try {
-                const { syncAllStremioData } = require('../utils/stremioAddon');
+                const { syncAllStremioData } = require('../stremio');
                 await syncAllStremioData(userId, stremioKeyToUse, context);
             } catch (sErr) {
                 console.warn(`[Hybrid] Stremio periodic likes sync failed:`, sErr.message);

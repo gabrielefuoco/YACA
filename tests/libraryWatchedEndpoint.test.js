@@ -13,13 +13,13 @@
 
 const UserAccount = require('../src/db/models/UserAccount');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
-const { stremioClient } = require('../src/clients/stremio');
+const { stremioClient } = require('../src/stremio');
 const router = require('../src/api/profiles');
 
 jest.mock('../src/db/models/UserAccount');
 jest.mock('../src/db/models/AddonConfig');
 jest.mock('../src/library/models/UserLibraryItem');
-jest.mock('../src/clients/stremio', () => ({
+jest.mock('../src/stremio/client', () => ({
     stremioClient: {
         post: jest.fn().mockResolvedValue({ data: { result: { success: true } } })
     }

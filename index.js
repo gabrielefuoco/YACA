@@ -254,7 +254,7 @@ if (require.main === module) {
         if (process.env.DISABLE_MANIFEST_RECONCILE === '1') {
             console.log('[ManifestReconciler] Disattivato da DISABLE_MANIFEST_RECONCILE=1');
         } else {
-            const { reconcileManifests } = require('./src/utils/manifestReconciler');
+            const { reconcileManifests } = require('./src/stremio');
             reconcileManifests().catch(err => console.warn('[ManifestReconciler] Startup Error:', err.message));
         }
     });

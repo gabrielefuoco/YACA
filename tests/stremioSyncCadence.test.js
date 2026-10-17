@@ -45,12 +45,13 @@ jest.mock('../src/clients/tmdb', () => ({
     prioritizeLocalizedImages: jest.fn(x => x)
 }));
 
-jest.mock('../src/utils/stremioAddon', () => ({
+jest.mock('../src/stremio', () => ({
+    ...jest.requireActual('../src/stremio'),
     syncAllStremioData: jest.fn().mockResolvedValue({ success: true })
 }));
 
 const { syncIncrementalRecommendations, isStremioSyncDueForUser } = require('../src/engines/hybridRecommendations');
-const { syncAllStremioData } = require('../src/utils/stremioAddon');
+const { syncAllStremioData } = require('../src/stremio');
 
 const H = 60 * 60 * 1000;
 
