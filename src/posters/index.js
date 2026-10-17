@@ -64,5 +64,10 @@ module.exports = {
 
     // 6. Cartella cache poster (proprietà del modulo)
     DEFAULT_CACHE_DIR: drenaCodaPoster.DEFAULT_CACHE_DIR,
-    getCacheDir: drenaCodaPoster.getCacheDir
+    getCacheDir: drenaCodaPoster.getCacheDir,
+
+    // 7. Refresh e Risoluzione Poster (Ticket 42)
+    refreshLibraryPoster: require('./libraryPosterRefresh').refreshLibraryPoster,
+    resolvePoster: require('./posterResolver').resolvePoster,
+    TMDB_IMAGE_BASE: require('./posterResolver').TMDB_IMAGE_BASE
 };

@@ -1,4 +1,4 @@
-const { resolvePoster } = require('../src/utils/posterResolver');
+const { resolvePoster } = require('../src/posters/posterResolver');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { stremioClient } = require('../src/stremio');
