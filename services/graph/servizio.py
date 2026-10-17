@@ -135,10 +135,15 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             med_v = round(float(motore.VOTMED[b]), 1) if b is not None else 0.0
             q_ser = round(float(motore.QUOTA_TV[b]), 2) if b is not None else 0.0
             es = [str(motore.TIT[int(r_)]) for r_ in motore.MEMBRI[b][np.argsort(-motore.VOT[motore.MEMBRI[b]])][:3]] if b is not None else []
-            desc = f"mondo {b} — {motore.SZ[b]} titoli, voti mediani {med_v}" + (f" · es. {', '.join(es)}" if es else "") if b is not None else "il tuo mondo"
+            mondi_coinvolti = [m["bolla"] for m in esito.get("mondi", [])]
+            if len(mondi_coinvolti) > 1:
+                desc = f"il tuo mondo ({b}) e i vicini ({', '.join(str(x) for x in mondi_coinvolti[1:])}) — {len(titoli)} titoli, voti mediani {med_v}" + (f" · es. {', '.join(es)}" if es else "") if b is not None else "il tuo mondo e i vicini"
+            else:
+                desc = f"mondo {b} — {motore.SZ[b]} titoli, voti mediani {med_v}" + (f" · es. {', '.join(es)}" if es else "") if b is not None else "il tuo mondo"
+            semi_mondi_set = set(mondi_coinvolti)
             semi_ids = list(dict.fromkeys(
                 int(ch.split(":")[1]) for ch, _, _, _ in storia
-                if ch in B.ROW_OF and int(motore.MEM[B.ROW_OF[ch]]) == b
+                if ch in B.ROW_OF and int(motore.MEM[B.ROW_OF[ch]]) in semi_mondi_set
             ))
             parziale = False
 
