@@ -126,4 +126,10 @@ Tutte le risposte memorizzate dichiarano il loro TTL esplicito accanto alla voce
 - **Modulo poster**: la gestione dei file ERDB, poster statici composti, coda eventi e drenatore (`posterDaEvento.js`, `codaEventi.js`, `drenaPoster.js`) è un dominio autonomo con consumatore fuori processo (timer di sistema) assegnato al ticket 25 in parallelo. Tali file sono stati lasciati intatti.
 
 
-**Il poster è il ticket 25** (): il modulo vive in  (con  dentro), il drenatore resta un **comando** per il timer di sistema, e le unità sull'host vanno riportate a mano ( →  +  + ).
+---
+
+**Il poster è il ticket 25** (`.scratch/confini/issues/25-modulo-poster.md`): il modulo vive in `src/posters/`
+(con `erdb/` dentro, perché il modulo possiede i poster ed ERDB è un fornitore), il drenatore resta un **comando**
+perché il consumatore è un timer di sistema, e le unità sull'host vanno riportate a mano
+(`cp ops/yaca-poster-eventi.service /etc/systemd/system/` + `daemon-reload` + `restart`). Gli shim in
+`src/cache/` e `src/erdb/` restano finché il mate non ha le unità nuove — sono il ponte per il timer vecchio.
