@@ -21,6 +21,9 @@ const { isCatalogConformant } = require('../catalog/catalogKind');
 
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
+const cookieParser = require('cookie-parser');
+const { utenteDallaSessione } = require('../middleware/sessione');
+
 
 const {
     SORT_OPTIONS,
@@ -440,9 +443,19 @@ router.get(['/:userHandle/stream/:type/:id.json', '/:userHandle/:configVersion/s
 // Frontend polls this every 3-5 seconds while syncStatus.isSyncing is true.
 // Requires JWT authentication to prevent unauthorized access to user sync data.
 // Uses unidirectional join: UserAccount.addonUuid → AddonConfig.uuid (no userId in AddonConfig).
-router.get('/sync-status/:userId', syncStatusLimiter, async (req, res) => {
-    const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: 'userId required' });
+router.get('/sync-status/:userId', cookieParser(), syncStatusLimiter, async (req, res) => {
+    const sessionUserId = utenteDallaSessione(req);
+    if (!sessionUserId) {
+        return res.status(401).json({
+            error: {
+                code: 'non_autenticato',
+                message: 'Sessione assente o scaduta.'
+            }
+        });
+    }
+
+    // Previene IDOR: ignora req.params.userId e usa l'utente autenticato nella sessione
+    const userId = sessionUserId;
     try {
         // Unidirectional join: find the user's addonUuid, then query AddonConfig by uuid
         const account = await UserAccount.findOne({ userId }).lean();
@@ -456,7 +469,7 @@ router.get('/sync-status/:userId', syncStatusLimiter, async (req, res) => {
         return res.json(config.syncStatus || { isSyncing: false, total: 0, current: 0, lastSync: null });
     } catch (err) {
         console.error('[SyncStatus] Error:', err.message);
-        return res.status(500).json({ error: 'Internal error' });
+        return res.status(500).json({ error: { code: 'non_disponibile', message: 'Errore interno.' } });
     }
 });
 

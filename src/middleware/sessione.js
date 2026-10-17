@@ -40,10 +40,26 @@ function utenteDallaSessione(req) {
 function richiedeSessione(req, res, next) {
     const userId = utenteDallaSessione(req);
     if (!userId) {
-        return res.status(401).json({ error: 'Sessione assente o scaduta', code: 'non_autenticato' });
+        return res.status(401).json({
+            error: {
+                code: 'non_autenticato',
+                message: 'Sessione assente o scaduta.'
+            }
+        });
     }
     req.utenteId = userId;
     next();
 }
 
-module.exports = { COOKIE, utenteDallaSessione, richiedeSessione };
+/** Risponde con il contratto di errore unico di dominio: `{ error: { code, message } }`. */
+function erroreDominio(res, status, code, message) {
+    return res.status(status).json({
+        error: {
+            code,
+            message
+        }
+    });
+}
+
+module.exports = { COOKIE, utenteDallaSessione, richiedeSessione, erroreDominio };
+
