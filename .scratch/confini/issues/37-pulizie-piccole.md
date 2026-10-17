@@ -72,3 +72,30 @@ Il file è vivo, ha 9 test suoi, e `t34-daemon` ha fatto bene a verificare prima
 **Quarta sonda sbagliata della giornata, sempre della stessa famiglia**: un `grep` che assume la *forma* di un
 percorso (`utils/x`) e non vede l'altra (`./x`). La regola che ne esce: per contare gli importatori, cerca il
 **nome del file**, non un percorso.
+
+## Parte 1 — la verifica del client, fatta dall'integratore (18/10/2026)
+
+Prima di cancellare una **superficie HTTP viva** serviva la prova che nessuno la chiami. Raccolta:
+
+1. **Il client lo dice da sé**: `frontend/src/lib/api.ts:9` — *«NO /api/profiles/:id/* (sostituito da
+   `/api/profilo/*`)»*. E il file usa già `/api/profilo/sincronizzazione`, `/dna/conferma`, `/aggiorna`.
+2. **Ogni rotta vecchia ha il suo equivalente nuovo** (nomi e vocabolario diversi):
+
+| vecchia (`/api/profiles/:id/…`) | nuova (`/api/profilo/…`) |
+|---|---|
+| `GET /:id/library` | `GET /libreria` |
+| `POST /:id/library` | `POST /libreria` |
+| `DELETE /:id/library/:itemId` | `DELETE /libreria/:itemId` |
+| `PUT /:id/library/reorder` | `PUT /libreria/ordine` |
+| `GET|POST /:id/library/watched` | `GET|POST /libreria/visti` |
+| `POST /:id/dna/confirm` | `POST /dna/conferma` |
+| `GET /:id/sync-status` · `POST /:id/sync/refresh` | `GET|POST /sincronizzazione` |
+| `POST /:id/convert-library` | `POST /aggiorna` (chiama `LibraryConverterService.convertAll`) |
+
+3. **Il modello di sessione cambia**: la vecchia prendeva l'utente da `req.params.id`, la nuova dalla **sessione**
+   (`req.utenteId` via `richiedeSessione`). È il vero lavoro dei tre test da adattare — non un `require` da
+   cambiare.
+
+**Le parti 2 e 3 di questo ticket (distribuire `data/`, nominare `utils/`) sono RIMANDATE**: spostano file dentro
+`src/catalog/**` e `src/indice/**`, che in questo momento sono il territorio del ticket 39. Farle adesso significa
+litigare sugli stessi file.
