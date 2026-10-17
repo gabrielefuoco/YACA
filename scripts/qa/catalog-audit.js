@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const store = require('../../src/db/duckDbStore');
+const store = require('../../src/indice/duckDbStore');
 const { getPresets } = require('../../src/data/presets');
 const { getDuckDbCatalogFromPreset, buildPresetFromFilters } = require('../../src/catalog/providers/DuckDbProvider');
 const { F, S, G } = require('../../src/data/filters');

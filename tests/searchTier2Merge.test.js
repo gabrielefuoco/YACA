@@ -5,7 +5,7 @@
  * della fusione (ordine, dedup, marcatura) e il degrado morbido quando l'indice non c'è.
  */
 
-jest.mock('../src/db/tier2Index', () => ({
+jest.mock('../src/indice/tier2', () => ({
     Tier2SearchClient: jest.fn()
 }));
 
@@ -23,7 +23,7 @@ jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
     executeUniversalPipeline: jest.fn()
 }));
 
-const { Tier2SearchClient } = require('../src/db/tier2Index');
+const { Tier2SearchClient } = require('../src/indice/tier2');
 const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');

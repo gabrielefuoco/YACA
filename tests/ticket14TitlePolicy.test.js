@@ -12,7 +12,7 @@ const os = require('os');
 const path = require('path');
 
 const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('../src/catalog/providers/DuckDbProvider');
 const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
 

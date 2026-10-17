@@ -32,7 +32,7 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
     // 2. DuckDB Missing Tables in RAM
     describe('2. DuckDB Missing Tables in RAM', () => {
         test('duckDbStore initializes tv, movies, and anime_mappings tables in RAM', async () => {
-            const duckDbStore = require('../src/db/duckDbStore');
+            const duckDbStore = require('../src/indice/duckDbStore');
             await duckDbStore.init();
 
             // Should be able to query tv and anime_mappings without Catalog Error
@@ -47,7 +47,7 @@ describe('Resilience Audit Fixes (10 Critical Vulnerabilities)', () => {
         });
 
         test('duckDbStore.updateAnimeMapping correctly extracts IDs, deduplicates seasons, and supports simple IDs', async () => {
-            const duckDbStore = require('../src/db/duckDbStore');
+            const duckDbStore = require('../src/indice/duckDbStore');
             await duckDbStore.init();
 
             await duckDbStore.updateAnimeMapping({ movie: [], tv: ['12345:1', '12345:2', '67890:7'] });

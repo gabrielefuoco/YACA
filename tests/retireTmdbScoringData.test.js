@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const { hydrateResultsFromLocalDetailsCache } = require('../src/catalog/processors/MetadataHydrator');
 const { metaHandler } = require('../src/handlers/metaHandler');
 

@@ -1,6 +1,6 @@
 const { getPresets } = require('../src/data/presets');
 const { buildCatalogQuery } = require('../src/db/queryBuilder');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 
 describe('preset_burton popularity ordering', () => {
     test('uses one deterministic snapshot order with popularity as primary key', async () => {

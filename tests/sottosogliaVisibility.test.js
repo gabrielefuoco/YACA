@@ -1,6 +1,6 @@
 const { getPresets } = require('../src/data/presets');
 const { buildCatalogQuery } = require('../src/db/queryBuilder');
-const duckDbStore = require('../src/db/duckDbStore');
+const duckDbStore = require('../src/indice/duckDbStore');
 const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { F } = require('../src/data/filters');
 const {
