@@ -54,6 +54,11 @@ const {
     buildAiPrompt
 } = require('./prompts');
 
+const {
+    generateTmdbFiltersFromPrompt,
+    routeLiveStremioSearch
+} = require('./router');
+
 module.exports = {
     // La porta unica
     cerca,
@@ -88,5 +93,8 @@ module.exports = {
     richiediComprensioneAI,
     SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
     buildSearchUnderstandingPrompt,
-    buildAiPrompt
+    buildAiPrompt,
+    generateTmdbFiltersFromPrompt,
+    routeLiveStremioSearch
 };
+

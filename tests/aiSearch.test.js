@@ -1,5 +1,6 @@
-const { generateTmdbFiltersFromPrompt } = require('../src/ai/router');
+const { generateTmdbFiltersFromPrompt } = require('../src/ricerca/router');
 const { aiPromptCache } = require('../src/cache/cacheInstances');
+
 const { deriva } = require('../src/cache');
 const { Mistral } = require('@mistralai/mistralai');
 

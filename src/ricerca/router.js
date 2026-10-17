@@ -1,6 +1,7 @@
-const { createAiClient } = require('./client');
-const { buildAiPrompt } = require('../ricerca/prompts');
+const { createAiClient } = require('../ai');
+const { buildAiPrompt } = require('./prompts');
 const { leggi, scrivi, deriva } = require('../cache');
+
 
 // ============================================
 // FUNCTIONS

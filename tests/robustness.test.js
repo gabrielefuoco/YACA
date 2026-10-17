@@ -52,7 +52,7 @@ describe('Input validation - IMDB ID format', () => {
 
 describe('AI router - missing Mistral key guard', () => {
     it('should return fallback filters when Mistral key is missing', async () => {
-        const { generateTmdbFiltersFromPrompt } = require('../src/ai/router');
+        const { generateTmdbFiltersFromPrompt } = require('../src/ricerca/router');
         const result = await generateTmdbFiltersFromPrompt('test prompt', null);
         expect(result).toBeDefined();
         expect(result.strategy).toBe('multi_search');
@@ -60,10 +60,11 @@ describe('AI router - missing Mistral key guard', () => {
     });
 
     it('should return fallback filters when Mistral key is empty string', async () => {
-        const { generateTmdbFiltersFromPrompt } = require('../src/ai/router');
+        const { generateTmdbFiltersFromPrompt } = require('../src/ricerca/router');
         const result = await generateTmdbFiltersFromPrompt('action movies', '');
         expect(result).toBeDefined();
         expect(result.strategy).toBe('multi_search');
         expect(result.text_search).toBe('action movies');
     });
 });
+

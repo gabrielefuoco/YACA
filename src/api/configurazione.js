@@ -13,8 +13,9 @@ const { getHeroUiGroups } = require('../catalog/registry');
 const { formatPreviewResponse } = require('../catalog/previewContract');
 const { catalogHandler } = require('../handlers/catalogHandler');
 const { createTmdbClient } = require('../clients/tmdb');
-const { generateTmdbFiltersFromPrompt } = require('../ai/router');
+const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
 const { sanitizeString } = require('../utils/helpers');
+
 
 const MAX_PROMPT_LENGTH = 500;
 const MAX_PREVIEW_CATALOG_NAME_LENGTH = 50;

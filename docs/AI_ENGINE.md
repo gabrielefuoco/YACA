@@ -3,8 +3,8 @@
 Questo documento descrive in dettaglio l'integrazione dell'Intelligenza Artificiale all'interno di YACA (Yet Another Catalog Addon). Il motore AI ha il compito di tradurre le ricerche libere in linguaggio naturale inserite dall'utente in query strutturate ed estremamente mirate per i provider di contenuti (TMDB, Kitsu, Trakt).
 
 Il sistema si appoggia sulle API di **Mistral AI** ed è implementato principalmente all'interno dei seguenti componenti:
-*   [src/ai/router.js](../src/ai/router.js): Traduce le ricerche libere in linguaggio naturale (Live Search) in filtri TMDB e instrada le query al provider corretto.
-*   [src/ai/prompts.js](../src/ai/prompts.js): Contiene le definizioni delle regole di base, dei dizionari di traduzione delle keyword e dei JSON schema per l'AI.
+*   [src/ricerca/router.js](../src/ricerca/router.js): Traduce le ricerche libere in linguaggio naturale (Live Search) in filtri TMDB e instrada le query al provider corretto.
+*   [src/ricerca/prompts.js](../src/ricerca/prompts.js): Contiene le definizioni delle regole di base, dei dizionari di traduzione delle keyword e dei JSON schema per la ricerca.
 
 > [!NOTE]
 > La generazione e il pre-filtraggio dei cataloghi personalizzati (es. *True Blend*, *Smart AND*, *Top Genres*) non richiedono chiamate esterne ad ogni richiesta: sono eseguiti a latenza zero dal motore SQL in-memory **DuckDB** e dal calcolatore bayesiano **VSM** ([catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js)).
@@ -31,16 +31,17 @@ graph TD
 
 ## Live Search & Routing AI
 
-All'interno di [src/ai/router.js](../src/ai/router.js), YACA espone una logica per mappare le ricerche libere dell'utente in parametri TMDB. Questo permette una ricerca di tipo semantico all'interno dell'addon.
+All'interno di [src/ricerca/router.js](../src/ricerca/router.js), YACA espone una logica per mappare le ricerche libere dell'utente in parametri TMDB. Questo permette una ricerca di tipo semantico all'interno dell'addon.
 
 ### 1. Traduzione semantica e Regole Generali
-Per garantire che le API di TMDB possano digerire l'input dell'utente, l'AI applica una serie di regole stringenti (configurate in [src/ai/prompts.js](../src/ai/prompts.js)):
+Per garantire che le API di TMDB possano digerire l'input dell'utente, l'AI applica una serie di regole stringenti (configurate in [src/ricerca/prompts.js](../src/ricerca/prompts.js)):
 *   **Traduzione concettuale**: I concetti descrittivi in lingua italiana vengono tradotti nei corrispettivi sostantivi inglesi più semplici (es. *"balene"* $\rightarrow$ *"whale"*, *"natalizia"* $\rightarrow$ *"christmas"*).
 *   **Regola dell'operatore singolo**: Nelle keyword è consentito un solo operatore per blocco di query: o solo AND (`,`) o solo OR (`|`). Non è ammesso mischiarli in una singola stringa (es. `cyberpunk|neon` è valido, `cyberpunk|neon,hacker` viene scartato o corretto).
 *   **Mappatura dei codici lingua**: Riconosce indicazioni geografiche e linguistiche (es. *"film americani"* $\rightarrow$ `original_language: "en"`, *"in italiano"* $\rightarrow$ `language: "it-IT"`).
 
 ### 2. Risposta JSON Schema
-L'AI deve rispondere restituendo un oggetto JSON che segue una delle due strutture definite in [src/ai/prompts.js](../src/ai/prompts.js):
+L'AI deve rispondere restituendo un oggetto JSON che segue una delle due strutture definite in [src/ricerca/prompts.js](../src/ricerca/prompts.js):
+
 *   `single_query`: Per mappare una ricerca singola.
 *   `multi_query`: Per pianificare più ricerche in parallelo (es. se la ricerca contiene concetti slegati).
 

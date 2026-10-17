@@ -17,9 +17,10 @@ jest.mock('../src/clients/tmdb', () => ({
     getTmdbIdByName: jest.fn()
 }));
 
-jest.mock('../src/ai/router', () => ({
+jest.mock('../src/ricerca/router', () => ({
     routeLiveStremioSearch: jest.fn()
 }));
+
 
 jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 38 — Il router dell'AI è un caso d'uso, non un meccanismo
@@ -39,3 +39,36 @@ catalogo ne è un **cliente**.
 Non è urgente e non è un guasto: è **la direzione di una freccia**. Ma è esattamente il tipo di cosa che, non
 scritta, al prossimo giro diventa «perché `ai/` conosce i prompt della ricerca?» — e la risposta sarà un
 `git blame` invece di una decisione.
+
+## Esito
+
+Eseguito il 17/10/2026.
+
+1. **Spostamento router**: `src/ai/router.js` spostato in `src/ricerca/router.js`. Importa `createAiClient` da `../ai`, `buildAiPrompt` da `./prompts` e il cache layer da `../cache`.
+2. **Modulo AI ridotto a puro meccanismo**: `src/ai/index.js` riesporta solo `createAiClient` da `src/ai/client.js`. `src/ai/prompts.js` rimosso.
+3. **Consumatori ripuntati**:
+   - `src/api/catalog.js` -> `require('../ricerca/router')`
+   - `src/api/configurazione.js` -> `require('../ricerca/router')`
+   - `src/catalog/providers/AiDiscoveryProvider.js` -> `require('../../ricerca/router')`
+   - `src/ricerca/index.js` riesporta `generateTmdbFiltersFromPrompt` e `routeLiveStremioSearch`.
+4. **Link documentativi**: `docs/AI_ENGINE.md` aggiornato per puntare a `src/ricerca/router.js` e `src/ricerca/prompts.js`.
+
+### Prove con grep
+- `grep -rn "ricerca" src/ai/` → zero occorrenze.
+- `grep -rn "ai/router" src/` → zero occorrenze.
+
+### Suite eseguite (una alla volta, tutte verdi)
+- `tests/aiSearch.test.js`: 5 passed, 5 total
+- `tests/ricercaDoor.test.js`: 20 passed, 20 total
+- `tests/stremioProtocolFixes.test.js`: 7 passed, 7 total
+- `tests/aiSearchLexicalFallback.test.js`: 3 passed, 3 total
+- `tests/configureGlobalProfile.test.js`: 7 passed, 7 total
+- `tests/diag.recommender.h5.pagination.test.js`: 3 passed, 3 total
+- `tests/diag.recommender.h9.injectProfile.test.js`: 2 passed, 2 total
+- `tests/robustness.test.js`: 8 passed, 8 total
+- `tests/searchTier2Merge.test.js`: 24 passed, 24 total
+- `tests/ticket14CatalogFixes.test.js`: 11 passed, 11 total
+
+### Cosa non si è potuto fare
+Nessun blocco riscontrato. L'intero deliverable richiesto è stato completato e verificato.
+

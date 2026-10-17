@@ -17,7 +17,7 @@ jest.mock('../src/clients/tmdb', () => ({
     getTmdbIdByName: jest.fn()
 }));
 
-jest.mock('../src/ai/router', () => ({
+jest.mock('../src/ricerca/router', () => ({
     routeLiveStremioSearch: jest.fn()
 }));
 
@@ -38,7 +38,8 @@ jest.mock('../src/engines/hybridRecommendations', () => ({
     computeTopKeywords: jest.fn(() => [])
 }));
 
-const router = require('../src/ai/router');
+const router = require('../src/ricerca/router');
+
 const TasteProfile = require('../src/models/TasteProfile');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
 const { computeTopKeywords } = require('../src/engines/hybridRecommendations');
