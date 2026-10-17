@@ -8,7 +8,8 @@ const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require(
 const UserAccount = require('../models/UserAccount');
 const SystemLog = require('../models/SystemLog');
 const adminAuth = require('../middleware/adminAuth');
-const { getDumpStatus } = require('../utils/tmdbDumpDaemon');
+const TmdbDumpStore = require('../utils/tmdbDumpStore');
+const tmdbDumpStore = new TmdbDumpStore();
 const { exec } = require('child_process');
 const path = require('path');
 
@@ -140,10 +141,10 @@ router.post('/scripts/trigger', async (req, res) => {
     }
 });
 
-// Endpoint per controllare lo stato del daemon TMDB Dump
+// Endpoint per controllare lo stato del daemon TMDB Dump (letto dall'artefatto su volume yaca_tmdb)
 router.get('/tmdb-dump/status', async (req, res) => {
     try {
-        const status = getDumpStatus();
+        const status = tmdbDumpStore.loadStatus();
         res.json({ success: true, status });
     } catch (err) {
         console.error('Errore status tmdb dump:', err);

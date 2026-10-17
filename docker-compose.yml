@@ -117,6 +117,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  tmdb-daemon:
+    image: ghcr.io/gabrielefuoco/yaca:${YACA_TAG:-latest}
+    container_name: yaca-tmdb-daemon
+    restart: unless-stopped
+    command: ["node", "services/tmdb-daemon/cli.js"]
+    mem_limit: 1024m
+    env_file:
+      - .env
+    volumes:
+      - yaca_tmdb:/data/tmdb
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD", "node", "services/tmdb-daemon/cli.js", "--health-check"]
+      interval: 10m
+      timeout: 10s
+      retries: 2
+      start_period: 2m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   watchtower:
     # Fork mantenuto: `containrrr/watchtower` non è più aggiornato e il suo client parla
     # l'API Docker 1.25, mentre Engine 29 richiede >= 1.40 → crash-loop.

@@ -1,0 +1,18 @@
+[Unit]
+Description=YACA TMDB Dump Daemon - Batch Ingestion & DuckDB Builder
+Documentation=file:///srv/yaca/services/tmdb-daemon/README.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+WorkingDirectory=/srv/yaca
+ExecStart=/usr/bin/docker exec --workdir /app yaca-app node services/tmdb-daemon/cli.js --once
+Restart=no
+TimeoutStartSec=60min
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

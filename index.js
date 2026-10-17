@@ -49,6 +49,10 @@ connectDB();
 const animeMappingStore = require('./src/anime').animeMappingStore;
 animeMappingStore.init().catch(err => console.error('[AnimeMappingStore] Init Error:', err.message));
 
+// Inizializza DuckDB su database persistente all'avvio
+const duckDbStore = require('./src/indice/duckDbStore');
+duckDbStore.init().catch(err => console.error('[DuckDB Store] Init Error:', err.message));
+
 // 1. Inizializza Express
 const app = express();
 app.set('trust proxy', 1);
@@ -239,16 +243,6 @@ if (require.main === module) {
             console.warn('⚠️ HOST_URL non configurato nel file .env. Verranno usati gli header proxy (X-Forwarded-Host/X-Forwarded-Proto) quando disponibili.');
         }
 
-        // Avvia il Demone TMDB Dump
-        // In sviluppo/test su più istanze parallele conviene disattivarlo
-        // (DISABLE_TMDB_DUMP=1): evita che ogni istanza riprenda il cold start
-        // e saturi le rate limit di TMDB. In produzione il default resta attivo.
-        if (process.env.DISABLE_TMDB_DUMP === '1') {
-            console.log('[TmdbDump Daemon] Disattivato da DISABLE_TMDB_DUMP=1');
-        } else {
-            const { runTmdbDumpDaemon } = require('./src/utils/tmdbDumpDaemon');
-            runTmdbDumpDaemon().catch(err => console.error('[TmdbDump Daemon] Startup Error:', err.message));
-        }
 
         // Riconciliazione automatica manifest Stremio all'avvio
         if (process.env.DISABLE_MANIFEST_RECONCILE === '1') {
