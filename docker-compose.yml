@@ -34,11 +34,17 @@ services:
       # Contratto di deploy: la porta e l'URL di Redis li decide il compose, non il .env locale.
       - PORT=7860
       - REDIS_URL=redis://redis:6379
+      # L'artefatto del servizio anime (indice di mapping, ~10 MB): il modulo `src/anime/`
+      # lo legge da qui. Senza questo mount l'app non lo vede e i cataloghi anime degradano
+      # in silenzio (verificato sul mate il 18/10/2026, ticket 30).
+      - ANIME_MAPPING_PATH=/data/anime-source/anime-mappings.json
     volumes:
       - yaca_tmdb:/data/tmdb
       - yaca_badges:/data/badges
       # Poster già composti, prodotti fuori e copiati qui: serviti da /erdb-poster/<file>
       - yaca_erdb_cache:/data/erdb-cache
+      # L'artefatto del servizio anime, in SOLA LETTURA: lo produce `anime-source`, lo legge l'app.
+      - yaca_anime_source_cache:/data/anime-source:ro
     mem_limit: 1536m
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
