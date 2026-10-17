@@ -11,17 +11,8 @@ const { getHeroUiGroups } = require('../../catalog/registry');
  * payload parziale) si conserva il profilo attivo già salvato, purché ancora valido: il
  * ritorno a `global` è l'ultima risorsa. Un fallback a `global` troppo aggressivo ha già
  * azzerato il profilo attivo di un utente reale, facendogli sparire i cataloghi da Stremio.
- *
- * @param {{ requested?: string, profiles?: Array<{id: string}>, previous?: string }} input
- * @returns {string}
  */
-function resolveActiveProfileId({ requested, profiles, previous } = {}) {
-    const ids = new Set((profiles || []).map(p => p?.id).filter(Boolean));
-    if (requested && ids.has(requested)) return requested;
-    if (previous && ids.has(previous)) return previous;
-    const first = (profiles || [])[0]?.id;
-    return first || 'global';
-}
+const { resolveActiveProfileId } = require('../../profile');
 
 module.exports = async (req, res) => {
     try {

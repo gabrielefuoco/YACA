@@ -185,11 +185,16 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     if (matchedPreset && matchedPreset.type) {
         mediaType = matchedPreset.type === 'series' ? 'series' : 'movie';
     }
-    const context = activeProfileId || 'global';
+    const { contestoDi } = require('../profile');
+    const ctx = userConfig?.context || await contestoDi({
+        userId,
+        profileId: activeProfileId,
+        user: userConfig
+    });
+    const context = ctx.profileId;
+    const isKidsMode = ctx.kidsMode;
+    const effectiveTypeSelectors = ctx.selettoriEffettivi;
     const profile = await TasteProfile.findOne({ owner: userId, context });
-    const isKidsMode = getActiveKidsMode(userConfig, context);
-    const typeSelectors = getActiveTypeSelectors(userConfig, context);
-    const effectiveTypeSelectors = getEffectiveTypeSelectors(profile, typeSelectors, { isKidsMode });
     const isHero = isHeroCatalogId(catalogId);
     const cacheKey = isHero
         ? buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode: isKidsMode, typeSelectors: effectiveTypeSelectors })

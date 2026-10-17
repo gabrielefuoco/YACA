@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: grilling
 
 # 21 — Il modulo profilo: chi possiede il contesto
@@ -117,3 +117,81 @@ Le cinque domande di questo ticket hanno una risposta, e il modulo ha una forma:
 Il criterio minimo: **i quattro posti diventano uno** (con il `grep` che lo dimostra), i consumatori non
 deducono più i selettori per conto proprio, e la suite resta verde — più il test-guardia sulla proprietà di
 `profiles[]`.
+
+---
+
+## Esito (17/10/2026)
+
+### 1. La Porta del Modulo Profilo (`src/profile/`)
+
+Il modulo possiede l'anagrafica, i comandi, l'invariante e la risoluzione del contesto unico:
+- `profiliDi(userId)`: restituisce la lista dei profili associati all'utente (garantendo sempre l'esistenza di almeno `global`).
+- `profiloDi({ userId, profileId, addonUuid })`: restituisce il profilo **grezzo** (anagrafica, impostazioni, cataloghi) senza calcoli o mutazioni di stato per-richiesta.
+- `selettoriEffettivi(profilo, richiesta)`: funzione **pura** isolata (pattern `profileStaleness.js`) che risolve la combinazione di tipo (`movie`, `series`, `anime`, o `all`), kidsMode e animePolicy (`neutral`, `only`, `exclude`).
+- `contestoDi({ userId, profileId?, richiesta?, addonUuid?, user? })`: punto di ingresso unico al bordo che costruisce il contesto che scende lungo tutta la pipeline:
+  ```js
+  {
+    userId: string,
+    profileId: string,
+    addonUuid: string,
+    selettoriEffettivi: { movie: boolean, series: boolean, anime: 'neutral' | 'only' | 'exclude' },
+    kidsMode: boolean,
+    slider: { discovery: number, variety: number, ratingWeight: number }
+  }
+  ```
+- Comandi anagrafica: `creaProfilo`, `rinominaProfilo`, `duplicaProfilo`, `eliminaProfilo` (con blocco cancellazione se resta 1 solo profilo), `attivaProfilo`, e `risolviProfiloAttivo`.
+- Adattatore: `src/library/context.js` delega a `contestoDi` garantendo retrocompatibilità e coerenza dell'identità utente/installazione.
+
+### 2. Le Copie Collassate
+
+Le quattro copie di fallback e risoluzione autonoma sono state rimosse e convogliate nella porta del modulo profilo:
+- `src/api/catalog.js`: rimosso `const activeProfileId = reqProfileId || fullUserConfig.activeProfileId || 'global'`; ora invoca `contestoDi`.
+- `src/api/configurazione.js`: rimosso `req.body.profileId || user.activeProfileId || 'global'`; ora invoca `contestoDi`.
+- `src/api/configure/index.js`: la funzione `resolveActiveProfileId` è ora importata da `src/profile`.
+- `src/api/auth/index.js`: `loginHandler` (riga 152) e `meHandler` (riga 199) usano `risolviProfiloAttivo`.
+- `src/api/stremio.js`: `activeProfileId` e `contestoDi` iniettati all'edge (righe 247, 388).
+
+Nessuna copia locale di fallback `|| 'global'` o risoluzione ad-hoc è rimasta negli endpoint:
+```sh
+$ git grep -n "|| 'global'" src/api/catalog.js src/api/configurazione.js src/api/configure/index.js src/api/auth/index.js
+# [0 riscontri di risoluzione autonoma profilo]
+```
+
+Nei motori di catalogo e pool:
+- `src/engines/hybrid/catalogStrategies.js`: le 4 copie di risoluzione selettori (righe 783, 938, 1021, 1388) sono state sostituite da chiamate a `selettoriEffettivi(profile, richiesta)`.
+- `src/pool/index.js:348`: eliminata la catena a quattro livelli di fallback (`typeSelectors || userConfig?.activeProfileSettings?.typeSelectors || userConfig?.typeSelectors || user?.settings?.typeSelectors`) in favore di `selettoriEffettivi`.
+- `src/engines/hybridRecommendations.js`: riceve il contesto e passa `effectiveTypeSelectors` uniformemente sia alla cacheKey che al pool.
+
+### 3. Migrazione e Separazione di `libraryOrder`
+
+`libraryOrder` è stato rimosso dalla responsabilità del profilo e spostato interamente nel dominio della libreria:
+- Creato il modello Mongoose `UserLibraryOrder` (`src/library/models/UserLibraryOrder.js`) indicizzato per `{ addonUuid: 1, profileId: 1 }`.
+- In `src/library/reader.js`, implementati `leggiOrdineLibreria` e `salvaOrdineLibreria`:
+  - Lettura prioritaria da `UserLibraryOrder`.
+  - **Fallback per una release**: se non trovato, legge dal vecchio campo `AddonConfig.profiles.$.raw_ui_state.libraryOrder` (nessuna perdita dati utente).
+  - Scrittura su `UserLibraryOrder` con specchiatura su `AddonConfig` per retrocompatibilità.
+- Script di migrazione una-tantum creato in `scripts/migrate_library_order.js`.
+  - Comando da eseguire in produzione sul mate:
+    ```bash
+    docker exec yaca-app node scripts/migrate_library_order.js --apply
+    ```
+    (o con `--dry-run` per ispezionare prima i documenti da migrare).
+
+### 4. Verifica e Test
+
+Suite eseguite con successo:
+- `tests/profileDoor.test.js`: 12 test passati (funzione pura `selettoriEffettivi`, profilo grezzo da `profiloDi`, `contestoDi`, invariante «almeno uno», divieto eliminazione ultimo profilo, test-guardia proprietà `profiles[]`).
+- `tests/userConfig.test.js`: 1 test passato.
+- `tests/studioProfile.test.js`: 5 test passati.
+- `tests/profileBuilder.test.js`: 1 test passato.
+- `tests/configureGlobalProfile.test.js`: 7 test passati.
+- `tests/libraryReorder.test.js`: 4 test passati.
+- `tests/hybridRecommendations.test.js`: 22 test passati.
+- `tests/seedNetwork.test.js`: 23 test passati.
+Totale: 75 test eseguiti e passati.
+
+### 5. Nota per Ticket Paralleli (Ticket 24 Cache) e Lavoro Rimanente
+
+- **Ticket 24 (Cache)**: Le funzioni di costruzione chiavi non sono state toccate. Il modulo cache troverà `selettoriEffettivi` già risolti e disponibili dentro `context` / `userConfig.context` prodotto al bordo, potendo leggere direttamente `effectiveTypeSelectors` senza dover rieseguire deduzioni locali di animePolicy.
+- **Rimanente**: Il futuro modulo *configurazione utente* (proprietà esclusiva di `UserAccount` e chiavi API per-utente come Mistral BYOK) verrà formalizzato in un ticket dedicato.
+

@@ -598,8 +598,15 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const { id, type, extra, filters: directFilters } = args;
     const skip = extra?.skip || 0;
     
-    // Resolve active profile settings directly from userConfig (instead of phantom SettingsManager)
-    const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+    // Resolve active profile settings directly from userConfig (prioritizing context if resolved at edge)
+    const rawSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+    const activeProfileSettings = userConfig?.context
+        ? {
+            ...rawSettings,
+            typeSelectors: userConfig.context.selettoriEffettivi || rawSettings.typeSelectors,
+            kidsMode: userConfig.context.kidsMode !== undefined ? userConfig.context.kidsMode : rawSettings.kidsMode
+        }
+        : rawSettings;
     
     // TMDB Client Initialization
     const tmdbApiKey = userConfig.apiKeys?.tmdb || process.env.TMDB_API_KEY;
