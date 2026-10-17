@@ -56,5 +56,6 @@
       "note": "anime giapponese assente dall'indice Fribb/AniBridge con id TMDB: senza questa voce l'app non lo tratta come anime e la card non entra nei cataloghi anime. Aggiunto insieme all'override di mapping del 04/10/2026.",
       "addedAt": "2026-10-04"
     }
-  ]
+  ],
+  "exclude": []
 }
