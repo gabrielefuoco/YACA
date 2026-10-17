@@ -24,6 +24,21 @@ jest.mock('../src/library/models/WatchHistory', () => ({
 }));
 
 const WatchHistory = require('../src/library/models/WatchHistory');
+jest.mock('../src/pool/graphClient', () => ({
+    raccomanda: jest.fn().mockImplementation(async ({ semi }) => {
+        if (!semi || semi.length === 0) return { liste: [], items: [], versioni: { artefatto: 'art-golden' } };
+        return {
+            versioni: { artefatto: 'art-golden', ricetta: 'ric-golden' },
+            liste: [
+                { ruolo: 'il_tuo_mondo', tipo: 'il_tuo_mondo', debole: false, titoli: [{ tmdbId: 314, medium: 'series', punteggio: 0.9 }] },
+                { ruolo: 'un_passo_fuori', tipo: 'un_passo_fuori', debole: false, titoli: [{ tmdbId: 1396, medium: 'series', punteggio: 0.8 }] },
+                { ruolo: 'uscite_nuove', tipo: 'uscite_nuove', debole: false, titoli: [] },
+                { ruolo: 'nicchia_di_qualita', tipo: 'nicchia_di_qualita', debole: true, titoli: [] }
+            ]
+        };
+    })
+}));
+
 const rotteBolle = require('../src/api/bolle');
 
 function fakeFind(voci) {

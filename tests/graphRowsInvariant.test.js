@@ -1,21 +1,54 @@
 /**
- * Test per l'invariante del ticket 38:
+ * Test per l'invariante del ticket 38 (ri-orientato nel Ticket 08):
  * Il pool non deve trasportare stringhe scalari; ogni elemento delle righe
  * del grafo è un oggetto strutturato con id, tmdbId, type e media_type coerenti col medium.
  */
-const { righePerStremio } = require('../src/engines/bolle/raccomanda');
+const { HERO_STRATEGIES } = require('../src/pool');
+const graphClient = require('../src/pool/graphClient');
+const library = require('../src/library');
 const { annotationKeyFor } = require('../src/handlers/catalogHandler');
 
-const STORIA = [
-    { tmdbId: 314, type: 'tv', episodesWatched: 172, signals: [{ type: 'loved' }] },
-    { tmdbId: 1396, type: 'tv', episodesWatched: 214, signals: [{ type: 'watched' }] },
-    { tmdbId: 603, type: 'movie', signals: [{ type: 'liked' }] },
-];
-
 describe('Invariante del ticket 38: il pool non porta stringhe scalari', () => {
-    test('le righe del grafo per film consegnano oggetti con medium coerente', () => {
-        const righe = righePerStremio(STORIA, { mediaType: 'movie' });
-        const items = [...(righe.yaca_mondi_movies || []), ...(righe.yaca_passo_fuori_movies || [])];
+    beforeEach(() => {
+        jest.clearAllMocks();
+        jest.spyOn(library, 'semiDi').mockResolvedValue({
+            seeds: new Map([['603', 3], ['314', 4]]),
+            counts: { loved: 1, liked: 1, watched: 0, library: 0 }
+        });
+    });
+
+    test('le righe del grafo per film consegnano oggetti con medium coerente', async () => {
+        jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
+            contratto: 1,
+            versioni: { artefatto: 'art-test', ricetta: 'ric-test' },
+            semi: { n: 1, da_catalogo: false },
+            liste: [
+                {
+                    ruolo: 'il_tuo_mondo',
+                    mondo: 1084,
+                    descrizione: 'mondo 1084',
+                    titoli: [{ tmdbId: 603, medium: 'movie', punteggio: 0.95 }]
+                },
+                {
+                    ruolo: 'un_passo_fuori',
+                    mondo: null,
+                    descrizione: 'mondi vicini',
+                    titoli: [{ tmdbId: 604, medium: 'movie', punteggio: 0.85 }]
+                }
+            ],
+            motivi: []
+        });
+
+        const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
+        const assigned = {};
+        await graphStrategy.run({
+            userId: 'u1',
+            context: 'p1',
+            mediaType: 'movie',
+            userConfig: {}
+        }, { assigned, rawTraktResult: { traktAvailable: false } });
+
+        const items = [...(assigned.yaca_mondi_movies || []), ...(assigned.yaca_passo_fuori_movies || [])];
 
         expect(items.length).toBeGreaterThan(0);
         for (const item of items) {
@@ -30,9 +63,38 @@ describe('Invariante del ticket 38: il pool non porta stringhe scalari', () => {
         }
     });
 
-    test('le righe del grafo per serie consegnano oggetti con medium coerente (type=series, media_type=tv)', () => {
-        const righe = righePerStremio(STORIA, { mediaType: 'series' });
-        const items = [...(righe.yaca_mondi_series || []), ...(righe.yaca_passo_fuori_series || [])];
+    test('le righe del grafo per serie consegnano oggetti con medium coerente (type=series, media_type=tv)', async () => {
+        jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
+            contratto: 1,
+            versioni: { artefatto: 'art-test', ricetta: 'ric-test' },
+            semi: { n: 2, da_catalogo: false },
+            liste: [
+                {
+                    ruolo: 'il_tuo_mondo',
+                    mondo: 4192,
+                    descrizione: 'mondo 4192',
+                    titoli: [{ tmdbId: 314, medium: 'series', punteggio: 0.92 }]
+                },
+                {
+                    ruolo: 'un_passo_fuori',
+                    mondo: null,
+                    descrizione: 'mondi vicini',
+                    titoli: [{ tmdbId: 1396, medium: 'series', punteggio: 0.88 }]
+                }
+            ],
+            motivi: []
+        });
+
+        const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
+        const assigned = {};
+        await graphStrategy.run({
+            userId: 'u1',
+            context: 'p1',
+            mediaType: 'series',
+            userConfig: {}
+        }, { assigned, rawTraktResult: { traktAvailable: false } });
+
+        const items = [...(assigned.yaca_mondi_series || []), ...(assigned.yaca_passo_fuori_series || [])];
 
         expect(items.length).toBeGreaterThan(0);
         for (const item of items) {
@@ -87,4 +149,3 @@ describe('Invariante del ticket 38: il pool non porta stringhe scalari', () => {
         spy.mockRestore();
     });
 });
-
