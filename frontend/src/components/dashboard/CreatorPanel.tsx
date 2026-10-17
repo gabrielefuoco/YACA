@@ -608,7 +608,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   <AutocompleteSearch
                     placeholder="Cerca film o serie TV su TMDB..."
                     searchFn={async (query) => {
-                      const res = await fetch(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`).then(r => r.json());
+                      const res = await api.searchTmdbMulti(query);
                       return {
                         results: (res.results || []).map((r: any) => ({
                           id: String(r.id),

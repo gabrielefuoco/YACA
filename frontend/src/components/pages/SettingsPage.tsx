@@ -86,7 +86,6 @@ export function SettingsPage({
       const data = await api.configure({
         profiles: apiProfiles,
         activeProfileId,
-        userId,
         stremioAuthKey,
         traktToken,
         traktRefreshToken,

@@ -42,7 +42,8 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
       .traktDeviceCode()
       .then((data) => {
         if (data?.error) {
-          setError(data.error);
+          const msg = typeof data.error === 'object' ? (data.error.message || 'Errore Trakt') : data.error;
+          setError(msg);
           return;
         }
         setUserCode(data.user_code ?? '');
@@ -83,20 +84,15 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
       }
       try {
         const data = await api.traktDeviceToken(deviceCode);
-        if (data.access_token) {
+        if (data.connected || data.success) {
           setSuccess(true);
           setPolling(false);
-          let expiresAt: string | null = null;
-          if (data.created_at && data.expires_in) {
-            expiresAt = new Date((data.created_at + data.expires_in) * 1000).toISOString();
-          } else if (data.expires_in) {
-            expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
-          }
-          onSuccessRef.current(data.access_token, data.refresh_token ?? '', expiresAt);
+          onSuccessRef.current('connected', '', null);
           setTimeout(() => onCloseRef.current(), 1500);
         } else if (data.error && !data.pending) {
           setPolling(false);
-          setError(data.error);
+          const msg = typeof data.error === 'object' ? (data.error.message || 'Errore Trakt') : data.error;
+          setError(msg);
         }
       } catch (err: any) {
         if (err?.message) {

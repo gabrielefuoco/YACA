@@ -1,3 +1,17 @@
+/**
+ * REGOLA ARCHITETTURALE (Ticket 11): Il client nomina solo il dominio.
+ *
+ * Nessun componente del client deve mai nominare l'infrastruttura del server:
+ * - NO /api/tmdb/* (sostituito da /api/ricerca?tipo=...)
+ * - NO /api/sync/* (sostituito da /api/profilo/sincronizzazione)
+ * - NO /api/validate-* (sostituito da /api/configurazione/verifica)
+ * - NO /api/clear-cache (sostituito da /api/profilo/aggiorna)
+ * - NO /api/profiles/:id/* (sostituito da /api/profilo/*)
+ * - NO userId in query o body (l'identità è stabilita dal cookie di sessione HttpOnly)
+ *
+ * Il client esprime intenzioni di dominio; il server orchestra i dati e le dipendenze.
+ */
+
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 function getCsrfTokenFromCookie() {
@@ -9,16 +23,27 @@ function getCsrfTokenFromCookie() {
 async function handleResponse(res: Response) {
   if (!res.ok) {
     let errorMsg = `HTTP ${res.status}: ${res.statusText}`;
+    let errorCode: string | undefined;
     try {
       const errData = await res.json();
       if (errData && typeof errData === 'object') {
-        errorMsg = errData.error || errData.message || JSON.stringify(errData);
+        if (errData.error && typeof errData.error === 'object') {
+          errorMsg = errData.error.message || errorMsg;
+          errorCode = errData.error.code;
+        } else if (typeof errData.error === 'string') {
+          errorMsg = errData.error;
+        } else if (errData.message) {
+          errorMsg = errData.message;
+        } else {
+          errorMsg = JSON.stringify(errData);
+        }
       }
     } catch {
-      // Non-JSON error response
+      // Risposta di errore non-JSON
     }
     const error = new Error(errorMsg);
     (error as any).status = res.status;
+    (error as any).code = errorCode;
     (error as any).response = res;
     throw error;
   }
@@ -73,7 +98,7 @@ async function del(url: string) {
 }
 
 export const api = {
-  // Auth endpoints (JWT HttpOnly Cookie)
+  // --- AUTENTICAZIONE ---
   authLogin: (email: string, password: string) =>
     post('/api/auth/login', { email, password }),
   authGuest: () =>
@@ -84,77 +109,87 @@ export const api = {
       return r.json();
     }),
   authLogout: () => post('/api/auth/logout'),
-
-  getPresets: () => get('/api/presets'),
-  previewCatalog: (body: object) => post('/api/preview-catalog', body),
-  configure: (body: object) => post('/api/configure', body),
   stremioAuth: (email: string, password: string) =>
-    post('/api/stremio-auth', { email, password }),
-  stremioAddonUpdate: (authKey: string, manifestUrl: string) =>
-    post('/api/stremio-addon-update', { authKey, manifestUrl }),
-  validateTmdbKey: (tmdbKey: string) =>
-    post('/api/validate-tmdb-key', { tmdbKey }),
-  validateMistralKey: (mistralKey: string) =>
-    post('/api/validate-mistral-key', { mistralKey }),
-  traktDeviceCode: () => post('/trakt/device/code'),
+    post('/api/auth/stremio', { email, password }),
+  traktDeviceCode: () =>
+    post('/api/auth/trakt/code'),
   traktDeviceToken: (device_code: string) =>
-    post('/trakt/device/token', { device_code }),
-  disconnectTrakt: (userId?: string) =>
-    post('/api/auth/trakt/disconnect', { userId }),
-  clearCache: () => post('/api/clear-cache'),
-  searchTmdbKeywords: (query: string) =>
-    get(`/api/tmdb/search/keyword?query=${encodeURIComponent(query)}`),
-  searchTmdbGenres: (query: string) =>
-    get(`/api/tmdb/search/genre?query=${encodeURIComponent(query)}`),
-  searchTmdbPeople: (query: string) =>
-    get(`/api/tmdb/search/person?query=${encodeURIComponent(query)}`),
-  generateMergedName: (nameA: string, nameB: string) =>
-    post('/api/ai/generate-merged-name', { nameA, nameB }),
-  checkUser: (authKey: string, email?: string) =>
-    post('/api/check-user', { authKey, email }),
-  getProfileAnalytics: (profileId: string, userId: string) =>
-    get(`/api/profiles/${encodeURIComponent(profileId)}/analytics?userId=${encodeURIComponent(userId)}`),
-  getSyncStatus: (profileId: string, userId: string) =>
-    get(`/api/profiles/${encodeURIComponent(profileId)}/sync-status?userId=${encodeURIComponent(userId)}`),
-  confirmDNA: (profileId: string, userId: string) =>
-    post(`/api/profiles/${encodeURIComponent(profileId)}/dna/confirm`, { userId }),
-  refreshSync: (profileId: string, userId: string) =>
-    post(`/api/profiles/${encodeURIComponent(profileId)}/sync/refresh`, { userId }),
-  
-  // Library methods
-  getLibrary: (profileId: string, userId: string) =>
-    get(`/api/profiles/${encodeURIComponent(profileId)}/library?userId=${encodeURIComponent(userId)}`),
-  addToLibrary: (profileId: string, userId: string, item: any) =>
-    post(`/api/profiles/${encodeURIComponent(profileId)}/library`, { userId, item }),
-  removeFromLibrary: (profileId: string, userId: string, itemId: string) =>
-    del(`/api/profiles/${encodeURIComponent(profileId)}/library/${encodeURIComponent(itemId)}?userId=${encodeURIComponent(userId)}`),
-  reorderLibrary: (profileId: string, userId: string, itemIds: string[]) =>
-    put(`/api/profiles/${encodeURIComponent(profileId)}/library/reorder`, { userId, itemIds }),
+    post('/api/auth/trakt/token', { device_code }),
+  disconnectTrakt: (_userId?: string) =>
+    del('/api/auth/trakt'),
 
-  // Anteprima + esecuzione 
-  // Rimuovi titoli visti: l'anteprima dichiara N, l'esecuzione rimuove esattamente N card.
-  getWatchedLibraryPreview: (profileId: string, userId: string) =>
-    get(`/api/profiles/${encodeURIComponent(profileId)}/library/watched?userId=${encodeURIComponent(userId)}`),
-  removeWatchedLibrary: (profileId: string, userId: string) =>
-    post(`/api/profiles/${encodeURIComponent(profileId)}/library/watched`, { userId }),
-  
-  convertLibrary: (profileId: string, userId: string) =>
-    post(`/api/profiles/${encodeURIComponent(profileId)}/convert-library`, { userId }),
-  getGlobalSyncQueue: (limit = 20) => 
-    get(`/api/sync/global-queue?limit=${limit}`),
-  enrichSyncItem: (body: { tmdbId: string, type: string, rawTMDB: any, userId?: string }) => 
-    post('/api/sync/enrich', body),
-  
-  // VSM Sync Endpoints
-  getRawProfileData: (profileId: string, userId: string) =>
-    get(`/api/profiles/${encodeURIComponent(profileId)}/raw-data?userId=${encodeURIComponent(userId)}`),
-  syncVectors: (profileId: string, userId: string, vectors: any) =>
-    post(`/api/profiles/${encodeURIComponent(profileId)}/sync-vectors`, { userId, ...vectors }),
-  batchTmdbDetails: (tmdbIds: number[], type: 'movie' | 'tv') =>
-    post('/api/tmdb/batch-details', { tmdbIds, type }),
-  batchTmdbKeywords: (keywordIds: number[]) =>
-    post('/api/tmdb/batch-keywords', { keywordIds }),
-  
-  // Custom Lists API
-  searchTmdbMulti: (query: string) => get(`/api/tmdb/search/multi?query=${encodeURIComponent(query)}`),
+  // --- CONFIGURAZIONE ---
+  getPresets: () =>
+    get('/api/configurazione/preset'),
+  previewCatalog: (body: any) => {
+    const { userId: _unused, ...clean } = body || {};
+    return post('/api/configurazione/anteprima', clean);
+  },
+  configure: (body: any) => {
+    const { userId: _unused, ...clean } = body || {};
+    return post('/api/configurazione', clean);
+  },
+  stremioAddonUpdate: (authKey?: string, manifestUrl?: string) =>
+    post('/api/configurazione', { stremioAuthKey: authKey, manifestUrl }),
+  validateTmdbKey: (tmdbKey: string) =>
+    post('/api/configurazione/verifica', { tmdbKey }),
+  validateMistralKey: (mistralKey: string) =>
+    post('/api/configurazione/verifica', { mistralKey }),
+  generateMergedName: (nameA: string, nameB: string) =>
+    post('/api/configurazione/nome', { nameA, nameB }),
+
+  // --- PROFILO & LIBRERIA ---
+  getProfile: () =>
+    get('/api/profilo'),
+  checkUser: (_authKey?: string, _email?: string) =>
+    get('/api/profilo'),
+  getProfileAnalytics: (_profileId?: string, _userId?: string) =>
+    get('/api/profilo'),
+  getSyncStatus: (profileId: string = 'global', _userId?: string) =>
+    get(`/api/profilo/sincronizzazione?profileId=${encodeURIComponent(profileId)}`),
+  refreshSync: (profileId: string = 'global', _userId?: string) =>
+    post('/api/profilo/sincronizzazione', { profileId }),
+  confirmDNA: (profileId: string = 'global', _userId?: string) =>
+    post('/api/profilo/dna/conferma', { profileId }),
+  clearCache: () =>
+    post('/api/profilo/aggiorna'),
+
+  getLibrary: (_profileId?: string, _userId?: string) =>
+    get('/api/profilo/libreria'),
+  addToLibrary: (arg1: any, arg2?: any, arg3?: any) => {
+    // Gestisce sia (item) che legacy (profileId, userId, item)
+    const item = arg3 !== undefined ? arg3 : (arg2 && arg2.id ? arg2 : (arg1 && arg1.id ? arg1 : arg2));
+    return post('/api/profilo/libreria', { item });
+  },
+  removeFromLibrary: (arg1: string, _arg2?: string, arg3?: string) => {
+    // Gestisce sia (itemId) che legacy (profileId, userId, itemId)
+    const itemId = arg3 || arg1;
+    return del(`/api/profilo/libreria/${encodeURIComponent(itemId)}`);
+  },
+  reorderLibrary: (arg1: any, arg2?: any, arg3?: any) => {
+    // Gestisce sia (itemIds, profileId) che legacy (profileId, userId, itemIds)
+    const itemIds = Array.isArray(arg1) ? arg1 : (Array.isArray(arg3) ? arg3 : (Array.isArray(arg2) ? arg2 : []));
+    const profileId = typeof arg1 === 'string' ? arg1 : (typeof arg2 === 'string' ? arg2 : 'global');
+    return put('/api/profilo/libreria/ordine', { itemIds, profileId });
+  },
+  getWatchedLibraryPreview: (_profileId?: string, _userId?: string) =>
+    get('/api/profilo/libreria/visti'),
+  removeWatchedLibrary: (_profileId?: string, _userId?: string) =>
+    post('/api/profilo/libreria/visti'),
+  convertLibrary: (profileId: string = 'global', _userId?: string) =>
+    post('/api/profilo/sincronizzazione', { profileId }),
+
+  // --- RICERCA UNIFICATA ---
+  searchTmdbKeywords: (query: string) =>
+    get(`/api/ricerca?tipo=keyword&q=${encodeURIComponent(query)}`),
+  searchTmdbGenres: (query: string) =>
+    get(`/api/ricerca?tipo=genere&q=${encodeURIComponent(query)}`),
+  searchTmdbPeople: (query: string) =>
+    get(`/api/ricerca?tipo=persona&q=${encodeURIComponent(query)}`),
+  searchTmdbMulti: (query: string) =>
+    get(`/api/ricerca?tipo=titolo&q=${encodeURIComponent(query)}`),
+
+  // --- MONDI DEL GRAFO ---
+  getMondi: (profileId: string = 'global', quante: number = 4) =>
+    post('/api/mondi', { profileId, quante }),
 };

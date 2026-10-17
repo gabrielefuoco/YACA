@@ -27,7 +27,6 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
         // Usiamo v1 come placeholder o recuperiamo la versione, ma proviamo a usare un endpoint API ad hoc.
         // Se non c'è, possiamo chiamare direttamente il formato manifest
         const res = await api.previewCatalog({ 
-          userId, 
           profileId, 
           id: catalogId,
           type: catalogId.includes('series') ? 'series' : 'movie'

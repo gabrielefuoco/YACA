@@ -1,3 +1,17 @@
+# YACA Frontend
+
+## Regola Architetturale: Il client nomina solo il dominio (Ticket 11)
+
+Il frontend non nomina mai l'infrastruttura del server:
+- **Nessuna rotta infrastrutturale**: vietati `/api/tmdb/*`, `/api/sync/*`, `/api/validate-*`, `/api/clear-cache`, `/api/profiles/:id/*`.
+- **Rotte di dominio**: tutte le chiamate passano esclusivamente tramite `frontend/src/lib/api.ts` e usano le risorse di dominio (`/api/profilo`, `/api/configurazione`, `/api/ricerca`, `/api/mondi`, `/api/auth/*`).
+- **Nessun `userId`**: l'identità dell'utente è veicolata dal cookie di sessione HttpOnly gestito dal server. Nessun `userId` viaggia in query o body.
+- **Perché**: evitare che il client torni a diventare un orchestratore di servizi esterni o di pipeline complesse. Il client esprime intenzioni di presentazione; il server compone e orchestra i dati.
+
+Questa regola è presidiata dal test automatico `tests/clientDomainGuard.test.js`.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

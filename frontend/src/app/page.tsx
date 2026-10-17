@@ -102,13 +102,9 @@ export default function Home() {
           if (data.authenticated && data.userId) {
             setUserId(data.userId);
             localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, data.userId);
-            // Load full user data
-            return fetch(`/api/user/${data.userId}`, { credentials: 'include' });
+            // Load full user data from domain route
+            return api.getProfile();
           }
-          return null;
-        })
-        .then(res => {
-          if (res && res.ok) return res.json();
           return null;
         })
         .then(data => {
@@ -145,12 +141,7 @@ export default function Home() {
       setUserId(storedUserId);
     }
 
-    fetch(`/api/user/${storedUserId}`, { credentials: 'include' })
-      .then(res => {
-        if (res.status === 401) throw new Error("Unauthorized");
-        if (!res.ok) throw new Error("User not found");
-        return res.json();
-      })
+    api.getProfile()
       .then(data => {
         if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
           const mappedProfiles = (data.profiles as BackendProfile[]).map(mapBackendProfile);
@@ -458,7 +449,6 @@ export default function Home() {
       const data = await api.configure({
         profiles: profilesToApiPayload(nextProfiles),
         activeProfileId,
-        userId: userId ?? undefined,
         stremioAuthKey: stremioAuth?.authKey || undefined,
         email: stremioAuth?.email,
         traktToken: traktToken ?? undefined,
@@ -475,10 +465,8 @@ export default function Home() {
         setConfigVersion(String(data.configVersion));
       }
 
-      const response = await fetch(`/api/user/${resolvedUserId}`, { credentials: 'include' });
-      if (!response.ok) return;
-      const freshUser = await response.json();
-      if (Array.isArray(freshUser.profiles) && freshUser.profiles.length > 0) {
+      const freshUser = await api.getProfile();
+      if (freshUser && Array.isArray(freshUser.profiles) && freshUser.profiles.length > 0) {
         const mappedProfiles = (freshUser.profiles as BackendProfile[]).map(mapBackendProfile);
         setProfiles(mappedProfiles);
       }
@@ -505,7 +493,7 @@ export default function Home() {
 
   const handleDisconnectTrakt = async () => {
     try {
-      const res = await api.disconnectTrakt(userId ?? undefined);
+      const res = await api.disconnectTrakt();
       if (res?.success) {
         setTraktToken(null);
         setTraktRefreshToken(null);
