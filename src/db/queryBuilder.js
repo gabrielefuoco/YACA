@@ -1,3 +1,11 @@
+/**
+ * src/db/queryBuilder.js
+ * 
+ * Facade del compilatore dell'indice.
+ * Il vero compilatore parametrizzato vive ora in src/indice/compiler.js.
+ */
+
+const { compileQuery } = require('../indice/compiler');
 const duckDbStore = require('./duckDbStore');
 
 function escapeSqlString(value) {
@@ -13,10 +21,23 @@ function getSearchTerms(value) {
 }
 
 /**
- * Converte un oggetto preset in una stringa SQL per DuckDB.
- * Gestisce nativamente la FTS (Full-Text Search) e i simili (Recommendations).
+ * Compilatore dell'indice: filtri dichiarativi in, query parametrizzata out.
+ * Nessun valore utente viene mai interpolato in SQL.
  */
-async function buildCatalogQuery(preset, skip = 0, limit = 100) {
+async function compileCatalogQuery(preset, skip = 0, limit = 100) {
+    return compileQuery(preset, skip, limit, duckDbStore);
+}
+
+/**
+ * Converte un oggetto preset in una query per DuckDB.
+ * Se invocato con options { parameterized: true }, restituisce { sql, params }.
+ * Per i test storici che asseriscono la stringa SQL, mantiene la compatibilità di formato.
+ */
+async function buildCatalogQuery(preset, skip = 0, limit = 100, options = {}) {
+    if (options && (options.parameterized || options.asParameterized)) {
+        return compileQuery(preset, skip, limit, duckDbStore);
+    }
+
     const table = preset.type === 'movie' ? 'movies' : 'tv';
     const rawWhere = preset.where || [];
     
@@ -40,10 +61,6 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
         }
     }
     
-    // FTS: BM25 è candidato veloce, ma il filtro per termini impedisce che una
-    // singola parola comune faccia entrare pagine di falsi positivi. Il match
-    // esatto ha un boost esplicito: a parità di BM25 l'id non deve decidere la
-    // posizione del titolo realmente cercato.
     if (ftsClause) {
         const titleColumn = table === 'movies' ? 'title' : 'name';
         const originalTitleColumn = table === 'movies' ? 'original_title' : 'original_name';
@@ -66,15 +83,16 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
         return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${exactTitle} ASC, ${score} DESC, id ASC LIMIT ${limit} OFFSET ${skip}`;
     }
     
-    // SIMILAR: legge i consigliati archiviati nativamente nei metadati
     if (similarId) {
         const cleanSimilarId = Number(String(similarId).replace(/^tmdb:/i, ''));
         let foundRecs = false;
         if (Number.isFinite(cleanSimilarId) && cleanSimilarId > 0) {
             try {
-                const targetRow = await duckDbStore.query(`SELECT recommendations FROM ${table} WHERE id = ${cleanSimilarId}`);
+                const targetRow = await duckDbStore.query(`SELECT recommendations FROM ${table} WHERE id = ?`, [cleanSimilarId]);
                 if (targetRow.length > 0 && targetRow[0].recommendations) {
-                    const recIds = JSON.parse(targetRow[0].recommendations);
+                    const recIds = typeof targetRow[0].recommendations === 'string'
+                        ? JSON.parse(targetRow[0].recommendations)
+                        : targetRow[0].recommendations;
                     const validRecIds = Array.isArray(recIds) ? recIds.map(Number).filter(n => Number.isFinite(n) && n > 0) : [];
                     if (validRecIds.length > 0) {
                         normalFilters.push(`id IN (${validRecIds.join(',')})`);
@@ -90,7 +108,6 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
         }
     }
     
-    // Query Standard
     const where = normalFilters.join(' AND ');
     const order = preset.orderBy || 'popularity DESC NULLS LAST';
     const stableOrder = /"?id"?\s+ASC/i.test(order) ? order : `${order}, id ASC`;
@@ -101,4 +118,8 @@ async function buildCatalogQuery(preset, skip = 0, limit = 100) {
     return `SELECT * FROM ${table} WHERE ${where} ORDER BY ${stableOrder} LIMIT ${limit} OFFSET ${skip}`;
 }
 
-module.exports = { buildCatalogQuery };
+module.exports = {
+    buildCatalogQuery,
+    compileCatalogQuery,
+    compileQuery
+};
