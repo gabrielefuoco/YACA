@@ -16,6 +16,20 @@ export interface CatalogKind {
   anime: 'yes' | 'no' | 'mixed' | 'agnostic';
 }
 
+export interface EngineSliders {
+  largo: number;
+  lontano: number;
+  cozy: number;
+  canone: number;
+}
+
+export const DEFAULT_ENGINE_SLIDERS: EngineSliders = {
+  largo: 4,
+  lontano: 0.0,
+  cozy: 0.0,
+  canone: 0.0,
+};
+
 export interface ProfileSettings {
   fastRefresh?: boolean;
   tmdbKey?: string;
@@ -25,6 +39,7 @@ export interface ProfileSettings {
   manualDNA?: DNAItem[];
   suggestedDNA?: DNAItem[];
   typeSelectors?: TypeSelectors;
+  sliders?: EngineSliders;
 }
 
 export interface QueryBlock {
@@ -105,6 +120,7 @@ export interface Profile {
   };
   existingCatalogs: Catalog[];
   settings?: ProfileSettings;
+  sliders?: EngineSliders;
 }
 
 export interface Preset {

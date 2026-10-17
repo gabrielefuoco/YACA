@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector, HeroCatalogUiGroup } from '@/types';
+import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector, HeroCatalogUiGroup, EngineSliders, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { api } from '@/lib/api';
-import { X, BrainCircuit, Terminal, EyeOff } from 'lucide-react';
+import { X, BrainCircuit, Terminal, EyeOff, Sliders, RotateCcw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { DnaBarChart } from './DnaBarChart';
 import { formatDnaLabel, groupDnaItems, DnaCategoryGroup } from '@/lib/dnaChart';
@@ -79,6 +80,40 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
   const [manualScore, setManualScore] = useState<number>(200);
   const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
+
+  const activeSliders: EngineSliders = useMemo(() => {
+    const raw = profile?.settings?.sliders ?? profile?.sliders;
+    return {
+      largo: typeof raw?.largo === 'number' ? raw.largo : DEFAULT_ENGINE_SLIDERS.largo,
+      lontano: typeof raw?.lontano === 'number' ? raw.lontano : DEFAULT_ENGINE_SLIDERS.lontano,
+      cozy: typeof raw?.cozy === 'number' ? raw.cozy : DEFAULT_ENGINE_SLIDERS.cozy,
+      canone: typeof raw?.canone === 'number' ? raw.canone : DEFAULT_ENGINE_SLIDERS.canone,
+    };
+  }, [profile?.settings?.sliders, profile?.sliders]);
+
+  const handleSliderChange = (key: keyof EngineSliders, value: number) => {
+    const updatedSliders: EngineSliders = {
+      ...activeSliders,
+      [key]: value,
+    };
+    onUpdateProfile(profile.id, {
+      sliders: updatedSliders,
+      settings: {
+        ...(profile.settings ?? {}),
+        sliders: updatedSliders,
+      },
+    });
+  };
+
+  const handleResetSliders = () => {
+    onUpdateProfile(profile.id, {
+      sliders: { ...DEFAULT_ENGINE_SLIDERS },
+      settings: {
+        ...(profile.settings ?? {}),
+        sliders: { ...DEFAULT_ENGINE_SLIDERS },
+      },
+    });
+  };
 
   const heroCatalogs: HeroCatalogUiGroup[] = useMemo(() => {
     if (analytics?.heroCatalogs && analytics.heroCatalogs.length > 0) {
@@ -303,6 +338,162 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
 
 
         <div className="flex flex-col gap-4 sm:gap-6">
+          {/* ── Manopole del Motore (Assi di Modulazione del Grafo) ── */}
+          <div className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5 border border-marrow-light/10">
+            <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Sliders className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-bold text-marrow-light">Manopole del Motore</span>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
+                    Modulazione Attivazione
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetSliders}
+                  className="inline-flex items-center gap-1.5 text-xs font-mono text-marrow-light/50 hover:text-primary transition-colors cursor-pointer py-1 px-2 rounded hover:bg-marrow-light/5"
+                  title="Ripristina valori predefiniti"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Ripristina Default</span>
+                </button>
+              </div>
+              <p className="text-xs text-marrow-light/50 mt-1.5 leading-relaxed">
+                Gli assi governano la camminata sul grafo e <strong>modulano l&apos;attivazione</strong> dei mondi: circa un terzo dei titoli cambia composizione lungo il percorso, senza svuotare le liste né imporre filtri rigidi.
+              </p>
+            </div>
+
+            <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Slider 1: Largo */}
+              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Ampiezza Esplorazione</span>
+                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(largo)</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                    {activeSliders.largo} mondi
+                  </span>
+                </div>
+                <div className="py-1">
+                  <Slider
+                    min={2}
+                    max={8}
+                    step={1}
+                    value={[activeSliders.largo]}
+                    onValueChange={([val]) => handleSliderChange('largo', val)}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                  <span>Resta nel tuo mondo (2)</span>
+                  <span>Default (4)</span>
+                  <span>Esci dal tuo mondo (8)</span>
+                </div>
+                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                  Modula il numero di mondi e caroselli da accendere (da 2 a 8). Allarga o concentra il portafoglio senza frammentare la coerenza.
+                </p>
+              </div>
+
+              {/* Slider 2: Lontano */}
+              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Distanza Mondi</span>
+                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(lontano)</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                    {activeSliders.lontano === 0 ? 'Affini (0.0)' : activeSliders.lontano === 1 ? 'Diversi (1.0)' : activeSliders.lontano.toFixed(2)}
+                  </span>
+                </div>
+                <div className="py-1">
+                  <Slider
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={[activeSliders.lontano]}
+                    onValueChange={([val]) => handleSliderChange('lontano', val)}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                  <span>Mondi più accesi (0.0)</span>
+                  <span>Diversi per fascia/medium (1.0)</span>
+                </div>
+                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                  Privilegia mondi diversi per fascia di voti e alternanza film/serie. Modula l&apos;angolo di visuale senza tagliare fuori i titoli chiave.
+                </p>
+              </div>
+
+              {/* Slider 3: Cozy / Impegnativo */}
+              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Tonalità</span>
+                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(cozy)</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                    {activeSliders.cozy < -0.05
+                      ? `Impegnativo (${activeSliders.cozy.toFixed(1)})`
+                      : activeSliders.cozy > 0.05
+                      ? `Cozy (+${activeSliders.cozy.toFixed(1)})`
+                      : 'Neutro (0.0)'}
+                  </span>
+                </div>
+                <div className="py-1">
+                  <Slider
+                    min={-1}
+                    max={1}
+                    step={0.1}
+                    value={[activeSliders.cozy]}
+                    onValueChange={([val]) => handleSliderChange('cozy', val)}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                  <span>Impegnativo (-1.0)</span>
+                  <span>Neutro (0.0)</span>
+                  <span>Cozy (+1.0)</span>
+                </div>
+                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                  Bilancia il peso verso documentari/storia/guerra (-1) o commedia/famiglia/animazione (+1). Circa un terzo dei titoli modula il tono.
+                </p>
+              </div>
+
+              {/* Slider 4: Canone */}
+              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Fascia di Canone</span>
+                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(canone)</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                    {activeSliders.canone < -0.05
+                      ? `Nicchia (${activeSliders.canone.toFixed(1)})`
+                      : activeSliders.canone > 0.05
+                      ? `Popolare (+${activeSliders.canone.toFixed(1)})`
+                      : 'Storico (0.0)'}
+                  </span>
+                </div>
+                <div className="py-1">
+                  <Slider
+                    min={-1}
+                    max={1}
+                    step={0.1}
+                    value={[activeSliders.canone]}
+                    onValueChange={([val]) => handleSliderChange('canone', val)}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                  <span>Nicchia (-1.0)</span>
+                  <span>Come da storico (0.0)</span>
+                  <span>Popolare (+1.0)</span>
+                </div>
+                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                  Sposta la finestra attorno al canone dedotto dallo storico (DELTA_FASCIA calibrato a 1.0, ~2.7x di fattore). Modula senza escludere.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {heroCatalogs.map((catalog) => {
             const idMovies = `${catalog.idBase}_movies`;
             const idSeries = `${catalog.idBase}_series`;

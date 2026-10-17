@@ -12,7 +12,7 @@ import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { MyList, StremioAuth, Profile, Catalog, ProfileTemplate } from '@/types';
+import { MyList, StremioAuth, Profile, Catalog, ProfileTemplate, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 import { api } from '@/lib/api';
 import { usePathname } from 'next/navigation';
@@ -40,9 +40,11 @@ function createDefaultProfiles(): Profile[] {
         heroPresetsInitialized: true,
       },
       existingCatalogs: [],
+      sliders: { ...DEFAULT_ENGINE_SLIDERS },
       settings: {
         fastRefresh: false,
         typeSelectors: { film: false, serie: false, anime: null },
+        sliders: { ...DEFAULT_ENGINE_SLIDERS },
       },
     },
   ];

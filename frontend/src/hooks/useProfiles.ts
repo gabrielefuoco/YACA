@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem } from '@/types';
+import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 
@@ -26,11 +26,13 @@ function createGlobalProfile(): Profile {
       heroPresetsInitialized: true,
     },
     existingCatalogs: [],
+    sliders: { ...DEFAULT_ENGINE_SLIDERS },
     settings: {
       fastRefresh: false,
       manualDNA: [],
       suggestedDNA: [],
       typeSelectors: { film: false, serie: false, anime: null },
+      sliders: { ...DEFAULT_ENGINE_SLIDERS },
     },
   };
 }
@@ -48,9 +50,11 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
       heroPresetsInitialized: true,
     },
     existingCatalogs: [],
+    sliders: { ...DEFAULT_ENGINE_SLIDERS },
     settings: {
       fastRefresh: false,
       typeSelectors: { film: false, serie: false, anime: null },
+      sliders: { ...DEFAULT_ENGINE_SLIDERS },
     },
   };
 }
