@@ -23,6 +23,11 @@ jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
     executeUniversalPipeline: jest.fn()
 }));
 
+jest.mock('../src/db/learnedNames', () => ({
+    searchLearnedNames: jest.fn(async () => []),
+    learnNames: jest.fn(async () => 0)
+}));
+
 const { Tier2SearchClient } = require('../src/db/tier2Index');
 const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');

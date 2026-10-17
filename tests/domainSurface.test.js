@@ -50,6 +50,22 @@ jest.mock('../src/library', () => ({
     LibrarySyncService: { normalizeSyncItemId: jest.fn((id) => id) }
 }));
 
+jest.mock('../src/catalog/providers/DuckDbProvider', () => {
+    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+    return {
+        ...actual,
+        getDuckDbCatalogFromFilters: jest.fn().mockResolvedValue([]),
+        getDuckDbCatalogFromPreset: jest.fn().mockResolvedValue([]),
+        getDuckDbMetaDetails: jest.fn().mockResolvedValue(null)
+    };
+});
+
+jest.mock('../src/catalog/tier2Search', () => ({
+    searchTier2: jest.fn(() => []),
+    searchLearnedTitles: jest.fn(async () => []),
+    closeTier2Search: jest.fn()
+}));
+
 jest.mock('../src/pool/graphClient', () => ({
     raccomanda: jest.fn().mockResolvedValue({
         versioni: { artefatto: 'art-1', ricetta: 'ric-1' },

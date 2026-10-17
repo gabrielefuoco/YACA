@@ -110,22 +110,26 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
     });
 
     describe('3. metaHandler executes without Mongo writes', () => {
-        test('metaHandler resolves metadata without touching TmdbScoringData', async () => {
-            const userConfig = {
-                userId: 'user_test',
-                activeProfileId: 'p1',
-                profiles: [{ id: 'p1', name: 'Default' }],
-                apiKeys: { tmdb: 'dummyApiKey' }
-            };
+        const hasLiveTmdb = Boolean(process.env.TMDB_API_KEY && process.env.TMDB_API_KEY !== 'dummyApiKey');
+        (hasLiveTmdb ? test : test.skip)(
+            'metaHandler resolves metadata without touching TmdbScoringData (richiede TMDB_API_KEY valida e connessione di rete)',
+            async () => {
+                const userConfig = {
+                    userId: 'user_test',
+                    activeProfileId: 'p1',
+                    profiles: [{ id: 'p1', name: 'Default' }],
+                    apiKeys: { tmdb: process.env.TMDB_API_KEY }
+                };
 
-            const result = await metaHandler(
-                { type: 'movie', id: 'tmdb:550' },
-                userConfig
-            );
+                const result = await metaHandler(
+                    { type: 'movie', id: 'tmdb:550' },
+                    userConfig
+                );
 
-            expect(result).toBeDefined();
-            expect(result.meta).toBeDefined();
-            expect(result.meta.name).toBe('Fight Club');
-        });
+                expect(result).toBeDefined();
+                expect(result.meta).toBeDefined();
+                expect(result.meta.name).toBe('Fight Club');
+            }
+        );
     });
 });
