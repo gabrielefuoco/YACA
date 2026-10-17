@@ -58,12 +58,11 @@ Come funziona oggi:
 
 ---
 
-## 3. Compatibilità con il VSM
+## 3. Compatibilità con il VSM e Risoluzione Query AI
 
-Il **Vector Space Model (VSM)** e il motore bayesiano mantengono per il momento la vecchia architettura TMDB-like che emette "queries".
-Per non frantumare un modello perfettamente funzionante, è stato introdotto il pattern **Adapter**: `src/utils/legacyTmdbAdapter.js`.
+Il **Vector Space Model (VSM)** e il motore bayesiano generano query analitiche che vengono risolte in DuckDB:
+1. `AiDiscoveryProvider.js` elabora le strategie generative e normalizza i filtri tramite `AiQueryNormalizer.js`.
+2. I filtri vengono passati direttamente a `DuckDbProvider.getDuckDbCatalogFromFilters`, che si appoggia a `src/db/queryBuilder.js` per compilare il codice SQL nativo (inclusi i filtri di qualità e la Full-Text Search).
 
-Questa utility funge da ponte:
-1. Intercetta gli input TMDB passati da `AiDiscoveryProvider`.
-2. Li traduce al volo nella sintassi DSL array di YACA.
-3. Lo passa a `DuckDbProvider.js` offrendo gli enormi vantaggi prestazionali senza richiedere variazioni sull'intelligenza artificiale.
+> [!NOTE]
+> Inizialmente (fino a luglio 2026) esisteva l'adattatore ponte `src/utils/legacyTmdbAdapter.js`. È stato rimosso definitivamente il **2026-07-23** (commit `73a023d`, «cleanup dead code… native DuckDB sql»): la traduzione delle query TMDB-like verso SQL DuckDB avviene direttamente nei provider dedicati senza passare da adattatori intermedi.

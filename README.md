@@ -1,6 +1,6 @@
 # YACA 🇮🇹 (Yet Another Catalog Addon)
 
-YACA è un addon stateful avanzato per **Stremio** che unisce un motore analitico SQL in-memory (**DuckDB** su file Parquet), caching distribuito (**Redis**), un motore di raccomandazione bayesiano basato su **Vector Space Model (VSM)** e intelligenza artificiale per generare cataloghi dinamici e personalizzati ad altissime prestazioni.
+YACA è un addon stateful avanzato per **Stremio** che unisce un motore analitico SQL in-memory (**DuckDB** su file Parquet), caching distribuito (**Redis**), un motore di raccomandazione a grafo di cluster/mondi (**Python Service**), algoritmi di scoring bayesiano e intelligenza artificiale per generare cataloghi dinamici e personalizzati ad altissime prestazioni.
 
 ---
 
@@ -12,6 +12,8 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 
 ### Documenti Chiave:
 - [🚀 Self-Hosting su Home Server (`mate`)](docs/DEPLOYMENT_HOME_SERVER.md): Guida completa al deploy Docker Compose, Tailscale, Watchtower e GHCR.
+- [🌐 Motore Grafo delle Raccomandazioni](docs/RECOMMENDATION_GRAPH.md): Servizio Python persistente, contratto HTTP (/health, /raccomanda), modulo Pool e trappole architetturali.
+- [📚 Dominio Libreria & Ingestione](docs/LIBRARY_MODULE.md): Separazione fatti vs deduzioni, porta di lettura unificata e macchina a stati di conversione.
 - [🦆 Architettura DuckDB In-Memory](docs/DUCKDB_ARCHITECTURE.md): Pre-filtraggio a zero chiamate TMDB tramite dataset Parquet ZSTD.
 - [🧬 Algoritmi di Scoring e VSM](docs/ALGORITHMS.md): Taste Profile pesato, Bayesian Rating IMDb e rotazione delle impression.
 - [🤖 Motore AI & Live Search Router](docs/AI_ENGINE.md): Mappatura del linguaggio naturale da barra di ricerca Stremio a parametri strutturati.
@@ -27,6 +29,8 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 ## ⚡ Caratteristiche Principali
 
 - **Cataloghi Istantanei DuckDB**: Pre-filtraggio ed estrazione a zero latenza (<10ms) interrogando in SQL locale i dump TMDB compressi in Parquet. Nessuna dipendenza dall'endpoint `/discover` di TMDB.
+- **Motore Raccomandazioni a Grafo**: Servizio Python isolato su porta 7862 che calcola la diffusione PageRank sui cluster di titoli (mondi), rispondendo con liste spiegate e punteggi di attivazione.
+- **Modulo Pool & Assegnazione Pairwise**: Gestione centralizzata del feed hero con deduplica pairwise (`claimedIds`), priorità unificata e inserimento additivo delle righe del grafo.
 - **Cache Distribuita Redis (L2)**: Persistenza distribuita ad alta velocità con TTL dedicati e mitigazione Thundering Herd (SWR Stampede).
 - **Taste Profile Pesato & VSM**: Raccoglie in tempo reale l'attività dell'utente (Love x4, Like x3, Watch x2) su Stremio e Trakt.tv, calcolando un vettore DNA multidimensionale (generi, keyword, registi, attori).
 - **Profili Multipli Dinamici**: Crea molteplici profili (es. "Cinema d'Autore", "Anime Fan", "Kids Only") con DNA e cataloghi dedicati all'interno della medesima installazione Stremio.
@@ -42,10 +46,11 @@ Abbiamo creato una documentazione dettagliata e modulare per ogni componente del
 Internet ──HTTPS──> Tailscale Funnel ──> 127.0.0.1:7860
                                                     ├─> container app (Node.js + DuckDB, RAM cap 1.5 GB)
                                                     ├─> container redis (Cache L2, cap 300 MB)
+                                                    ├─> container graph (Motore raccomandazioni Python :7862, cap 512 MB)
                                                     ├─> container anime-source (Worker sincronizzazione)
                                                     └─> container watchtower (Auto-update continuo da GHCR)
 MongoDB Atlas M0 (Configurazioni & Profili)  ◄──────┘
-GitHub Actions main ──> GHCR (ghcr.io/gabrielefuoco/yaca:latest) ──> Watchtower pull
+GitHub Actions main ──> GHCR (yaca, yaca-graph, yaca-anime-source) ──> Watchtower pull
 ```
 
 ---
@@ -55,7 +60,7 @@ GitHub Actions main ──> GHCR (ghcr.io/gabrielefuoco/yaca:latest) ──> Wat
 La configurazione di riferimento di YACA è un deploy headless su Home Server (`mate`) tramite Docker Compose:
 
 1. **Clona la configurazione o crea il `docker-compose.yml`**:
-   Configura i servizi `app`, `redis`, `anime-source` e `watchtower` come dettagliato in [docs/DEPLOYMENT_HOME_SERVER.md](docs/DEPLOYMENT_HOME_SERVER.md).
+   Configura i servizi `app`, `redis`, `graph`, `anime-source` e `watchtower` come dettagliato in [docs/DEPLOYMENT_HOME_SERVER.md](docs/DEPLOYMENT_HOME_SERVER.md).
 
 2. **Configura le variabili d'ambiente (`.env`)**:
    ```bash
@@ -66,6 +71,7 @@ La configurazione di riferimento di YACA è un deploy headless su Home Server (`
    JWT_SECRET=genera_con_crypto_randomBytes
    HOST_URL=https://mate.hyena-alphard.ts.net
    PORT=7860
+   GRAPH_SERVICE_URL=http://graph:7862
    ```
 
 3. **Avvia lo stack**:
@@ -77,7 +83,7 @@ La configurazione di riferimento di YACA è un deploy headless su Home Server (`
    - Tramite **Tailscale Funnel**: `tailscale funnel 7860 on`
 
 5. **Aggiornamenti Automatici**:
-   Watchtower controlla periodicamente il registro GHCR (`ghcr.io/gabrielefuoco/yaca:latest`) e riavvia il container senza interruzione di servizio.
+   Watchtower controlla periodicamente il registro GHCR (`ghcr.io/gabrielefuoco/yaca:latest` e `ghcr.io/gabrielefuoco/yaca-graph:latest`) e riavvia i container senza interruzione di servizio.
 
 ---
 
@@ -113,12 +119,14 @@ npm test
 | **Variabile** | **Obbligatoria** | **Descrizione** |
 |---|---|---|
 | `MONGODB_URI` | **Sì** | Stringa di connessione a MongoDB Atlas per profili e account utente. |
-| `REDIS_URL` | No | URL del server Redis per la cache L2 (default: `redis://127.0.0.1:6379`). |
+| `REDIS_URL` | No | URL del server Redis per la cache L2 (default: `redis://127.0.0.1:6379` o `redis://redis:6379`). |
 | `TMDB_API_KEY` | **Sì*** | API Key globale di TMDB per metadati estesi. |
 | `MISTRAL_API_KEY` | No | API Key Mistral AI per abilitare la ricerca semantica Live Search. |
 | `JWT_SECRET` | No | Chiave di firma token sessione dashboard (fallback random ad ogni avvio se assente). |
 | `HOST_URL` | **Sì** | URL pubblico del server per locandine, badge e manifest Stremio. |
-| `PORT` | No | Porta di ascolto HTTP (default `7860`). |
+| `PORT` | No | Porta di ascolto HTTP del backend Node (default `7860`). |
+| `GRAPH_SERVICE_URL` | No | URL del servizio raccomandazioni Python (default: `http://graph:7862` nella rete compose). |
+| `GRAPH_TAG` | No | Tag dell'immagine Docker per `yaca-graph` (default: `latest`). |
 | `TRAKT_CLIENT_ID` | No | Client ID di Trakt.tv per la sincronizzazione libreria e cronologia. |
 | `TRAKT_CLIENT_SECRET` | No | Client Secret di Trakt.tv per il flusso OAuth. |
 | `CORS_ALLOWED_ORIGINS` | No | Origini CORS consentite per API pubbliche (default `*`). |
