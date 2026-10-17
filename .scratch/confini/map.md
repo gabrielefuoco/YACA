@@ -474,3 +474,32 @@ revisione — e **le divergenze sono l'informazione**. La revisione ha trovato p
 servire dentro il tipo, la duplicazione) e ha sbagliato una cosa (l'IDOR: il middleware c'è, 0 accessori vecchi,
 12 `req.utenteId`). Ogni prova è stata **rieseguita** dal committente prima di essere accettata: nessuno dei due
 creduto sulla parola.
+
+### 18. La ricognizione col metro in mano (ticket 31)
+
+**18/10/2026.** Misurato invece che ragionato: **152 dei 157 file di `src/` sono raggiungibili da `index.js`** —
+zero codice morto per import, quindi il backend non si snellisce cancellando file irraggiungibili. Il criterio
+della decisione 16 (processo separato solo dove il runtime lo impone) è stato passato a ognuna delle candidate:
+
+- **l'indice (DuckDB + SQLite)** → **no**: +31 MiB di RSS misurati, 162 MB dei 654 dell'immagine (25%), stessa
+  lingua e stesso runtime, i file già su un volume. La decisione 22 regge. Riapribile solo se una scansione
+  bloccasse l'event loop per centinaia di ms (non misurato).
+- **il vecchio stack (engines+handlers+pool, 6.278 righe = 17%)** → **no all'estrazione, sì alla sostituzione**:
+  `src/api/stremio.js` (montato su `/`, cioè il prodotto) chiama `handlers/catalogHandler`, che chiama
+  `CatalogRouter` *e* `duckDbStore`. **Non è ritirato: serve il prodotto adesso.** Estrarlo sarebbe costruire un
+  confine attorno a ciò che si sta ritirando (la lezione del ticket 02). Il lavoro è finire la sostituzione e
+  **poi cancellare 6.278 righe**.
+- **il drenatore dei poster (1.975 righe)** → **sì, come container**: ciclo di vita diverso (lotto periodico) e
+  oggi gira sul mate come unità systemd con `node` e il repo sull'host. È l'unica forza di runtime rimasta.
+- **`src/data/` (1,2 MB)** → niente.
+
+**Due cose trovate per strada**: `src/catalog/index.js` e `validation.js` sono un'**isola chiusa** (solo i test li
+raggiungono: la porta del modulo non è la porta che si usa — e il bug 4 del ticket 27 vive in un file che il
+prodotto non chiama); e **l'app tiene il DuckDB aperto in scrittura**, quindi un secondo processo non riesce ad
+aprirlo (stessa classe dei 7 lock del ticket 29).
+
+**Le sonde sbagliate di questa ricognizione**, che sono la parte da ricordare: ho chiamato «ritirato» il vecchio
+stack basandomi sulla *raggiungibilità* invece che sull'**uso** (la raggiungibilità dice cosa è caricato, non cosa
+serve); i log **non registrano le richieste**, quindi «0 richieste» non è una misura; e il primo probe nel
+container è caduto perché **la produzione ha ancora il codice pre-refactor** — ogni misura nel container misura il
+vecchio, finché non si fa il ticket 30.
