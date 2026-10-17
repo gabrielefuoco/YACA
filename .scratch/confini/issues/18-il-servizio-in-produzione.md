@@ -51,3 +51,77 @@ queste non torna, il ticket non è chiuso — e il prodotto (08) non si tocca pr
 
 Il caricamento del motore è **~1,3 s** (misurato il 17/10/2026; il servizio, processo compreso, 2,05 s): il
 `start_period: 10s` dell'healthcheck è abbondante, e non serve nessuna attesa particolare al deploy.
+
+## Esito (parziale)
+
+Completata la parte di CI, configurazione Docker Compose e allineamento volumi il 17/10/2026.
+Lo stato del ticket resta `Status: ready-for-agent` con esito parziale perché — conformemente alla regola di non effettuare `git push` da questo worktree — l'avvio reale del container e la verifica dei consumi e dell'healthcheck sul mate presuppongono il push orchestrato su `main` e la prima esecuzione del workflow su GitHub Actions.
+
+### 1. Pubblicazione dell'immagine in CI (`.github/workflows/deploy-graph.yml`)
+- **Modello**: Segue l'assetto di `deploy-anime-source.yml`.
+- **Trigger**: Solo su `push` al branch `main` quando vengono modificati file sotto `services/graph/**` o `.github/workflows/deploy-graph.yml`, oltre a `workflow_dispatch` per esecuzione manuale. Non parte sui commit generici del prodotto.
+- **Costruzione**: Buildx con context `.` e Dockerfile `./services/graph/Dockerfile`. Un passo preliminare nel runner (`sed -i '/services\/graph\//d' .dockerignore`) rimuove l'esclusione di `services/graph/` dal build context senza alterare il file `.dockerignore` nel repository (che continua così a escludere il codice Python del modulo dalla build dell'app principale `yaca-app`).
+- **Pubblicazione**: Su GHCR (`ghcr.io/gabrielefuoco/yaca-graph`) con tag `latest` e `${{ github.sha }}`. Coerente con la variabile `${GRAPH_TAG:-latest}` dichiarata in `docker-compose.yml`.
+
+### 2. La casa dell'artefatto (Bind Mount coerente)
+- **Scelta definitiva**: Bind mount read-only dal percorso fisico sull'host:
+  `/srv/yaca/services/graph/data:/app/services/graph/data:ro`
+- **Pulizia Compose**: Rimosso il named volume vuoto `yaca_graph_data` da `docker-compose.yml` (sia dal blocco `graph` che dalla sezione root `volumes:`).
+- **Comando di migrazione sul mate** (i 138 MB non viaggiano via git perché esclusi da `.gitignore`):
+  ```bash
+  mkdir -p /srv/yaca/services/graph && cp -r /srv/yaca/modulo/graph/data /srv/yaca/services/graph/data
+  # oppure, se il ticket 06 ha già riorganizzato la cartella sotto modulo:
+  # cp -r /srv/yaca/modulo/services/graph/data /srv/yaca/services/graph/data
+  # Verifica immediata della presenza dei ~138 MB:
+  ls -lh /srv/yaca/services/graph/data
+  ```
+
+### 3. Verifiche sintattiche e schema Compose
+- **Validazione Compose**: Eseguito `docker compose config` con successo. Il bind mount verso `/srv/yaca/services/graph/data` viene risolto correttamente e con flag `read_only: true`.
+- **Validazione Workflow**: Eseguito parsing YAML di `.github/workflows/deploy-graph.yml` e `docker-compose.yml` tramite parser `js-yaml` in Node.js (uscita 0, nessun errore di sintassi).
+- **Coerenza blocchi**: Stesse convenzioni degli altri servizi (`yaca-graph`, `${GRAPH_TAG:-latest}`, `watchtower.enable=true`, `json-file` max-size 10m / 3 file, healthcheck HTTP su porta 7862 con start_period 10s).
+
+### 4. Checklist esatta per il mate (dopo il push su `main`)
+Una volta che l'orchestratore avrà mergiato e pushato su `main` e il workflow `deploy-graph.yml` avrà completato la prima build:
+
+1. Collegarsi al server:
+   ```bash
+   ssh mate
+   ```
+2. Garantire la presenza dei 138 MB nel bind mount dell'host (se non già fatto):
+   ```bash
+   mkdir -p /srv/yaca/services/graph && cp -rn /srv/yaca/modulo/graph/data /srv/yaca/services/graph/data
+   ls -lh /srv/yaca/services/graph/data
+   ```
+3. Portarsi nella root del deploy e aggiornare compose:
+   ```bash
+   cd /srv/yaca
+   git pull
+   ```
+4. Scaricare l'immagine pubblicata da GHCR:
+   ```bash
+   docker compose pull graph
+   ```
+5. Avviare il servizio:
+   ```bash
+   docker compose up -d graph
+   ```
+6. Verificare l'endpoint di salute e l'artefatto montato:
+   ```bash
+   docker compose exec graph python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:7862/health').read())"
+   ```
+   **Cosa guardare**:
+   - HTTP 200 con `{"ok": true, "contratto": 1, ...}`.
+   - Il campo `versioni.artefatto` **non deve essere vuoto** (deve contenere la versione/hash dell'artefatto attivo; un valore vuoto o 503 indica mount mancante o artefatto assente).
+7. Verificare lo stato del container:
+   ```bash
+   docker ps --filter "name=yaca-graph"
+   ```
+   Deve mostrare `healthy` (dopo i 10 s di start period).
+8. **La questione `mem_limit` e bilanciamento RAM**:
+   ```bash
+   docker stats --no-stream
+   ```
+   - In benchmark il processo Python occupa ~128 MB di RSS. In `docker-compose.yml` è fissato un tetto `mem_limit: 512m` (margine 4x).
+   - Verificare su `docker stats` che il consumo effettivo si mantenga attorno ai 128–150 MB accanto a `yaca-app` (dove DuckDB carica in RAM i cataloghi TMDB, limite 1536 MB), `yaca-redis` (300 MB) e `yaca-anime-source` (256 MB), assicurando che non ci sia pressione complessiva sulla memoria del mate.
+

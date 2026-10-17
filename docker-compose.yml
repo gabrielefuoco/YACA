@@ -65,8 +65,8 @@ services:
     environment:
       - PORT=7862
     volumes:
-      # L'artefatto letto dal modulo come volume read-only (decisione ticket 07)
-      - yaca_graph_data:/app/services/graph/data:ro
+      # L'artefatto letto dal modulo come bind mount read-only dal disco del mate (decisione ticket 07 / 18)
+      - /srv/yaca/services/graph/data:/app/services/graph/data:ro
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
@@ -140,5 +140,3 @@ volumes:
     name: yaca_erdb_cache
   yaca_anime_source_cache:
     name: yaca_anime_source_cache
-  yaca_graph_data:
-    name: yaca_graph_data
