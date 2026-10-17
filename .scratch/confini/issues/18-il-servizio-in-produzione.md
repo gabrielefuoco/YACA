@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: wontfix
 Type: task
 Blocked by: 07
 
@@ -125,3 +125,18 @@ Una volta che l'orchestratore avrà mergiato e pushato su `main` e il workflow `
    - In benchmark il processo Python occupa ~128 MB di RSS. In `docker-compose.yml` è fissato un tetto `mem_limit: 512m` (margine 4x).
    - Verificare su `docker stats` che il consumo effettivo si mantenga attorno ai 128–150 MB accanto a `yaca-app` (dove DuckDB carica in RAM i cataloghi TMDB, limite 1536 MB), `yaca-redis` (300 MB) e `yaca-anime-source` (256 MB), assicurando che non ci sia pressione complessiva sulla memoria del mate.
 
+
+## Chiusura (18/10/2026): i due buchi sono coperti, e senza il workflow
+
+**Buco 2 (il volume) — risolto**: il compose monta il **bind mount read-only dal disco del mate**
+(`/srv/yaca/services/graph/data:/app/services/graph/data:ro`, riga 78), che era la decisione scritta del ticket 07.
+Nessun named volume vuoto.
+
+**Buco 1 (la pubblicazione dell'immagine) — coperto diversamente**: il workflow `deploy-graph.yml` non esiste e
+richiederebbe lo scope `workflow` del token (un'automazione che vale poco), ma il servizio in produzione **gira e
+si aggiorna**: `cd /srv/yaca && docker compose build graph && docker compose up -d graph` è nel ticket 30 come
+passo manuale, ed è già stato fatto il 17/10/2026 e il 18/10/2026.
+
+**Quindi**: questo ticket non ha più lavoro di codice. Il residuo — pubblicare l'immagine del grafo da CI come per
+`yaca` e `yaca-anime-source` — è **comodità, non necessità**: si riapre solo se i rebuild manuali diventano
+fastidiosi. Lo stato passa a `wontfix` con questa motivazione, e il passo manuale vive nel ticket 30.
