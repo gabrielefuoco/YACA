@@ -98,3 +98,14 @@ specchio di transizione.
 docker exec yaca-app node -e "require('/app/src/models/UserLibraryOrder')" # il modello esiste
 # e nei log dell'app: nessuna riga di fallback su raw_ui_state.libraryOrder durante un riordino
 ```
+
+## Decisione (18/10/2026): si aspetta, un solo deploy
+
+**Niente push finché il ticket 41 (il sostituto della catena ibrida) non è finito.** Motivo: 101 commit in attesa
+significano un deploy solo, con tutto dentro — refactor, moduli, fix e motore nuovo — invece di due deploy e due
+finestre di rischio. Il costo accettato è che la produzione resta su `338d7d4` (pre-refactor) più a lungo.
+
+**L'ordine deciso**: fetta del 41 → **code review indipendente** (due revisori, uno sugli standard e uno sulla
+specifica) → resto del 41 → push (eseguito dall'integratore, non da uno slave, con i numeri prima e dopo).
+
+La checklist qui sopra resta valida: va eseguita **al momento del push**, non prima.
