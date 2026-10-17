@@ -18,6 +18,20 @@ const dumpStatus = {
     error: null
 };
 
+let lastPersistTime = 0;
+function updateStatus(store, patch = {}, forcePersist = false) {
+    Object.assign(dumpStatus, patch);
+    const now = Date.now();
+    if (store && (forcePersist || now - lastPersistTime >= 3000)) {
+        lastPersistTime = now;
+        try {
+            store.saveStatus(dumpStatus);
+        } catch (err) {
+            console.error('[TmdbDump] Errore salvataggio status:', err.message);
+        }
+    }
+}
+
 let daemonRunning = false;
 let isFirstRun = true;
 
@@ -72,8 +86,8 @@ async function buildTier2Index() {
     }
 }
 
-async function convertAndReloadDuckDb() {
-    dumpStatus.currentTask = 'Converting Parquet and Reloading DuckDB...';
+async function convertAndReloadDuckDb(store) {
+    updateStatus(store, { currentTask: 'Converting Parquet and Reloading DuckDB...' }, true);
     console.log('[TmdbDump] Esecuzione conversione in Parquet...');
     try {
         const { spawn } = require('child_process');
@@ -83,16 +97,18 @@ async function convertAndReloadDuckDb() {
             proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Code ${code}`)));
         });
 
-        console.log('[TmdbDump] Riavvio modulo DuckDB...');
+        console.log('[TmdbDump] Ricostruzione DuckDB da Parquet...');
         const duckDbStore = require('../indice/duckDbStore');
         await duckDbStore.close();
         await duckDbStore.init({ forceRebuild: true });
-        console.log('[TmdbDump] DuckDB riavviato con successo e connesso ai nuovi Parquet.');
+        console.log('[TmdbDump] DuckDB pronto su database persistente.');
+        await duckDbStore.close(); // Chiusura immediata: il job batch/daemon standalone non trattiene il DB in RAM
 
         // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)
         await buildTier2Index();
     } catch (convertErr) {
         console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
+        updateStatus(store, { error: convertErr.message }, true);
     }
 }
 
@@ -103,7 +119,7 @@ async function convertAndReloadDuckDb() {
  * riprende dal punto in cui si era fermato grazie all'indice salvato.
  */
 async function coldStart(store, client) {
-    dumpStatus.phase = 'cold-start';
+    updateStatus(store, { phase: 'cold-start', currentTask: 'Starting Cold Start...' }, true);
     console.log('[TmdbDump] Starting Cold Start...');
 
     const mediaTypes = ['movies', 'tv'];
@@ -117,7 +133,7 @@ async function coldStart(store, client) {
         }
 
         // Scarica il Daily Export (sempre, ~2s per file compresso)
-        dumpStatus.currentTask = `Downloading Daily Export for ${mediaType}`;
+        updateStatus(store, { currentTask: `Downloading Daily Export for ${mediaType}` }, true);
         console.log(`[TmdbDump] ${dumpStatus.currentTask}`);
         const allIds = await client.downloadDailyExport(mediaType);
         
@@ -128,8 +144,7 @@ async function coldStart(store, client) {
         }
         
         const idsToFetch = allIds.slice(startIndex);
-        dumpStatus.total = allIds.length;
-        dumpStatus.progress = startIndex;
+        updateStatus(store, { total: allIds.length, progress: startIndex }, true);
 
         console.log(`[TmdbDump] Cold Start for ${mediaType}: resuming at ${startIndex}/${allIds.length} (${idsToFetch.length} remaining)`);
         
@@ -158,8 +173,10 @@ async function coldStart(store, client) {
 
                 const slice = chunk.slice(j, j + CONCURRENCY);
                 const actualIndex = startIndex + chunkStart + j;
-                dumpStatus.currentTask = `Fetching ${mediaType} ${slice[0]}…${slice[slice.length - 1]} (${actualIndex + 1}/${allIds.length})`;
-                dumpStatus.progress = actualIndex;
+                updateStatus(store, {
+                    currentTask: `Fetching ${mediaType} ${slice[0]}…${slice[slice.length - 1]} (${actualIndex + 1}/${allIds.length})`,
+                    progress: actualIndex
+                });
 
                 const rows = await Promise.all(slice.map(id =>
                     mediaType === 'movies' ? client.fetchMovie(id, { trackedIds }) : client.fetchTv(id, { trackedIds })
@@ -185,6 +202,7 @@ async function coldStart(store, client) {
                 completed: cursor.completed || {}
             };
             store.saveCursor(cursor);
+            updateStatus(store, { progress: cursor.index }, true);
 
             const percent = ((cursor.index / allIds.length) * 100).toFixed(1);
             console.log(`[TmdbDump] [${mediaType.toUpperCase()}] Progress: ${cursor.index}/${allIds.length} (${percent}%)`);
@@ -193,7 +211,7 @@ async function coldStart(store, client) {
             if (cursor.index % 5000 === 0 && cursor.index > 0) {
                 console.log(`[TmdbDump] Triggering intermediate Parquet conversion at ${cursor.index}...`);
                 // Non usiamo await così non fermiamo il download
-                convertAndReloadDuckDb().catch(e => console.error(e));
+                convertAndReloadDuckDb(store).catch(e => console.error(e));
             }
 
             if (!daemonRunning) {
@@ -210,22 +228,22 @@ async function coldStart(store, client) {
         store.saveCursor(cursor);
 
         const finalCount = await store.countLines(mediaType);
-        dumpStatus.stats[mediaType] = finalCount;
+        updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
         console.log(`[TmdbDump] Cold Start for ${mediaType} COMPLETED. Total records: ${finalCount}`);
     }
 
-    dumpStatus.lastSync = new Date().toISOString();
+    updateStatus(store, { lastSync: new Date().toISOString() }, true);
     console.log('[TmdbDump] Cold Start FULLY COMPLETED.');
 }
 
 async function dailySync(store, client) {
-    dumpStatus.phase = 'daily-sync';
+    updateStatus(store, { phase: 'daily-sync', currentTask: 'Starting Daily Sync...' }, true);
     console.log('[TmdbDump] Starting Daily Sync...');
 
     const mediaTypes = ['movies', 'tv'];
     
     for (const mediaType of mediaTypes) {
-        dumpStatus.currentTask = `Fetching Changes for ${mediaType}`;
+        updateStatus(store, { currentTask: `Fetching Changes for ${mediaType}` }, true);
         const changedIds = new Set();
         
         // Pagina API Changes
@@ -250,7 +268,7 @@ async function dailySync(store, client) {
         const trackedIds = await loadTrackedAiringIds();
         
         // Scarica Daily Export per filtrare nuovi ID per popolarità
-        dumpStatus.currentTask = `Downloading Daily Export for ${mediaType}`;
+        updateStatus(store, { currentTask: `Downloading Daily Export for ${mediaType}` }, true);
         const popularIds = await client.downloadDailyExport(mediaType);
         const popularSet = new Set(popularIds);
 
@@ -262,8 +280,7 @@ async function dailySync(store, client) {
         }
 
         console.log(`[TmdbDump] ${idsToFetch.length} relevant changes to fetch for ${mediaType}`);
-        dumpStatus.total = idsToFetch.length;
-        dumpStatus.progress = 0;
+        updateStatus(store, { total: idsToFetch.length, progress: 0 }, true);
 
         const toUpsert = [];
         const toDelete = [];
@@ -272,8 +289,10 @@ async function dailySync(store, client) {
             if (!daemonRunning) break;
             
             const id = idsToFetch[i];
-            dumpStatus.progress = i + 1;
-            dumpStatus.currentTask = `Syncing ${mediaType} ${id} (${i+1}/${idsToFetch.length})`;
+            updateStatus(store, {
+                progress: i + 1,
+                currentTask: `Syncing ${mediaType} ${id} (${i+1}/${idsToFetch.length})`
+            });
 
             try {
                 const row = mediaType === 'movies' 
@@ -296,40 +315,52 @@ async function dailySync(store, client) {
         }
 
         // Applica le modifiche al file JSONL
-        dumpStatus.currentTask = `Writing changes to disk for ${mediaType}`;
+        updateStatus(store, { currentTask: `Writing changes to disk for ${mediaType}` }, true);
         console.log(`[TmdbDump] Disk Apply: ${toUpsert.length} upserts, ${toDelete.length} deletes for ${mediaType}`);
         
         if (toUpsert.length > 0) await store.upsert(toUpsert, mediaType);
         if (toDelete.length > 0) await store.deleteIds(toDelete, mediaType);
 
         const finalCount = await store.countLines(mediaType);
-        dumpStatus.stats[mediaType] = finalCount;
+        updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
     }
 
     console.log('[TmdbDump] Daily Sync COMPLETED. Triggering Parquet rebuild...');
     try {
-        await convertAndReloadDuckDb();
+        await convertAndReloadDuckDb(store);
     } catch (err) {
         console.error('[TmdbDump] Error rebuilding Parquet after Daily Sync:', err);
     }
-    dumpStatus.lastSync = new Date().toISOString();
+    updateStatus(store, { lastSync: new Date().toISOString() }, true);
 }
 
-async function runTmdbDumpDaemon() {
+function stopDaemon() {
+    daemonRunning = false;
+    dumpStatus.isRunning = false;
+    try {
+        const store = new TmdbDumpStore();
+        updateStatus(store, { isRunning: false, currentTask: 'Daemon fermato' }, true);
+    } catch (_) {}
+}
+
+async function runTmdbDumpDaemon(options = {}) {
+    const once = Boolean(options.once);
+    const intervalMs = options.intervalMs || (60 * 60 * 1000); // 1 ora di default
+
     if (daemonRunning) return;
     
+    const store = new TmdbDumpStore();
+
     if (!apiKey) {
         console.error('[TmdbDump] TMDB_API_KEY non definita in .env. Il demone non partirà.');
-        dumpStatus.error = 'Missing TMDB_API_KEY';
+        updateStatus(store, { error: 'Missing TMDB_API_KEY', phase: 'error', isRunning: false }, true);
         return;
     }
 
     daemonRunning = true;
-    dumpStatus.isRunning = true;
-    dumpStatus.error = null;
+    updateStatus(store, { isRunning: true, error: null, phase: 'starting' }, true);
 
     try {
-        const store = new TmdbDumpStore();
         const client = new TmdbDumpClient(apiKey);
         const duckDbStore = require('../indice/duckDbStore');
         
@@ -338,13 +369,14 @@ async function runTmdbDumpDaemon() {
             const parquetFresh = isParquetFresh(store, duckDbStore);
             if (!parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                 console.log('[TmdbDump] Pre-existing JSONL detected. Parquet missing or stale: running boot conversion...');
-                await convertAndReloadDuckDb();
+                await convertAndReloadDuckDb(store);
             } else {
                 if (parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                     console.log('[TmdbDump] Parquet già presenti e aggiornati rispetto ai JSONL. Conversione al boot saltata.');
                 }
                 if (!duckDbStore.isInitialized) {
                     await duckDbStore.init();
+                    await duckDbStore.close();
                 }
                 console.log('[TmdbDump] DuckDB pronto su database persistente.');
 
@@ -372,34 +404,94 @@ async function runTmdbDumpDaemon() {
         }
         
         // Conversione DuckDB e Hot-Reload (Eseguito sempre alla fine del sync)
-        await convertAndReloadDuckDb();
+        await convertAndReloadDuckDb(store);
         
-        dumpStatus.phase = 'idle';
-        dumpStatus.currentTask = 'Waiting for next sync...';
-        console.log('[TmdbDump] Waiting 1 hour for next sync cycle...');
+        updateStatus(store, {
+            phase: 'idle',
+            currentTask: 'Waiting for next sync...',
+            isRunning: !once,
+            lastSync: new Date().toISOString()
+        }, true);
+
+        if (once) {
+            console.log('[TmdbDump] Giro batch completato con successo (--once). Uscita.');
+            daemonRunning = false;
+            return;
+        }
+
+        console.log(`[TmdbDump] Waiting ${Math.round(intervalMs / 60000)} minutes for next sync cycle...`);
         
-        // Attesa interrompibile (controlla ogni minuto se il daemon è stato stoppato)
+        // Attesa interrompibile con heartbeat ogni 60s
         let waited = 0;
-        const ONE_HOUR = 1 * 60 * 60 * 1000;
-        while (waited < ONE_HOUR && daemonRunning) {
+        while (waited < intervalMs && daemonRunning) {
             await sleep(60000);
             waited += 60000;
+            if (daemonRunning) {
+                updateStatus(store, { isRunning: true }, true);
+            }
         }
     } catch (e) {
         console.error('[TmdbDump] Fatal error:', e);
-        dumpStatus.error = e.message;
-        dumpStatus.phase = 'error';
+        updateStatus(store, { error: e.message, phase: 'error', isRunning: false }, true);
+        if (once) {
+            daemonRunning = false;
+            throw e;
+        }
         // Dopo errore fatale, aspetta 5 minuti prima di riprovare
         await sleep(5 * 60 * 1000);
     } finally {
-        daemonRunning = false;
-        dumpStatus.isRunning = false;
-        // Loop perpetuo come il CacheWarmer
-        setTimeout(() => runTmdbDumpDaemon(), 5000);
+        if (!once && daemonRunning) {
+            setTimeout(() => runTmdbDumpDaemon(options), 5000);
+        } else {
+            daemonRunning = false;
+            updateStatus(store, { isRunning: false }, true);
+        }
     }
 }
 
+// Supporto CLI autonomo: node src/utils/tmdbDumpDaemon.js [--once|--status|--health-check]
+if (require.main === module) {
+    const args = process.argv.slice(2);
+    const once = args.includes('--once');
+    const status = args.includes('--status');
+    const healthCheck = args.includes('--health-check');
+
+    const store = new TmdbDumpStore();
+
+    if (status) {
+        console.log(JSON.stringify(store.loadStatus(), null, 2));
+        process.exit(0);
+    }
+
+    if (healthCheck) {
+        const s = store.loadStatus();
+        if (s.isStale || s.phase === 'error') {
+            console.error(`[TmdbDump HealthCheck] UNHEALTHY: phase=${s.phase}, isStale=${s.isStale}, reason=${s.staleReason}`);
+            process.exit(1);
+        }
+        console.log(`[TmdbDump HealthCheck] OK: phase=${s.phase}, lastSync=${s.lastSync}`);
+        process.exit(0);
+    }
+
+    process.on('SIGTERM', () => {
+        console.log('[TmdbDump] SIGTERM ricevuto. Arresto ordinato...');
+        stopDaemon();
+        process.exit(0);
+    });
+    process.on('SIGINT', () => {
+        console.log('[TmdbDump] SIGINT ricevuto. Arresto ordinato...');
+        stopDaemon();
+        process.exit(0);
+    });
+
+    runTmdbDumpDaemon({ once }).catch((err) => {
+        console.error('[TmdbDump Daemon] Fatal Error:', err);
+        process.exit(1);
+    });
+}
+
 module.exports = { 
-    runTmdbDumpDaemon, 
-    getDumpStatus: () => ({ ...dumpStatus })
+    runTmdbDumpDaemon,
+    stopDaemon,
+    getDumpStatus: () => (new TmdbDumpStore()).loadStatus()
 };
