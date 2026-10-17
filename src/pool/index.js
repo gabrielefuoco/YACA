@@ -173,6 +173,54 @@ async function runPoolBuilder(builder, fallbackBuilder, label, args) {
     }
 }
 
+let flagNewHiddenGems = null;
+
+function isNewHiddenGemsActive() {
+    if (flagNewHiddenGems !== null) return flagNewHiddenGems;
+    return process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS === 'true'
+        || process.env.FLAG_NEW_HIDDEN_GEMS === 'true'
+        || process.env.FLAG_NUOVA_CATENA === 'true';
+}
+
+function setFlagNewHiddenGems(val) {
+    flagNewHiddenGems = val;
+}
+
+async function buildHiddenGemsOnNewProvider(ctx) {
+    const indice = require('../indice');
+    const resolvedContext = (ctx.context && typeof ctx.context === 'object' && ctx.context.selettoriEffettivi)
+        ? ctx.context
+        : {
+            userId: ctx.userId,
+            profileId: typeof ctx.context === 'string' ? ctx.context : (ctx.context?.profileId || 'global'),
+            addonUuid: ctx.userConfig?.uuid || ctx.userConfig?.addonUuid || null,
+            selettoriEffettivi: ctx.effectiveSelectors || {},
+            kidsMode: Boolean(ctx.kidsMode),
+            sliders: ctx.sliders || ctx.slider || {}
+        };
+
+    const result = await indice.candidati(resolvedContext, {
+        mediaType: ctx.mediaType,
+        strategia: 'hidden_gems',
+        limit: ctx.heroCandidateLimit
+    });
+
+    if (result?.candidati && result.candidati.length > 0) {
+        const items = result.candidati.map(c => ({
+            id: String(c.id),
+            matchScore: Math.min(100, Math.max(1, Math.round((c.punteggio || 0) * 10))),
+            motivo: c.motivo,
+            punteggio: c.punteggio,
+            genres: c.genres
+        }));
+        items.ids = items;
+        items.meta = { motivi: result.motivi || [] };
+        return items;
+    }
+
+    return fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors);
+}
+
 /**
  * Definizione a lista delle strategie nel modulo pool.
  * Le quattro strategie hero producono candidati per l'assegnazione disgiunta.
@@ -211,6 +259,9 @@ const HERO_STRATEGIES = [
         slug: 'hidden_gems',
         additive: false,
         run: async (ctx) => {
+            if (isNewHiddenGemsActive()) {
+                return await buildHiddenGemsOnNewProvider(ctx);
+            }
             return await runPoolBuilder(
                 buildHiddenGemsCatalog,
                 () => fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors),
@@ -689,5 +740,8 @@ module.exports = {
     HERO_PRIORITY,
     SLUG_ADDITIVI,
     HERO_STRATEGIES,
-    graphClient
+    graphClient,
+    isNewHiddenGemsActive,
+    setFlagNewHiddenGems,
+    buildHiddenGemsOnNewProvider
 };
