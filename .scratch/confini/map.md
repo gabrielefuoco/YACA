@@ -278,6 +278,36 @@ rilievi sulle sezioni 4-13 erano dedotti dalle citazioni: alcuni reggevano, due 
   loro criteri di collaudo confrontano conteggi: senza il 38 non si distingue una guarigione da una
   regressione), e il **06 va applicato prima del 07** (il 07 scriverebbe percorsi che il 06 sposta).
 
+### 15. L'esecuzione: cosa è entrato, e cosa la misura ha cambiato
+
+**17/10/2026**, quattro ticket in parallelo su worktree isolati (slave `agy`), integrati uno alla volta dal
+committente, con l'ordine della decisione 14 rispettato.
+
+- **05** — root pulita (4 file cancellati, 34,3 MiB fuori dal tracking), `streamHandler` ridotto a tre righe
+  inline. *I «test orfani» erano tre, non otto*: `mongoConnect`/`retry` e i test di caratterizzazione del DNA
+  sono vivi (decisione della revisione, verificata prima di applicarla).
+- **06** — l'assetto: il modulo in `services/graph/` (rinomine, pacchetto intatto), `keywords/`, 19 script via
+  con la loro storia e lo **sha di recupero**, `erdb` promosso a modulo. *Il `git mv` non porta i 666 MB non
+  tracciati*: spostati a mano, con le regole di `.gitignore` — e la pipeline risponde dalla root
+  (`PYTHONPATH=services`) vedendo il canone.
+- **38** — **la causa vera non era quella dedotta dalla revisione**: non la forma degli id, ma **il cap
+  applicato prima dei filtri** (con `anime: 'exclude'`, 18 dei primi 20 id erano anime → ne restavano 2-3;
+  con `anime: 'neutral'` la stessa richiesta ne restituisce 20). Misurato sul deploy, non dedotto. Il medium
+  perso dalle stringhe era un **secondo** difetto, reale e corretto. Il ticket resta aperto: la parte che
+  resta è del **12**, e ora è scritta lì.
+- **15** — il modulo libreria e la porta di lettura: zero asserzioni cambiate, zero lettori dei modelli fuori
+  dal modulo.
+- **l'IDOR chiuso** (era il primo criterio del ticket 10, e non poteva aspettare la superficie nuova):
+  `src/middleware/sessione.js` con `richiedeSessione`, e i **13** accessori `req.body.userId` /
+  `req.query.userId` diventati `req.utenteId`. Nello stesso giro è caduto un secondo guasto che nessuno aveva
+  nominato: `bolle.js` leggeva `req.cookies` che **nessuno parsava** su quel percorso, quindi
+  `POST /api/bolle` rispondeva 401 sempre.
+
+**La lezione operativa**, che vale più dei commit: le quattro smentite del modello di frontiera sono arrivate
+tutte dalla stessa parte — **la misura**. Il revisore aveva visto solo le prime tre sezioni del digest; gli
+slave, che avevano il codice e il container sotto mano, hanno corretto due sue deduzioni e hanno trovato la
+causa vera.
+
 ## Not yet specified
 
 - **Dove vive `hierarchical_graph.json`** (1 MB tracciato, letto da `HierarchicalGraph.js:18-20` con un
@@ -320,25 +350,24 @@ rilievi sulle sezioni 4-13 erano dedotti dalle citazioni: alcuni reggevano, due 
 
 ## Il primo passo, quando si parte
 
-**L'ordine è cambiato il 17/10/2026** dopo la revisione esterna (decisione 14). Questo elenco dice l'ordine,
-non sostituisce i `Blocked by:` nei ticket, che restano la verità.
+**Eseguito il 17/10/2026** (decisione 15): 05, 06, 38 e 15 sono **in `main`** (commit locali, non ancora
+pushati — il deploy parte col push). In corso, in parallelo, su worktree isolati: **07**, **12**, **16**.
+
+Il resto è a valle loro, e l'ordine non cambia:
 
 ```
-38 (diagnosi)  → 06 + 05  → ┃ 07 (Python)  ∥  [15 → 12 (Node)]  ┃  → 08 → 09
-                                        → 16 → 10 → 11 → 17 → 13
+07 + 12  → 08  → 09            (il prodotto parla col servizio; l'artefatto esce dal prodotto)
+16       → 10  → 11  → 17      (la superficie di dominio, il client, l'export statico)
+08 + 12  → 13                  (i docs del grafo)
 ```
 
-I due motivi, che sono misure e non gusti: il **38** prima di tutto perché i ticket 08 e 12 si collaudano
-confrontando i conteggi delle righe (senza il bug noto, non si sa se un numero cambiato è una guarigione o
-una regressione); il **06** prima del **07** perché il 07 scrive `Dockerfile`, entrypoint e percorsi del
-modulo, e il 06 li sposta.
+I motivi, che sono misure: il **38** prima di 08/12 perché quei ticket si collaudano confrontando i conteggi;
+il **06** prima del **07** perché il 07 scrive percorsi che il 06 sposta; il **15/16** prima del **10** perché
+se no le rotte nuove copiano la logica che il 16 sta spostando.
 
-**Le altre catene**: `15 → 12` in parallelo a `07`, perché modificano file diversi (Node vs Python) e `08`
-entra una volta sola nel modulo pool; `15 → 16` prima di `10`, se no le rotte nuove copiano la logica che il
-15/16 stanno spostando.
+**Dopo il push**, sul mate: la checklist del ticket 06 — `mv /srv/yaca/modulo/graph/data
+/srv/yaca/modulo/services/graph/data` (138 MB non tracciati) e `PYTHONPATH=services` per i cron che
+invocano la pipeline.
 
-**Aperti e prendibili ora**: **05**, **06**, **07** — più la diagnosi del 38, che vive nella mappa
-`suggerimenti` ma blocca il collaudo di questa.
-
-**Chiusi**: **01**, **02**, **03**, **14** (grilling) e **04** (ricerca) — le decisioni 8–12 qui sopra. Il **06**
-è deciso (decisione 13) ma **aperto**: la sua applicazione è sua.
+**Chiusi**: 01, 02, 03, 04, 14 (grilling e ricerca). **In `main`**: 05, 06, 38, 15. **In corso**: 07, 12, 16.
+**Aperti e non ancora prendibili**: 08, 09, 10, 11, 13, 17 (e il 06 per la sua parte sul mate).
