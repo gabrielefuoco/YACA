@@ -16,16 +16,9 @@ const {
     SORT_MAP
 } = require('../stremio');
 const { traktClient } = require('../clients/trakt');
-<<<<<<< HEAD
-const { updateStremioAddonCollection } = require('../utils/stremioAddon');
-const UserConfig = require('../models/UserConfig');
+const getUserConfig = () => require('../models/UserConfig');
 const AddonConfig = require('../models/AddonConfig');
 const UserAccount = require('../models/UserAccount');
-=======
-const getUserConfig = () => require('../models/UserConfig');
-const AddonConfig = require('../db/models/AddonConfig');
-const UserAccount = require('../db/models/UserAccount');
->>>>>>> t35-stremio
 const CacheManager = require('../cache/CacheManager');
 const axios = require('axios');
 const path = require('path');
