@@ -3,13 +3,14 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 
-const { erdbIdDaNomeFile, eventoDaNomeFile } = require('../cache/posterDaEvento');
-const { posterUrl } = require('../erdb/build');
-const { scarica, scrivi } = require('../cache/drenaPoster');
-
 // Cartella dei poster già composti: in produzione è un volume montato in /data/erdb-cache,
 // in sviluppo/test la si punta altrove con ERDB_CACHE_DIR.
 const DEFAULT_CACHE_DIR = '/data/erdb-cache';
+const getCacheDir = () => process.env.ERDB_CACHE_DIR || DEFAULT_CACHE_DIR;
+module.exports.getCacheDir = getCacheDir;
+module.exports.DEFAULT_CACHE_DIR = DEFAULT_CACHE_DIR;
+
+const { erdbIdDaNomeFile, eventoDaNomeFile, posterUrl, scarica, scrivi } = require('../posters');
 
 // I file serviti sono immutabili (produotti altrove e copiati sul server): 24 ore va bene.
 // Il 404 invece dura pochi minuti, così se il poster arriva dopo compare subito.
@@ -22,10 +23,6 @@ const CONTENT_TYPES = {
     '.jpeg': 'image/jpeg',
     '.webp': 'image/webp'
 };
-
-// Unica fonte di verità sulla cartella dei poster: la riusa anche il drenatore, così i due
-// non possono divergere (se divergessero i file prodotti non sarebbero mai serviti).
-const getCacheDir = () => process.env.ERDB_CACHE_DIR || DEFAULT_CACHE_DIR;
 
 // Il parametro della rotta arriva già decodificato (`%2e%2e%2f` è già `../`), quindi qui si
 // ragiona sul nome "grezzo": nessun separatore, nessun risalimento, nessun byte null.
@@ -138,9 +135,7 @@ const mettiInCoda = (fileName, badge) => {
     const chiave = `${evento.tipo}|${evento.id}`;
 
     try {
-        // `require` pigro, dentro il `try`: se il modulo non si carica è un "non posso",
-        // non un guasto che deve uscire dalla rotta.
-        const coda = require('../cache/codaEventi');
+        const coda = require('../posters').codaEventi;
         Promise.resolve(coda.push(evento))
             .then((accodato) => {
                 // Solo quando è entrato davvero: se era già in attesa è idempotenza, e
@@ -254,7 +249,7 @@ router.get('/erdb-poster/:file', (req, res) => {
         }
         // Se il file ora c'è lo si serve da disco (stessi header di un file già presente:
         // il `Cache-Control` è quello da HIT perché il file è in cartella, ora).
-        if (reso) {
+        if (reso || filePresente(filePath)) {
             return inviaFile(res, filePath, contentType);
         }
         const fallback = fallbackAmmesso(req.query.fallback);

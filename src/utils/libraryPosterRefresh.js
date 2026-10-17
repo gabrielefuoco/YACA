@@ -31,8 +31,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { BADGE_IMG_VERSION } = require('../catalog/formatters/posterBadgeVersion');
-const { erdbIdDaNomeFile } = require('../cache/posterDaEvento');
-const { posterFileName } = require('../erdb/build');
+const { erdbIdDaNomeFile, posterFileName } = require('../posters');
 const { normalizeLegacyPosterHost } = require('../library/identity');
 
 const COMPOSED_PREFIX = '/images/poster/';

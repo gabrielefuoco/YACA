@@ -8,7 +8,7 @@ Wants=network-online.target
 # Se `docker` non sta in /usr/bin sul server, cambia quel percorso qui dentro.
 #
 # PERCHÉ `docker exec` E NON NODE SULL'HOST (a differenza degli altri timer, che girano nativi):
-# lo script è `scripts/drena-coda-poster.js`, quindi ha bisogno delle dipendenze DELL'APP
+# il comando è `src/posters/drenaCodaPoster.js` (con `scripts/drena-coda-poster.js` come shim), quindi ha bisogno delle dipendenze DELL'APP
 # (ioredis per la coda, better-sqlite3/DuckDB per la mappa anime) e della rete del compose
 # (`REDIS_URL=redis://redis:6379` non è risolvibile dall'host: `redis` è un nome interno).
 # Dentro `yaca-app` inoltre `ERDB_CACHE_DIR=/data/erdb-cache` è il volume `yaca_erdb_cache`,
@@ -29,7 +29,7 @@ Type=oneshot
 EnvironmentFile=-/srv/yaca/.env
 Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 WorkingDirectory=/srv/yaca
-ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=${ERDB_LOCAL_BASE} -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node scripts/drena-coda-poster.js
+ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=${ERDB_LOCAL_BASE} -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node src/posters/drenaCodaPoster.js
 Restart=no
 # Lo script ha già un watchdog interno di 10 minuti (coda + mappa anime). Il default di systemd
 # per un oneshot sono 90 s e taglierebbe un giro che sta caricando la mappa: qui si lascia il

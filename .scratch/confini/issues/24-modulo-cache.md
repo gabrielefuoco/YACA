@@ -125,3 +125,5 @@ Tutte le risposte memorizzate dichiarano il loro TTL esplicito accanto alla voce
 ### 7. Cosa resta (fuori da questo ticket)
 - **Modulo poster**: la gestione dei file ERDB, poster statici composti, coda eventi e drenatore (`posterDaEvento.js`, `codaEventi.js`, `drenaPoster.js`) è un dominio autonomo con consumatore fuori processo (timer di sistema) assegnato al ticket 25 in parallelo. Tali file sono stati lasciati intatti.
 
+
+**Il poster è il ticket 25** (): il modulo vive in  (con  dentro), il drenatore resta un **comando** per il timer di sistema, e le unità sull'host vanno riportate a mano ( →  +  + ).

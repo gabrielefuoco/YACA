@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const erdb = require('../../src/erdb/build');
+const erdb = require('../../src/posters/erdb/build');
 
 if (require.main === module) {
     erdb.main();

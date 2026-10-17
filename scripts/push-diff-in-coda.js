@@ -56,7 +56,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const codaEventi = require('../src/cache/codaEventi');
+const { codaEventi } = require('../src/posters');
 const redisClient = require('../src/cache/redisClient');
 
 const FILE_NAME = 'ita_annotations.diff.json';
