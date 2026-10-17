@@ -17,8 +17,32 @@ interpreta), `src/data/presets.js` (**543 righe** di definizioni), `src/data/fil
 **Il modulo possiede il tipo e la validazione** — dice **cosa è un catalogo** (kind, mediaSet, anime, filtri,
 ordinamento, preset) e sa dire se una definizione è **legittima**. **Non produce titoli.**
 
-Il confine, in una riga: **il catalogo è un tipo, il feed è chi lo serve.** Il *servirlo* resta fuori (il
+**C'è una natura sola di catalogo** (deciso lo stesso giorno): **la riga hero è un preset di sistema**, e il tipo
+copre tutto. La conseguenza è più forte di quella di un registro: se la riga hero è una definizione come le
+altre, allora il manifest, le impronte, i kind e il `getHeroPoolSpec()` sono **derivati dal tipo** — e la trappola
+dei «dieci posti che definiscono una riga hero» non si risolve tenendoli allineati, si risolve perché **c'è un
+posto solo da cui tutto discende**. Il tipo deve quindi portare anche i campi che oggi hanno solo le righe di
+sistema (priorità, additive, «non modificabile dall'utente»), dichiarati come proprietà di quella specie.
+
+**Il confine, in una riga**: **il catalogo è un tipo, il feed è chi lo serve.** Il *servirlo* resta fuori (il
 `CatalogRouter`, i sei provider, gli handler, i formatter).
+
+**La forma è un oggetto dichiarativo, e i preset diventano dati del modulo** (deciso lo stesso giorno): nome,
+emoji, `mediaSet`, l'asse anime, i filtri, l'ordinamento, le proprietà di sistema (priorità, additive) — e la
+**parte filtri è l'ingresso del compilatore** dell'indice (decisione del ticket 22). `src/data/presets.js` (543
+righe) e le 12 righe hero di `registry.js` **migrano alla forma nuova**: una forma sola, due dataset (di sistema
+e dell'utente).
+
+**La validazione è l'intersezione di due dichiarazioni** (deciso lo stesso giorno): il tipo dichiara **la lingua**
+(i filtri ammessi, i kind, i mediaSet, gli ordinamenti) e **il servire dichiara le sue capacità** — *«questo
+filtro lo servo, questo no»* — nel **registro delle fonti** del ticket 22. La validazione le incrocia **senza
+dipendere dal servire**: il tipo non importa i provider, consulta ciò che essi dichiarano. Così una definizione
+invalida si scopre **prima** di provarla, e l'anteprima può dire anche *perché* è invalida.
+
+**Il contratto dell'anteprima è nel tipo, i numeri nel servire** (deciso lo stesso giorno): il modulo dichiara
+*cosa un'anteprima deve rispondere* (le card e la **forma** della diagnosi: candidati, entrati, tagliati per
+filtro), e i **conteggi** li produce il servire, che è l'unico che sa *perché* un titolo è stato scartato. La forma
+è una sola (nessun consumatore se la inventa), e la verità sui numeri sta dove i numeri nascono.
 
 **L'anteprima è il primo *consumatore* del tipo**, e vive dove vive il servirlo: il modulo possiede il
 **contratto** dell'anteprima (cosa deve rispondere: card + diagnosi dei filtri), non la sua esecuzione. Il motivo

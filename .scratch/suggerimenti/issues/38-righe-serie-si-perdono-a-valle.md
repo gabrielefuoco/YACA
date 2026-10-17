@@ -253,3 +253,21 @@ Tutte e tre le domande sono state verificate ed eseguite direttamente in produzi
     `[Mondi] movie: seed da archivio 15, da Trakt 0 · mondi 44 · passo fuori 60`
     `[Mondi] catalogo yaca_passo_fuori_movies: serviti 20 titoli (cache=miss)`.
 
+
+---
+
+## Misura del 17/10/2026, dopo il deploy del 19 (cache v14, fix dei semi in produzione)
+
+| riga | prima del fix | dopo |
+|---|---|---|
+| `yaca_passo_fuori_series` | 1-2 | **20** ✓ |
+| **`yaca_mondi_series`** | 20 (dopo il deploy dell'08) | **3** ✗ |
+
+**Il fix dei semi ha sistemato «un passo fuori» e ha spostato la perdita su «il tuo mondo».** Ipotesi da
+verificare (NON diagnosi): la riga `il_tuo_mondo` sceglie **il mondo più acceso**, e con i semi filtrati quel
+mondo è ancora un mondo anime — che il filtro a valle riduce a 3. Se è così, la domanda che resta non è più «i
+semi» ma **«la scelta del mondo»**: `il_tuo_mondo` deve scegliere il mondo **compatibile con i selettori del
+profilo**, non il più acceso in assoluto.
+
+La verifica è la stessa sonda a quattro bordi (servizio → pool → `cardSurvivesFilters` → risposta HTTP), per
+`yaca_mondi_series`, col profilo `anime: exclude`.
