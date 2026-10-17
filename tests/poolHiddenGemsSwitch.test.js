@@ -17,7 +17,8 @@ const {
     assignHeroPools,
     getHeroCatalogId,
     ensurePoolItem,
-    getRecommendationId
+    getRecommendationId,
+    buildSharedHeroCacheKey
 } = require('../src/pool');
 const duckDbStore = require('../src/indice/duckDbStore');
 
@@ -128,5 +129,58 @@ describe('Pool Hidden Gems Switch (Ticket 41 - Switch OFF vs ON)', () => {
             const id = getRecommendationId(item);
             expect(tbIds.has(id)).toBe(false);
         }
+    });
+
+    test('con switch OFF, la strategia hidden_gems esegue il vecchio motore e NON il fornitore nuovo', async () => {
+        setFlagNewHiddenGems(false);
+
+        const catalogStrategies = require('../src/engines/hybrid/catalogStrategies');
+        const indice = require('../src/indice');
+
+        const oldSpy = jest.spyOn(catalogStrategies, 'buildHiddenGemsCatalog').mockResolvedValueOnce([
+            { id: 'tmdb:123', matchScore: 80, motivo: 'vecchio_motore' }
+        ]);
+        const newSpy = jest.spyOn(indice, 'candidati');
+
+        const strat = HERO_STRATEGIES.find(s => s.slug === 'hidden_gems');
+        const ctx = {
+            userId: 'u_switch_off',
+            context: 'global',
+            mediaType: 'movie',
+            heroCandidateLimit: 20,
+            kidsMode: false,
+            effectiveSelectors: { anime: 'neutral' },
+            tmdbApiKey: 'test'
+        };
+
+        const result = await strat.run(ctx);
+        expect(oldSpy).toHaveBeenCalledTimes(1);
+        expect(newSpy).not.toHaveBeenCalled();
+        expect(result).toEqual([
+            { id: 'tmdb:123', matchScore: 80, motivo: 'vecchio_motore' }
+        ]);
+
+        oldSpy.mockRestore();
+        newSpy.mockRestore();
+    });
+
+    test('lo stato dello switch produce chiavi di cache distinte (nessuna collisione)', () => {
+        const baseParams = {
+            userId: 'user_cache',
+            context: 'global',
+            mediaType: 'movie',
+            kidsMode: false,
+            typeSelectors: {}
+        };
+
+        setFlagNewHiddenGems(false);
+        const keyOff = buildSharedHeroCacheKey(baseParams);
+
+        setFlagNewHiddenGems(true);
+        const keyOn = buildSharedHeroCacheKey(baseParams);
+
+        expect(keyOff).not.toBe(keyOn);
+        expect(keyOff).toMatch(/^user_cache_global_heroes_v14_movie$/);
+        expect(keyOn).toMatch(/^user_cache_global_heroes_v14_movie_hg$/);
     });
 });
