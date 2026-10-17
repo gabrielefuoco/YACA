@@ -16,6 +16,7 @@ const {
     SORT_MAP
 } = require('../stremio');
 const { traktClient } = require('../clients/trakt');
+const getUserConfig = () => require('../models/UserConfig');
 const AddonConfig = require('../models/AddonConfig');
 const { accountDi, trovaAccountPerEmailOAuthKey } = require('../configurazione');
 const CacheManager = require('../cache/CacheManager');

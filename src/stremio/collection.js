@@ -1,5 +1,5 @@
 const { stremioClient, stremioLikesClient } = require('./client');
-const { accountDi } = require('../configurazione');
+const { accountDi, traktDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
 const { getPresets } = require('../data/presets');
@@ -268,8 +268,8 @@ async function pushToTrakt(userId, data) {
     const safeUserId = validateAndNormalizeSafeId(userId);
     if (!safeUserId) return;
 
-    const account = await UserAccount.findOne({ userId: safeUserId }).lean();
-    const traktToken = account?.apiKeys?.trakt;
+    const trakt = await traktDi(safeUserId);
+    const traktToken = trakt?.accessToken;
     if (!traktToken) return;
 
     const { syncTraktRatings } = require('../clients/trakt');
