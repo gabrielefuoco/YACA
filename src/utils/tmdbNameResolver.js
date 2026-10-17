@@ -1,4 +1,5 @@
 const { createTmdbClient } = require('../clients/tmdb');
+const { leggi, scrivi, deriva } = require('../cache');
 const { dnaNamesCache } = require('../cache/cacheInstances');
 const { isRetiredTmdbKeywordId } = require('../data/keywordIds');
 
@@ -108,18 +109,42 @@ function getEndpointForType(type) {
     }
 }
 
+const DNA_NAMES_CACHE_VERSION = 1;
+
 /**
- * Normalizes cache key for an item. Actor and Director map to person:id.
+ * Builds the cache description for a DNA item (Map Decision 24).
+ *
+ * @param {string} type
+ * @param {string|number} id
+ * @returns {object}
+ */
+function getDnaNameDesc(type, id) {
+    const t = String(type || '').trim().toLowerCase();
+    const strId = String(id !== undefined && id !== null ? id : '').trim();
+    const normalizedType = (t === 'actor' || t === 'director') ? 'person' : t;
+    return {
+        nome: 'dna_names',
+        versione: DNA_NAMES_CACHE_VERSION,
+        dipendenze: {
+            varia: {
+                type: normalizedType,
+                id: strId
+            }
+        }
+    };
+}
+
+/**
+ * Normalizes cache key for an item via the cache module (Map Decision 24).
+ * Actor and Director map to person:id.
+ * Also used as a deduplication Map key.
  *
  * @param {string} type
  * @param {string|number} id
  * @returns {string}
  */
 function getCacheKey(type, id) {
-    const t = String(type || '').trim().toLowerCase();
-    const strId = String(id !== undefined && id !== null ? id : '').trim();
-    const normalizedType = (t === 'actor' || t === 'director') ? 'person' : t;
-    return `${normalizedType}:${strId}`;
+    return deriva(getDnaNameDesc(type, id)).chiave;
 }
 
 /**
@@ -188,10 +213,10 @@ async function resolveDnaNames(items, options = {}) {
             continue;
         }
 
-        // Check cache
-        const cacheKey = getCacheKey(item.type, item.id);
+        // Check cache via cache module (Map Decision 24)
         if (!forceRefresh) {
-            const cachedName = await dnaNamesCache.get(cacheKey);
+            const desc = getDnaNameDesc(item.type, item.id);
+            const { value: cachedName } = await leggi(desc);
             if (cachedName) {
                 item.name = cachedName;
                 continue;
@@ -257,19 +282,20 @@ async function resolveDnaNames(items, options = {}) {
             try {
                 const requestTimeout = Math.max(100, Math.min(1000, remainingMs));
                 const res = await client.get(`${endpoint}/${req.id}`, { timeout: requestTimeout });
+                const desc = getDnaNameDesc(req.type, req.id);
                 if (res?.data?.name) {
                     const resolvedName = String(res.data.name).trim();
                     resolvedMap.set(key, resolvedName);
-                    await dnaNamesCache.set(key, resolvedName);
+                    await scrivi(desc, resolvedName);
                 } else {
                     const fallback = getReadableFallback(req.type, req.id);
                     resolvedMap.set(key, fallback);
-                    await dnaNamesCache.set(key, fallback);
+                    await scrivi(desc, fallback);
                 }
             } catch (err) {
                 const fallback = getReadableFallback(req.type, req.id);
                 resolvedMap.set(key, fallback);
-                await dnaNamesCache.set(key, fallback);
+                await scrivi(getDnaNameDesc(req.type, req.id), fallback);
             }
         }));
 

@@ -337,6 +337,32 @@ describe('Modulo Cache (Ticket 24)', () => {
             expect(letto.status).toBe('fresh');
             expect(letto.value).toEqual({ aggiornato: true });
         });
+
+        test('deduplicazione concorrente: due letture parallele su chiave fredda eseguono il costruttore una volta', async () => {
+            const testDesc = {
+                nome: 'heroes',
+                dipendenze: {
+                    varia: { utente: 'test_user_concurrent_cold', profilo: 'test_prof', media: 'movie' }
+                },
+                ttl: 60000
+            };
+
+            let buildCount = 0;
+            const slowBuilder = async () => {
+                buildCount++;
+                await new Promise(r => setTimeout(r, 50));
+                return { risultato: 'costruito_concorrente' };
+            };
+
+            const [res1, res2] = await Promise.all([
+                cache.leggi(testDesc, slowBuilder),
+                cache.leggi(testDesc, slowBuilder)
+            ]);
+
+            expect(res1).toEqual({ risultato: 'costruito_concorrente' });
+            expect(res2).toEqual({ risultato: 'costruito_concorrente' });
+            expect(buildCount).toBe(1);
+        });
     });
 
 });

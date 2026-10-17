@@ -196,6 +196,48 @@ describe('Modulo Ricerca (Ticket 22 — seconda metà)', () => {
             expect(res.items).toEqual([]);
             expect(res.motivi.length).toBeGreaterThan(0);
         });
+
+        test('una fonte interna che solleva (lock DuckDB/FTS5) degrada senza eccezioni: candidati parziali e motivo in motivi[]', async () => {
+            const { registerSource, defineSourceEntry, getSource } = require('../src/ricerca');
+            const originalDuckdb = getSource('duckdb');
+
+            const faultyDuckdb = defineSourceEntry({
+                id: 'duckdb',
+                name: 'DuckDB Faulty',
+                kind: 'index',
+                appliesToCatalog: () => false,
+                serveCatalog: async () => [],
+                appliesToSearch: () => true,
+                search: async () => {
+                    throw new Error('DuckDB lock: database is locked');
+                }
+            });
+
+            registerSource(faultyDuckdb);
+
+            try {
+                const mockTmdbClient = {
+                    get: jest.fn().mockResolvedValue({
+                        data: {
+                            results: [{ id: 999, title: 'Inception TMDB' }]
+                        }
+                    })
+                };
+
+                const res = await cerca({
+                    q: 'Inception',
+                    tipo: 'titolo',
+                    client: mockTmdbClient
+                });
+
+                expect(res).toBeDefined();
+                expect(res.items.length).toBe(1);
+                expect(res.items[0].title).toBe('Inception TMDB');
+                expect(res.motivi.some(m => m.includes('fonte_duckdb_degradata: DuckDB lock'))).toBe(true);
+            } finally {
+                registerSource(originalDuckdb);
+            }
+        });
     });
 
     describe('3. Fusione e ordinamento (proprietà del modulo ricerca)', () => {

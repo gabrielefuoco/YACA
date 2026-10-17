@@ -3,6 +3,7 @@ const {
     resolveDnaItem,
     isPlaceholderName,
     getReadableFallback,
+    getCacheKey,
     clearDnaNamesCache
 } = require('../src/utils/tmdbNameResolver');
 const { processProfiles } = require('../src/api/configure/profileProcessor');
@@ -220,5 +221,18 @@ describe('DNA Names Resolver & Integration', () => {
             expect(item).toHaveProperty('name');
             expect(typeof item.id).toBe('string');
         });
+    });
+
+    test('8. getCacheKey deriva la chiave tramite il modulo cache, include la versione e mappa actor/director a person', () => {
+        const kPerson = getCacheKey('person', '6193');
+        const kActor = getCacheKey('actor', '6193');
+        const kDirector = getCacheKey('director', '6193');
+
+        expect(kPerson).toMatch(/^dna_names:v\d+:/);
+        expect(kActor).toBe(kPerson);
+        expect(kDirector).toBe(kPerson);
+
+        const kOther = getCacheKey('person', '525');
+        expect(kOther).not.toBe(kPerson);
     });
 });

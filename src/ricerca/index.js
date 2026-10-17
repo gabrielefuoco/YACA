@@ -50,7 +50,8 @@ const {
 
 const {
     SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
-    buildSearchUnderstandingPrompt
+    buildSearchUnderstandingPrompt,
+    buildAiPrompt
 } = require('./prompts');
 
 module.exports = {
@@ -86,5 +87,6 @@ module.exports = {
     // AI
     richiediComprensioneAI,
     SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
-    buildSearchUnderstandingPrompt
+    buildSearchUnderstandingPrompt,
+    buildAiPrompt
 };

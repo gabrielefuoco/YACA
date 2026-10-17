@@ -47,9 +47,9 @@ async function richiediComprensioneAI({
     }
 
     try {
-        // Tentativo con Mistral SDK se disponibile
-        const { Mistral } = require('@mistralai/mistralai');
-        const client = new Mistral({ apiKey });
+        // Meccanismo AI condiviso (Map Decision 22)
+        const { createAiClient } = require('../ai');
+        const client = createAiClient({ apiKey });
 
         const response = await client.chat.complete({
             model: 'mistral-small-latest',

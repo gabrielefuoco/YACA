@@ -51,7 +51,12 @@ async function routeCatalogRequest(args, userConfig, tmdbClient, tmdbApiKey, act
 
     const source = findSourceForCatalog(requestContext);
     if (source) {
-        return await source.serveCatalog(requestContext);
+        try {
+            return await source.serveCatalog(requestContext);
+        } catch (err) {
+            console.error(`[CatalogRouter] Errore serveCatalog per fonte ${source.id}:`, err.message);
+            return [];
+        }
     }
 
     return [];

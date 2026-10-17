@@ -344,6 +344,23 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
             expect(r2.errors.some(e => e.code === 'ERR_SOURCE_UNSUPPORTED_FILTER')).toBe(true);
         });
 
+        test('Rifiuta definizione multi-query se il secondo blocco contiene un filtro non supportato', () => {
+            const r = validateCatalogDefinition({
+                id: 'test_multi_invalid_second_block',
+                name: 'Multi Query Invalid Second Block',
+                mediaSet: ['film'],
+                anime: 'no',
+                filters: {
+                    queries: [
+                        { strategy: 'discovery', sort_by: 'popularity.desc' },
+                        { strategy: 'discovery', filtro_che_non_esiste: 123 }
+                    ]
+                }
+            });
+            expect(r.valid).toBe(false);
+            expect(r.errors.some(e => e.code === 'ERR_SOURCE_UNSUPPORTED_FILTER' && e.field === 'filters[1].filtro_che_non_esiste')).toBe(true);
+        });
+
         test('Valida con successo una definizione corretta', () => {
             const r = validateCatalogDefinition({
                 id: 'preset_pop_movies',

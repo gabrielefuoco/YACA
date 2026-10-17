@@ -1,12 +1,13 @@
 /**
  * src/ricerca/prompts.js
  *
- * I PROMPT DELLA RICERCA (Ticket 22).
+ * I PROMPT DELLA RICERCA (Ticket 22 / Decisione 22).
  *
  * Principio architetturale:
  * "L'AI fornisce il meccanismo, non i prompt: ogni modulo possiede i suoi" (Decisione Ticket 22).
- * Questo file definisce i prompt specifici per la comprensione delle query di ricerca,
- * trasformando una richiesta utente in linguaggio naturale in filtri ed entità strutturate.
+ * Questo file definisce i prompt specialistici del modulo ricerca:
+ * 1. Comprensione semantica delle query utente in linguaggio naturale (search understanding);
+ * 2. Query planning e compiti di ricerca verso l'architettura TMDB (buildAiPrompt).
  */
 
 const SEARCH_UNDERSTANDING_SYSTEM_PROMPT = `Sei l'analizzatore semantico delle ricerche cinematografiche e serie TV di YACA.
@@ -41,7 +42,190 @@ function buildSearchUnderstandingPrompt(query, context = {}) {
     return `Analizza la seguente query di ricerca:${hintSection}\n"${String(query).trim()}"`;
 }
 
+// ============================================================================
+// Query Planning & TMDB Search Prompts (ex src/ai/prompts.js, ora in src/ricerca/)
+// ============================================================================
+
+const BASE_RULES = `You are a TMDB Query Architect. Your job is to convert user input into precise TMDB search tasks.
+
+### CORE RULES (FOLLOW STRICTLY):
+- Never use markdown.
+- Always reply with raw JSON only.
+- Translate descriptive concepts to simple English nouns before using them in keyword fields.
+- Use pipe ('|') for OR logic and comma (',') for AND logic.
+- RULE: For keywords, use ONLY ONE operator per query block. Use EITHER comma (,) for AND, OR pipe (|) for OR. NEVER mix them in the same string. Example valid: 'cyberpunk|neon'. Example invalid: 'cyberpunk|neon, hacker'.
+- Use numerical TMDB genre IDs in genre_ids arrays.
+- Keep the user's intent intact. Do not invent filters that were not requested.
+- Default to TMDB-compatible tasks.
+
+### LANGUAGE RULES:
+- "in inglese", "in english" -> "language": "en-US"
+- "tradotti in italiano", "in italiano" -> "language": "it-IT"
+- "film italiani" -> "original_language": "it"
+- "film americani" -> "original_language": "en"
+
+### KEYWORD RULES:
+- "natalizia", "natale" -> "christmas"
+- "balene" -> "whale"
+- "isekai" -> "isekai"
+- "anime" -> "anime"
+- "kdrama", "k-drama" -> "kdrama"
+- "zodiacali", "zodiaco" -> "zodiac"
+- "robot", "mecha" -> "robot"
+- "alieni", "alieno" -> "alien"
+- "fantasmi", "fantasma" -> "ghost"
+- "maghi", "mago" -> "wizard"
+- "draghi", "drago" -> "dragon"
+- "mostri", "mostro" -> "monster"
+- "animali" -> "animal"
+- "bambini" -> "children"
+- "zombie" -> "zombie"
+- "viaggi nel tempo" -> "time travel"
+- "cyberpunk" -> "cyberpunk"
+- "steampunk" -> "steampunk"
+- "squali", "squalo" -> "shark"
+- "vampiri", "vampiro" -> "vampire"
+- "pirati", "pirata" -> "pirate"
+- "apocalisse", "post-apocalittico" -> "apocalypse"
+- "ninja" -> "ninja"
+- "samurai" -> "samurai"
+- "spionaggio", "spie" -> "spy"
+- "supereroi", "supereroe" -> "superhero"
+- For other topics, translate to the closest simple English noun.
+
+### GENRE HINTS:
+- "azione" -> 28
+- "avventura" -> 12
+- "animazione" -> 16
+- "commedia" -> 35
+- "crime" -> 80
+- "documentario" -> 99
+- "dramma" -> 18
+- "famiglia" -> 10751
+- "fantasy" -> 14
+- "storia" -> 36
+- "horror" -> 27
+- "musica" -> 10402
+- "mistero" -> 9648
+- "romantico" -> 10749
+- "fantascienza" -> 878
+- "thriller" -> 53
+- "guerra" -> 10752
+- "western" -> 37`;
+
+const SCHEMAS = {
+    single_query: `### TASK:
+Return exactly one JSON object describing the best TMDB query or a static recommendation list.
+- If the user asks for a recommendation list of specific titles (e.g. "dammi i 10 film horror più spaventosi", "la lista dei tuoi film preferiti", "consigliami 5 serie tv di fantascienza"), use the "static_list" strategy and return the titles in "static_items".
+- Note: The type of list (movies or series) must be consistent. Avoid mixing them.
+
+### RESPONSE FORMAT:
+{
+  "strategy": "discovery" | "multi_search" | "similar" | "static_list",
+  "static_items": ["string"] | null,
+  "similar_to": "string" | null,
+  "text_search": "string" | null,
+  "genre_ids": [12, 16] | null,
+  "people_list": ["string"] | null,
+  "year_from": "YYYY" | null,
+  "year_to": "YYYY" | null,
+  "runtime_lte": 120 | null,
+  "company_name": "string" | null,
+  "watch_provider": "netflix" | "amazon" | "disney" | "apple" | null,
+  "keyword": "string" | null,
+  "original_language": "en" | "it" | "ja" | "ko" | null,
+  "language": "it-IT" | "en-US" | "es-ES" | "fr-FR" | null,
+  "sort_by": "popularity.desc" | "revenue.desc" | "primary_release_date.desc" | "vote_average.desc" | null,
+  "vote_average_gte": 8.0 | null,
+  "vote_average_lte": 4.5 | null,
+  "without_genre_ids": [10749, 27] | null,
+  "without_keyword": "string" | null,
+  "certification_lte": "PG-13" | "R" | null,
+  "runtime_gte": 180 | null,
+  "target": "tmdb" | "trakt"
+}`,
+    multi_query: `### TASK:
+Act as a Query Planner. Return a JSON object with a "queries" array or a static list.
+- If the user asks for a recommendation list of specific titles (e.g. "dammi i 10 migliori film di sempre", "la lista dei tuoi film preferiti"), return a single query block with "strategy": "static_list" and a "static_items" array of plain movie/show titles.
+- Use "multi_search" ONLY for exact titles (e.g. "Breaking Bad", "Avatar").
+- NEVER use "multi_search" for a list of topics, genres, or keywords. Always use "discovery" for these.
+- Use "similar" when the user explicitly asks for works like another title.
+- Use "discovery" for vibe, cast, genre, year, plot, or provider constraints.
+
+### RESPONSE FORMAT:
+{
+  "strategy": "discovery" | "multi_search" | "similar" | "static_list",
+  "static_items": ["string"] | null,
+  "queries": [
+    {
+      "strategy": "discovery" | "multi_search" | "similar",
+      "similar_to": "string" | null,
+      "text_search": "string" | null,
+      "genre_ids": [12, 16] | null,
+      "people_list": ["string"] | null,
+      "year_from": "YYYY" | null,
+      "year_to": "YYYY" | null,
+      "runtime_lte": 120 | null,
+      "company_name": "string" | null,
+      "watch_provider": "netflix" | "amazon" | "disney" | "apple" | null,
+      "keyword": "string" | null,
+      "original_language": "en" | "it" | "ja" | "ko" | null,
+      "language": "it-IT" | "en-US" | "es-ES" | "fr-FR" | null,
+      "sort_by": "popularity.desc" | "revenue.desc" | "primary_release_date.desc" | "vote_average.desc" | null,
+      "vote_average_gte": 8.0 | null,
+      "vote_average_lte": 4.5 | null,
+      "without_genre_ids": [10749, 27] | null,
+      "without_keyword": "string" | null,
+      "certification_lte": "PG-13" | "R" | null,
+      "runtime_gte": 180 | null,
+      "target": "tmdb" | null
+    }
+  ]
+}`
+};
+
+const EXAMPLES = {
+    single_query: `### EXAMPLES:
+- Query: "Film tipo Interstellar" -> { "strategy": "similar", "similar_to": "Interstellar", "target": "tmdb" }
+- Query: "Breaking Bad" -> { "strategy": "multi_search", "text_search": "Breaking Bad", "target": "tmdb" }
+- Query: "Film thriller anni 90 con Brad Pitt" -> { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }
+- Query: "I 5 film di zombie migliori" -> { "strategy": "static_list", "static_items": ["Train to Busan", "28 Days Later", "Shaun of the Dead", "Zombieland", "Night of the Living Dead"] }`,
+    multi_query: `### EXAMPLES:
+- Query: "Io amo Game of Thrones ma la mia ragazza Bridgerton" -> {
+  "queries": [
+    { "strategy": "similar", "similar_to": "Game of Thrones", "target": "tmdb" },
+    { "strategy": "similar", "similar_to": "Bridgerton", "target": "tmdb" },
+    { "strategy": "discovery", "keyword": "politics|romance", "genre_ids": [18, 10765], "target": "tmdb" }
+  ]
+}
+- Query: "Avatar" -> {
+  "queries": [
+    { "strategy": "multi_search", "text_search": "Avatar", "target": "tmdb" }
+  ]
+}
+- Query: "Thriller anni 90 con Brad Pitt e Morgan Freeman" -> {
+  "queries": [
+    { "strategy": "discovery", "genre_ids": [53], "people_list": ["Brad Pitt"], "year_from": "1990", "year_to": "1999", "target": "tmdb" },
+    { "strategy": "discovery", "genre_ids": [53], "people_list": ["Morgan Freeman"], "year_from": "1990", "year_to": "1999", "target": "tmdb" }
+  ]
+}
+- Query: "Le 3 serie tv sci-fi più famose di sempre" -> {
+  "strategy": "static_list",
+  "static_items": ["Star Trek: The Next Generation", "Doctor Who", "The X-Files"]
+}`
+};
+
+function buildAiPrompt(taskType = 'single_query') {
+    const schema = SCHEMAS[taskType] || SCHEMAS.single_query;
+    const examples = EXAMPLES[taskType] || EXAMPLES.single_query;
+    return [BASE_RULES, schema, examples].join('\n\n');
+}
+
 module.exports = {
     SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
-    buildSearchUnderstandingPrompt
+    buildSearchUnderstandingPrompt,
+    BASE_RULES,
+    SCHEMAS,
+    EXAMPLES,
+    buildAiPrompt
 };
