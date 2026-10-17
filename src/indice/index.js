@@ -125,6 +125,29 @@ class IndiceModule {
     }
 
     /**
+     * Fornitore di candidati spiegati per gusto (Ticket 41 - Prima fetta).
+     *
+     * @param {Object} contesto Contesto profilo già RISOLTO (contestoDi)
+     * @param {Object} [options] Opzioni { mediaType, strategia, limit }
+     * @returns {Promise<{ candidati: Array<Object>, motivi: Array<string> }>}
+     */
+    async candidati(contesto, options = {}) {
+        const { candidati } = require('./candidati');
+        return candidati(contesto, {
+            db: this.duckDb,
+            queryCompiler: this.compiler,
+            ...options
+        });
+    }
+
+    /**
+     * Alias semantico per il fornitore di candidati di gusto.
+     */
+    async candidatiPerGusto(contesto, options = {}) {
+        return this.candidati(contesto, options);
+    }
+
+    /**
      * Chiusura pulita delle risorse.
      */
     async close(callback) {

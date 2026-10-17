@@ -102,6 +102,9 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
     let historyDocs = [];
     try {
         const HistoryModel = getHistoryModel();
+        if (HistoryModel?.db && HistoryModel.db.readyState !== 1) {
+            return { seeds: new Map(), counts: buckets ? { loved: 0, liked: 0, watched: 0, library: 0 } : {} };
+        }
         historyDocs = await HistoryModel.find({ owner: userId, context: ctx }).lean();
         if (!Array.isArray(historyDocs)) historyDocs = [];
     } catch (_e) {

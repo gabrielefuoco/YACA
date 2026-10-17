@@ -12,7 +12,10 @@ const NICHE_MAX_VOTE_BONUS = 2.5;
 const { isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
 const { G } = require('../catalog/filters');
 const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../indice/keywordIds');
-const { resolveAnimePolicy, computeAnimeScoreMultiplier } = require('../anime');
+const { resolveAnimePolicy, computeAnimeScoreMultiplier, isAnimeContent } = require('../anime');
+
+const HIDDEN_CHILD_ORIENTED_GENRE_IDS = new Set(['16', '10751', '10762']);
+const HIDDEN_MUSIC_GENRE_ID = 10402;
 
 function clampScore(value) {
     return Math.min(Math.max(value, 0), 10);
@@ -579,6 +582,53 @@ class ProfileScorer {
         }
 
         return result;
+    }
+
+    /**
+     * Verifica l'allineamento tematico e di gusto di un titolo con il profilo VSM per hidden_gems.
+     * @param {Object} item Oggetto film o serie (con genre_ids/genres, keywords, etc.)
+     * @param {Object} profile Profilo di gusto (TasteProfile)
+     * @param {string} tipo 'movie' | 'tv' | 'series'
+     * @returns {boolean}
+     */
+    static isHiddenGemAlignedWithProfile(item, profile, tipo = 'movie') {
+        const vector = profile?.compiledVectors?.V_final;
+        if (!vector || typeof vector !== 'object' || Object.keys(vector).length === 0) return true;
+
+        const genreIds = (item.genre_ids || (item.genres ? item.genres.map(g => String(g.id || g)) : [])).map(String);
+        const keywordItems = Array.isArray(item.keywords)
+            ? item.keywords
+            : (item.keywords?.results || item.keywords?.keywords || []);
+        const keywordIds = [...new Set(keywordItems.map(k => {
+            const id = typeof k === 'object' && k !== null ? (k.id ?? k.name) : k;
+            return id !== null && id !== undefined ? String(id) : null;
+        }).filter(Boolean))];
+
+        const hasAffinityForAny = (prefix, ids) => ids.some(id => this.getVectorScore(vector, prefix, id) > 0);
+
+        const hasDnaAffinity = hasAffinityForAny('g', genreIds) || hasAffinityForAny('k', keywordIds);
+        if (!hasDnaAffinity) return false;
+
+        const childGenreIds = genreIds.filter(id => HIDDEN_CHILD_ORIENTED_GENRE_IDS.has(id));
+        const hasChildGenreAffinity = hasAffinityForAny('g', childGenreIds);
+        if (childGenreIds.length > 0 && !hasChildGenreAffinity) return false;
+
+        const isAnime = isAnimeContent({
+            tmdbId: item.id ?? item._tmdbId,
+            genreIds,
+            originalLanguage: item.original_language,
+            keywords: keywordItems,
+            tipo: tipo === 'movie' ? 'movie' : 'tv'
+        });
+        const isMangaAdaptation = keywordItems.some(k => (
+            typeof k?.name === 'string' && /based on manga/i.test(k.name)
+        ));
+        if ((isAnime || isMangaAdaptation) && !hasChildGenreAffinity) return false;
+
+        if (genreIds.includes(String(HIDDEN_MUSIC_GENRE_ID))
+            && this.getVectorScore(vector, 'g', HIDDEN_MUSIC_GENRE_ID) <= 0) return false;
+
+        return true;
     }
 }
 

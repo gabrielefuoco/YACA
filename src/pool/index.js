@@ -27,13 +27,14 @@ const {
     fetchHiddenGemsFallbackIds,
     fetchTraktRecommendationsRawDetailed
 } = require('../engines/hybrid/dataFetchers');
+const catalogStrategies = require('../engines/hybrid/catalogStrategies');
 const {
     buildTopGenresMixCatalog,
     buildHybridCatalog,
     buildHiddenGemsCatalog,
     buildTraktFilteredCatalog,
     buildTraktFilteredCatalogWithMeta
-} = require('../engines/hybrid/catalogStrategies');
+} = catalogStrategies;
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const graphClient = require('../clients/graphClient');
@@ -73,6 +74,7 @@ function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSel
                 media: mediaType,
                 kids: kidsMode,
                 selettori: typeSelectors,
+                ...(isNewHiddenGemsActive() ? { nuova_catena_hidden_gems: 'true' } : {}),
                 ...(sl ? { slider: sl } : {})
             },
             invalida: {
@@ -173,6 +175,59 @@ async function runPoolBuilder(builder, fallbackBuilder, label, args) {
     }
 }
 
+function isNewHiddenGemsActive() {
+    return process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS === 'true';
+}
+
+function setFlagNewHiddenGems(val) {
+    if (val === null || val === undefined) {
+        delete process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS;
+    } else {
+        process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS = String(val);
+    }
+}
+
+async function buildHiddenGemsOnNewProvider(ctx) {
+    const indice = require('../indice');
+    const resolvedContext = (ctx.context && typeof ctx.context === 'object' && ctx.context.selettoriEffettivi)
+        ? {
+            ...ctx.context,
+            tasteProfile: ctx.tasteProfile || ctx.profile || ctx.context.tasteProfile || ctx.context.profile || null,
+            profile: ctx.tasteProfile || ctx.profile || ctx.context.profile || null
+        }
+        : {
+            userId: ctx.userId,
+            profileId: typeof ctx.context === 'string' ? ctx.context : (ctx.context?.profileId || 'global'),
+            addonUuid: ctx.userConfig?.uuid || ctx.userConfig?.addonUuid || null,
+            selettoriEffettivi: ctx.effectiveSelectors || {},
+            kidsMode: Boolean(ctx.kidsMode),
+            sliders: ctx.sliders || ctx.slider || {},
+            tasteProfile: ctx.tasteProfile || ctx.profile || null,
+            profile: ctx.tasteProfile || ctx.profile || null
+        };
+
+    const result = await indice.candidati(resolvedContext, {
+        mediaType: ctx.mediaType,
+        strategia: 'hidden_gems',
+        limit: ctx.heroCandidateLimit
+    });
+
+    if (result?.candidati && result.candidati.length > 0) {
+        const items = result.candidati.map(c => ({
+            id: String(c.id),
+            matchScore: Math.min(100, Math.max(1, Math.round((c.punteggio || 0) * 10))),
+            motivo: c.motivo,
+            punteggio: c.punteggio,
+            genres: c.genres
+        }));
+        items.ids = items;
+        items.meta = { motivi: result.motivi || [] };
+        return items;
+    }
+
+    return fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors);
+}
+
 /**
  * Definizione a lista delle strategie nel modulo pool.
  * Le quattro strategie hero producono candidati per l'assegnazione disgiunta.
@@ -211,8 +266,11 @@ const HERO_STRATEGIES = [
         slug: 'hidden_gems',
         additive: false,
         run: async (ctx) => {
+            if (isNewHiddenGemsActive()) {
+                return await buildHiddenGemsOnNewProvider(ctx);
+            }
             return await runPoolBuilder(
-                buildHiddenGemsCatalog,
+                catalogStrategies.buildHiddenGemsCatalog,
                 () => fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors),
                 'hidden_gems',
                 [ctx.userId, ctx.context, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.effectiveSelectors, ctx.heroCandidateLimit]
@@ -448,7 +506,9 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         communityFallbackWithMeta,
         sharedTraktResult,
         sliders: resolvedSliders,
-        slider: resolvedSliders
+        slider: resolvedSliders,
+        tasteProfile: profile || null,
+        profile: profile || null
     };
 
     // Eseguiamo le strategie esclusive in parallelo
@@ -543,6 +603,7 @@ function toHeroDesc(args, keyOrDesc) {
                 media: args?.mediaType,
                 kids: args?.kidsMode,
                 selettori: args?.typeSelectors,
+                ...(isNewHiddenGemsActive() ? { nuova_catena_hidden_gems: 'true' } : {}),
                 ...(sl ? { slider: sl } : {})
             },
             invalida: {
@@ -624,25 +685,16 @@ async function getHeroPool(params) {
         || undefined;
 
     const graphVersions = await graphClient.getGraphHealthVersions();
-    const heroDesc = {
-        nome: 'heroes',
-        versione: HERO_CACHE_KEY_VERSION,
-        dipendenze: {
-            varia: {
-                utente: userId,
-                profilo: context,
-                media: mediaType,
-                kids: kidsMode,
-                selettori: typeSelectors,
-                ...(resolvedSliders ? { slider: resolvedSliders } : {})
-            },
-            invalida: {
-                artefatto: graphVersions?.artefatto,
-                ricetta: graphVersions?.ricetta
-            }
-        },
-        ttl: 7 * 24 * 60 * 60 * 1000
-    };
+    const heroDesc = toHeroDesc({
+        userId,
+        context,
+        mediaType,
+        kidsMode,
+        typeSelectors,
+        graphVersions,
+        sliders: resolvedSliders,
+        slider: resolvedSliders
+    });
     const sharedGroup = await getSharedHeroCatalogs({
         userId,
         context,
@@ -689,5 +741,8 @@ module.exports = {
     HERO_PRIORITY,
     SLUG_ADDITIVI,
     HERO_STRATEGIES,
-    graphClient
+    graphClient,
+    isNewHiddenGemsActive,
+    setFlagNewHiddenGems,
+    buildHiddenGemsOnNewProvider
 };
