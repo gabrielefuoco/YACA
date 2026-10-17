@@ -109,4 +109,35 @@ describe('Stremio Protocol Fixes', () => {
         });
 
     });
+
+    describe('(c) CatalogRouter con provider che solleva: zero eccezioni, il client riceve []', () => {
+        test('un provider il cui serveCatalog solleva eccezione restituisce [] e non lancia al client', async () => {
+            const { registerSource, defineSourceEntry, getSource } = require('../src/ricerca');
+            const originalDuckdb = getSource('duckdb');
+
+            const crashingSource = defineSourceEntry({
+                id: 'duckdb',
+                name: 'DuckDB Crashing Provider',
+                kind: 'index',
+                appliesToCatalog: () => true,
+                serveCatalog: async () => {
+                    throw new Error('Database disk image is malformed or lock timeout');
+                },
+                appliesToSearch: () => false,
+                search: async () => []
+            });
+
+            registerSource(crashingSource);
+
+            try {
+                const args = { id: 'preset_top_rated_movies', type: 'movie' };
+                const result = await routeCatalogRequest(args);
+
+                expect(result).toBeDefined();
+                expect(result).toEqual([]);
+            } finally {
+                registerSource(originalDuckdb);
+            }
+        });
+    });
 });

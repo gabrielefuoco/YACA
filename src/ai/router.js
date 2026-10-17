@@ -1,6 +1,6 @@
-const { Mistral } = require('@mistralai/mistralai');
-const { buildAiPrompt } = require('./prompts');
-const { aiPromptCache } = require('../cache/cacheInstances');
+const { createAiClient } = require('./client');
+const { buildAiPrompt } = require('../ricerca/prompts');
+const { leggi, scrivi, deriva } = require('../cache');
 
 // ============================================
 // FUNCTIONS
@@ -114,6 +114,30 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
     }
 }
 
+const AI_PROMPT_CACHE_VERSION = 1;
+
+/**
+ * Costruisce la descrizione di cache per il prompt AI (Map Decision 24).
+ *
+ * @param {string} prompt
+ * @param {string} taskType
+ * @param {boolean} kidsMode
+ * @returns {object}
+ */
+function getAiPromptDesc(prompt, taskType, kidsMode) {
+    return {
+        nome: 'ai_prompt',
+        versione: AI_PROMPT_CACHE_VERSION,
+        dipendenze: {
+            varia: {
+                prompt: String(prompt || '').trim().toLowerCase(),
+                taskType,
+                kidsMode: Boolean(kidsMode)
+            }
+        }
+    };
+}
+
 /**
  * Utilizzato durante la fase di CONFIG per le liste custom e anche per live search di Stremio.
  * Mappa la richiesta libera dell'utente ai parametri TMDB basandosi sulle regole avanzate.
@@ -127,9 +151,9 @@ function parseMistralResponse(content, originalPrompt, taskType = 'single_query'
 async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'single_query', kidsMode = false) {
     if (!prompt) return buildFallbackResponse(prompt, taskType);
 
-    const cacheKey = `prompt:${kidsMode ? 'kids:' : ''}${taskType}:${prompt.trim().toLowerCase()}`;
+    const desc = getAiPromptDesc(prompt, taskType, kidsMode);
     try {
-        const cached = await aiPromptCache.get(cacheKey);
+        const { value: cached } = await leggi(desc);
         if (cached) {
             console.log(`[AI Search] Cache HIT per: "${prompt}"`);
             return cached;
@@ -142,7 +166,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'sin
         return buildFallbackResponse(prompt, taskType);
     }
     try {
-        const client = new Mistral({ apiKey: mistralKey, timeout: 25000 });
+        const client = createAiClient({ apiKey: mistralKey, timeout: 25000 });
 
         let systemPrompt = buildAiPrompt(taskType);
         if (kidsMode) {
@@ -173,7 +197,7 @@ async function generateTmdbFiltersFromPrompt(prompt, mistralKey, taskType = 'sin
 
         if (parsed && parsed.strategy !== 'multi_search') {
             try {
-                await aiPromptCache.set(cacheKey, parsed);
+                await scrivi(desc, parsed);
             } catch (cacheErr) {
                 console.warn("[AI Search] Errore scrittura cache:", cacheErr.message);
             }
@@ -205,5 +229,7 @@ async function routeLiveStremioSearch(searchQuery, mistralKey, kidsMode = false)
 
 module.exports = {
     generateTmdbFiltersFromPrompt,
-    routeLiveStremioSearch
+    routeLiveStremioSearch,
+    getAiPromptDesc,
+    AI_PROMPT_CACHE_VERSION
 };

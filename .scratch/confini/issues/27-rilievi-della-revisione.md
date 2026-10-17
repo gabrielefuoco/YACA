@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 27 — I rilievi della revisione: i bug, i confini da imporre, i residui
@@ -91,3 +91,61 @@ Suite toccate: `tests/ricercaDoor.test.js` 19/19, `tests/catalogTypeAndValidatio
 **Non fatto, e perché**: il **confine 1** (le due chiavi di cache costruite a mano) e il **confine 4** (i prompt della ricerca dentro `src/ai/`) richiedono di riscrivere i mock di `tests/aiSearch.test.js` (che mocka `get`/`set` mentre `leggi` usa `getWithStatus`) — lavoro meccanico ma non banale, rimandato. I **4 test di copertura** restano da scrivere.
 
 **Quello che il confine 1 richiede** (già verificato): il caso `default` di `deriva` in `src/cache/index.js` costruisce una chiave **con la versione** (`${nome}:v${versione}:hash(invalida):hash(varia)`) → i due chiamanti devono solo passare una descrizione `{nome, versione, dipendenze:{varia}, ttl}` e usare `leggi`/`scrivi` con `{instance}`. Chiavi attuali: `ai/router.js:130` (`prompt:…`) e `utils/tmdbNameResolver.js:118` (`tipo:id`), quest'ultima usata anche come chiave di deduplicazione (va bene: resta una stringa unica per coppia).
+
+## Esito (completamento) — Confini 1 e 4, e i 4 test di copertura, 18/10/2026
+
+### 1. Confine 1: Le due chiavi di cache costruite a mano ricondotte all'API del modulo cache (Decisione 24)
+
+1. **`src/utils/tmdbNameResolver.js`**:
+   - `getCacheKey(type, id)` e l'accesso diretto a `dnaNamesCache.get/.set` sono stati sostituiti con la descrizione `{ nome: 'dna_names', versione: 1, dipendenze: { varia: { type, id } } }`.
+   - La lettura usa `leggi(desc)` e la scrittura usa `scrivi(desc, val)`.
+   - `getCacheKey` delega a `deriva(desc).chiave`, preservando la sua funzione come chiave di deduplicazione in Map (rimane una stringa deterministica e unica per coppia `(normalizedType, id)`).
+   - Test aggiunto in `tests/dnaNames.test.js`: verifica che la chiave derivata contenga la versione (`:v1:`) e che normalizzi `actor` e `director` su `person`.
+
+2. **`src/ai/router.js`**:
+   - La chiave template `prompt:${kidsMode ? 'kids:' : ''}${taskType}:${prompt.trim().toLowerCase()}` e l'accesso diretto ad `aiPromptCache.get/.set` sono stati rimossi.
+   - Si usa la descrizione `{ nome: 'ai_prompt', versione: 1, dipendenze: { varia: { prompt, taskType, kidsMode } } }` con `leggi(desc)` e `scrivi(desc, parsed)`.
+   - **Allineamento mock e asserzioni in `tests/aiSearch.test.js`**:
+     - Il mock di `aiPromptCache` è stato allineato per supportare `getWithStatus` (oltre a `get` e `set`), poiché `leggi` senza costruttore interroga lo stato della cache via `instance.getWithStatus(chiave)`.
+     - L'asserzione sulla chiave è passata dalla stringa artigianale alla chiave derivata (`ai_prompt:v1:<hash_invalida>:<hash_varia>`).
+     - **Cosa è cambiato e perché**: l'asserzione fissa ora la forma derivata canonica con versione esplicita (`:v1:`) invece di una stringa ad-hoc non versionata. Il test mantiene e rafforza le semantiche contrattuali: stessi ingressi generano la stessa chiave deterministica, mentre cambiare prompt, taskType, kidsMode o versione genera chiavi rigorosamente distinte.
+
+### 2. Confine 4: I prompt della ricerca spostati in `src/ricerca/` e meccanismo AI condiviso (Decisione 22)
+
+1. **Spostamento prompt**:
+   - I prompt di ricerca (`BASE_RULES`, `SCHEMAS`, `EXAMPLES`, `buildAiPrompt`) sono stati traslocati da `src/ai/prompts.js` a `src/ricerca/prompts.js` (e riesportati da `src/ricerca/index.js`).
+   - `src/ai/prompts.js` non contiene più prompt di ricerca (svuotato; resta solo commento di confine architetturale).
+   - `src/ai/router.js` importa `buildAiPrompt` da `../ricerca/prompts`.
+   - **Prova `grep`**:
+     - `git grep -n "Query Architect" src/ai/` → 0 occorrenze in `src/ai/` (trovato solo in `src/ricerca/prompts.js:49`).
+     - `git grep -n "single_query" src/ai/prompts.js` → 0 occorrenze.
+2. **Meccanismo AI condiviso**:
+   - Creato `src/ai/client.js` e `src/ai/index.js` che incapsulano la fabbrica del client (`createAiClient({ apiKey, timeout })`).
+   - `src/ricerca/aiAdapter.js` non istanzia più `new Mistral({ apiKey })` direttamente con l'SDK, ma usa il meccanismo condiviso `createAiClient` esposto da `src/ai`.
+   - **Prova `grep`**: `git grep -n "new Mistral" src/ricerca/` → 0 occorrenze.
+
+### 3. I quattro test di copertura
+
+1. **(a) Cache, deduplicazione concorrente**:
+   - Aggiunto test in `tests/cacheModule.test.js`: due letture parallele (`Promise.all`) con costruttore asincrono lento su chiave fredda eseguono il costruttore una sola volta (`expect(buildCount).toBe(1)`), sfruttando il promise coalescing di `CacheManager`.
+2. **(b) Ricerca, degrado di fonte interna che solleva**:
+   - Aggiunto test in `tests/ricercaDoor.test.js`: una fonte interna (`duckdb`) registrata che solleva eccezione (simulando lock DuckDB o errore FTS5) non fa fallire `cerca`; la porta risponde con codice sicuro 200/payload valido, restituisce i candidati parziali (es. TMDB) e annota il fallimento in `motivi[]` (`fonte_duckdb_degradata`).
+3. **(c) Catalogo, validazione definizioni multi-query**:
+   - Aggiunto test in `tests/catalogTypeAndValidation.test.js`: definizione con `queries: [{ valido }, { invalido: filtro_inesistente }]` produce `valid: false` e traccia `ERR_SOURCE_UNSUPPORTED_FILTER @ filters[1].filtro_che_non_esiste`.
+4. **(d) `CatalogRouter` con provider che solleva eccezione**:
+   - In `src/catalog/CatalogRouter.js` aggiunto blocco `try/catch` protettivo attorno a `source.serveCatalog(requestContext)` che registra l'errore e restituisce `[]`.
+   - Aggiunto test in `tests/stremioProtocolFixes.test.js`: fonte con `serveCatalog` che lancia eccezione restituisce `[]` e garantisce zero eccezioni verso il client di Stremio.
+
+### 4. Conteggio esecuzioni suite di test
+
+Tutte le suite toccate sono state eseguite singolarmente con successo:
+- `tests/cacheModule.test.js`: **17/17 passati**
+- `tests/dnaNames.test.js`: **8/8 passati**
+- `tests/aiSearch.test.js`: **5/5 passati**
+- `tests/ricercaDoor.test.js`: **20/20 passati**
+- `tests/catalogTypeAndValidation.test.js`: **26/26 passati**
+- `tests/stremioProtocolFixes.test.js`: **7/7 passati**
+- Totale test suite toccate: **83/83 passati**.
+
+### 5. Cosa non è stato fatto (e perché)
+- Nessun file dell'area anime (`src/data/animeMappingStore.js`, `src/data/animeAiringState.js`, `src/utils/animeIdentity.js`, `src/engines/hybrid/animePolicy.js`, `src/pool/index.js`) o di `services/anime-source/**` è stato toccato, in rispetto del lock parallelo con altri agenti.
