@@ -607,3 +607,23 @@ confine dichiarato non è un confine imposto (rilievo 2 del ticket 27).
   `findSourceForCatalog` legge l'array `CATALOG_EVALUATION_ORDER` → la sostituzione non aveva effetto. L'ha
   rivelato un test che **passava per il motivo sbagliato** (veniva servito dalla fonte vera, che in quel worktree
   rispondeva `[]` per caso): un test verde per caso è peggio di un test rosso, perché nessuno lo guarda.
+
+### 24. Cosa del vecchio stack serve al nuovo (ticket 39)
+
+**18/10/2026.** Misurato prima di promettere una cancellazione: il vecchio stack è **12 file e 5.879 righe**, e
+**tutti e 12** sono importati dall'esterno — ma la differenza che conta è **da chi**. Due li importa il **percorso
+che serve** (`catalogHandler`, `metaHandler` ← le rotte: atteso, si sostituisce), sette li importano **solo i
+test**, e **tre sono ponti veri**:
+
+1. **`HierarchicalGraph` (243)** ← **l'indice, il profilo e il dna**: è una *struttura dati*, non vecchio stack.
+   Va salvata nel modulo che la possiede.
+2. **`graphClient` (124)** ← `api/bolle.js` e `api/mondi.js`: è il **client del servizio del grafo** (roba nuova
+   nella cartella sbagliata). Va spostato fuori da `pool/`.
+3. **La catena ibrida** — `catalog/providers/{HybridProvider,AiDiscoveryProvider}` → `hybridRecommendations`
+   (459) → `pool` (655) → `dataFetchers` (417) + `catalogStrategies` (1.599): **i provider NUOVI dipendono dal
+   vecchio motore per 2.670 righe.** Qui non si salva, si **sostituisce**: è l'ultimo modulo da costruire, e
+   finché quella catena esiste il vecchio stack non si può cancellare — non perché serva le rotte vecchie, ma
+   perché serve **i provider nuovi**.
+
+**La distinzione che vale il ticket**: «il vecchio stack serve le rotte vecchie» (pianificato) contro «il vecchio
+stack serve i moduli nuovi» (dipendenza nascosta, e va tolta) è la differenza fra un lavoro e un guasto silenzioso.
