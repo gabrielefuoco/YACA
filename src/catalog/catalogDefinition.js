@@ -74,7 +74,7 @@ function catalogContentParams({ type, extra, directFilters, catalogMeta, activeP
     };
 }
 
-function buildCatalogCacheKey({
+function buildCatalogDesc({
     id,
     baseId,
     type,
@@ -84,11 +84,12 @@ function buildCatalogCacheKey({
     catalogMeta,
     userConfig,
     activeProfileSettings,
-    badgeVersion = BADGE_CATALOG_VERSION
+    badgeVersion = BADGE_CATALOG_VERSION,
+    ttl
 } = {}) {
     const presetIds = getPresetIds();
     const condiviso = presetIds.has(baseId);
-    const { chiave } = cache.deriva({
+    return {
         nome: 'catalog_page',
         versione: badgeVersion,
         dipendenze: {
@@ -112,8 +113,14 @@ function buildCatalogCacheKey({
                 badgeVersion,
                 catalogDef: canonicalCatalogDefinition(catalogMeta)
             }
-        }
-    });
+        },
+        ...(ttl !== undefined ? { ttl } : {})
+    };
+}
+
+function buildCatalogCacheKey(params = {}) {
+    const desc = buildCatalogDesc(params);
+    const { chiave } = cache.deriva(desc);
     return chiave;
 }
 
@@ -122,6 +129,7 @@ module.exports = {
     canonicalCatalogDefinition,
     resolveCatalogDefinition,
     catalogContentParams,
+    buildCatalogDesc,
     buildCatalogCacheKey,
     getPresetIds
 };
