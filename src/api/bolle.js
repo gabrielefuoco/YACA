@@ -2,7 +2,7 @@
  * LA ROTTA DEL GRAFO — `POST /api/bolle`.
  *
  * Prende il profilo dalla sessione (come fa `catalog.js`), legge la sua cronologia da `WatchHistory` e
- * chiede le liste a `src/bolle/raccomanda.js`. Il calcolo sta la': qui c'e' solo il collegamento
+ * chiede le liste a `src/clients/graphClient.js` (servizio grafo). Il calcolo sta la': qui c'e' solo il collegamento
  * — autenticazione, query, risposta — che e' esattamente la parte che va scritta guardando come lo fa il
  * resto del prodotto, e non inventata.
  *
