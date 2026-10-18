@@ -6,7 +6,7 @@ const {
     resolveDnaNames,
     getReadableFallback,
     GENRE_ID_TO_NAME
-} = require('../../utils/tmdbNameResolver');
+} = require('../../profile/tmdbNameResolver');
 const { isRetiredTmdbKeywordId } = require('../../indice/keywordIds');
 const { sanitizeCustomCatalogs } = require('./validators');
 
