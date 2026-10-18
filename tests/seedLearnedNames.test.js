@@ -34,7 +34,7 @@ const mockPercorso = path.join(os.tmpdir(), 'seed-learned-names-test.db');
  */
 const mockRigheTabella = { n: 0, esiste: false };
 
-jest.mock('../src/db/learnedNames', () => ({
+jest.mock('../src/ricerca/learnedNames', () => ({
     learnNames: jest.fn(async () => 0),
     searchLearnedNames: jest.fn(async () => []),
     learnedNamesPath: () => mockPercorso,
@@ -52,7 +52,7 @@ jest.mock('../src/db/learnedNames', () => ({
     })
 }));
 
-const archivio = require('../src/db/learnedNames');
+const archivio = require('../src/ricerca/learnedNames');
 const {
     main,
     codiceUscita,

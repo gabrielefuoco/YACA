@@ -11,7 +11,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { LearnedNamesStore, learnNames, searchLearnedNames, normalizeText, titleTokens, toLearnableRow, MAX_ROWS, PRUNE_TARGET } = require('../src/db/learnedNames');
+const { LearnedNamesStore, learnNames, searchLearnedNames, normalizeText, titleTokens, toLearnableRow, MAX_ROWS, PRUNE_TARGET } = require('../src/ricerca/learnedNames');
 
 /** Una cartella temporanea che sparisce a fine test (Windows: qualche tentativo, non e' un test). */
 function tempDir(nome) {
@@ -309,7 +309,7 @@ describe('dall\'arricchimento all\'archivio: il giro completo', () => {
         // pigro, durante la richiesta, e deve trovare **questa** istanza e non quella del
         // file, altrimenti scriverebbe sul path di default.
         jest.resetModules();
-        const archivio = require('../src/db/learnedNames');
+        const archivio = require('../src/ricerca/learnedNames');
         const arricchimento = require('../src/ricerca/tier2Enrich');
         return { arricchimento, archivio };
     }

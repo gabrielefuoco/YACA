@@ -8,7 +8,7 @@
 
 /** L'archivio e' finto: qui si conta quanto e' stato scritto, non si tocca il disco. */
 const mockLearnNames = jest.fn(async () => 1);
-jest.mock('../src/db/learnedNames', () => ({
+jest.mock('../src/ricerca/learnedNames', () => ({
     learnNames: (...args) => mockLearnNames(...args),
     searchLearnedNames: jest.fn(async () => [])
 }));

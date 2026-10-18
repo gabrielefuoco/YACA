@@ -42,7 +42,7 @@ const {
     toLearnableRow,
     // Serve solo per contare le righe davvero presenti nella tabella, senza aprirla in scrittura.
     LearnedNamesStore
-} = require('../src/db/learnedNames');
+} = require('../src/ricerca');
 
 // Le due famiglie di chiavi, esattamente come le costruisce `src/clients/tmdb.js`.
 // `KEY_PATTERNS` e' l'unico posto in cui sono nominate: `parseKey` accetta le due forme
@@ -68,7 +68,7 @@ const INTERVALLO_ATTESA_REDIS_MS = 100;
  *   - la famiglia `v2:*` nasce da `getTmdbMovieDetails`, che invece riceve gia' `'tv'`
  *     (`src/stremio/processors/MetadataHydrator.js`).
  * Quindi in Redis le serie compaiono con **due** nomi diversi, e vanno entrambe lette come `tv`:
- * e' il valore che l'app usa in scrittura (`toLearnableRow` in `src/db/learnedNames.js`) e che
+ * e' il valore che l'app usa in scrittura (`toLearnableRow` in `src/ricerca/learnedNames.js`) e che
  * chiede in lettura (`toTier2Type` in `src/ricerca/tier2Search.js`, che filtra per
  * `media_type = 'tv'`). Rimandare `series` a `movie` — com'era prima — scriveva tutte le serie
  * come film: non le trovava la ricerca serie e ne inquinava quella dei film.

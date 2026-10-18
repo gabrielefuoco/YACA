@@ -5,7 +5,7 @@
 //
 // Fasi isolate del percorso `routeCatalogRequest` → ricerca:
 //   A. FTS5 del Tier 2   (src/db/tier2Index.js, SQLite in sola lettura)
-//   B. nomi imparati     (src/db/learnedNames.js, LIKE senza indice — ripresa in sola lettura)
+//   B. nomi imparati     (src/ricerca/learnedNames.js, LIKE senza indice — ripresa in sola lettura)
 //   C. arricchimento con cache CALDA: GET su Redis dei dettagli TMDB gia' in cache
 //      + JSON.parse, cioe' quello che costa una ricerca ripetuta
 //   D. la stessa A+B per un termine che non trova nulla (solo costo dell'indice)

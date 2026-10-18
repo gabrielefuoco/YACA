@@ -11,7 +11,7 @@ jest.mock('../src/indice/tier2', () => ({ Tier2SearchClient: jest.fn() }));
 
 /** L'archivio finto: un array di righe, e ogni errore si puo' far explodere a piacere. */
 const mockSearchLearnedNames = jest.fn(async () => []);
-jest.mock('../src/db/learnedNames', () => ({
+jest.mock('../src/ricerca/learnedNames', () => ({
     searchLearnedNames: (...args) => mockSearchLearnedNames(...args),
     learnNames: jest.fn(async () => 0)
 }));

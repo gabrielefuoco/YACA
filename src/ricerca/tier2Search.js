@@ -14,7 +14,7 @@
  * restituisce `[]` e la ricerca prosegue esattamente come prima (soli titoli locali).
  * L'indisponibilità viene segnalata **una volta sola**, per non sporcare il log a ogni ricerca.
  *
- * Terza fonte, piccola: i **nomi appresi** (`src/db/learnedNames.js`). Sono i nomi italiani dei
+ * Terza fonte, piccola: i **nomi appresi** (`src/ricerca/learnedNames.js`). Sono i nomi italiani dei
  * titoli del Tier 2 che l'arricchimento ha già visto una volta: cercarli prima non poteva
  * funzionare perché quel nome non esisteva da nessuna parte, adesso esiste. Vengono uniti **in
  * coda** e deduplicati per id, quindi non riordinano e non duplicano nulla di quanto è già
@@ -40,7 +40,7 @@ let _learnedUnavailableLogged = false;
 /** L'archivio dei nomi appresi contiene `better-sqlite3`: si carica solo se serve davvero. */
 let _learnedNames = null;
 function getLearnedNamesModule() {
-    if (!_learnedNames) _learnedNames = require('../db/learnedNames');
+    if (!_learnedNames) _learnedNames = require('./learnedNames');
     return _learnedNames;
 }
 
