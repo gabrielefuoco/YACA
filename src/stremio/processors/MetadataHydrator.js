@@ -2,7 +2,7 @@ const { getTmdbMovieDetails } = require('../../clients/tmdb');
 const { normalizeContentId } = require('../../catalog/contentId');
 const duckDbStore = require('../../indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('../../indice');
-const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../../catalog/constants');
+const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
     if (!tmdbApiKey || !Array.isArray(metas) || metas.length === 0) return;

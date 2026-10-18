@@ -13,7 +13,7 @@
  * - le sue capacità dichiarate (capabilities, conforme a capabilities.js)
  *
  * Ha DUE consumatori:
- * 1. Il Servire (src/catalog/CatalogRouter.js) che consulta il registro per servire un catalogo
+ * 1. Il Servire (src/stremio/CatalogRouter.js) che consulta il registro per servire un catalogo
  * 2. La Ricerca (src/ricerca/door.js) che consulta il registro per recuperare i candidati
  */
 

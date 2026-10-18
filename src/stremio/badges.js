@@ -4,7 +4,7 @@
  * Applicazione badge post-cache (Ticket 41 - Serving su moduli).
  */
 
-const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
+const { EPISODE_CATALOG_IDS } = require('./constants');
 const itaAnnotations = require('../catalog/itaAnnotations');
 const indice = require('../indice');
 const {
@@ -17,7 +17,7 @@ const {
     applyAiringStateBadges,
     findAiringStateDocument
 } = require('../anime');
-const { sanitizeCatalogMeta } = require('../stremio/formatters/StremioFormatter');
+const { sanitizeCatalogMeta } = require('./formatters/StremioFormatter');
 
 const extractTmdbId = extractAnimeTmdbId;
 

@@ -14,7 +14,7 @@ const { createTmdbClient } = require('../clients/tmdb');
 const cache = require('../cache');
 const { getCacheConfig } = require('../cache/CacheManager');
 const { getPresets } = require('../catalog/presets');
-const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
+const { EPISODE_CATALOG_IDS } = require('./constants');
 
 const { routeCatalogRequest } = require('./CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../stremio/processors/MetadataHydrator');

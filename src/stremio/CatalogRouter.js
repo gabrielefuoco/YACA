@@ -1,5 +1,5 @@
 /**
- * src/catalog/CatalogRouter.js
+ * src/stremio/CatalogRouter.js
  *
  * IL DISPATCHER DEI CATALOGHI (Consumatore del Registro delle Fonti).
  *

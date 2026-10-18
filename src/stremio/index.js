@@ -1,15 +1,15 @@
 const client = require('./client');
-const badges = require('./badges');
 const manifest = require('./manifest');
 const fingerprint = require('./fingerprint');
 const collection = require('./collection');
 const reconciler = require('./reconciler');
 
 module.exports = {
-    // Badge post-cache (servire: il feed li applica, il catalogo non li conosce)
-    applyPostCacheBadges: (...a) => badges.applyPostCacheBadges(...a),
-    annotationKeyFor: (...a) => badges.annotationKeyFor(...a),
-    resolveImdbMap: (...a) => badges.resolveImdbMap(...a),
+    // Badge post-cache: require pigro, se no la porta di stremio trascina badges -> indice ->
+    // profile -> library -> stremio al caricamento (ciclo potenziale, segnalato dalla review).
+    applyPostCacheBadges: (...a) => require('./badges').applyPostCacheBadges(...a),
+    annotationKeyFor: (...a) => require('./badges').annotationKeyFor(...a),
+    resolveImdbMap: (...a) => require('./badges').resolveImdbMap(...a),
     // Client
     stremioClient: client.stremioClient,
     stremioLikesClient: client.stremioLikesClient,

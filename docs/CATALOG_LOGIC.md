@@ -46,7 +46,7 @@ graph TD
    - Se l'hash è presente in cache ed è **fresh**, viene restituito immediatamente.
    - Se è **stale** (nella finestra SWR), viene restituito subito il dato archiviato e viene avviata una Promise asincrona in background per aggiornare la cache.
    - Se è un **miss**, la pipeline attende la risoluzione sincrona della fetch.
-5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/catalog/CatalogRouter.js) mappa l'ID del catalogo al provider corretto. **Prima ancora**, se il catalogo richiesto non è conforme ai selettori di tipo del profilo attivo, `catalogHandler` risponde `{ metas: [] }`: copre la finestra in cui Stremio ha ancora in mano il manifest vecchio, senza mai tirare un errore.
+5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/stremio/CatalogRouter.js) mappa l'ID del catalogo al provider corretto. **Prima ancora**, se il catalogo richiesto non è conforme ai selettori di tipo del profilo attivo, `catalogHandler` risponde `{ metas: [] }`: copre la finestra in cui Stremio ha ancora in mano il manifest vecchio, senza mai tirare un errore.
 6. **Filtri Post-Fetch**:
    - **Esclusione di tipi errati**: Filtra elementi il cui `media_type` non corrisponde alla richiesta (es. rimuove film da richieste di serie).
    - **Kids Mode**: se il profilo ha la modalità bambini attiva è un **hard filter**, non un ripiego — vale per i 4 cataloghi hero come per i preset, ed è applicato sia alle query DuckDB sia ai pool e ai risultati finali. Esclude i generi horror (27), thriller (53) e crime (80), **23 keyword adulte** e le certificazioni `TV-MA`/`NC-17`/`R`/`X`, ed è **fail-closed**: un item di cui non si conoscono né generi né keyword viene trattato come non adatto.

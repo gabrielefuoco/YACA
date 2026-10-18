@@ -149,7 +149,7 @@ const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS 
 1. **Navigazione Normale**: Quando un utente apre un catalogo preset su Stremio senza selezionare alcun filtro di ordinamento, la richiesta non include `sortBy`. Il backend esegue la query SQL utilizzando il default curato `catalogMeta.orderBy`.
 2. **Selezione Utente**: Se l'utente seleziona una voce nel menu a tendina di Stremio (es. "Voto Medio"):
    - L'endpoint estrae `extra.sortBy` e lo traduce in formato TMDB tramite `getSortByValue()` (`src/api/stremio.js:28`, chiamata a riga 379).
-   - Il [CatalogRouter](../src/catalog/CatalogRouter.js#L79-L82) rileva `sortBy` e sovrascrive temporaneamente l'ordinamento:
+   - Il [CatalogRouter](../src/stremio/CatalogRouter.js#L79-L82) rileva `sortBy` e sovrascrive temporaneamente l'ordinamento:
      ```javascript
      if (sortBy) {
          const { mapSortBy } = require('./providers/DuckDbProvider');
@@ -157,7 +157,7 @@ const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS 
      }
      ```
    - DuckDB esegue la query con il nuovo `orderBy` e restituisce i risultati ordinati secondo la preferenza temporanea dell'utente.
-3. **Catalogo dell'utente a più query**: sul percorso della Universal Pipeline non c'è un `orderBy` da sovrascrivere — l'override finisce nel `sort_by` di **ogni** query che lo compone ([CatalogRouter.js](../src/catalog/CatalogRouter.js)), così tutte le sorgenti rispettano la scelta dell'utente invece di una sola.
+3. **Catalogo dell'utente a più query**: sul percorso della Universal Pipeline non c'è un `orderBy` da sovrascrivere — l'override finisce nel `sort_by` di **ogni** query che lo compone ([CatalogRouter.js](../src/stremio/CatalogRouter.js)), così tutte le sorgenti rispettano la scelta dell'utente invece di una sola.
 
 ---
 
