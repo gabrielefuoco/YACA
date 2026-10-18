@@ -1,13 +1,13 @@
 // src/catalog/providers/HybridProvider.js
 
-const { getHybridCatalog } = require('../../pool');
+const { getHybridCatalog } = require('../../engines/hybridRecommendations');
 const { HERO_CATALOG_IDS_SET } = require('../registry');
 
 const TASTE_BASED_IDS = HERO_CATALOG_IDS_SET;
 
 /**
  * Provider dei cataloghi basati sul profilo (Taste-based / Hero).
- * Delega direttamente alla porta del compositore unico (Decisione 27).
+ * Delega direttamente alla porta del motore tramite hybridRecommendations.
  */
 async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey, activeProfileSettings) {
     const traktToken = userConfig.apiKeys?.trakt;
@@ -23,15 +23,7 @@ async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey
             targetCatalogId = candidate;
         }
     }
-    // Compatibilità con test che applicano jest.spyOn su engines/hybridRecommendations.getHybridCatalog
-    let runner = getHybridCatalog;
-    try {
-        const hybridRec = require('../../engines/hybridRecommendations');
-        if (hybridRec && typeof hybridRec.getHybridCatalog === 'function' && typeof jest !== 'undefined' && jest && typeof jest.isMockFunction === 'function' && jest.isMockFunction(hybridRec.getHybridCatalog)) {
-            runner = hybridRec.getHybridCatalog;
-        }
-    } catch (_e) {}
-    const pageResults = await runner(targetCatalogId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, effectiveConfig);
+    const pageResults = await getHybridCatalog(targetCatalogId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, effectiveConfig);
     return pageResults || [];
 }
 
