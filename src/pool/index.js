@@ -553,9 +553,6 @@ module.exports = {
     HERO_STRATEGIES,
     runPoolBuilder,
     graphClient,
-    get getHybridCatalog() {
-        return require('./composer').getHybridCatalog;
-    },
     get composer() {
         return require('./composer');
     }

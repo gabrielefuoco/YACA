@@ -9,7 +9,7 @@
  * - fetchPopularFallbackIds: composizione fallback con tie-breakers e dedup regista/collezione
  *
  * Tutte le responsabilità di serving (staleness, sync, cache a 7 giorni, idratazione, impressioni)
- * sono state dissolte e riallocate ai rispettivi proprietari di dominio in src/catalog/providers/HybridProvider.js.
+ * sono state dissolte e riallocate ai rispettivi proprietari di dominio in src/stremio/hybridServing.js.
  */
 
 const { isHeroCatalogId } = require('../catalog/registry');
@@ -243,17 +243,9 @@ async function composeCandidateIds({
     return [];
 }
 
-/**
- * Delegatore sottile per compatibilità verso HybridProvider (Ticket 41 - Decisione 26).
- */
-async function getHybridCatalog(...args) {
-    const { getHybridCatalog: serve } = require('../catalog/providers/HybridProvider');
-    return serve(...args);
-}
 
 module.exports = {
     composeCandidateIds,
     fetchPopularFallbackIds,
     buildDirectPresetCatalog,
-    getHybridCatalog
 };

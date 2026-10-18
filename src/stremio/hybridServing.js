@@ -1,4 +1,4 @@
-// src/catalog/providers/HybridProvider.js
+// src/stremio/hybridServing.js
 
 /**
  * Provider dei cataloghi basati sul profilo (Taste-based / Hero) (Ticket 41 - Decisione 26).
@@ -11,9 +11,9 @@
  * - Impressioni: registra visualizzazioni al primo giro (modulo profile)
  */
 
-const { HERO_CATALOG_IDS_SET } = require('../registry');
-const { ITEMS_PER_PAGE, RECOMMENDATIONS_CACHE_TTL_MS } = require('../../config');
-const cache = require('../../cache');
+const { HERO_CATALOG_IDS_SET } = require('../catalog/registry');
+const { ITEMS_PER_PAGE, RECOMMENDATIONS_CACHE_TTL_MS } = require('../config');
+const cache = require('../cache');
 
 const TASTE_BASED_IDS = HERO_CATALOG_IDS_SET;
 
@@ -21,7 +21,7 @@ const TASTE_BASED_IDS = HERO_CATALOG_IDS_SET;
  * Servizio di orchestrazione del catalogo ibrido/hero per Stremio.
  */
 async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global', userConfig = null) {
-    const { getPresets } = require('../presets');
+    const { getPresets } = require('../catalog/presets');
     const presetsList = getPresets();
     const matchedPreset = presetsList.find(p => p.id === catalogId);
     let mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';
@@ -29,12 +29,12 @@ async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userI
         mediaType = matchedPreset.type === 'series' ? 'series' : 'movie';
     }
 
-    const { contestoDi } = require('../../profile/context');
-    const { getTasteProfile, isProfileSyncDue, registraImpressioni } = require('../../profile');
-    const { syncIncrementalRecommendations } = require('../../library');
-    const { composeCandidateIds, fetchPopularFallbackIds } = require('../../pool/composer');
-    const { idrataEImpaginaCandidati } = require('../idratazione');
-    const { isHeroCatalogId } = require('../registry');
+    const { contestoDi } = require('../profile/context');
+    const { getTasteProfile, isProfileSyncDue, registraImpressioni } = require('../profile');
+    const { syncIncrementalRecommendations } = require('../library');
+    const { composeCandidateIds, fetchPopularFallbackIds } = require('../pool/composer');
+    const { idrataEImpaginaCandidati } = require('./idratazione');
+    const { isHeroCatalogId } = require('../catalog/registry');
 
     const ctx = userConfig?.context || await contestoDi({
         userId,
@@ -175,8 +175,9 @@ async function getEngineHybridCatalog(baseId, type, skip, userConfig, tmdbApiKey
             targetCatalogId = candidate;
         }
     }
-    const { getHybridCatalog } = require('../../pool/composer');
-    const pageResults = await getHybridCatalog(targetCatalogId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, effectiveConfig);
+    // Il servizio è invocato qui, nello stesso modulo che lo possiede: la catena
+    // getEngineHybridCatalog -> pool.composer -> HybridProvider era un rimbalzo (review Standards).
+    const pageResults = await module.exports.serveHybridCatalog(targetCatalogId, skip, traktToken, tmdbApiKey, userConfig.userId, userConfig.activeProfileId, effectiveConfig);
     return pageResults || [];
 }
 

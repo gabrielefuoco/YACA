@@ -11,7 +11,7 @@
 
 const { buildManifest } = require('../src/api/stremio');
 const { catalogHandler } = require('../src/stremio');
-const { getHybridCatalog } = require('../src/pool/composer');
+const { getHybridCatalog } = require('../src/stremio/hybridServing');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const DuckDbProvider = require('../src/indice/duckDbProvider');

@@ -159,7 +159,7 @@ const hybridSourceEntry = defineSourceEntry({
     capabilities: hybridSource,
 
     appliesToCatalog(ctx) {
-        const { TASTE_BASED_IDS } = require('../catalog/providers/HybridProvider');
+        const { TASTE_BASED_IDS } = require('../stremio/hybridServing');
         const { isHeroCatalogId, HERO_SYSTEM_CATALOGS } = require('../catalog/registry');
         const id = ctx.id || ctx.baseId || '';
         const baseId = ctx.baseId || ctx.id || '';
@@ -175,7 +175,7 @@ const hybridSourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { getEngineHybridCatalog } = require('../catalog/providers/HybridProvider');
+        const { getEngineHybridCatalog } = require('../stremio/hybridServing');
         return await getEngineHybridCatalog(
             ctx.baseId,
             ctx.type,

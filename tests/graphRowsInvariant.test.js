@@ -192,12 +192,12 @@ describe('Invariante del ticket 38: il pool non porta stringhe scalari', () => {
     });
 
     test('getEngineHybridCatalog risolve correttamente la baseId verso l ID hero con suffisso', async () => {
-        const hybridRec = require('../src/pool/composer');
-        const spy = jest.spyOn(hybridRec, 'getHybridCatalog').mockImplementation(async (catId) => {
+        const hybridRec = require('../src/stremio/hybridServing');
+        const spy = jest.spyOn(hybridRec, 'serveHybridCatalog').mockImplementation(async (catId) => {
             return [{ id: 'tmdb:100', type: catId.includes('series') ? 'series' : 'movie' }];
         });
 
-        const { getEngineHybridCatalog } = require('../src/catalog/providers/HybridProvider');
+        const { getEngineHybridCatalog } = require('../src/stremio/hybridServing');
         const userConfig = { userId: 'u1', activeProfileId: 'p1', apiKeys: {} };
 
         await getEngineHybridCatalog('yaca_mondi', 'series', 0, userConfig, 'tmdb_key', {});

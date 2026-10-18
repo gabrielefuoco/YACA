@@ -1,5 +1,5 @@
 /**
- * src/catalog/idratazione.js
+ * src/stremio/idratazione.js
  *
  * Risoluzione metadati, idratazione card Stremio e paginazione dei candidati (Ticket 41 - Decisione 26/27).
  *
@@ -11,14 +11,14 @@
 const { ITEMS_PER_PAGE } = require('../config');
 const tmdb = require('../clients/tmdb');
 const { prioritizeLocalizedImages } = require('../clients/tmdb');
-const { normalizeContentId } = require('./contentId');
+const { normalizeContentId } = require('../catalog/contentId');
 const { rateLimitedMap } = require('../infra/rateLimiter');
-const { isItemInappropriateForKids } = require('./kidsModeFilters');
+const { isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
 const { isItemAnime } = require('../anime');
 
 async function getDuckDbMetaDetailsSafe(id, type) {
     try {
-        const duckDbProvider = require('../indice/duckDbProvider');
+        const duckDbProvider = require('../indice');
         if (typeof duckDbProvider.getDuckDbMetaDetails === 'function') {
             return await duckDbProvider.getDuckDbMetaDetails(id, type);
         }

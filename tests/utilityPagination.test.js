@@ -15,7 +15,7 @@ jest.mock('../src/indice/duckDbProvider', () => {
     };
 });
 
-jest.mock('../src/catalog/providers/HybridProvider', () => ({
+jest.mock('../src/stremio/hybridServing', () => ({
     TASTE_BASED_IDS: new Set(),
     getEngineHybridCatalog: jest.fn()
 }));

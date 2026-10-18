@@ -67,12 +67,18 @@ describe('config RECOMMENDATIONS_CACHE_TTL_MS', () => {
     });
 });
 
-describe('composer module exports', () => {
-    it('should export all required functions', () => {
-        const composer = require('../src/pool/composer');
-        expect(typeof composer.getHybridCatalog).toBe('function');
-        expect(typeof composer.fetchPopularFallbackIds).toBe('function');
-        expect(typeof composer.buildDirectPresetCatalog).toBe('function');
+describe('exports dopo la dissoluzione (ticket 41)', () => {
+    it('il servizio vive in src/stremio e la composizione in src/pool', () => {
+        // Il servizio (staleness, sync, cache, idratazione, impressioni) è del feed.
+        const serving = require('../src/stremio/hybridServing');
+        expect(typeof serving.getHybridCatalog).toBe('function');
+        expect(typeof serving.serveHybridCatalog).toBe('function');
+        // La composizione delle righe è del pool, e non serve più il catalogo.
+        const pool = require('../src/pool/composer');
+        expect(typeof pool.composeCandidateIds).toBe('function');
+        expect(typeof pool.fetchPopularFallbackIds).toBe('function');
+        expect(typeof pool.buildDirectPresetCatalog).toBe('function');
+        expect(pool.getHybridCatalog).toBeUndefined();
     });
 });
 
@@ -122,8 +128,8 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
     it('should route active hero id yaca_mondi_movies to hybrid engine', async () => {
         let routeCatalogRequestFromIsolatedModule;
         jest.isolateModules(() => {
-            jest.doMock('../src/catalog/providers/HybridProvider', () => {
-                const original = jest.requireActual('../src/catalog/providers/HybridProvider');
+            jest.doMock('../src/stremio/hybridServing', () => {
+                const original = jest.requireActual('../src/stremio/hybridServing');
                 return {
                     ...original,
                     getEngineHybridCatalog: jest.fn(async () => [{ id: 'tmdb:999', type: 'movie', name: 'Phase4' }])
