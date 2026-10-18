@@ -54,3 +54,38 @@ Il costo di una nuova strategia è basso (qualche ora); il costo di scoprire **d
 righe sono peggiori è un ritorno indietro su tutto. Questo ticket rende la decisione **una misura** invece di
 una scommessa — ed è la stessa lezione del giorno: *un numero giusto con una spiegazione sbagliata è peggio di un
 numero sbagliato*, e qui senza metro non avremmo nemmeno il numero.
+
+## Vincoli misurati (18/10/2026) — la ricetta NON si può ripetere come è scritta
+
+Ho verificato i dati disponibili **prima** di chiedere la misura, perché una misura impossibile si scopre tardi:
+
+| fonte | stato |
+|---|---|
+| `services/graph/data/` in locale | **vuoto** (i 138 MB stanno sul mate, montati read-only nel container `yaca-graph`) |
+| storie Trakt per-utente (`movie-*.json`, `show-*.json` — il `pool` della ricetta) | **non esistono più**: 0 file in locale, 0 in `/srv/yaca/services/graph/data`, 0 nel vecchio clone `/srv/yaca/modulo/` |
+| **MongoDB di produzione** (Atlas, db `yaca`) | **2 utenti**, **200** voci di cronologia, 218 item di libreria, 10 profili di gusto |
+
+**Conseguenza onesta**: il `oro_preso` su **60 utenti** non è calcolabile. Su **2 utenti** è **un segnale, non una
+prova** — va detto nel referto, non nascosto.
+
+## Il rischio da dichiarare: la fuga del futuro nei semi
+
+Il holdout classico (semi = passato, oro = futuro) presuppone che la riga sia costruita **solo dal passato**. Ma la
+riga di produzione nasce dal profilo **vivo**, che contiene **anche i titoli del futuro** (le stesse voci dell'oro):
+il `oro_preso` risulterebbe **gonfiato** e il confronto falso.
+
+Quindi il ticket deve dire, per il holdout:
+1. se la misura ha **fuga** (riga costruita col profilo intero) → dichiararlo come **limite superiore**;
+2. e/o costruire la variante **senza fuga**, escludendo i semi del futuro — se serve un'opzione nuova nel pool,
+   **dirlo** invece di aggirarla.
+
+## Cosa deve uscire (aggiornato)
+
+1. **Lo strumento** `scripts/qa/probe-gusto-holdout.js`: dato un utente reale dal Mongo, taglia la cronologia
+   (70% vecchio = semi, 30% recente = oro), costruisce la riga `hidden_gems` **OFF** e **ON**, e misura:
+   `oro_preso`, **riempimento** (quanti titoli), **novità** (quanti NON sono già in libreria), **diversità**
+   (generi/registi).
+2. **Il criterio scritto PRIMA** (in un commit separato, prima di eseguire): cosa fa dire «la nuova va bene».
+3. **La lettura sui 2 utenti disponibili**, etichettata come **segnale**; e **cosa servirebbe** per una prova
+   (più storie: è un problema di **dati**, non di codice).
+4. **Se il vecchio vince**, si scrive — e allora il piano cambia.
