@@ -16,7 +16,7 @@ jest.mock('../src/cache/CacheManager', () => {
     };
 });
 
-jest.mock('../src/id_mapping/id_cache', () => ({
+jest.mock('../src/clients', () => ({
     translateImdbToTmdb: jest.fn(async () => null)
 }));
 

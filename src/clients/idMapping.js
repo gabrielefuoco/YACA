@@ -1,4 +1,4 @@
-const { createTmdbClient } = require('../clients/tmdb');
+const { createTmdbClient } = require('./tmdb');
 const ImdbToTmdbMapping = require('../models/ImdbToTmdbMapping');
 
 const localCache = new Map();

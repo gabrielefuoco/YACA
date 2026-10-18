@@ -77,7 +77,7 @@ jest.mock('../src/indice/duckDbStore', () => ({
     })
 }));
 
-jest.mock('../src/id_mapping/id_cache', () => ({
+jest.mock('../src/clients', () => ({
     translateImdbToTmdb: jest.fn(async (imdbId) => ({ id: { 'tt0108778': '1668' }[imdbId] }))
 }));
 

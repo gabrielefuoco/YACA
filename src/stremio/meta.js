@@ -11,7 +11,7 @@
  */
 
 const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient, resolveImdbId } = require('../clients/tmdb');
-const { translateImdbToTmdb } = require('../id_mapping/id_cache');
+const { translateImdbToTmdb } = require('../clients');
 const CacheManager = require('../cache/CacheManager');
 const cache = require('../cache');
 const {
