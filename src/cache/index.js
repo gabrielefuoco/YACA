@@ -284,6 +284,22 @@ async function cancella(descrizione, options = {}) {
     return { chiave: derived.chiave };
 }
 
+function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
+    const { chiave } = deriva({
+        nome: 'recommendations',
+        dipendenze: {
+            varia: {
+                utente: userId,
+                profilo: context,
+                catalogo: catalogId,
+                kids: kidsMode,
+                selettori: typeSelectors
+            }
+        }
+    });
+    return chiave;
+}
+
 module.exports = {
     leggi,
     scrivi,
@@ -291,6 +307,7 @@ module.exports = {
     invalida: cancella,
     deriva,
     derivaChiave: deriva,
+    buildRecommendationCacheKey,
     finalMetaCache,
     CacheManager,
     cacheInstances,

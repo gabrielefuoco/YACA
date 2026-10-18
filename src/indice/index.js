@@ -135,6 +135,19 @@ class IndiceModule {
     }
 
     /**
+     * Risolve un catalogo di titoli filtrati attraverso la compilazione dichiarativa.
+     */
+    async getCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 100, options = {}) {
+        try {
+            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
+            if (typeof DuckDbProvider.getDuckDbCatalogFromFilters === 'function') {
+                return await DuckDbProvider.getDuckDbCatalogFromFilters(filters, type, skip, limit, options);
+            }
+        } catch (_e) {}
+        return [];
+    }
+
+    /**
      * Risoluzione IMDb IDs -> TMDB IDs
      */
     async resolveImdbIds(imdbIds) {

@@ -1,33 +1,21 @@
 const { ITEMS_PER_PAGE } = require('../config');
-const TasteProfile = require('../models/TasteProfile');
 const cache = require('../cache');
-const { hybridRecommendationsCache } = require('../cache/cacheInstances');
+const { buildRecommendationCacheKey } = require('../cache');
 const { isHeroCatalogId } = require('../catalog/registry');
 const { normalizeContentId } = require('../catalog/contentId');
 const { isItemInappropriateForKids, applyKidsMode } = require('../catalog/kidsModeFilters');
 
-// Modulo profilo: staleness e vettori (Ticket 41 - Fetta 1)
-const { isProfileSyncDue } = require('../profile/profileStaleness');
-const { computeTopGenres, computeTopKeywords } = require('../profile/vectorElements');
+// Modulo profilo: staleness e accesso profilo (Ticket 41)
+const { isProfileSyncDue, getTasteProfile } = require('../profile');
 
+// Modulo libreria: sincronizzazione raccomandazioni e registrazione impressioni (Ticket 41)
+const { syncIncrementalRecommendations, registraImpressioni } = require('../library');
 
-// Modulo libreria: sincronizzazione fatti e registrazione impressioni (Ticket 41 - Fetta 1)
-const {
-    isStremioSyncDueForUser,
-    syncIncrementalRecommendations
-} = require('../library/syncRecommendations');
-const { fetchRecentHistory } = require('../library/traktFetchers');
-const { registraImpressioni } = require('../library/impressions');
-
-// Modulo indice: idratazione card, filtraggio e paginazione (Ticket 41 - Fetta 1)
-const {
-    resolveCardDetails,
-    cardSurvivesFilters,
-    idrataEImpaginaCandidati
-} = require('../indice/idratazione');
+// Modulo indice: query e idratazione candidati (Ticket 41)
+const indice = require('../indice');
+const { idrataEImpaginaCandidati } = require('../indice/idratazione');
 
 const { isItemAnime } = require('../anime');
-const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
 
 const MAX_HERO_FALLBACK_FETCH = 260;
 const HERO_FALLBACK_LIMIT = 160;
@@ -67,7 +55,7 @@ async function fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors
     }
     let pending;
     try {
-        pending = DuckDbProvider.getDuckDbCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
+        pending = indice.getCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
     } catch (_error) {
         return [];
     }
@@ -149,34 +137,6 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
     );
 }
 
-function getActiveKidsMode(userConfig, context) {
-    if (typeof userConfig?.activeProfileSettings?.kidsMode === 'boolean') {
-        return userConfig.activeProfileSettings.kidsMode;
-    }
-    if (typeof userConfig?.kidsMode === 'boolean') {
-        return userConfig.kidsMode;
-    }
-    const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
-    const activeProfile = profiles.find(profile => profile.id === context);
-    return (activeProfile?.settings?.kidsMode ?? activeProfile?.kidsMode) === true;
-}
-
-function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
-    const { chiave } = cache.deriva({
-        nome: 'recommendations',
-        dipendenze: {
-            varia: {
-                utente: userId,
-                profilo: context,
-                catalogo: catalogId,
-                kids: kidsMode,
-                selettori: typeSelectors
-            }
-        }
-    });
-    return chiave;
-}
-
 function matchesTypeSelectors(item, typeSelectors, tipo) {
     if (!typeSelectors) return true;
     const { isItemAnime } = require('../anime');
@@ -198,7 +158,6 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
         return [];
     }
 
-    const { getDuckDbCatalogFromFilters } = require('../catalog/providers/DuckDbProvider');
     const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'series' : 'movie';
     const existingIds = new Set();
     const pool = [];
@@ -212,7 +171,7 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
 
         for (let page = 1; page <= 3; page++) {
             const skip = (page - 1) * 40;
-            const results = await getDuckDbCatalogFromFilters(
+            const results = await indice.getCatalogFromFilters(
                 finalParams,
                 tmdbType,
                 skip,
@@ -259,7 +218,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const effectiveSliders = ctx.sliders || ctx.slider || userConfig?.activeProfileSettings?.sliders || userConfig?.activeProfileSettings?.slider;
     let profile = null;
     try {
-        profile = await TasteProfile.findOne({ owner: userId, context });
+        profile = await getTasteProfile(userId, context);
     } catch (_e) {}
     const isHero = isHeroCatalogId(catalogId);
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
@@ -368,19 +327,6 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
 module.exports = {
     getHybridCatalog,
-    isStremioSyncDueForUser,
-    getActiveKidsMode,
-    buildRecommendationCacheKey,
-    get buildSharedHeroCacheKey() { return require('.').buildSharedHeroCacheKey; },
-    get buildSharedHeroCatalogs() { return require('.').buildSharedHeroCatalogs; },
-    get getSharedHeroCatalogs() { return require('.').getSharedHeroCatalogs; },
-    syncIncrementalRecommendations,
-    fetchRecentHistory,
-    computeTopGenres,
-    computeTopKeywords,
     fetchPopularFallbackIds,
-    buildDirectPresetCatalog,
-    resolveCardDetails,
-    cardSurvivesFilters,
-    recommendationsCache: hybridRecommendationsCache
+    buildDirectPresetCatalog
 };

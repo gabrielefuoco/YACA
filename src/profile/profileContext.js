@@ -37,6 +37,15 @@ async function fetchProfileContext(userId, context) {
     return { profile, user, globalProfile };
 }
 
+async function getTasteProfile(owner, context) {
+    try {
+        return await TasteProfile.findOne({ owner, context });
+    } catch (_e) {
+        return null;
+    }
+}
+
 module.exports = {
-    fetchProfileContext
+    fetchProfileContext,
+    getTasteProfile
 };

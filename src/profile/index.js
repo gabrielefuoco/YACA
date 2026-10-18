@@ -63,7 +63,7 @@ const {
 } = require('./vectorElements');
 
 // Estrazione contesto del profilo (Ticket 41 - Fetta 1)
-const { fetchProfileContext } = require('./profileContext');
+const { fetchProfileContext, getTasteProfile } = require('./profileContext');
 
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
@@ -76,6 +76,7 @@ module.exports = {
     resolveActiveProfileId,
     defaultGlobalProfile,
     fetchProfileContext,
+    getTasteProfile,
 
     // Staleness e sincronizzazione (Ticket 41)
     PROFILE_SYNC_INTERVAL_MS,

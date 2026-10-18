@@ -21,7 +21,7 @@ jest.mock('../src/clients/trakt', () => ({
 
 
 
-const { recommendationsCache } = require('../src/pool/composer');
+const { hybridRecommendationsCache: recommendationsCache } = require('../src/cache/cacheInstances');
 
 
 describe('recommendationsCache', () => {
