@@ -36,7 +36,7 @@ const {
 } = require('../catalog/catalogDefinition');
 const { applyCatalogSpecialOrdering } = require('../catalog/catalogSorting');
 const { isDailyWindowCatalog } = require('../catalog/registry');
-const { applyPostCacheBadges } = require('../catalog/badges');
+const { applyPostCacheBadges } = require('./badges');
 const { allineaIdFilm } = require('../meta');
 
 function logCatalogTiming({ id, catalog, cache, ms, titles }) {

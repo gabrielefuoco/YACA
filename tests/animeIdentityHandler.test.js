@@ -16,7 +16,7 @@
  */
 
 const { animeMappingStore, animeAiringState, isItemAnime, extractTmdbId } = require('../src/anime');
-const { applyPostCacheBadges } = require('../src/catalog');
+const { applyPostCacheBadges } = require('../src/stremio');
 
 // Le date dei fixture seguono l'orologio VERO. Il codice confronta con `Date.now()` e la
 // finestra è di 14 giorni: con un NOW congelato il test era verde il giorno in cui è stato

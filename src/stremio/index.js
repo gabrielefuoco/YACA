@@ -1,10 +1,15 @@
 const client = require('./client');
+const badges = require('./badges');
 const manifest = require('./manifest');
 const fingerprint = require('./fingerprint');
 const collection = require('./collection');
 const reconciler = require('./reconciler');
 
 module.exports = {
+    // Badge post-cache (servire: il feed li applica, il catalogo non li conosce)
+    applyPostCacheBadges: (...a) => badges.applyPostCacheBadges(...a),
+    annotationKeyFor: (...a) => badges.annotationKeyFor(...a),
+    resolveImdbMap: (...a) => badges.resolveImdbMap(...a),
     // Client
     stremioClient: client.stremioClient,
     stremioLikesClient: client.stremioLikesClient,

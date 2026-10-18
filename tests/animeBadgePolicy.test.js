@@ -12,7 +12,7 @@
  */
 
 const { animeAiringState } = require('../src/anime');
-const { applyPostCacheBadges } = require('../src/catalog');
+const { applyPostCacheBadges } = require('../src/stremio');
 
 const NOW = Date.UTC(2026, 8, 23, 12, 0, 0);
 const daysAgo = (d) => new Date(NOW - d * 24 * 60 * 60 * 1000).toISOString();

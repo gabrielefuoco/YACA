@@ -1,11 +1,11 @@
 /**
- * src/catalog/badges.js
+ * src/stremio/badges.js
  *
  * Applicazione badge post-cache (Ticket 41 - Serving su moduli).
  */
 
-const { EPISODE_CATALOG_IDS } = require('./constants');
-const itaAnnotations = require('./itaAnnotations');
+const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
+const itaAnnotations = require('../catalog/itaAnnotations');
 const indice = require('../indice');
 const {
     animeAiringState,

@@ -24,7 +24,7 @@
 
 const itaAnnotations = require('../src/catalog/itaAnnotations');
 const { animeAiringState, animeMappingStore } = require('../src/anime');
-const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/catalog');
+const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/stremio');
 
 const USER_CONFIG = { profiles: [{ id: 'global', settings: {} }], activeProfileId: 'global' };
 const HOST_URL = 'http://localhost:7860';
