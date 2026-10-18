@@ -9,19 +9,15 @@ const ALWAYS_VISIBLE_IDS = new Set([
 ]);
 
 const FALLBACK_HERO_REGISTRY: Record<string, CatalogKind> = {
-  // le righe del grafo
+  // le righe del grafo (Ticket 46 & 47)
   yaca_mondi_movies: { mediaSet: ['film'], anime: 'agnostic' },
   yaca_mondi_series: { mediaSet: ['serie'], anime: 'agnostic' },
   yaca_passo_fuori_movies: { mediaSet: ['film'], anime: 'agnostic' },
   yaca_passo_fuori_series: { mediaSet: ['serie'], anime: 'agnostic' },
-  yaca_true_blend_movies: { mediaSet: ['film'], anime: 'agnostic' },
-  yaca_true_blend_series: { mediaSet: ['serie'], anime: 'agnostic' },
-  yaca_seed_network_movies: { mediaSet: ['film'], anime: 'agnostic' },
-  yaca_seed_network_series: { mediaSet: ['serie'], anime: 'agnostic' },
-  yaca_hidden_gems_movies: { mediaSet: ['film'], anime: 'agnostic' },
-  yaca_hidden_gems_series: { mediaSet: ['serie'], anime: 'agnostic' },
-  yaca_trakt_filtered_movies: { mediaSet: ['film'], anime: 'agnostic' },
-  yaca_trakt_filtered_series: { mediaSet: ['serie'], anime: 'agnostic' },
+  yaca_uscite_nuove_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_uscite_nuove_series: { mediaSet: ['serie'], anime: 'agnostic' },
+  yaca_nicchia_di_qualita_movies: { mediaSet: ['film'], anime: 'agnostic' },
+  yaca_nicchia_di_qualita_series: { mediaSet: ['serie'], anime: 'agnostic' },
 };
 
 let activeHeroRegistry: Record<string, CatalogKind> = { ...FALLBACK_HERO_REGISTRY };

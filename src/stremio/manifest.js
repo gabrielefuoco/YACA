@@ -90,11 +90,23 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
 
     // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets
     // and conformant to typeSelectors.
-    const activeHeroCatalogs = (
-        Array.isArray(selectedPresets)
-            ? heroCatalogs.filter(c => selectedPresets.includes(c.id))
-            : heroCatalogs
-    ).filter(c => isCatalogConformant(c, typeSelectors));
+    // Degrado di sistema (Ticket 47): se un profilo ha un array selectedPresets la cui intersezione
+    // con i cataloghi hero correnti è VUOTA (es. un profilo legacy che contiene solo gli ID rimossi dal ticket 46),
+    // mostriamo comunque tutte le righe hero di sistema e logghiamo l'avviso.
+    // Motivo: un profilo non deve perdere il feed solo perché il sistema ha rinominato o rimosso le sue righe.
+    let eligibleHeroCatalogs = heroCatalogs;
+    if (Array.isArray(selectedPresets)) {
+        const matchingHeroCatalogs = heroCatalogs.filter(c => selectedPresets.includes(c.id));
+        if (matchingHeroCatalogs.length > 0) {
+            eligibleHeroCatalogs = matchingHeroCatalogs;
+        } else {
+            const profileIdentifier = profile?.id || activeProfileId || 'default';
+            console.log(`[Manifest] profilo ${profileIdentifier}: nessun hero selezionato fra gli id correnti — mostro le ${heroCatalogs.length} righe di sistema`);
+            eligibleHeroCatalogs = heroCatalogs;
+        }
+    }
+
+    const activeHeroCatalogs = eligibleHeroCatalogs.filter(c => isCatalogConformant(c, typeSelectors));
 
     const catalogs = [
         { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
