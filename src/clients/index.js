@@ -15,5 +15,9 @@ module.exports = {
     // Letture del modello ImdbToTmdbMapping: il modello appartiene a questo modulo (idMapping).
     // Gli altri moduli (library, posters) leggono da qui, non dal modello (map §16).
     lookupImdbToTmdb: (...a) => require('./idMapping').lookupImdbToTmdb(...a),
-    lookupImdbToTmdbBatch: (...a) => require('./idMapping').lookupImdbToTmdbBatch(...a)
+    lookupImdbToTmdbBatch: (...a) => require('./idMapping').lookupImdbToTmdbBatch(...a),
+    get graphClient() {
+        return require('./graphClient');
+    }
 };
+

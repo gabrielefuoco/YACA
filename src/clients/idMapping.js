@@ -17,8 +17,8 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
     }
 
     try {
-        const duckDbStore = require('../indice/duckDbStore');
-        const duckResolved = await duckDbStore.resolveImdbIds([imdbId]);
+        const indice = require('../indice');
+        const duckResolved = await indice.resolveImdbIds([imdbId]);
         if (duckResolved && duckResolved[imdbId]) {
             const result = { 
                 id: `tmdb:${duckResolved[imdbId].tmdbId}`, 

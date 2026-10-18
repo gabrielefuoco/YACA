@@ -226,18 +226,18 @@ class AnimeMappingStore {
 
     async syncDuckDb() {
         try {
-            const duckDbStore = require('../indice/duckDbStore');
+            const indice = require('../indice');
             const idsByType = {
                 movie: Array.from(this.animeTmdbIdsMovie || []),
                 tv: Array.from(this.animeTmdbIdsShow || [])
             };
             if (idsByType.movie.length > 0 || idsByType.tv.length > 0) {
-                await duckDbStore.updateAnimeMapping(idsByType).catch(e => {
+                await indice.updateAnimeMapping(idsByType).catch(e => {
                     console.error('[AnimeMappingStore] Impossibile aggiornare DuckDB:', e.message);
                 });
             }
         } catch (_err) {
-            // duckDbStore non disponibile o ambiente di test isolato
+            // indice non disponibile o ambiente di test isolato
         }
     }
 

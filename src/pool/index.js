@@ -19,7 +19,7 @@ const { getHeroPoolSpec } = require('../catalog/registry');
 const { fetchProfileContext } = require('../profile');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
-const graphClient = require('../clients/graphClient');
+const { graphClient } = require('../clients');
 const { resolveAnimePolicy, isAnimeContent } = require('../anime');
 
 const HERO_CATALOG_IDS = new Map([

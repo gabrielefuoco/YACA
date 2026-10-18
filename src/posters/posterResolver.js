@@ -1,4 +1,4 @@
-const duckDbStore = require('../indice/duckDbStore');
+const { queryRaw } = require('../indice');
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
@@ -64,7 +64,7 @@ async function resolvePoster(item, options = {}) {
             const primaryTable = isTv ? 'tv' : 'movies';
             const fallbackTable = isTv ? 'movies' : 'tv';
 
-            const primaryRows = await duckDbStore.query(
+            const primaryRows = await queryRaw(
                 `SELECT poster_path FROM ${primaryTable} WHERE id = ? LIMIT 1`,
                 [effectiveTmdbId]
             );
@@ -74,7 +74,7 @@ async function resolvePoster(item, options = {}) {
             }
 
             // Fallback tra tabelle (es. anime classificato series ma catalogato in movies)
-            const fallbackRows = await duckDbStore.query(
+            const fallbackRows = await queryRaw(
                 `SELECT poster_path FROM ${fallbackTable} WHERE id = ? LIMIT 1`,
                 [effectiveTmdbId]
             );

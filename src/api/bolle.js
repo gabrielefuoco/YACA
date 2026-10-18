@@ -2,7 +2,7 @@
  * LA ROTTA DEL GRAFO — `POST /api/bolle`.
  *
  * Prende il profilo dalla sessione (come fa `catalog.js`), legge la sua cronologia da `WatchHistory` e
- * chiede le liste a `src/clients/graphClient.js` (servizio grafo). Il calcolo sta la': qui c'e' solo il collegamento
+ * chiede le liste a `src/clients` (servizio grafo). Il calcolo sta la': qui c'e' solo il collegamento
  * — autenticazione, query, risposta — che e' esattamente la parte che va scritta guardando come lo fa il
  * resto del prodotto, e non inventata.
  *
@@ -19,7 +19,7 @@ const express = require('express');
 const router = express.Router();
 
 const { cronologiaDi } = require('../library');
-const graphClient = require('../clients/graphClient');
+const { graphClient } = require('../clients');
 
 const COOKIE = 'yaca_session';
 const STORIA_MAX = 300;      // il motore e' tarato su storie fino a ~300 voci (i file di Trakt lo erano)

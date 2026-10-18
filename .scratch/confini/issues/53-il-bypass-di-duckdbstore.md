@@ -72,3 +72,66 @@ aggiungere superficie.
 
 Appendici un `## Esito` in italiano: per ogni modulo, da dove a dove, il metodo usato e la sua prova; la lista
 `FAIL` e i totali della suite; i due hash; cosa **non** hai fatto. Lascia `Status: ready-for-agent`: chiude l'integratore.
+
+## Esito
+
+Completata la chiusura del bypass di `duckDbStore` e il completamento della porta `src/clients`.
+
+### 1. Tabella Moduli Ripuntati (da dove a dove, metodo e prova)
+
+| Modulo | Da | A | Metodo esposto usato | Prova di caricamento ed esecuzione |
+|---|---|---|---|---|
+| `src/anime/mapping.js` | `require('../indice/duckDbStore')` | `require('../indice')` | `updateAnimeMapping(idsByType)` | `node -e "require('./src/anime/mapping'); process.exit(0)"` OK |
+| `src/clients/idMapping.js` | `require('../indice/duckDbStore')` | `require('../indice')` | `resolveImdbIds(imdbIds)` | `node -e "require('./src/clients/idMapping'); process.exit(0)"` OK |
+| `src/library/identity.js` | `require('../indice/duckDbStore')` | `require('../indice')` | `queryRaw(sql, params)` | `node -e "require('./src/library/identity'); process.exit(0)"` OK, suite `tests/libraryIdentity.test.js` PASS (14/14) |
+| `src/library/ingestion/LibraryConverterService.js` | `require('../../indice/duckDbStore')` | `require('../../indice')` | `queryRaw(sql, params)` | `node -e "require('./src/library/ingestion/LibraryConverterService'); process.exit(0)"` OK, suite `tests/libraryConverterNamespace.test.js` PASS (7/7) |
+| `src/library/ingestion/libraryMediaTypeResolution.js` | `require('../../indice/duckDbStore')` | `require('../../indice')` | `queryRaw(sql, params)` | `node -e "require('./src/library/ingestion/libraryMediaTypeResolution'); process.exit(0)"` OK, suite `tests/libraryIdentityDuplicatesTicket19.test.js` PASS (16/16) |
+| `src/posters/posterResolver.js` | `require('../indice/duckDbStore')` | `require('../indice')` | `queryRaw(sql, params)` | `node -e "require('./src/posters/posterResolver'); process.exit(0)"` OK |
+| `src/profile/ProfileBuilder.js` | `require('../indice/duckDbStore')` (due require: riga 133 e riga 503) | `require('../indice')` | `queryRaw(sql, params)` e `resolveImdbIds(imdbIds)` | `node -e "require('./src/profile/ProfileBuilder'); process.exit(0)"` OK, suite `tests/profileBuilderMultiVector.test.js` PASS (2/2), `tests/diag.recommender.h2.activeVectorSource.test.js` PASS (2/2) |
+| `src/profile/studioProfile.js` | `require('../indice/duckDbStore')` | `require('../indice')` | `queryRaw(sql, params)` | `node -e "require('./src/profile/studioProfile'); process.exit(0)"` OK, suite `tests/studioProfile.test.js` PASS (5/5) |
+| `src/stremio/processors/MetadataHydrator.js` | `require('../../indice/duckDbStore')` | `require('../../indice')` | `isInitialized` (getter), `init()`, `queryRaw(sql, params)` | `node -e "require('./src/stremio/processors/MetadataHydrator'); process.exit(0)"` OK, suite `tests/retireTmdbScoringData.test.js` PASS (6/6 passati, 1 skipped) |
+| `src/stremio/providers/WatchlistProvider.js` | `require('../../indice/duckDbStore')` | `require('../../indice')` | `queryRaw(sql, params)` | `node -e "require('./src/stremio/providers/WatchlistProvider'); process.exit(0)"` OK |
+| `index.js` | `require('./src/indice/duckDbStore')` | `require('./src/indice')` | `init()`, `close()` | `node -c index.js` OK |
+| `src/api/bolle.js` | `require('../clients/graphClient')` | `require('../clients')` | `graphClient` (esposto su porta `clients`) | `node -e "require('./src/api/bolle'); process.exit(0)"` OK, suite `tests/bolleRoute.test.js` PASS |
+| `src/api/mondi.js` | `require('../clients/graphClient')` | `require('../clients')` | `graphClient` (esposto su porta `clients`) | `node -e "require('./src/api/mondi'); process.exit(0)"` OK |
+| `src/pool/index.js` | `require('../clients/graphClient')` | `require('../clients')` | `graphClient` (esposto su porta `clients`) | `node -e "require('./src/pool'); process.exit(0)"` OK, suite `tests/sliderWiringAndModulation.test.js` PASS |
+
+### 2. Prove Grep Assenza Bypass
+- `git grep -n "indice/duckDbStore" -- src/` → `src/indice/keywordIds.js:36:// NIENTE I/O QUI: la mappa la costruisce 'src/indice/duckDbStore.js' con la stessa` (solo all'interno di `src/indice/`).
+- `git grep -n "clients/graphClient" -- src/` → `src/clients/graphClient.js:1:// src/clients/graphClient.js` (solo all'interno di `src/clients/`).
+
+### 3. Sonda Port collaudata
+Creata e committata `tests/porteIndiceAndClients.test.js`:
+- Collauda che `queryRaw` è esposto come funzione distinta da `query` compilata.
+- Collauda che `queryRaw` e `updateAnimeMapping` delegano correttamente a duckDb anche se destrutturati.
+- Collauda il getter sincrono `isInitialized`.
+- Collauda l'esportazione di `graphClient` su `src/clients` e la sua destrutturazione.
+Esito: 7 test passati su 7.
+
+### 4. Verifica Invarianza Feed e Sonda Eroi
+- Manifest SHA256:
+  - `buildManifest({})`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (invariato)
+  - `buildRootManifest()`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (invariato)
+- Sonda Eroi:
+  - `node scripts/qa/probe-hero-counts.js --fixture` → Film: 9 titoli (Disgiunti: true), Serie: 9 titoli (Disgiunti: true).
+
+### 5. Totali Suite e Lista FAIL
+
+Comando eseguito: `npx jest --forceExit`
+Totali: `Test Suites: 5 failed, 183 passed, 188 total`
+Test: `8 failed, 1 skipped, 1879 passed, 1888 total`
+
+Lista FAIL (esattamente le sole 5 suite ammesse per assenza parquet locali in checkout isolato, zero regressioni):
+- `FAIL tests/animeOverridesCertify.test.js`
+- `FAIL tests/donghuaCatalog.test.js`
+- `FAIL tests/presetBurtonOrdering.test.js`
+- `FAIL tests/candidateProvider.test.js`
+- `FAIL tests/duckDbAndMatchmaker.test.js`
+
+### 6. Cosa NON è stato fatto
+- `src/indice/duckDbStore.js` non è stato spostato né rimosso (rimane file interno del modulo indice).
+- Nessuno shim introdotto.
+- Nessuna modifica a `frontend/**`.
+- Nessun `git push`, nessun `npm run build` o `tsc`.
+- Nessun metodo superfluo aggiunto alla porta dell'indice oltre a quelli strettamente richiesti (`queryRaw`, `updateAnimeMapping`, `isInitialized`).
+

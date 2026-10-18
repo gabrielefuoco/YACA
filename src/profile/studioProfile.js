@@ -12,7 +12,7 @@
  * chiamata a TMDB.
  */
 
-const duckDbStore = require('../indice/duckDbStore');
+const { queryRaw } = require('../indice');
 const { leggiItemPerStudi } = require('../library');
 const { animeMappingStore } = require('../anime');
 
@@ -75,7 +75,7 @@ async function fetchRows(table, { ids = [], imdbIds = [] }) {
     const sql = `SELECT CAST(id AS VARCHAR) AS id, imdb_id, production_companies${networksColumn} FROM ${table} WHERE ${where.join(' OR ')}`;
 
     try {
-        return await duckDbStore.query(sql);
+        return await queryRaw(sql);
     } catch (err) {
         return [];
     }

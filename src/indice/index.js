@@ -19,6 +19,11 @@ class IndiceModule {
         this.compiler = queryCompiler;
         this._tier2 = tier2;
         this._tier2Client = tier2Client;
+        this.queryRaw = this.queryRaw.bind(this);
+        this.updateAnimeMapping = this.updateAnimeMapping.bind(this);
+        this.init = this.init.bind(this);
+        this.resolveImdbIds = this.resolveImdbIds.bind(this);
+        this.resolveTmdbToImdb = this.resolveTmdbToImdb.bind(this);
     }
 
     get tier2Client() {
@@ -40,6 +45,14 @@ class IndiceModule {
     }
 
     /**
+     * Stato di inizializzazione del motore DuckDB (Ticket 53).
+     * Letto come proprietà sincrona (getter) dai consumatori come MetadataHydrator.
+     */
+    get isInitialized() {
+        return Boolean(this.duckDb && this.duckDb.isInitialized);
+    }
+
+    /**
      * Verifica della freschezza del database dell'indice.
      */
     isFresh() {
@@ -47,6 +60,31 @@ class IndiceModule {
             return this.duckDb._isDatabaseFresh();
         }
         return this.duckDb.isInitialized;
+    }
+
+    /**
+     * Esecuzione di SQL grezza direttamente sul database DuckDB (Ticket 53).
+     * Deliberatamente separato da query(), che compila filtri dichiarativi.
+     *
+     * @param {string} sql Stringa SQL da eseguire
+     * @param {Array} [params] Parametri posizionali
+     * @returns {Promise<Array<Object>>} Righe risultanti
+     */
+    async queryRaw(sql, params) {
+        if (params !== undefined) {
+            return this.duckDb.query(sql, params);
+        }
+        return this.duckDb.query(sql);
+    }
+
+    /**
+     * Aggiorna il mapping anime in DuckDB (Ticket 53).
+     *
+     * @param {Object} idsByType { movie: number[], tv: number[] }
+     * @returns {Promise<void>}
+     */
+    async updateAnimeMapping(idsByType) {
+        return this.duckDb.updateAnimeMapping(idsByType);
     }
 
     /**

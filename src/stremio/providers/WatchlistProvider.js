@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 const { leggiWatchlist, WATCHLIST_PAGE_SIZE } = require('../../library');
 const { accountPerAddonUuid } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
-const duckDbStore = require('../../indice/duckDbStore');
-const { mapDuckDbRowToMeta } = require('../../indice');
+const { mapDuckDbRowToMeta, queryRaw } = require('../../indice');
 const { normalizeLegacyPosterHost } = require('../../library');
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -68,7 +67,7 @@ async function enrichWatchlistItemsWithTmdbMetadata(items) {
     const fetchRows = async (table, ids) => {
         if (ids.size === 0) return [];
         const idList = Array.from(ids).join(',');
-        return duckDbStore.query(`SELECT * FROM ${table} WHERE id IN (${idList})`);
+        return queryRaw(`SELECT * FROM ${table} WHERE id IN (${idList})`);
     };
 
     let movieRows;
