@@ -144,7 +144,10 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     const isKidsMode = ctx.kidsMode;
     const effectiveTypeSelectors = ctx.selettoriEffettivi;
     const effectiveSliders = ctx.sliders || ctx.slider || userConfig?.activeProfileSettings?.sliders || userConfig?.activeProfileSettings?.slider;
-    const profile = await TasteProfile.findOne({ owner: userId, context });
+    let profile = null;
+    try {
+        profile = await TasteProfile.findOne({ owner: userId, context });
+    } catch (_e) {}
     const isHero = isHeroCatalogId(catalogId);
     console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
     console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}`);

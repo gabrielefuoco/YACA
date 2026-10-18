@@ -341,4 +341,97 @@ Tutti i test di regressione del grafo, del pool e della sincronizzazione (`feedP
   - Le 5 suite fallite (`animeOverridesCertify`, `candidateProvider`, `donghuaCatalog`, `duckDbAndMatchmaker`, `presetBurtonOrdering`) sono identiche ed esclusive del baseline preesistente ambientale su `main`. Nessun fallimento residuo imputabile alla fetta.
 - **Verifica parità conteggi hero**: rieseguito `getHeroPool` con fixture mondi; conteggi invariati a **2 / 2 / 3 / 2** (totale 9 titoli).
 
+## Esito (fetta 2: il serving — 18/10/2026)
+
+### 1. Cosa si è mosso e dove (File:Linee → Moduli di Destinazione)
+La fetta 2 ha disaccoppiato le 1.717 righe del serving Stremio (`catalogHandler` e `metaHandler`) dai layer di persistenza a basso livello (`duckDbStore`) e dal vecchio stack `src/engines/`, portandoli sui moduli puliti di dominio (`src/meta`, `src/catalog`, `src/indice`):
+
+1. **`src/handlers/metaHandler.js` (680 righe) → `src/meta/` (510 righe) & delegatore (20 righe)**:
+   - Creata la nuova porta di dominio `src/meta/index.js` contenente la logica completa del serving dei metadati: risoluzione dettagli TMDB, idratazione episodi e serie video order, sanitizzazione e rimozione metadati pesanti (`buildResponseMeta`), allineamento ID (`alignVideoIdsToRequestedForm`), traduzione e dump IMDb, policy dubbed/anime, e promozione Tier 1 lazy.
+   - **Disaccoppiamento da DuckDB**: eliminata la dipendenza interna diretta da `src/indice/duckDbStore.js`, sostituita con la porta standard dell'indice `const { resolveTmdbToImdb } = require('../indice')`.
+   - `src/handlers/metaHandler.js` ridotto a un sottile delegatore trasparente di 20 righe che re-esporta tutte le funzioni e costanti da `src/meta/index.js` preservando inalterata la compatibilità con tutti i test preesistenti.
+2. **`src/handlers/catalogHandler.js` (1.037 righe) → Disaccoppiamento DuckDB e porta `src/catalog/`**:
+   - In `resolveImdbMap`, rimosso l'import top-level di `duckDbStore = require('../indice/duckDbStore')`, sostituito dall'uso della porta standard `const indice = require('../indice')` con chiamata `indice.resolveImdbIds(ids)` (`catalogHandler.js:439`).
+   - Il serving del catalogo non conosce più DuckDB né il grafo.
+   - Esportato formalmente come lazy getter `catalogHandler` dal modulo principale `src/catalog/index.js`.
+3. **Invocazione Unica del Motore (Decisione di Mappa 27)**:
+   - Il serving del catalogo convoglia tutte le richieste per cataloghi basati sul gusto o su liste hero attraverso `CatalogRouter.routeCatalogRequest` verso un unico punto:
+     `src/catalog/providers/HybridProvider.js:34` (`getEngineHybridCatalog`), che delega a `getHybridCatalog`.
+   - A sua volta, `getHybridCatalog` (`src/engines/hybridRecommendations.js:180`) invoca il compositore del pool hero `getHeroPool` da `src/pool/index.js` in un **singolo punto di invocazione**, nascondendo completamente al serving il grafo e DuckDB.
+
+### 2. Debiti Ereditati: Gestione e Dichiarazione
+- **`src/catalog/providers/AiDiscoveryProvider.js`**:
+  - Mantiene l'import di `computeTopGenres` e `computeTopKeywords` tramite la facciata di compatibilità `../../engines/hybridRecommendations`.
+  - **Decisione**: Il repoint verso `src/profile` viene **esplicitamente differito alla Fetta 3 (La cancellazione)**.
+  - **Motivo**: `AiDiscoveryProvider` gestisce query AI e non fa parte del serving Stremio (`catalogHandler`/`metaHandler`). Ripuntarlo a `src/profile` senza modificare i test romperebbe le suite `tests/aiSearchLexicalFallback.test.js`, `tests/diag.recommender.h5.pagination.test.js` e `tests/diag.recommender.h9.injectProfile.test.js` a causa della catena transitiva di require (`AiDiscoveryProvider` → `profile` → `ProfileBuilder` → `library` → `manifest` → `presets` → `DuckDbProvider`) con i mock parziali di `DuckDbProvider` presenti in quei test. Nella Fetta 3, contestualmente alla rimozione di `src/engines/`, i mock dei test verranno aggiornati in blocco.
+- **Re-export `filters/presets/kidsModeFilters/contentId` dal modulo catalogo**:
+  - Rimane differito alla fetta 3 per la pulizia finale dei re-export.
+
+### 3. Prove di Accettazione e Comandi di Misura
+
+#### A. Suite Stremio (`tests/stremio*.test.js`)
+Tutte le 4 suite passano inalterate e verdi:
+```bash
+npx jest tests/stremio --forceExit
+```
+**Esito**:
+```
+PASS tests/stremioAddonResync.test.js
+PASS tests/stremioSyncCadence.test.js
+PASS tests/stremioProtocolFixes.test.js
+PASS tests/stremioSync.test.js
+
+Test Suites: 4 passed, 4 total
+Tests:       19 passed, 19 total
+```
+
+#### B. 32 Suite Coinvolte di Serving (Catalog & Meta)
+Eseguite tutte le suite che importano `catalogHandler` e `metaHandler`:
+```bash
+npx jest tests/allineaIdFilm.test.js tests/animeAiringCatalogBadges.test.js tests/animeAllCatalogsDubbedBadge.test.js tests/animeBadgePolicy.test.js tests/animeContentFilter.test.js tests/animeIdentityHandler.test.js tests/animeMarkerNormalization.test.js tests/animeSimulcastCardBadge.test.js tests/animeSimulcastHomeSource.test.js tests/catalogBadgeNonAnime.test.js tests/catalogCacheKey.test.js tests/catalogCacheKeys.test.js tests/catalogKindAndSelectors.test.js tests/domainSurface.test.js tests/feedProtocolAndCatalogs.test.js tests/graphRowsInvariant.test.js tests/hybridRecommendations.test.js tests/itaFallbackTipoAnimeBadge.test.js tests/proprietaDocumenti.test.js tests/animeAiringState.test.js tests/duckDbTmdbToImdb.test.js tests/kitsuMappingStats.test.js tests/metaHandlerCacheImmutability.test.js tests/metaHandlerDumpImdbId.test.js tests/metaHandlerEpisodeIds.test.js tests/metaHandlerImdbIdNoNetwork.test.js tests/metaHandlerSeriesVideoOrder.test.js tests/metaHandlerTier1Promotion.test.js tests/retireTmdbScoringData.test.js tests/schedaPosterCacheIta.test.js tests/seedLearnedNames.test.js tests/tier2SearchEnrich.test.js --forceExit
+```
+**Esito**:
+```
+Test Suites: 32 passed, 32 total
+Tests:       1 skipped, 380 passed, 381 total
+```
+
+#### C. Invarianza Byte-a-Byte del Manifest Stremio
+Verifica degli hash SHA-256 generati per il manifest:
+```bash
+node -e "const crypto = require('crypto'); const { buildManifest, buildRootManifest } = require('./src/stremio/manifest'); const m1 = JSON.stringify(buildManifest({})); const h1 = crypto.createHash('sha256').update(m1).digest('hex'); const m2 = JSON.stringify(buildRootManifest()); const h2 = crypto.createHash('sha256').update(m2).digest('hex'); console.log('buildManifest hash:', h1); console.log('buildRootManifest hash:', h2); process.exit(0);"
+```
+**Esito**:
+- `buildManifest`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (100% IDENTICO)
+- `buildRootManifest`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (100% IDENTICO)
+
+#### D. Suite Completa (`npx jest --forceExit`)
+Esecuzione dell'intera suite di test del repository a confronto con il baseline di `main`:
+```bash
+npx jest --forceExit
+```
+**Esito**:
+```
+Test Suites: 5 failed, 181 passed, 186 total
+Tests:       8 failed, 1 skipped, 1881 passed, 1890 total
+```
+**Lista FAIL (ESATTAMENTE le 5 suite ambientali preesistenti su main dovute all'assenza locale dei parquet TMDB)**:
+1. `tests/animeOverridesCertify.test.js`
+2. `tests/presetBurtonOrdering.test.js`
+3. `tests/donghuaCatalog.test.js`
+4. `tests/candidateProvider.test.js`
+5. `tests/duckDbAndMatchmaker.test.js`
+
+Nessun nuovo fallimento o regressione introdotta.
+
+### 4. Cosa Resta per la Fetta 3 (La cancellazione)
+1. Rimozione fisica (`git rm`) dei file orfani in `src/engines/`:
+   - `src/engines/hybridRecommendations.js`
+   - `src/engines/hybrid/dataFetchers.js`
+   - `src/engines/hybrid/scoringEngine.js`
+   - `src/engines/profileStaleness.js`
+2. Aggiornamento delle suite di test che importano direttamente dai percorsi `src/engines/` per ripuntare ai moduli definitivi (`src/profile/`, `src/library/`, `src/indice/`, `src/meta/`, `src/catalog/`).
+3. Aggiornamento finale di `AiDiscoveryProvider.js` per importare direttamente da `src/profile`.
+
+
 

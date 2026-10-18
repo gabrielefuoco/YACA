@@ -10,7 +10,7 @@ const { routeCatalogRequest } = require('../catalog/CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
 const { formatStremioCatalog, sanitizeCatalogMeta, findLatestAiredEpisode } = require('../catalog/formatters/StremioFormatter');
 const itaAnnotations = require('../catalog/itaAnnotations');
-const duckDbStore = require('../indice/duckDbStore');
+const indice = require('../indice');
 const {
     animeAiringState,
     animeMappingStore,
@@ -436,7 +436,7 @@ async function resolveImdbMap(metas) {
     const ids = [...new Set(metas.map(item => String(item.id || '')).filter(id => id.startsWith('tt')))];
     if (ids.length === 0) return {};
     try {
-        const mapping = await duckDbStore.resolveImdbIds(ids);
+        const mapping = await indice.resolveImdbIds(ids);
         const out = {};
         for (const [imdbId, value] of Object.entries(mapping || {})) {
             if (value && value.tmdbId) {
