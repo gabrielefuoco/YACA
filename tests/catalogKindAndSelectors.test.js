@@ -37,14 +37,14 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
         });
 
         it('identifica gli 8 hero catalogs dal registry esplicito (agnostici su anime)', () => {
-            expect(getCatalogKind('yaca_true_blend_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_true_blend_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_seed_network_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_seed_network_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_hidden_gems_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_hidden_gems_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_trakt_filtered_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
-            expect(getCatalogKind('yaca_trakt_filtered_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_mondi_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_mondi_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_passo_fuori_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_passo_fuori_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_uscite_nuove_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_uscite_nuove_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_nicchia_di_qualita_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_nicchia_di_qualita_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
         });
 
         it('identifica cataloghi custom / Matchmaker', () => {
@@ -69,7 +69,7 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(isAlwaysVisible('yaca_watchlist_anime')).toBe(true);
 
             expect(isAlwaysVisible('preset_pop_movies')).toBe(false);
-            expect(isAlwaysVisible('yaca_true_blend_movies')).toBe(false);
+            expect(isAlwaysVisible('yaca_mondi_movies')).toBe(false);
         });
     });
 
@@ -80,8 +80,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
         const movieAnime = { id: 'cat_movie_yes', type: 'movie', isAnime: true };
         const seriesAnime = { id: 'cat_series_yes', type: 'series', isAnime: true };
         const mixedMerged = { id: 'cat_merged', mediaSet: ['film', 'serie'], anime: 'mixed' };
-        const heroMovie = 'yaca_true_blend_movies';
-        const heroSeries = 'yaca_true_blend_series';
+        const heroMovie = 'yaca_mondi_movies';
+        const heroSeries = 'yaca_mondi_series';
 
         describe('Caso: nessun vincolo ({ film: false, serie: false, anime: null } o undefined)', () => {
             const selectors = { film: false, serie: false, anime: null };
@@ -197,8 +197,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
                             'preset_pop_series',
                             'preset_ghibli',
                             'preset_pop_anime',
-                            'yaca_true_blend_movies',
-                            'yaca_true_blend_series'
+                            'yaca_mondi_movies',
+                            'yaca_mondi_series'
                         ]
                     },
                     settings: {}
@@ -221,8 +221,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(catalogIds).toContain('yaca_watchlist_anime');
 
             // Hero attivi presenti
-            expect(catalogIds).toContain('yaca_true_blend_movies');
-            expect(catalogIds).toContain('yaca_true_blend_series');
+            expect(catalogIds).toContain('yaca_mondi_movies');
+            expect(catalogIds).toContain('yaca_mondi_series');
 
             // Presets utente presenti
             expect(catalogIds).toContain('preset_pop_movies');
@@ -249,8 +249,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(catalogIds).toContain('yaca_watchlist_anime');
 
             // Hero entrambi presenti (film e serie non vengono più esclusi)
-            expect(catalogIds).toContain('yaca_true_blend_series');
-            expect(catalogIds).toContain('yaca_true_blend_movies');
+            expect(catalogIds).toContain('yaca_mondi_series');
+            expect(catalogIds).toContain('yaca_mondi_movies');
 
             // Presets: sia film che serie presenti
             expect(catalogIds).toContain('preset_pop_series');
@@ -274,8 +274,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(catalogIds).toContain('yaca_watchlist_anime');
 
             // Hero compaiono nel manifest anche con Solo Anime (Ticket 15)
-            expect(catalogIds).toContain('yaca_true_blend_movies');
-            expect(catalogIds).toContain('yaca_true_blend_series');
+            expect(catalogIds).toContain('yaca_mondi_movies');
+            expect(catalogIds).toContain('yaca_mondi_series');
 
             // Presets: anime presenti, non-anime assenti
             expect(catalogIds).toContain('preset_ghibli');
@@ -299,8 +299,8 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             // Non-anime e hero inclusi
             expect(catalogIds).toContain('preset_pop_movies');
             expect(catalogIds).toContain('preset_pop_series');
-            expect(catalogIds).toContain('yaca_true_blend_movies');
-            expect(catalogIds).toContain('yaca_true_blend_series');
+            expect(catalogIds).toContain('yaca_mondi_movies');
+            expect(catalogIds).toContain('yaca_mondi_series');
 
             // Anime esclusi
             expect(catalogIds).not.toContain('preset_ghibli');
@@ -342,14 +342,14 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
         });
 
         it('richiesta diretta di un hero su profilo "Solo Anime" NON viene bloccata dalla guardia (è conforme)', () => {
-            const isConf = isCatalogConformant('yaca_true_blend_movies', userConfigAnimeOnly.profiles[0].settings.typeSelectors);
+            const isConf = isCatalogConformant('yaca_mondi_movies', userConfigAnimeOnly.profiles[0].settings.typeSelectors);
             expect(isConf).toBe(true);
         });
 
         it('richiesta diretta con residui legacy film/serie non viene bloccata dalla guardia', () => {
             const legacySelectors = { film: false, serie: true, anime: null };
             expect(isCatalogConformant('preset_pop_movies', legacySelectors)).toBe(true);
-            expect(isCatalogConformant('yaca_true_blend_movies', legacySelectors)).toBe(true);
+            expect(isCatalogConformant('yaca_mondi_movies', legacySelectors)).toBe(true);
         });
 
     });

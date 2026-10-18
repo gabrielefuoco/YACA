@@ -19,186 +19,11 @@ const crypto = require('crypto');
 const { defineCatalog } = require('./definition');
 
 /**
- * Le 12 definizioni dei cataloghi hero di sistema.
+ * Le 8 definizioni dei cataloghi hero di sistema (Ticket 46).
+ * Il grafo è il motore del gusto: mondi, passo_fuori, uscite_nuove, nicchia_di_qualita.
  * Una sola natura: la riga hero è un preset di sistema con la stessa forma del preset utente.
  */
 const RAW_HERO_DEFINITIONS = [
-    {
-        id: 'yaca_true_blend_movies',
-        name: '⭐ Scelti per Te',
-        emoji: '⭐',
-        mediaSet: ['film'],
-        anime: 'agnostic',
-        filters: { strategy: 'trueBlend' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 1,
-            additive: false,
-            alwaysVisible: false,
-            strategy: 'trueBlend',
-            uiType: 'ai',
-            idBase: 'yaca_true_blend',
-            label: 'Scelti per Te',
-            desc: 'Ricerca semantica AI + Scoring algoritmico.',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_true_blend_series',
-        name: '⭐ Scelti per Te',
-        emoji: '⭐',
-        mediaSet: ['serie'],
-        anime: 'agnostic',
-        filters: { strategy: 'trueBlend' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 1,
-            additive: false,
-            alwaysVisible: false,
-            strategy: 'trueBlend',
-            uiType: 'ai',
-            idBase: 'yaca_true_blend',
-            label: 'Scelti per Te',
-            desc: 'Ricerca semantica AI + Scoring algoritmico.',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_seed_network_movies',
-        name: '🕸️ La Rete dei tuoi Preferiti',
-        emoji: '🕸️',
-        mediaSet: ['film'],
-        anime: 'agnostic',
-        filters: { strategy: 'stacking' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 2,
-            additive: false,
-            alwaysVisible: false,
-            strategy: null,
-            uiType: 'algo',
-            idBase: 'yaca_seed_network',
-            label: 'La Rete dei tuoi Preferiti',
-            desc: 'Espande la rete dei titoli amati (Stacking).',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_seed_network_series',
-        name: '🕸️ La Rete dei tuoi Preferiti',
-        emoji: '🕸️',
-        mediaSet: ['serie'],
-        anime: 'agnostic',
-        filters: { strategy: 'stacking' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 2,
-            additive: false,
-            alwaysVisible: false,
-            strategy: null,
-            uiType: 'algo',
-            idBase: 'yaca_seed_network',
-            label: 'La Rete dei tuoi Preferiti',
-            desc: 'Espande la rete dei titoli amati (Stacking).',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_hidden_gems_movies',
-        name: '💎 Gemme Nascoste',
-        emoji: '💎',
-        mediaSet: ['film'],
-        anime: 'agnostic',
-        filters: { strategy: 'hiddenGems' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 3,
-            additive: false,
-            alwaysVisible: false,
-            strategy: 'hiddenGems',
-            uiType: 'ai',
-            idBase: 'yaca_hidden_gems',
-            label: 'Gemme Nascoste',
-            desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_hidden_gems_series',
-        name: '💎 Gemme Nascoste',
-        emoji: '💎',
-        mediaSet: ['serie'],
-        anime: 'agnostic',
-        filters: { strategy: 'hiddenGems' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 3,
-            additive: false,
-            alwaysVisible: false,
-            strategy: 'hiddenGems',
-            uiType: 'ai',
-            idBase: 'yaca_hidden_gems',
-            label: 'Gemme Nascoste',
-            desc: 'Ricerca AI di nicchia + Quality Cage algoritmica.',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_trakt_filtered_movies',
-        name: '🌐 Suggeriti dalla Community',
-        emoji: '🌐',
-        mediaSet: ['film'],
-        anime: 'agnostic',
-        filters: { strategy: 'trakt_filtered' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 4,
-            additive: false,
-            alwaysVisible: false,
-            strategy: null,
-            uiType: 'algo',
-            idBase: 'yaca_trakt_filtered',
-            label: 'Suggeriti dalla Community',
-            desc: 'Suggerimenti community filtrati col tuo DNA.',
-            provider: 'hybrid'
-        }
-    },
-    {
-        id: 'yaca_trakt_filtered_series',
-        name: '🌐 Suggeriti dalla Community',
-        emoji: '🌐',
-        mediaSet: ['serie'],
-        anime: 'agnostic',
-        filters: { strategy: 'trakt_filtered' },
-        sort: { by: 'affinity_score', sortable: false },
-        system: {
-            isSystem: true,
-            userModifiable: false,
-            priority: 4,
-            additive: false,
-            alwaysVisible: false,
-            strategy: null,
-            uiType: 'algo',
-            idBase: 'yaca_trakt_filtered',
-            label: 'Suggeriti dalla Community',
-            desc: 'Suggerimenti community filtrati col tuo DNA.',
-            provider: 'hybrid'
-        }
-    },
     {
         id: 'yaca_mondi_movies',
         name: '🌍 Il tuo mondo',
@@ -210,7 +35,7 @@ const RAW_HERO_DEFINITIONS = [
         system: {
             isSystem: true,
             userModifiable: false,
-            priority: 5,
+            priority: 1,
             additive: true,
             alwaysVisible: false,
             strategy: null,
@@ -232,7 +57,7 @@ const RAW_HERO_DEFINITIONS = [
         system: {
             isSystem: true,
             userModifiable: false,
-            priority: 5,
+            priority: 1,
             additive: true,
             alwaysVisible: false,
             strategy: null,
@@ -254,7 +79,7 @@ const RAW_HERO_DEFINITIONS = [
         system: {
             isSystem: true,
             userModifiable: false,
-            priority: 6,
+            priority: 2,
             additive: true,
             alwaysVisible: false,
             strategy: null,
@@ -276,7 +101,7 @@ const RAW_HERO_DEFINITIONS = [
         system: {
             isSystem: true,
             userModifiable: false,
-            priority: 6,
+            priority: 2,
             additive: true,
             alwaysVisible: false,
             strategy: null,
@@ -284,6 +109,94 @@ const RAW_HERO_DEFINITIONS = [
             idBase: 'yaca_passo_fuori',
             label: 'Un passo fuori',
             desc: "I mondi accanto al tuo: dove stanno le scoperte, a un passo dal conosciuto.",
+            provider: 'hybrid'
+        }
+    },
+    {
+        id: 'yaca_uscite_nuove_movies',
+        name: '✨ Uscite Nuove',
+        emoji: '✨',
+        mediaSet: ['film'],
+        anime: 'agnostic',
+        filters: { strategy: 'uscite_nuove' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 3,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_uscite_nuove',
+            label: 'Uscite Nuove',
+            desc: 'Uscite recenti nei mondi accesi dal tuo gusto.',
+            provider: 'hybrid'
+        }
+    },
+    {
+        id: 'yaca_uscite_nuove_series',
+        name: '✨ Uscite Nuove',
+        emoji: '✨',
+        mediaSet: ['serie'],
+        anime: 'agnostic',
+        filters: { strategy: 'uscite_nuove' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 3,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_uscite_nuove',
+            label: 'Uscite Nuove',
+            desc: 'Uscite recenti nei mondi accesi dal tuo gusto.',
+            provider: 'hybrid'
+        }
+    },
+    {
+        id: 'yaca_nicchia_di_qualita_movies',
+        name: '💎 Nicchia di Qualità',
+        emoji: '💎',
+        mediaSet: ['film'],
+        anime: 'agnostic',
+        filters: { strategy: 'nicchia_di_qualita' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 4,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_nicchia_di_qualita',
+            label: 'Nicchia di Qualità',
+            desc: 'Titoli di alta qualità e bassa popolarità scoperti dal grafo.',
+            provider: 'hybrid'
+        }
+    },
+    {
+        id: 'yaca_nicchia_di_qualita_series',
+        name: '💎 Nicchia di Qualità',
+        emoji: '💎',
+        mediaSet: ['serie'],
+        anime: 'agnostic',
+        filters: { strategy: 'nicchia_di_qualita' },
+        sort: { by: 'affinity_score', sortable: false },
+        system: {
+            isSystem: true,
+            userModifiable: false,
+            priority: 4,
+            additive: true,
+            alwaysVisible: false,
+            strategy: null,
+            uiType: 'algo',
+            idBase: 'yaca_nicchia_di_qualita',
+            label: 'Nicchia di Qualità',
+            desc: 'Titoli di alta qualità e bassa popolarità scoperti dal grafo.',
             provider: 'hybrid'
         }
     }
@@ -329,7 +242,7 @@ function getHeroCatalogModes() {
 }
 
 /**
- * Derives unique hero prefixes (e.g. 'yaca_true_blend_') from catalog IDs.
+ * Derives unique hero prefixes (e.g. 'yaca_mondi_') from catalog IDs.
  */
 function getHeroPrefixes() {
     const prefixes = new Set();

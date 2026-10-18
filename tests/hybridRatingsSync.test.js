@@ -52,10 +52,10 @@ const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
 
 function cachedMovieHeroGroup(ids) {
     const catalogs = {};
-    for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
+    for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
         catalogs[`yaca_${slug}_movies`] = ids;
     }
-    return { schemaVersion: 3, mediaType: 'movie', catalogs };
+    return { schemaVersion: 8, mediaType: 'movie', catalogs };
 }
 
 describe('hybrid catalog stale sync merges history and ratings', () => {
@@ -89,7 +89,7 @@ describe('hybrid catalog stale sync merges history and ratings', () => {
             genre_ids: [18]
         });
 
-        await getHybridCatalog('yaca_seed_network_movies', 0, 'trakt_token', 'tmdb_key', 'user_1', 'global');
+        await getHybridCatalog('yaca_mondi_movies', 0, 'trakt_token', 'tmdb_key', 'user_1', 'global');
         for (let i = 0; i < MAX_POLLING_ATTEMPTS && ProfileBuilder.syncUserHistory.mock.calls.length === 0; i++) {
             await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL_MS));
         }

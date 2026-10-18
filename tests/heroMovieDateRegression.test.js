@@ -51,12 +51,12 @@ jest.mock('../src/cache/cacheInstances', () => ({
 
 function cachedHeroGroup(mediaType, ids) {
     const suffix = mediaType === 'movie' ? 'movies' : 'series';
-    const owner = mediaType === 'series' ? 'seed_network' : 'true_blend';
+    const owner = mediaType === 'series' ? 'passo_fuori' : 'mondi';
     const catalogs = {};
-    for (const slug of ['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered']) {
+    for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
         catalogs[`yaca_${slug}_${suffix}`] = slug === owner ? ids : [];
     }
-    return { schemaVersion: 7, mediaType, catalogs };
+    return { schemaVersion: 8, mediaType, catalogs };
 }
 
 describe('Hero Catalogs Audit 02 Fixes', () => {
@@ -85,7 +85,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
             });
 
             const results = await getHybridCatalog(
-                'yaca_true_blend_movies',
+                'yaca_mondi_movies',
                 0,
                 'fake_trakt',
                 'fake_tmdb',
@@ -125,7 +125,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
             });
 
             const results = await getHybridCatalog(
-                'yaca_true_blend_movies',
+                'yaca_mondi_movies',
                 0,
                 'fake_trakt',
                 'fake_tmdb',
@@ -159,7 +159,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
             });
 
             const results = await getHybridCatalog(
-                'yaca_true_blend_movies',
+                'yaca_mondi_movies',
                 0,
                 'fake_trakt',
                 'fake_tmdb',
@@ -192,7 +192,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
             });
 
             const results = await getHybridCatalog(
-                'yaca_seed_network_series',
+                'yaca_passo_fuori_series',
                 0,
                 'fake_trakt',
                 'fake_tmdb',
@@ -274,7 +274,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
     });
 
     describe('Ticket 07: corti, backstage e trailer serviti come film (minRuntime 60)', () => {
-        const { passesQualityFloor } = require('../src/engines/hybrid/catalogStrategies');
+        const { passesQualityFloor } = require('../src/indice/candidati');
 
         it('passesQualityFloor scarta i film con durata nota < 60 minuti', () => {
             const shortMovie = {

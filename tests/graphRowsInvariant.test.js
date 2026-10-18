@@ -105,8 +105,68 @@ describe('Invariante del ticket 38: il pool non porta stringhe scalari', () => {
             expect(typeof item.tmdbId).toBe('number');
             expect(Number.isFinite(item.tmdbId)).toBe(true);
             expect(item.type).toBe('series');
-            expect(item.media_type).toBe('tv');
         }
+    });
+
+    test('le righe uscite_nuove e nicchia_di_qualita consegnano oggetti strutturati coerenti', async () => {
+        jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
+            contratto: 1,
+            versioni: { artefatto: 'art-test', ricetta: 'ric-test' },
+            semi: { n: 2, da_catalogo: false },
+            liste: [
+                {
+                    ruolo: 'il_tuo_mondo',
+                    mondo: 1084,
+                    descrizione: 'mondo 1084',
+                    titoli: [{ tmdbId: 603, medium: 'movie', punteggio: 0.95 }]
+                },
+                {
+                    ruolo: 'un_passo_fuori',
+                    mondo: null,
+                    descrizione: 'mondi vicini',
+                    titoli: [{ tmdbId: 604, medium: 'movie', punteggio: 0.85 }]
+                },
+                {
+                    ruolo: 'uscite_nuove',
+                    mondo: 1084,
+                    descrizione: 'uscite recenti',
+                    da_comporre: true,
+                    titoli: [{ tmdbId: 701, medium: 'movie', punteggio: 0.90 }]
+                },
+                {
+                    ruolo: 'nicchia_di_qualita',
+                    mondo: null,
+                    descrizione: 'nicchia di qualità',
+                    da_comporre: true,
+                    titoli: [{ tmdbId: 702, medium: 'movie', punteggio: 0.80 }]
+                }
+            ],
+            motivi: []
+        });
+
+        const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
+        const assigned = {};
+        await graphStrategy.run({
+            userId: 'u1',
+            context: 'p1',
+            mediaType: 'movie',
+            userConfig: {}
+        }, { assigned, rawTraktResult: { traktAvailable: false } });
+
+        expect(assigned.yaca_uscite_nuove_movies).toHaveLength(1);
+        expect(assigned.yaca_nicchia_di_qualita_movies).toHaveLength(1);
+
+        const usciteItem = assigned.yaca_uscite_nuove_movies[0];
+        expect(usciteItem.id).toBe('tmdb:701');
+        expect(usciteItem.tmdbId).toBe(701);
+        expect(usciteItem.type).toBe('movie');
+        expect(usciteItem.media_type).toBe('movie');
+
+        const nicchiaItem = assigned.yaca_nicchia_di_qualita_movies[0];
+        expect(nicchiaItem.id).toBe('tmdb:702');
+        expect(nicchiaItem.tmdbId).toBe(702);
+        expect(nicchiaItem.type).toBe('movie');
+        expect(nicchiaItem.media_type).toBe('movie');
     });
 
     test('annotationKeyFor normalizza serie/tv senza perdere il tipo', () => {

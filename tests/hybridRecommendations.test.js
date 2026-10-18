@@ -216,8 +216,6 @@ describe('hybridRecommendations module exports', () => {
         expect(typeof engine.getHybridCatalog).toBe('function');
         expect(typeof engine.calculateHybridScore).toBe('function');
         expect(typeof engine.fetchRecentHistory).toBe('function');
-        expect(typeof engine.fetchTraktRecommendationsRaw).toBe('function');
-        expect(typeof engine.fetchTmdbSimilarCounts).toBe('function');
         expect(typeof engine.computeTopGenres).toBe('function');
     });
 });
@@ -265,7 +263,7 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
         expect(result).toEqual([]);
     });
 
-    it('should route active phase4 id yaca_true_blend_movies to hybrid engine', async () => {
+    it('should route active hero id yaca_mondi_movies to hybrid engine', async () => {
         let routeCatalogRequestFromIsolatedModule;
         jest.isolateModules(() => {
             jest.doMock('../src/catalog/providers/HybridProvider', () => {
@@ -278,7 +276,7 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
             ({ routeCatalogRequest: routeCatalogRequestFromIsolatedModule } = require('../src/catalog/CatalogRouter'));
         });
         const result = await routeCatalogRequestFromIsolatedModule(
-            { type: 'movie', id: 'yaca_true_blend_movies', extra: { skip: 0 }, filters: null },
+            { type: 'movie', id: 'yaca_mondi_movies', extra: { skip: 0 }, filters: null },
             { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
             {},
             'fake-key',
