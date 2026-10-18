@@ -50,6 +50,19 @@ La destinazione è un **codice** più che un documento: ogni ticket taglia un co
   un `Object.keys` che non elencava i metodi dell'istanza, e un `exit=1` che era il caso *documentato* di
   configurazione mancante. Prima di dichiarare un guasto, **verifica la sonda** — e se la sonda è sbagliata,
   scrivilo: una sonda imprecisa che *sembra* un guasto è il modo in cui ci si mette a cercare un bug che non c'è.
+- **La suite intera è l'unica prova** — e la baseline va *misurata*, non ricordata. Il 18/10/2026 la fetta 1
+  del ticket 41 ha quasi spedito una regressione (require cycle → `buildPresetFromFilters is not a function`)
+  mentre l'esecutore riportava «tutte le suite passano»: ne aveva scelte **dodici a mano**. Su `main` falliscono
+  **5 suite ambientali** (`animeOverridesCertify`, `candidateProvider`, `donghuaCatalog`, `duckDbAndMatchmaker`,
+  `presetBurtonOrdering`): quelle e solo quelle sono ammesse. Nel brief: la lista `FAIL` e i totali, incollati.
+- **I mock di Jest sono un confine anche loro** (pagato **due volte** il 18/10/2026). Ripuntare un import da un
+  modulo *mockato* a uno *non* mockato forza la catena transitiva dei require e il modulo mockato torna
+  **parziale**: `TypeError: buildPresetFromFilters is not a function`, in una suite che non c'entra nulla. Quindi:
+  require **pigro dentro la funzione** (il pattern di `src/indice/candidati.js`), e quando si ripunta qualcosa si
+  eseguono **le suite che mockavano il percorso vecchio** — non quelle che si spera siano verdi.
+- **Un worktree senza il link a `frontend/node_modules` sembra una regressione e non lo è**: tre suite caricano
+  `react` da lì e falliscono con `Cannot find module`. Nei worktree servono **entrambi** i link (`node_modules`,
+  `frontend/node_modules`).
 - **Trappole già pagate**: gli hero sono definiti in **dieci** posti (nove derivati da `src/catalog/registry.js`,
   il decimo — `HERO_PRIORITY` — no, ed è quello che decide *quale percorso* prende un catalogo); `tv` e
   `series` sono la stessa cosa con due nomi; gli id dei cataloghi del prodotto sono `tmdb:<id>` nella forma
