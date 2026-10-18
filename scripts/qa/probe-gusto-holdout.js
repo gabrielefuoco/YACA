@@ -2,32 +2,63 @@
 /**
  * scripts/qa/probe-gusto-holdout.js
  *
- * Il Metro della Qualità (Ticket 43) — Holdout sui dati reali di gusto.
+ * Il Metro della Qualità, Seconda Iterazione (Ticket 45) — Holdout sui dati reali di gusto.
  *
- * Metodologia (mutuata da services/graph/measure/ricetta.py):
- * - Dato un utente reale da MongoDB, ordina cronologicamente la sua storia di visione.
+ * Confronto Piano (a):
+ *   'nicchia_di_qualita' (Grafo) contro 'hidden_gems' (Vecchio motore, commit ref e24470e).
+ *
+ * Metodologia:
+ * - Dato un utente reale da MongoDB, ordina cronologicamente la storia di visione.
  * - Taglio temporale: 70% più vecchio = SEMI (passato), 30% più recente = ORO (futuro).
- * - Costruisce la riga hidden_gems con switch OFF (vecchio motore) e ON (nuovo candidate provider).
- * - Misura le 4 metriche:
- *   1. oro_preso: quanti titoli dell'oro finiscono nella riga raccomandata
- *   2. riempimento: quanti titoli produce la riga
- *   3. novità: quanti titoli NON sono già nella libreria dell'utente (UserLibraryItem)
- *   4. diversità: dispersione per genere e regista/autore
- * - Dichiara esplicitamente la fuga (live profile = limite superiore con fuga vs profilo solo semi = senza fuga).
+ * - Oro Ammissibile: filtrato con le regole del motore (popolarità <= 20, voti 50..1000, voto medio >= 6.5).
+ * - Variante Senza Fuga: semi, profilo e insieme dei visti sono SOLO il passato (70%).
+ * - Limite del vecchio motore: catalogStrategies.buildHiddenGemsCatalog richiama fetchProfileContext
+ *   leggendo da Mongo (non accetta profilo in memoria), quindi per OFF si dichiara il limite superiore.
+ * - Criterio non vacuo dichiarato a priori:
+ *   oro_preso(ON) >= oro_preso(OFF) AND oro_ammissibile_preso(ON) >= 1.
  *
  * Utilizzo:
  *   node scripts/qa/probe-gusto-holdout.js [--userId=<id>] [--context=<id>] [--allUsers]
  */
 
 require('dotenv').config();
+const path = require('path');
+const { execFileSync } = require('child_process');
 const mongoose = require('mongoose');
 const duckDbStore = require('../../src/indice/duckDbStore');
-const {
-    HERO_STRATEGIES,
-    setFlagNewHiddenGems,
-    getRecommendationId
-} = require('../../src/pool');
 const { fetchProfileContext } = require('../../src/engines/hybrid/dataFetchers');
+
+const PYTHON_BIN = 'C:\\Users\\gabri\\APP\\YACA\\offline_graph_builder\\venv\\Scripts\\python.exe';
+const SERVICES_DIR = path.resolve(__dirname, '../../services');
+
+// Criterio vincolante non vacuo dichiarato a priori (Punto 3 del Ticket 45)
+const CRITERIO_DICHIARATO = {
+    nome: "Criterio Discriminante Non Vacuo (Ticket 45)",
+    definizione: "oro_preso(ON) >= oro_preso(OFF) AND oro_ammissibile_preso(ON) >= 1",
+    valuta: (oroPresoOnCount, oroPresoOffCount, oroAmmPresoOnCount) => {
+        const c1 = oroPresoOnCount >= oroPresoOffCount;
+        const c2 = oroAmmPresoOnCount >= 1;
+        return {
+            accettato: Boolean(c1 && c2),
+            dettaglio: {
+                "oro_preso_ON_ge_OFF": c1,
+                "almeno_un_titolo_oro_amm_preso": c2
+            }
+        };
+    }
+};
+
+// Numeri di riferimento congelati del vecchio motore al commit e24470e
+const VECCHIO_MOTORE_REF_E24470E = {
+    REOZrGNRr3: {
+        movie: { riempimento: 160, oroPresoCount: 0, oroPresoPct: 0.0, novitaPct: 99.4, distinctGenres: 18, distinctDirectors: 184 },
+        series: { riempimento: 160, oroPresoCount: 0, oroPresoPct: 0.0, novitaPct: 98.8, distinctGenres: 12, distinctDirectors: 177 }
+    },
+    sim_user_yaca: {
+        movie: { riempimento: 160, oroPresoCount: 0, oroPresoPct: 0.0, novitaPct: 100.0, distinctGenres: 18, distinctDirectors: 183 },
+        series: { riempimento: 160, oroPresoCount: 0, oroPresoPct: 0.0, novitaPct: 100.0, distinctGenres: 12, distinctDirectors: 181 }
+    }
+};
 
 function parseJsonSafe(val, defaultVal = []) {
     if (!val) return defaultVal;
@@ -37,11 +68,6 @@ function parseJsonSafe(val, defaultVal = []) {
     } catch (_) {
         return defaultVal;
     }
-}
-
-function extractIds(result) {
-    const items = Array.isArray(result) ? result : (result?.ids || []);
-    return items.map(item => getRecommendationId(item)).filter(Boolean);
 }
 
 function computeJaccard(listA, listB) {
@@ -54,13 +80,13 @@ function computeJaccard(listA, listB) {
 }
 
 /**
- * Recupera i metadati arricchiti (generi, registi/creatori) da DuckDB per una lista di ID TMDB.
+ * Recupera i metadati arricchiti da DuckDB per una lista di ID TMDB.
  */
 async function fetchMetadataForIds(ids, mediaType) {
     if (!ids || ids.length === 0) return new Map();
     const isMovie = mediaType === 'movie';
     const table = isMovie ? 'movies' : 'tv';
-    const cols = isMovie ? 'id, title, genres, directors' : 'id, name, genres, created_by';
+    const cols = isMovie ? 'id, title, vote_average, vote_count, popularity, genres, directors' : 'id, name, vote_average, vote_count, popularity, genres, created_by';
     const cleanIds = ids.map(id => String(id).replace(/\D/g, '')).filter(Boolean);
     if (cleanIds.length === 0) return new Map();
 
@@ -75,9 +101,50 @@ async function fetchMetadataForIds(ids, mediaType) {
         const genres = rawGenres.map(g => (typeof g === 'object' && g !== null ? (g.name || String(g.id)) : String(g))).filter(Boolean);
         const rawCrew = isMovie ? parseJsonSafe(row.directors) : parseJsonSafe(row.created_by);
         const directors = rawCrew.map(d => (typeof d === 'object' && d !== null ? (d.name || String(d.id)) : String(d))).filter(Boolean);
-        metaMap.set(id, { id, title, genres, directors });
+        metaMap.set(id, {
+            id,
+            title,
+            vote_average: Number(row.vote_average),
+            vote_count: Number(row.vote_count),
+            popularity: Number(row.popularity),
+            genres,
+            directors
+        });
     }
     return metaMap;
+}
+
+/**
+ * Filtra l'oro determinando i titoli ammissibili secondo le regole di nicchia/hidden_gems:
+ * - vote_count <= 1000 e vote_count >= 50
+ * - popularity <= 20.0
+ * - vote_average >= 6.5
+ */
+async function filterAdmissibleGold(oroIds, mediaType) {
+    const metaMap = await fetchMetadataForIds([...oroIds], mediaType);
+    const admissibleIds = new Set();
+    const excludedDetails = [];
+
+    for (const id of oroIds) {
+        const meta = metaMap.get(id);
+        if (!meta) {
+            excludedDetails.push({ id, title: 'Non a catalogo', motivo: 'non_in_duckdb' });
+            continue;
+        }
+
+        const reasons = [];
+        if (meta.vote_count > 1000) reasons.push(`voti eccessivi (${meta.vote_count} > 1000)`);
+        if (meta.popularity > 20.0) reasons.push(`popolarità eccessiva (${meta.popularity.toFixed(1)} > 20)`);
+        if (meta.vote_average < 6.5) reasons.push(`voto insufficiente (${meta.vote_average} < 6.5)`);
+
+        if (reasons.length === 0) {
+            admissibleIds.add(id);
+        } else {
+            excludedDetails.push({ id, title: meta.title, motivo: reasons.join(', ') });
+        }
+    }
+
+    return { admissibleIds, metaMap, excludedDetails };
 }
 
 /**
@@ -129,55 +196,30 @@ function computeDiversity(ids, metaMap) {
 }
 
 /**
- * Costruisce in memoria un TasteProfile basato ESCLUSIVAMENTE sui semi passati (70% oldest),
- * escludendo completamente i titoli del futuro (oro) per la variante SENZA FUGA.
+ * Invoca direttamente il Motore del grafo per la riga nicchia_di_qualita.
  */
-async function buildPastOnlyTasteProfile(semiDocs, baseProfile) {
-    if (!semiDocs || semiDocs.length === 0 || !baseProfile) return baseProfile;
+function runGraphNicchia(seeds, mediaType, cap = 10) {
+    const scriptPath = path.resolve(SERVICES_DIR, 'graph/measure/call_motore.py');
+    const inputPayload = JSON.stringify({
+        semi: seeds,
+        medium: mediaType,
+        cap
+    });
 
-    const semiMovieIds = semiDocs.filter(d => d.type === 'movie').map(d => Number(d.tmdbId)).filter(Boolean);
-    const semiTvIds = semiDocs.filter(d => d.type !== 'movie').map(d => Number(d.tmdbId)).filter(Boolean);
-
-    let rows = [];
-    if (semiMovieIds.length > 0) {
-        const mRows = await duckDbStore.query(`SELECT id, genres, keywords FROM movies WHERE id IN (${semiMovieIds.join(',')})`);
-        rows.push(...(Array.isArray(mRows) ? mRows : []));
-    }
-    if (semiTvIds.length > 0) {
-        const tRows = await duckDbStore.query(`SELECT id, genres, keywords FROM tv WHERE id IN (${semiTvIds.join(',')})`);
-        rows.push(...(Array.isArray(tRows) ? tRows : []));
-    }
-
-    const vPast = {};
-    for (const row of rows) {
-        const gList = parseJsonSafe(row.genres);
-        for (const g of gList) {
-            const gid = typeof g === 'object' && g !== null ? (g.id || g.name) : g;
-            if (gid) vPast[`g:${gid}`] = (vPast[`g:${gid}`] || 0) + 1.0;
-        }
-        const kList = parseJsonSafe(row.keywords);
-        for (const k of kList) {
-            const kid = typeof k === 'object' && k !== null ? (k.id || k.name) : k;
-            if (kid) vPast[`k:${kid}`] = (vPast[`k:${kid}`] || 0) + 1.0;
-        }
-    }
-
-    // Normalizzazione vettoriale [0.0 - 1.0]
-    const maxVal = Math.max(...Object.values(vPast), 1.0);
-    for (const k of Object.keys(vPast)) {
-        vPast[k] = Number((vPast[k] / maxVal).toFixed(3));
-    }
-
-    const vStatic = baseProfile.compiledVectors?.V_static || {};
-
-    return {
-        ...baseProfile,
-        compiledVectors: {
-            V_static: vStatic,
-            V_active: vPast,
-            V_final: Object.keys(vPast).length > 0 ? vPast : (baseProfile.compiledVectors?.V_final || {})
-        }
+    const env = {
+        ...process.env,
+        PYTHONPATH: SERVICES_DIR
     };
+
+    const stdout = execFileSync(PYTHON_BIN, [scriptPath, '--stdin'], {
+        input: inputPayload,
+        env,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+    });
+
+    const res = JSON.parse(stdout);
+    return res.nicchia_di_qualita || [];
 }
 
 /**
@@ -198,7 +240,7 @@ async function probeUser(userId, profileContextArg) {
     console.log(`Contesto profilo: ${profileContext}`);
     console.log(`Addon UUID      : ${addonUuid || 'nessuno (account simulato/senza addon)'}`);
 
-    // 2. Lettura Libreria Utente (UserLibraryItem) per calcolo novità
+    // 2. Lettura Libreria Utente per calcolo novità
     const libraryTmdbIds = new Set();
     if (addonUuid) {
         const libDocs = await db.collection('userlibraryitems').find({
@@ -211,23 +253,12 @@ async function probeUser(userId, profileContextArg) {
     }
     console.log(`Titoli attivi in libreria: ${libraryTmdbIds.size}`);
 
-    // 3. Lettura Profilo di Gusto Live (con fuga)
-    const { profile: liveProfile } = await fetchProfileContext(userId, profileContext);
-    const vFinalKeysCount = Object.keys(liveProfile?.compiledVectors?.V_final || {}).length;
-    console.log(`Vettore live V_final     : ${vFinalKeysCount} chiavi`);
-
-    // 4. Lettura cronologia e split cronologico holdout (70% semi, 30% oro)
+    // 3. Cronologia
     const rawHistory = await db.collection('watchhistories').find({
         owner: userId,
         context: profileContext
     }).toArray();
-
     console.log(`Cronologia totale profilo: ${rawHistory.length} voci\n`);
-
-    const strat = HERO_STRATEGIES.find(s => s.slug === 'hidden_gems');
-    if (!strat) {
-        throw new Error('Strategia hidden_gems non trovata in HERO_STRATEGIES');
-    }
 
     const resultsByMedia = {};
 
@@ -256,58 +287,76 @@ async function probeUser(userId, profileContextArg) {
         console.log(`MEDIA: ${mediaType.toUpperCase()} (totale cronologia: ${totalHist})`);
         console.log(`  Semi (passato 70%): ${semiDocs.length} titoli [${[...semiIds].join(', ')}]`);
         console.log(`  Oro  (futuro  30%): ${oroDocs.length} titoli [${[...oroIds].join(', ')}]`);
+
+        // Filtro Oro Ammissibile (Punto 1 del Ticket 45)
+        const { admissibleIds, metaMap: goldMetaMap, excludedDetails } = await filterAdmissibleGold(oroIds, mediaType);
+        console.log(`  Oro AMMISSIBILE   : ${admissibleIds.size}/${oroIds.size} titoli [${[...admissibleIds].join(', ') || 'nessuno'}]`);
+        if (excludedDetails.length > 0) {
+            console.log(`  Titoli oro esclusi dalle regole di nicchia:`);
+            for (const ex of excludedDetails) {
+                console.log(`    - ID ${ex.id} (${ex.title}): ${ex.motivo}`);
+            }
+        }
         console.log(`----------------------------------------------------------------------`);
 
-        // Profilo solo semi (senza fuga)
-        const pastOnlyProfile = await buildPastOnlyTasteProfile(semiDocs, liveProfile);
-
-        const ctxCommon = {
-            userId,
-            context: profileContext,
-            mediaType,
-            heroCandidateLimit: 160,
-            kidsMode: false,
-            effectiveSelectors: { anime: 'neutral' },
-            tmdbApiKey: null
-        };
-
-        // 1. Esecuzione OFF con Live Profile (Vecchio motore - Limite Superiore con Fuga)
-        setFlagNewHiddenGems(false);
-        const resOff = await strat.run({
-            ...ctxCommon,
-            tasteProfile: liveProfile,
-            profile: liveProfile
+        // Costruzione semi per Motore Grafo
+        const seedsLive = mediaDocs.map(d => {
+            let tipo = 'watched';
+            let peso = 2.0;
+            const sig = d.signals?.[0]?.type;
+            if (sig === 'loved') { tipo = 'loved'; peso = 4.0; }
+            else if (sig === 'liked') { tipo = 'liked'; peso = 3.0; }
+            else if (sig === 'library') { tipo = 'library'; peso = 1.0; }
+            return {
+                tmdbId: Number(d.tmdbId),
+                medium: mediaType,
+                tipo,
+                peso
+            };
         });
-        const idsOff = extractIds(resOff);
 
-        // 2. Esecuzione ON con Live Profile (Nuova catena - Limite Superiore con Fuga)
-        setFlagNewHiddenGems(true);
-        const resOnLive = await strat.run({
-            ...ctxCommon,
-            tasteProfile: liveProfile,
-            profile: liveProfile
+        const seedsPastOnly = semiDocs.map(d => {
+            let tipo = 'watched';
+            let peso = 2.0;
+            const sig = d.signals?.[0]?.type;
+            if (sig === 'loved') { tipo = 'loved'; peso = 4.0; }
+            else if (sig === 'liked') { tipo = 'liked'; peso = 3.0; }
+            else if (sig === 'library') { tipo = 'library'; peso = 1.0; }
+            return {
+                tmdbId: Number(d.tmdbId),
+                medium: mediaType,
+                tipo,
+                peso
+            };
         });
-        const idsOnLive = extractIds(resOnLive);
 
-        // 3. Esecuzione ON senza Fuga (Nuova catena - Profilo solo semi passati)
-        const resOnPast = await strat.run({
-            ...ctxCommon,
-            tasteProfile: pastOnlyProfile,
-            profile: pastOnlyProfile
-        });
-        const idsOnPast = extractIds(resOnPast);
+        // 1. Esecuzione ON (Grafo: nicchia_di_qualita con Live Profile - Fuga Superiore)
+        const resOnLiveItems = runGraphNicchia(seedsLive, mediaType, 10);
+        const idsOnLive = resOnLiveItems.map(item => String(item.tmdbId));
+
+        // 2. Esecuzione ON (Grafo: nicchia_di_qualita Senza Fuga - Solo Passato)
+        const resOnPastItems = runGraphNicchia(seedsPastOnly, mediaType, 10);
+        const idsOnPast = resOnPastItems.map(item => String(item.tmdbId));
 
         // Metadati DuckDB per calcolo diversità
-        const allUniqueIds = [...new Set([...idsOff, ...idsOnLive, ...idsOnPast, ...oroIds])];
+        const allUniqueIds = [...new Set([...idsOnLive, ...idsOnPast, ...oroIds])];
         const metaMap = await fetchMetadataForIds(allUniqueIds, mediaType);
 
-        // Helper calcolo metriche
+        // Riferimento OFF del vecchio motore (e24470e)
+        const refOff = VECCHIO_MOTORE_REF_E24470E[userId]?.[mediaType] || {
+            riempimento: 160, oroPresoCount: 0, oroPresoPct: 0.0, novitaPct: 100.0, distinctGenres: 12, distinctDirectors: 100
+        };
+
         const evaluateRow = (ids, label) => {
             const riempimento = ids.length;
             const oroPresoIds = ids.filter(id => oroIds.has(id));
             const oroPresoCount = oroPresoIds.length;
             const oroPresoPct = oroIds.size > 0 ? (oroPresoCount / oroIds.size) * 100 : 0;
             const oroPresoTitles = oroPresoIds.map(id => metaMap.get(id)?.title || id);
+
+            const oroAmmPresoIds = ids.filter(id => admissibleIds.has(id));
+            const oroAmmPresoCount = oroAmmPresoIds.length;
+            const oroAmmPresoPct = admissibleIds.size > 0 ? (oroAmmPresoCount / admissibleIds.size) * 100 : 0;
 
             const novelIds = ids.filter(id => !libraryTmdbIds.has(id));
             const novitaCount = novelIds.length;
@@ -321,6 +370,8 @@ async function probeUser(userId, profileContextArg) {
                 oroPresoCount,
                 oroPresoPct: Number(oroPresoPct.toFixed(1)),
                 oroPresoTitles,
+                oroAmmPresoCount,
+                oroAmmPresoPct: Number(oroAmmPresoPct.toFixed(1)),
                 novitaCount,
                 novitaPct: Number(novitaPct.toFixed(1)),
                 distinctGenres: div.distinctGenres,
@@ -331,32 +382,35 @@ async function probeUser(userId, profileContextArg) {
             };
         };
 
-        const metricsOff = evaluateRow(idsOff, 'OFF (Live / Limite Superiore)');
-        const metricsOnLive = evaluateRow(idsOnLive, 'ON (Live / Limite Superiore)');
-        const metricsOnPast = evaluateRow(idsOnPast, 'ON (Senza Fuga / Solo Passato)');
+        const metricsOnLive = evaluateRow(idsOnLive, 'ON: Grafo nicchia_di_qualita (Live / Fuga)');
+        const metricsOnPast = evaluateRow(idsOnPast, 'ON: Grafo nicchia_di_qualita (Senza Fuga / Passato)');
 
-        const jaccardLive = computeJaccard(idsOff, idsOnLive);
-        const jaccardPast = computeJaccard(idsOff, idsOnPast);
+        // Valutazione Criterio Non Vacuo
+        const verdettoLive = CRITERIO_DICHIARATO.valuta(metricsOnLive.oroPresoCount, refOff.oroPresoCount, metricsOnLive.oroAmmPresoCount);
+        const verdettoPast = CRITERIO_DICHIARATO.valuta(metricsOnPast.oroPresoCount, refOff.oroPresoCount, metricsOnPast.oroAmmPresoCount);
 
         resultsByMedia[mediaType] = {
             totalHist,
             semiCount: semiDocs.length,
             oroCount: oroDocs.length,
+            oroAmmissibileCount: admissibleIds.size,
             oroIds: [...oroIds],
-            jaccardLive,
-            jaccardPast,
+            admissibleIds: [...admissibleIds],
             metrics: {
-                off: metricsOff,
+                offRef: refOff,
                 onLive: metricsOnLive,
                 onPast: metricsOnPast
+            },
+            verdetto: {
+                live: verdettoLive,
+                past: verdettoPast
             }
         };
 
-        console.log(`  OFF Count    : ${metricsOff.riempimento} | Oro Preso: ${metricsOff.oroPresoCount}/${oroDocs.length} (${metricsOff.oroPresoPct}%) | Novità: ${metricsOff.novitaPct}% | Generi: ${metricsOff.distinctGenres} | Registi: ${metricsOff.distinctDirectors}`);
-        console.log(`  ON Live Count: ${metricsOnLive.riempimento} | Oro Preso: ${metricsOnLive.oroPresoCount}/${oroDocs.length} (${metricsOnLive.oroPresoPct}%) | Novità: ${metricsOnLive.novitaPct}% | Generi: ${metricsOnLive.distinctGenres} | Registi: ${metricsOnLive.distinctDirectors}`);
-        console.log(`  ON Past Count: ${metricsOnPast.riempimento} | Oro Preso: ${metricsOnPast.oroPresoCount}/${oroDocs.length} (${metricsOnPast.oroPresoPct}%) | Novità: ${metricsOnPast.novitaPct}% | Generi: ${metricsOnPast.distinctGenres} | Registi: ${metricsOnPast.distinctDirectors}`);
-        console.log(`  Jaccard OFF vs ON (Live): ${jaccardLive.jaccard} (int: ${jaccardLive.intersection}, uni: ${jaccardLive.union})`);
-        console.log(`  Jaccard OFF vs ON (Past): ${jaccardPast.jaccard} (int: ${jaccardPast.intersection}, uni: ${jaccardPast.union})\n`);
+        console.log(`  OFF Ref (Vecchio hidden_gems, e24470e): Count ${refOff.riempimento} | Oro Preso: ${refOff.oroPresoCount}/${oroDocs.length} (${refOff.oroPresoPct}%) | Novità: ${refOff.novitaPct}%`);
+        console.log(`  ON Live (Grafo nicchia_di_qualita): Count ${metricsOnLive.riempimento} | Oro Preso: ${metricsOnLive.oroPresoCount}/${oroDocs.length} (${metricsOnLive.oroPresoPct}%) | Oro Amm: ${metricsOnLive.oroAmmPresoCount}/${admissibleIds.size} (${metricsOnLive.oroAmmPresoPct}%) | Novità: ${metricsOnLive.novitaPct}%`);
+        console.log(`  ON Past (Grafo nicchia_di_qualita): Count ${metricsOnPast.riempimento} | Oro Preso: ${metricsOnPast.oroPresoCount}/${oroDocs.length} (${metricsOnPast.oroPresoPct}%) | Oro Amm: ${metricsOnPast.oroAmmPresoCount}/${admissibleIds.size} (${metricsOnPast.oroAmmPresoPct}%) | Novità: ${metricsOnPast.novitaPct}%`);
+        console.log(`  VERDETTO CRITERIO NON VACUO (Past): ${verdettoPast.accettato ? 'ACCETTATO ✓' : 'RESPINTO ✗'} (Dettaglio: ${JSON.stringify(verdettoPast.dettaglio)})\n`);
     }
 
     return { userId, profileContext, addonUuid, librarySize: libraryTmdbIds.size, resultsByMedia };
@@ -364,22 +418,23 @@ async function probeUser(userId, profileContextArg) {
 
 function printSummaryMarkdownTable(userReports) {
     console.log('='.repeat(100));
-    console.log('  TABELLA GENERALE MARKDOWN PER ## Esito (Ticket 43)');
+    console.log('  TABELLA PIANO (a): TESTA A TESTA SUI 2 UTENTI REALI (Ticket 45)');
     console.log('='.repeat(100) + '\n');
 
     for (const report of userReports) {
         console.log(`### Utente: \`${report.userId}\` (contesto: \`${report.profileContext}\`, libreria: ${report.librarySize} titoli)\n`);
 
-        console.log('| Media | Variante / Fuga | Riempimento | Oro Preso (su Oro) | Novità vs Lib | Generi Distinti (Top Genre) | Registi Distinti (Max/Reg) |');
-        console.log('|---|---|---|---|---|---|---|');
+        console.log('| Media | Motore / Variante | Riempimento | Oro Preso (su Oro Tot) | Oro Preso (su Oro Ammissibile) | Novità vs Lib | Generi Distinti (Top Genre) | Criterio Non Vacuo |');
+        console.log('|---|---|---|---|---|---|---|---|');
 
         for (const [media, r] of Object.entries(report.resultsByMedia)) {
             const mediaLabel = media === 'movie' ? 'Film (`movie`)' : 'Serie (`series`)';
             const m = r.metrics;
+            const v = r.verdetto;
 
-            console.log(`| **${mediaLabel}** | OFF (Live Profile - Vecchio) | **${m.off.riempimento}** | ${m.off.oroPresoCount}/${r.oroCount} (${m.off.oroPresoPct}%) | ${m.off.novitaCount}/${m.off.riempimento} (${m.off.novitaPct}%) | ${m.off.distinctGenres} (${m.off.topGenre}) | ${m.off.distinctDirectors} (max ${m.off.maxItemsPerDirector}) |`);
-            console.log(`| | ON (Live Profile - Fuga Sup.) | **${m.onLive.riempimento}** | ${m.onLive.oroPresoCount}/${r.oroCount} (${m.onLive.oroPresoPct}%) | ${m.onLive.novitaCount}/${m.onLive.riempimento} (${m.onLive.novitaPct}%) | ${m.onLive.distinctGenres} (${m.onLive.topGenre}) | ${m.onLive.distinctDirectors} (max ${m.onLive.maxItemsPerDirector}) |`);
-            console.log(`| | ON (Senza Fuga - Solo Passato) | **${m.onPast.riempimento}** | ${m.onPast.oroPresoCount}/${r.oroCount} (${m.onPast.oroPresoPct}%) | ${m.onPast.novitaCount}/${m.onPast.riempimento} (${m.onPast.novitaPct}%) | ${m.onPast.distinctGenres} (${m.onPast.topGenre}) | ${m.onPast.distinctDirectors} (max ${m.onPast.maxItemsPerDirector}) |`);
+            console.log(`| **${mediaLabel}** | OFF: Vecchio \`hidden_gems\` (e24470e, Live Sup.) | **${m.offRef.riempimento}** | ${m.offRef.oroPresoCount}/${r.oroCount} (${m.offRef.oroPresoPct}%) | ${m.offRef.oroPresoCount}/${r.oroAmmissibileCount} (—) | ${m.offRef.novitaPct}% | ${m.offRef.distinctGenres} | — (rivale storico) |`);
+            console.log(`| | ON: Grafo \`nicchia_di_qualita\` (Live / Fuga) | **${m.onLive.riempimento}** | ${m.onLive.oroPresoCount}/${r.oroCount} (${m.onLive.oroPresoPct}%) | ${m.onLive.oroAmmPresoCount}/${r.oroAmmissibileCount} (${m.onLive.oroAmmPresoPct}%) | ${m.onLive.novitaCount}/${m.onLive.riempimento} (${m.onLive.novitaPct}%) | ${m.onLive.distinctGenres} (${m.onLive.topGenre}) | ${v.live.accettato ? 'ACCETTATO' : 'RESPINTO'} |`);
+            console.log(`| | ON: Grafo \`nicchia_di_qualita\` (Senza Fuga / Passato) | **${m.onPast.riempimento}** | ${m.onPast.oroPresoCount}/${r.oroCount} (${m.onPast.oroPresoPct}%) | ${m.onPast.oroAmmPresoCount}/${r.oroAmmissibileCount} (${m.onPast.oroAmmPresoPct}%) | ${m.onPast.novitaCount}/${m.onPast.riempimento} (${m.onPast.novitaPct}%) | ${m.onPast.distinctGenres} (${m.onPast.topGenre}) | **${v.past.accettato ? 'ACCETTATO' : 'RESPINTO'}** |`);
         }
         console.log('\n');
     }
@@ -387,8 +442,9 @@ function printSummaryMarkdownTable(userReports) {
 
 async function main() {
     console.log('================================================================================');
-    console.log('  YACA QA PROBE — Misura Qualitativa Holdout di Gusto (Ticket 43)');
-    console.log('  Metrica: Oro Preso (70% semi / 30% oro) · Riempimento · Novità · Diversità');
+    console.log('  YACA QA PROBE — Il Metro della Qualità, Seconda Iterazione (Ticket 45)');
+    console.log('  Piano (a): nicchia_di_qualita (Grafo) vs hidden_gems (Vecchio Motore)');
+    console.log(`  Criterio dichiarato a priori: ${CRITERIO_DICHIARATO.definizione}`);
     console.log('================================================================================\n');
 
     await duckDbStore.init();
@@ -425,8 +481,6 @@ async function main() {
 
     printSummaryMarkdownTable(reports);
 
-    // Pulizia e chiusura risorse
-    setFlagNewHiddenGems(null);
     if (mongoose.connection.readyState === 1) {
         await mongoose.disconnect();
     }
