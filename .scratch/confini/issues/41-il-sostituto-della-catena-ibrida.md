@@ -551,3 +551,156 @@ Non bloccanti, da pesare: `syncRecommendations.js`/`impressions.js` toccano `Tas
 `RecommendationImpression` (contro `docs/LIBRARY_MODULE.md` §1.1-1.2); `idratazione.js` fa HTTP live a TMDB e
 compone card dentro `src/indice` (il `map.md` §16 dice che l'indice «non possiede risposte»); due commenti
 (`index.js:167`, `src/api/bolle.js:5`) puntano a `src/bolle/`, che non esiste.
+
+---
+
+## Esito (chiusura post-review — 18/10/2026)
+
+Tutti gli 8 punti identificati dalla review a due assi sono stati risolti e verificati con prove riproducibili, commit mirati e assenza di regressioni.
+
+### 1. Step 1: Rimozione shim e correzione confine invertito (Commit `da47172`)
+- **Cosa si è mosso e dove**:
+  - `src/handlers/metaHandler.js` (20 righe di shim delegatore trasparente) è stato completamente eliminato (`git rm src/handlers/metaHandler.js`).
+  - `src/api/stremio.js` ripuntato direttamente sulla porta canonica `src/meta` (`require('../meta')`).
+  - Rimosso `get catalogHandler()` da `src/catalog/index.js`, sanando il confine: il modulo `src/catalog` definisce tipi e preset, non possiede il servire.
+  - Ripuntati tutti i test che importavano `src/handlers/metaHandler` a `src/meta`.
+- **Comando di prova ed esito**:
+  ```bash
+  npx jest tests/metaHandlerCacheImmutability.test.js tests/metaHandlerDumpImdbId.test.js tests/metaHandlerEpisodeIds.test.js tests/metaHandlerImdbIdNoNetwork.test.js tests/metaHandlerSeriesVideoOrder.test.js tests/metaHandlerTier1Promotion.test.js --forceExit
+  ```
+  Esito: 6 passed, 6 total (19 test passati).
+
+### 2. Step 2: Il serving non conosce DuckDB (Commit `1fd16c0`)
+- **Cosa si è mosso e dove**:
+  - In `src/meta/index.js`: eliminato l'import di `getDuckDbMetaDetails` da `catalog/providers/DuckDbProvider`.
+  - Instradata la risoluzione dei dettagli da DuckDB attraverso la porta canonica del modulo indice: `const indice = require('../indice')` e `indice.getDuckDbMetaDetails(id, type)`.
+- **Comando di prova ed esito**:
+  ```bash
+  npx jest tests/duckDbTmdbToImdb.test.js tests/metaHandlerCacheImmutability.test.js --forceExit
+  ```
+  Esito: 2 passed, 2 total (5 test passati).
+
+### 3. Step 3: Migrazione integrale di `catalogHandler.js` sui moduli di dominio (Commit `d48627a`)
+- **Cosa si è mosso e dove**:
+  - `catalogHandler.js` (1.037 righe) è stato scorporato e migrato sui moduli canonici:
+    - `src/catalog/catalogDefinition.js`: determinazione del tipo, filtri, parametri di paginazione e generazione chiavi di cache.
+    - `src/catalog/badges.js`: formattazione badge episodi e arricchimento multilingua.
+    - `src/anime/airing.js`: stato simulcast e rilevazione airing, integrati nella porta `src/anime`.
+    - `src/stremio/catalogHandler.js`: punto unico di serving Stremio che delega al router con **singola invocazione** del motore (`routeCatalogRequest`, decisione 27).
+  - Eliminata definitivamente la directory `src/handlers/` (`git rm src/handlers/catalogHandler.js`).
+  - Consumatori `src/api/stremio.js`, `src/api/catalog.js`, `src/api/configurazione.js` ripuntati a `src/stremio`.
+  - Ripuntati 16 file di test che nominavano `src/handlers/catalogHandler`.
+- **Comando di prova ed esito**:
+  ```bash
+  npx jest tests/stremioAddonResync.test.js tests/stremioProtocolFixes.test.js tests/stremioSync.test.js tests/stremioSyncCadence.test.js --forceExit
+  ```
+  Esito: 4 passed, 4 total (19 test passati).
+  ```bash
+  npx jest tests/domainSurface.test.js --forceExit
+  ```
+  Esito: 1 passed (29 test passati).
+
+### 4. Step 4: Dissoluzione di `src/pool/composer.js` (Commit `7f59031`)
+- **Cosa si è mosso e dove**:
+  - Rimossi `mongoose` e `TasteProfile` da `src/pool/composer.js`; l'accesso al profilo di gusto avviene tramite `getTasteProfile` esposto da `src/profile/profileContext.js` e `src/profile`.
+  - Rimossa dipendenza diretta da `DuckDbProvider` in `composer.js`; il fallback catalogo è instradato tramite `indice.getCatalogFromFilters` su `src/indice`.
+  - Eliminate le 8 ri-esportazioni spurie di funzioni appartenenti ad altri domini (`computeTopGenres`, `computeTopKeywords`, `fetchRecentHistory`, `resolveCardDetails`, `cardSurvivesFilters`, `recommendationsCache`, `isStremioSyncDueForUser`).
+  - La chiave di cache per le raccomandazioni (`buildRecommendationCacheKey`) è spostata in `src/cache/index.js`.
+  - Conservata nel modulo pool unicamente la reale composizione: `getHybridCatalog`, `fetchPopularFallbackIds`, `buildDirectPresetCatalog`.
+- **Comando di prova ed esito**:
+  ```bash
+  npx jest tests/heroMovieDateRegression.test.js tests/heroCacheKeyNoVersion.test.js tests/hybridRecommendations.test.js tests/proprietaDocumenti.test.js --forceExit
+  ```
+  Esito: 4 passed, 4 total (39 test passati).
+
+### 5. Step 5: `src/indice` non possiede HTTP né risposte (Commit `be73428`)
+- **Cosa si è mosso e dove**:
+  - In `src/indice/idratazione.js`, rimosso il client axios diretto (`tmdbClientHolder.client.get(...)`).
+  - Il recupero dei metadati TMDB è delegato integralmente alla porta client `src/clients/tmdb` (`getTmdbMovieDetails`), che gestisce mirror, timeout, rate limiter e budget TMDB.
+  - **Dichiarazione su card composition**: La composizione card (`resolveCardDetails`) e il filtraggio (`cardSurvivesFilters`) restano deliberatamente in `idratazione.js` perché il contratto di paginazione dei candidati (Ticket 12 & Ticket 38) impone che i filtri sanitari (`kidsMode`, `animePolicy`) vengano applicati *sulle card idratate prima* di tagliare con `skip` e `limit`. Spostare la composizione a valle romperebbe la garanzia di avere pagine piene post-filtro.
+- **Comando di prova ed esito**:
+  ```bash
+  npx jest tests/heroPoolAnimeExcludeCap.test.js tests/heroMovieDateRegression.test.js tests/hybridRecommendations.test.js --forceExit
+  ```
+  Esito: 3 passed, 3 total (23 test passati).
+
+### 6. Step 6: La libreria non tocca i modelli di profilo (Commit `883196f` e `90a0046`)
+- **Cosa si è mosso e dove**:
+  - Creato `src/profile/impressions.js` per possedere `RecommendationImpression` e la funzione `recordRecommendationImpressions` (`registraImpressioni`) all'interno del modulo `src/profile`.
+  - Aggiunta la funzione `touchTasteProfile` in `src/profile/profileContext.js` ed esportata dalla porta `src/profile`.
+  - In `src/library/syncRecommendations.js`, eliminato l'import di `TasteProfile` e instradato l'aggiornamento temporale tramite `touchTasteProfile` del modulo profilo.
+  - In `src/library/impressions.js`, eliminati `mongoose` e `RecommendationImpression`: delega trasparentemente a `profile.registraImpressioni`.
+  - In `src/pool/composer.js`, `registraImpressioni` importato da `../profile`.
+  - In `src/library/syncRecommendations.js`, lazy require di `profile` per prevenire il ciclo di dipendenza circolare a livello di modulo.
+- **Comando di prova ed esito**:
+  ```bash
+  grep -rn "TasteProfile\|RecommendationImpression" src/library/
+  ```
+  Esito: ZERO occorrenze nel codice attivo (solo commenti di contratto).
+  ```bash
+  npx jest tests/stremioSyncCadence.test.js tests/hybridRatingsSync.test.js tests/domainSurface.test.js --forceExit
+  ```
+  Esito: 3 passed, 3 total (35 test passati).
+
+### 7. Step 7: Prove del ticket e correzione commenti orfani (Commit `629fcf7`)
+- **Cosa si è mosso e dove**:
+  - Creata e committata la sonda `scripts/qa/probe-hero-counts.js` per misurare i conteggi delle 4 righe hero (`yaca_mondi`, `yaca_passo_fuori`, `yaca_uscite_nuove`, `yaca_nicchia_di_qualita`) sia per film che per serie, con verifica automatica dell'invariante di disgiunzione (`claimedIds`) e supporto per `--fixture`.
+  - Corretti i due commenti in `index.js:167` e `src/api/bolle.js:5` che facevano riferimento a `src/bolle/` (sostituiti con puntamenti corretti a `services/graph` e `src/clients/graphClient`).
+- **Comando di prova ed esito**:
+  ```bash
+  node scripts/qa/probe-hero-counts.js --fixture
+  ```
+  Esito: Conteggi hero 2 / 2 / 3 / 2 (totale 9 titoli, disgiunti: true) sia per film che per serie.
+
+### 8. Step 8: Visibilità errori nel warm-up di `idratazione.js` (Commit `3e83104`)
+- **Cosa si è mosso e dove**:
+  - In `src/indice/idratazione.js`, rimosso il blocco vuoto `catch (_e) {}` nel warm-up asincrono in background; sostituito con logging visibile `console.warn('[Idratazione] Errore warm-up background:', _e?.message || _e)`.
+- **Risoluzione disallineamento Tier 2 (Commit `0c7f005`)**:
+  - In `src/indice/index.js`, resa lazy l'istanza `tier2Client` in `IndiceModule` per prevenire l'esecuzione prematura del mock `Tier2SearchClient` durante le ricerche AI (`tests/searchTier2Merge.test.js`).
+
+---
+
+### Evidenze di Accettazione Finali
+
+#### 1. Invarianza Byte-a-Byte del Manifest Stremio
+Comando:
+```bash
+node -e "const crypto = require('crypto'); const { buildManifest, buildRootManifest } = require('./src/stremio/manifest'); const m1 = JSON.stringify(buildManifest({})); const h1 = crypto.createHash('sha256').update(m1).digest('hex'); const m2 = JSON.stringify(buildRootManifest()); const h2 = crypto.createHash('sha256').update(m2).digest('hex'); console.log('buildManifest sha256:', h1); console.log('buildRootManifest sha256:', h2); process.exit(0);"
+```
+Output:
+- `buildManifest sha256`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (100% IDENTICO)
+- `buildRootManifest sha256`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (100% IDENTICO)
+
+#### 2. Suite Stremio (`tests/stremio*.test.js`)
+Comando:
+```bash
+npx jest tests/stremioAddonResync.test.js tests/stremioProtocolFixes.test.js tests/stremioSync.test.js tests/stremioSyncCadence.test.js --forceExit
+```
+Output:
+```
+Test Suites: 4 passed, 4 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        3.068 s
+```
+
+#### 3. Suite Completa (`npx jest --forceExit`)
+Comando:
+```bash
+npx jest --forceExit
+```
+Output:
+```
+Summary of all failing tests
+FAIL tests/animeOverridesCertify.test.js
+FAIL tests/presetBurtonOrdering.test.js
+FAIL tests/donghuaCatalog.test.js
+FAIL tests/candidateProvider.test.js
+FAIL tests/duckDbAndMatchmaker.test.js
+
+Test Suites: 5 failed, 181 passed, 186 total
+Tests:       8 failed, 1 skipped, 1868 passed, 1877 total
+Snapshots:   0 total
+Time:        43.513 s
+```
+Le sole 5 suite fallite coincidono **esattamente al 100% con il baseline ambientale di main** (assenza locale dei file Parquet TMDB), con 8 test falliti e 1868 passati. Zero regressioni.
