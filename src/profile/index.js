@@ -49,15 +49,6 @@ const studioProfile = require('./studioProfile');
 // Motore matematico del DNA (Ticket 49)
 const dnaEngine = require('./dnaEngine');
 
-// Ricezione DF Cache dall'indice (Dependency Inversion, Ticket 49)
-try {
-    const duckDbStore = require('../indice/duckDbStore');
-    if (duckDbStore && typeof duckDbStore.setDfCacheConsumer === 'function') {
-        duckDbStore.setDfCacheConsumer(dnaEngine.setGlobalDfCache);
-    }
-} catch (_e) {
-    // Ambiente di test isolato o mock senza setDfCacheConsumer
-}
 
 // Staleness del profilo (Ticket 41 - Fetta 1)
 const {
@@ -139,6 +130,10 @@ module.exports = {
     getSoftRarityMultiplier: dnaEngine.getSoftRarityMultiplier,
     applySoftRarity: dnaEngine.applySoftRarity,
     computeTimeDecay: dnaEngine.computeTimeDecay,
-    normalizeVector: dnaEngine.normalizeVector
+    normalizeVector: dnaEngine.normalizeVector,
+    // Il resolver dei nomi TMDB è del profilo: chi sta fuori lo prende dalla porta (docs/INDEX.md:19).
+    resolveDnaNames: (...a) => require('./tmdbNameResolver').resolveDnaNames(...a),
+    getReadableFallback: (...a) => require('./tmdbNameResolver').getReadableFallback(...a),
+    GENRE_ID_TO_NAME: require('./tmdbNameResolver').GENRE_ID_TO_NAME
 };
 

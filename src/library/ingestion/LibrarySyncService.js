@@ -462,8 +462,9 @@ class LibrarySyncService {
             const imdbMap = new Map();
             if (imdbIds.length > 0) {
                 try {
-                    const ImdbToTmdbMapping = require('../../models/ImdbToTmdbMapping');
-                    const mappings = await ImdbToTmdbMapping.find({ imdbId: { $in: imdbIds } }).lean();
+                    // Il modello è del modulo clients: si legge dalla sua porta (map §16).
+                    const { lookupImdbToTmdbBatch } = require('../../clients');
+                    const mappings = await lookupImdbToTmdbBatch(imdbIds);
                     for (const m of mappings) {
                         if (m.imdbId && m.tmdbId) {
                             imdbMap.set(m.imdbId, String(m.tmdbId).replace(/^tmdb:/i, '').split(':')[0]);

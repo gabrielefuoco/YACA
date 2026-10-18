@@ -17,8 +17,9 @@
  * della matematica L1-L5). Il call graph resta aciclico.
  *
  * ATTENZIONE: `globalDfCache` è stato di modulo e deve restare **una sola
- * istanza**. `src/indice/duckDbStore.js` la inietta direttamente: se nascesse una seconda
- * cache, la rarità ricadrebbe in silenzio sui fallback stimati.
+ * istanza**. La riempie chi legge `getDfCache()` dalla porta dell'indice
+ * (`src/profile/ProfileBuilder.js`): se nascesse una seconda cache, la rarità
+ * ricadrebbe in silenzio sui fallback stimati.
  */
 
 const { isRetiredTmdbKeywordId, sanitizeDnaVector } = require('../indice/keywordIds');

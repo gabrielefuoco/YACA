@@ -5,7 +5,7 @@ Questo documento illustra nel dettaglio gli algoritmi, i modelli matematici e le
 Le logiche di calcolo e raccomandazione si trovano principalmente in:
 *   [src/profile/ProfileScorer.js](../src/profile/ProfileScorer.js): Core engine di scoring per l'affinità dei contenuti (vettoriale, bayesiano e penalità di rotazione).
 *   [src/profile/ProfileBuilder.js](../src/profile/ProfileBuilder.js): Gestore del ciclo di vita dei profili e aggiornamento incrementale dei vettori.
-*   [src/dna/dnaEngine.js](../src/dna/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path in utils sono stati rimossi e unificati in questo modulo (ticket 42).
+*   [src/profile/dnaEngine.js](../src/profile/dnaEngine.js): il motore matematico del DNA — estrazione (statica + attiva), rarità, saturazione, clustering, scoring VSM e fusione. Non fa I/O. I vecchi path in utils sono stati rimossi e unificati in questo modulo (ticket 42).
 *   [src/engines/hybrid/scoringEngine.js](../src/engines/hybrid/scoringEngine.js): Score ibrido per co-occorrenza (semi-seed del *Seed Network*) ed estrazione dei top-N generi/keyword dal vettore. **Non** è l'orchestratore Two-Tier: vedi §2.
 *   [src/engines/hybrid/catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js): Strategie di compilazione per i cataloghi speciali (*True Blend*, *Hidden Gems*, ecc.) e i cap di diversità degli hero.
 *   [src/infra/resultMerger.js](../src/infra/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
@@ -22,7 +22,7 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 YACA modella l'identità cinematografica dell'utente usando un approccio basato sul **Vector Space Model (VSM)**. Le preferenze dell'utente sono rappresentate da un vettore multidimensionale i cui elementi sono coppie chiavi-valore del tipo `prefisso:valore` (es. `g:28` per il genere Action, `k:12984` per la keyword *time travel*, `o:JP` per il Giappone, `L2:t_272` per un topos del grafo gerarchico).
 
 > [!NOTE]
-> **Il motore matematico vive in un modulo solo**: [src/dna/dnaEngine.js](../src/dna/dnaEngine.js) (ticket 22, consolidato in ticket 42). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi in utils sono stati rimossi.
+> **Il motore matematico vive in un modulo solo**: [src/profile/dnaEngine.js](../src/profile/dnaEngine.js) (ticket 22, consolidato in ticket 42). Contiene estrazione statica e attiva, rarità, saturazione, clustering, scoring VSM e la fusione `computeFinalDNA`; **non fa I/O** — niente Mongo, niente DuckDB, niente HTTP. I vecchi percorsi in utils sono stati rimossi.
 >
 > Due cose da non rompere se si tocca il modulo:
 > - **`globalDfCache` è una variabile di modulo**, iniettata all'avvio da `src/db/duckDbStore.js:361`. Se il modulo ne istanziasse una propria copia non sincronizzata, la rarità ricadrebbe **in silenzio** sui fallback stimati, alterando i pesi senza errori né log. C'è un test che la verifica per identità.
@@ -33,20 +33,20 @@ YACA modella l'identità cinematografica dell'utente usando un approccio basato 
 > Che i due percorsi restino **consistenti** e che le tre convenzioni restino **distinte** lo difende `tests/dnaScalesInvariant.test.js`: verifica l'idempotenza di `sanitizeDnaVector` sull'uscita di `computeActiveDNA` (cioè che la rotta REST non ri-normalizzi ciò che il builder ha già normalizzato) e che le scale non convergano. È la voce che mancava: chi un giorno le unifica "per pulizia" prende un rosso con la spiegazione, invece di rompere i pesi dei profili salvati in silenzio.
 
 > [!IMPORTANT]
-> **Le persone non fanno parte del DNA.** Le chiavi `d:` (crew/registi) e `a:` (cast) vengono scartate sia in generazione sia in lettura: `isPersonDnaKey()` le riconosce e `stripPersonKeys()` le rimuove dentro `normalizeVector()` ([dnaEngine.js](../src/dna/dnaEngine.js)). Un `V_final` salvato prima di questa decisione viene ripulito al momento in cui viene riletto, senza migrazione. Motivo dichiarato nel codice: le persone rendevano il DNA troppo restrittivo. **Non esistono quindi assi autoriali nello score**: vedi §2.
+> **Le persone non fanno parte del DNA.** Le chiavi `d:` (crew/registi) e `a:` (cast) vengono scartate sia in generazione sia in lettura: `isPersonDnaKey()` le riconosce e `stripPersonKeys()` le rimuove dentro `normalizeVector()` ([dnaEngine.js](../src/profile/dnaEngine.js)). Un `V_final` salvato prima di questa decisione viene ripulito al momento in cui viene riletto, senza migrazione. Motivo dichiarato nel codice: le persone rendevano il DNA troppo restrittivo. **Non esistono quindi assi autoriali nello score**: vedi §2.
 
 Il DNA finale dell'utente (`V_final`) è il risultato della fusione dinamica di due componenti vettoriali:
 
 ### Vettore Statico (`V_static`)
-Rappresenta le intenzioni dichiarate dall'utente durante la configurazione o derivanti dai preset del catalogo ([dnaEngine.js](../src/dna/dnaEngine.js)): generi, keyword gerarchiche e paese d'origine, ciascuno con peso fisso `100`.
+Rappresenta le intenzioni dichiarate dall'utente durante la configurazione o derivanti dai preset del catalogo ([dnaEngine.js](../src/profile/dnaEngine.js)): generi, keyword gerarchiche e paese d'origine, ciascuno con peso fisso `100`.
 
 *   **Rosetta Dictionary per Kitsu — percorso di retrocompatibilità, non più attivabile dall'utente**: il codice di traduzione esiste ancora in `extractStaticDNAFromQueries()` (`provider === 'kitsu'` → `g:16` + `o:JP` + keyword testuali come `k:isekai`), ma chi salva un catalogo con `provider: 'kitsu'` oggi lo normalizza a `'tmdb'` prima che arrivi al DNA ([validators.js](../src/api/configure/validators.js#L124-L160)). Kitsu resta solo come **formato di ID** degli item anime (`idPrefixes`, `animeIdMode`), non come sorgente selezionabile.
 
 ### Vettore Attivo (`V_active`)
-Rappresenta le abitudini reali di consumo registrate tramite la cronologia di visione (`WatchHistory`). Viene arricchito in tempo reale ad ogni visione o ad ogni sincronizzazione incrementale da Trakt o Stremio. Ciascun elemento visto incrementa la forza dei rispettivi generi, keyword e paesi dell'opera. Ogni segnale è moltiplicato per un **decadimento esponenziale con emivita di 24 mesi** (`computeTimeDecay`, [dnaEngine.js](../src/dna/dnaEngine.js)): un interesse del 2020 pesa metà del suo valore nominale.
+Rappresenta le abitudini reali di consumo registrate tramite la cronologia di visione (`WatchHistory`). Viene arricchito in tempo reale ad ogni visione o ad ogni sincronizzazione incrementale da Trakt o Stremio. Ciascun elemento visto incrementa la forza dei rispettivi generi, keyword e paesi dell'opera. Ogni segnale è moltiplicato per un **decadimento esponenziale con emivita di 24 mesi** (`computeTimeDecay`, [dnaEngine.js](../src/profile/dnaEngine.js)): un interesse del 2020 pesa metà del suo valore nominale.
 
 ### Algoritmo di Fusione (`computeFinalDNA`)
-La fusione è in [dnaEngine.js](../src/dna/dnaEngine.js) — `computeFinalDNA` e avviene in quattro passi:
+La fusione è in [dnaEngine.js](../src/profile/dnaEngine.js) — `computeFinalDNA` e avviene in quattro passi:
 
 1.  **Rarità dolce**: `applySoftRarity()` moltiplica ogni chiave per un fattore in $[1.0, 1.80]$ prima di ogni altra operazione, così un genere onnipresente (`df` alto) non schiaccia le keyword di nicchia. Le chiavi sotto la soglia `df = 15` non ricevono alcun bonus.
 2.  **Normalizzazione a $1.0$**: `normalizeVector()` scarta le chiavi persona e porta la somma dei pesi a $1.0$.

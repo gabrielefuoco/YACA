@@ -235,4 +235,4 @@ Cinque trappole insidiose sono state scoperte e pagate durante lo sviluppo. Sono
 > [!NOTE]
 > La superficie API esposta al frontend web è attualmente **in movimento** (Ticket 10 e Ticket 11 in corso di implementazione parallela).
 > - Il client dismetterà le chiamate infrastrutturali dirette (`/api/tmdb/*`, `/api/sync/*`, `/api/clear-cache`).
-> - La comunicazione migra verso risorse pure di dominio: `GET /api/dashboard`, `POST /api/dashboard/save`, `POST /api/mondi`, protette da autenticazione cookie-session (`src/middleware/sessione.js`) con blocco delle vulnerabilità IDOR riscontrate sui vecchi parametri `userId`.
+> - La comunicazione migra verso risorse pure di dominio: `GET /api/dashboard`, `POST /api/dashboard/save`, `POST /api/mondi`, protette da autenticazione cookie-session (`src/api/middleware/sessione.js`) con blocco delle vulnerabilità IDOR riscontrate sui vecchi parametri `userId`.

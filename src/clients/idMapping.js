@@ -89,8 +89,28 @@ async function translateImdbToTmdb(imdbId, tmdbApiKey) {
     }
 }
 
+/**
+ * Il modello ImdbToTmdbMapping è di QUESTO modulo (map §16: solo il proprietario tocca i suoi modelli).
+ * Gli altri moduli leggono da qui, non dal modello.
+ */
+async function lookupImdbToTmdb(imdbId) {
+    if (!imdbId) return null;
+    const doc = await ImdbToTmdbMapping.findOne({ imdbId }).lean();
+    return doc || null;
+}
+
+/**
+ * Lettura in blocco: una query per N id.
+ * @param {string[]} imdbIds
+ * @returns {Promise<Array<{imdbId: string, tmdbId: string, type?: string}>>}
+ */
+async function lookupImdbToTmdbBatch(imdbIds) {
+    if (!Array.isArray(imdbIds) || imdbIds.length === 0) return [];
+    return ImdbToTmdbMapping.find({ imdbId: { $in: imdbIds } }).lean();
+}
+
 async function clearIdCache() {
     localCache.clear();
 }
 
-module.exports = { translateImdbToTmdb, clearIdCache };
+module.exports = { translateImdbToTmdb, clearIdCache, lookupImdbToTmdb, lookupImdbToTmdbBatch };

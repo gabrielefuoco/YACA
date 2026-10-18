@@ -31,7 +31,7 @@ La **versione sta nel nome del file** ed è derivata dal contenuto (disegno + id
 
 ### DNA: il motore in un modulo, e un difetto corretto
 
-Il motore matematico vive in **`src/dna/dnaEngine.js`** (puro: niente Mongo, DuckDB o HTTP), con i vecchi percorsi diventati thin-shim. `globalDfCache` resta la stessa istanza — è la trappola silenziosa: se il modulo ne creasse una propria, la rarità ricadrebbe sui fallback **senza errori né log**. Corretto un difetto vero: `V_active` veniva persistito in **due scale diverse** a seconda di chi scriveva il profilo (saturazione per chiave ≈ 1472, oppure somma 100); ora entrambi i percorsi usano `computeActiveDNA`, con `V_final` invariato.
+Il motore matematico vive in **`src/profile/dnaEngine.js`** (puro: niente Mongo, DuckDB o HTTP), con i vecchi percorsi diventati thin-shim. `globalDfCache` resta la stessa istanza — è la trappola silenziosa: se il modulo ne creasse una propria, la rarità ricadrebbe sui fallback **senza errori né log**. Corretto un difetto vero: `V_active` veniva persistito in **due scale diverse** a seconda di chi scriveva il profilo (saturazione per chiave ≈ 1472, oppure somma 100); ora entrambi i percorsi usano `computeActiveDNA`, con `V_final` invariato.
 
 ### Ordinamenti: un vocabolario, e i tie-breaker protetti
 

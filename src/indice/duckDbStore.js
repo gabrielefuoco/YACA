@@ -25,7 +25,6 @@ class DuckDbStore {
         // così un titolo promosso a Tier 1 dopo è visibile subito).
         this.tmdbImdbIdCache = new Map();
         this.dfMap = null;
-        this._dfCacheConsumer = null;
     }
 
     _cleanupDbFiles(filePath) {
@@ -580,15 +579,9 @@ class DuckDbStore {
                 dfMap.set(`k:${name}`, df);
                 idToName.set(id, name);
                 if (!nameToId.has(name)) nameToId.set(name, id);
-            }
-            // Memorizza la cache DF internamente ed invoca il consumer esterno registrato (Ticket 49)
-            this.dfMap = dfMap;
-            if (typeof this._dfCacheConsumer === 'function') {
-                try {
-                    this._dfCacheConsumer(dfMap);
-                } catch (consumerErr) {
-                    console.warn('[DuckDbStore] Error in dfCacheConsumer:', consumerErr.message);
-                }
+                // La cache DF resta qui e chi la vuole la LEGGE (getDfCache): niente callback push.
+                // L'indice non conosce il profilo, e il profilo non importa i file interni dell'indice.
+                this.dfMap = dfMap;
             }
 
             const { setKeywordNameMaps } = require('./keywordIds');
@@ -601,22 +594,6 @@ class DuckDbStore {
             } catch (_e) { /* grafo non caricato: niente da invalidare */ }
         } catch (err) {
             console.warn('[DuckDbStore] Error building DF cache:', err.message);
-        }
-    }
-
-    /**
-     * Registra un consumer esterno per la cache DF calcolata dall'indice (Ticket 49).
-     * L'indice non dipende dal profilo / DNA: riceve il consumer dall'esterno.
-     * @param {Function} consumer (dfMap: Map<string, number>) => void
-     */
-    setDfCacheConsumer(consumer) {
-        this._dfCacheConsumer = consumer;
-        if (this.dfMap && typeof consumer === 'function') {
-            try {
-                consumer(this.dfMap);
-            } catch (err) {
-                console.warn('[DuckDbStore] Error notifying dfCacheConsumer:', err.message);
-            }
         }
     }
 

@@ -1,10 +1,4 @@
 const duckDbStore = require('../indice/duckDbStore');
-let ImdbToTmdbMapping = null;
-try {
-    ImdbToTmdbMapping = require('../models/ImdbToTmdbMapping');
-} catch (_e) {
-    ImdbToTmdbMapping = null;
-}
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
@@ -46,10 +40,12 @@ async function resolvePoster(item, options = {}) {
         }
     }
 
-    // 2. Se è un imdbId (tt...), prova a risolvere tramite ImdbToTmdbMapping (senza rete)
-    if ((!effectiveTmdbId || isNaN(effectiveTmdbId)) && /^tt\d+$/.test(rawId) && ImdbToTmdbMapping) {
+    // 2. Se è un imdbId (tt...), prova a risolvere tramite il mapping (senza rete).
+    // Il modello è del modulo clients: si legge dalla sua porta (map §16).
+    if ((!effectiveTmdbId || isNaN(effectiveTmdbId)) && /^tt\d+$/.test(rawId)) {
         try {
-            const mapping = await ImdbToTmdbMapping.findOne({ imdbId: rawId }).lean();
+            const { lookupImdbToTmdb } = require('../clients');
+            const mapping = await lookupImdbToTmdb(rawId);
             if (mapping && mapping.tmdbId) {
                 const cleaned = String(mapping.tmdbId).replace(/^tmdb:/i, '').split(':')[0].trim();
                 if (/^\d+$/.test(cleaned)) {
