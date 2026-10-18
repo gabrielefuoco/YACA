@@ -26,7 +26,7 @@ jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/engines/hybridRecommendations', () => ({
+jest.mock('../src/profile', () => ({
     computeTopGenres: jest.fn(() => []),
     computeTopKeywords: jest.fn(() => [])
 }));

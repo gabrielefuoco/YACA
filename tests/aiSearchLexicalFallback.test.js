@@ -19,7 +19,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn()
 }));
 
-jest.mock('../src/engines/hybridRecommendations', () => ({
+jest.mock('../src/profile', () => ({
     computeTopGenres: jest.fn(() => ['878']),
     computeTopKeywords: jest.fn(() => ['878'])
 }));
