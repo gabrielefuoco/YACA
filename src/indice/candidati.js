@@ -20,7 +20,7 @@
 const compiler = require('./compiler');
 const duckDbStore = require('./duckDbStore');
 const { isItemAnime, ANIME_POLICY_MODES, isAnimeContent } = require('../anime');
-const { F, S } = require('../catalog/filters');
+const { F, S } = require('./filters');
 const { isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../catalog/kidsModeFilters');
 
 const HIDDEN_GEMS_MAX_POPULARITY = 20;

@@ -1,5 +1,5 @@
 const ProfileScorer = require('../src/profile/ProfileScorer');
-const { G, F } = require('../src/catalog/filters');
+const { G, F } = require('../src/indice/filters');
 const { computeTopGenres, computeTopKeywords } = require('../src/profile');
 const HierarchicalGraph = require('../src/indice/HierarchicalGraph');
 

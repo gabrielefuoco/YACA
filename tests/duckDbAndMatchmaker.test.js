@@ -1,5 +1,5 @@
 const { compileQuery } = require('../src/indice/compiler');
-const { F, S } = require('../src/catalog/filters');
+const { F, S } = require('../src/indice/filters');
 const { getPresets } = require('../src/catalog/presets');
 const { 
     buildPresetFromFilters, 

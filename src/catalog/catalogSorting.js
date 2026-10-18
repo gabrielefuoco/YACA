@@ -28,7 +28,7 @@
  * -----------------------------------------------------------------------------
  */
 
-const { S } = require('./filters');
+const { S } = require('../indice/filters');
 const { isHeroCatalogId } = require('./registry');
 
 /**

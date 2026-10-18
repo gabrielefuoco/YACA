@@ -10,7 +10,7 @@ const NICHE_MIN_VOTE_BONUS = 1.0;
 const NICHE_MAX_VOTE_BONUS = 2.5;
 
 const { isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
-const { G } = require('../catalog/filters');
+const { G } = require('../indice/filters');
 const { isRetiredTmdbKeywordId, filterRetiredTmdbKeywords, sanitizeDnaVector } = require('../indice/keywordIds');
 const { resolveAnimePolicy, computeAnimeScoreMultiplier, isAnimeContent } = require('../anime');
 

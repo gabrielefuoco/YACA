@@ -2,7 +2,7 @@ const { getPresets } = require('../src/catalog/presets');
 const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-const { F } = require('../src/catalog/filters');
+const { F } = require('../src/indice/filters');
 const {
     passesQualityFloor,
     isQualityFloorItemRecent

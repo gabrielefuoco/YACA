@@ -13,7 +13,7 @@ const {
 } = require('../src/catalog/catalogSorting');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
-const { S } = require('../src/catalog/filters');
+const { S } = require('../src/indice/filters');
 const stremioRouter = require('../src/api/stremio');
 const UserConfig = require('../src/models/UserConfig');
 

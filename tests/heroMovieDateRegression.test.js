@@ -5,7 +5,7 @@ const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const { getDuckDbMetaDetails, mapDuckDbRowToMeta } = require('../src/indice/duckDbProvider');
 const traktFetchers = require('../src/library/traktFetchers');
-const { F } = require('../src/catalog/filters');
+const { F } = require('../src/indice/filters');
 
 jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn(),

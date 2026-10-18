@@ -177,14 +177,14 @@ module.exports = {
     // 1. Evitare collisioni di nomi (es. applyKidsMode presente sia in filters che in kidsModeFilters).
     // 2. Preservare l'isolamento dei mock Jest: presets.js invoca buildPresetFromFilters all'avvio;
     //    un require eager romperebbe i test che mockano parzialmente DuckDbProvider.
-    get filters() { return require('./filters'); },
+    get filters() { return require('../indice/filters'); },
     get presets() { return require('./presets'); },
     get kidsModeFilters() { return require('./kidsModeFilters'); },
     get contentId() { return require('./contentId'); },
     get normalizeContentId() { return require('./contentId').normalizeContentId; },
     get getPresets() { return require('./presets').getPresets; },
-    get F() { return require('./filters').F; },
-    get G() { return require('./filters').G; },
+    get F() { return require('../indice/filters').F; },
+    get G() { return require('../indice/filters').G; },
     get applyKidsMode() { return require('./kidsModeFilters').applyKidsMode; },
     get isItemInappropriateForKids() { return require('./kidsModeFilters').isItemInappropriateForKids; }
 };

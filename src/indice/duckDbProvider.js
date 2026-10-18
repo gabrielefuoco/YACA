@@ -5,7 +5,7 @@
  * L'indice possiede DuckDB (map §16); catalog e meta dipendono dall'indice, mai il contrario.
  */
 
-const { F, S } = require('../catalog/filters');
+const { F, S } = require('./filters');
 const { animeMappingStore, normalizeAnimeMarker } = require('../anime');
 const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../catalog/kidsModeFilters');
 

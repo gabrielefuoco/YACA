@@ -1,7 +1,7 @@
 const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
 const { normalizeToUniversalSchema } = require('../src/infra/resultMerger');
 const { sanitizeCustomCatalog, sanitizeCustomCatalogs } = require('../src/api/configure/validators');
-const { F } = require('../src/catalog/filters');
+const { F } = require('../src/indice/filters');
 
 describe('Creator Solo Anime Tag & Engine Filtering', () => {
     describe('(a) Catalog with "solo anime" tag produces expected anime filter', () => {

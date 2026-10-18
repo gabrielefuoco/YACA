@@ -1,6 +1,6 @@
 // src/catalog/presets.js
 
-const { F, S } = require('./filters');
+const { F, S } = require('../indice/filters');
 const { buildPresetFromFilters } = require('./providers/DuckDbProvider');
 const { defineCatalog } = require('./definition');
 
