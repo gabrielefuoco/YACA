@@ -189,6 +189,7 @@ async function idrataEImpaginaCandidati({
                         const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
                         const normalizedId = normalizeContentId(tmdbId);
                         const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
+                        const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
                         const duckMeta = await getDuckDbMetaDetailsSafe(normalizedId, tmdbType);
                         if (!duckMeta || !duckMeta.rawTMDB) {
                             await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType);
