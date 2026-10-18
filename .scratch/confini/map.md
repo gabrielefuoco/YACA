@@ -775,3 +775,18 @@ passati a `src/ricerca` — per il §16 la ricerca possiede «da una richiesta a
 oggi sono **13 file, 3.124 righe di solo tipo**: definizione, registro, derivazioni, validazione, vocabolario.
 Dipende dall'indice (il compilatore) e non è dipendente da nessuno; `ricerca` dipende dal catalogo (registro e
 capacità), mai il contrario.
+
+### 30. I moduli che la mappa non aveva nominato: `clients` e `infra`
+
+**18/10/2026, integratore.** Il §16 elenca otto moduli, e le decisioni successive ne hanno aggiunti altri quattro
+(`pool` dec. 26, `stremio` dec. 29, `anime` dal ticket 32, `infra` dal ticket 42). Restano due cartelle che
+nessuna decisione nomina ma che **sono** moduli di fatto, e vanno dichiarati invece di lasciarli sembrare residui:
+
+| modulo | possiede | non possiede |
+|---|---|---|
+| **`src/clients`** | gli **adattatori verso l'esterno**: TMDB (dettagli, ricerca, budget di chiamate), Trakt, e la traduzione fra sistemi di id (IMDb ↔ TMDB, ticket 52). È il «meccanismo» verso la rete, come `src/ai` lo è verso Mistral | le decisioni: chi li chiama possiede la politica, il client possiede il come |
+| **`src/infra`** | l'**impianto condiviso senza dominio**: LRU, rate limiter, e i pezzi che il ticket 42 ha raccolto | tutto ciò che ha un dominio |
+
+Con questo, le cartelle di `src/` che **non** sono moduli restano poche e dichiarate: `models` (i modelli Mongoose,
+con la regola che solo il proprietario li tocca), `api` + `middleware` (l'orlo HTTP, ticket 10/11), `data`/`assets`
+(nessun `.js`), `config.js`.
