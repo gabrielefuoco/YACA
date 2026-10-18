@@ -1,4 +1,4 @@
-Status: resolved
+Status: needs-triage
 Type: task
 
 <!-- Triato il 18/10/2026: il piano è la sezione RE-TRIAGE in fondo; le tre fette sono indipendenti dal deploy.
@@ -521,7 +521,33 @@ Le 5 suite fallite sono **esattamente e soltanto** le 5 suite ambientali previst
 Tutte e 3 le fette del Ticket 41 sono state completate con successo:
 - Fetta 1: La facciata del gusto (isolamento profilo, libreria, indice)
 - Fetta 2: Il serving (catalogHandler e metaHandler unificati su src/meta e catalog)
-- Fetta 3: La cancellazione (rimozione totale di `src/engines/`, promozione a `src/pool/composer.js`, chiusura dei debiti e pulizia test)
+- Fetta 3: La cancellazione (rimozione totale di `src/engines/`, promozione a `src/pool/composer.js`, chiusura dei debiti e pulizia test) ---
 
+## Review a due assi (18/10/2026) — il ticket NON è chiuso
 
+Le tre fette sono state eseguite e mergiate, ma la review (assi Standards e Spec, due revisori indipendenti)
+ha mostrato che il ticket non è chiuso. Bloccanti, **verificati eseguendo** (righe e grep, non opinioni):
 
+1. **`catalogHandler.js` non è stato migrato**: 1.037 righe, di cui la fetta 2 ne ha toccate **2**
+   (`git diff --stat 7a7c014...HEAD -- src/handlers/catalogHandler.js`). È la parte più grossa della fetta 2.
+   I consumatori (`src/api/stremio.js`, `api/catalog.js`, `api/configurazione.js`) importano ancora da `handlers/`.
+2. **Il serving conosce ancora DuckDB**: `src/meta/index.js:23` importa `getDuckDbMetaDetails` da
+   `catalog/providers/DuckDbProvider` e lo chiama alle righe 428 e 450.
+3. **`hybridRecommendations.js` è stato spostato, non dissolto**: `src/pool/composer.js` sono 386 righe che
+   importano `mongoose`/`TasteProfile` (riga 2, 262) e `DuckDbProvider` (righe 30, 201) e **riesportano**
+   funzioni di profile/library/indice (righe ~370-386). La decisione 26 voleva la divisione, non il trasloco.
+4. **Il confine del catalogo è invertito**: `src/catalog/index.js:160` espone `get catalogHandler()` — il
+   serving dentro il modulo che per contratto «non possiede il servire».
+5. **`src/handlers/metaHandler.js` è uno shim** verso cui `src/api/stremio.js` punta ancora: `docs/INDEX.md:19`
+   vieta i ponti di retrocompatibilità nel codice di produzione.
+6. **Bug vero, introdotto dallo spostamento**: in `src/indice/idratazione.js` il warm-up in background (192, 194)
+   usa `tmdbType`, dichiarato a riga 39 dentro `resolveCardDetails` — un'altra funzione. Il vecchio
+   `hybridRecommendations.js` (a `7a7c014`, riga 388) lo dichiarava localmente: la porta l'ha perso.
+   Il `catch (_e) {}` vuoto a riga 196 ingoia il `ReferenceError` → **il prefetch non parte mai, in silenzio**.
+7. **La sonda dei conteggi hero non è committata** (regola del ticket: «la sonda va committata, se no la misura
+   vive nella prosa»): l'Esito della fetta 1 riporta solo uno snippet inline.
+
+Non bloccanti, da pesare: `syncRecommendations.js`/`impressions.js` toccano `TasteProfile` e
+`RecommendationImpression` (contro `docs/LIBRARY_MODULE.md` §1.1-1.2); `idratazione.js` fa HTTP live a TMDB e
+compone card dentro `src/indice` (il `map.md` §16 dice che l'indice «non possiede risposte»); due commenti
+(`index.js:167`, `src/api/bolle.js:5`) puntano a `src/bolle/`, che non esiste.
