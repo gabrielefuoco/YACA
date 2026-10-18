@@ -67,3 +67,19 @@ in questa mappa: *il test giusto con i dati sbagliati*.
 
 Il ticket 30 (push) porta in produzione il 46: senza questo, **chi ha un profilo legacy perde tutte le righe
 hero** — cioè il feed. Va chiuso **prima** del push.
+
+## Le decisioni (18/10/2026)
+
+1. **Un profilo legacy vede tutti e 8 i cataloghi hero di sistema.** Il manifest: se l'intersezione fra
+   `selectedPresets` e gli id hero è **vuota**, mostra tutti gli hero (con un log). Gli hero sono **righe di
+   sistema**: un profilo non deve perdere il feed perché il sistema ha rinominato le righe.
+2. **La migrazione dei profili** aggiunge i vivi mancanti a `selectedPresets` e `catalogOrder` (e toglie i morti).
+   **Come le altre: dry-run di default, `--apply` per scrivere, exit code 1 su errore critico** — e va eseguita
+   **dopo il deploy**, non prima: la produzione attuale conosce gli id vecchi, e scrivere i nuovi prima del push
+   le spegnerebbe il feed.
+   ⚠️ **Il fallback nel manifest non è opzionale proprio per questo**: protegge i profili *prima* che la
+   migrazione giri, e protegge per sempre dal prossimo rinomino.
+3. **Il client**: id vivi nei quattro posti — o, meglio, **derivati dal registro** (`/api/dashboard` porta già
+   `heroCatalogs`): è la decisione 27, «le superfici sono dati, non rami di codice».
+4. **Un test che sarebbe fallito**: (a) `buildManifest` con un profilo legacy → **8** hero; (b) ogni id hero
+   scritto nel client deve esistere nel registro.
