@@ -128,9 +128,7 @@ class ProfileBuilder {
      */
     static async _fetchDnaItemsFromDuckDb(items) {
         if (!items || items.length === 0) return [];
-        // La query grezza qui sotto non ha equivalente sulla porta dell'indice: il file interno resta
-        // (è il debito dichiarato nella decisione 31, che riguarda 11 moduli).
-        const duckDbStore = require('../indice/duckDbStore');
+        const { queryRaw } = require('../indice');
 
         const movieItems = items.filter(i => !i.type || i.type === 'movie');
         const tvItems = items.filter(i => i.type === 'tv' || i.type === 'series');
@@ -146,7 +144,7 @@ class ProfileBuilder {
                 const directorsCol = table === 'movies' ? 'directors' : 'created_by AS directors';
                 const sql = `SELECT id, genres, keywords, "cast", ${directorsCol}, original_language FROM ${table} WHERE id IN (${chunk.join(',')})`;
                 try {
-                    const res = await duckDbStore.query(sql);
+                    const res = await queryRaw(sql);
                     if (res && res.length > 0) rows.push(...res);
                 } catch (err) {
                     console.warn(`[ProfileBuilder] Errore query DuckDB per ${table}:`, err.message);
@@ -500,8 +498,8 @@ class ProfileBuilder {
             let duckDbResolved = {};
             if (imdbIds.length > 0) {
                 try {
-                    const duckDbStore = require('../indice/duckDbStore');
-                    duckDbResolved = await duckDbStore.resolveImdbIds(imdbIds);
+                    const { resolveImdbIds } = require('../indice');
+                    duckDbResolved = await resolveImdbIds(imdbIds);
                 } catch (e) {
                     console.warn('[ProfileBuilder] DuckDB resolveImdbIds error:', e.message);
                 }

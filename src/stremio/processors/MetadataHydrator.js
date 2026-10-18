@@ -1,7 +1,7 @@
 const { getTmdbMovieDetails } = require('../../clients/tmdb');
 const { normalizeContentId } = require('../../catalog/contentId');
-const duckDbStore = require('../../indice/duckDbStore');
-const { mapDuckDbRowToMeta } = require('../../indice');
+const indice = require('../../indice');
+const { mapDuckDbRowToMeta } = indice;
 const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {
@@ -48,8 +48,8 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
     // Fase 1: Bulk query su DuckDB (parquet) per evitare N chiamate individuali
     let scoringMap = new Map();
     try {
-        if (!duckDbStore.isInitialized) {
-            await duckDbStore.init();
+        if (!indice.isInitialized) {
+            await indice.init();
         }
 
         const tableName = tmdbType === 'movie' ? 'movies' : 'tv';
@@ -66,7 +66,7 @@ async function hydrateResultsFromLocalDetailsCache(metas, tmdbApiKey, type) {
 
         if (conditions.length > 0) {
             const sql = `SELECT * FROM ${tableName} WHERE ${conditions.join(' OR ')}`;
-            const rows = await duckDbStore.query(sql);
+            const rows = await indice.queryRaw(sql);
 
             for (const row of rows) {
                 const mappedMeta = mapDuckDbRowToMeta(row, tmdbType === 'movie');

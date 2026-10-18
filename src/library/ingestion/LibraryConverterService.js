@@ -4,7 +4,7 @@ const AddonConfig = require('../../models/AddonConfig');
 const { stremioClient, buildStremioLibraryPayload } = require('../../stremio');
 const { createTmdbClient } = require('../../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../../stremio/formatters/StremioFormatter');
-const duckDbStore = require('../../indice/duckDbStore');
+const { queryRaw } = require('../../indice');
 const { resolvePoster, TMDB_IMAGE_BASE } = require('../../posters/posterResolver');
 const LibrarySyncService = require('./LibrarySyncService');
 const { selectConvertibleItems } = require('./libraryConversionAdmission');
@@ -172,7 +172,7 @@ class LibraryConverterService {
                         const { table, endpoint } = resolveTargetTableAndEndpoint(mediaType, tmdbId);
                         if (table) {
                             try {
-                                const duckRows = await duckDbStore.query(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`, [Number(tmdbId)]);
+                                const duckRows = await queryRaw(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`, [Number(tmdbId)]);
                                 if (duckRows && duckRows.length > 0) {
                                     tmdbData = duckRows[0];
                                 }

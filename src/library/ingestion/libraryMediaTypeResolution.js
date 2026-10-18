@@ -19,11 +19,11 @@
  *    - VIETATO tirare a indovinare, VIETATO fallback predefinito su movies o tv.
  */
 
-let duckDbStore = null;
+let indice = null;
 try {
-    duckDbStore = require('../../indice/duckDbStore');
+    indice = require('../../indice');
 } catch (_e) {
-    duckDbStore = null;
+    indice = null;
 }
 
 const unresolvedTypeLog = [];
@@ -157,7 +157,7 @@ function resolveItemMediaType(item, deps = {}) {
  * non si indovina e l'anomalia viene tracciata.
  *
  * @param {Object} item
- * @param {Object} [deps] Dipendenze: { duckDbStore, mappingStore, identity, tmdbId }
+ * @param {Object} [deps] Dipendenze: { indice, duckDbStore, mappingStore, identity, tmdbId }
  * @returns {Promise<'tv'|'movie'|null>}
  */
 async function resolveMediaTypeFromDb(item, deps = {}) {
@@ -171,9 +171,10 @@ async function resolveMediaTypeFromDb(item, deps = {}) {
     if (syncType) return syncType;
 
     // 2. Interrogazione del DB locale
-    const store = deps.duckDbStore || duckDbStore;
-    if (!store || typeof store.query !== 'function') {
-        trackUnresolvedType(item, 'duckDbStore non disponibile per lookup DB');
+    const store = deps.duckDbStore || deps.indice || indice;
+    const queryFn = store && (typeof store.queryRaw === 'function' ? store.queryRaw.bind(store) : (typeof store.query === 'function' ? store.query.bind(store) : null));
+    if (!queryFn) {
+        trackUnresolvedType(item, 'indice non disponibile per lookup DB');
         return null;
     }
 
@@ -195,8 +196,8 @@ async function resolveMediaTypeFromDb(item, deps = {}) {
     try {
         const numId = Number(cleanId);
         const [movieRows, tvRows] = await Promise.all([
-            store.query('SELECT CAST(id AS VARCHAR) AS id FROM movies WHERE id = ? LIMIT 1', [numId]).catch(() => []),
-            store.query('SELECT CAST(id AS VARCHAR) AS id FROM tv WHERE id = ? LIMIT 1', [numId]).catch(() => [])
+            queryFn('SELECT CAST(id AS VARCHAR) AS id FROM movies WHERE id = ? LIMIT 1', [numId]).catch(() => []),
+            queryFn('SELECT CAST(id AS VARCHAR) AS id FROM tv WHERE id = ? LIMIT 1', [numId]).catch(() => [])
         ]);
 
         const inMovies = Array.isArray(movieRows) && movieRows.length > 0;

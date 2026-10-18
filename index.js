@@ -49,9 +49,9 @@ connectDB();
 const animeMappingStore = require('./src/anime').animeMappingStore;
 animeMappingStore.init().catch(err => console.error('[AnimeMappingStore] Init Error:', err.message));
 
-// Inizializza DuckDB su database persistente all'avvio
-const duckDbStore = require('./src/indice/duckDbStore');
-duckDbStore.init().catch(err => console.error('[DuckDB Store] Init Error:', err.message));
+// Inizializza l'indice su database persistente all'avvio
+const indice = require('./src/indice');
+indice.init().catch(err => console.error('[DuckDB Store] Init Error:', err.message));
 
 // 1. Inizializza Express
 const app = express();
@@ -266,8 +266,8 @@ const shutdown = (signal) => {
                 console.error('Errore durante la disconnessione:', err.message);
             }
             try {
-                const duckDbStore = require('./src/indice/duckDbStore');
-                await duckDbStore.close();
+                const indice = require('./src/indice');
+                await indice.close();
                 console.log('DuckDB disconnesso.');
             } catch (err) {
                 console.error('Errore chiusura DuckDB:', err.message);

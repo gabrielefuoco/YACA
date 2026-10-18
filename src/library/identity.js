@@ -18,7 +18,7 @@
  * letture (dashboard e cataloghi watchlist) lo escludono.
  */
 
-const duckDbStore = require('../indice/duckDbStore');
+const { queryRaw } = require('../indice');
 const UserLibraryItem = require('./models/UserLibraryItem');
 const { resolveItemMediaType } = require('./ingestion/libraryMediaTypeResolution');
 let animeMappingStore = null;
@@ -118,7 +118,7 @@ async function fetchRows(table, { ids = [], imdbIds = [] }) {
     if (imdbIds.length > 0) where.push(`imdb_id IN (${quote(imdbIds)})`);
 
     try {
-        return await duckDbStore.query(`SELECT CAST(id AS VARCHAR) AS id, imdb_id FROM ${table} WHERE ${where.join(' OR ')}`);
+        return await queryRaw(`SELECT CAST(id AS VARCHAR) AS id, imdb_id FROM ${table} WHERE ${where.join(' OR ')}`);
     } catch (err) {
         return [];
     }
