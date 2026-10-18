@@ -1,5 +1,8 @@
-Status: needs-triage
+Status: ready-for-agent
 Type: task
+
+<!-- Triato il 18/10/2026: il piano è la sezione RE-TRIAGE in fondo; le tre fette sono indipendenti dal deploy.
+     Fetta 1 (la facciata del gusto, 1.003 righe) delegata a uno slave. -->
 
 # 41 — Il sostituto della catena ibrida (l'ultimo modulo da costruire)
 
