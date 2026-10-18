@@ -45,3 +45,29 @@ e sono quelli che correggono il verdetto.
 
 La sonda rieseguita (comando nel ticket), col criterio scritto **prima**, e i numeri di OFF e ON **sugli stessi
 insiemi**: oro ammissibile, `oro_preso`, riempimento, novità, diversità — per i due utenti, poi per la coorte.
+
+## Cosa si confronta (decisione dell'utente, 18/10/2026)
+
+**`nicchia_di_qualita` (grafo) contro `hidden_gems` (vecchio motore)** — cioè **ciò che il grafo sostituisce
+davvero**, non una variante del nuovo fornitore contro sé stessa. Metrica: `oro_preso` (e riempimento, novità,
+diversità). Criterio dichiarato **prima**, non vacuo.
+
+### L'asimmetria, da dichiarare e non aggirare
+
+| motore | di cosa ha bisogno | su quanti utenti si può misurare |
+|---|---|---|
+| **vecchio** (`hidden_gems`) | un **profilo di gusto su Mongo** | **2 utenti reali** |
+| **grafo** (`nicchia_di_qualita`) | i **semi** dalla cronologia + il servizio | **400 utenti** del corpus Trakt (ticket 44 ✓) |
+
+Quindi la misura si fa su **due piani**, dichiarandoli entrambi:
+- **(a) testa a testa** sui 2 utenti di Mongo, con **entrambi** i motori → è il confronto diretto, con n=2;
+- **(b) lato grafo** sui **400 utenti** del corpus → è la **distribuzione**, senza il vecchio.
+
+Un confronto su un piano solo sarebbe una mezza verità: (a) ha il rivale ma non la numerosità, (b) ha la
+numerosità ma non il rivale. Va scritto nel referto quale piano dice cosa.
+
+### Il punto di riferimento (senza il quale la misura diventa archeologia)
+
+Dopo il **ticket 46** `hidden_gems` **sparisce da `main`**: il vecchio motore e il fornitore nuovo vengono rimossi
+insieme al catalogo. La misura testa-a-testa va quindi fatta **sul commit precedente** a quel merge — il commit va
+**scritto in questo ticket** appena il 46 atterra (il suo Esito lo dichiara).
