@@ -6,11 +6,6 @@
  */
 
 module.exports = {
-    // Gli adattatori del modulo: chi sta fuori li prende da qui, non dai file interni.
-    get tmdb() { return require('./tmdb'); },
-    get trakt() { return require('./trakt'); },
-    get tmdbBudget() { return require('./tmdbBudget'); },
-
     get translateImdbToTmdb() {
         return require('./idMapping').translateImdbToTmdb;
     },

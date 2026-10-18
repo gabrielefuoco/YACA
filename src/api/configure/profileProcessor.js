@@ -10,7 +10,8 @@ const {
 const {
     resolveDnaNames,
     getReadableFallback,
-    GENRE_ID_TO_NAME
+    GENRE_ID_TO_NAME,
+    sincronizzaDfCache
 } = require('../../profile');
 const { isRetiredTmdbKeywordId } = require('../../indice/keywordIds');
 const { sanitizeCustomCatalogs } = require('./validators');
@@ -257,6 +258,8 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                     const { storiaDi } = require('../../library');
                     const historyDocs = await storiaDi({ userId, profileId: profile.id });
                     const totalInteractions = calculateWeightedInteractions(historyDocs);
+                    // La rarità legge una cache di modulo: senza questo sync ricadrebbe in silenzio sulle stime.
+                    sincronizzaDfCache();
                     const vFinal = computeFinalDNA(inferredStaticDNA, vActive, totalInteractions);
                     const flatnessMetrics = calculateFlatnessMetrics(vFinal);
                     

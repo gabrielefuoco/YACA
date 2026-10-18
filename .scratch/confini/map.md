@@ -809,9 +809,9 @@ sulla porta dell'indice `module.exports.getDfCache = (...a) => indice.getDfCache
 (`module.exports === indice`), quindi ricorsione infinita: nessuno la usava, e la prima lettura l'ha svegliata.
 
 **Dichiarato, non chiuso: `src/indice/duckDbStore.js` è importato per percorso da 11 moduli** (`anime/mapping`,
-`clients/idMapping`, `library/identity`, `library/ingestion/LibraryConversionService`, `library/ingestion/libraryMediaTypeResolution`,
+`clients/idMapping`, `library/identity`, `library/ingestion/LibraryConverterService`, `library/ingestion/libraryMediaTypeResolution`,
 `posters/posterResolver`, `profile/ProfileBuilder`, `profile/studioProfile`, `stremio/processors/MetadataHydrator`,
 `stremio/providers/WatchlistProvider`). È **preesistente** e largo: chiuderlo significa esporre sulla porta
 dell'indice tutto ciò che serve (query grezza, `resolveImdbIds`, `getDfCache`, …) e ripuntare 11 moduli **coi
-loro mock**, che è il lavoro dove questo repo sbaglia più spesso. **Ticket suo.** Non è una regressione: la suite
+loro mock**, che è il lavoro dove questo repo sbaglia più spesso. **Ticket suo.** Anche `clients/graphClient` non è esposto sulla porta dei clients (lo prendono per percorso `api/bolle`, `api/mondi`, `pool`): stessa sorte, stesso ticket. Non è una regressione: la suite
 è alla baseline e il feed è byte-a-byte.

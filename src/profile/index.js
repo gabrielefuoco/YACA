@@ -134,6 +134,8 @@ module.exports = {
     // Il resolver dei nomi TMDB è del profilo: chi sta fuori lo prende dalla porta (docs/INDEX.md:19).
     resolveDnaNames: (...a) => require('./tmdbNameResolver').resolveDnaNames(...a),
     getReadableFallback: (...a) => require('./tmdbNameResolver').getReadableFallback(...a),
-    GENRE_ID_TO_NAME: require('./tmdbNameResolver').GENRE_ID_TO_NAME
+    GENRE_ID_TO_NAME: require('./tmdbNameResolver').GENRE_ID_TO_NAME,
+    // Sincronizza la cache DF dall'indice al motore DNA: da invocare prima di un calcolo che usa la rarità.
+    sincronizzaDfCache: (...a) => require('./dfCache').sincronizzaDfCache(...a)
 };
 

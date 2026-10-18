@@ -248,5 +248,8 @@ module.exports.mapDuckDbRowToMeta = (...args) => require('./duckDbProvider').map
 module.exports.getDuckDbMetaDetails = (...args) => indice.getMetaDetails(...args);
 module.exports.getDuckDbCatalogFromFilters = (...args) => indice.getCatalogFromFilters(...args);
 module.exports.getDuckDbCatalogFromPreset = (...args) => indice.getCatalogFromPreset(...args);
+// Bind esplicito: senza, `const { getDfCache } = require('./indice')` perde il ricevitore e
+// il metodo esplode su `this.duckDb`. Un wrapper che chiama lo stesso nome sarebbe ricorsivo.
+module.exports.getDfCache = indice.getDfCache.bind(indice);
 // La promozione Tier 2 -> Tier 1 è dell'indice: si chiede dalla porta, non dal file interno.
 module.exports.schedulePromotion = (...args) => require('./tier1LazyPromotion').schedulePromotion(...args);

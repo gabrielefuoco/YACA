@@ -112,18 +112,25 @@ class ProfileBuilder {
     }
 
     /**
+     * Porta la cache DF dall'indice al motore DNA, se non c'è già.
+     * Esplicita e idempotente: la rarità legge una variabile di modulo, e senza questa
+     * chiamata ricadrebbe in SILENZIO sulle stime stimate (vedi l'avvertenza in dnaEngine).
+     * Va invocata prima di ogni calcolo che tocca la rarità.
+     */
+    static sincronizzaDfCache() {
+        return require('./dfCache').sincronizzaDfCache();
+    }
+
+
+
+    /**
      * Recupera i dati DNA per una lista di elementi da DuckDB locale.
      */
     static async _fetchDnaItemsFromDuckDb(items) {
         if (!items || items.length === 0) return [];
+        // La query grezza qui sotto non ha equivalente sulla porta dell'indice: il file interno resta
+        // (è il debito dichiarato nella decisione 31, che riguarda 11 moduli).
         const duckDbStore = require('../indice/duckDbStore');
-        if (typeof duckDbStore?.getDfCache === 'function') {
-            const cached = duckDbStore.getDfCache();
-            const { getGlobalDfCache, setGlobalDfCache } = require('./dnaEngine');
-            if (cached && !getGlobalDfCache()) {
-                setGlobalDfCache(cached);
-            }
-        }
 
         const movieItems = items.filter(i => !i.type || i.type === 'movie');
         const tvItems = items.filter(i => i.type === 'tv' || i.type === 'series');
@@ -289,6 +296,7 @@ class ProfileBuilder {
 
         // Anti-flat: saturazione logaritmica per chiave (rendimenti decrescenti),
         // poi normalizzazione alla scala di persistenza (somma 100) come la rotta REST.
+        ProfileBuilder.sincronizzaDfCache();
         const vActive = computeActiveDNA(rawActive);
 
         const totalInteractions = calculateWeightedInteractions(historyDocs);
