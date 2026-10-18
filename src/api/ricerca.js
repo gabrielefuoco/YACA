@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { richiedeSessione, erroreDominio } = require('../middleware/sessione');
+const { richiedeSessione, erroreDominio } = require('./middleware/sessione');
 const { cerca, TIPI_TITOLO, TIPI_GENERE, TIPI_KEYWORD, TIPI_PERSONA } = require('../ricerca');
 
 // La ricerca di dominio richiede la sessione

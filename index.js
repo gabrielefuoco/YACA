@@ -25,10 +25,10 @@ const {
     traktCodeHandler,
     traktTokenHandler
 } = require('./src/api/auth/index.js');
-const { richiedeSessione } = require('./src/middleware/sessione');
-const { inputSanitizer } = require('./src/middleware/inputSanitizer');
-const { attachRequestContext } = require('./src/middleware/requestContext');
-const errorMiddleware = require('./src/middleware/errorMiddleware');
+const { richiedeSessione } = require('./src/api/middleware/sessione');
+const { inputSanitizer } = require('./src/api/middleware/inputSanitizer');
+const { attachRequestContext } = require('./src/api/middleware/requestContext');
+const errorMiddleware = require('./src/api/middleware/errorMiddleware');
 
 const stremioRoutes = require('./src/api/stremio');
 const tmdbRoutes = require('./src/api/tmdb');

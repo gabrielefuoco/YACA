@@ -8,7 +8,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { richiedeSessione, erroreDominio } = require('../middleware/sessione');
+const { richiedeSessione, erroreDominio } = require('./middleware/sessione');
 const { cronologiaDi } = require('../library');
 const graphClient = require('../clients/graphClient');
 

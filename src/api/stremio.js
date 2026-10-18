@@ -33,7 +33,7 @@ const { isCatalogConformant } = require('../catalog/catalogKind');
 // Rate limiter for sync-status polling (max 30 requests per minute per IP)
 const syncStatusLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 const cookieParser = require('cookie-parser');
-const { utenteDallaSessione } = require('../middleware/sessione');
+const { utenteDallaSessione } = require('./middleware/sessione');
 
 
 

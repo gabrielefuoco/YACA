@@ -149,7 +149,7 @@ describe('TMDB Dump Status from Artifact (Ticket 34)', () => {
             app.use(express.json());
 
             jest.isolateModules(() => {
-                jest.doMock('../src/middleware/adminAuth', () => (req, res, next) => next());
+                jest.doMock('../src/api/middleware/adminAuth', () => (req, res, next) => next());
                 const adminRouter = require('../src/api/admin');
                 app.use('/api/admin', adminRouter);
             });
