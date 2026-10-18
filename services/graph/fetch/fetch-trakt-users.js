@@ -5,8 +5,8 @@
  *  Uso: USERS=400 PAGES=3 node .scratch/ml-collaborativo/fetch-trakt-users.js */
 const fs = require('fs'), path = require('path');
 require('dotenv').config({ quiet: true });
-const CACHE = path.join(__dirname, '../../.cache/trakt/users');
-const LC = path.join(__dirname, '../../.cache/trakt/lists');
+const CACHE = path.join(__dirname, '../../../.cache/trakt/users');
+const LC = path.join(__dirname, '../../../.cache/trakt/lists');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
     const key = process.env.TRAKT_CLIENT_ID;

@@ -5,8 +5,8 @@
  */
 const fs = require('fs'), path = require('path'), duckdb = require('duckdb');
 require('dotenv').config({ quiet: true });
-const CACHE = path.join(__dirname, '../../.cache/trakt');
-const PARDIR = path.join(__dirname, '../../.cache/tmdb').split(String.fromCharCode(92)).join('/');
+const CACHE = path.join(__dirname, '../../../.cache/trakt');
+const PARDIR = path.join(__dirname, '../../../.cache/tmdb').split(String.fromCharCode(92)).join('/');
 const all = (db, sql) => new Promise((res, rej) => db.all(sql, (e, r) => (e ? rej(e) : res(r))));
 const parse = v => (typeof v === 'string' ? JSON.parse(v) : v);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
