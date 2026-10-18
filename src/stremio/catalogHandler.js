@@ -5,7 +5,7 @@
  * Orchestra le richieste di catalogo coordinando i moduli di dominio:
  * - src/catalog: definizioni, filtri, router, formattazione
  * - src/anime: stato anime, conformità e badge airing
- * - src/meta: allineamento id film
+ * - src/stremio/meta: allineamento id film
  * - src/indice: interrogazione e risoluzione id
  * - src/pool: composizione delle righe hero (invocata ad un unico punto tramite il router)
  */
@@ -37,7 +37,7 @@ const {
 const { applyCatalogSpecialOrdering } = require('../catalog/catalogSorting');
 const { isDailyWindowCatalog } = require('../catalog/registry');
 const { applyPostCacheBadges } = require('./badges');
-const { allineaIdFilm } = require('../meta');
+const { allineaIdFilm } = require('./meta');
 
 function logCatalogTiming({ id, catalog, cache, ms, titles }) {
     const count = Array.isArray(titles) ? titles.length : (Number(titles) || 0);

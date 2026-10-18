@@ -144,7 +144,7 @@ const {
     traktCodeHandler,
     traktTokenHandler
 } = require('../src/api/auth/index');
-const { richiedeSessione } = require('../src/middleware/sessione');
+const { richiedeSessione } = require('../src/api/middleware/sessione');
 
 let server;
 let port;

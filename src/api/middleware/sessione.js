@@ -28,7 +28,7 @@ function utenteDallaSessione(req) {
     if (!token) return null;
     try {
         const jwt = require('jsonwebtoken');
-        const { getJwtSecret } = require('../api/auth/index');
+        const { getJwtSecret } = require('../auth/index');
         const decoded = jwt.verify(token, getJwtSecret());
         return decoded && decoded.userId ? decoded.userId : null;
     } catch (e) {

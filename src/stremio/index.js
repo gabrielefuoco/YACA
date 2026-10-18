@@ -45,5 +45,8 @@ module.exports = {
     reconcileManifests: reconciler.reconcileManifests,
 
     // Serving
-    get catalogHandler() { return require('./catalogHandler').catalogHandler; }
+    get catalogHandler() { return require('./catalogHandler').catalogHandler; },
+    get metaHandler() { return require('./meta').metaHandler; },
+    get isMetaDubbed() { return require('./meta').isMetaDubbed; },
+    get allineaIdFilm() { return require('./meta').allineaIdFilm; }
 };

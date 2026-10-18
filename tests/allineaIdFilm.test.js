@@ -12,7 +12,7 @@
  * suffisso `_ita_offset` dei cloni doppiati.
  */
 
-const { allineaIdFilm } = require('../src/meta');
+const { allineaIdFilm } = require('../src/stremio/meta');
 
 const risposta = (...metas) => ({ metas });
 

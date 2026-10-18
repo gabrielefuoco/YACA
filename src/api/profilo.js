@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { richiedeSessione, erroreDominio } = require('../middleware/sessione');
+const { richiedeSessione, erroreDominio } = require('./middleware/sessione');
 
 // Ogni rotta di dominio richiede la sessione: l'utente è sempre req.utenteId
 router.use(richiedeSessione);

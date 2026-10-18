@@ -15,7 +15,7 @@ const UserAccount = require('../src/models/UserAccount');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { stremioClient } = require('../src/stremio');
 const router = require('../src/api/profilo');
-const { richiedeSessione } = require('../src/middleware/sessione');
+const { richiedeSessione } = require('../src/api/middleware/sessione');
 
 jest.mock('../src/models/UserAccount');
 jest.mock('../src/models/AddonConfig');
