@@ -7,18 +7,15 @@
 
 const { F, S } = require('./filters');
 const { animeMappingStore, normalizeAnimeMarker } = require('../anime');
-const { applyKidsMode, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../catalog/kidsModeFilters');
+// Vocabolario del catalogo, letto pigramente (ciclo indice <-> catalog: vedi decisione 29).
+const kidsVocab = () => require('../catalog/kidsModeFilters');
 
-const {
-    SUPPORTED_SORT_BY,
-    isMappedSortBy,
-    mapSortBy,
-    applySortWithTieBreakers
-} = require('../catalog/catalogSorting');
+// Vocabolario di ordinamento del catalogo, letto pigramente (stesso motivo).
+const sorting = () => require('../catalog/catalogSorting');
 
 function buildPresetFromFilters(q, type = 'movie', options = {}) {
     const where = [];
-    if (options?.kidsMode) q = applyKidsMode(q || {});
+    if (options?.kidsMode) q = kidsVocab().applyKidsMode(q || {});
     if (!q) return { type, where, orderBy: S.POPULAR };
 
     const isTv = type === 'tv' || type === 'series';
@@ -184,7 +181,7 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     const preset = {
         type,
         where,
-        orderBy: mapSortBy(q.sort_by, type)
+        orderBy: sorting().mapSortBy(q.sort_by, type)
     };
     if (q.uniqueById) preset.uniqueById = true;
     return preset;
@@ -323,8 +320,8 @@ function applyKidsModeToPreset(preset, options = {}) {
         ...preset,
         where: [
             ...(preset.where || []),
-            F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)),
-            F.notKeyword(...ADULT_KEYWORD_IDS.split(',').map(Number))
+            F.notGenre(...kidsVocab().ADULT_GENRE_IDS.split(',').map(Number)),
+            F.notKeyword(...kidsVocab().ADULT_KEYWORD_IDS.split(',').map(Number))
         ]
     };
 }
@@ -465,10 +462,11 @@ async function getDuckDbMetaDetails(tmdbId, type = 'movie') {
 }
 
 module.exports = {
-    SUPPORTED_SORT_BY,
-    isMappedSortBy,
-    mapSortBy,
-    applySortWithTieBreakers,
+    // Vocabolario inoltrato dal catalogo: getter, così il require resta pigro.
+    get SUPPORTED_SORT_BY() { return sorting().SUPPORTED_SORT_BY; },
+    isMappedSortBy: (...a) => sorting().isMappedSortBy(...a),
+    mapSortBy: (...a) => sorting().mapSortBy(...a),
+    applySortWithTieBreakers: (...a) => sorting().applySortWithTieBreakers(...a),
     buildPresetFromFilters,
     applyKidsModeToPreset,
     getDuckDbCatalogFromFilters,

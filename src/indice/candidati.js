@@ -21,7 +21,9 @@ const compiler = require('./compiler');
 const duckDbStore = require('./duckDbStore');
 const { isItemAnime, ANIME_POLICY_MODES, isAnimeContent } = require('../anime');
 const { F, S } = require('./filters');
-const { isItemInappropriateForKids, ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = require('../catalog/kidsModeFilters');
+// Il vocabolario kids è del catalogo e lo leggiamo pigramente: evita il ciclo di require
+// indice -> catalog -> indice (le decisioni della mappa prescrivono il require pigro per i cicli).
+const kidsVocab = () => require('../catalog/kidsModeFilters');
 
 const HIDDEN_GEMS_MAX_POPULARITY = 20;
 const HIDDEN_GEMS_MIN_SCORE = 6.5;
@@ -253,6 +255,7 @@ async function candidati(contesto, opzioni = {}) {
 
         // Kids Mode (src/catalog/kidsModeFilters)
         if (kidsMode) {
+            const { ADULT_GENRE_IDS, ADULT_KEYWORD_IDS } = kidsVocab();
             if (ADULT_GENRE_IDS) {
                 where.push(F.notGenre(...ADULT_GENRE_IDS.split(',').map(Number)));
             }
