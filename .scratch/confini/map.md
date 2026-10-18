@@ -651,3 +651,20 @@ stack serve i moduli nuovi» (dipendenza nascosta, e va tolta) è la differenza 
   dentro la cartella) — e **mai** silenziare l'errore del comando che la smonta: un `rmdir` fallito in silenzio
   è ciò che trasforma una pulizia in una perdita di dati. La sequenza documentata è in
   `docs/TESTING_UTILITIES.md` (sezione *«La procedura che funziona per rimuovere un worktree»*) — **leggerla prima**.
+
+### 25. Il metro non era un metro (ticket 45) e il corpus è riscaricabile (ticket 44)
+
+**18/10/2026.** La prima misura del `oro_preso` (ticket 43) **non è una prova**, e il verdetto «nuova catena
+accettata» **non sta in piedi**:
+1. **il criterio che discriminava era vacuo** — `oro_preso(ON) >= oro_preso(OFF)` con **0% contro 0%**: sempre vero;
+2. **la spiegazione era falsa per le serie** — l'oro contiene **Yu Yu Hakusho** (voto 7.49 · 240 voti · pop 7) che
+   **rispetta** la definizione di `hidden_gems` e non è stato preso: la causa è da trovare, non da raccontare;
+3. **il campione è minimo** — oro = 2 film e 5 serie: `oro_preso` può valere solo 0/50/100%;
+4. e la **fuga** dichiarata lavora **all'incontrario**: il profilo vivo contiene l'oro, e il motore esclude il già
+   visto → l'oro è **escluso prima di misurare**.
+
+**Il corpus Trakt non è perduto**: è **dato scaricato**, e i 7 fetcher sono in git (`TRAKT_CLIENT_ID` nel `.env`).
+I **60 utenti** della ricetta tornano a portata → la metrica può diventare una prova (ticket 44 → 45).
+
+**E la lezione, che è la quarta volta in un giorno**: *un numero giusto con una spiegazione sbagliata è peggio di
+un numero sbagliato* — perché la spiegazione è ciò che convince. Qui il numero (0% vs 0%) era pure **vacuo**.
