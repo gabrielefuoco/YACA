@@ -18,7 +18,14 @@ class IndiceModule {
         this.duckDb = duckDb;
         this.compiler = queryCompiler;
         this._tier2 = tier2;
-        this._tier2Client = tier2Client || new tier2.Tier2SearchClient();
+        this._tier2Client = tier2Client;
+    }
+
+    get tier2Client() {
+        if (!this._tier2Client) {
+            this._tier2Client = new this._tier2.Tier2SearchClient();
+        }
+        return this._tier2Client;
     }
 
     /**
@@ -26,7 +33,9 @@ class IndiceModule {
      */
     async init(options = {}) {
         const duckInit = this.duckDb.init(options);
-        this._tier2Client.init();
+        if (this._tier2Client) {
+            this._tier2Client.init();
+        }
         return duckInit;
     }
 
