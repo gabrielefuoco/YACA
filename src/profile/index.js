@@ -52,7 +52,13 @@ const {
     STREMMIO_SYNC_INTERVAL_MS,
     isProfileSyncDue,
     isStremioSyncDue
-} = require('./profileStaleness');
+// Deduzioni e analisi vettoriale (Ticket 41 - Fetta 1)
+const {
+    extractVectorByPrefix,
+    computeTopElements,
+    computeTopGenres,
+    computeTopKeywords
+} = require('./vectorElements');
 
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
@@ -71,6 +77,12 @@ module.exports = {
     isProfileSyncDue,
     isStremioSyncDue,
 
+    // Analisi vettoriale e preferenze di gusto (Ticket 41)
+    extractVectorByPrefix,
+    computeTopElements,
+    computeTopGenres,
+    computeTopKeywords,
+
     // Gestione UI State (Ticket 26, Decisione 2)
     leggiUiState,
     salvaUiState,
@@ -88,3 +100,4 @@ module.exports = {
     ProfileScorer,
     studioProfile
 };
+

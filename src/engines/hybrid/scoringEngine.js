@@ -1,86 +1,21 @@
-const { getProfileDnaFilters } = require('../../infra/helpers');
+/**
+ * src/engines/hybrid/scoringEngine.js
+ *
+ * DECISIONE TICKET 41 (Fetta 1):
+ * 1. `computeTopGenres`, `computeTopKeywords`, `extractVectorByPrefix`:
+ *    VIVI in produzione (consumati da AiDiscoveryProvider e dai filtri DNA del profilo).
+ *    Sono funzioni di estrazione e analisi del TasteProfile: spostati in src/profile/vectorElements.js
+ *    ed esposti dalla porta src/profile/index.js.
+ * 2. `calculateHybridScore`:
+ *    MORTO in produzione. Era il ranker ibrido di co-occorrenza del vecchio Seed Network
+ *    in catalogStrategies.js (rimosso interamente nel Ticket 46 con -1.598 righe).
+ *    Zero chiamanti in src/. Viene mantenuto qui unicamente come facciata per i test unitari
+ *    preesistenti (tests/scoringEngine.test.js, tests/hybridRecommendations.test.js)
+ *    in attesa della loro pulizia definitiva.
+ */
+
 const { G } = require('../../catalog/filters');
-const { isRetiredTmdbKeywordId, keywordIdForName } = require('../../indice/keywordIds');
-
-function extractVectorByPrefix(vFinal, prefix) {
-    if (!vFinal || typeof vFinal !== 'object') return {};
-    const scores = {};
-    const target = `${prefix}:`;
-    for (const [key, value] of Object.entries(vFinal)) {
-        if (key.startsWith(target)) {
-            scores[key.slice(target.length)] = value;
-        }
-    }
-    return scores;
-}
-
-function computeTopElements(profile, prefix, filterType, n = 5, user = null, context = 'global') {
-    let scores = {};
-    const vFinal = profile?.compiledVectors?.V_final;
-    if (vFinal && Object.keys(vFinal).length > 0) {
-        scores = extractVectorByPrefix(vFinal, prefix);
-        if (filterType === 'keyword') {
-            // Il vettore porta la stessa keyword in DUE forme: `k:<id>` e `k:<nome>`
-            // (la seconda è quella che il grafo gerarchico sa leggere). Chi consuma
-            // `computeTopKeywords` le usa però come ID — filtri DuckDB e `with_keywords`
-            // di TMDB discover — quindi qui si tiene solo la forma numerica,
-            // risolvendo i nomi con la mappa del dump e scartando ciò che non si
-            // risolve invece di propagare una stringa dove serve un id.
-            const normalized = {};
-            for (const [key, value] of Object.entries(scores)) {
-                if (isRetiredTmdbKeywordId(key)) continue;
-                const id = /^\d+$/.test(key) ? key : keywordIdForName(key);
-                if (!id) continue;
-                // Stessa keyword su due chiavi: si tiene il peso maggiore, non la
-                // somma, altrimenti quella keyword peserebbe il doppio delle altre.
-                normalized[id] = Math.max(normalized[id] || 0, Number(value) || 0);
-            }
-            scores = normalized;
-        }
-    }
-
-    const dnaFilters = getProfileDnaFilters(user, context);
-    const suggestedIds = dnaFilters
-        .filter(f => f.type === filterType)
-        .map(f => String(f.id))
-        .filter(id => filterType !== 'keyword' || !isRetiredTmdbKeywordId(id));
-    const suggestedSet = new Set(suggestedIds);
-
-    // Ordina gli elementi dal vettore reale V_final per score decrescente
-    // (a parità di score, usa la presenza in suggestedDNA come tie-breaker)
-    const sortedFromVector = Object.entries(scores)
-        .sort((a, b) => {
-            const diff = b[1] - a[1];
-            if (Math.abs(diff) > 0.0001) return diff;
-            const aBonus = suggestedSet.has(String(a[0])) ? 1 : 0;
-            const bBonus = suggestedSet.has(String(b[0])) ? 1 : 0;
-            if (bBonus !== aBonus) return bBonus - aBonus;
-            return String(a[0]).localeCompare(String(b[0]));
-        })
-        .map(e => String(e[0]));
-
-    const result = sortedFromVector.slice(0, n);
-
-    // Fallback: se il vettore reale ha meno di n elementi, usa suggestedDNA
-    if (result.length < n) {
-        for (const id of suggestedIds) {
-            if (!result.includes(id)) {
-                result.push(id);
-                if (result.length >= n) break;
-            }
-        }
-    }
-
-    return result;
-}
-
-function computeTopGenres(profile, n = 5, user = null, context = 'global') {
-    return computeTopElements(profile, 'g', 'genre', n, user, context);
-}
-
-function computeTopKeywords(profile, n = 3, user = null, context = 'global') {
-    return computeTopElements(profile, 'k', 'keyword', n, user, context);
-}
+const vectorElements = require('../../profile/vectorElements');
 
 function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
     let score = 0;
@@ -91,10 +26,7 @@ function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
 
     const count = tmdbCounts.get(item.tmdbId) || 0;
     if (count > 0) {
-        // Ticket 13: il vecchio 100/2^(count-1) faceva crollare il punteggio dopo
-        // il primo hop (loved+liked = 7 -> 1) e la convergenza multi-seme spariva.
-        // Normalizzazione logaritmica sul massimo del pool: monotona crescente,
-        // saturante e con il candidato più sostenuto ancorato a 100.
+        // Normalizzazione logaritmica sul massimo del pool
         let maxCount = count;
         for (const value of tmdbCounts.values()) {
             if (Number.isFinite(value) && value > maxCount) maxCount = value;
@@ -120,15 +52,9 @@ function calculateHybridScore(item, tmdbCounts, topGenres, itemGenres) {
     return score;
 }
 
-
-
-
-
-
-
 module.exports = {
-    computeTopGenres,
-    computeTopKeywords,
-    calculateHybridScore,
-    extractVectorByPrefix
+    computeTopGenres: vectorElements.computeTopGenres,
+    computeTopKeywords: vectorElements.computeTopKeywords,
+    extractVectorByPrefix: vectorElements.extractVectorByPrefix,
+    calculateHybridScore
 };
