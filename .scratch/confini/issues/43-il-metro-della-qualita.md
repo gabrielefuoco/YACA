@@ -89,3 +89,22 @@ Quindi il ticket deve dire, per il holdout:
 3. **La lettura sui 2 utenti disponibili**, etichettata come **segnale**; e **cosa servirebbe** per una prova
    (più storie: è un problema di **dati**, non di codice).
 4. **Se il vecchio vince**, si scrive — e allora il piano cambia.
+
+## Correzione (18/10/2026): il corpus Trakt NON è perduto — è da riscaricare
+
+Nel ticket c'era scritto che il dataset dei 60 utenti «non esiste più» e che la misura **non è più calcolabile**.
+**Falso, e me ne scuso**: il corpus è **dato scaricato**, non un prodotto del nostro lavoro — e i programmi che lo
+scaricano **sono in git**:
+
+| cosa | dove | stato |
+|---|---|---|
+| i **7 fetcher Trakt** | `services/graph/fetch/fetch-trakt-{users,followers,full,bulk,lists,movies,related}.js` | **tracciati ✓** — scaricano da `api.trakt.tv` e scrivono in `.cache/trakt/` |
+| i **6 generatori dei derivati** | `services/graph/upstream/{00_ratings_puliti,spazi-trakt,cf-edges,contaminazione,boot-comp,componenti-nuovi}.py` | **tracciati ✓** |
+| il **manifesto di chi scarica cosa** | `services/graph/fetch/README.md` | **tracciato ✓** — dichiara input, produttore e stato di ognuno |
+| MovieLens `ml-32m` | `.cache/movielens/` | dataset **pubblico**, da scaricare a mano |
+| gli **artefatti del grafo** (141 MB) | `services/graph/data/` | erano stati cancellati il 18/10 18:14, **ripristinati dal mate** (identici) ✓ |
+| grafo delle **keyword** | `src/data/hierarchical_graph.json`, `src/data/entities.json`, `src/indice/keywordIds.js` | **tracciati in git** ✓ |
+
+Quindi la frase giusta è: **il corpus va riscaricato** (tempo + API), non è perduto — e il grafo si può ricostruire.
+Il costo vero è un altro: un corpus riscaricato **oggi** non è identico a quello di ieri (Trakt cresce), quindi la
+ricetta girerebbe su dati più nuovi — confrontabile in metodologia, non in valori assoluti.
