@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { hydrateResultsFromLocalDetailsCache } = require('../src/catalog/processors/MetadataHydrator');
-const { metaHandler } = require('../src/handlers/metaHandler');
+const { metaHandler } = require('../src/meta');
 
 describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () => {
     beforeAll(async () => {
@@ -57,7 +57,7 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
         });
 
         test('metaHandler does not import TmdbScoringData or call updateScoringCache', () => {
-            const filePath = path.join(__dirname, '../src/handlers/metaHandler.js');
+            const filePath = path.join(__dirname, '../src/meta/index.js');
             const fileContent = fs.readFileSync(filePath, 'utf8');
             expect(fileContent).not.toContain('TmdbScoringData');
             expect(fileContent).not.toContain('updateScoringCache');

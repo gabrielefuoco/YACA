@@ -47,7 +47,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 
-const { metaHandler } = require('../src/handlers/metaHandler');
+const { metaHandler } = require('../src/meta');
 const { getTmdbMetaDetails } = require('../src/clients/tmdb');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../src/db/tier1LazyPromotion');

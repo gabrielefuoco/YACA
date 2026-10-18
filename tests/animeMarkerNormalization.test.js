@@ -5,7 +5,7 @@ const {
     animeMappingStore
 } = require('../src/anime');
 const { isItemAnime } = require('../src/handlers/catalogHandler');
-const { applyKitsuMappingToMeta } = require('../src/handlers/metaHandler');
+const { applyKitsuMappingToMeta } = require('../src/meta');
 const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
 
 describe('Ticket 28: contratto unico del marker _isAnime', () => {

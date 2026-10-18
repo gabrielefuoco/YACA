@@ -156,10 +156,7 @@ module.exports = {
     getSortByValue,
     applySortWithTieBreakers,
 
-    // Serving (Ticket 41 - Fetta 2)
-    get catalogHandler() {
-        return require('../handlers/catalogHandler').catalogHandler;
-    },
+
 
     // Debito Ticket 42 / Fetta 3: Esposizione controllata tramite lazy getter.
     // L'export eager spalmato è deliberatamente evitato per due motivi:

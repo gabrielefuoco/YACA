@@ -115,7 +115,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 
-const { metaHandler } = require('../src/handlers/metaHandler');
+const { metaHandler } = require('../src/meta');
 const { resolveImdbId } = require('../src/clients/tmdb');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 const { animeMappingStore } = require('../src/anime');
