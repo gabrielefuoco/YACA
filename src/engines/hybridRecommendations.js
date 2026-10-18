@@ -34,8 +34,7 @@ const {
     idrataEImpaginaCandidati
 } = require('../indice/idratazione');
 
-// Modulo scoring & fallback (retrocompatibilità)
-const { calculateHybridScore } = require('./hybrid/scoringEngine');
+// Modulo fallback (retrocompatibilità)
 const { fetchPopularFallbackIds } = require('./hybrid/dataFetchers');
 
 function getActiveKidsMode(userConfig, context) {
@@ -262,7 +261,6 @@ module.exports = {
     getSharedHeroCatalogs,
     syncIncrementalRecommendations,
     fetchRecentHistory,
-    calculateHybridScore,
     computeTopGenres,
     computeTopKeywords,
     fetchPopularFallbackIds,
