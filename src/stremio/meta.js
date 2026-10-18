@@ -1,5 +1,5 @@
 /**
- * src/meta/index.js
+ * src/stremio/meta.js
  *
  * Modulo Meta di YACA (Ticket 41 - Fetta 2).
  * Confine di dominio per il serving dei metadati Stremio:

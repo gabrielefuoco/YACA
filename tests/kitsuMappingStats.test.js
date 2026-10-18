@@ -2,7 +2,7 @@ const {
     applyKitsuMappingToMeta,
     getKitsuMappingStats,
     resetKitsuMappingStats
-} = require('../src/meta');
+} = require('../src/stremio/meta');
 const { animeMappingStore } = require('../src/anime');
 
 describe('Kitsu Mapping Stats & Resilience', () => {

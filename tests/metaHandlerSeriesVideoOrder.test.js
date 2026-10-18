@@ -115,7 +115,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 
-const { metaHandler } = require('../src/meta');
+const { metaHandler } = require('../src/stremio/meta');
 const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
 const { animeMappingStore } = require('../src/anime');
 
@@ -253,7 +253,7 @@ describe('metaHandler: aprendo una serie non viene imposto nessun episodio', () 
     });
 
     test('serie senza speciali: la lista non viene toccata (stesso array)', async () => {
-        const { buildResponseMeta } = require('../src/meta');
+        const { buildResponseMeta } = require('../src/stremio/meta');
         animeMappingStore.isAnimeTmdbId.mockReturnValue(false);
         const ingresso = {
             id: 'tmdb:1668',

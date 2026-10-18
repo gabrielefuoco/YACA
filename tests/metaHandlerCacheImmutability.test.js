@@ -70,7 +70,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 
-const { metaHandler } = require('../src/meta');
+const { metaHandler } = require('../src/stremio/meta');
 const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
 const { animeMappingStore } = require('../src/anime');
 
@@ -194,7 +194,7 @@ describe('metaHandler: la risposta non è l\'oggetto in cache', () => {
         // `normalizeAnimeMarker` scrive `_isAnime` sull\'oggetto che riceve: qui l\'ingresso è un
         // oggetto in cache (per esempio una entry venuta da Redis, senza marker), e non deve
         // accorgersi del passaggio.
-        const { buildResponseMeta } = require('../src/meta');
+        const { buildResponseMeta } = require('../src/stremio/meta');
         animeMappingStore.isAnimeTmdbId.mockReturnValue(false);
         const ingresso = { id: ID_IMDB, type: 'movie', name: 'Inseparabili', genre_ids: [18] };
         const snapshot = JSON.parse(JSON.stringify(ingresso));
