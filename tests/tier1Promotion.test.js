@@ -9,7 +9,7 @@ const {
     promoteToTier1,
     MOVIE_FIELDS,
     TV_FIELDS
-} = require('../src/db/tier1Promotion');
+} = require('../src/indice/tier1Promotion');
 
 // Fixture: la forma di una riga del Tier 1 come sta davvero nel file (output di
 // TmdbDumpClient.fetchMovie): i campi annidati sono stringhe JSON, l'id è numerico.
