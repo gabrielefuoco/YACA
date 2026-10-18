@@ -35,11 +35,11 @@ jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn()
 }));
 
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 
 // Paginazione deterministica: keyword 'a' → a_0..a_N, keyword 'b' → b_0..b_N.
 // Per il test consensus 'b' è slittata di 25 rispetto ad 'a'

@@ -1,4 +1,4 @@
-const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { buildPresetFromFilters } = require('../src/indice/duckDbProvider');
 const { normalizeToUniversalSchema } = require('../src/infra/resultMerger');
 const { sanitizeCustomCatalog, sanitizeCustomCatalogs } = require('../src/api/configure/validators');
 const { F } = require('../src/indice/filters');

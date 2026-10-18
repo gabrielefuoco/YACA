@@ -78,11 +78,11 @@ const duckDbSourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
+        const { getDuckDbCatalogFromFilters } = require('../indice');
 
         // SCENARIO 1: Ricerca standard (locale + Tier 2 + nomi appresi)
         if (ctx.search) {
-            const { getDuckDbCatalogFromFilters } = DuckDbProvider;
+            
             const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('../catalog/tier2Search');
             const { enrichTier2Items } = require('../catalog/tier2Enrich');
 
@@ -112,7 +112,7 @@ const duckDbSourceEntry = defineSourceEntry({
             };
         }
         const isPresetCatalog = ctx.baseId.startsWith('preset_') || String(ctx.effectiveMeta?.id || '').startsWith('preset_');
-        return await DuckDbProvider.getDuckDbCatalogFromPreset(
+        return await require('../indice').getDuckDbCatalogFromPreset(
             presetToRun,
             ctx.skip || 0,
             isPresetCatalog ? 20 : 100,
@@ -127,13 +127,13 @@ const duckDbSourceEntry = defineSourceEntry({
 
     async search(searchCtx) {
         try {
-            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
+            const { getDuckDbCatalogFromFilters } = require('../indice');
             const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('../catalog/tier2Search');
 
             const limit = searchCtx.cap || 20;
             const type = searchCtx.tipo === 'series' ? 'series' : 'movie';
 
-            const localItems = await DuckDbProvider.getDuckDbCatalogFromFilters(
+            const localItems = await getDuckDbCatalogFromFilters(
                 { _search: searchCtx.q },
                 type,
                 0,

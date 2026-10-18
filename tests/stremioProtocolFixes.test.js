@@ -3,7 +3,7 @@ const axios = require('axios');
 const http = require('http');
 const stremioRouter = require('../src/api/stremio');
 const { compileQuery } = require('../src/indice/compiler');
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 

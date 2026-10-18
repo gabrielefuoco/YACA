@@ -16,7 +16,7 @@ jest.mock('../src/db/learnedNames', () => ({
     learnNames: jest.fn(async () => 0)
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn(),
     getDuckDbCatalogFromPreset: jest.fn(),
     getDuckDbMetaDetails: jest.fn(),
@@ -36,7 +36,7 @@ jest.mock('../src/catalog/tier2Enrich', () => ({
 }));
 
 const { Tier2SearchClient } = require('../src/indice/tier2');
-const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
 const { enrichTier2Items } = require('../src/catalog/tier2Enrich');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const tier2Search = require('../src/catalog/tier2Search');

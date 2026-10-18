@@ -6,13 +6,13 @@
  * card base nuda quando la home ha visto solo il doppiaggio, degrado.
  */
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return { ...actual, getDuckDbCatalogFromPreset: jest.fn() };
 });
 
 const { animeAiringState, animeMappingStore } = require('../src/anime');
-const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../src/indice/duckDbProvider');
 const { getAiringStateCatalog, PAGE_SIZE } = require('../src/catalog/providers/AiringStateProvider');
 const { applyAiringStateBadges, isAiringStateCatalog } = require('../src/anime');
 const { sanitizeCatalogMeta, formatStremioCatalog } = require('../src/catalog/formatters/StremioFormatter');

@@ -15,7 +15,7 @@ jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn()
 }));
 
@@ -28,7 +28,7 @@ const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryP
 const router = require('../src/ricerca/router');
 
 const TasteProfile = require('../src/models/TasteProfile');
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 
 const USER_CONFIG = {
     userId: 'user-1',

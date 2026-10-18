@@ -335,7 +335,7 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
         });
 
         it('dataFetchers applica F.minRuntime(60) solo ai film', async () => {
-            const duckDb = require('../src/catalog/providers/DuckDbProvider');
+            const duckDb = require('../src/indice/duckDbProvider');
             const spyFilters = jest.spyOn(duckDb, 'getDuckDbCatalogFromFilters').mockResolvedValue([]);
 
             await fetchPopularFallbackIds('fake_key', 'movie', 20);

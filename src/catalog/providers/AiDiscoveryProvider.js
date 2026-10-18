@@ -3,12 +3,12 @@ const { routeLiveStremioSearch } = require('../../ricerca/router');
 const { getProfileDnaFilters } = require('../../infra');
 
 const { applyConsensusScoring } = require('../../infra');
-const { getDuckDbCatalogFromFilters } = require('./DuckDbProvider');
+const { getDuckDbCatalogFromFilters } = require('../../indice');
 const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
 const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
-const { G } = require('../filters');
+const { G } = require('../../indice/filters');
 
 function getTmdbVoteScore(item) {
     const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;

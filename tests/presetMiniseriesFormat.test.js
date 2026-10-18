@@ -1,5 +1,5 @@
 const { getPresets } = require('../src/catalog/presets');
-const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { buildPresetFromFilters } = require('../src/indice/duckDbProvider');
 
 describe('preset_miniseries closed-format gate', () => {
     test('requires an ended, short one-season format in addition to the keyword', () => {

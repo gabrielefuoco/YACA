@@ -29,7 +29,7 @@ jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn()
 }));
 
@@ -41,7 +41,7 @@ jest.mock('../src/profile', () => ({
 const router = require('../src/ricerca/router');
 
 const TasteProfile = require('../src/models/TasteProfile');
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 const { computeTopKeywords } = require('../src/profile');
 
 describe('H9 — l\'iniezione profilo trasforma with_genres AND in OR', () => {

@@ -5,7 +5,7 @@ const {
     buildPresetFromFilters, 
     getDuckDbCatalogFromPreset, 
     getDuckDbMetaDetails 
-} = require('../src/catalog/providers/DuckDbProvider');
+} = require('../src/indice/duckDbProvider');
 const duckDbStore = require('../src/indice/duckDbStore');
 const graph = require('../src/indice/HierarchicalGraph');
 

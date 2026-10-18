@@ -4,7 +4,7 @@ const LibrarySyncService = require('../../library/ingestion/LibrarySyncService')
 const { accountPerAddonUuid } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const duckDbStore = require('../../indice/duckDbStore');
-const { mapDuckDbRowToMeta } = require('./DuckDbProvider');
+const { mapDuckDbRowToMeta } = require('../../indice');
 const { normalizeLegacyPosterHost } = require('../../library');
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours

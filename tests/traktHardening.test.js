@@ -43,8 +43,8 @@ jest.mock('../src/profile/ProfileBuilder', () => ({
     syncUserHistory: jest.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbCatalogFromFilters: jest.fn(),

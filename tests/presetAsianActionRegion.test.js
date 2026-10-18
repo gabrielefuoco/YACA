@@ -1,5 +1,5 @@
 const { getPresets } = require('../src/catalog/presets');
-const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { buildPresetFromFilters } = require('../src/indice/duckDbProvider');
 
 describe('preset_asian_action regional whitelist', () => {
     test('accepts only JP, KR and HK production origins', () => {

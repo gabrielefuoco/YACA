@@ -1,7 +1,7 @@
 const { getTmdbMovieDetails } = require('../../clients/tmdb');
 const { normalizeContentId } = require('../contentId');
 const duckDbStore = require('../../indice/duckDbStore');
-const { mapDuckDbRowToMeta } = require('../providers/DuckDbProvider');
+const { mapDuckDbRowToMeta } = require('../../indice');
 const { MAX_BADGE_CACHE_HYDRATION_ITEMS } = require('../constants');
 
 async function hydrateEpisodeBadgesFromCache(metas, tmdbApiKey) {

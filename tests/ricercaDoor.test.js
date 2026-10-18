@@ -16,8 +16,8 @@
  * 6. L'AI fuori dal modulo: prompt specialistici di ricerca e adattatore con soft degradation
  */
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbCatalogFromFilters: jest.fn().mockResolvedValue([]),

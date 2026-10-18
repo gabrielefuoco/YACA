@@ -17,7 +17,7 @@
  */
 
 const { animeAiringState, animeMappingStore } = require('../../anime');
-const { getDuckDbCatalogFromPreset } = require('./DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../../indice');
 
 const PAGE_SIZE = 20;
 

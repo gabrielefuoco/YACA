@@ -1,7 +1,7 @@
 // src/catalog/presets.js
 
 const { F, S } = require('../indice/filters');
-const { buildPresetFromFilters } = require('./providers/DuckDbProvider');
+const { buildPresetFromFilters } = require('../indice');
 const { defineCatalog } = require('./definition');
 
 // Lista dei Cataloghi Pre-Configurati con query API TMDB "Hardcoded"

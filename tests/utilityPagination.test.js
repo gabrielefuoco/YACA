@@ -6,8 +6,8 @@ jest.mock('../src/library/ingestion/LibrarySyncService', () => ({
     syncLibraryForUser: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbCatalogFromFilters: jest.fn(),
@@ -34,7 +34,7 @@ jest.mock('../src/catalog/providers/AiringStateProvider', () => ({
 }));
 
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
-const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
 const {
     getWatchlistCatalog,
     WATCHLIST_PAGE_SIZE

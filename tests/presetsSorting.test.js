@@ -1,5 +1,5 @@
 const { getPresets } = require('../src/catalog/presets');
-const { mapSortBy, SUPPORTED_SORT_BY, isMappedSortBy } = require('../src/catalog/providers/DuckDbProvider');
+const { mapSortBy, SUPPORTED_SORT_BY, isMappedSortBy } = require('../src/indice/duckDbProvider');
 const {
     FAMILY_SORT_DEFAULTS,
     SORT_OPTIONS,
@@ -12,7 +12,7 @@ const {
     applySortWithTieBreakers
 } = require('../src/catalog/catalogSorting');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 const { S } = require('../src/indice/filters');
 const stremioRouter = require('../src/api/stremio');
 const UserConfig = require('../src/models/UserConfig');

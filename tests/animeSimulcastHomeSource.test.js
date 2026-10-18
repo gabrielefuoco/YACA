@@ -16,13 +16,13 @@
  * passata home non confermata da giorni esce (la freschezza è della fonte, non nostra).
  */
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return { ...actual, getDuckDbCatalogFromPreset: jest.fn() };
 });
 
 const { animeAiringState, animeMappingStore } = require('../src/anime');
-const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../src/indice/duckDbProvider');
 const { getAiringStateCatalog } = require('../src/catalog/providers/AiringStateProvider');
 const { applyAiringStateBadges } = require('../src/anime');
 const { formatStremioCatalog } = require('../src/catalog/formatters/StremioFormatter');

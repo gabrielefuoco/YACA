@@ -9,7 +9,7 @@ jest.mock('../src/indice/tier2', () => ({
     Tier2SearchClient: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn(),
     getDuckDbCatalogFromPreset: jest.fn(),
     getDuckDbMetaDetails: jest.fn(),
@@ -29,7 +29,7 @@ jest.mock('../src/db/learnedNames', () => ({
 }));
 
 const { Tier2SearchClient } = require('../src/indice/tier2');
-const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
 const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const http = require('http');

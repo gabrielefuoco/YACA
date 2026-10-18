@@ -1,5 +1,5 @@
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbCatalogFromFilters: jest.fn(),
@@ -29,7 +29,7 @@ jest.mock('../src/catalog/providers/WatchlistProvider', () => ({
     getWatchlistCatalog: jest.fn()
 }));
 
-const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../src/indice/duckDbProvider');
 const { routeCatalogRequest, PRESET_PAGE_SIZE } = require('../src/catalog/CatalogRouter');
 const { compileQuery } = require('../src/indice/compiler');
 

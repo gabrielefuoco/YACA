@@ -2,7 +2,7 @@ const {
     clearAiFilterResolutionCache,
     normalizeAiDiscoveryQueries
 } = require('../src/catalog/providers/AiQueryNormalizer');
-const { buildPresetFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+const { buildPresetFromFilters } = require('../src/indice/duckDbProvider');
 const { F } = require('../src/indice/filters');
 
 function makeTmdbClient() {

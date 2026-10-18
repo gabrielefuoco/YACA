@@ -1,7 +1,7 @@
 const { getPresets } = require('../src/catalog/presets');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { compileQuery } = require('../src/indice/compiler');
-const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbCatalogFromPreset } = require('../src/indice/duckDbProvider');
 
 describe('Preset Donghua Dedicato (Ticket 45)', () => {
     beforeAll(async () => {

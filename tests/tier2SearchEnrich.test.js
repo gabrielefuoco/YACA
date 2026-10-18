@@ -76,7 +76,7 @@ jest.mock('../src/infra/logger', () => ({ logError: jest.fn() }));
 /** L'indice FTS5 non serve qui: non si vuole alcun disco ne' alcuna rete. */
 jest.mock('../src/indice/tier2', () => ({ Tier2SearchClient: jest.fn() }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn(),
     getDuckDbCatalogFromPreset: jest.fn(),
     getDuckDbMetaDetails: jest.fn(),
@@ -509,7 +509,7 @@ describe('La ricerca standard risponde con i titoli del Tier 2 gia presentabili'
     beforeEach(() => {
         ({ routeCatalogRequest } = require('../src/catalog/CatalogRouter'));
         tier2Search = require('../src/catalog/tier2Search');
-        require('../src/catalog/providers/DuckDbProvider').getDuckDbCatalogFromFilters.mockResolvedValue([]);
+        require('../src/indice/duckDbProvider').getDuckDbCatalogFromFilters.mockResolvedValue([]);
     });
 
     afterEach(() => {
@@ -557,7 +557,7 @@ describe('La ricerca standard risponde con i titoli del Tier 2 gia presentabili'
     });
 
     it('i titoli locali restano intatti e non costano nessuna richiesta', async () => {
-        const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+        const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
         getDuckDbCatalogFromFilters.mockResolvedValue([locale(272, 'Batman Begins')]);
         stubIndice([]);
 

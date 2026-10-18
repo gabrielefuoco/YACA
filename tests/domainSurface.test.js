@@ -50,8 +50,8 @@ jest.mock('../src/library', () => ({
     LibrarySyncService: { normalizeSyncItemId: jest.fn((id) => id) }
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbCatalogFromFilters: jest.fn().mockResolvedValue([]),

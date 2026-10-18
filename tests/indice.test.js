@@ -11,7 +11,7 @@ const indice = require('../src/indice');
 const { IndiceModule } = require('../src/indice');
 const { compileQuery } = require('../src/indice/compiler');
 const compiler = require('../src/indice/compiler');
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 
 describe('Ticket 22 — Seam B: Il compilatore dell\'indice (filtri in, parametri out)', () => {
     test('escapeSqlString scompare dal compilatore dell indice', () => {

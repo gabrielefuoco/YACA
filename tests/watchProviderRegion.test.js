@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
 const { getPresets } = require('../src/catalog/presets');
-const { buildPresetFromFilters, mapDuckDbRowToMeta } = require('../src/catalog/providers/DuckDbProvider');
+const { buildPresetFromFilters, mapDuckDbRowToMeta } = require('../src/indice/duckDbProvider');
 
 describe('Watch provider region', () => {
     afterEach(() => {
