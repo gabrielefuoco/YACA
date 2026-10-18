@@ -210,3 +210,57 @@ La **fetta 1** ha consegnato: la porta `indice.candidati(contesto, opzioni)` (ca
 strategie e può far cadere **tutto il pool** invece di degradare. La porta non solleva ✓ (contratto rispettato),
 quindi il rischio pratico è basso — ma la parità col percorso OFF va chiusa, ed è la prima cosa da fare nella
 parte 2.
+
+---
+
+# RE-TRIAGE (18/10/2026) — cosa resta, dopo che il 46 ha cambiato lo scopo
+
+Il piano «PARTE 2» qui sopra (tre strategie da **reimplementare**) è **superato**: la decisione 26 ha deciso di
+**rimuoverle**, e il ticket 46 le ha rimosse (`catalogStrategies.js` −1.598 righe, i cataloghi hero sostituiti da
+`nicchia_di_qualita` e `uscite_nuove` del grafo). La prova che funziona: `tests/feedProtocolAndCatalogs.test.js`
+(8 cataloghi, titoli > 0) e la sonda `probe-hidden-gems-jaccard.js`.
+
+## Cosa resta, misurato (non stimato)
+
+| file | righe | chi lo chiama oggi | cosa fa | destinazione |
+|---|---|---|---|---|
+| `src/handlers/catalogHandler.js` | **1.037** | `api/catalog`, `api/configurazione`, `api/stremio` | il **serving** del catalogo Stremio: definizione, chiave di cache, `CatalogRouter`, badge (airing, ita), kids, formattazione, paginazione | moduli, con **una sola invocazione** (decisione 27) |
+| `src/handlers/metaHandler.js` | **680** | `api/stremio` | il **serving** del meta Stremio: dettagli, episodi, id IMDb (dump + traduzione), kitsu, anime | moduli |
+| `src/pool/index.js` | **539** | `engines/hybridRecommendations` | il **compositore** delle righe: priorità, `claimedIds`, chiave di cache condivisa | **resta** (decisione 26) — ma i suoi ingressi cambiano |
+| `src/engines/hybridRecommendations.js` | **512** | `catalog/providers/{HybridProvider,AiDiscoveryProvider}` | la **facciata del gusto**: contesto, staleness, pool, idratazione, paginazione | si **divide**: profilo/libreria/cache/indice |
+| `src/engines/hybrid/dataFetchers.js` | **279** | `hybridRecommendations`, `pool` | **estrazione dei fatti** (contesto del profilo, storia e voti Trakt, sync) | **si tiene** (decisione 26): va in `library`/`profile` |
+| `src/engines/hybrid/scoringEngine.js` | **134** | `hybridRecommendations` | punteggio ibrido di co-occorrenza, top generi/keyword | da decidere: morto o a `profile` |
+| `src/engines/profileStaleness.js` | **78** | `hybridRecommendations` | freschezza del profilo | `profile` |
+| **totale** | **3.259** | | | |
+
+E **33 file di test** li nominano (`catalogHandler` 19, `metaHandler` 14, `hybridRecommendations` 14,
+`dataFetchers` 5, `scoringEngine` 4, `profileStaleness` 1) su **183 suite**.
+
+## Le tre fette che restano
+
+1. **La facciata del gusto** (`hybridRecommendations` 512 + `dataFetchers` 279 + `scoringEngine` 134 +
+   `profileStaleness` 78 = **1.003 righe**): dividere ciò che è del profilo, della libreria, della cache e
+   dell'indice. **Prova**: i conteggi delle righe hero prima/dopo, identici (le sonde esistono già).
+2. **Il serving** (`catalogHandler` + `metaHandler` = **1.717 righe**): portarlo sui moduli, con **una sola
+   invocazione** del motore (decisione 27). **Prova**: le suite `tests/stremio*.test.js` e i 33 test coinvolti
+   devono passare **identici**, e il manifest byte-a-byte.
+3. **La cancellazione**: `git rm` di ciò che resta senza consumatori, e la decisione sui test che muoiono con lui.
+
+## La domanda che il 46 ha aperto: **il deploy aspetta ancora?**
+
+La decisione scritta nel ticket 30 (*«niente push finché il 41 non è finito»*) è stata presa **prima** che il 26
+cambiasse lo scopo del 41. Adesso il 41 che resta è **lavoro interno** (serving + cancellazione): non cambia il
+feed, non cambia il contratto del motore, e non è un prerequisito per il deploy — è un prerequisito per
+**cancellare** il vecchio stack.
+
+Le due opzioni, dichiarate:
+- **A. Deploy adesso** (dopo il ticket 47, che è un blocco vero): la produzione prende il refactor, i moduli, il
+  grafo, i cataloghi nuovi. Il serving resta dov'è (funziona) e le tre fette si fanno dopo, su `main`, senza
+  fretta. Costo: nessuno, se non che il vecchio stack resta in piedi ancora un po'.
+- **B. Deploy dopo le tre fette**: un solo push con tutto, come deciso allora. Costo: `main` si allontana ancora
+  dalla produzione (oggi **135 commit**), e ogni fetta in più è rischio accumulato su un deploy mai provato.
+
+**Raccomandazione: A.** Il motivo è la misura, non il gusto: il distacco fra `main` e produzione è già il più
+grande che questa mappa abbia mai avuto, e un deploy mai provato che cresce è il modo di rendere impossibile
+attribuire un guasto. Le tre fette non toccano il feed, quindi non hanno fretta — e si fanno **dopo**, con la
+produzione allineata e i numeri veri in mano.
