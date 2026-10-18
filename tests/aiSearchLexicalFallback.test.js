@@ -21,7 +21,8 @@ jest.mock('../src/indice/duckDbProvider', () => ({
 
 jest.mock('../src/profile', () => ({
     computeTopGenres: jest.fn(() => ['878']),
-    computeTopKeywords: jest.fn(() => ['878'])
+    computeTopKeywords: jest.fn(() => ['878']),
+    getTasteProfile: jest.fn((userId, context) => require('../src/models/TasteProfile').findOne({ owner: userId, context }))
 }));
 
 const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');

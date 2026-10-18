@@ -35,7 +35,10 @@ jest.mock('../src/indice/duckDbProvider', () => ({
 
 jest.mock('../src/profile', () => ({
     computeTopGenres: jest.fn(() => ['28', '16']),
-    computeTopKeywords: jest.fn(() => [])
+    computeTopKeywords: jest.fn(() => []),
+    // La porta del profilo e' l'unica via al gusto: il mock deve esporla, se no
+    // resta un mock parziale che non intercetta piu' nulla.
+    getTasteProfile: jest.fn((userId, context) => require('../src/models/TasteProfile').findOne({ owner: userId, context }))
 }));
 
 const router = require('../src/ricerca/router');

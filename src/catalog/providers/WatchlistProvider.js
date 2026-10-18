@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const { leggiWatchlist, WATCHLIST_PAGE_SIZE } = require('../../library');
-const LibrarySyncService = require('../../library/ingestion/LibrarySyncService');
 const { accountPerAddonUuid } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const duckDbStore = require('../../indice/duckDbStore');
@@ -26,7 +25,10 @@ async function triggerSyncIfNeeded(addonUuid) {
             const user = await accountPerAddonUuid(addonUuid);
             if (user) {
                 // Fire and forget
-                LibrarySyncService.syncLibraryForUser(user.userId).catch(e => console.error(e));
+                // La porta della libreria, non il servizio interno (decisione 29: i moduli si
+                // parlano dalle porte; la libreria possiede l'ingestione).
+                const { syncLibraryForUser } = require('../../library');
+                syncLibraryForUser(user.userId).catch(e => console.error(e));
             }
         }
     } catch (error) {

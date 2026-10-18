@@ -5,7 +5,6 @@ const { getProfileDnaFilters } = require('../../infra');
 const { applyConsensusScoring } = require('../../infra');
 const { getDuckDbCatalogFromFilters } = require('../../indice');
 const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
-const TasteProfile = require('../../models/TasteProfile');
 const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
 const { G } = require('../../indice/filters');
@@ -245,7 +244,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
 // Automatic query injection from profile
 async function injectProfilePreferences(filters, userId, profileId) {
     if (!userId) return filters;
-    const profile = await TasteProfile.findOne({ owner: userId, context: profileId || 'global' });
+    // Il gusto si chiede alla porta del profilo: solo il profilo tocca i suoi modelli (map §16).
+    const { getTasteProfile } = require('../../profile');
+    const profile = await getTasteProfile(userId, profileId || 'global');
     if (!profile) return filters;
 
     const enriched = { ...filters };
@@ -290,12 +291,13 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const profileId = userConfig.activeProfileId;
     const activeContext = profileId || 'global';
     
+    const { getTasteProfile } = require('../../profile');
     let profileDoc = null;
     let globalProfileDoc = null;
     if (userId) {
         [profileDoc, globalProfileDoc] = await Promise.all([
-            TasteProfile.findOne({ owner: userId, context: activeContext }),
-            activeContext === 'global' ? Promise.resolve(null) : TasteProfile.findOne({ owner: userId, context: 'global' })
+            getTasteProfile(userId, activeContext),
+            activeContext === 'global' ? Promise.resolve(null) : getTasteProfile(userId, 'global')
         ]);
     }
     const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
