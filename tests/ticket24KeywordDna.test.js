@@ -4,9 +4,12 @@ const {
     filterRetiredTmdbKeywords,
     sanitizeDnaVector
 } = require('../src/indice/keywordIds');
-const { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData } = require('../src/dna/dnaEngine');
 const { getProfileDnaFilters } = require('../src/infra/helpers');
-const { computeTopKeywords } = require('../src/profile');
+const {
+    computeTopKeywords,
+    extractStaticDNAFromQueries,
+    extractActiveDNAFromTmdbData
+} = require('../src/profile');
 const { getPresets } = require('../src/catalog/presets');
 
 const RETIRED_IDS = [363309, 364043, 210086, 208035];

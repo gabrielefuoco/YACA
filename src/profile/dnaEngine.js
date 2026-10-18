@@ -1,5 +1,5 @@
 /**
- * src/dna/dnaEngine.js
+ * src/profile/dnaEngine.js
  *
  * Motore matematico del DNA: modulo **puro, senza I/O** (niente Mongo, DuckDB,
  * HTTP). L'I/O resta in `src/profile/ProfileBuilder.js`, la combinazione

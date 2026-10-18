@@ -35,9 +35,12 @@ const {
     keywordIdForName,
     isRetiredTmdbKeywordId
 } = require('../src/indice/keywordIds');
-const { extractStaticDNAFromQueries } = require('../src/dna/dnaEngine');
-const { setGlobalDfCache, getSoftRarityMultiplier } = require('../src/dna/dnaEngine');
-const { computeTopKeywords } = require('../src/profile');
+const {
+    extractStaticDNAFromQueries,
+    setGlobalDfCache,
+    getSoftRarityMultiplier,
+    computeTopKeywords
+} = require('../src/profile');
 
 // Keyword reale del grafo: da sola produce k:10364, k:mission e la catena L1–L5.
 const MISSION = { id: 10364, name: 'mission' };

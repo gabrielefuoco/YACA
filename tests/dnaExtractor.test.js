@@ -1,4 +1,4 @@
-const { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions, normalizeVector } = require('../src/dna/dnaEngine');
+const { extractStaticDNAFromQueries, extractActiveDNAFromTmdbData, computeFinalDNA, calculateWeightedInteractions, normalizeVector } = require('../src/profile/dnaEngine');
 
 describe('dnaExtractor', () => {
     describe('extractStaticDNAFromQueries', () => {

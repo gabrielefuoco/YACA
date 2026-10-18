@@ -1,7 +1,12 @@
 const { nanoid } = require('nanoid');
 const { getPresets } = require('../../catalog/presets');
 const TasteProfile = require('../../models/TasteProfile');
-const { extractStaticDNAFromQueries } = require('../../dna/dnaEngine');
+const {
+    extractStaticDNAFromQueries,
+    computeFinalDNA,
+    calculateWeightedInteractions,
+    calculateFlatnessMetrics
+} = require('../../profile');
 const {
     resolveDnaNames,
     getReadableFallback,
@@ -249,7 +254,6 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
                     const vActive = existing?.compiledVectors?.V_active || {};
                     const hasActiveHistory = Object.keys(vActive).length > 0;
                     
-                    const { computeFinalDNA, calculateWeightedInteractions, calculateFlatnessMetrics } = require('../../dna/dnaEngine');
                     const { storiaDi } = require('../../library');
                     const historyDocs = await storiaDi({ userId, profileId: profile.id });
                     const totalInteractions = calculateWeightedInteractions(historyDocs);

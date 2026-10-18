@@ -33,7 +33,7 @@
  * perché. Se rosseggia per un altro motivo, la domanda giusta è: qualcuno ha
  * toccato la scala di ciò che si scrive su Mongo?
  */
-const { computeActiveDNA, normalizeVector, sparseUnitNormalize } = require('../src/dna/dnaEngine');
+const { computeActiveDNA, normalizeVector, sparseUnitNormalize } = require('../src/profile/dnaEngine');
 const { sanitizeDnaVector } = require('../src/indice/keywordIds');
 
 const somma = (v) => Object.values(v).reduce((a, b) => a + b, 0);
