@@ -512,9 +512,9 @@ class ProfileBuilder {
                         tmdbId = duckDbResolved[rawId].tmdbId;
                         type = duckDbResolved[rawId].type;
                     } else {
-                        // Fallback id_cache / Mongo
+                        // Fallback idMapping / Mongo
                         try {
-                            const { translateImdbToTmdb } = require('../id_mapping/id_cache');
+                            const { translateImdbToTmdb } = require('../clients');
                             const res = await translateImdbToTmdb(rawId);
                             if (res?.id) {
                                 tmdbId = Number(res.id.replace('tmdb:', ''));

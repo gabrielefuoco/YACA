@@ -69,7 +69,7 @@ jest.mock('../src/cache/CacheManager', () => {
     return FakeCacheManager;
 });
 
-jest.mock('../src/id_mapping/id_cache', () => ({
+jest.mock('../src/clients', () => ({
     translateImdbToTmdb: jest.fn(async (imdbId) => ({ id: { 'tt0108778': '1668', 'tt0098800': '999' }[imdbId] }))
 }));
 

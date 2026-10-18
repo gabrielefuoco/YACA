@@ -13,7 +13,7 @@ jest.mock('../src/models/ImdbToTmdbMapping', () => ({
     updateOne: jest.fn().mockResolvedValue(true)
 }));
 
-const { translateImdbToTmdb } = require('../src/id_mapping/id_cache');
+const { translateImdbToTmdb } = require('../src/clients');
 
 describe('Input validation - IMDB ID format', () => {
     it('should reject null IMDB ID', async () => {
