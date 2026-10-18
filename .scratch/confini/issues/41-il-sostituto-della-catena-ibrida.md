@@ -323,3 +323,22 @@ Tutti i test di regressione del grafo, del pool e della sincronizzazione (`feedP
 - **Fetta 3: La cancellazione**:
   - `git rm` del vecchio stack `src/engines/` una volta orfano di chiamanti esterni, e bonifica o ripuntamento dei test.
 
+### 5. Addendum Integrazione: Risoluzione Ciclo Require & Ripristino Suite Completa (18/10/2026)
+- **Diagnosi del ciclo e dell'edge incriminato**:
+  - Nei test `aiSearchLexicalFallback.test.js`, `diag.recommender.h5.pagination.test.js` e `diag.recommender.h9.injectProfile.test.js`, `DuckDbProvider` viene mockato tramite `jest.mock('../src/catalog/providers/DuckDbProvider', () => ({ getDuckDbCatalogFromFilters: jest.fn() }))`.
+  - In precedenza (su `main`), `src/catalog/providers/AiDiscoveryProvider.js` importava `{ computeTopGenres, computeTopKeywords }` da `../../engines/hybridRecommendations`, che era a sua volta mockato dai test, impedendo il caricamento transitivo del modulo.
+  - Con la migrazione della fetta 1, la modifica dell'import in `AiDiscoveryProvider.js` verso `../../profile` ha chiuso l'edge non mockato:
+    `AiDiscoveryProvider` ─→ `profile` ─→ `ProfileBuilder` ─→ `library` ─→ `LibrarySyncService` ─→ `stremio` ─→ `manifest` ─→ `presets` ─→ `DuckDbProvider`.
+  - Giunto a `presets.js:4`, `require('./providers/DuckDbProvider')` riceveva il mock parziale del test privo di `buildPresetFromFilters`, scatenando `TypeError: buildPresetFromFilters is not a function` all'inizializzazione del modulo (`presets.js:331`).
+  - Inoltre, `src/library/syncRecommendations.js` manteneva un require top-level a `ProfileBuilder`, chiudendo un ciclo diretto `library` ─→ `syncRecommendations` ─→ `ProfileBuilder` ─→ `library`.
+- **Risoluzione (pattern lazy require e rispetto della facciata)**:
+  1. Ripristinato l'import in `src/catalog/providers/AiDiscoveryProvider.js` da `../../engines/hybridRecommendations` (facciata di retrocompatibilità che re-esporta `computeTopGenres` e `computeTopKeywords` da `src/profile/vectorElements`), preservando l'isolamento dei mock dei test e rimandando la migrazione dei consumatori del catalogo alla fetta 2.
+  2. Applicato il pattern del require lazy in `src/library/syncRecommendations.js`: `ProfileBuilder` viene ora richiesto dinamicamente all'interno di `syncIncrementalRecommendations`.
+  3. Applicato il pattern del require lazy in `src/stremio/manifest.js`: `getPresets` da `../catalog/presets` viene ora richiesto dinamicamente dentro `getCanonicalPresetsMap()`, evitando l'esecuzione immediata di `presets.js` al semplice caricamento del client Stremio.
+- **Totali Full-Suite (`npx jest --forceExit`)**:
+  - **Prima del fix**: 11 suite fallite (44 test falliti, 1837 passati).
+  - **Dopo il fix**: **5 suite fallite, 181 passate, 186 totali (1881 test passati)**.
+  - Le 5 suite fallite (`animeOverridesCertify`, `candidateProvider`, `donghuaCatalog`, `duckDbAndMatchmaker`, `presetBurtonOrdering`) sono identiche ed esclusive del baseline preesistente ambientale su `main`. Nessun fallimento residuo imputabile alla fetta.
+- **Verifica parità conteggi hero**: rieseguito `getHeroPool` con fixture mondi; conteggi invariati a **2 / 2 / 3 / 2** (totale 9 titoli).
+
+

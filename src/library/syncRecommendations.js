@@ -6,7 +6,6 @@
  */
 
 const TasteProfile = require('../models/TasteProfile');
-const ProfileBuilder = require('../profile/ProfileBuilder');
 const { isStremioSyncDue } = require('../profile/profileStaleness');
 const { fetchRecentHistory, fetchRecentRatings } = require('./traktFetchers');
 const dataFetchers = require('../engines/hybrid/dataFetchers');
@@ -72,6 +71,7 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
             return false;
         }
 
+        const ProfileBuilder = require('../profile/ProfileBuilder');
         const syncResult = await ProfileBuilder.syncUserHistory(userId, context, combined, tmdbApiKey);
         if (typeof TasteProfile.updateOne === 'function') {
             await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });

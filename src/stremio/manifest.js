@@ -3,7 +3,6 @@ const {
     SORT_MAP,
     getSortByValue
 } = require('../catalog/catalogSorting');
-const { getPresets } = require('../catalog/presets');
 const { isCatalogConformant } = require('../catalog/catalogKind');
 const { getManifestHeroCatalogs } = require('../catalog/registry');
 
@@ -15,6 +14,7 @@ let canonicalPresetsMap = null;
 function getCanonicalPresetsMap() {
     if (!canonicalPresetsMap) {
         try {
+            const { getPresets } = require('../catalog/presets');
             const presets = getPresets();
             canonicalPresetsMap = new Map(presets.map(p => [p.id, p]));
         } catch (e) {
