@@ -81,7 +81,7 @@ da -6 mesi a oggi (serie), da -45 giorni a oggi (episodi).
 La definizione non resta "la stessa cosa con un numero diverso": la data finisce nella
 **WHERE SQL** che DuckDB esegue.
 
-### I tre preset "nuove uscite" — `src/catalog/providers/DuckDbProvider.js:160-164`
+### I tre preset "nuove uscite" — `src/indice/duckDbProvider.js:160-164`
 
 ```js
 const dateCol = isTv ? '"first_air_date"' : '"release_date"';
@@ -110,7 +110,7 @@ preset_new_series_eps    2026-10-02 → "first_air_date" >= '2026-08-18' AND "fi
 Il risultato è diverso ogni giorno **per costruzione**: senza la data nella chiave, serviremo
 ieri la finestra di ieri — cioè risultati stantii.
 
-### I quattro preset anime — `src/catalog/filters.js:68-77`
+### I quattro preset anime — `src/indice/filters.js:68-77`
 
 ```js
 permissiveFloor: (standardFloor, recentDate, recentFloor = 0, isTv = false) => {
@@ -165,7 +165,7 @@ diventerebbe "tutte le serie per popolarità". Non è una cache stantia: è **un
    where ORIGINALE                   : ("vote_count" >= 50 OR ("first_air_date" IS NOT NULL AND "first_air_date" >= '2026-04-03'))
 ```
 
-**Identiche.** Perché `src/catalog/providers/DuckDbProvider.js:48-57` ricalcola da sé la data se manca:
+**Identiche.** Perché `src/indice/duckDbProvider.js:48-57` ricalcola da sé la data se manca:
 
 ```js
 let recentDate = q.recent_since;

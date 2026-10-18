@@ -15,7 +15,7 @@ L'architettura SQL-First risolve questo limite abbracciando nativamente un **Dom
 
 ## 2. Componenti Chiave
 
-### A. `src/catalog/filters.js` (La DSL SQL)
+### A. `src/indice/filters.js` (La DSL SQL)
 Espone primitive costruttive (factory) sotto l'oggetto `F` e l'oggetto `S` (Sorting).
 Ogni funzione restituisce un frammento SQL.
 
@@ -31,13 +31,13 @@ Ogni funzione restituisce un frammento SQL.
 - Se presente il parametro `{ _fts: "termine" }`, concatena stringhe ed esegue una `BM25` search.
 - Se presente il parametro `{ _similar: 1234 }`, effettua l'estrazione dai campi `recommendations` stoccati in pre-computazione nel database locale.
 
-### C. `src/catalog/providers/DuckDbProvider.js`
+### C. `src/indice/duckDbProvider.js`
 Il provider che connette la logica astratta al database fisico di esecuzione. Esegue `queryBuilder.js`, incanala i dati grezzi estratti (spesso in ~10-15ms) e mappa le colonne lette nella sintassi unificata di risposta *Stremio Light Meta*, che arricchirà il frontend senza effettuare alcuna richiesta web.
 
 ### D. Il dump TMDB e la politica dei titoli
 
 > [!NOTE]
-> `scripts/sync_entities.js` **non esiste più**: la risoluzione degli ID di crew/cast/keyword è oggi fatta a runtime da `src/catalog/filters.js` e dal grafo gerarchico, non da un dizionario statico precompilato.
+> `scripts/sync_entities.js` **non esiste più**: la risoluzione degli ID di crew/cast/keyword è oggi fatta a runtime da `src/indice/filters.js` e dal grafo gerarchico, non da un dizionario statico precompilato.
 
 **I titoli arrivano da TMDB con una politica esplicita: italiano → inglese → originale** (ticket 14).
 

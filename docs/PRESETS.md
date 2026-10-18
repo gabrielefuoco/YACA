@@ -8,7 +8,7 @@ I preset sono definiti centralmente nel file [presets.js](../src/catalog/presets
 
 ## 1. Architettura SQL-First e DSL (`filters.js`)
 
-A partire dall'aggiornamento SQL-First, i preset non utilizzano più la vecchia sintassi di interrogazione API TMDB (es. `with_genres: '28|12'`), ma si basano su una **Domain Specific Language (DSL)** nativa esposta in [filters.js](../src/catalog/filters.js).
+A partire dall'aggiornamento SQL-First, i preset non utilizzano più la vecchia sintassi di interrogazione API TMDB (es. `with_genres: '28|12'`), ma si basano su una **Domain Specific Language (DSL)** nativa esposta in [filters.js](../src/indice/filters.js).
 Questo permette di creare condizioni `WHERE` SQL tramite funzioni di utilità modulari, fortemente tipizzate e flessibili.
 
 Un preset tipico è strutturato in questo modo:
@@ -80,7 +80,7 @@ Il flusso dei preset è gestito in modalità 100% offline:
 
 1. Stremio richiede il catalogo `yaca_preset_nolan`.
 2. Il `CatalogRouter` individua il preset.
-3. Trovando la chiave `where`, la richiesta viene delegata al [DuckDbProvider](../src/catalog/providers/DuckDbProvider.js).
+3. Trovando la chiave `where`, la richiesta viene delegata al [DuckDbProvider](../src/indice/duckDbProvider.js).
 4. Il provider converte le chiamate `F.*` in un'unica stringa SQL grazie al `queryBuilder.js`.
 5. DuckDB esegue la query in memoria (tempo tipico: < 15ms) e ritorna il result-set.
 6. Il result-set viene convertito nel formato compatto LightMeta e passato allo `StremioFormatter`.
@@ -99,7 +99,7 @@ La traduzione dei criteri vive in un modulo solo: [src/catalog/catalogSorting.js
 
 ### 4.1 Default Curato per Ogni Preset
 Ogni catalogo preset definisce un proprio ordinamento predefinito e curato, identificato dalla proprietà `orderBy`.
-Durante la generazione dei preset da [presets.js](../src/catalog/presets.js), la funzione `buildPresetFromFilters` analizza il parametro `sort_by` specificato nel blocco query del preset (`p.queries[0].sort_by`) e calcola l'espressione SQL corrispondente invocando [`mapSortBy(s, type)`](../src/catalog/providers/DuckDbProvider.js#L31).
+Durante la generazione dei preset da [presets.js](../src/catalog/presets.js), la funzione `buildPresetFromFilters` analizza il parametro `sort_by` specificato nel blocco query del preset (`p.queries[0].sort_by`) e calcola l'espressione SQL corrispondente invocando [`mapSortBy(s, type)`](../src/indice/duckDbProvider.js#L31).
 
 Se un preset definisce già un `orderBy` esplicito a livello di radice, questo ha la precedenza (`orderBy: p.orderBy || duck.orderBy`).
 

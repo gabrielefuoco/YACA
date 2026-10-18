@@ -225,7 +225,7 @@ Cinque trappole insidiose sono state scoperte e pagate durante lo sviluppo. Sono
 - **La soluzione**: [src/catalog/registry.js:300](../src/catalog/registry.js#L300) centralizza prioritizzazione e additività in `getHeroPoolSpec()`.
 
 ### Trappola 5: `tv` vs `series` e gli Identificativi
-- **Il problema**: In TMDB le serie hanno tipo `tv`, nei manifest e cataloghi Stremio si chiamano `series`, e nel parquet DuckDB gli ID sono nella forma breve senza tipo (`tmdb:<id>`, vedi [src/catalog/providers/DuckDbProvider.js:292](../src/catalog/providers/DuckDbProvider.js#L292)).
+- **Il problema**: In TMDB le serie hanno tipo `tv`, nei manifest e cataloghi Stremio si chiamano `series`, e nel parquet DuckDB gli ID sono nella forma breve senza tipo (`tmdb:<id>`, vedi [src/indice/duckDbProvider.js:292](../src/indice/duckDbProvider.js#L292)).
 - **La soluzione**: Nel contratto HTTP del grafo il medium è rigorosamente normalizzato come `"series"` o `"movie"`. Ai confini, [src/handlers/catalogHandler.js:387](../src/handlers/catalogHandler.js#L387) (`annotationKeyFor`) mappa `series` su `tv` per il lookup delle annotazioni doppiaggio.
 
 ---

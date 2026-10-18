@@ -28,9 +28,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const store = require('../../src/indice/duckDbStore');
-const { getPresets } = require('../src/catalog/presets');
-const { getDuckDbCatalogFromPreset } = require('../../src/catalog/providers/DuckDbProvider');
-const { G } = require('../src/catalog/filters');
+const { getPresets } = require('../../src/catalog/presets');
+const { getDuckDbCatalogFromPreset } = require('../../src/indice');
+const { G } = require('../../src/indice/filters');
 
 const num = v => {
     const n = Number(typeof v === 'bigint' ? Number(v) : v);
