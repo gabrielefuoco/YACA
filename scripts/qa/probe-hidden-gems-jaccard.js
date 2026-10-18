@@ -12,7 +12,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const duckDbStore = require('../../src/indice/duckDbStore');
+const duckDbStore = require('../../src/indice');
 const {
     HERO_STRATEGIES,
     setFlagNewHiddenGems,

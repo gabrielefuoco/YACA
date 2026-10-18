@@ -27,7 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const store = require('../../src/indice/duckDbStore');
+const store = require('../../src/indice');
 const { getPresets } = require('../../src/catalog/presets');
 const { getDuckDbCatalogFromPreset } = require('../../src/indice');
 const { G } = require('../../src/indice/filters');
@@ -167,7 +167,7 @@ function timestampTag(d = new Date()) {
 async function poolCount(preset) {
     const table = preset.type === 'movie' ? 'movies' : 'tv';
     const where = ['adult = false', ...(preset.where || [])].join(' AND ');
-    const r = await store.query(`SELECT count(*) AS n FROM ${table} WHERE ${where}`);
+    const r = await store.queryRaw(`SELECT count(*) AS n FROM ${table} WHERE ${where}`);
     return num(r[0]?.n);
 }
 

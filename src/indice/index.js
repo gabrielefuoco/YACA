@@ -24,6 +24,7 @@ class IndiceModule {
         this.init = this.init.bind(this);
         this.resolveImdbIds = this.resolveImdbIds.bind(this);
         this.resolveTmdbToImdb = this.resolveTmdbToImdb.bind(this);
+        this.close = this.close.bind(this);
     }
 
     get tier2Client() {
@@ -255,6 +256,15 @@ class IndiceModule {
     /**
      * Cache DF (Document Frequency) calcolata da DuckDB (Ticket 49).
      */
+    /**
+     * Stato degli artefatti parquet (esistenza + mtime). Il daemon del dump lo usa per
+     * decidere se riconvertire, senza leggere i percorsi interni dello store.
+     */
+    parquetStats() {
+        if (typeof this.duckDb.parquetStats === 'function') return this.duckDb.parquetStats();
+        return { movies: { exists: false, mtimeMs: null }, tv: { exists: false, mtimeMs: null } };
+    }
+
     getDfCache() {
         if (typeof this.duckDb.getDfCache === 'function') {
             return this.duckDb.getDfCache();
@@ -289,5 +299,7 @@ module.exports.getDuckDbCatalogFromPreset = (...args) => indice.getCatalogFromPr
 // Bind esplicito: senza, `const { getDfCache } = require('./indice')` perde il ricevitore e
 // il metodo esplode su `this.duckDb`. Un wrapper che chiama lo stesso nome sarebbe ricorsivo.
 module.exports.getDfCache = indice.getDfCache.bind(indice);
+// Stato degli artefatti parquet (esistenza + mtime), non i percorsi: lo chiede il daemon del dump.
+module.exports.parquetStats = indice.parquetStats.bind(indice);
 // La promozione Tier 2 -> Tier 1 è dell'indice: si chiede dalla porta, non dal file interno.
 module.exports.schedulePromotion = (...args) => require('./tier1LazyPromotion').schedulePromotion(...args);

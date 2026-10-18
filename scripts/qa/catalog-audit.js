@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const store = require('../../src/indice/duckDbStore');
+const store = require('../../src/indice');
 const { getPresets } = require('../../src/catalog/presets');
 const { getDuckDbCatalogFromPreset, buildPresetFromFilters } = require('../../src/indice');
 const { F, S, G } = require('../../src/indice/filters');
@@ -240,7 +240,7 @@ function qualityOf(items) {
 async function queryPoolCount(preset) {
     const table = preset.type === 'movie' ? 'movies' : 'tv';
     const where = ['adult = false', ...(preset.where || [])].join(' AND ');
-    const r = await store.query(`SELECT count(*) AS n FROM ${table} WHERE ${where}`);
+    const r = await store.queryRaw(`SELECT count(*) AS n FROM ${table} WHERE ${where}`);
     return num(r[0]?.n);
 }
 
@@ -548,7 +548,7 @@ Opzioni:
                     FROM ${table} t, unnest(CAST(json_extract(t.keywords,'$[*]') AS JSON[])) AS u(kw)
                 ) WHERE kwid IN (${inList}) GROUP BY kwid`;
             try {
-                const rows = await store.query(q);
+                const rows = await store.queryRaw(q);
                 for (const r of rows) {
                     const id = Number(num(r.kwid));
                     if (r.kwname && !kwNames.has(id)) kwNames.set(id, r.kwname);
@@ -594,7 +594,7 @@ Opzioni:
 
             const sql = `SELECT count(*) AS pool, ${sums.join(', ')} FROM ${table} WHERE ${baseWhere} AND ${clauseExpr}`;
             try {
-                const rows = await store.query(sql);
+                const rows = await store.queryRaw(sql);
                 const row = rows[0] || {};
                 const pool = Number(num(row.pool) || 0);
 
@@ -669,7 +669,7 @@ Opzioni:
                 GROUP BY 1`;
 
             try {
-                const [coocRows, totalRows] = await Promise.all([store.query(coocSql), store.query(totalSql)]);
+                const [coocRows, totalRows] = await Promise.all([store.queryRaw(coocSql), store.queryRaw(totalSql)]);
                 const totals = new Map();
                 for (const r of totalRows) totals.set(Number(num(r.kwid)), Number(num(r.total)));
 
@@ -744,7 +744,7 @@ Opzioni:
         const fullWhere = ['adult = false', ...cat.where].join(' AND ');
         const testSql = `SELECT id FROM ${table} WHERE id IN (${ids.join(',')}) AND NOT (${fullWhere})`;
         try {
-            const violated = await store.query(testSql);
+            const violated = await store.queryRaw(testSql);
             if (violated.length > 0) {
                 const badIds = violated.map(v => Number(num(v.id)));
                 addFinding('blocking', 'WHERE_VIOLATION', cat.id,
@@ -780,7 +780,7 @@ Opzioni:
                             if (itemIds.length > 0) {
                                 const table = preset.type === 'movie' ? 'movies' : 'tv';
                                 const fullWhere = ['adult = false', ...preset.where].join(' AND ');
-                                const violRows = await store.query(`SELECT id FROM ${table} WHERE id IN (${itemIds.join(',')}) AND NOT (${fullWhere})`);
+                                const violRows = await store.queryRaw(`SELECT id FROM ${table} WHERE id IN (${itemIds.join(',')}) AND NOT (${fullWhere})`);
                                 if (violRows.length > 0) {
                                     addFinding('blocking', 'SERVED_PAYLOAD_WHERE_VIOLATION', presetId,
                                         `${violRows.length} item serviti in produzione (run ${prof}) violano il WHERE congelato`,

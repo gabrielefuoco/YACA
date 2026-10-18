@@ -24,7 +24,8 @@ jest.mock('../src/library/models/WatchHistory', () => ({
 }));
 
 const WatchHistory = require('../src/library/models/WatchHistory');
-jest.mock('../src/clients/graphClient', () => ({
+jest.mock('../src/clients', () => ({
+    graphClient: {
     raccomanda: jest.fn().mockImplementation(async ({ semi }) => {
         if (!semi || semi.length === 0) return { liste: [], items: [], versioni: { artefatto: 'art-golden' } };
         return {
@@ -37,6 +38,7 @@ jest.mock('../src/clients/graphClient', () => ({
             ]
         };
     })
+    }
 }));
 
 const rotteBolle = require('../src/api/bolle');

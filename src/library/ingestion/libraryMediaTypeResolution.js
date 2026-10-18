@@ -170,9 +170,10 @@ async function resolveMediaTypeFromDb(item, deps = {}) {
     const syncType = resolveItemMediaType(item, deps);
     if (syncType) return syncType;
 
-    // 2. Interrogazione del DB locale
-    const store = deps.duckDbStore || deps.indice || indice;
-    const queryFn = store && (typeof store.queryRaw === 'function' ? store.queryRaw.bind(store) : (typeof store.query === 'function' ? store.query.bind(store) : null));
+    // 2. Interrogazione del DB locale — dalla PORTA dell'indice, con un solo nome:
+    // niente fallback su `duckDbStore`/`query` (erano uno shim per non aggiornare i test).
+    const store = deps.indice || indice;
+    const queryFn = store && typeof store.queryRaw === 'function' ? store.queryRaw.bind(store) : null;
     if (!queryFn) {
         trackUnresolvedType(item, 'indice non disponibile per lookup DB');
         return null;

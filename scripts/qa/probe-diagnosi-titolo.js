@@ -18,7 +18,7 @@
 require('dotenv').config();
 const path = require('path');
 const { execFileSync } = require('child_process');
-const duckDbStore = require('../../src/indice/duckDbStore');
+const duckDbStore = require('../../src/indice');
 
 const PYTHON_BIN = 'C:\\Users\\gabri\\APP\\YACA\\offline_graph_builder\\venv\\Scripts\\python.exe';
 const SERVICES_DIR = path.resolve(__dirname, '../../services');
@@ -38,8 +38,8 @@ async function main() {
     await duckDbStore.init();
 
     // 1. Dati TMDB da DuckDB per i due record
-    const r121659 = (await duckDbStore.query('SELECT * FROM tv WHERE id = 121659'))[0];
-    const r30669 = (await duckDbStore.query('SELECT * FROM tv WHERE id = 30669'))[0];
+    const r121659 = (await duckDbStore.queryRaw('SELECT * FROM tv WHERE id = 121659'))[0];
+    const r30669 = (await duckDbStore.queryRaw('SELECT * FROM tv WHERE id = 30669'))[0];
 
     console.log('--- 1. CARATTERISTICHE DI CATALOGO IN DUCKDB ---');
     console.log(`[ID 121659] '${r121659.name}' (Live-Action 2023):`);
@@ -64,7 +64,7 @@ async function main() {
         WHERE vote_average >= 6.5 AND vote_count >= 50 AND vote_count <= 1000 AND popularity <= 20.0
         ORDER BY bayes_score DESC
     `;
-    const candRows = await duckDbStore.query(sqlBayes);
+    const candRows = await duckDbStore.queryRaw(sqlBayes);
     const totalCand = candRows.length;
     const rank121659 = candRows.findIndex(r => r.id === 121659n);
 

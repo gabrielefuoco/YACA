@@ -25,7 +25,7 @@ require('dotenv').config();
 const path = require('path');
 const { execFileSync } = require('child_process');
 const mongoose = require('mongoose');
-const duckDbStore = require('../../src/indice/duckDbStore');
+const duckDbStore = require('../../src/indice');
 const { fetchProfileContext } = require('../../src/profile');
 
 const PYTHON_BIN = 'C:\\Users\\gabri\\APP\\YACA\\offline_graph_builder\\venv\\Scripts\\python.exe';
@@ -91,7 +91,7 @@ async function fetchMetadataForIds(ids, mediaType) {
     if (cleanIds.length === 0) return new Map();
 
     const sql = `SELECT ${cols} FROM ${table} WHERE id IN (${cleanIds.join(',')})`;
-    const rows = await duckDbStore.query(sql);
+    const rows = await duckDbStore.queryRaw(sql);
     const metaMap = new Map();
 
     for (const row of rows) {

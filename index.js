@@ -164,7 +164,7 @@ app.use('/api', tmdbRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', catalogRoutes);
 // LA ROTTA DEL GRAFO: il portafoglio dei mondi per un profilo (`POST /api/bolle`).
-// Il calcolo sta nel servizio grafo (services/graph via clients/graphClient), qui c'e' solo il montaggio — come per tutte le altre.
+// Il calcolo sta nel servizio grafo, raggiunto dalla porta `src/clients`; qui c'e' solo il montaggio — come per tutte le altre.
 app.use('/api', cookieParser(), require('./src/api/bolle'));
 
 app.get('/api/user/:userId', inputSanitizer, async (req, res) => {

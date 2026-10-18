@@ -40,7 +40,7 @@ async function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-function isParquetFresh(store, duckDbStore) {
+function isParquetFresh(store, indice) {
     const moviesJsonlExists = store.storeExists('movies');
     const tvJsonlExists = store.storeExists('tv');
 
@@ -48,14 +48,16 @@ function isParquetFresh(store, duckDbStore) {
         return true;
     }
 
-    const moviesParquetExists = fs.existsSync(duckDbStore.moviesParquetPath);
-    const tvParquetExists = fs.existsSync(duckDbStore.tvParquetPath);
+    // Lo stato degli artefatti lo riferisce l'indice: qui non si leggono percorsi interni.
+    const parquet = indice.parquetStats();
+    const moviesParquetExists = parquet.movies.exists;
+    const tvParquetExists = parquet.tv.exists;
 
     if (moviesJsonlExists) {
         if (!moviesParquetExists) return false;
         try {
             const jsonlStat = fs.statSync(store._getFilePath('movies'));
-            const parquetStat = fs.statSync(duckDbStore.moviesParquetPath);
+            const parquetStat = { mtimeMs: parquet.movies.mtimeMs };
             if (parquetStat.mtimeMs < jsonlStat.mtimeMs) return false;
         } catch (_) {
             return false;
@@ -66,7 +68,7 @@ function isParquetFresh(store, duckDbStore) {
         if (!tvParquetExists) return false;
         try {
             const jsonlStat = fs.statSync(store._getFilePath('tv'));
-            const parquetStat = fs.statSync(duckDbStore.tvParquetPath);
+            const parquetStat = { mtimeMs: parquet.tv.mtimeMs };
             if (parquetStat.mtimeMs < jsonlStat.mtimeMs) return false;
         } catch (_) {
             return false;
@@ -99,11 +101,11 @@ async function convertAndReloadDuckDb(store) {
         });
 
         console.log('[TmdbDump] Ricostruzione DuckDB da Parquet...');
-        const duckDbStore = require('../../src/indice/duckDbStore');
-        await duckDbStore.close();
-        await duckDbStore.init({ forceRebuild: true });
+        const indice = require('../../src/indice');
+        await indice.close();
+        await indice.init({ forceRebuild: true });
         console.log('[TmdbDump] DuckDB pronto su database persistente.');
-        await duckDbStore.close(); // Chiusura immediata: il job batch/daemon standalone non trattiene il DB in RAM
+        await indice.close(); // Chiusura immediata: il job batch/daemon standalone non trattiene il DB in RAM
 
         // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)
         await buildTier2Index();
@@ -363,11 +365,11 @@ async function runTmdbDumpDaemon(options = {}) {
 
     try {
         const client = new TmdbDumpClient(apiKey);
-        const duckDbStore = require('../../src/indice/duckDbStore');
+        const indice = require('../../src/indice');
         
         // Conversione al boot: se i parquet esistono e sono freschi, salta convert_to_parquet.js
         if (isFirstRun) {
-            const parquetFresh = isParquetFresh(store, duckDbStore);
+            const parquetFresh = isParquetFresh(store, indice);
             if (!parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                 console.log('[TmdbDump] Pre-existing JSONL detected. Parquet missing or stale: running boot conversion...');
                 await convertAndReloadDuckDb(store);
@@ -375,9 +377,9 @@ async function runTmdbDumpDaemon(options = {}) {
                 if (parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                     console.log('[TmdbDump] Parquet già presenti e aggiornati rispetto ai JSONL. Conversione al boot saltata.');
                 }
-                if (!duckDbStore.isInitialized) {
-                    await duckDbStore.init();
-                    await duckDbStore.close();
+                if (!indice.isInitialized) {
+                    await indice.init();
+                    await indice.close();
                 }
                 console.log('[TmdbDump] DuckDB pronto su database persistente.');
 

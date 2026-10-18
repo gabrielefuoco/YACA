@@ -3,7 +3,7 @@
  * Tutto locale (parquet + Mongo), nessuna chiamata TMDB. Gli studi NON entrano
  * nel vettore DNA: servono solo alla vista.
  */
-jest.mock('../src/indice/duckDbStore', () => ({ query: jest.fn() }));
+jest.mock('../src/indice', () => ({ queryRaw: jest.fn() }));
 jest.mock('../src/library/models/UserLibraryItem', () => ({
     collection: { find: jest.fn() }
 }));
@@ -14,7 +14,7 @@ jest.mock('../src/anime', () => ({
     }
 }));
 
-const duckDbStore = require('../src/indice/duckDbStore');
+const indice = require('../src/indice');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { computeStudioProfile, parseLibraryId } = require('../src/profile/studioProfile');
 
@@ -43,7 +43,7 @@ describe('computeStudioProfile', () => {
             { itemId: 'tt0903747', type: 'series' },
         ]));
 
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) {
                 return Promise.resolve([
                     { id: '550', imdb_id: 'tt0137523', production_companies: '[{"id":1,"name":"Fox 2000 Pictures"}]' },
@@ -73,14 +73,14 @@ describe('computeStudioProfile', () => {
         UserLibraryItem.collection.find.mockReturnValue(libraryDocs([]));
 
         await expect(computeStudioProfile('uuid-test')).resolves.toEqual([]);
-        expect(duckDbStore.query).not.toHaveBeenCalled();
+        expect(indice.queryRaw).not.toHaveBeenCalled();
     });
 
     test('gli item non risolvibili vengono ignorati senza errori', async () => {
         UserLibraryItem.collection.find.mockReturnValue(libraryDocs([
             { itemId: 'kitsu:999999', type: 'anime' },
         ]));
-        duckDbStore.query.mockResolvedValue([]);
+        indice.queryRaw.mockResolvedValue([]);
 
         await expect(computeStudioProfile('uuid-test')).resolves.toEqual([]);
     });

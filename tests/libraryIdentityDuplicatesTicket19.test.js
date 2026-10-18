@@ -20,10 +20,11 @@ const {
     clearUnresolvedTypeLog
 } = require('../src/library/ingestion/libraryMediaTypeResolution');
 const { planDuplicateMarks } = require('../src/library/identity');
-const duckDbStore = require('../src/indice/duckDbStore');
+const indice = require('../src/indice');
 
-jest.mock('../src/indice/duckDbStore', () => ({
-    query: jest.fn()
+// La porta è ciò che il codice di produzione usa davvero: il mock deve colpire quella.
+jest.mock('../src/indice', () => ({
+    queryRaw: jest.fn()
 }));
 
 describe('Ticket 19: 1. Regola di Elezione del Primario', () => {
@@ -73,7 +74,7 @@ describe('Ticket 19: 1. Regola di Elezione del Primario', () => {
     });
 
     test('1.6. planDuplicateMarks applica la regola di elezione assegnando duplicateOf al secondario', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
             return Promise.resolve([]);
         });
@@ -98,40 +99,40 @@ describe('Ticket 19: 2. Risoluzione Tipo da DB e Tracciamento Discordanze', () =
     });
 
     test('2.1. resolveMediaTypeFromDb risolve a movie se presente unicamente nella tabella movies', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477' }]);
             if (sql.includes('FROM tv')) return Promise.resolve([]);
             return Promise.resolve([]);
         });
 
         const item = { itemId: 'kitsu:534', type: 'anime', tmdbId: 12477, name: 'La tomba delle lucciole' };
-        const resolved = await resolveMediaTypeFromDb(item, { duckDbStore });
+        const resolved = await resolveMediaTypeFromDb(item, { indice });
 
         expect(resolved).toBe('movie');
     });
 
     test('2.2. resolveMediaTypeFromDb risolve a tv se presente unicamente nella tabella tv', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([]);
             if (sql.includes('FROM tv')) return Promise.resolve([{ id: '46004' }]);
             return Promise.resolve([]);
         });
 
         const item = { itemId: 'kitsu:7278', type: 'anime', tmdbId: 46004, name: 'Date A Live' };
-        const resolved = await resolveMediaTypeFromDb(item, { duckDbStore });
+        const resolved = await resolveMediaTypeFromDb(item, { indice });
 
         expect(resolved).toBe('tv');
     });
 
     test('2.3. Se presente in entrambe le tabelle (collisione) e nessuna fonte disambigua: NON indovina e traccia', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '99999' }]);
             if (sql.includes('FROM tv')) return Promise.resolve([{ id: '99999' }]);
             return Promise.resolve([]);
         });
 
         const item = { itemId: 'tmdb:99999', type: 'anime', tmdbId: 99999, name: 'Ambiguo' };
-        const resolved = await resolveMediaTypeFromDb(item, { duckDbStore });
+        const resolved = await resolveMediaTypeFromDb(item, { indice });
 
         expect(resolved).toBeNull();
         const logs = getUnresolvedTypeLog();
@@ -140,10 +141,10 @@ describe('Ticket 19: 2. Risoluzione Tipo da DB e Tracciamento Discordanze', () =
     });
 
     test('2.4. Se assente da entrambe le tabelle: restituisce null e traccia l anomalia', async () => {
-        duckDbStore.query.mockResolvedValue([]);
+        indice.queryRaw.mockResolvedValue([]);
 
         const item = { itemId: 'tmdb:88888', type: 'anime', tmdbId: 88888, name: 'Sconosciuto' };
-        const resolved = await resolveMediaTypeFromDb(item, { duckDbStore });
+        const resolved = await resolveMediaTypeFromDb(item, { indice });
 
         expect(resolved).toBeNull();
         const logs = getUnresolvedTypeLog();

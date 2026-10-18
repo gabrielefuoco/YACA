@@ -75,7 +75,7 @@ async function main() {
     const isFixture = args.includes('--fixture');
 
     if (isFixture) {
-        const graphClient = require('../../src/clients/graphClient');
+        const graphClient = require('../../src/clients').graphClient;
         const library = require('../../src/library');
         library.semiDi = async () => ({
             seeds: new Map([['603', 3], ['314', 4]]),

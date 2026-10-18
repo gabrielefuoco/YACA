@@ -36,6 +36,22 @@ describe('Porta src/indice (Ticket 53)', () => {
         expect(res).toEqual([{ col: 123 }]);
     });
 
+    test('la porta espone parquetStats: stato degli artefatti, non i percorsi', () => {
+        // Il daemon del dump usa questo metodo per decidere se riconvertire: se sparisse,
+        // tornerebbe a leggere gli interni dello store (la violazione chiusa dal ticket 53).
+        expect(typeof indice.parquetStats).toBe('function');
+        const stats = indice.parquetStats();
+        expect(stats).toHaveProperty('movies');
+        expect(stats).toHaveProperty('tv');
+        expect(typeof stats.movies.exists).toBe('boolean');
+        expect(stats.movies).not.toHaveProperty('moviesParquetPath');
+    });
+
+    test('close è bindata: destrutturata non perde il ricevitore', () => {
+        const { close } = require('../src/indice');
+        expect(typeof close).toBe('function');
+    });
+
     test('la porta espone updateAnimeMapping e delega correttamente a duckDb', async () => {
         expect(typeof indice.updateAnimeMapping).toBe('function');
 

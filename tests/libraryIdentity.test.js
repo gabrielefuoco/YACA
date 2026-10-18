@@ -3,7 +3,7 @@
  * deve diventare una sola card, e le copertine servite da host morti devono
  * essere riscritte verso l'host corrente.
  */
-jest.mock('../src/indice/duckDbStore', () => ({ query: jest.fn() }));
+jest.mock('../src/indice', () => ({ queryRaw: jest.fn() }));
 jest.mock('../src/anime', () => ({
     ...jest.requireActual('../src/anime'),
     animeMappingStore: {
@@ -15,7 +15,7 @@ jest.mock('../src/anime', () => ({
     }
 }));
 
-const duckDbStore = require('../src/indice/duckDbStore');
+const indice = require('../src/indice');
 const {
     normalizeLibraryId,
     normalizeTitle,
@@ -82,11 +82,11 @@ describe('planDuplicateMarks', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        duckDbStore.query.mockResolvedValue([]);
+        indice.queryRaw.mockResolvedValue([]);
     });
 
     test('marca il duplicato quando gli id risolvono alla stessa entità', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
             return Promise.resolve([]);
         });
@@ -118,7 +118,7 @@ describe('planDuplicateMarks', () => {
     });
 
     test('converte gli id kitsu in TMDB tramite il mapping anime', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM tv')) return Promise.resolve([{ id: '46004', imdb_id: 'tt2575684' }]);
             return Promise.resolve([]);
         });
@@ -135,7 +135,7 @@ describe('planDuplicateMarks', () => {
         // 12477 è "La tomba delle lucciole" in movies ed è la serie "Fourth Reading" in tv.
         // Indicizzando le due tabelle in una mappa sola vinceva l'ultima riga (la serie):
         // `tmdb:12477` non risolveva a `tt0095327` e il film restava su due card.
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
             if (sql.includes('FROM tv')) return Promise.resolve([{ id: '12477', imdb_id: null }]);
             return Promise.resolve([]);
@@ -153,7 +153,7 @@ describe('planDuplicateMarks', () => {
     });
 
     test('una serie con lo stesso numero TMDB di un film resta un\'altra cosa', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
             if (sql.includes('FROM tv')) return Promise.resolve([{ id: '12477', imdb_id: null }]);
             return Promise.resolve([]);
@@ -169,7 +169,7 @@ describe('planDuplicateMarks', () => {
     });
 
     test('con il tipo ignoto e lo stesso numero in entrambe le tabelle non si indovina', async () => {
-        duckDbStore.query.mockImplementation((sql) => {
+        indice.queryRaw.mockImplementation((sql) => {
             if (sql.includes('FROM movies')) return Promise.resolve([{ id: '12477', imdb_id: 'tt0095327' }]);
             if (sql.includes('FROM tv')) return Promise.resolve([{ id: '12477', imdb_id: null }]);
             return Promise.resolve([]);

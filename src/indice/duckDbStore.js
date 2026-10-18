@@ -601,6 +601,24 @@ class DuckDbStore {
      * Restituisce la cache DF calcolata dall'indice (Ticket 49).
      * @returns {Map<string, number>|null}
      */
+    /**
+     * Stato degli artefatti parquet dell'indice: esistenza e mtime, non i percorsi.
+     * Serve a chi deve decidere se riconvertire (il daemon del dump confronta questi
+     * mtime con i suoi JSONL) senza che un estraneo legga gli interni di questo modulo.
+     * @returns {{movies: {exists: boolean, mtimeMs: number|null}, tv: {exists: boolean, mtimeMs: number|null}}}
+     */
+    parquetStats() {
+        const stat = (filePath) => {
+            try {
+                if (!fs.existsSync(filePath)) return { exists: false, mtimeMs: null };
+                return { exists: true, mtimeMs: fs.statSync(filePath).mtimeMs };
+            } catch (_e) {
+                return { exists: false, mtimeMs: null };
+            }
+        };
+        return { movies: stat(this.moviesParquetPath), tv: stat(this.tvParquetPath) };
+    }
+
     getDfCache() {
         return this.dfMap || null;
     }

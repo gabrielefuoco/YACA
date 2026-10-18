@@ -18,8 +18,8 @@
  * - 270603: film "Roundabout American" (2012) / serie "The Exiled Heavy Knight" (2026) -> tmdb:270603 (TV da poster)
  */
 
-const mockDuckDbStore = {
-    query: jest.fn(async (sql, params) => {
+const mockIndice = {
+    queryRaw: jest.fn(async (sql, params) => {
         const id = Number(params[0]);
         if (sql.includes('FROM movies')) {
             if (id === 30981) return [{ id: 30981, title: 'Know Your Mushrooms', release_date: '2009-01-01' }];
@@ -43,7 +43,8 @@ const mockDuckDbStore = {
     })
 };
 
-jest.mock('../src/indice/duckDbStore', () => mockDuckDbStore);
+// Il codice di produzione usa la PORTA dell'indice, non il file interno: il mock deve colpire quella.
+jest.mock('../src/indice', () => mockIndice);
 
 const mockAnimeMappingStore = {
     isReady: true,
@@ -186,7 +187,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
 
         await LibraryConverterService.convertAll('user-test');
 
-        expect(mockDuckDbStore.query).toHaveBeenCalledWith(
+        expect(mockIndice.queryRaw).toHaveBeenCalledWith(
             expect.stringContaining('FROM tv'),
             [30981]
         );
@@ -207,7 +208,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
 
         await LibraryConverterService.convertAll('user-test');
 
-        expect(mockDuckDbStore.query).toHaveBeenCalledWith(
+        expect(mockIndice.queryRaw).toHaveBeenCalledWith(
             expect.stringContaining('FROM tv'),
             [26867]
         );
@@ -227,7 +228,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
 
         await LibraryConverterService.convertAll('user-test');
 
-        expect(mockDuckDbStore.query).toHaveBeenCalledWith(
+        expect(mockIndice.queryRaw).toHaveBeenCalledWith(
             expect.stringContaining('FROM tv'),
             [46298]
         );
@@ -247,7 +248,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
 
         await LibraryConverterService.convertAll('user-test');
 
-        expect(mockDuckDbStore.query).toHaveBeenCalledWith(
+        expect(mockIndice.queryRaw).toHaveBeenCalledWith(
             expect.stringContaining('FROM tv'),
             [94664]
         );
@@ -267,7 +268,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
 
         await LibraryConverterService.convertAll('user-test');
 
-        expect(mockDuckDbStore.query).toHaveBeenCalledWith(
+        expect(mockIndice.queryRaw).toHaveBeenCalledWith(
             expect.stringContaining('FROM movies'),
             [128]
         );
@@ -289,7 +290,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
 
         await LibraryConverterService.convertAll('user-test');
 
-        expect(mockDuckDbStore.query).toHaveBeenCalledWith(
+        expect(mockIndice.queryRaw).toHaveBeenCalledWith(
             expect.stringContaining('FROM tv'),
             [270603]
         );
@@ -311,7 +312,7 @@ describe('LibraryConverterService: collisioni di namespace TMDB e tipo giusto', 
         await LibraryConverterService.convertAll('user-test');
 
         // Non deve aver interrogato né movies né tv con id 99999
-        expect(mockDuckDbStore.query).not.toHaveBeenCalled();
+        expect(mockIndice.queryRaw).not.toHaveBeenCalled();
         // Il titolo salvato NON cambia!
         expect(item.name).toBe(originalName);
         // Non è dato per convertito

@@ -347,7 +347,7 @@ Opzioni:
 
         // Ricaricamento DuckDB in-memory se inizializzato
         try {
-            const duckDbStore = require('../src/indice/duckDbStore');
+            const duckDbStore = require('../src/indice');
             if (duckDbStore && duckDbStore.isInitialized) {
                 console.log('[Backfill] Ricaricamento modulo DuckDB in RAM...');
                 duckDbStore.close();
