@@ -89,3 +89,31 @@ Quindi il ticket deve dire, per il holdout:
 3. **La lettura sui 2 utenti disponibili**, etichettata come **segnale**; e **cosa servirebbe** per una prova
    (più storie: è un problema di **dati**, non di codice).
 4. **Se il vecchio vince**, si scrive — e allora il piano cambia.
+
+## Criterio di accettazione dichiarato a priori (prima della misurazione)
+
+Per evitare l'auto-inganno di adattare la soglia dopo aver visto i dati, stabiliamo qui le condizioni vincolanti affinché la nuova catena (`ON`) sia considerata **accettabile o superiore** rispetto alla vecchia (`OFF`) sulla strategia `hidden_gems`:
+
+1. **`riempimento` (Volume minimo di catalogo)**:
+   - **Soglia**: `riempimento(ON) >= 20` sia per i Film (`movie`) sia per le Serie (`series`).
+   - **Razionale**: Una riga vuota o con meno di 20 titoli è inservibile nel client Stremio. La nuova catena deve garantire almeno 20 titoli validi senza dover ricorrere a fallback ciechi per popolarità.
+
+2. **`oro_preso` (Holdout / Predizione del futuro)**:
+   - **Soglia**: `oro_preso(ON) >= oro_preso(OFF)` (in percentuale o conteggio assoluto).
+   - **Tolleranza**: Se `oro_preso(OFF) > 0`, `oro_preso(ON)` non deve essere inferiore di oltre **5 punti percentuali** (o 1 titolo su piccoli campioni) rispetto a OFF.
+   - **Razionale**: Se la nuova catena riduce il numero di titoli (da 160 a ~60-75) per maggiore selettività qualitativa, non deve perdere i titoli che l'utente ha effettivamente scelto di guardare nel futuro.
+
+3. **`novità` (Capacità di scoperta vs Libreria)**:
+   - **Soglia**: `novità(ON) >= 80%` dei titoli raccomandati (non presenti in `userlibraryitems`), e `novità(ON) >= novità(OFF)`.
+   - **Razionale**: `hidden_gems` è per definizione una riga di scoperta. Se raccomanda materiale che l'utente ha già salvato in libreria, non sta scoprendo gemme nascoste ma riproponendo contenuti noti.
+
+4. **`diversità` (Generi e Registi/Autori)**:
+   - **Soglia**:
+     - *Generi distinti*: `generi(ON) >= generi(OFF)` (e almeno 5 generi distinti rappresentati).
+     - *Registi/Autori distinti*: `registi(ON) >= registi(OFF)` o concentrazione inferiore (nessun regista/creatore con più di 3 titoli, come imposto dai diversity cap).
+   - **Razionale**: La vecchia catena con i fallback per popolarità tendeva a saturare il catalogo con titoli monotematici dello stesso cluster. La nuova catena deve mostrare una dispersione tematica pari o superiore.
+
+5. **Verdetto globale**:
+   - Se tutte e 4 le condizioni sono soddisfatte (o `oro_preso` è paritario a 0 per assenza strutturale di gemme nell'oro dell'utente), la nuova catena è **ACCETTATA**.
+   - Se `oro_preso(ON) < oro_preso(OFF)` di oltre 5 punti percentuali, o se `riempimento(ON) < 20`, il vecchio motore **VINCE** e il piano deve cambiare prima di procedere con le altre tre strategie.
+
