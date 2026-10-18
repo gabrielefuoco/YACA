@@ -15,9 +15,9 @@ const { isItemAnime } = require('../anime');
 
 async function getDuckDbMetaDetailsSafe(id, type) {
     try {
-        const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
-        if (typeof DuckDbProvider.getDuckDbMetaDetails === 'function') {
-            return await DuckDbProvider.getDuckDbMetaDetails(id, type);
+        const duckDbProvider = require('./duckDbProvider');
+        if (typeof duckDbProvider.getDuckDbMetaDetails === 'function') {
+            return await duckDbProvider.getDuckDbMetaDetails(id, type);
         }
     } catch (_e) {}
     return null;

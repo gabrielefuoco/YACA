@@ -14,7 +14,7 @@ const { catalogHandler } = require('../src/stremio');
 const { getHybridCatalog } = require('../src/pool/composer');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
-const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
+const DuckDbProvider = require('../src/indice/duckDbProvider');
 const TasteProfile = require('../src/models/TasteProfile');
 const { hybridRecommendationsCache, catalogRequestCache } = require('../src/cache/cacheInstances');
 
@@ -54,8 +54,8 @@ jest.mock('../src/clients/tmdb', () => ({
     getTmdbMetaDetails: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbMetaDetails: jest.fn(),

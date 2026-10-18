@@ -64,8 +64,8 @@ const mockSchedeInCassa = new Map();
 
 // I provider restituiscono schede già costruite: nessuna query, nessun parquet. Il resto del
 // modulo resta vero (`stremio.js` lo richiede anche per altri cataloghi: si finge solo la lettura).
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
-    ...jest.requireActual('../src/catalog/providers/DuckDbProvider'),
+jest.mock('../src/indice/duckDbProvider', () => ({
+    ...jest.requireActual('../src/indice/duckDbProvider'),
     getDuckDbMetaDetails: jest.fn(async (tmdbId, type) => mockSchedeInCassa.get(`${tmdbId}_${type}`) || null)
 }));
 

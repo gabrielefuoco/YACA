@@ -20,8 +20,8 @@ jest.mock('../src/models/TasteProfile');
 jest.mock('../src/models/AddonConfig');
 jest.mock('../src/models/UserAccount');
 jest.mock('../src/clients/tmdb');
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbMetaDetails: jest.fn()
@@ -39,7 +39,7 @@ const TasteProfile = require('../src/models/TasteProfile');
 const AddonConfig = require('../src/models/AddonConfig');
 const UserAccount = require('../src/models/UserAccount');
 const tmdb = require('../src/clients/tmdb');
-const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
 const { getHeroPool } = require('../src/pool');
 const { getHybridCatalog } = require('../src/pool/composer');
 const { getEngineHybridCatalog } = require('../src/catalog/providers/HybridProvider');
