@@ -7,10 +7,10 @@ import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import { generateId, resolveHydratedActiveProfile } from '@/lib/utils';
 
 const HERO_PRESET_IDS = [
-  'yaca_true_blend_movies', 'yaca_true_blend_series',
-  'yaca_seed_network_movies', 'yaca_seed_network_series',
-  'yaca_hidden_gems_movies', 'yaca_hidden_gems_series',
-  'yaca_trakt_filtered_movies', 'yaca_trakt_filtered_series'
+  'yaca_mondi_movies', 'yaca_mondi_series',
+  'yaca_passo_fuori_movies', 'yaca_passo_fuori_series',
+  'yaca_uscite_nuove_movies', 'yaca_uscite_nuove_series',
+  'yaca_nicchia_di_qualita_movies', 'yaca_nicchia_di_qualita_series'
 ];
 
 function createGlobalProfile(): Profile {
