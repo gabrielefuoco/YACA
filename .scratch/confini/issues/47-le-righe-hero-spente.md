@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: claimed
 Type: bug
 
 # 47 — Il ticket 46 ha spento le righe hero: i profili veri selezionano id che non esistono più

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 46 — I quattro cataloghi vecchi si rimuovono, e il grafo prende i suoi
