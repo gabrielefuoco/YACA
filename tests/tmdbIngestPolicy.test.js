@@ -3,7 +3,7 @@ const {
     isTrackedAiringId,
     shouldKeepTmdbRecord,
     loadTrackedAiringIds
-} = require('../src/utils/tmdbIngestPolicy');
+} = require('../services/tmdb-daemon/tmdbIngestPolicy');
 const { animeAiringState } = require('../src/anime');
 
 describe('TMDB Ingest Policy (Ticket 31)', () => {

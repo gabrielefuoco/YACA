@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
+const TmdbDumpClient = require('../services/tmdb-daemon/tmdbDumpClient');
 const { getPresets } = require('../src/catalog/presets');
 const { buildPresetFromFilters, mapDuckDbRowToMeta } = require('../src/indice/duckDbProvider');
 

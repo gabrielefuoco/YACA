@@ -28,8 +28,8 @@ const fs = require('fs');
 const path = require('path');
 const duckdb = require('duckdb');
 
-const TmdbDumpStore = require('../src/utils/tmdbDumpStore');
-const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
+const TmdbDumpStore = require('../services/tmdb-daemon/tmdbDumpStore');
+const TmdbDumpClient = require('../services/tmdb-daemon/tmdbDumpClient');
 const { convert } = require('./convert_to_parquet');
 
 const CJK = '[ぁ-ヿ一-鿿]';

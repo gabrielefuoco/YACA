@@ -9,8 +9,8 @@
  *   node cli.js --health-check # Exit 0 se il sync è recente e sano, exit 1 se stantio o in errore
  */
 require('dotenv').config();
-const { runTmdbDumpDaemon, stopDaemon } = require('../../src/utils/tmdbDumpDaemon');
-const TmdbDumpStore = require('../../src/utils/tmdbDumpStore');
+const { runTmdbDumpDaemon, stopDaemon } = require('./tmdbDumpDaemon');
+const TmdbDumpStore = require('./tmdbDumpStore');
 
 const args = process.argv.slice(2);
 const once = args.includes('--once');

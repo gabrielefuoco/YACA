@@ -2,7 +2,7 @@ const axios = require('axios');
 const zlib = require('zlib');
 const readline = require('readline');
 const { shouldKeepTmdbRecord } = require('./tmdbIngestPolicy');
-const { tmdbBudget, TMDB_CATEGORIES } = require('./tmdbBudget');
+const { tmdbBudget, TMDB_CATEGORIES } = require('../../src/clients/tmdbBudget');
 
 const TMDB_GENRES_EN_MAP = {
     28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',

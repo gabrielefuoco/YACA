@@ -26,8 +26,8 @@ const path = require('path');
 const mongoose = require('mongoose');
 const duckdb = require('duckdb');
 
-const TmdbDumpStore = require('../src/utils/tmdbDumpStore');
-const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
+const TmdbDumpStore = require('../services/tmdb-daemon/tmdbDumpStore');
+const TmdbDumpClient = require('../services/tmdb-daemon/tmdbDumpClient');
 const { animeAiringState } = require('../src/anime');
 const { connectMongo } = require('../src/infra/mongoConnect');
 const { convert } = require('./convert_to_parquet');

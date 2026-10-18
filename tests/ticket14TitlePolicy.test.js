@@ -11,7 +11,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
+const TmdbDumpClient = require('../services/tmdb-daemon/tmdbDumpClient');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('../src/indice/duckDbProvider');
 const { sanitizeCatalogMeta } = require('../src/stremio/formatters/StremioFormatter');

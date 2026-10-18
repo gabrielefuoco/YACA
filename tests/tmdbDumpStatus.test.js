@@ -3,7 +3,7 @@ const path = require('path');
 const os = require('os');
 const http = require('http');
 const express = require('express');
-const TmdbDumpStore = require('../src/utils/tmdbDumpStore');
+const TmdbDumpStore = require('../services/tmdb-daemon/tmdbDumpStore');
 
 describe('TMDB Dump Status from Artifact (Ticket 34)', () => {
     let tempDir;
