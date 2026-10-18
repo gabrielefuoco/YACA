@@ -770,6 +770,8 @@ provider, né formatter, né applicazione di badge. Le due violazioni **di sosta
 `AiDiscoveryProvider` legge il gusto con `profile.getTasteProfile` (non tocca più `models/TasteProfile`) e
 `WatchlistProvider` sincronizza con `library.syncLibraryForUser` (non più `LibrarySyncService`).
 
-**Il residuo che resta, e non è di questa decisione**: `src/catalog/tier2Search.js` e `tier2Enrich.js` (460 righe)
-sono **ricerca**, non servire — per il §16 appartengono al modulo `ricerca` (da una richiesta a una lista
-ordinata). È il confine `catalogo ↔ ricerca`, un altro ticket.
+**Chiuso anche il residuo della ricerca** (stesso giorno): `tier2Search.js` e `tier2Enrich.js` (460 righe) sono
+passati a `src/ricerca` — per il §16 la ricerca possiede «da una richiesta a una lista ordinata». Il catalogo
+oggi sono **13 file, 3.124 righe di solo tipo**: definizione, registro, derivazioni, validazione, vocabolario.
+Dipende dall'indice (il compilatore) e non è dipendente da nessuno; `ricerca` dipende dal catalogo (registro e
+capacità), mai il contrario.
