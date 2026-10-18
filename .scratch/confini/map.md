@@ -763,3 +763,13 @@ contengono ancora servire (`AiDiscoveryProvider`, `WatchlistProvider`, `TraktPro
 `MetadataHydrator`, `paginationHelper`) e `src/catalog/formatters/` formatta Stremio. Per questa decisione
 appartengono a `src/stremio`. Non si spostano adesso perché il blasto è di ~40 file di test con `jest.mock` sui
 percorsi: è un ticket suo, non un residuo del 41.
+
+**Aggiornamento del 18/10/2026 — il debito è stato pagato.** `providers/`, `processors/`, `formatters/`, `badges.js`
+e `CatalogRouter.js` sono passati a `src/stremio` (1.958 righe di servire): il catalogo non ha più router, né
+provider, né formatter, né applicazione di badge. Le due violazioni **di sostanza** sono chiuse dalle porte:
+`AiDiscoveryProvider` legge il gusto con `profile.getTasteProfile` (non tocca più `models/TasteProfile`) e
+`WatchlistProvider` sincronizza con `library.syncLibraryForUser` (non più `LibrarySyncService`).
+
+**Il residuo che resta, e non è di questa decisione**: `src/catalog/tier2Search.js` e `tier2Enrich.js` (460 righe)
+sono **ricerca**, non servire — per il §16 appartengono al modulo `ricerca` (da una richiesta a una lista
+ordinata). È il confine `catalogo ↔ ricerca`, un altro ticket.
