@@ -50,7 +50,7 @@ jest.mock('../src/stremio', () => ({
     syncAllStremioData: jest.fn().mockResolvedValue({ success: true })
 }));
 
-const { syncIncrementalRecommendations, isStremioSyncDueForUser } = require('../src/engines/hybridRecommendations');
+const { syncIncrementalRecommendations, isStremioSyncDueForUser } = require('../src/library/syncRecommendations');
 const { syncAllStremioData } = require('../src/stremio');
 
 const H = 60 * 60 * 1000;

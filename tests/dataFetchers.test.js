@@ -1,5 +1,4 @@
-const { fetchProfileContext } = require('../src/profile/profileContext');
-const { fetchPopularFallbackIds } = require('../src/engines/hybridRecommendations');
+const { fetchPopularFallbackIds } = require('../src/pool/composer');
 const {
     safeTraktFetch,
     fetchRecentHistory,

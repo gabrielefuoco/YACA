@@ -14,7 +14,7 @@
 const {
     buildSharedHeroCacheKey,
     buildRecommendationCacheKey
-} = require('../src/engines/hybridRecommendations');
+} = require('../src/pool/composer');
 
 describe('chiave della cache dei cataloghi hero', () => {
 

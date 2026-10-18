@@ -1,4 +1,4 @@
-const { getHybridCatalog, syncIncrementalRecommendations, fetchPopularFallbackIds } = require('../src/engines/hybridRecommendations');
+const { getHybridCatalog, syncIncrementalRecommendations, fetchPopularFallbackIds } = require('../src/pool/composer');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');

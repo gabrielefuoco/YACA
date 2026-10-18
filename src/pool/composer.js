@@ -10,13 +10,6 @@ const { isItemInappropriateForKids, applyKidsMode } = require('../catalog/kidsMo
 const { isProfileSyncDue } = require('../profile/profileStaleness');
 const { computeTopGenres, computeTopKeywords } = require('../profile/vectorElements');
 
-// Modulo pool: compositore delle righe hero
-const {
-    getHeroPool,
-    buildSharedHeroCatalogs,
-    getSharedHeroCatalogs,
-    buildSharedHeroCacheKey
-} = require('../pool');
 
 // Modulo libreria: sincronizzazione fatti e registrazione impressioni (Ticket 41 - Fetta 1)
 const {
@@ -299,6 +292,7 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
 
     let recommendationIds;
     if (isHero) {
+        const { getHeroPool } = require('.');
         const poolResults = await getHeroPool({
             userId,
             context,
@@ -377,9 +371,9 @@ module.exports = {
     isStremioSyncDueForUser,
     getActiveKidsMode,
     buildRecommendationCacheKey,
-    buildSharedHeroCacheKey,
-    buildSharedHeroCatalogs,
-    getSharedHeroCatalogs,
+    get buildSharedHeroCacheKey() { return require('.').buildSharedHeroCacheKey; },
+    get buildSharedHeroCatalogs() { return require('.').buildSharedHeroCatalogs; },
+    get getSharedHeroCatalogs() { return require('.').getSharedHeroCatalogs; },
     syncIncrementalRecommendations,
     fetchRecentHistory,
     computeTopGenres,

@@ -41,7 +41,7 @@ const UserAccount = require('../src/models/UserAccount');
 const tmdb = require('../src/clients/tmdb');
 const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
 const { getHeroPool } = require('../src/pool');
-const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
+const { getHybridCatalog } = require('../src/pool/composer');
 const { getEngineHybridCatalog } = require('../src/catalog/providers/HybridProvider');
 
 describe('Ticket 12 / Ticket 38: il cap si applica DOPO i filtri (anime: exclude)', () => {
