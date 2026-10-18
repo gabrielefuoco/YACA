@@ -70,8 +70,11 @@ class IndiceModule {
      * @param {Array} [params] Parametri posizionali
      * @returns {Promise<Array<Object>>} Righe risultanti
      */
-    async queryRaw(sql, params = []) {
-        return this.duckDb.query(sql, params);
+    async queryRaw(sql, params) {
+        if (params !== undefined) {
+            return this.duckDb.query(sql, params);
+        }
+        return this.duckDb.query(sql);
     }
 
     /**
