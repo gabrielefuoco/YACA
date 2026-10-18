@@ -154,5 +154,10 @@ module.exports = {
     mapSortBy,
     getSortComparator,
     getSortByValue,
-    applySortWithTieBreakers
+    applySortWithTieBreakers,
+
+    // Serving (Ticket 41 - Fetta 2)
+    get catalogHandler() {
+        return require('../handlers/catalogHandler').catalogHandler;
+    }
 };
