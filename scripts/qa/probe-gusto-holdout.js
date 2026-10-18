@@ -26,7 +26,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const mongoose = require('mongoose');
 const duckDbStore = require('../../src/indice/duckDbStore');
-const { fetchProfileContext } = require('../../src/engines/hybrid/dataFetchers');
+const { fetchProfileContext } = require('../../src/profile');
 
 const PYTHON_BIN = 'C:\\Users\\gabri\\APP\\YACA\\offline_graph_builder\\venv\\Scripts\\python.exe';
 const SERVICES_DIR = path.resolve(__dirname, '../../services');
