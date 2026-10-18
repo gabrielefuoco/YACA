@@ -6,9 +6,9 @@
  *  Uso: MAX=4000 PAGES=3 node .scratch/ml-collaborativo/fetch-trakt-followers.js */
 const fs = require('fs'), path = require('path');
 require('dotenv').config({ quiet: true });
-const SRC = path.join(__dirname, '../../.cache/trakt/users');
-const DST = path.join(__dirname, '../../.cache/trakt/users');
-const LISTA = path.join(__dirname, '../../.cache/trakt/utenti-scoperti.json');
+const SRC = path.join(__dirname, '../../../.cache/trakt/users');
+const DST = path.join(__dirname, '../../../.cache/trakt/users');
+const LISTA = path.join(__dirname, '../../../.cache/trakt/utenti-scoperti.json');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
     const key = process.env.TRAKT_CLIENT_ID;

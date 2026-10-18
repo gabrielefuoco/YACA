@@ -41,3 +41,18 @@ modulo legge ancora. Sono elencati qui sopra, e vanno portati in questa cartella
 criterio**: dentro il modulo quello che si usa, nell'archivio quello che no. Finché restano lì, la
 rigenerazione del grafo da zero non è possibile senza leggere 120 report — cioè è esattamente il
 problema che questo giro di lavoro doveva risolvere, e l'ha risolto **a metà**.
+
+## Come si rifà il corpus Trakt (per la misura)
+
+Se `.cache/trakt/` viene persa (è una cache e si può cancellare), il corpus degli utenti e delle liste si riscarica con i due comandi in sequenza:
+
+```bash
+# 1. Le liste pubbliche (da cui si ricavano gli autori)
+TRAKT_CLIENT_ID=$(grep '^TRAKT_CLIENT_ID=' /path/to/.env | cut -d= -f2-) PAGES=40 node services/graph/fetch/fetch-trakt-lists.js
+
+# 2. Le cronologie degli utenti (TK = .cache/trakt/users/)
+TRAKT_CLIENT_ID=$(grep '^TRAKT_CLIENT_ID=' /path/to/.env | cut -d= -f2-) USERS=400 PAGES=3 node services/graph/fetch/fetch-trakt-users.js
+```
+
+Nota: un corpus riscaricato oggi non è identico a quello precedente (Trakt cresce nel tempo) — la metodologia di misura è confrontabile, i valori assoluti no.
+
