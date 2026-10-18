@@ -159,3 +159,54 @@ Totale: 7 suite eseguite singolarmente, **71 test passati**, zero fallimenti.
 **Il rilievo che vale più di tutti** (revisione di specifica): *un numero giusto con una spiegazione sbagliata è peggio di un numero sbagliato*, perché la spiegazione è ciò che convince. Terza volta in un giorno con questa forma.
 
 **Prossima fetta**: `trakt_filtered` (o `seed_network`) — richiede l'isolamento dell'ingestione Trakt in `src/library/`. Poi `true_blend` (il cuore). Poi il pool svuotato e il serving.
+
+## Come si fa la PARTE 2 (il piano, scritto qui perché non viva in chat)
+
+### Dove siamo
+
+La **fetta 1** ha consegnato: la porta `indice.candidati(contesto, opzioni)` (candidati *spiegati*
+`{id, motivo, punteggio}`, non solleva mai, degrada dichiarando in `motivi[]`) e **`hidden_gems`** dietro
+`FLAG_NUOVA_CATENA_HIDDEN_GEMS` (OFF = vecchio motore, verificato). La sonda
+`scripts/qa/probe-hidden-gems-jaccard.js` è il riferimento dei numeri.
+
+### Le tre strategie che restano (in ordine di difficoltà crescente)
+
+| strategia | cosa fa oggi (vecchio) | cosa serve per rifarla | difficoltà |
+|---|---|---|---|
+| **`trakt_filtered`** | scarica le raccomandazioni Trakt dell'utente (`fetchTraktRecommendationsRawDetailed`) e le filtra/ordina col DNA | una **porta** `raccomandazioniTrakt(userId)` dove vivono le credenziali: `src/clients/trakt.js` (ha già refresh, 33 test) o `src/library/`. I token sono il blocco `trakt` unificato (ticket 26) ✓. Poi: ordinare per affinità VSM + caps | **media** — l'ingestione Trakt è il pezzo da spostare |
+| **`seed_network`** | espande i semi (`collectRealSeeds`), aggiunge suggerimenti Trakt e similarità DuckDB (`similar_to`), calcola lo score ibrido VSM+similarità | semi: `src/library/semiDi` ✓ esiste. Vicini: il servizio del grafo (`POST /raccomanda` con `semi`) **o** `similar_to` su DuckDB. Lo score: `ProfileScorer` ✓ | **media-alta** — è l'espansione, e va deciso *chi* propone i vicini |
+| **`true_blend`** | generi dominanti dal profilo → query DuckDB per genere → match VSM → quote di diversità (max 3/genere, 1/regista, 2/famiglia) | è il **cuore**: candidati dai generi dominanti (`compiler` ✓), match VSM ✓, e le quote (`ProfileScorer.applyDiversityCaps` ✓ — il nuovo fornitore le usa già) | **alta**, ma è quello con più pezzi già in piedi |
+
+### I due pezzi di sistema
+
+4. **Il pool si svuota**: tolte le chiamate a `dataFetchers`/`catalogStrategies`, `pool/index.js` resta il
+   **compositore** — invariante `claimedIds`, ordine delle righe, cache, paginazione. È lì che la sostituzione si
+   chiude, e lì che si vede (o no) il guadagno: **-3.169 righe**.
+5. **Il serving**: `catalogHandler` (1.037) + `metaHandler` (680) sui moduli nuovi — le rotte Stremio smettono di
+   passare dal vecchio stack. **La prova è il protocollo**: le suite `tests/stremio*.test.js` devono passare
+   **identiche** (esistono già).
+
+### E alla fine
+
+6. **La cancellazione**: `git rm` delle 5.098 righe del vecchio stack, e la decisione sui **57 file di test** che le
+   esercitano (ripuntati ai moduli nuovi o morti con loro).
+
+### Le regole per OGNI fetta (il pattern che ha funzionato)
+
+- **Una strategia alla volta, dietro interruttore**, con **OFF = comportamento di oggi**. Nessuna fetta spedisce.
+- **La chiave di cache deve portare lo switch** (trappola pagata il 17/10: senza, si serve il vecchio motore per 7
+  giorni).
+- **La prova è una misura** (conteggio + Jaccard, e `oro_preso` quando il metro del ticket 45 sarà pronto) — e la
+  sonda va **committata**, se no la misura vive nella prosa.
+- **Un test che fallirebbe se lo switch fosse ignorato** (il buco trovato dalla review nella fetta 1).
+- **Non toccare il vecchio motore**: la duplicazione è **temporanea** e va **dichiarata** (chi è la fonte di verità).
+- **Revisione indipendente dopo ogni fetta** (due revisori, assi diversi: standard e specifica) — nella fetta 1 ha
+  trovato 9 difetti, di cui due bug veri, che nessun test aveva visto.
+
+### ⚠️ Un rilievo della review rimasto aperto (trovato ora)
+
+`buildHiddenGemsOnNewProvider` **ha** il ripiego (se il fornitore torna vuoto usa `fetchHiddenGemsFallbackIds`) ma
+**non è avvolto in `runPoolBuilder`**: se una qualunque parte solleva, l'errore risale al `Promise.all` delle
+strategie e può far cadere **tutto il pool** invece di degradare. La porta non solleva ✓ (contratto rispettato),
+quindi il rischio pratico è basso — ma la parità col percorso OFF va chiusa, ed è la prima cosa da fare nella
+parte 2.
