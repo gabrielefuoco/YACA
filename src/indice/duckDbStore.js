@@ -24,6 +24,8 @@ class DuckDbStore {
         // TMDB id → IMDb id letti dal dump: solo i risultati trovati (mai i "non trovato",
         // così un titolo promosso a Tier 1 dopo è visibile subito).
         this.tmdbImdbIdCache = new Map();
+        this.dfMap = null;
+        this._dfCacheConsumer = null;
     }
 
     _cleanupDbFiles(filePath) {
@@ -579,8 +581,15 @@ class DuckDbStore {
                 idToName.set(id, name);
                 if (!nameToId.has(name)) nameToId.set(name, id);
             }
-            const { setGlobalDfCache } = require('../dna/dnaEngine');
-            setGlobalDfCache(dfMap);
+            // Memorizza la cache DF internamente ed invoca il consumer esterno registrato (Ticket 49)
+            this.dfMap = dfMap;
+            if (typeof this._dfCacheConsumer === 'function') {
+                try {
+                    this._dfCacheConsumer(dfMap);
+                } catch (consumerErr) {
+                    console.warn('[DuckDbStore] Error in dfCacheConsumer:', consumerErr.message);
+                }
+            }
 
             const { setKeywordNameMaps } = require('./keywordIds');
             setKeywordNameMaps({ idToName, nameToId });
@@ -595,6 +604,30 @@ class DuckDbStore {
         }
     }
 
+    /**
+     * Registra un consumer esterno per la cache DF calcolata dall'indice (Ticket 49).
+     * L'indice non dipende dal profilo / DNA: riceve il consumer dall'esterno.
+     * @param {Function} consumer (dfMap: Map<string, number>) => void
+     */
+    setDfCacheConsumer(consumer) {
+        this._dfCacheConsumer = consumer;
+        if (this.dfMap && typeof consumer === 'function') {
+            try {
+                consumer(this.dfMap);
+            } catch (err) {
+                console.warn('[DuckDbStore] Error notifying dfCacheConsumer:', err.message);
+            }
+        }
+    }
+
+    /**
+     * Restituisce la cache DF calcolata dall'indice (Ticket 49).
+     * @returns {Map<string, number>|null}
+     */
+    getDfCache() {
+        return this.dfMap || null;
+    }
+
     async close(callback) {
         const oldCon = this.con;
         const oldDb = this.db;
@@ -602,6 +635,7 @@ class DuckDbStore {
         this.db = null;
         this.initPromise = null;
         this.isInitialized = false;
+        this.dfMap = null;
 
         await this._closeCon(oldCon);
         await this._closeDb(oldDb);

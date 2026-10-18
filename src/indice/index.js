@@ -215,6 +215,22 @@ class IndiceModule {
     }
 
     /**
+     * Cache DF (Document Frequency) calcolata da DuckDB (Ticket 49).
+     */
+    getDfCache() {
+        if (typeof this.duckDb.getDfCache === 'function') {
+            return this.duckDb.getDfCache();
+        }
+        return this.duckDb.dfMap || null;
+    }
+
+    setDfCacheConsumer(consumer) {
+        if (typeof this.duckDb.setDfCacheConsumer === 'function') {
+            return this.duckDb.setDfCacheConsumer(consumer);
+        }
+    }
+
+    /**
      * Chiusura pulita delle risorse.
      */
     async close(callback) {
@@ -238,3 +254,5 @@ module.exports.mapDuckDbRowToMeta = (...args) => require('./duckDbProvider').map
 module.exports.getDuckDbMetaDetails = (...args) => indice.getMetaDetails(...args);
 module.exports.getDuckDbCatalogFromFilters = (...args) => indice.getCatalogFromFilters(...args);
 module.exports.getDuckDbCatalogFromPreset = (...args) => indice.getCatalogFromPreset(...args);
+module.exports.getDfCache = (...args) => indice.getDfCache(...args);
+module.exports.setDfCacheConsumer = (...args) => indice.setDfCacheConsumer(...args);

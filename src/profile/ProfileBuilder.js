@@ -117,6 +117,13 @@ class ProfileBuilder {
     static async _fetchDnaItemsFromDuckDb(items) {
         if (!items || items.length === 0) return [];
         const duckDbStore = require('../indice/duckDbStore');
+        if (typeof duckDbStore?.getDfCache === 'function') {
+            const cached = duckDbStore.getDfCache();
+            const { getGlobalDfCache, setGlobalDfCache } = require('./dnaEngine');
+            if (cached && !getGlobalDfCache()) {
+                setGlobalDfCache(cached);
+            }
+        }
 
         const movieItems = items.filter(i => !i.type || i.type === 'movie');
         const tvItems = items.filter(i => i.type === 'tv' || i.type === 'series');
