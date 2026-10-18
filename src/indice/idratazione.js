@@ -182,7 +182,9 @@ async function idrataEImpaginaCandidati({
                         if (!duckMeta || !duckMeta.rawTMDB) {
                             await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType);
                         }
-                    } catch (_e) {}
+                    } catch (_e) {
+                        console.warn('[Idratazione] Errore warm-up background:', _e?.message || _e);
+                    }
                 },
                 { batchSize: 2, delayMs: 150 }
             ).catch(err => console.error('[Background-Warmup] Error:', err.message));
