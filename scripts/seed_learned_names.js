@@ -64,12 +64,12 @@ const INTERVALLO_ATTESA_REDIS_MS = 100;
  * `learned_names` ha una convenzione sola — `media_type` in `'movie'|'tv'`:
  *   - la famiglia `full:v2:*` nasce da `getTmdbMetaDetails` (`src/clients/tmdb.js`), che riceve
  *     il tipo **Stremio**: `'series'` (`src/handlers/metaHandler.js`, `loadDetailsFromTmdb` in
- *     `src/catalog/tier2Enrich.js` passa `'series'`);
+ *     `src/ricerca/tier2Enrich.js` passa `'series'`);
  *   - la famiglia `v2:*` nasce da `getTmdbMovieDetails`, che invece riceve gia' `'tv'`
  *     (`src/stremio/processors/MetadataHydrator.js`).
  * Quindi in Redis le serie compaiono con **due** nomi diversi, e vanno entrambe lette come `tv`:
  * e' il valore che l'app usa in scrittura (`toLearnableRow` in `src/db/learnedNames.js`) e che
- * chiede in lettura (`toTier2Type` in `src/catalog/tier2Search.js`, che filtra per
+ * chiede in lettura (`toTier2Type` in `src/ricerca/tier2Search.js`, che filtra per
  * `media_type = 'tv'`). Rimandare `series` a `movie` — com'era prima — scriveva tutte le serie
  * come film: non le trovava la ricerca serie e ne inquinava quella dei film.
  *

@@ -4,7 +4,7 @@
  * L'archivio dei **nomi appresi**: i titoli italiani che l'app ha **già visto una volta**.
  *
  * Il percorso e' gia' intero, nessuna parte viene reinventata:
- *   - l'**arricchimento** (`src/catalog/tier2Enrich.js`) chiama gia' TMDB con `it-IT` per ogni
+ *   - l'**arricchimento** (`src/ricerca/tier2Enrich.js`) chiama gia' TMDB con `it-IT` per ogni
  *     titolo del Tier 2 che mostra, e il dettaglio resta in cache (`tmdb_details_raw`): il nome
  *     italiano **e' gia' li', gratis**, semplicemente non e' cercabile da nessuna parte;
  *   - questo modulo lo **scrive** in una tabella e lo rende **cercabile** al passo successivo.

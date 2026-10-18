@@ -150,7 +150,7 @@ function dettaglioFilm(id, { titolo, originale, descrizione, anno, poster }) {
 /** Carica il modulo fresco (nuova istanza, quindi nuove cache) a ogni test. */
 function caricaArricchimento() {
     let mod;
-    jest.isolateModules(() => { mod = require('../src/catalog/tier2Enrich'); });
+    jest.isolateModules(() => { mod = require('../src/ricerca/tier2Enrich'); });
     return mod;
 }
 
@@ -508,7 +508,7 @@ describe('La ricerca standard risponde con i titoli del Tier 2 gia presentabili'
 
     beforeEach(() => {
         ({ routeCatalogRequest } = require('../src/stremio/CatalogRouter'));
-        tier2Search = require('../src/catalog/tier2Search');
+        tier2Search = require('../src/ricerca/tier2Search');
         require('../src/indice/duckDbProvider').getDuckDbCatalogFromFilters.mockResolvedValue([]);
     });
 

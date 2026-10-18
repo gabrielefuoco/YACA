@@ -310,7 +310,7 @@ describe('dall\'arricchimento all\'archivio: il giro completo', () => {
         // file, altrimenti scriverebbe sul path di default.
         jest.resetModules();
         const archivio = require('../src/db/learnedNames');
-        const arricchimento = require('../src/catalog/tier2Enrich');
+        const arricchimento = require('../src/ricerca/tier2Enrich');
         return { arricchimento, archivio };
     }
 

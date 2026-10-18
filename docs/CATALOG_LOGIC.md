@@ -125,9 +125,9 @@ La risoluzione fisica dei dati è delegata ai provider dedicati in `src/stremio/
 
 ### Ricerca su due livelli (Tier 1 locale + indice FTS5 del Tier 2)
 
-La ricerca standard (`yaca_search_standard`) interroga due insiemi e li fondisce in un'unica pagina: prima i **titoli locali** di [DuckDbProvider.js](../src/indice/duckDbProvider.js) (117k titoli con titolo italiano e poster pronti), poi quelli dell'indice FTS5 del **Tier 2** (1.485.129 titoli dell'export TMDB) letti da [tier2Search.js](../src/catalog/tier2Search.js). In caso di id in comune vince il locale. Se l'indice manca o e' illeggibile la risposta e' esattamente quella di prima.
+La ricerca standard (`yaca_search_standard`) interroga due insiemi e li fondisce in un'unica pagina: prima i **titoli locali** di [DuckDbProvider.js](../src/indice/duckDbProvider.js) (117k titoli con titolo italiano e poster pronti), poi quelli dell'indice FTS5 del **Tier 2** (1.485.129 titoli dell'export TMDB) letti da [tier2Search.js](../src/ricerca/tier2Search.js). In caso di id in comune vince il locale. Se l'indice manca o e' illeggibile la risposta e' esattamente quella di prima.
 
-I titoli del Tier 2 nascono **grezzi** (solo id, titolo originale e popolarita') e portano il marchio `_tier2`. A riempierli (poster, titolo localizzato, descrizione, anno) interviene [tier2Enrich.js](../src/catalog/tier2Enrich.js), che **riusa** il percorso di dettaglio gia' in uso quando si apre una scheda: `getTmdbMetaDetails` in [tmdb.js](../src/clients/tmdb.js), con la sua cache `tmdb_details_raw`. Nessun client TMDB e nessuna cache nuovi.
+I titoli del Tier 2 nascono **grezzi** (solo id, titolo originale e popolarita') e portano il marchio `_tier2`. A riempierli (poster, titolo localizzato, descrizione, anno) interviene [tier2Enrich.js](../src/ricerca/tier2Enrich.js), che **riusa** il percorso di dettaglio gia' in uso quando si apre una scheda: `getTmdbMetaDetails` in [tmdb.js](../src/clients/tmdb.js), con la sua cache `tmdb_details_raw`. Nessun client TMDB e nessuna cache nuovi.
 
 Tre regole tengono la ricerca veloce:
 - **concorrenza limitata** a 5 titoli insieme e **budget di tempo** complessivo (3,5 s): scaduto il budget si restituisce quello che e' pronto, il resto resta grezzo e si completa alla richiesta successiva, quando la cache e' calda;

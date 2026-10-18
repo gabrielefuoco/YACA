@@ -60,7 +60,7 @@ jest.mock('../src/indice/duckDbProvider', () => {
     };
 });
 
-jest.mock('../src/catalog/tier2Search', () => ({
+jest.mock('../src/ricerca/tier2Search', () => ({
     searchTier2: jest.fn(() => []),
     searchLearnedTitles: jest.fn(async () => []),
     closeTier2Search: jest.fn()

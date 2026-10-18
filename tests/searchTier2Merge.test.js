@@ -63,7 +63,7 @@ function stubTier2Index({ rows = [], initResult = true, failOn = null } = {}) {
 
 function loadTier2Search() {
     let mod;
-    jest.isolateModules(() => { mod = require('../src/catalog/tier2Search'); });
+    jest.isolateModules(() => { mod = require('../src/ricerca/tier2Search'); });
     return mod;
 }
 
@@ -242,7 +242,7 @@ describe('CatalogRouter: la ricerca standard interroga anche il Tier 2', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-        tier2Search = require('../src/catalog/tier2Search');
+        tier2Search = require('../src/ricerca/tier2Search');
     });
 
     afterEach(() => {

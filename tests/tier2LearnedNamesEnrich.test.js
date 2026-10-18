@@ -43,7 +43,7 @@ function dettaglioIt(id, { titolo, originale, anno = '2001' }) {
 
 function caricaArricchimento() {
     let mod;
-    jest.isolateModules(() => { mod = require('../src/catalog/tier2Enrich'); });
+    jest.isolateModules(() => { mod = require('../src/ricerca/tier2Enrich'); });
     return mod;
 }
 

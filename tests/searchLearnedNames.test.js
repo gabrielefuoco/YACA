@@ -30,16 +30,16 @@ jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeUniversalPipeline: jest.fn()
 }));
 
-jest.mock('../src/catalog/tier2Enrich', () => ({
+jest.mock('../src/ricerca/tier2Enrich', () => ({
     TIER2_FLAG: '_tier2',
     enrichTier2Items: jest.fn(async (items) => items)
 }));
 
 const { Tier2SearchClient } = require('../src/indice/tier2');
 const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
-const { enrichTier2Items } = require('../src/catalog/tier2Enrich');
+const { enrichTier2Items } = require('../src/ricerca/tier2Enrich');
 const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
-const tier2Search = require('../src/catalog/tier2Search');
+const tier2Search = require('../src/ricerca/tier2Search');
 
 /** Righe come le restituisce l'indice SQLite FTS5. */
 function tier2Row(id, title, type = 'movie') {

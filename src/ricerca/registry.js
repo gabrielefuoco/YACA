@@ -83,8 +83,8 @@ const duckDbSourceEntry = defineSourceEntry({
         // SCENARIO 1: Ricerca standard (locale + Tier 2 + nomi appresi)
         if (ctx.search) {
             
-            const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('../catalog/tier2Search');
-            const { enrichTier2Items } = require('../catalog/tier2Enrich');
+            const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('./tier2Search');
+            const { enrichTier2Items } = require('./tier2Enrich');
 
             const PRESET_PAGE_SIZE = 20;
             const localItems = await getDuckDbCatalogFromFilters(
@@ -128,7 +128,7 @@ const duckDbSourceEntry = defineSourceEntry({
     async search(searchCtx) {
         try {
             const { getDuckDbCatalogFromFilters } = require('../indice');
-            const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('../catalog/tier2Search');
+            const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('./tier2Search');
 
             const limit = searchCtx.cap || 20;
             const type = searchCtx.tipo === 'series' ? 'series' : 'movie';
