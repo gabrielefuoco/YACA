@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: task
 
 <!-- Triato il 18/10/2026: il piano è la sezione RE-TRIAGE in fondo; le tre fette sono indipendenti dal deploy.
@@ -848,3 +848,34 @@ Tutti i quattro punti aperti della review a due assi (più il punto 5 opzionale 
 3. **Integrità Frontend**:
    Nessun file sotto `frontend/**` è stato toccato.
 
+
+---
+
+## Chiusura dell'integratore (18/10/2026) — decisione 29, poi i fatti
+
+Le due assi del terzo giro dicevano la stessa cosa: il blocco di orchestrazione era stato spostato
+(`engines` → `pool` → `catalog/providers`), non assegnato. Non era un problema di esecuzione: **mancava la
+decisione su chi possiede il servire**. L'ho scritta nel `map.md` (decisione 29) e poi ho eseguito io:
+
+1. **Il compilatore dei filtri (`filters.js`, 269 righe) passa all'indice** — `src/catalog/filters.js` →
+   `src/indice/filters.js`. Il map §16 assegna il compilatore all'indice, e questo rompe il ciclo
+   `catalog → indice → catalog`. 12 import aggiornati (fra cui 7 file di test).
+2. **Shim `src/catalog/providers/DuckDbProvider.js` eliminato.** I consumatori (`presets`, `MetadataHydrator`,
+   `ricerca/registry`, `AiDiscoveryProvider`, `AiringStateProvider`, `WatchlistProvider`) passano dalla porta
+   `src/indice`; i 27 file di test che lo mockavano puntano al modulo interno (`src/indice/duckDbProvider`) —
+   stessa granularità, path nuovo. Nessun consumatore tocca più un file interno dell'indice.
+3. **Il servire passa al feed**: `src/catalog/providers/HybridProvider.js` → `src/stremio/hybridServing.js` e
+   `src/catalog/idratazione.js` → `src/stremio/idratazione.js`. L'orchestrazione (staleness, sync, cache 7 giorni,
+   idratazione, impressioni) vive ora dove vive il feed; nessun file di `src/catalog/` nomina più
+   `syncIncrementalRecommendations` o `registraImpressioni`.
+4. **Via il rimbalzo**: `composer.getHybridCatalog` e il getter `pool.getHybridCatalog` sono cancellati;
+   `getEngineHybridCatalog` invoca il servizio dello stesso modulo. Il test `graphRowsInvariant` non spia più il
+   pool (era il motivo per cui il rimbalzo esisteva) ma la porta vera del servizio.
+
+**Verifica dell'integratore, eseguita**: `npx jest --forceExit` → **5 suite fallite, 8 test falliti, 1868 passati**,
+esattamente la baseline ambientale di `main`; manifest **byte-a-byte** identico (`dc4af35c…c2178` /
+`91bf96d3…9ce2`); le porte caricate ed eseguite con `node -e` (`stremio`, `hybridServing`, `pool`, `indice`).
+
+**Il debito che resta non è di questo ticket** ed è dichiarato nella decisione 29: `src/catalog/providers/`,
+`src/catalog/processors/` e `src/catalog/formatters/` contengono ancora servire, e per la decisione 29
+appartengono a `src/stremio`. Blasto ~40 file di test: ticket suo.
