@@ -2,7 +2,7 @@
  * LA ROTTA DI DOMINIO DEL GRAFO — `POST /api/mondi`.
  *
  * Prende il profilo dalla sessione (`req.utenteId`), legge la sua cronologia da `src/library`
- * e chiede le liste spiegate dei mondi al servizio (`src/clients/graphClient`).
+ * e chiede le liste spiegate dei mondi al servizio (`src/clients`).
  *
  * Replaces `/api/bolle`: "bolle" è la parola interna dell'engine; la rotta di dominio è "mondi".
  */
@@ -10,7 +10,7 @@ const express = require('express');
 const router = express.Router();
 const { richiedeSessione, erroreDominio } = require('./middleware/sessione');
 const { cronologiaDi } = require('../library');
-const graphClient = require('../clients/graphClient');
+const { graphClient } = require('../clients');
 
 const STORIA_MAX = 300;
 
