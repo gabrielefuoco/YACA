@@ -1,10 +1,9 @@
 const {
     fetchProfileContext,
-    fetchTraktRecommendationsRaw,
     fetchPopularFallbackIds,
-    fetchTopRatedPeriodFallbackIds,
-    fetchUndiscoveredFallbackIds,
-    fetchHiddenGemsFallbackIds
+    safeTraktFetch,
+    fetchRecentHistory,
+    fetchRecentRatings
 } = require('../src/engines/hybrid/dataFetchers');
 const tmdb = require('../src/clients/tmdb');
 const { getTmdbPopularCache, getTmdbTopRatedCache } = require('../src/cache/cacheInstances');
@@ -56,24 +55,7 @@ describe('dataFetchers', () => {
         });
     });
 
-    describe('fetchHiddenGemsFallbackIds', () => {
-        it('should fetch from TMDB discover and filter by popularity (now DuckDb)', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValue([{ id: 101, popularity: 20 }, { id: 102, popularity: 41.4 }]);
-            const { fetchHiddenGemsFallbackIds } = require('../src/engines/hybrid/dataFetchers');
-            const result = await fetchHiddenGemsFallbackIds('key', 'tv');
-            expect(result).toEqual(['101']); // 102 filtered out (popularity > 20)
-            expect(getDuckDbCatalogFromFilters).toHaveBeenCalledWith(
-                expect.objectContaining({ 'popularity.lte': 20, 'vote_count.lte': 1000 }),
-                'series',
-                0,
-                expect.any(Number),
-                {}
-            );
-        });
-    });
-
-    describe('fallback hero distinti', () => {
+    describe('fallback deduplicazione collection e regista', () => {
         it('deduplica collection e regista anche nei fallback', async () => {
             const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
             getDuckDbCatalogFromFilters.mockResolvedValue([
@@ -87,67 +69,11 @@ describe('dataFetchers', () => {
 
             expect(result).toEqual(['1', '4']);
         });
-
-        it('seleziona top-rated nella finestra mobile e usa ID come tie-breaker', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValue([
-                { id: 20, vote_average: 8, vote_count: 500 },
-                { id: 10, vote_average: 8, vote_count: 500 }
-            ]);
-
-            const result = await fetchTopRatedPeriodFallbackIds('key', 'movie');
-
-            expect(result).toEqual(['10', '20']);
-            expect(getDuckDbCatalogFromFilters.mock.calls[0][0]).toEqual(expect.objectContaining({
-                sort_by: 'vote_average.desc',
-                'primary_release_date.gte': expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
-            }));
-        });
-
-        it('seleziona novità per tipo e deduplica gli ID', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValue([
-                { id: 20, release_date: '2025-02-01', vote_average: 8 },
-                { id: 10, release_date: '2025-02-01', vote_average: 8 },
-                { id: 'tmdb:10', release_date: '2026-01-01', vote_average: 9 },
-                { id: 30, release_date: '2026-01-01', vote_average: 7 }
-            ]);
-
-            const result = await fetchUndiscoveredFallbackIds('key', 'movie');
-
-            expect(result).toEqual(['30', '10', '20']);
-            expect(getDuckDbCatalogFromFilters.mock.calls[0][0]).toEqual(expect.objectContaining({
-                sort_by: 'primary_release_date.desc',
-                'primary_release_date.gte': expect.any(String)
-            }));
-        });
-    });
-
-    describe('fetchTmdbSimilarCounts', () => {
-        it.skip('should fetch recommendations and count frequencies', async () => {
-            const client = { get: jest.fn()
-                .mockResolvedValueOnce({ data: { results: [{ id: 1 }, { id: 2 }] } })
-                .mockResolvedValueOnce({ data: { results: [{ id: 2 }, { id: 3 }] } })
-            };
-            tmdb.createTmdbClient.mockReturnValue(client);
-            const { fetchTmdbSimilarCounts } = require('../src/engines/hybrid/dataFetchers');
-            
-            const counts = await fetchTmdbSimilarCounts([100, 200], 'key', 'movie');
-            expect(counts.get(1)).toBe(1);
-            expect(counts.get(2)).toBe(2);
-            expect(counts.get(3)).toBe(1);
-        });
-
-        it('should return empty map if no seeds', async () => {
-            const { fetchTmdbSimilarCounts } = require('../src/engines/hybrid/dataFetchers');
-            const counts = await fetchTmdbSimilarCounts([], 'key', 'movie');
-            expect(counts.size).toBe(0);
-        });
     });
 
     describe('trakt fetchers', () => {
         const { traktClient } = require('../src/clients/trakt');
-        const { safeTraktFetch, fetchRecentHistory, fetchRecentRatings, fetchTraktRecommendationsRaw } = require('../src/engines/hybrid/dataFetchers');
+        const { safeTraktFetch, fetchRecentHistory, fetchRecentRatings } = require('../src/engines/hybrid/dataFetchers');
 
         it('safeTraktFetch should return empty on missing token', async () => {
             const result = await safeTraktFetch('/test', null);

@@ -1,5 +1,4 @@
 const ProfileScorer = require('../src/profile/ProfileScorer');
-const { finalizeHeroQualityCandidates } = require('../src/engines/hybrid/catalogStrategies');
 
 describe('Hero Strand Diversity & Caps', () => {
     describe('ProfileScorer.getItemNarrativeStrand', () => {
@@ -67,31 +66,6 @@ describe('Hero Strand Diversity & Caps', () => {
             expect(trueCrimeItems.length).toBe(2);
             expect(animeItems.length).toBe(2);
             expect(capped.length).toBe(4);
-        });
-    });
-
-    describe('finalizeHeroQualityCandidates', () => {
-        test('riempie fino a targetSize senza items consecutivi dello stesso filone', () => {
-            const pool = [
-                { id: 'a1', genre_ids: [16], original_language: 'ja', directors: [{ id: 1, job: 'Director' }] },
-                { id: 'c1', genre_ids: [35], directors: [{ id: 2, job: 'Director' }] },
-                { id: 'd1', genre_ids: [99, 80], directors: [{ id: 3, job: 'Director' }] },
-                { id: 'a2', genre_ids: [16], original_language: 'ja', directors: [{ id: 4, job: 'Director' }] },
-                { id: 'a3', genre_ids: [16], original_language: 'ja', directors: [{ id: 5, job: 'Director' }] },
-                { id: 'c2', genre_ids: [35], directors: [{ id: 6, job: 'Director' }] },
-                { id: 'd2', genre_ids: [99, 80], directors: [{ id: 7, job: 'Director' }] }
-            ];
-
-            const caps = { genre: 1, director: 1, strand: 1 };
-            const result = finalizeHeroQualityCandidates(pool, caps, 6);
-
-            expect(result.length).toBe(6);
-
-            for (let i = 0; i < result.length - 1; i++) {
-                const currentStrand = ProfileScorer.getItemNarrativeStrand(result[i]);
-                const nextStrand = ProfileScorer.getItemNarrativeStrand(result[i + 1]);
-                expect(currentStrand).not.toBe(nextStrand);
-            }
         });
     });
 });

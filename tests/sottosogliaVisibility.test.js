@@ -6,7 +6,7 @@ const { F } = require('../src/catalog/filters');
 const {
     passesQualityFloor,
     isQualityFloorItemRecent
-} = require('../src/engines/hybrid/catalogStrategies');
+} = require('../src/indice/candidati');
 
 describe('Ticket 35: Pavimenti di visibilità dei sottosoglia', () => {
     beforeAll(async () => {

@@ -22,7 +22,7 @@ function makeConfig() {
                     { id: 'series-one', name: 'Serie uno', type: 'series', isAnime: false }
                 ],
                 raw_ui_state: {
-                    selectedPresets: ['yaca_true_blend_movies'],
+                    selectedPresets: ['yaca_mondi_movies'],
                     catalogOrder: ['movie-one', 'series-one']
                 },
                 settings: {

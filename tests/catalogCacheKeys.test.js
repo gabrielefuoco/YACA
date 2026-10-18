@@ -36,7 +36,7 @@ const chiavi = (id, baseId, userConfig, activeProfileSettings = {}) => ({
 // Un preset vero (sta in `getPresets()`), e tre cataloghi che non lo sono.
 const PRESET = ['yaca_preset_preset_adult_animation', 'preset_adult_animation'];
 const WATCHLIST = ['yaca_watchlist_series', 'yaca_watchlist_series'];
-const HERO = ['yaca_true_blend_movies', 'yaca_true_blend_movies'];
+const HERO = ['yaca_mondi_movies', 'yaca_mondi_movies'];
 const MERGED = ['yaca_merged_qualcosa', 'merged_qualcosa'];
 
 describe('le chiavi della cache dei cataloghi (ticket 47)', () => {

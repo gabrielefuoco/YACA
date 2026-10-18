@@ -57,9 +57,9 @@ describe('Profile and Catalog Deduplication Tests', () => {
             const inputProfiles = [{
                 id: 'prof_1',
                 name: 'Anime Fan',
-                selectedPresets: ['preset_pop_movies', 'yaca_true_blend_movies', 'preset_pop_movies', 'yaca_true_blend_movies'],
-                catalogOrder: ['yaca_preset_preset_pop_movies', 'yaca_true_blend_movies', 'yaca_preset_preset_pop_movies'],
-                existingCatalogs: [{ id: 'yaca_true_blend_movies', name: 'True Blend Movies', type: 'movie' }],
+                selectedPresets: ['preset_pop_movies', 'yaca_mondi_movies', 'preset_pop_movies', 'yaca_mondi_movies'],
+                catalogOrder: ['yaca_preset_preset_pop_movies', 'yaca_mondi_movies', 'yaca_preset_preset_pop_movies'],
+                existingCatalogs: [{ id: 'yaca_mondi_movies', name: 'Il tuo mondo Movies', type: 'movie' }],
                 newPrompts: []
             }];
 
@@ -70,13 +70,13 @@ describe('Profile and Catalog Deduplication Tests', () => {
 
             // Catalogs should contain the resolved preset + existing catalog (no duplicates)
             const catalogIds = profile.catalogs.map(c => c.id);
-            expect(catalogIds).toEqual(['yaca_true_blend_movies', 'yaca_preset_preset_pop_movies']);
+            expect(catalogIds).toEqual(['yaca_mondi_movies', 'yaca_preset_preset_pop_movies']);
 
             // selectedPresets should be deduplicated
-            expect(profile.raw_ui_state.selectedPresets).toEqual(['preset_pop_movies', 'yaca_true_blend_movies']);
+            expect(profile.raw_ui_state.selectedPresets).toEqual(['preset_pop_movies', 'yaca_mondi_movies']);
 
             // catalogOrder should be deduplicated
-            expect(profile.raw_ui_state.catalogOrder).toEqual(['yaca_preset_preset_pop_movies', 'yaca_true_blend_movies']);
+            expect(profile.raw_ui_state.catalogOrder).toEqual(['yaca_preset_preset_pop_movies', 'yaca_mondi_movies']);
         });
     });
 

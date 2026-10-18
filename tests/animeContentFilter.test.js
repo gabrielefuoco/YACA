@@ -175,7 +175,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             expect(response.metas.length).toBe(5);
         });
 
-        it('filtra correttamente anche sugli 8 Hero Catalogs (es. yaca_true_blend_series)', async () => {
+        it('filtra correttamente anche sugli 8 Hero Catalogs (es. yaca_mondi_series)', async () => {
             routeCatalogRequest.mockResolvedValueOnce([
                 { id: 'tmdb:201', type: 'series', name: 'Hero Anime', _isAnime: true },
                 { id: 'tmdb:202', type: 'series', name: 'Hero Drama', _isAnime: false }
@@ -185,7 +185,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             config.profiles[0].settings.typeSelectors.anime = 'exclude';
 
             const response = await catalogHandler(
-                { id: 'yaca_true_blend_series', type: 'series', extra: {} },
+                { id: 'yaca_mondi_series', type: 'series', extra: {} },
                 config,
                 'http://localhost:7000'
             );
@@ -209,7 +209,7 @@ describe('TICKET 13: Filtro dei contenuti anime dentro i cataloghi', () => {
             const config = JSON.parse(JSON.stringify(baseUserConfig));
             config.profiles[0].settings.typeSelectors.anime = 'exclude';
 
-            for (const catalogId of ['preset_top_rated_movies', 'yaca_true_blend_movies']) {
+            for (const catalogId of ['preset_top_rated_movies', 'yaca_mondi_movies']) {
                 routeCatalogRequest.mockResolvedValueOnce([kpop]);
                 const response = await catalogHandler(
                     { id: catalogId, type: 'movie', extra: {} },

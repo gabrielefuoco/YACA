@@ -20,31 +20,7 @@
 
 jest.mock('../src/engines/hybrid/dataFetchers', () => ({
     fetchProfileContext: jest.fn().mockResolvedValue({ profile: {}, user: {} }),
-    fetchPopularFallbackIds: jest.fn().mockResolvedValue(['tmdb:1']),
-    fetchTopRatedPeriodFallbackIds: jest.fn().mockResolvedValue(['tmdb:2']),
-    fetchUndiscoveredFallbackIds: jest.fn().mockResolvedValue(['tmdb:3']),
-    fetchHiddenGemsFallbackIds: jest.fn().mockResolvedValue(['tmdb:4']),
-    fetchTraktRecommendationsRawDetailed: jest.fn().mockResolvedValue({
-        items: [],
-        available: false,
-        fallbackUsed: true,
-        reason: 'credentials'
-    })
-}));
-
-jest.mock('../src/engines/hybrid/catalogStrategies', () => ({
-    buildTopGenresMixCatalog: jest.fn().mockResolvedValue(['tmdb:1']),
-    buildHybridCatalog: jest.fn().mockResolvedValue(['tmdb:2']),
-    buildHiddenGemsCatalog: jest.fn().mockResolvedValue(['tmdb:3']),
-    buildTraktFilteredCatalog: jest.fn().mockResolvedValue(['tmdb:4']),
-    buildTraktFilteredCatalogWithMeta: jest.fn().mockResolvedValue({
-        ids: ['tmdb:4'],
-        traktAvailable: true,
-        traktSourcedCount: 1,
-        fallbackTopUpCount: 0,
-        isDegradedFallback: false,
-        fallbackUsed: false
-    })
+    fetchPopularFallbackIds: jest.fn().mockResolvedValue(['tmdb:1'])
 }));
 
 const axios = require('axios');

@@ -6,7 +6,6 @@ const {
     classifyRefreshError
 } = require('../src/clients/trakt');
 const { safeTraktFetchDetailed, fetchProfileContext } = require('../src/engines/hybrid/dataFetchers');
-const { buildTraktFilteredCatalogWithMeta } = require('../src/engines/hybrid/catalogStrategies');
 const jwt = require('jsonwebtoken');
 const { traktHealthHandler, getJwtSecret } = require('../src/api/auth/index.js');
 const UserAccount = require('../src/models/UserAccount');
@@ -474,41 +473,6 @@ describe('Trakt Hardening (Ticket 06 - Irrobustimento Trakt)', () => {
             expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
             expect(mockTraktGet).not.toHaveBeenCalled();
         });
-
-        it('degrado nei cataloghi: buildTraktFilteredCatalogWithMeta rende visibile fallbackUsed e traktAvailable', async () => {
-            const { getDuckDbCatalogFromFilters, getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromPreset.mockResolvedValue([
-                { _tmdbId: 101, id: 'movie:101', title: 'Fallback Movie 1', score: 8.0 }
-            ]);
-            getDuckDbCatalogFromFilters.mockResolvedValue([
-                { _tmdbId: 101, id: 'movie:101', title: 'Fallback Movie 1', score: 8.0 }
-            ]);
-
-            // Simuliamo il caso di degrado (Trakt non disponibile)
-            const degradedTraktResult = { items: [], available: false, fallbackUsed: true, reason: 'unauthorized' };
-
-            UserAccount.findOne.mockReturnValue({
-                userId: 'user_catalog_deg',
-                addonUuid: 'uuid_cat',
-                lean: jest.fn().mockResolvedValue({ userId: 'user_catalog_deg', addonUuid: 'uuid_cat' })
-            });
-
-            const result = await buildTraktFilteredCatalogWithMeta(
-                'user_catalog_deg',
-                'global',
-                'bad_trakt_token',
-                'tmdb_key',
-                'movie',
-                false,
-                degradedTraktResult
-            );
-
-            expect(result.fallbackUsed).toBe(true);
-            expect(result.traktAvailable).toBe(false);
-            expect(result.ids.length).toBeGreaterThan(0);
-            expect(result.ids[0]).toHaveProperty('fallbackUsed', true);
-            expect(result.ids[0]).toHaveProperty('traktAvailable', false);
-        });
     });
 
     describe('5. Guardia inerte e propagazione traktStatus (Ticket 19)', () => {
@@ -552,128 +516,6 @@ describe('Trakt Hardening (Ticket 06 - Irrobustimento Trakt)', () => {
             // Nessuna chiamata di rete effettuata né GET né POST
             expect(mockTraktGet).not.toHaveBeenCalled();
             expect(mockTraktPost).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('6. Prevenzione TDZ e robustezza builder Trakt (Ticket 16)', () => {
-        it('non solleva ReferenceError TDZ se profile è assente (scenario freddo/nuovo utente) con anime: only', async () => {
-            const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromPreset.mockResolvedValueOnce([
-                { _tmdbId: 501, id: 'movie:501', title: 'Anime Fallback 1', vote_average: 8.0, vote_count: 500, genres: [{ id: 16, name: 'Animation' }], original_language: 'ja' }
-            ]);
-
-            TasteProfile.findOne.mockReturnValueOnce(null);
-            UserAccount.findOne.mockReturnValueOnce({
-                userId: 'user_cold_otaku',
-                addonUuid: 'uuid_cat',
-                lean: jest.fn().mockResolvedValue({ userId: 'user_cold_otaku', addonUuid: 'uuid_cat' })
-            });
-
-            // Con profile null e selettore anime 'only', il builder chiama buildFallback(false)
-            // che a sua volta invoca fetchAnimeFallbackItems prima delle dichiarazioni di types/dnaFilters.
-            const result = await buildTraktFilteredCatalogWithMeta(
-                'user_cold_otaku',
-                'cold_context',
-                null,
-                'tmdb_key',
-                'movie',
-                false,
-                null,
-                { anime: 'only' }
-            );
-
-            expect(result).toBeDefined();
-            expect(result.fallbackUsed).toBe(true);
-            expect(result.traktAvailable).toBe(false);
-            expect(result.ids.length).toBeGreaterThan(0);
-        });
-
-        it('ritorna senza sollevare quando traktToken è assente (fallback pulito senza token)', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValueOnce([
-                { _tmdbId: 101, id: 'movie:101', title: 'Community Fallback 1', vote_average: 7.5, vote_count: 500 }
-            ]);
-
-            UserAccount.findOne.mockReturnValueOnce({
-                userId: 'user_no_token',
-                addonUuid: 'uuid_cat',
-                lean: jest.fn().mockResolvedValue({ userId: 'user_no_token', addonUuid: 'uuid_cat' })
-            });
-
-            const result = await buildTraktFilteredCatalogWithMeta(
-                'user_no_token',
-                'global',
-                null,
-                'tmdb_key',
-                'movie',
-                false,
-                null
-            );
-
-            expect(result.fallbackUsed).toBe(true);
-            expect(result.traktAvailable).toBe(false);
-            expect(result.ids.length).toBeGreaterThan(0);
-        });
-
-        it('ritorna senza sollevare quando Trakt restituisce dati vuoti', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
-            getDuckDbCatalogFromFilters.mockResolvedValueOnce([
-                { _tmdbId: 101, id: 'movie:101', title: 'Community Fallback 1', vote_average: 7.5, vote_count: 500 }
-            ]);
-
-            UserAccount.findOne.mockReturnValueOnce({
-                userId: 'user_empty_trakt',
-                addonUuid: 'uuid_cat',
-                lean: jest.fn().mockResolvedValue({ userId: 'user_empty_trakt', addonUuid: 'uuid_cat' })
-            });
-
-            const emptyTraktResult = { items: [], available: true, fallbackUsed: false };
-
-            const result = await buildTraktFilteredCatalogWithMeta(
-                'user_empty_trakt',
-                'global',
-                'valid_token',
-                'tmdb_key',
-                'movie',
-                false,
-                emptyTraktResult
-            );
-
-            expect(result.fallbackUsed).toBe(true);
-            expect(result.traktAvailable).toBe(false);
-            expect(result.ids.length).toBeGreaterThan(0);
-        });
-
-        it('ritorna senza sollevare con token e dati Trakt disponibili', async () => {
-            UserAccount.findOne.mockReturnValueOnce({
-                userId: 'user_with_trakt',
-                addonUuid: 'uuid_cat',
-                lean: jest.fn().mockResolvedValue({ userId: 'user_with_trakt', addonUuid: 'uuid_cat' })
-            });
-
-            const validTraktResult = {
-                items: [
-                    { movie: { ids: { tmdb: 101 } } },
-                    { movie: { ids: { tmdb: 102 } } }
-                ],
-                available: true,
-                fallbackUsed: false
-            };
-
-            const result = await buildTraktFilteredCatalogWithMeta(
-                'user_with_trakt',
-                'global',
-                'valid_token',
-                'tmdb_key',
-                'movie',
-                false,
-                validTraktResult
-            );
-
-            expect(result.fallbackUsed).toBe(false);
-            expect(result.traktAvailable).toBe(true);
-            expect(result.ids.length).toBe(2);
-            expect(result.ids[0].id).toBe('101');
         });
     });
 });

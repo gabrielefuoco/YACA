@@ -352,7 +352,7 @@ describe('Modulo Ricerca (Ticket 22 — seconda metà)', () => {
             expect(s1.id).toBe('duckdb');
 
             // Hybrid per taste based
-            const s2 = findSourceForCatalog({ baseId: 'yaca_true_blend' });
+            const s2 = findSourceForCatalog({ baseId: 'yaca_mondi' });
             expect(s2.id).toBe('hybrid');
 
             // Trakt per trakt_*

@@ -114,39 +114,39 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
     });
 
     describe('2. Invarianza delle Derivazioni (Regression Net)', () => {
-        test('getManifestHeroCatalogs produce esattamente le 12 righe hero per Stremio', () => {
+        test('getManifestHeroCatalogs produce esattamente le 8 righe hero per Stremio', () => {
             const manifestRows = getManifestHeroCatalogs();
-            expect(manifestRows).toHaveLength(12);
+            expect(manifestRows).toHaveLength(8);
 
             expect(manifestRows[0]).toEqual({
-                id: 'yaca_true_blend_movies',
+                id: 'yaca_mondi_movies',
                 type: 'movie',
-                name: '⭐ Scelti per Te',
+                name: '🌍 Il tuo mondo',
                 extra: [{ name: 'skip' }]
             });
             expect(manifestRows[1]).toEqual({
-                id: 'yaca_true_blend_series',
+                id: 'yaca_mondi_series',
                 type: 'series',
-                name: '⭐ Scelti per Te',
+                name: '🌍 Il tuo mondo',
                 extra: [{ name: 'skip' }]
             });
-            expect(manifestRows[10]).toEqual({
-                id: 'yaca_passo_fuori_movies',
+            expect(manifestRows[6]).toEqual({
+                id: 'yaca_nicchia_di_qualita_movies',
                 type: 'movie',
-                name: '🔭 Un passo fuori',
+                name: '💎 Nicchia di Qualità',
                 extra: [{ name: 'skip' }]
             });
-            expect(manifestRows[11]).toEqual({
-                id: 'yaca_passo_fuori_series',
+            expect(manifestRows[7]).toEqual({
+                id: 'yaca_nicchia_di_qualita_series',
                 type: 'series',
-                name: '🔭 Un passo fuori',
+                name: '💎 Nicchia di Qualità',
                 extra: [{ name: 'skip' }]
             });
         });
 
-        test('getHeroCatalogFingerprintRows produce le 12 righe per la firma cache', () => {
+        test('getHeroCatalogFingerprintRows produce le 8 righe per la firma cache', () => {
             const fingerprints = getHeroCatalogFingerprintRows();
-            expect(fingerprints).toHaveLength(12);
+            expect(fingerprints).toHaveLength(8);
             for (const row of fingerprints) {
                 expect(row).toHaveProperty('id');
                 expect(row).toHaveProperty('type');
@@ -155,86 +155,83 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
             }
         });
 
-        test('getHeroCatalogKindMap mappa tutti i 12 cataloghi a mediaSet, anime: agnostic, alwaysVisible: false', () => {
+        test('getHeroCatalogKindMap mappa tutti gli 8 cataloghi a mediaSet, anime: agnostic, alwaysVisible: false', () => {
             const kindMap = getHeroCatalogKindMap();
-            expect(Object.keys(kindMap)).toHaveLength(12);
+            expect(Object.keys(kindMap)).toHaveLength(8);
 
-            expect(kindMap['yaca_true_blend_movies']).toEqual({
-                mediaSet: ['film'],
-                anime: 'agnostic',
-                alwaysVisible: false
-            });
-            expect(kindMap['yaca_true_blend_series']).toEqual({
-                mediaSet: ['serie'],
-                anime: 'agnostic',
-                alwaysVisible: false
-            });
             expect(kindMap['yaca_mondi_movies']).toEqual({
                 mediaSet: ['film'],
                 anime: 'agnostic',
                 alwaysVisible: false
             });
+            expect(kindMap['yaca_mondi_series']).toEqual({
+                mediaSet: ['serie'],
+                anime: 'agnostic',
+                alwaysVisible: false
+            });
+            expect(kindMap['yaca_uscite_nuove_movies']).toEqual({
+                mediaSet: ['film'],
+                anime: 'agnostic',
+                alwaysVisible: false
+            });
         });
 
-        test('getHeroPoolSpec mantiene le priorità, gli slug e l\'additività di Ticket 12', () => {
+        test('getHeroPoolSpec mantiene le priorità, gli slug e l\'additività di Ticket 46', () => {
             const poolSpec = getHeroPoolSpec();
 
             // Ordine di priorità invariante
             expect(poolSpec.heroPriority).toEqual([
-                'true_blend',
-                'seed_network',
-                'hidden_gems',
-                'trakt_filtered',
                 'mondi',
-                'passo_fuori'
+                'passo_fuori',
+                'uscite_nuove',
+                'nicchia_di_qualita'
             ]);
 
-            // Slug additivi: solo mondi e passo_fuori
+            // Slug additivi: tutti e 4 i cataloghi grafo sono additivi
             expect(poolSpec.slugAdditivi.has('mondi')).toBe(true);
             expect(poolSpec.slugAdditivi.has('passo_fuori')).toBe(true);
-            expect(poolSpec.slugAdditivi.has('true_blend')).toBe(false);
-            expect(poolSpec.slugAdditivi.size).toBe(2);
+            expect(poolSpec.slugAdditivi.has('uscite_nuove')).toBe(true);
+            expect(poolSpec.slugAdditivi.has('nicchia_di_qualita')).toBe(true);
+            expect(poolSpec.slugAdditivi.size).toBe(4);
 
-            // 6 slug base e 12 cataloghi associati
-            expect(poolSpec.slugs).toHaveLength(6);
-            expect(poolSpec.catalogs).toHaveLength(12);
+            // 4 slug base e 8 cataloghi associati
+            expect(poolSpec.slugs).toHaveLength(4);
+            expect(poolSpec.catalogs).toHaveLength(8);
         });
 
-        test('getHeroUiGroups raggruppa le 6 card per la UI di configurazione', () => {
+        test('getHeroUiGroups raggruppa le 4 card per la UI di configurazione', () => {
             const groups = getHeroUiGroups();
-            expect(groups).toHaveLength(6);
+            expect(groups).toHaveLength(4);
             expect(groups.map(g => g.idBase)).toEqual([
-                'yaca_true_blend',
-                'yaca_seed_network',
-                'yaca_hidden_gems',
-                'yaca_trakt_filtered',
                 'yaca_mondi',
-                'yaca_passo_fuori'
+                'yaca_passo_fuori',
+                'yaca_uscite_nuove',
+                'yaca_nicchia_di_qualita'
             ]);
             expect(groups[0]).toEqual({
-                idBase: 'yaca_true_blend',
-                label: 'Scelti per Te',
-                emoji: '⭐',
-                desc: 'Ricerca semantica AI + Scoring algoritmico.',
-                type: 'ai'
+                idBase: 'yaca_mondi',
+                label: 'Il tuo mondo',
+                emoji: '🌍',
+                desc: 'La bolla che la tua storia accende di piu\': il tuo mondo, coi suoi titoli.',
+                type: 'algo'
             });
         });
 
         test('getHeroCatalogModes restituisce le strategie dichiarate per il motore', () => {
             const modes = getHeroCatalogModes();
-            expect(modes['yaca_true_blend_movies']).toBe('trueBlend');
-            expect(modes['yaca_hidden_gems_series']).toBe('hiddenGems');
             expect(modes['yaca_mondi_movies']).toBeNull();
+            expect(modes['yaca_uscite_nuove_series']).toBeNull();
         });
 
-        test('getRegistryHash calcola l\'hash identico a quello precedente (71354fae575c3d16)', () => {
-            expect(getRegistryHash()).toBe('71354fae575c3d16');
+        test('getRegistryHash calcola l\'hash identico a quello precedente (4abf3230f7019d6d)', () => {
+            expect(getRegistryHash()).toBe('4abf3230f7019d6d');
         });
 
-        test('isHeroCatalogId riconosce tutti i 12 hero e rifiuta ID sconosciuti', () => {
+        test('isHeroCatalogId riconosce tutti gli 8 hero e rifiuta ID sconosciuti o rimossi', () => {
             for (const id of HERO_IDS) {
                 expect(isHeroCatalogId(id)).toBe(true);
             }
+            expect(isHeroCatalogId('yaca_true_blend_movies')).toBe(false);
             expect(isHeroCatalogId('preset_pop_movies')).toBe(false);
             expect(isHeroCatalogId('random_id')).toBe(false);
             expect(isHeroCatalogId(null)).toBe(false);

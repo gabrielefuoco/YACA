@@ -174,7 +174,7 @@ describe('Preset Sorting, Coverage and Simulcast Data-Driven Rule', () => {
             expect(popMoviesCat.extra.find(e => e.name === 'sortBy')).toBeDefined();
 
             // 3. Hero catalogs MUST NOT have sortBy extra
-            const heroCats = manifestJson.catalogs.filter(c => c.id.startsWith('yaca_true_blend_') || c.id.startsWith('yaca_seed_network_'));
+            const heroCats = manifestJson.catalogs.filter(c => c.id.startsWith('yaca_mondi_') || c.id.startsWith('yaca_passo_fuori_'));
             expect(heroCats.length).toBeGreaterThan(0);
             for (const hCat of heroCats) {
                 expect(hCat.extra).toEqual([{ name: 'skip' }]);
@@ -270,8 +270,8 @@ describe('Preset Sorting, Coverage and Simulcast Data-Driven Rule', () => {
             expect(isCatalogSortable({ id: 'yaca_watchlist_movies' })).toBe(false);
             expect(isCatalogSortable({ id: 'yaca_watchlist_series' })).toBe(false);
             expect(isCatalogSortable({ id: 'yaca_watchlist_anime' })).toBe(false);
-            expect(isCatalogSortable({ id: 'yaca_true_blend_movies' })).toBe(false);
-            expect(isCatalogSortable({ id: 'yaca_seed_network_series' })).toBe(false);
+            expect(isCatalogSortable({ id: 'yaca_mondi_movies' })).toBe(false);
+            expect(isCatalogSortable({ id: 'yaca_passo_fuori_series' })).toBe(false);
             expect(isCatalogSortable({ id: 'preset_pop_movies' })).toBe(true);
             expect(isCatalogSortable({ id: 'custom_fixed', sortable: false })).toBe(false);
         });
