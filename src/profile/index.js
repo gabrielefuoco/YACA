@@ -46,6 +46,9 @@ const ProfileBuilder = require('./ProfileBuilder');
 const ProfileScorer = require('./ProfileScorer');
 const studioProfile = require('./studioProfile');
 
+// Motore matematico del DNA (Ticket 49)
+const dnaEngine = require('./dnaEngine');
+
 // Staleness del profilo (Ticket 41 - Fetta 1)
 const {
     PROFILE_SYNC_INTERVAL_MS,
@@ -111,6 +114,21 @@ module.exports = {
     // Deduzioni
     ProfileBuilder,
     ProfileScorer,
-    studioProfile
+    studioProfile,
+
+    // Motore DNA (Ticket 49)
+    dnaEngine,
+    extractStaticDNAFromQueries: dnaEngine.extractStaticDNAFromQueries,
+    extractActiveDNAFromTmdbData: dnaEngine.extractActiveDNAFromTmdbData,
+    computeFinalDNA: dnaEngine.computeFinalDNA,
+    computeActiveDNA: dnaEngine.computeActiveDNA,
+    calculateWeightedInteractions: dnaEngine.calculateWeightedInteractions,
+    calculateFlatnessMetrics: dnaEngine.calculateFlatnessMetrics,
+    setGlobalDfCache: dnaEngine.setGlobalDfCache,
+    getGlobalDfCache: dnaEngine.getGlobalDfCache,
+    getSoftRarityMultiplier: dnaEngine.getSoftRarityMultiplier,
+    applySoftRarity: dnaEngine.applySoftRarity,
+    computeTimeDecay: dnaEngine.computeTimeDecay,
+    normalizeVector: dnaEngine.normalizeVector
 };
 

@@ -19,7 +19,7 @@ const {
     calculateFlatnessMetrics,
     clusterTasteSignals,
     shouldRecomputeClusters
-} = require('../dna/dnaEngine');
+} = require('./dnaEngine');
 
 class ProfileBuilder {
     /**
