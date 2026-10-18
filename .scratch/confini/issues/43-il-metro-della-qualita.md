@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: research
 
 # 43 — Il metro: quale riga è **meglio**, non solo diversa
@@ -280,3 +280,11 @@ la metrica ha risoluzione nulla. E la **fuga** dichiarata dall'Esito come «limi
 **Cosa si salva, e vale**: lo **strumento** (`scripts/qa/probe-gusto-holdout.js`) è buono e riproducibile — è il
 metro, non la misura. E il **corpus Trakt è riscaricabile** (7 fetcher tracciati, `TRAKT_CLIENT_ID` nel `.env`):
 i 60 utenti della ricetta sono di nuovo a portata, quindi la metrica può diventare una **prova**.
+
+## Stato: chiuso per lo STRUMENTO, la domanda passa al ticket 45
+
+Questo ticket ha consegnato ciò che prometteva sul piano degli strumenti: la sonda
+`scripts/qa/probe-gusto-holdout.js` (riproducibile, in git) e il criterio dichiarato a priori. **La domanda
+«quale riga è meglio» resta aperta** e passa al **ticket 45**, che corregge i tre difetti trovati verificando
+(criterio vacuo, spiegazione falsa per le serie, campione minimo) e porta la misura a N utenti col corpus del
+**ticket 44**.
