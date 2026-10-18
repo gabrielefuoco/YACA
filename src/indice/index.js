@@ -161,7 +161,13 @@ class IndiceModule {
 // Singleton di default per l'applicazione
 const indice = new IndiceModule();
 
+const idratazione = require('./idratazione');
+
 module.exports = indice;
 module.exports.IndiceModule = IndiceModule;
 module.exports.compiler = compiler;
 module.exports.tier2 = tier2;
+module.exports.idratazione = idratazione;
+module.exports.resolveCardDetails = idratazione.resolveCardDetails;
+module.exports.cardSurvivesFilters = idratazione.cardSurvivesFilters;
+module.exports.idrataEImpaginaCandidati = idratazione.idrataEImpaginaCandidati;
