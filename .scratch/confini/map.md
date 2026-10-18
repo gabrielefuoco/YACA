@@ -790,3 +790,28 @@ nessuna decisione nomina ma che **sono** moduli di fatto, e vanno dichiarati inv
 Con questo, le cartelle di `src/` che **non** sono moduli restano poche e dichiarate: `models` (i modelli Mongoose,
 con la regola che solo il proprietario li tocca), `api` + `middleware` (l'orlo HTTP, ticket 10/11), `data`/`assets`
 (nessun `.js`), `config.js`.
+
+### 31. Chi possiede i modelli, e il bypass sistemico di `duckDbStore`
+
+**18/10/2026, dopo la review della quinta ondata.** Due cose emerse e chiuse, una dichiarata.
+
+**Chiuso: `ImdbToTmdbMapping` ha un proprietario.** Era toccato da tre moduli senza che nessuno l'avesse mai
+dichiarato: la cache di traduzione (`id_cache` → oggi `src/clients/idMapping.js`), `LibrarySyncService` e
+`posterResolver`. Ora **il proprietario è `src/clients` (idMapping)**, che espone sulla porta
+`lookupImdbToTmdb(id)` e `lookupImdbToTmdbBatch(ids)`; gli altri due leggono da lì. Regola: **il modello si tocca
+solo dentro il modulo che lo possiede** — come `TasteProfile` per il profilo.
+
+**Chiuso: il macchinario dell'inversione di dipendenza non serviva.** Il ticket 49 aveva introdotto
+`setDfCacheConsumer` (callback push) più la registrazione del profilo sull'indice, per non far importare il DNA
+all'indice. Era **più complicato del problema**: il profilo legge già la cache con `getDfCache()`, quindi la
+forma giusta è la **lettura pura**. Il push è stato rimosso. Nella rimozione è emerso un difetto latente dal 49:
+sulla porta dell'indice `module.exports.getDfCache = (...a) => indice.getDfCache(...a)` **chiamava sé stesso**
+(`module.exports === indice`), quindi ricorsione infinita: nessuno la usava, e la prima lettura l'ha svegliata.
+
+**Dichiarato, non chiuso: `src/indice/duckDbStore.js` è importato per percorso da 11 moduli** (`anime/mapping`,
+`clients/idMapping`, `library/identity`, `library/ingestion/LibraryConversionService`, `library/ingestion/libraryMediaTypeResolution`,
+`posters/posterResolver`, `profile/ProfileBuilder`, `profile/studioProfile`, `stremio/processors/MetadataHydrator`,
+`stremio/providers/WatchlistProvider`). È **preesistente** e largo: chiuderlo significa esporre sulla porta
+dell'indice tutto ciò che serve (query grezza, `resolveImdbIds`, `getDfCache`, …) e ripuntare 11 moduli **coi
+loro mock**, che è il lavoro dove questo repo sbaglia più spesso. **Ticket suo.** Non è una regressione: la suite
+è alla baseline e il feed è byte-a-byte.
