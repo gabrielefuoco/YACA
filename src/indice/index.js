@@ -18,7 +18,14 @@ class IndiceModule {
         this.duckDb = duckDb;
         this.compiler = queryCompiler;
         this._tier2 = tier2;
-        this._tier2Client = tier2Client || new tier2.Tier2SearchClient();
+        this._tier2Client = tier2Client;
+    }
+
+    get tier2Client() {
+        if (!this._tier2Client) {
+            this._tier2Client = new this._tier2.Tier2SearchClient();
+        }
+        return this._tier2Client;
     }
 
     /**
@@ -26,7 +33,9 @@ class IndiceModule {
      */
     async init(options = {}) {
         const duckInit = this.duckDb.init(options);
-        this._tier2Client.init();
+        if (this._tier2Client) {
+            this._tier2Client.init();
+        }
         return duckInit;
     }
 
@@ -108,6 +117,43 @@ class IndiceModule {
         const table = (type === 'tv' || type === 'series') ? 'tv' : 'movies';
         const rows = await this.duckDb.query(`SELECT * FROM ${table} WHERE id = ?`, [cleanId]);
         return (rows && rows.length > 0) ? rows[0] : null;
+    }
+
+    /**
+     * Dettagli meta di un titolo (usato dal serving meta).
+     *
+     * @param {number|string} tmdbId
+     * @param {'movie'|'tv'|'series'} [type]
+     * @returns {Promise<Object|null>}
+     */
+    async getMetaDetails(tmdbId, type = 'movie') {
+        try {
+            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
+            if (typeof DuckDbProvider.getDuckDbMetaDetails === 'function') {
+                return await DuckDbProvider.getDuckDbMetaDetails(tmdbId, type);
+            }
+        } catch (_e) {}
+        return null;
+    }
+
+    /**
+     * Alias per compatibilità con il fornitore DuckDb.
+     */
+    async getDuckDbMetaDetails(tmdbId, type = 'movie') {
+        return this.getMetaDetails(tmdbId, type);
+    }
+
+    /**
+     * Risolve un catalogo di titoli filtrati attraverso la compilazione dichiarativa.
+     */
+    async getCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 100, options = {}) {
+        try {
+            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
+            if (typeof DuckDbProvider.getDuckDbCatalogFromFilters === 'function') {
+                return await DuckDbProvider.getDuckDbCatalogFromFilters(filters, type, skip, limit, options);
+            }
+        } catch (_e) {}
+        return [];
     }
 
     /**

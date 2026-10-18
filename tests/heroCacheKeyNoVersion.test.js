@@ -11,10 +11,8 @@
  * (una versione di configurazione, un timestamp, un contatore), quel test fallisce.
  */
 
-const {
-    buildSharedHeroCacheKey,
-    buildRecommendationCacheKey
-} = require('../src/pool/composer');
+const { buildSharedHeroCacheKey } = require('../src/pool');
+const { buildRecommendationCacheKey } = require('../src/cache');
 
 describe('chiave della cache dei cataloghi hero', () => {
 

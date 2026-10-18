@@ -18,7 +18,7 @@
 
 const {
     buildCatalogCacheKey
-} = require('../src/handlers/catalogHandler');
+} = require('../src/catalog');
 
 const utente = (userId, profileId) => ({ userId, activeProfileId: profileId });
 

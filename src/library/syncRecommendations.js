@@ -5,7 +5,6 @@
  * Spostato da src/engines/hybridRecommendations.js nel modulo src/library ("la sincronizzazione Trakt/Stremio dentro src/library").
  */
 
-const TasteProfile = require('../models/TasteProfile');
 const { isStremioSyncDue } = require('../profile/profileStaleness');
 const { fetchRecentHistory, fetchRecentRatings } = require('./traktFetchers');
 
@@ -62,16 +61,18 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
         const combined = [...(history || []), ...(ratings || [])];
 
         if (combined.length === 0) {
-            if (typeof TasteProfile.updateOne === 'function') {
-                await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
+            const { touchTasteProfile } = require('../profile');
+            if (typeof touchTasteProfile === 'function') {
+                await touchTasteProfile(userId, context);
             }
             return false;
         }
 
         const ProfileBuilder = require('../profile/ProfileBuilder');
         const syncResult = await ProfileBuilder.syncUserHistory(userId, context, combined, tmdbApiKey);
-        if (typeof TasteProfile.updateOne === 'function') {
-            await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
+        const { touchTasteProfile } = require('../profile');
+        if (typeof touchTasteProfile === 'function') {
+            await touchTasteProfile(userId, context);
         }
         return syncResult !== false;
     } catch (err) {

@@ -24,7 +24,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => {
 const { animeAiringState, animeMappingStore } = require('../src/anime');
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
 const { getAiringStateCatalog } = require('../src/catalog/providers/AiringStateProvider');
-const { applyAiringStateBadges } = require('../src/handlers/catalogHandler');
+const { applyAiringStateBadges } = require('../src/anime');
 const { formatStremioCatalog } = require('../src/catalog/formatters/StremioFormatter');
 
 // Le funzioni pure del servizio: nessuna rete, nessun Mongo, stesso identico di chi scrive.

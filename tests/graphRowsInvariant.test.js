@@ -6,7 +6,7 @@
 const { HERO_STRATEGIES } = require('../src/pool');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
-const { annotationKeyFor } = require('../src/handlers/catalogHandler');
+const { annotationKeyFor } = require('../src/catalog');
 
 describe('Invariante del ticket 38: il pool non porta stringhe scalari', () => {
     beforeEach(() => {

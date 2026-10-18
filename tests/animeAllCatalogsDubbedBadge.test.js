@@ -14,7 +14,7 @@
  */
 
 const { animeMappingStore, animeAiringState } = require('../src/anime');
-const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/handlers/catalogHandler');
+const { applyPostCacheBadges: applyPostCacheBadgesRaw } = require('../src/catalog');
 
 /**
  * Snapshot delle annotazioni ITA. Nelle fixture di questo file i doppiati sono quelli con

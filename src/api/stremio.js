@@ -25,8 +25,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const { urlPosterDaRottaLegacy } = require('../catalog/formatters/StremioFormatter');
-const { catalogHandler } = require('../handlers/catalogHandler');
-const { metaHandler, isMetaDubbed } = require('../handlers/metaHandler');
+const { catalogHandler } = require('../stremio');
+const { metaHandler, isMetaDubbed } = require('../meta');
 const { parseExtra } = require('../infra/helpers');
 const { getPresets } = require('../catalog/presets');
 const { isCatalogConformant } = require('../catalog/catalogKind');

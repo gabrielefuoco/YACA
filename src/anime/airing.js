@@ -699,6 +699,122 @@ function resetForTests(keepDataSource = false) {
     if (!keepDataSource) dataSource = defaultDataSource;
 }
 
+const AIRING_STATE_PROVIDERS = new Set(['airing_state', 'anilist_simulcast']);
+
+function isAiringStateCatalog(baseId, catalogMeta) {
+    return baseId === 'preset_anime_simulcast' || AIRING_STATE_PROVIDERS.has(catalogMeta?._provider);
+}
+
+function findAiringStateDocument(snapshot, item, mappingStore = null) {
+    if (!snapshot || !item) return null;
+
+    const viaggio = item._airingDocTmdbId;
+    if (viaggio && snapshot.byTmdbId) {
+        const byViaggio = snapshot.byTmdbId.get(String(viaggio));
+        if (byViaggio) return byViaggio;
+    }
+
+    const direct = findDocument(snapshot, item.id);
+    if (direct) return direct;
+
+    const { extractAnimeTmdbId } = require('./identita');
+    const tmdbId = extractAnimeTmdbId(item);
+    if (tmdbId && snapshot.byTmdbId) {
+        const byTmdbId = snapshot.byTmdbId.get(String(tmdbId));
+        if (byTmdbId) return byTmdbId;
+    }
+
+    const itemId = String(item.id || '').replace(/_ita_offset$/, '');
+    if (!itemId.startsWith('kitsu:')) return null;
+
+    const kitsuId = itemId.slice('kitsu:'.length).split(':')[0];
+    const mStore = mappingStore || require('./mapping');
+    if (!/^\d+$/.test(kitsuId) || !mStore) return null;
+
+    try {
+        const mappedTmdbId = mStore.resolveTmdbFromKitsu(kitsuId);
+        return mappedTmdbId && snapshot.byTmdbId
+            ? snapshot.byTmdbId.get(String(mappedTmdbId)) || null
+            : null;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function senzaRiferimentoAiring(item) {
+    if (!item || item._airingDocTmdbId === undefined) return item;
+    const copia = { ...item };
+    delete copia._airingDocTmdbId;
+    return copia;
+}
+
+async function applyAiringStateBadges(metas, {
+    userConfig,
+    hostUrl,
+    catalogMeta,
+    type,
+    snapshot = null,
+    mappingStore = null
+} = {}) {
+    if (!Array.isArray(metas) || metas.length === 0) return { metas: [] };
+
+    try {
+        const state = snapshot || await getSnapshot();
+        const activeProfileSettings = userConfig?.profiles?.find((p) => p.id === userConfig.activeProfileId)?.settings || {};
+        const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
+        const sanitizeOptions = {
+            shouldApplyEpisodeBadge: type === 'series' || type === 'anime',
+            isLandscapeEnabled: isLandscape,
+            userConfig,
+            hostUrl
+        };
+        const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+        const mStore = mappingStore || require('./mapping');
+
+        const processed = [];
+        for (const item of metas) {
+            if (String(item.id).endsWith('_ita_offset')) {
+                processed.push(senzaRiferimentoAiring(item));
+                continue;
+            }
+            const doc = findAiringStateDocument(state, item, mStore);
+            const info = getCardInfo(doc);
+            if (!info) {
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta(
+                    { ...item, _itaBadge: false },
+                    { ...sanitizeOptions, shouldApplyEpisodeBadge: false }
+                )));
+                continue;
+            }
+
+            processed.push(senzaRiferimentoAiring(info.sub
+                ? sanitizeCatalogMeta({
+                    ...item,
+                    _itaBadge: false,
+                    _forceBadgeText: `EP ${info.sub.episode}`
+                }, sanitizeOptions)
+                : sanitizeCatalogMeta(
+                    { ...item, _itaBadge: false },
+                    { ...sanitizeOptions, shouldApplyEpisodeBadge: false }
+                )));
+
+            if (info.dub) {
+                processed.push(senzaRiferimentoAiring(sanitizeCatalogMeta({
+                    ...item,
+                    id: `${item.id}_ita_offset`,
+                    _itaBadge: false,
+                    _forceBadgeText: `ITA ${info.dub.episode}`
+                }, sanitizeOptions)));
+            }
+        }
+
+        return { metas: processed };
+    } catch (error) {
+        console.error('[Catalog] Errore badge stato anime:', error.message);
+        return { metas };
+    }
+}
+
 module.exports = {
     COLLECTION_NAME,
     SUPPORTED_SCHEMA_VERSION,
@@ -721,5 +837,8 @@ module.exports = {
     validateDocument,
     buildSnapshot,
     setDataSourceForTests,
-    resetForTests
+    resetForTests,
+    isAiringStateCatalog,
+    findAiringStateDocument,
+    applyAiringStateBadges
 };

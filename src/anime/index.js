@@ -24,6 +24,7 @@ module.exports = {
     isAnimeContent: identita.isAnimeContent,
     normalizeAnimeMarker: identita.normalizeAnimeMarker,
     extractAnimeTmdbId: identita.extractAnimeTmdbId,
+    extractTmdbId: identita.extractAnimeTmdbId,
     extractAnimeGenreIds: identita.extractAnimeGenreIds,
     normalizeTipoAnime: identita.normalizeTipoAnime,
     hasAnimeKeyword: identita.hasAnimeKeyword,
@@ -81,5 +82,8 @@ module.exports = {
     setDataSourceForTests: animeAiringState.setDataSourceForTests,
     resetForTests: animeAiringState.resetForTests,
     COLLECTION_NAME: animeAiringState.COLLECTION_NAME,
-    SUPPORTED_SCHEMA_VERSION: animeAiringState.SUPPORTED_SCHEMA_VERSION
+    SUPPORTED_SCHEMA_VERSION: animeAiringState.SUPPORTED_SCHEMA_VERSION,
+    isAiringStateCatalog: animeAiringState.isAiringStateCatalog,
+    findAiringStateDocument: animeAiringState.findAiringStateDocument,
+    applyAiringStateBadges: animeAiringState.applyAiringStateBadges
 };
