@@ -1,5 +1,5 @@
 const stremioRouter = require('../src/api/stremio');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const { getWatchlistCatalog } = require('../src/stremio/providers/WatchlistProvider');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const { normalizeLegacyId } = require('../scripts/migrate_library_itemid_null');

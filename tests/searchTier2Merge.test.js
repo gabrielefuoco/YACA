@@ -31,7 +31,7 @@ jest.mock('../src/db/learnedNames', () => ({
 const { Tier2SearchClient } = require('../src/indice/tier2');
 const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
 const { executeCombinedSearch } = require('../src/stremio/providers/AiDiscoveryProvider');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const http = require('http');
 const https = require('https');
 

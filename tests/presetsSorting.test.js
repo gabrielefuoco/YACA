@@ -11,7 +11,7 @@ const {
     extractSecondaryTieBreakers,
     applySortWithTieBreakers
 } = require('../src/catalog/catalogSorting');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const DuckDbProvider = require('../src/indice/duckDbProvider');
 const { S } = require('../src/indice/filters');
 const stremioRouter = require('../src/api/stremio');

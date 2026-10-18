@@ -16,13 +16,13 @@ const {
     BADGE_CATALOG_VERSION
 } = require('../src/catalog');
 const { catalogHandler } = require('../src/stremio');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const { catalogRequestCache } = require('../src/cache/cacheInstances');
 
 // Il router è l'unica parte costosa: lo sostituiamo per pilotare i risultati
 // senza toccare provider e rete. Gli altri test del file sono funzioni pure e
 // non lo usano.
-jest.mock('../src/catalog/CatalogRouter', () => ({
+jest.mock('../src/stremio/CatalogRouter', () => ({
     routeCatalogRequest: jest.fn()
 }));
 

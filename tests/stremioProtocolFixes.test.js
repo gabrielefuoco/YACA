@@ -5,7 +5,7 @@ const stremioRouter = require('../src/api/stremio');
 const { compileQuery } = require('../src/indice/compiler');
 const DuckDbProvider = require('../src/indice/duckDbProvider');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 
 // Utente inesistente: il protocollo Stremio vuole HTTP 200 con payload vuoto
 jest.mock('../src/models/UserConfig', () => ({

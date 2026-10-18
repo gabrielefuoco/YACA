@@ -16,7 +16,7 @@ const { getCacheConfig } = require('../cache/CacheManager');
 const { getPresets } = require('../catalog/presets');
 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
-const { routeCatalogRequest } = require('../catalog/CatalogRouter');
+const { routeCatalogRequest } = require('./CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../stremio/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../stremio/formatters/StremioFormatter');
 const {

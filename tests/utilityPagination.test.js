@@ -39,7 +39,7 @@ const {
     getWatchlistCatalog,
     WATCHLIST_PAGE_SIZE
 } = require('../src/stremio/providers/WatchlistProvider');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const { compileQuery } = require('../src/indice/compiler');
 
 describe('U-03: paginazione utility a 20 item', () => {

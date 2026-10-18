@@ -507,7 +507,7 @@ describe('La ricerca standard risponde con i titoli del Tier 2 gia presentabili'
     let routeCatalogRequest;
 
     beforeEach(() => {
-        ({ routeCatalogRequest } = require('../src/catalog/CatalogRouter'));
+        ({ routeCatalogRequest } = require('../src/stremio/CatalogRouter'));
         tier2Search = require('../src/catalog/tier2Search');
         require('../src/indice/duckDbProvider').getDuckDbCatalogFromFilters.mockResolvedValue([]);
     });

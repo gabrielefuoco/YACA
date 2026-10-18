@@ -30,7 +30,7 @@ jest.mock('../src/stremio/providers/WatchlistProvider', () => ({
 }));
 
 const { getDuckDbCatalogFromPreset } = require('../src/indice/duckDbProvider');
-const { routeCatalogRequest, PRESET_PAGE_SIZE } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest, PRESET_PAGE_SIZE } = require('../src/stremio/CatalogRouter');
 const { compileQuery } = require('../src/indice/compiler');
 
 const EMPTY_USER_CONFIG = { profiles: [], activeProfileId: null };

@@ -10,7 +10,7 @@
  */
 
 const { findSourceForCatalog } = require('../ricerca/registry');
-const { getPresets } = require('./presets');
+const { getPresets } = require('../catalog/presets');
 
 const PRESET_PAGE_SIZE = 20;
 

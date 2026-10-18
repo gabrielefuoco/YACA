@@ -1,10 +1,10 @@
 const { isItemAnime } = require('../src/anime');
 const { catalogHandler } = require('../src/stremio');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const { catalogRequestCache } = require('../src/cache/cacheInstances');
 
 // Mock di routeCatalogRequest per controllare precisamente gli item restituiti dal routing
-jest.mock('../src/catalog/CatalogRouter', () => ({
+jest.mock('../src/stremio/CatalogRouter', () => ({
     routeCatalogRequest: jest.fn()
 }));
 

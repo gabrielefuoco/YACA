@@ -38,7 +38,7 @@ jest.mock('../src/catalog/tier2Enrich', () => ({
 const { Tier2SearchClient } = require('../src/indice/tier2');
 const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
 const { enrichTier2Items } = require('../src/catalog/tier2Enrich');
-const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const tier2Search = require('../src/catalog/tier2Search');
 
 /** Righe come le restituisce l'indice SQLite FTS5. */

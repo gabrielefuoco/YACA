@@ -84,7 +84,7 @@ describe('exports dopo la dissoluzione (ticket 41)', () => {
 
 describe('catalogHandler handles hybrid catalog IDs', () => {
     it('should return empty metas for removed legacy id yaca_hybrid_movies', async () => {
-        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+        const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
         const result = await routeCatalogRequest(
             { type: 'movie', id: 'yaca_hybrid_movies', extra: { skip: 0 }, filters: null },
             { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
@@ -98,7 +98,7 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
     });
 
     it('should return empty metas for removed legacy id yaca_hybrid_series', async () => {
-        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+        const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
         const result = await routeCatalogRequest(
             { type: 'series', id: 'yaca_hybrid_series', extra: { skip: 0 }, filters: null },
             { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
@@ -112,7 +112,7 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
     });
 
     it('should return empty metas for removed legacy id yaca_top20_movies', async () => {
-        const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
+        const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
         const result = await routeCatalogRequest(
             { type: 'movie', id: 'yaca_top20_movies', extra: { skip: 0 }, filters: null },
             { userId: 'u1', apiKeys: { tmdb: 'fake-key' }, profiles: [], activeProfileId: 'global' },
@@ -135,7 +135,7 @@ describe('catalogHandler handles hybrid catalog IDs', () => {
                     getEngineHybridCatalog: jest.fn(async () => [{ id: 'tmdb:999', type: 'movie', name: 'Phase4' }])
                 };
             });
-            ({ routeCatalogRequest: routeCatalogRequestFromIsolatedModule } = require('../src/catalog/CatalogRouter'));
+            ({ routeCatalogRequest: routeCatalogRequestFromIsolatedModule } = require('../src/stremio/CatalogRouter'));
         });
         const result = await routeCatalogRequestFromIsolatedModule(
             { type: 'movie', id: 'yaca_mondi_movies', extra: { skip: 0 }, filters: null },
