@@ -637,3 +637,17 @@ stack serve i moduli nuovi» (dipendenza nascosta, e va tolta) è la differenza 
 - **`sed` applica il pattern CORTO prima del lungo**: ripuntando `../keywords/X` con due pattern (`../` → `../indice/`
   e `../../` → `../../indice/`) il primo ha riscritto anche i casi che volevano il secondo, producendo
   `src/engines/indice/X` (inesistente). Ordina i pattern dal più specifico al più generico.
+- **La pulizia dei worktree ha portato via anche i DATI, non solo le dipendenze** (18/10/2026). Alle **18:14** il
+  ciclo di rimozione ha svuotato `services/graph/data` (**141 MB di artefatti del grafo**) e `YACA/.cache/trakt/users`
+  (le storie Trakt per-utente su cui girava `measure/ricetta.py`): quei worktree avevano **giunzioni** verso il
+  checkout principale, e `git worktree remove --force` **segue i link e cancella il bersaglio**. Riconoscibile
+  dagli mtime: `services/graph/data` a 18:14 (ora del lotto), `.cache` a 21:23, `frontend/node_modules` a 21:31.
+  **Recuperato**: i 141 MB dal mate (`/srv/yaca/services/graph/data`, bind mount del container `yaca-graph`), i
+  parquet TMDB dallo stesso volume, `frontend/node_modules` con `npm ci`.
+  **Non recuperabile**: le **storie Trakt per-utente** — non esistono più né in locale né sul mate (`find` su
+  `/srv` → 0). Conseguenza concreta: la misura `oro_preso` su 60 utenti (ticket 43) **non è più calcolabile**;
+  restano i 2 utenti di Mongo (segnale, non prova).
+  **La regola**: prima di rimuovere un worktree, **smonta ogni giunzione** (`cmd //c "dir /AL"` in relativo,
+  dentro la cartella) — e **mai** silenziare l'errore del comando che la smonta: un `rmdir` fallito in silenzio
+  è ciò che trasforma una pulizia in una perdita di dati. La sequenza documentata è in
+  `docs/TESTING_UTILITIES.md` (sezione *«La procedura che funziona per rimuovere un worktree»*) — **leggerla prima**.
