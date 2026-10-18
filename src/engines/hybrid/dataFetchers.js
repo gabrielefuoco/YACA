@@ -3,24 +3,13 @@ const { accountDi } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const { traktClient } = require('../../clients/trakt');
 const { normalizeContentId } = require('../../catalog/contentId');
-const { rateLimitedMap } = require('../../infra/rateLimiter');
 const DuckDbProvider = require('../../catalog/providers/DuckDbProvider');
-const { F } = require('../../catalog/filters');
 const { applyKidsMode } = require('../../catalog/kidsModeFilters');
 const { isItemAnime } = require('../../anime');
 
 // Ticket 21: ampliato a 260 per consentire il pool allargato a monte (250) nei contesti stretti
 const MAX_HERO_FALLBACK_FETCH = 260;
 const HERO_FALLBACK_LIMIT = 160;
-// 20 separa le code lunghe dai titoli già mainstream (i falsi positivi osservati
-// nel ticket 23 partivano da 41.4), mantenendo comunque ampia la finestra.
-const HIDDEN_GEMS_MAX_POPULARITY = 20;
-// 1.000 è la soglia già usata dal builder hidden_gems normale (50–1.000 voti).
-// Il fallback deve applicare lo stesso contratto, altrimenti il ramo freddo
-// amplia il range e invalida la deduplicazione/qualità verificata sul builder.
-const HIDDEN_GEMS_MAX_VOTES = 1000;
-const TOP_RATED_FALLBACK_MONTHS = 60;
-const DISCOVERY_FALLBACK_MONTHS = Object.freeze({ movie: 12, series: 24 });
 
 function compareContentIds(a, b) {
     const idA = String(a ?? '');
@@ -36,11 +25,6 @@ function compareContentIds(a, b) {
 function getNumericSortValue(item, field) {
     const value = Number(item?.[field]);
     return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
-}
-
-function isHiddenGemPopularity(value) {
-    const popularity = Number(value);
-    return Number.isFinite(popularity) && popularity <= HIDDEN_GEMS_MAX_POPULARITY;
 }
 
 function getDateSortValue(item) {
@@ -265,14 +249,6 @@ async function fetchRecentRatings(traktToken, mediaType, limit = 40, userObj = n
     return safeTraktFetch(`/users/me/ratings/${mediaType}`, traktToken, limit, userObj);
 }
 
-async function fetchTraktRecommendationsRawDetailed(traktToken, mediaType, limit = 40, userObj = null) {
-    return safeTraktFetchDetailed(`/recommendations/${mediaType}`, traktToken, limit, userObj);
-}
-
-async function fetchTraktRecommendationsRaw(traktToken, mediaType, limit = 40, userObj = null) {
-    return safeTraktFetch(`/recommendations/${mediaType}`, traktToken, limit, userObj);
-}
-
 async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
     const type = mediaType === 'movie' ? 'movie' : 'series';
     const isMovie = type === 'movie';
@@ -293,124 +269,11 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
     );
 }
 
-async function fetchTopRatedPeriodFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
-    const type = mediaType === 'movie' ? 'movie' : 'series';
-    const isMovie = type === 'movie';
-    const baseFilters = {
-        sort_by: 'vote_average.desc',
-        'primary_release_date.gte': rollingDateStart(TOP_RATED_FALLBACK_MONTHS),
-        'vote_count.gte': 100,
-        'vote_average.gte': 6.5
-    };
-    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    // Ticket 07: vincolo di durata minima (60') per i film nei fallback top-rated hero gestito in fetchFallbackRows
-    const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
-    return mapStableFallbackIds(results, limit, (a, b) => {
-        const scoreDelta = getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
-        return scoreDelta || getNumericSortValue(b, 'vote_count') - getNumericSortValue(a, 'vote_count');
-    });
-}
-
-async function fetchUndiscoveredFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
-    const type = mediaType === 'movie' ? 'movie' : 'series';
-    const isMovie = type === 'movie';
-    const baseFilters = {
-        sort_by: isMovie ? 'primary_release_date.desc' : 'first_air_date.desc',
-        'primary_release_date.gte': rollingDateStart(DISCOVERY_FALLBACK_MONTHS[type]),
-        'vote_count.gte': isMovie ? 10 : 20,
-        'vote_average.gte': 5.5
-    };
-    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    // Ticket 07: vincolo di durata minima (60') per i film nel fallback discovery hero gestito in fetchFallbackRows
-    const results = await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors);
-    return mapStableFallbackIds(results, limit, (a, b) => {
-        const dateDelta = getDateSortValue(b) - getDateSortValue(a);
-        return dateDelta || getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average');
-    });
-}
-
-async function fetchHiddenGemsFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLBACK_LIMIT, isKidsMode = false, typeSelectors = null) {
-    const type = mediaType === 'movie' ? 'movie' : 'series';
-    const isMovie = type === 'movie';
-    const baseFilters = {
-        sort_by: 'popularity.desc',
-        'vote_count.gte': 100,
-        'vote_count.lte': HIDDEN_GEMS_MAX_VOTES,
-        'vote_average.gte': 7.0,
-        'popularity.lte': HIDDEN_GEMS_MAX_POPULARITY
-    };
-    const filters = isKidsMode ? applyKidsMode(baseFilters) : baseFilters;
-    // Nelle gemme nascoste la durata minima fa già parte del criterio esplicito della lista
-    const results = (await fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors))
-        .filter(item => isHiddenGemPopularity(item.popularity));
-    return mapStableFallbackIds(results, limit, (a, b) => {
-        const popDelta = getNumericSortValue(b, 'popularity') - getNumericSortValue(a, 'popularity');
-        return popDelta || (getNumericSortValue(b, 'vote_average') - getNumericSortValue(a, 'vote_average'));
-    });
-}
-
-async function fetchTmdbSimilarCounts(seedTmdbIds, tmdbApiKey, mediaType = 'movie') {
-    const type = mediaType === 'movie' ? 'movie' : 'series';
-    const counts = new Map();
-
-    if (!seedTmdbIds || seedTmdbIds.length === 0) return counts;
-
-    const results = await rateLimitedMap(
-        seedTmdbIds,
-        (id) => getDuckDbCatalogFromFilters({ similar_to: id }, type, 0, 40, {}).catch(() => []),
-        { batchSize: 3, delayMs: 150 }
-    );
-
-    results.forEach(items => {
-        if (Array.isArray(items)) {
-            for (const item of items) {
-                counts.set(item.id, (counts.get(item.id) || 0) + 1);
-            }
-        }
-    });
-
-    return counts;
-}
-
-async function getImpressionMap(userId, context, catalogId, candidateIds) {
-    const impressionMap = new Map();
-    try {
-        const RecommendationImpression = require('../../models/RecommendationImpression');
-        const impressions = await RecommendationImpression.find({
-            owner: userId,
-            profileId: context,
-            catalogId: catalogId,
-            tmdbId: { $in: candidateIds }
-        }).lean();
-        for (const imp of impressions) {
-            impressionMap.set(String(imp.tmdbId), imp.seenDates.length);
-        }
-    } catch (_e) { }
-    return impressionMap;
-}
-
-function calculateImpressionPenalty(seenDays) {
-    if (seenDays >= 3) {
-        return Math.max(0.2, 1.0 - (seenDays - 2) * 0.2);
-    }
-    return 1.0;
-}
-
 module.exports = {
     fetchProfileContext,
     safeTraktFetch,
     safeTraktFetchDetailed,
     fetchRecentHistory,
     fetchRecentRatings,
-    fetchTraktRecommendationsRaw,
-    fetchTraktRecommendationsRawDetailed,
-    fetchPopularFallbackIds,
-    fetchTopRatedPeriodFallbackIds,
-    fetchUndiscoveredFallbackIds,
-    fetchHiddenGemsFallbackIds,
-    HIDDEN_GEMS_MAX_POPULARITY,
-    HIDDEN_GEMS_MAX_VOTES,
-    fetchTmdbSimilarCounts,
-    getImpressionMap,
-    calculateImpressionPenalty
+    fetchPopularFallbackIds
 };

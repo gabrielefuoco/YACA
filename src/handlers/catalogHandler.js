@@ -983,7 +983,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         });
     }
 
-    if (baseId.startsWith('yaca_mondi_') || baseId.startsWith('yaca_passo_fuori_')) {
+    if (baseId.startsWith('yaca_mondi_') || baseId.startsWith('yaca_passo_fuori_') || baseId.startsWith('yaca_uscite_nuove_') || baseId.startsWith('yaca_nicchia_di_qualita_')) {
         console.log(`[Mondi] catalogo ${baseId}: serviti ${responseData?.metas?.length || 0} titoli (cache=${builds === 0 ? 'hit' : 'miss'})`);
     }
 

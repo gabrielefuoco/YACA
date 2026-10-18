@@ -21,10 +21,9 @@
  *    - Basato sullo stato di sincronizzazione utente in MongoDB.
  *    - Ordinabile dall'utente: NO (sortable: false, manifest extra: [{ name: 'skip' }]).
  *
- * 4. HERO (Raccomandazioni dinamiche ibride VSM: true_blend, seed_network, hidden_gems, trakt_filtered):
- *    - Default: Score di affinità vettoriale del profilo utente (calcolato dal ProfileScorer).
- *    - Reranker matematico interno VSM in RAM (con tie-breaker compareContentIds).
- *    - Il DNA resta un reranker interno: nessuna voce "Per te" nel vocabolario utente.
+ * 4. HERO (Raccomandazioni dinamiche del grafo: mondi, passo_fuori, uscite_nuove, nicchia_di_qualita):
+ *    - Default: Score di affinità calcolato dal servizio del grafo.
+ *    - Reranker e clustering del grafo (Ticket 46).
  *    - Ordinabile dall'utente: NO (sortable: false, manifest extra: [{ name: 'skip' }]).
  * -----------------------------------------------------------------------------
  */

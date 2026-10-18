@@ -1,40 +1,22 @@
 // src/pool/index.js
 
 /**
- * MODULO POOL DI YACA (Ticket 12).
+ * MODULO POOL DI YACA (Ticket 12 & Ticket 46).
  *
  * Incapsula l'intera logica di composizione e gestione del pool dei cataloghi hero:
  * - Porta unica di accesso per il feed (getHeroPool).
  * - HERO_PRIORITY e righe additive (SLUG_ADDITIVI) consumati da src/catalog/registry.js.
- * - Le 4 strategie storiche (trueBlend, seed_network, hiddenGems, trakt_filtered) più
- *   le righe del grafo sono voci di una lista (HERO_STRATEGIES).
- *   (Il ticket 08 sostituirà l'entry del grafo con la chiamata al servizio Python).
- * - Assegnazione esclusiva (pairwise disjoint / claimedIds).
- * - Limiti per catalogo (HERO_MAX_ITEMS_PER_CATALOG) e soglie di fallback (HERO_MIN_FALLBACK_ITEMS).
- * - Degrado Trakt (hiddenForInsufficientFallback).
- * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v12').
+ * - Le 4 strategie storiche (trueBlend, seed_network, hiddenGems, trakt_filtered) sono rimosse;
+ *   il motore del gusto è interamente il servizio del grafo (mondi, passo_fuori, uscite_nuove, nicchia_di_qualita).
+ * - Assegnazione disgiunta / claimedIds per eventuali strategie esclusive.
+ * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v15').
  */
 
 const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec } = require('../catalog/registry');
-const {
-    fetchProfileContext,
-    fetchPopularFallbackIds,
-    fetchTopRatedPeriodFallbackIds,
-    fetchUndiscoveredFallbackIds,
-    fetchHiddenGemsFallbackIds,
-    fetchTraktRecommendationsRawDetailed
-} = require('../engines/hybrid/dataFetchers');
-const catalogStrategies = require('../engines/hybrid/catalogStrategies');
-const {
-    buildTopGenresMixCatalog,
-    buildHybridCatalog,
-    buildHiddenGemsCatalog,
-    buildTraktFilteredCatalog,
-    buildTraktFilteredCatalogWithMeta
-} = catalogStrategies;
+const { fetchProfileContext } = require('../engines/hybrid/dataFetchers');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const graphClient = require('../clients/graphClient');
@@ -47,8 +29,8 @@ const HERO_CATALOG_IDS = new Map([
     ]))
 ]);
 
-const HERO_CACHE_KEY_VERSION = 'v14';
-const HERO_CACHE_SCHEMA_VERSION = 7;
+const HERO_CACHE_KEY_VERSION = 'v15';
+const HERO_CACHE_SCHEMA_VERSION = 8;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
@@ -74,7 +56,6 @@ function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSel
                 media: mediaType,
                 kids: kidsMode,
                 selettori: typeSelectors,
-                ...(isNewHiddenGemsActive() ? { nuova_catena_hidden_gems: 'true' } : {}),
                 ...(sl ? { slider: sl } : {})
             },
             invalida: {
@@ -120,7 +101,7 @@ function ensurePoolItem(item, mediaType) {
 }
 
 /**
- * Assegna in modo esclusivo i candidati dei quattro hero secondo priorità.
+ * Assegna in modo esclusivo i candidati degli hero secondo priorità.
  */
 function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MAX_ITEMS_PER_CATALOG) {
     const assigned = {};
@@ -149,9 +130,10 @@ function isSharedHeroCacheEntry(entry, mediaType) {
 
     const claimedIds = new Set();
     for (const slug of HERO_PRIORITY) {
-        if (SLUG_ADDITIVI.has(slug)) continue; // le righe del grafo non sono disgiunte, per scelta
-        const pool = entry.catalogs[getHeroCatalogId(slug, mediaType)];
+        const catId = getHeroCatalogId(slug, mediaType);
+        const pool = entry.catalogs[catId];
         if (!Array.isArray(pool)) return false;
+        if (SLUG_ADDITIVI.has(slug)) continue; // le righe del grafo non sono disgiunte, per scelta
         for (const item of pool) {
             const id = getRecommendationId(item);
             if (!id || claimedIds.has(id)) return false;
@@ -166,145 +148,26 @@ function normalizePoolResult(result) {
     return Array.isArray(result?.ids) ? result.ids : [];
 }
 
-async function runPoolBuilder(builder, fallbackBuilder, label, args) {
-    try {
-        return await builder(...args);
-    } catch (error) {
-        console.error(`[HeroPool] ${label} builder failed:`, error?.message || error);
-        return fallbackBuilder();
-    }
-}
-
-function isNewHiddenGemsActive() {
-    return process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS === 'true';
-}
-
-function setFlagNewHiddenGems(val) {
-    if (val === null || val === undefined) {
-        delete process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS;
-    } else {
-        process.env.FLAG_NUOVA_CATENA_HIDDEN_GEMS = String(val);
-    }
-}
-
-async function buildHiddenGemsOnNewProvider(ctx) {
-    const indice = require('../indice');
-    const resolvedContext = (ctx.context && typeof ctx.context === 'object' && ctx.context.selettoriEffettivi)
-        ? {
-            ...ctx.context,
-            tasteProfile: ctx.tasteProfile || ctx.profile || ctx.context.tasteProfile || ctx.context.profile || null,
-            profile: ctx.tasteProfile || ctx.profile || ctx.context.profile || null
-        }
-        : {
-            userId: ctx.userId,
-            profileId: typeof ctx.context === 'string' ? ctx.context : (ctx.context?.profileId || 'global'),
-            addonUuid: ctx.userConfig?.uuid || ctx.userConfig?.addonUuid || null,
-            selettoriEffettivi: ctx.effectiveSelectors || {},
-            kidsMode: Boolean(ctx.kidsMode),
-            sliders: ctx.sliders || ctx.slider || {},
-            tasteProfile: ctx.tasteProfile || ctx.profile || null,
-            profile: ctx.tasteProfile || ctx.profile || null
-        };
-
-    const result = await indice.candidati(resolvedContext, {
-        mediaType: ctx.mediaType,
-        strategia: 'hidden_gems',
-        limit: ctx.heroCandidateLimit
-    });
-
-    if (result?.candidati && result.candidati.length > 0) {
-        const items = result.candidati.map(c => ({
-            id: String(c.id),
-            matchScore: Math.min(100, Math.max(1, Math.round((c.punteggio || 0) * 10))),
-            motivo: c.motivo,
-            punteggio: c.punteggio,
-            genres: c.genres
-        }));
-        items.ids = items;
-        items.meta = { motivi: result.motivi || [] };
-        return items;
-    }
-
-    return fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors);
-}
-
 /**
  * Definizione a lista delle strategie nel modulo pool.
- * Le quattro strategie hero producono candidati per l'assegnazione disgiunta.
- * La voce del grafo aggiunge righe additive DOPO l'assegnazione disgiunta.
- * (Ticket 08 sostituirà l'entry del grafo con la chiamata al servizio Python).
+ * Le quattro strategie storiche sono state rimosse (Ticket 46).
+ * Il grafo genera le 4 righe additive: mondi, passo_fuori, uscite_nuove, nicchia_di_qualita.
  */
 const HERO_STRATEGIES = [
-    {
-        name: 'true_blend',
-        slug: 'true_blend',
-        additive: false,
-        run: async (ctx) => {
-            return await runPoolBuilder(
-                buildTopGenresMixCatalog,
-                () => fetchPopularFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors),
-                'true_blend',
-                [ctx.userId, ctx.context, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.effectiveSelectors, ctx.heroCandidateLimit]
-            );
-        }
-    },
-    {
-        name: 'seed_network',
-        slug: 'seed_network',
-        additive: false,
-        run: async (ctx) => {
-            return await runPoolBuilder(
-                buildHybridCatalog,
-                ctx.seedFallback,
-                'seed_network',
-                [ctx.userId, ctx.context, ctx.traktToken, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.sharedTraktResult, ctx.effectiveSelectors, ctx.heroCandidateLimit]
-            );
-        }
-    },
-    {
-        name: 'hidden_gems',
-        slug: 'hidden_gems',
-        additive: false,
-        run: async (ctx) => {
-            if (isNewHiddenGemsActive()) {
-                return await buildHiddenGemsOnNewProvider(ctx);
-            }
-            return await runPoolBuilder(
-                catalogStrategies.buildHiddenGemsCatalog,
-                () => fetchHiddenGemsFallbackIds(ctx.tmdbApiKey, ctx.mediaType, ctx.heroCandidateLimit, ctx.kidsMode, ctx.effectiveSelectors),
-                'hidden_gems',
-                [ctx.userId, ctx.context, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.effectiveSelectors, ctx.heroCandidateLimit]
-            );
-        }
-    },
-    {
-        name: 'trakt_filtered',
-        slug: 'trakt_filtered',
-        additive: false,
-        run: async (ctx) => {
-            const builder = typeof buildTraktFilteredCatalogWithMeta === 'function'
-                ? buildTraktFilteredCatalogWithMeta
-                : buildTraktFilteredCatalog;
-            return await runPoolBuilder(
-                builder,
-                ctx.communityFallbackWithMeta,
-                'trakt_filtered',
-                [ctx.userId, ctx.context, ctx.traktToken, ctx.tmdbApiKey, ctx.mediaType, ctx.kidsMode, ctx.sharedTraktResult, ctx.effectiveSelectors, ctx.heroCandidateLimit]
-            );
-        }
-    },
     {
         name: 'graph_rows',
         slug: 'graph_rows',
         additive: true,
         // =========================================================================
-        // GANCI DEL GRAFO (Ticket 08: servizio Python persistente via HTTP)
+        // GANCI DEL GRAFO (Ticket 08 & Ticket 46: servizio Python persistente via HTTP)
         // =========================================================================
         run: async (ctx, { assigned, rawTraktResult, sharedState }) => {
             const med = ctx.mediaType === 'movie' ? 'movie' : 'series';
             const suffisso = ctx.mediaType === 'movie' ? 'movies' : 'series';
             const catMondi = `yaca_mondi_${suffisso}`;
             const catPasso = `yaca_passo_fuori_${suffisso}`;
+            const catUscite = `yaca_uscite_nuove_${suffisso}`;
+            const catNicchia = `yaca_nicchia_di_qualita_${suffisso}`;
 
             try {
                 const { semiDi } = require('../library');
@@ -359,7 +222,9 @@ const HERO_STRATEGIES = [
                 if (semi.length === 0) {
                     assigned[catMondi] = [];
                     assigned[catPasso] = [];
-                    console.log(`[Mondi] ${ctx.mediaType}: seed da archivio 0, da Trakt 0 · mondi 0 · passo fuori 0`);
+                    assigned[catUscite] = [];
+                    assigned[catNicchia] = [];
+                    console.log(`[Mondi] ${ctx.mediaType}: seed da archivio 0, da Trakt 0 · mondi 0 · passo fuori 0 · uscite 0 · nicchia 0`);
                     return;
                 }
 
@@ -367,6 +232,8 @@ const HERO_STRATEGIES = [
                     || ctx.slider
                     || ctx.userConfig?.activeProfileSettings?.sliders
                     || ctx.userConfig?.activeProfileSettings?.slider
+                    || ctx.userConfig?.context?.sliders
+                    || ctx.userConfig?.context?.slider
                     || ctx.userConfig?.activeProfileSettings?.graphOptions
                     || ctx.userConfig?.graphOptions
                     || undefined;
@@ -382,6 +249,8 @@ const HERO_STRATEGIES = [
                 const liste = resGraph?.liste || [];
                 const listaMondi = liste.find((l) => l.ruolo === 'il_tuo_mondo');
                 const listaPasso = liste.find((l) => l.ruolo === 'un_passo_fuori');
+                const listaUscite = liste.find((l) => l.ruolo === 'uscite_nuove');
+                const listaNicchia = liste.find((l) => l.ruolo === 'nicchia_di_qualita');
 
                 assigned[catMondi] = (listaMondi?.titoli || []).map((t) => ensurePoolItem({
                     id: `tmdb:${t.tmdbId}`,
@@ -399,17 +268,37 @@ const HERO_STRATEGIES = [
                     punteggio: t.punteggio
                 }, ctx.mediaType));
 
+                assigned[catUscite] = (listaUscite?.titoli || []).map((t) => ensurePoolItem({
+                    id: `tmdb:${t.tmdbId}`,
+                    tmdbId: Number(t.tmdbId),
+                    type: t.medium === 'movie' ? 'movie' : 'series',
+                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
+                    punteggio: t.punteggio
+                }, ctx.mediaType));
+
+                assigned[catNicchia] = (listaNicchia?.titoli || []).map((t) => ensurePoolItem({
+                    id: `tmdb:${t.tmdbId}`,
+                    tmdbId: Number(t.tmdbId),
+                    type: t.medium === 'movie' ? 'movie' : 'series',
+                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
+                    punteggio: t.punteggio
+                }, ctx.mediaType));
+
                 const nMondi = (assigned[catMondi] || []).length;
                 const nPasso = (assigned[catPasso] || []).length;
+                const nUscite = (assigned[catUscite] || []).length;
+                const nNicchia = (assigned[catNicchia] || []).length;
                 console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${filteredSeeds.length}, da Trakt ${traktCount}` +
-                    ` · mondi ${nMondi} · passo fuori ${nPasso}`);
-                if (semi.length > 0 && nMondi === 0 && nPasso === 0) {
-                    console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in entrambe le righe ` +
+                    ` · mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}`);
+                if (semi.length > 0 && nMondi === 0 && nPasso === 0 && nUscite === 0 && nNicchia === 0) {
+                    console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in tutte le righe ` +
                         `(${ctx.mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
                 }
             } catch (e) {
                 assigned[catMondi] = [];
                 assigned[catPasso] = [];
+                assigned[catUscite] = [];
+                assigned[catNicchia] = [];
                 if (sharedState) sharedState.graphCallFailed = true;
                 console.warn(`[Mondi] motore non raggiungibile: ${e?.message || e}`);
             }
@@ -443,54 +332,6 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         || profile?.settings?.slider
         || undefined;
 
-    const seedFallback = async () => {
-        const fetcher = typeof fetchTopRatedPeriodFallbackIds === 'function'
-            ? fetchTopRatedPeriodFallbackIds
-            : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
-    };
-    const communityFallback = async () => {
-        const fetcher = typeof fetchUndiscoveredFallbackIds === 'function'
-            ? fetchUndiscoveredFallbackIds
-            : fetchPopularFallbackIds;
-        return fetcher(tmdbApiKey, mediaType, heroCandidateLimit, kidsMode, effectiveSelectors);
-    };
-    const communityFallbackWithMeta = async () => {
-        const fallbackIds = await communityFallback();
-        return {
-            ids: fallbackIds,
-            traktAvailable: false,
-            traktSourcedCount: 0,
-            fallbackTopUpCount: fallbackIds.length,
-            isDegradedFallback: true,
-            fallbackUsed: true
-        };
-    };
-
-    const hasDetailedTraktFetch = typeof fetchTraktRecommendationsRawDetailed === 'function';
-    let sharedTraktResult = hasDetailedTraktFetch
-        ? { items: [], available: false, fallbackUsed: true, reason: 'credentials' }
-        : null;
-    if (traktToken && hasDetailedTraktFetch) {
-        let traktUser = {
-            userId,
-            apiKeys: userConfig?.apiKeys || userConfig?.config?.apiKeys || {}
-        };
-        if (!traktUser.apiKeys?.traktRefreshToken && typeof fetchProfileContext === 'function') {
-            const profileContext = await fetchProfileContext(userId, context).catch(() => ({}));
-            if (profileContext?.user) traktUser = profileContext.user;
-        }
-        sharedTraktResult = await fetchTraktRecommendationsRawDetailed(
-            traktToken,
-            mediaType === 'movie' ? 'movies' : 'shows',
-            100,
-            traktUser
-        ).catch(error => {
-            console.error('[HeroPool] Trakt fetch failed:', error?.message || error);
-            return { items: [], available: false, fallbackUsed: true, reason: 'error' };
-        });
-    }
-
     const ctx = {
         userId,
         context,
@@ -502,73 +343,23 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         effectiveSelectors,
         animePolicy,
         heroCandidateLimit,
-        seedFallback,
-        communityFallbackWithMeta,
-        sharedTraktResult,
         sliders: resolvedSliders,
         slider: resolvedSliders,
         tasteProfile: profile || null,
         profile: profile || null
     };
 
-    // Eseguiamo le strategie esclusive in parallelo
-    const exclusiveStrategies = HERO_STRATEGIES.filter(s => !s.additive);
-    const results = await Promise.all(exclusiveStrategies.map(s => s.run(ctx)));
-
     const pools = {};
-    let rawTraktResult = {
-        ids: [],
-        traktAvailable: false,
-        traktSourcedCount: 0,
-        fallbackTopUpCount: 0,
-        isDegradedFallback: true,
-        fallbackUsed: true
-    };
+    for (const slug of HERO_PRIORITY) {
+        pools[getHeroCatalogId(slug, mediaType)] = [];
+    }
 
-    exclusiveStrategies.forEach((strat, idx) => {
-        const res = results[idx];
-        const catId = getHeroCatalogId(strat.slug, mediaType);
-        if (strat.slug === 'trakt_filtered') {
-            const traktSourcedCount = res?.traktSourcedCount ?? (Array.isArray(res) ? res.length : 0);
-            const fallbackTopUpCount = res?.fallbackTopUpCount ?? 0;
-            const isDegradedFallback = res?.isDegradedFallback ?? (traktSourcedCount === 0);
-            const traktAvailable = res?.traktAvailable === true;
-            const fallbackUsed = res?.fallbackUsed === true || isDegradedFallback;
-
-            rawTraktResult = {
-                ids: normalizePoolResult(res),
-                traktAvailable,
-                traktSourcedCount,
-                fallbackTopUpCount,
-                isDegradedFallback,
-                fallbackUsed
-            };
-            pools[catId] = rawTraktResult.ids;
-        } else {
-            pools[catId] = normalizePoolResult(res);
-        }
-    });
-
-    // Assegnazione esclusiva
     const assigned = assignHeroPools(pools, mediaType);
 
-    // Eseguiamo le strategie additive (il grafo) DOPO l'assegnazione disgiunta
     const sharedState = { graphCallFailed: false };
     const additiveStrategies = HERO_STRATEGIES.filter(s => s.additive);
     for (const strat of additiveStrategies) {
-        await strat.run(ctx, { assigned, rawTraktResult, sharedState });
-    }
-
-    // Degrado Trakt
-    const traktCatalogId = getHeroCatalogId('trakt_filtered', mediaType);
-    let hiddenForInsufficientFallback = false;
-    console.log(`[HeroPool] Trakt status per ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}, isDegradedFallback=${rawTraktResult.isDegradedFallback}, fallbackUsed=${rawTraktResult.fallbackUsed}`);
-    if (rawTraktResult.isDegradedFallback) {
-        console.warn(`[HeroPool] Degrado Trakt confermato per pool ${traktCatalogId}: traktAvailable=${rawTraktResult.traktAvailable}, traktSourcedCount=${rawTraktResult.traktSourcedCount}, fallbackTopUpCount=${rawTraktResult.fallbackTopUpCount}`);
-    }
-    if (rawTraktResult.fallbackUsed && assigned[traktCatalogId].length < HERO_MIN_FALLBACK_ITEMS) {
-        assigned[traktCatalogId] = [];
-        hiddenForInsufficientFallback = true;
+        await strat.run(ctx, { assigned, rawTraktResult: { traktAvailable: false, ids: [] }, sharedState });
     }
 
     return {
@@ -577,13 +368,13 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         catalogs: assigned,
         graphCallFailed: !!sharedState.graphCallFailed,
         trakt: {
-            available: rawTraktResult.traktAvailable,
-            traktAvailable: rawTraktResult.traktAvailable,
-            traktSourcedCount: rawTraktResult.traktSourcedCount,
-            fallbackTopUpCount: rawTraktResult.fallbackTopUpCount,
-            isDegradedFallback: rawTraktResult.isDegradedFallback,
-            fallbackUsed: rawTraktResult.fallbackUsed,
-            hiddenForInsufficientFallback
+            available: false,
+            traktAvailable: false,
+            traktSourcedCount: 0,
+            fallbackTopUpCount: 0,
+            isDegradedFallback: false,
+            fallbackUsed: false,
+            hiddenForInsufficientFallback: false
         }
     };
 }
@@ -603,7 +394,6 @@ function toHeroDesc(args, keyOrDesc) {
                 media: args?.mediaType,
                 kids: args?.kidsMode,
                 selettori: args?.typeSelectors,
-                ...(isNewHiddenGemsActive() ? { nuova_catena_hidden_gems: 'true' } : {}),
                 ...(sl ? { slider: sl } : {})
             },
             invalida: {
@@ -712,9 +502,13 @@ async function getHeroPool(params) {
     const assigned = sharedGroup?.catalogs || {};
     const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;
     const catPasso = `yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`;
+    const catUscite = `yaca_uscite_nuove_${mediaType === 'movie' ? 'movies' : 'series'}`;
+    const catNicchia = `yaca_nicchia_di_qualita_${mediaType === 'movie' ? 'movies' : 'series'}`;
     const nMondi = (assigned[catMondi] || []).length;
     const nPasso = (assigned[catPasso] || []).length;
-    console.log(`[Mondi] ${mediaType}: pool mondi ${nMondi} · passo fuori ${nPasso}`);
+    const nUscite = (assigned[catUscite] || []).length;
+    const nNicchia = (assigned[catNicchia] || []).length;
+    console.log(`[Mondi] ${mediaType}: pool mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}`);
 
     return {
         ...assigned,
@@ -741,8 +535,5 @@ module.exports = {
     HERO_PRIORITY,
     SLUG_ADDITIVI,
     HERO_STRATEGIES,
-    graphClient,
-    isNewHiddenGemsActive,
-    setFlagNewHiddenGems,
-    buildHiddenGemsOnNewProvider
+    graphClient
 };

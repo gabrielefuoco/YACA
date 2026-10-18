@@ -39,15 +39,67 @@ function getActiveTypeSelectors(userConfig, context) {
 
 // Data fetchers per sync e preset
 const {
-    fetchProfileContext,
     fetchRecentHistory,
     fetchRecentRatings,
-    fetchTraktRecommendationsRaw,
-    fetchTmdbSimilarCounts,
     fetchPopularFallbackIds
 } = require('./hybrid/dataFetchers');
 const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
-const { buildDirectPresetCatalog } = require('./hybrid/catalogStrategies');
+
+function matchesTypeSelectors(item, typeSelectors, tipo) {
+    if (!typeSelectors) return true;
+    const animeSelector = typeSelectors.anime;
+    if (animeSelector === 'only') {
+        return isItemAnime(item, tipo);
+    }
+    if (animeSelector === 'exclude') {
+        return !isItemAnime(item, tipo);
+    }
+    return true;
+}
+
+async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, mediaType, isKidsMode = false, directTypeSelectors = null) {
+    const presetsList = getPresets();
+    const preset = presetsList.find(p => p.id === presetId);
+    if (!preset || !preset.queries || preset.queries.length === 0) {
+        return [];
+    }
+
+    const { getDuckDbCatalogFromFilters } = require('../catalog/providers/DuckDbProvider');
+    const tmdbType = (preset.type === 'series' || mediaType === 'series') ? 'series' : 'movie';
+    const existingIds = new Set();
+    const pool = [];
+
+    for (const query of preset.queries) {
+        const params = { ...query };
+        delete params.strategy;
+
+        if (!params.sort_by) params.sort_by = 'popularity.desc';
+        const finalParams = isKidsMode ? applyKidsMode(params) : params;
+
+        for (let page = 1; page <= 3; page++) {
+            const skip = (page - 1) * 40;
+            const results = await getDuckDbCatalogFromFilters(
+                finalParams,
+                tmdbType,
+                skip,
+                40,
+                {}
+            ).catch(() => []);
+            const presetTipo = tmdbType === 'movie' ? 'movie' : 'tv';
+            for (const item of results) {
+                if (isKidsMode && isItemInappropriateForKids(item)) continue;
+                if (!matchesTypeSelectors(item, directTypeSelectors, presetTipo)) continue;
+                const nId = normalizeContentId(item.id);
+                if (nId && !existingIds.has(nId)) {
+                    existingIds.add(nId);
+                    pool.push(nId);
+                }
+            }
+        }
+    }
+
+    return pool.slice(0, 100).map(id => ({ id: String(id), matchScore: null }));
+}
 
 function getActiveKidsMode(userConfig, context) {
     if (typeof userConfig?.activeProfileSettings?.kidsMode === 'boolean') {
@@ -451,8 +503,6 @@ module.exports = {
     getSharedHeroCatalogs,
     syncIncrementalRecommendations,
     fetchRecentHistory,
-    fetchTraktRecommendationsRaw,
-    fetchTmdbSimilarCounts,
     calculateHybridScore,
     computeTopGenres,
     computeTopKeywords,

@@ -366,13 +366,12 @@ const SOURCES_MAP = new Map([
 // Ordine di valutazione per CatalogRouter
 const CATALOG_EVALUATION_ORDER = [
     duckDbSourceEntry,     // Cattura yaca_search_standard se search presente
-    aiDiscoverySourceEntry,// Cattura altre ricerche se search presente
     hybridSourceEntry,     // Taste-based cataloghi
     traktSourceEntry,      // trakt_*
     watchlistSourceEntry,  // yaca_watchlist_*
     airingStateSourceEntry,// simulcast
     duckDbSourceEntry,     // Preset SQL con .where
-    aiDiscoverySourceEntry // Universal legacy pipeline
+    aiDiscoverySourceEntry // Ricerche residue e universal legacy pipeline
 ];
 
 function registerSource(sourceEntry) {
