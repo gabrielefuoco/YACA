@@ -20,7 +20,6 @@ const {
     normalizeAnimeMarker,
     extractAnimeTmdbId
 } = require('../anime');
-const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
 const { schedulePromotion } = require('../db/tier1LazyPromotion');
 const indice = require('../indice');
 const itaAnnotations = require('../catalog/itaAnnotations');
@@ -425,7 +424,7 @@ async function metaHandler(args, userConfig) {
                         meta = cachedMeta;
                         (async () => {
                             try {
-                                const bgMeta = await getDuckDbMetaDetails(tmdbId, type);
+                                const bgMeta = await indice.getMetaDetails(tmdbId, type);
                                 
                                 let finalBgMeta = bgMeta;
                                 if (!finalBgMeta) {
@@ -447,7 +446,7 @@ async function metaHandler(args, userConfig) {
                             } catch (_e) { /* silent background revalidation */ }
                         })();
                     } else {
-                        meta = await getDuckDbMetaDetails(tmdbId, type);
+                        meta = await indice.getMetaDetails(tmdbId, type);
                         
                         if (!meta) {
                              meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
@@ -506,5 +505,5 @@ module.exports = {
     resetKitsuMappingStats,
     resolveImdbIdFromDump,
     resolveImdbIdPerEpisodi,
-    getMetaDetails: getDuckDbMetaDetails
+    getMetaDetails: (tmdbId, type) => indice.getMetaDetails(tmdbId, type)
 };

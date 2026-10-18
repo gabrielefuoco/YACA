@@ -111,6 +111,30 @@ class IndiceModule {
     }
 
     /**
+     * Dettagli meta di un titolo (usato dal serving meta).
+     *
+     * @param {number|string} tmdbId
+     * @param {'movie'|'tv'|'series'} [type]
+     * @returns {Promise<Object|null>}
+     */
+    async getMetaDetails(tmdbId, type = 'movie') {
+        try {
+            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
+            if (typeof DuckDbProvider.getDuckDbMetaDetails === 'function') {
+                return await DuckDbProvider.getDuckDbMetaDetails(tmdbId, type);
+            }
+        } catch (_e) {}
+        return null;
+    }
+
+    /**
+     * Alias per compatibilità con il fornitore DuckDb.
+     */
+    async getDuckDbMetaDetails(tmdbId, type = 'movie') {
+        return this.getMetaDetails(tmdbId, type);
+    }
+
+    /**
      * Risoluzione IMDb IDs -> TMDB IDs
      */
     async resolveImdbIds(imdbIds) {
