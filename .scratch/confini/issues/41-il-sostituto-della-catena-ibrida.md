@@ -704,3 +704,37 @@ Snapshots:   0 total
 Time:        43.513 s
 ```
 Le sole 5 suite fallite coincidono **esattamente al 100% con il baseline ambientale di main** (assenza locale dei file Parquet TMDB), con 8 test falliti e 1868 passati. Zero regressioni.
+
+---
+
+## Review a due assi, secondo giro (18/10/2026) — restano 4 punti
+
+Il giro di chiusura (commit `da47172..99240e9`, mergiato come `9cf2bc8`) ha chiuso 5 dei 7 rilievi.
+Ne restano **quattro**, confermati da entrambi gli assi e verificati dall'integratore:
+
+1. **`src/pool/composer.js` non è dissolto, è ripulito** (333 righe). `getHybridCatalog` orchestra ancora
+   staleness, sync, cache 7 giorni, idratazione e impressioni in un blocco solo, ed è consumato da
+   `src/catalog/providers/HybridProvider.js:3`. La decisione 26 chiede la **divisione** (profilo/libreria/
+   cache/indice), e nel pool deve restare **solo** la composizione delle righe.
+2. **DuckDB è stato spostato, non isolato nel proprietario.** `src/indice/index.js:131,151` fa
+   `require('../catalog/providers/DuckDbProvider')`: l'indice, che *possiede* DuckDB (map §16), dipende dal
+   fornitore del **catalogo**. Il confine è attraversato nell'altra direzione.
+3. **La logica di dominio è ancora nel serving, e la chiave di cache è duplicata.**
+   `src/stremio/catalogHandler.js:92-117` ricostruisce a mano lo stesso `catalogDesc` (14 voci) che
+   `src/catalog/catalogDefinition.js:88-116` costruisce già dentro `buildCatalogCacheKey`;
+   `catalogHandler.js:215-245` incorpora l'ordinamento speciale di `preset_new_series_eps`;
+   `catalogHandler.js:275-298` cabla `DAILY_WINDOW_CATALOG_IDS` e `SIMULCAST_TTL_MS`. Le superfici sono
+   **dati nel registro** (decisione 27), i TTL sono della **cache** (map §16): qui non devono stare.
+4. **`src/library/impressions.js` è uno shim morto.** Nessun consumatore vivo: `src/pool/composer.js:9`
+   importa `registraImpressioni` direttamente da `src/profile`, e l'unico riferimento è il re-export
+   `src/library/index.js:169`. `docs/INDEX.md:19` vieta i ponti di compatibilità nel codice di produzione.
+
+Resta aperto anche `resolveCardDetails` in `src/indice/idratazione.js:93-112` (compone schede Stremio dentro
+l'indice): il primo giro lo aveva dichiarato "deliberato" per il contratto di paginazione del ticket 12/38 —
+la dichiarazione non basta, perché il **proprietario** della composizione è il serving. Va spostato, o
+giustificato con una prova che il contratto si rompe (un test che fallisce se lo si sposta).
+
+**Bug trovato dal secondo giro e corretto dall'integratore** (`3e3bb7e`): `src/indice/index.js:103`
+(`searchTier2`) leggeva `this._tier2Client` — `null` nell'istanza di produzione, perché il commit `0c7f005`
+aveva reso il client pigro via getter — e lanciava `TypeError: Cannot read properties of null (reading 'search')`.
+Riprodotto con `node -e` sulla porta pubblica, invisibile a tutte le suite (che iniettano un client finto).
