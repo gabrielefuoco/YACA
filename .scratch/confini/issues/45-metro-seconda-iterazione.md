@@ -71,3 +71,23 @@ numerosità ma non il rivale. Va scritto nel referto quale piano dice cosa.
 Dopo il **ticket 46** `hidden_gems` **sparisce da `main`**: il vecchio motore e il fornitore nuovo vengono rimossi
 insieme al catalogo. La misura testa-a-testa va quindi fatta **sul commit precedente** a quel merge — il commit va
 **scritto in questo ticket** appena il 46 atterra (il suo Esito lo dichiara).
+
+## Il commit di riferimento (fissato il 18/10/2026, prima del merge del 46)
+
+Il vecchio `hidden_gems` — motore vecchio (`catalogStrategies.js`), fornitore nuovo (`src/indice/candidati.js`) e
+lo switch del pool — **esiste per intero fino a**:
+
+```
+e24470e   docs(45): cosa si confronta (nicchia_di_qualita vs hidden_gems), i due piani della misura…
+```
+
+È l'ultimo commit di `main` **prima** del merge del ticket 46 (che rimuove il catalogo, il motore e il fornitore
+insieme a lui). Per la misura testa-a-testa:
+
+```bash
+git worktree add /c/Users/gabri/APP/.YACA.worktrees/metro e24470e
+# e lì: node scripts/qa/probe-gusto-holdout.js --allUsers
+```
+
+Da lì in avanti il vecchio `hidden_gems` è **solo storia** (`git show e24470e:src/engines/hybrid/catalogStrategies.js`),
+e il grafo ha preso il suo posto nel feed con `nicchia_di_qualita`.
