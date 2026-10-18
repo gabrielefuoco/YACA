@@ -37,5 +37,8 @@ module.exports = {
     validateManifestUrl: collection.validateManifestUrl,
 
     // Reconciler
-    reconcileManifests: reconciler.reconcileManifests
+    reconcileManifests: reconciler.reconcileManifests,
+
+    // Serving
+    get catalogHandler() { return require('./catalogHandler').catalogHandler; }
 };

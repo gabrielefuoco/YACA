@@ -15,12 +15,8 @@
  * insieme al codice che li giustificava, e il nome è cambiato perché non raccontasse più una cosa che non c'è.
  */
 
-const { animeMappingStore, animeAiringState } = require('../src/anime');
-const {
-    applyPostCacheBadges,
-    isItemAnime,
-    extractTmdbId
-} = require('../src/handlers/catalogHandler');
+const { animeMappingStore, animeAiringState, isItemAnime, extractTmdbId } = require('../src/anime');
+const { applyPostCacheBadges } = require('../src/catalog');
 
 // Le date dei fixture seguono l'orologio VERO. Il codice confronta con `Date.now()` e la
 // finestra è di 14 giorni: con un NOW congelato il test era verde il giorno in cui è stato

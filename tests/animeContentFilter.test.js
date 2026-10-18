@@ -1,4 +1,5 @@
-const { isItemAnime, catalogHandler } = require('../src/handlers/catalogHandler');
+const { isItemAnime } = require('../src/anime');
+const { catalogHandler } = require('../src/stremio');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const { catalogRequestCache } = require('../src/cache/cacheInstances');
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { catalogHandler } = require('../handlers/catalogHandler');
+const { catalogHandler } = require('../stremio');
 const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
 const { getPresets } = require('../catalog/presets');
 

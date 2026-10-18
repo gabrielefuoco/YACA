@@ -158,6 +158,16 @@ module.exports = {
 
 
 
+    // Definizione e Cache dei Cataloghi
+    get BADGE_CATALOG_VERSION() { return require('./catalogDefinition').BADGE_CATALOG_VERSION; },
+    get buildCatalogCacheKey() { return require('./catalogDefinition').buildCatalogCacheKey; },
+    get canonicalCatalogDefinition() { return require('./catalogDefinition').canonicalCatalogDefinition; },
+    get resolveCatalogDefinition() { return require('./catalogDefinition').resolveCatalogDefinition; },
+    get catalogContentParams() { return require('./catalogDefinition').catalogContentParams; },
+    get applyPostCacheBadges() { return require('./badges').applyPostCacheBadges; },
+    get annotationKeyFor() { return require('./badges').annotationKeyFor; },
+    get resolveImdbMap() { return require('./badges').resolveImdbMap; },
+
     // Debito Ticket 42 / Fetta 3: Esposizione controllata tramite lazy getter.
     // L'export eager spalmato è deliberatamente evitato per due motivi:
     // 1. Evitare collisioni di nomi (es. applyKidsMode presente sia in filters che in kidsModeFilters).

@@ -10,7 +10,7 @@
  */
 
 const { buildManifest } = require('../src/api/stremio');
-const { catalogHandler } = require('../src/handlers/catalogHandler');
+const { catalogHandler } = require('../src/stremio');
 const { getHybridCatalog } = require('../src/pool/composer');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');

@@ -13,9 +13,9 @@
 const {
     buildCatalogCacheKey,
     resolveCatalogDefinition,
-    BADGE_CATALOG_VERSION,
-    catalogHandler
-} = require('../src/handlers/catalogHandler');
+    BADGE_CATALOG_VERSION
+} = require('../src/catalog');
+const { catalogHandler } = require('../src/stremio');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const { catalogRequestCache } = require('../src/cache/cacheInstances');
 

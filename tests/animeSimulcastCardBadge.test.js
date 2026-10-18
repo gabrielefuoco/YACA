@@ -20,7 +20,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => {
 const { animeAiringState, animeMappingStore } = require('../src/anime');
 const { getDuckDbCatalogFromPreset } = require('../src/catalog/providers/DuckDbProvider');
 const { getAiringStateCatalog } = require('../src/catalog/providers/AiringStateProvider');
-const { applyAiringStateBadges, findAiringStateDocument } = require('../src/handlers/catalogHandler');
+const { applyAiringStateBadges, findAiringStateDocument } = require('../src/anime');
 const { formatStremioCatalog } = require('../src/catalog/formatters/StremioFormatter');
 
 const DAY_MS = 24 * 60 * 60 * 1000;

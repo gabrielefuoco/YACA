@@ -494,6 +494,24 @@ async function metaHandler(args, userConfig) {
     }
 }
 
+/**
+ * Allinea l'ID delle card film a IMDb se disponibile.
+ */
+function allineaIdFilm(risposta) {
+    if (!risposta || !Array.isArray(risposta.metas)) return risposta;
+    for (const meta of risposta.metas) {
+        if (!meta || meta.type !== 'movie' || !meta._imdbId) continue;
+        const id = String(meta.id || '');
+        if (id.startsWith('tt')) continue;
+        const suffisso = id.endsWith('_ita_offset') ? '_ita_offset' : '';
+        meta.id = `${meta._imdbId}${suffisso}`;
+        if (meta.behaviorHints && meta.behaviorHints.defaultVideoId) {
+            meta.behaviorHints.defaultVideoId = meta.id;
+        }
+    }
+    return risposta;
+}
+
 module.exports = {
     metaHandler,
     isMetaDubbed,
@@ -505,5 +523,6 @@ module.exports = {
     resetKitsuMappingStats,
     resolveImdbIdFromDump,
     resolveImdbIdPerEpisodi,
-    getMetaDetails: (tmdbId, type) => indice.getMetaDetails(tmdbId, type)
+    getMetaDetails: (tmdbId, type) => indice.getMetaDetails(tmdbId, type),
+    allineaIdFilm
 };

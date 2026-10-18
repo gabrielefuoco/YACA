@@ -1,6 +1,6 @@
 const { getCatalogKind, isCatalogConformant, getIncompatibilityReason, isAlwaysVisible } = require('../src/catalog/catalogKind');
 const { buildManifest } = require('../src/api/stremio');
-const { catalogHandler } = require('../src/handlers/catalogHandler');
+const { catalogHandler } = require('../src/stremio');
 
 describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guardia)', () => {
 

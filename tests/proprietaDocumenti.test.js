@@ -104,7 +104,7 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
             'src/stremio/reconciler.js',
 
             // Motori e cataloghi: lettura del contesto profilo attivo (activeProfileId)
-            'src/handlers/catalogHandler.js',
+            'src/stremio/catalogHandler.js',
             'src/pool/composer.js',
             'src/infra/helpers.js',
 

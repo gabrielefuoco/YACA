@@ -113,7 +113,7 @@ jest.mock('../src/clients/tmdb', () => ({
     }))
 }));
 
-jest.mock('../src/handlers/catalogHandler', () => ({
+jest.mock('../src/stremio/catalogHandler', () => ({
     catalogHandler: jest.fn().mockResolvedValue({
         metas: Array.from({ length: 30 }, (_, i) => ({
             id: `tmdb:${i + 1}`,

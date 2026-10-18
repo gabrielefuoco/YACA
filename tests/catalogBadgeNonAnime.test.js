@@ -18,7 +18,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { applyPostCacheBadges } = require('../src/handlers/catalogHandler');
+const { applyPostCacheBadges } = require('../src/catalog');
 
 const HOST_URL = 'http://localhost:7860';
 const USER_CONFIG = { profiles: [{ id: 'global', settings: {} }], activeProfileId: 'global' };

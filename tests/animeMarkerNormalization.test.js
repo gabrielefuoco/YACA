@@ -2,9 +2,9 @@ const {
     ANIME_MARKER_DEFAULT,
     normalizeAnimeMarker,
     isAnimeContent,
+    isItemAnime,
     animeMappingStore
 } = require('../src/anime');
-const { isItemAnime } = require('../src/handlers/catalogHandler');
 const { applyKitsuMappingToMeta } = require('../src/meta');
 const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
 
