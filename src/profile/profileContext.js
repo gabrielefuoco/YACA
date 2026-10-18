@@ -45,7 +45,19 @@ async function getTasteProfile(owner, context) {
     }
 }
 
+async function touchTasteProfile(owner, context) {
+    try {
+        if (typeof TasteProfile.updateOne === 'function') {
+            return await TasteProfile.updateOne({ owner, context }, { $set: { lastUpdated: new Date() } });
+        }
+    } catch (_e) {
+        return null;
+    }
+}
+
 module.exports = {
     fetchProfileContext,
-    getTasteProfile
+    getTasteProfile,
+    touchTasteProfile
 };
+

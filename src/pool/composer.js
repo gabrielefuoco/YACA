@@ -5,11 +5,11 @@ const { isHeroCatalogId } = require('../catalog/registry');
 const { normalizeContentId } = require('../catalog/contentId');
 const { isItemInappropriateForKids, applyKidsMode } = require('../catalog/kidsModeFilters');
 
-// Modulo profilo: staleness e accesso profilo (Ticket 41)
-const { isProfileSyncDue, getTasteProfile } = require('../profile');
+// Modulo profilo: staleness, accesso profilo e impressioni (Ticket 41)
+const { isProfileSyncDue, getTasteProfile, registraImpressioni } = require('../profile');
 
-// Modulo libreria: sincronizzazione raccomandazioni e registrazione impressioni (Ticket 41)
-const { syncIncrementalRecommendations, registraImpressioni } = require('../library');
+// Modulo libreria: sincronizzazione raccomandazioni (Ticket 41)
+const { syncIncrementalRecommendations } = require('../library');
 
 // Modulo indice: query e idratazione candidati (Ticket 41)
 const indice = require('../indice');

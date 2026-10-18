@@ -63,7 +63,10 @@ const {
 } = require('./vectorElements');
 
 // Estrazione contesto del profilo (Ticket 41 - Fetta 1)
-const { fetchProfileContext, getTasteProfile } = require('./profileContext');
+const { fetchProfileContext, getTasteProfile, touchTasteProfile } = require('./profileContext');
+
+// Impressioni delle raccomandazioni (Ticket 41 - Step 6)
+const { recordRecommendationImpressions, registraImpressioni } = require('./impressions');
 
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
@@ -77,6 +80,9 @@ module.exports = {
     defaultGlobalProfile,
     fetchProfileContext,
     getTasteProfile,
+    touchTasteProfile,
+    recordRecommendationImpressions,
+    registraImpressioni,
 
     // Staleness e sincronizzazione (Ticket 41)
     PROFILE_SYNC_INTERVAL_MS,
