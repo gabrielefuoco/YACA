@@ -208,7 +208,7 @@ describe('configure route global profile safeguards', () => {
         expect(profile.settings.suggestedDNA.map(d => d.type)).toEqual(['genre']);
 
         // E il vettore statico non deve contenere chiavi persona (a:/d:)
-        const { extractStaticDNAFromQueries } = require('../src/dna/dnaEngine');
+        const { extractStaticDNAFromQueries } = require('../src/profile');
         const vector = extractStaticDNAFromQueries([{ with_genres: '28', with_cast: '10205', with_crew: '5678' }]);
         expect(Object.keys(vector).some(k => k.startsWith('a:') || k.startsWith('d:'))).toBe(false);
         expect(vector['g:28']).toBeGreaterThan(0);

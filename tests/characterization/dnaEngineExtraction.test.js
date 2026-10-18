@@ -13,9 +13,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const dnaEngine = require('../../src/dna/dnaEngine');
-const dnaRarity = require('../../src/dna/dnaEngine');
-const dnaExtractor = require('../../src/dna/dnaEngine');
+const dnaEngine = require('../../src/profile/dnaEngine');
+const dnaRarity = require('../../src/profile/dnaEngine');
+const dnaExtractor = require('../../src/profile/dnaEngine');
 const keywordIds = require('../../src/indice/keywordIds');
 
 describe('estrazione DNA — thin-shim e identità del modulo', () => {
@@ -42,7 +42,7 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
         const previous = dnaEngine.getGlobalDfCache();
         try {
             // È esattamente ciò che fa duckDbStore._buildDfCache.
-            const { setGlobalDfCache } = require('../../src/dna/dnaEngine');
+            const { setGlobalDfCache } = require('../../src/profile/dnaEngine');
             setGlobalDfCache(injected);
 
             expect(dnaEngine.getGlobalDfCache()).toBe(injected);
@@ -58,12 +58,12 @@ describe('estrazione DNA — thin-shim e identità del modulo', () => {
     });
 
     it('scrive la cache una sola volta: la cache risiede unicamente in dnaEngine', () => {
-        const source = fs.readFileSync(path.join(__dirname, '../../src/dna/dnaEngine.js'), 'utf8');
+        const source = fs.readFileSync(path.join(__dirname, '../../src/profile/dnaEngine.js'), 'utf8');
         expect(source).toMatch(/let globalDfCache = null/);
     });
 
     it('il modulo è puro: nessun require di I/O (Mongo, DuckDB, HTTP, express)', () => {
-        const source = fs.readFileSync(path.join(__dirname, '../../src/dna/dnaEngine.js'), 'utf8');
+        const source = fs.readFileSync(path.join(__dirname, '../../src/profile/dnaEngine.js'), 'utf8');
         const requires = [...source.matchAll(/require\((['"])([^'"]+)\1\)/g)].map((match) => match[2]);
         const forbidden = ['mongoose', 'duckdb', 'axios', 'express', '/http', 'node:http', 'fs'];
         for (const request of requires) {
