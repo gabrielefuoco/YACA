@@ -23,7 +23,7 @@ jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeUniversalPipeline: jest.fn()
 }));
 
-jest.mock('../src/db/learnedNames', () => ({
+jest.mock('../src/ricerca/learnedNames', () => ({
     searchLearnedNames: jest.fn(async () => []),
     learnNames: jest.fn(async () => 0)
 }));

@@ -18,7 +18,7 @@
  *   - **resta gratis quando non serve**: senza risultati del Tier 2 non parte nessuna
  *     richiesta di rete (il caso normale della maggior parte delle ricerche).
  *
- * Il nome italiano che arriva qui non viene buttato: viene **imparato** (`src/db/learnedNames.js`),
+ * Il nome italiano che arriva qui non viene buttato: viene **imparato** (`src/ricerca/learnedNames.js`),
  * cosi' dalla ricerca successiva quel titolo del Tier 2 si trova anche per il suo nome italiano.
  * E' una scrittura fire-and-forget e non promozionale: nessun Tier 1, nessun file di catalogo,
  * il titolo resta di seconda classe e semplicemente smette di essere irraggiungibile.
@@ -69,7 +69,7 @@ function getTmdbModule() {
 /** L'archivio dei nomi apperti pesa poco, ma si carica solo se c'e' qualcosa da imparare. */
 let _learnedNames = null;
 function getLearnedNamesModule() {
-    if (!_learnedNames) _learnedNames = require('../db/learnedNames');
+    if (!_learnedNames) _learnedNames = require('./learnedNames');
     return _learnedNames;
 }
 

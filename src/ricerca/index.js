@@ -95,6 +95,21 @@ module.exports = {
     buildSearchUnderstandingPrompt,
     buildAiPrompt,
     generateTmdbFiltersFromPrompt,
-    routeLiveStremioSearch
+    routeLiveStremioSearch,
+
+    // Learned names (archivio titoli appresi - getter pigri per non anticipare better-sqlite3)
+    get LearnedNamesStore() { return require('./learnedNames').LearnedNamesStore; },
+    get DB_FILE() { return require('./learnedNames').DB_FILE; },
+    get MAX_ROWS() { return require('./learnedNames').MAX_ROWS; },
+    get PRUNE_TARGET() { return require('./learnedNames').PRUNE_TARGET; },
+    get normalizeText() { return require('./learnedNames').normalizeText; },
+    get titleTokens() { return require('./learnedNames').titleTokens; },
+    get toLearnableRow() { return require('./learnedNames').toLearnableRow; },
+    get learnNames() { return require('./learnedNames').learnNames; },
+    get searchLearnedNames() { return require('./learnedNames').searchLearnedNames; },
+    get defaultDataDir() { return require('./learnedNames').defaultDataDir; },
+    get defaultDbPath() { return require('./learnedNames').defaultDbPath; },
+    get closeLearnedNames() { return require('./learnedNames').closeLearnedNames; },
+    get learnedNamesPath() { return require('./learnedNames').learnedNamesPath; }
 };
 
