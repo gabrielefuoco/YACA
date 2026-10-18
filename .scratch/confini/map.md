@@ -736,3 +736,30 @@ misura si fa su **due piani**, dichiarandoli: (a) testa-a-testa sui 2 utenti di 
 
 E va fatta **mentre il vecchio codice esiste ancora**: dopo il ticket 46 `hidden_gems` sparisce da `main`. Il punto
 di riferimento è il commit **prima** di quel merge — va scritto nel ticket, se no la misura diventa archeologia.
+
+### 29. Dove vive il servire: nel feed, non nel catalogo e non nel pool
+
+**18/10/2026, decisione dell'integratore dopo tre giri falliti sullo stesso punto.** Per tre volte il blocco di
+orchestrazione del servizio (freschezza del profilo, sync Trakt/Stremio, cache SWR a 7 giorni, idratazione delle
+card, impressioni) è stato spostato invece che assegnato: `src/engines/hybridRecommendations.js` →
+`src/pool/composer.js` → `src/catalog/providers/HybridProvider.js`. Ogni destinazione era sbagliata per la stessa
+ragione: **nessuna decisione diceva chi possiede il servire**, quindi ogni esecutore ne sceglieva una plausibile.
+
+La regola, scritta una volta:
+
+| dove | cosa possiede | cosa **non** possiede |
+|---|---|---|
+| `src/catalog` | il **tipo**, il registro, le derivazioni (manifest, impronte, pool spec), la validazione, il vocabolario di ordinamento | **il servire**: niente orchestrazione, niente HTTP, niente composizione di card |
+| `src/pool` | la **composizione delle righe** (`composeCandidateIds`, `claimedIds`, tie-breaker) | il servizio: niente profilo, niente sync, niente cache, niente impressioni |
+| `src/stremio` | **il feed**: chi serve (`catalogHandler`, `hybridServing`, `idratazione`, manifest, collection) e orchestration: staleness, sync, cache, idratazione, impressioni | la definizione delle superfici (è del catalogo) |
+| `src/indice` | DuckDB, FTS5, Tier 2 e **il compilatore** (`filters.js`: `F`, `S`, …) | le risposte, il servire, il formato Stremio |
+
+**La conseguenza operativa**: un blocco di orchestrazione che si sposta da un modulo all'altro è un sintomo di
+decisione mancante, non di esecuzione sbagliata. Quando succede la seconda volta, **si scrive la decisione prima
+del quarto giro.** Questo è costato tre giri e un `TypeError` in produzione (`searchTier2`).
+
+**Il debito che resta, dichiarato qui perché non si perda**: `src/catalog/providers/` e `src/catalog/processors/`
+contengono ancora servire (`AiDiscoveryProvider`, `WatchlistProvider`, `TraktProvider`, `AiringStateProvider`,
+`MetadataHydrator`, `paginationHelper`) e `src/catalog/formatters/` formatta Stremio. Per questa decisione
+appartengono a `src/stremio`. Non si spostano adesso perché il blasto è di ~40 file di test con `jest.mock` sui
+percorsi: è un ticket suo, non un residuo del 41.
