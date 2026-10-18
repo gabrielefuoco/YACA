@@ -668,3 +668,29 @@ I **60 utenti** della ricetta tornano a portata → la metrica può diventare un
 
 **E la lezione, che è la quarta volta in un giorno**: *un numero giusto con una spiegazione sbagliata è peggio di
 un numero sbagliato* — perché la spiegazione è ciò che convince. Qui il numero (0% vs 0%) era pure **vacuo**.
+
+### 26. I cataloghi vecchi si rimuovono, il grafo prende i suoi (ticket 46)
+
+**18/10/2026, decisione dell'utente.** Cambia il piano della parte 2 del ticket 41: **non si reimplementano** le
+strategie vecchie — **si rimuovono**. Il motore del gusto è il **servizio del grafo**:
+
+| rimossi (8 cataloghi) | sostituto |
+|---|---|
+| `true_blend` (trueBlend) | il grafo (gusto) |
+| `seed_network` (stacking) | il grafo (**l'espansione dei semi è sua**) |
+| `hidden_gems` (hiddenGems) | **`nicchia_di_qualita`** del grafo (stesso concetto) |
+| `trakt_filtered` | Trakt resta **seme**, non catalogo |
+
+**Nuovi cataloghi del feed**: `uscite_nuove` e `nicchia_di_qualita` (il grafo le calcola già ma le restituisce
+`da_comporre: true`, perché servono **anni, popolarità e voto medio dal catalogo del prodotto**: il commento è in
+`src/api/bolle.js:12-13`).
+
+**Si TENGONO i meccanismi**, che sono il motivo per cui il grafo funziona: estrazione **like/love** (→ DNA),
+**watchlist**, **cronologia** (→ i semi), la libreria, il profilo, l'indice, anime, la cache, il client del grafo.
+**La regola**: si rimuovono i **cataloghi** (generatori di righe), non i **meccanismi** (chi estrae i fatti).
+
+**Conseguenza sul lavoro**: la **fetta 1** (che ha migrato `hidden_gems` al fornitore nuovo) è lavoro su un
+catalogo che muore — ma **`src/indice/candidati.js` resta**, è il pezzo riusabile (e può comporre
+`nicchia_di_qualita`). E la cancellazione del vecchio motore diventa possibile **subito dopo**: `catalogStrategies`
+(1.598) + la parte di `dataFetchers` (416) che serve solo quei cataloghi → **−2.016 righe**, senza reimplementare
+niente.
