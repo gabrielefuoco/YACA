@@ -16,7 +16,7 @@ const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec } = require('../catalog/registry');
-const { fetchProfileContext } = require('../engines/hybrid/dataFetchers');
+const { fetchProfileContext } = require('../profile');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const graphClient = require('../clients/graphClient');
@@ -307,6 +307,22 @@ const HERO_STRATEGIES = [
 ];
 
 /**
+ * Esegue in sicurezza un builder del pool (Ticket 41 - parità con il fallback).
+ * Se la strategia solleva un errore non gestito, lo cattura per evitare
+ * che l'intero pool fallisca, permettendo al sistema di degradare con grazia.
+ */
+async function runPoolBuilder(strat, ctx, args) {
+    try {
+        await strat.run(ctx, args);
+    } catch (err) {
+        console.error(`[HeroPool] Strategy builder '${strat?.name || strat?.slug || 'unknown'}' threw:`, err?.message || err);
+        if (args?.sharedState) {
+            args.sharedState.graphCallFailed = true;
+        }
+    }
+}
+
+/**
  * Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta.
  */
 async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders }) {
@@ -359,7 +375,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     const sharedState = { graphCallFailed: false };
     const additiveStrategies = HERO_STRATEGIES.filter(s => s.additive);
     for (const strat of additiveStrategies) {
-        await strat.run(ctx, { assigned, rawTraktResult: { traktAvailable: false, ids: [] }, sharedState });
+        await runPoolBuilder(strat, ctx, { assigned, rawTraktResult: { traktAvailable: false, ids: [] }, sharedState });
     }
 
     return {
@@ -535,5 +551,6 @@ module.exports = {
     HERO_PRIORITY,
     SLUG_ADDITIVI,
     HERO_STRATEGIES,
+    runPoolBuilder,
     graphClient
 };

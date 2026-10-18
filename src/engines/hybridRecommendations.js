@@ -1,23 +1,17 @@
 const { ITEMS_PER_PAGE } = require('../config');
 const TasteProfile = require('../models/TasteProfile');
-const ProfileBuilder = require('../profile/ProfileBuilder');
-const tmdb = require('../clients/tmdb');
-const { prioritizeLocalizedImages } = require('../clients/tmdb');
 const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
-const { normalizeContentId } = require('../catalog/contentId');
-const { rateLimitedMap } = require('../infra/rateLimiter');
 const { getPresets } = require('../catalog/presets');
-const { getDuckDbMetaDetails } = require('../catalog/providers/DuckDbProvider');
-const RecommendationImpression = require('../models/RecommendationImpression');
-const mongoose = require('mongoose');
-
-const { applyKidsMode, isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
-const { resolveAnimePolicy, getEffectiveTypeSelectors, isItemAnime } = require('../anime');
-const { isProfileSyncDue, isStremioSyncDue } = require('./profileStaleness');
 const { isHeroCatalogId } = require('../catalog/registry');
+const { normalizeContentId } = require('../catalog/contentId');
+const { isItemInappropriateForKids, applyKidsMode } = require('../catalog/kidsModeFilters');
 
-// Modulo pool (Ticket 12): il feed consuma la porta unica e non gestisce più le strategie né l'assegnazione
+// Modulo profilo: staleness e vettori (Ticket 41 - Fetta 1)
+const { isProfileSyncDue } = require('../profile/profileStaleness');
+const { computeTopGenres, computeTopKeywords } = require('../profile/vectorElements');
+
+// Modulo pool: compositore delle righe hero
 const {
     getHeroPool,
     buildSharedHeroCatalogs,
@@ -25,28 +19,56 @@ const {
     buildSharedHeroCacheKey
 } = require('../pool');
 
-function getActiveTypeSelectors(userConfig, context) {
-    if (userConfig?.activeProfileSettings?.typeSelectors) {
-        return userConfig.activeProfileSettings.typeSelectors;
+// Modulo libreria: sincronizzazione fatti e registrazione impressioni (Ticket 41 - Fetta 1)
+const {
+    isStremioSyncDueForUser,
+    syncIncrementalRecommendations
+} = require('../library/syncRecommendations');
+const { fetchRecentHistory } = require('../library/traktFetchers');
+const { registraImpressioni } = require('../library/impressions');
+
+// Modulo indice: idratazione card, filtraggio e paginazione (Ticket 41 - Fetta 1)
+const {
+    resolveCardDetails,
+    cardSurvivesFilters,
+    idrataEImpaginaCandidati
+} = require('../indice/idratazione');
+
+// Modulo scoring & fallback (retrocompatibilità)
+const { calculateHybridScore } = require('./hybrid/scoringEngine');
+const { fetchPopularFallbackIds } = require('./hybrid/dataFetchers');
+
+function getActiveKidsMode(userConfig, context) {
+    if (typeof userConfig?.activeProfileSettings?.kidsMode === 'boolean') {
+        return userConfig.activeProfileSettings.kidsMode;
     }
-    if (userConfig?.typeSelectors) {
-        return userConfig.typeSelectors;
+    if (typeof userConfig?.kidsMode === 'boolean') {
+        return userConfig.kidsMode;
     }
     const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
     const activeProfile = profiles.find(profile => profile.id === context);
-    return activeProfile?.settings?.typeSelectors || activeProfile?.typeSelectors || null;
+    return (activeProfile?.settings?.kidsMode ?? activeProfile?.kidsMode) === true;
 }
 
-// Data fetchers per sync e preset
-const {
-    fetchRecentHistory,
-    fetchRecentRatings,
-    fetchPopularFallbackIds
-} = require('./hybrid/dataFetchers');
-const { calculateHybridScore, computeTopGenres, computeTopKeywords } = require('./hybrid/scoringEngine');
+function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
+    const { chiave } = cache.deriva({
+        nome: 'recommendations',
+        dipendenze: {
+            varia: {
+                utente: userId,
+                profilo: context,
+                catalogo: catalogId,
+                kids: kidsMode,
+                selettori: typeSelectors
+            }
+        }
+    });
+    return chiave;
+}
 
 function matchesTypeSelectors(item, typeSelectors, tipo) {
     if (!typeSelectors) return true;
+    const { isItemAnime } = require('../anime');
     const animeSelector = typeSelectors.anime;
     if (animeSelector === 'only') {
         return isItemAnime(item, tipo);
@@ -101,144 +123,6 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
     return pool.slice(0, 100).map(id => ({ id: String(id), matchScore: null }));
 }
 
-function getActiveKidsMode(userConfig, context) {
-    if (typeof userConfig?.activeProfileSettings?.kidsMode === 'boolean') {
-        return userConfig.activeProfileSettings.kidsMode;
-    }
-    if (typeof userConfig?.kidsMode === 'boolean') {
-        return userConfig.kidsMode;
-    }
-    const profiles = userConfig?.profiles ?? userConfig?.config?.profiles ?? [];
-    const activeProfile = profiles.find(profile => profile.id === context);
-    return (activeProfile?.settings?.kidsMode ?? activeProfile?.kidsMode) === true;
-}
-
-function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typeSelectors }) {
-    const { chiave } = cache.deriva({
-        nome: 'recommendations',
-        dipendenze: {
-            varia: {
-                utente: userId,
-                profilo: context,
-                catalogo: catalogId,
-                kids: kidsMode,
-                selettori: typeSelectors
-            }
-        }
-    });
-    return chiave;
-}
-
-async function resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder) {
-    try {
-        const isObj = typeof recItem === 'object' && recItem !== null;
-        const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
-        const matchScore = isObj ? recItem.matchScore : null;
-        const itemFallbackUsed = isObj ? recItem.fallbackUsed : undefined;
-        const itemTraktAvailable = isObj ? recItem.traktAvailable : undefined;
-
-        const normalizedId = normalizeContentId(tmdbId);
-        const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
-        const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
-        let item = null;
-        try {
-            const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
-            if (duckMeta && duckMeta.rawTMDB) {
-                item = duckMeta.rawTMDB;
-            }
-        } catch (_e) {}
-
-        if (!item) {
-            item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
-        }
-
-        if (!item) {
-            if (!tmdbClientHolder.client) tmdbClientHolder.client = tmdb.createTmdbClient(tmdbApiKey);
-            const endpoint = tmdbType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
-            const res = await tmdbClientHolder.client.get(endpoint, {
-                params: {
-                    append_to_response: 'images,keywords',
-                    include_image_language: 'it,en,null'
-                }
-            });
-            item = res.data;
-        }
-
-        if (!item) return null;
-
-        let logoUrl = null;
-        if (item.images && item.images.logos && item.images.logos.length > 0) {
-            const bestLogoArray = prioritizeLocalizedImages(item.images.logos);
-            const bestLogoObj = bestLogoArray.length > 0 ? bestLogoArray[0] : null;
-            if (bestLogoObj && bestLogoObj.file_path) {
-                logoUrl = `https://image.tmdb.org/t/p/w500${bestLogoObj.file_path}`;
-            }
-        }
-
-        let releaseYear = '';
-        try {
-            const rawDate = item.release_date || item.first_air_date;
-            if (rawDate instanceof Date) {
-                releaseYear = !isNaN(rawDate.getTime()) ? rawDate.toISOString().substring(0, 4) : '';
-            } else if (typeof rawDate === 'string') {
-                releaseYear = rawDate.substring(0, 4);
-            } else if (rawDate !== null && rawDate !== undefined) {
-                releaseYear = String(rawDate).substring(0, 4);
-            }
-        } catch (_e) {
-            releaseYear = '';
-        }
-
-        let imdbRating;
-        if (item.vote_average !== null && item.vote_average !== undefined) {
-            const num = Number(item.vote_average);
-            if (!isNaN(num)) imdbRating = num.toFixed(1);
-        }
-
-        const genre_ids = Array.isArray(item.genre_ids)
-            ? item.genre_ids
-            : (Array.isArray(item.genres) ? item.genres.map(g => g.id).filter(id => id !== null && id !== undefined) : []);
-        const keywords = Array.isArray(item.keywords)
-            ? item.keywords
-            : (item.keywords?.results || item.keywords?.keywords || []);
-
-        const cardType = (tmdbType === 'tv' || tmdbType === 'series') ? 'series' : 'movie';
-        const cardMediaType = tmdbType === 'movie' ? 'movie' : 'tv';
-
-        return {
-            id: `tmdb:${normalizedId}`,
-            type: cardType,
-            media_type: cardMediaType,
-            name: item.title || item.name || 'Unknown',
-            poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-            posterShape: 'poster',
-            background: item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : null,
-            logo: logoUrl,
-            description: item.overview || '',
-            releaseInfo: releaseYear,
-            imdbRating,
-            genre_ids,
-            original_language: item.original_language || item.originalLanguage || null,
-            keywords,
-            _yacaMatch: matchScore,
-            ...(itemFallbackUsed !== undefined ? { fallbackUsed: itemFallbackUsed } : {}),
-            ...(itemTraktAvailable !== undefined ? { traktAvailable: itemTraktAvailable } : {}),
-            rawTMDB: item
-        };
-    } catch (err) {
-        console.error(`[Hybrid] Errore risoluzione item ${recItem?.id || recItem}:`, err?.message || err);
-        return null;
-    }
-}
-
-function cardSurvivesFilters(card, { isKidsMode, effectiveTypeSelectors }) {
-    if (!card) return false;
-    if (isKidsMode && isItemInappropriateForKids(card)) return false;
-    if (effectiveTypeSelectors?.anime === 'only' && !isItemAnime(card)) return false;
-    if (effectiveTypeSelectors?.anime === 'exclude' && isItemAnime(card)) return false;
-    return true;
-}
-
 /**
  * Main endpoint: handles request for a profiled hybrid catalog.
  */
@@ -249,7 +133,8 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
     if (matchedPreset && matchedPreset.type) {
         mediaType = matchedPreset.type === 'series' ? 'series' : 'movie';
     }
-    const { contestoDi } = require('../profile');
+
+    const { contestoDi } = require('../profile/context');
     const ctx = userConfig?.context || await contestoDi({
         userId,
         profileId: activeProfileId,
@@ -347,150 +232,21 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
         return [];
     }
 
-    // Ticket 12 / Ticket 38: Il cap (ITEMS_PER_PAGE) si applica DOPO i filtri, MAI prima.
-    // Iteriamo sui candidati del pool a blocchi e raccogliamo solo ciò che sopravvive
-    // ai filtri post-fetch (kidsMode, animePolicy / effectiveTypeSelectors) fino a
-    // soddisfare la pagina richiesta (skip + ITEMS_PER_PAGE).
-    const targetCount = skip + ITEMS_PER_PAGE;
-    const cleanResults = [];
-    const tmdbClientHolder = { client: null };
-    const BATCH_SIZE = ITEMS_PER_PAGE;
-    let processedIndex = 0;
-
-    for (let i = 0; i < recommendationIds.length && cleanResults.length < targetCount; i += BATCH_SIZE) {
-        const chunk = recommendationIds.slice(i, i + BATCH_SIZE);
-        processedIndex = i + chunk.length;
-        const resolved = await rateLimitedMap(
-            chunk,
-            recItem => resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder),
-            { batchSize: 3, delayMs: 150 }
-        );
-        for (const card of resolved) {
-            if (cardSurvivesFilters(card, { isKidsMode, effectiveTypeSelectors })) {
-                cleanResults.push(card);
-                if (cleanResults.length >= targetCount) break;
-            }
-        }
-    }
-
-    // Warm-up dei successivi elementi in background
-    const nextBatchIds = recommendationIds.slice(processedIndex, processedIndex + ITEMS_PER_PAGE);
-    if (nextBatchIds.length > 0) {
-        global.setImmediate(() => {
-            rateLimitedMap(
-                nextBatchIds,
-                async (recItem) => {
-                    try {
-                        const isObj = typeof recItem === 'object' && recItem !== null;
-                        const tmdbId = isObj ? (recItem.tmdbId !== undefined ? recItem.tmdbId : recItem.id) : recItem;
-                        const normalizedId = normalizeContentId(tmdbId);
-                        const itemMedium = isObj ? (recItem.media_type || (recItem.type === 'series' ? 'tv' : recItem.type)) : null;
-                        const tmdbType = (itemMedium === 'tv' || itemMedium === 'series') ? 'tv' : (itemMedium === 'movie' ? 'movie' : (mediaType === 'movie' ? 'movie' : 'tv'));
-                        const duckMeta = await getDuckDbMetaDetails(normalizedId, tmdbType);
-                        if (!duckMeta || !duckMeta.rawTMDB) {
-                            await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType);
-                        }
-                    } catch (_e) { }
-                },
-                { batchSize: 2, delayMs: 150 }
-            ).catch(err => console.error("[Background-Warmup] Error:", err.message));
-        });
-    }
-
-    const pageResults = cleanResults.slice(skip, skip + ITEMS_PER_PAGE);
+    const pageResults = await idrataEImpaginaCandidati({
+        recommendationIds,
+        skip,
+        limit: ITEMS_PER_PAGE,
+        tmdbApiKey,
+        mediaType,
+        isKidsMode,
+        effectiveTypeSelectors
+    });
 
     if (skip === 0 && pageResults.length > 0) {
-        const currentDateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const ops = pageResults.map(item => {
-            const normalizedId = item.id.replace('tmdb:', '');
-            return {
-                updateOne: {
-                    filter: {
-                        owner: userId,
-                        profileId: context,
-                        catalogId: catalogId,
-                        tmdbId: normalizedId
-                    },
-                    update: {
-                        $addToSet: { seenDates: currentDateStr }
-                    },
-                    upsert: true
-                }
-            };
-        });
-
-        if (process.env.NODE_ENV !== 'test' && mongoose.connection?.readyState === 1) {
-            global.setImmediate(() => {
-                RecommendationImpression.bulkWrite(ops).catch(err => {
-                    console.error("[Impression-Tracking] Error during bulkWrite:", err.message);
-                });
-            });
-        }
+        registraImpressioni(userId, context, catalogId, pageResults);
     }
 
     return pageResults;
-}
-
-/**
- * La parte Stremio (likes/loved) ha una cadenza PROPRIA, scritta sulla configurazione a
- * ogni sync (`config.lastStremioSync` + `config.nextSyncInterval`, 8 ore ± jitter).
- *
- * @param {object|null} userConfig configurazione risolta che porta il bookkeeping del sync
- * @returns {boolean} true se il sync Stremio è dovuto adesso
- */
-function isStremioSyncDueForUser(userConfig) {
-    const config = userConfig?.config || userConfig || {};
-    return isStremioSyncDue(config.lastStremioSync, new Date(), config.nextSyncInterval);
-}
-
-/**
- * Incremental user profile synchronization from Trakt history.
- */
-async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context = 'global', userConfig = null) {
-    if (!userId || !traktToken || !tmdbApiKey) return false;
-
-    try {
-        const stremioKey = userConfig?.apiKeys?.stremio || userConfig?.stremioKey;
-        let stremioKeyToUse = stremioKey;
-        if (!stremioKeyToUse) {
-            try {
-                const { accountDi } = require('../configurazione');
-                const account = await accountDi(userId);
-                stremioKeyToUse = account?.apiKeys?.stremio;
-            } catch (_e) {}
-        }
-        if (stremioKeyToUse && isStremioSyncDueForUser(userConfig)) {
-            try {
-                const { syncAllStremioData } = require('../stremio');
-                await syncAllStremioData(userId, stremioKeyToUse, context);
-            } catch (sErr) {
-                console.warn(`[Hybrid] Stremio periodic likes sync failed:`, sErr.message);
-            }
-        }
-
-        const traktType = mediaType === 'movie' ? 'movies' : 'shows';
-        const [history, ratings] = await Promise.all([
-            fetchRecentHistory(traktToken, traktType, 40, userConfig),
-            fetchRecentRatings(traktToken, traktType, 40, userConfig)
-        ]);
-        const combined = [...(history || []), ...(ratings || [])];
-
-        if (combined.length === 0) {
-            if (typeof TasteProfile.updateOne === 'function') {
-                await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
-            }
-            return false;
-        }
-
-        const syncResult = await ProfileBuilder.syncUserHistory(userId, context, combined, tmdbApiKey);
-        if (typeof TasteProfile.updateOne === 'function') {
-            await TasteProfile.updateOne({ owner: userId, context }, { $set: { lastUpdated: new Date() } });
-        }
-        return syncResult !== false;
-    } catch (err) {
-        console.error(`[Hybrid] syncIncrementalRecommendations failed for ${userId}/${context}:`, err.message);
-        return false;
-    }
 }
 
 module.exports = {
@@ -508,5 +264,7 @@ module.exports = {
     computeTopKeywords,
     fetchPopularFallbackIds,
     buildDirectPresetCatalog,
+    resolveCardDetails,
+    cardSurvivesFilters,
     recommendationsCache: hybridRecommendationsCache
 };

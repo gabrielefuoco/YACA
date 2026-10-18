@@ -89,4 +89,12 @@ describe('isStremioSyncDue', () => {
         expect(isStremioSyncDue(NOW - 3 * H, NOW, H)).toBe(true);
         expect(isStremioSyncDue(new Date(NOW - 30 * H), 'non-una-data')).toBe(false);
     });
-});
+
+    it('la porta src/profile espone isProfileSyncDue e isStremioSyncDue (Ticket 41)', () => {
+        const profile = require('../src/profile');
+        expect(typeof profile.isProfileSyncDue).toBe('function');
+        expect(typeof profile.isStremioSyncDue).toBe('function');
+        expect(profile.PROFILE_SYNC_INTERVAL_MS).toBe(PROFILE_SYNC_INTERVAL_MS);
+        expect(profile.STREMMIO_SYNC_INTERVAL_MS).toBe(STREMMIO_SYNC_INTERVAL_MS);
+    });
+});

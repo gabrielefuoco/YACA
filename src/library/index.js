@@ -50,7 +50,7 @@ const {
 } = require('./reader');
 
 const identity = require('./identity');
-const { contestoDi } = require('../profile');
+const { contestoDi } = require('../profile/context');
 
 async function resolveLibraryContext(input = {}) {
     const ctx = await contestoDi(input);
@@ -71,6 +71,11 @@ const libraryIdentityResolution = require('./ingestion/libraryIdentityResolution
 const conversionStateMachine = require('./ingestion/conversionStateMachine');
 const libraryConversionAdmission = require('./ingestion/libraryConversionAdmission');
 const libraryConversionOutcome = require('./ingestion/libraryConversionOutcome');
+
+// Estrazione fatti Trakt e sincronizzazione raccomandazioni (Ticket 41 - Fetta 1)
+const traktFetchers = require('./traktFetchers');
+const syncRecommendations = require('./syncRecommendations');
+const impressions = require('./impressions');
 
 /**
  * Write path unificato per la sincronizzazione dei dati Stremio nella libreria e cronologia (Ticket 16, Emendamento 2).
@@ -151,6 +156,18 @@ module.exports = {
 
     // Scrittore Stremio fuori da qualsiasi lista (Ticket 16, Emendamento 2)
     ingestStremioData,
+
+    // Estrazione fatti Trakt e sincronizzazione raccomandazioni (Ticket 41 - Fetta 1)
+    safeTraktFetchDetailed: (...args) => traktFetchers.safeTraktFetchDetailed(...args),
+    safeTraktFetch: (...args) => traktFetchers.safeTraktFetch(...args),
+    fetchRecentHistory: (...args) => traktFetchers.fetchRecentHistory(...args),
+    fetchRecentRatings: (...args) => traktFetchers.fetchRecentRatings(...args),
+    traktFetchers,
+    isStremioSyncDueForUser: syncRecommendations.isStremioSyncDueForUser,
+    syncIncrementalRecommendations: syncRecommendations.syncIncrementalRecommendations,
+    syncRecommendations,
+    registraImpressioni: impressions.registraImpressioni,
+    impressions,
 
     // Servizi di Ingestione (Ticket 16)
     LibrarySyncService,

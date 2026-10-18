@@ -10,6 +10,14 @@ jest.mock('../src/engines/hybrid/dataFetchers', () => ({
     fetchPopularFallbackIds: jest.fn().mockResolvedValue(['tmdb:1'])
 }));
 
+jest.mock('../src/profile', () => {
+    const actual = jest.requireActual('../src/profile');
+    return {
+        ...actual,
+        fetchProfileContext: jest.fn().mockResolvedValue({ profile: {}, user: {} })
+    };
+});
+
 const graphClient = require('../src/clients/graphClient');
 const {
     buildSharedHeroCacheKey,
@@ -141,5 +149,34 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             expect(cacheSetSpy).toHaveBeenCalledWith(cacheKey, group, 60000);
             cacheSetSpy.mockRestore();
         });
+
+        test('runPoolBuilder intercetta eccezioni sollevate dal builder impedendo il crash del pool', async () => {
+            const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
+            const originalRun = graphStrategy.run;
+            graphStrategy.run = jest.fn().mockRejectedValue(new Error('Uncaught builder crash'));
+
+            try {
+                const group = await buildSharedHeroCatalogs({
+                    userId: 'user_throw',
+                    context: 'global',
+                    mediaType: 'movie',
+                    kidsMode: false,
+                    userConfig: {}
+                });
+
+                expect(group).toBeDefined();
+                expect(group.catalogs).toBeDefined();
+                expect(group.graphCallFailed).toBe(true);
+                expect(errSpy).toHaveBeenCalledWith(
+                    expect.stringContaining('[HeroPool] Strategy builder'),
+                    expect.stringContaining('Uncaught builder crash')
+                );
+            } finally {
+                graphStrategy.run = originalRun;
+                errSpy.mockRestore();
+            }
+        });
     });
 });
+

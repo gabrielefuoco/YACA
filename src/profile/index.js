@@ -46,6 +46,25 @@ const ProfileBuilder = require('./ProfileBuilder');
 const ProfileScorer = require('./ProfileScorer');
 const studioProfile = require('./studioProfile');
 
+// Staleness del profilo (Ticket 41 - Fetta 1)
+const {
+    PROFILE_SYNC_INTERVAL_MS,
+    STREMMIO_SYNC_INTERVAL_MS,
+    isProfileSyncDue,
+    isStremioSyncDue
+} = require('./profileStaleness');
+
+// Deduzioni e analisi vettoriale (Ticket 41 - Fetta 1)
+const {
+    extractVectorByPrefix,
+    computeTopElements,
+    computeTopGenres,
+    computeTopKeywords
+} = require('./vectorElements');
+
+// Estrazione contesto del profilo (Ticket 41 - Fetta 1)
+const { fetchProfileContext } = require('./profileContext');
+
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
     profiliDi,
@@ -56,6 +75,19 @@ module.exports = {
     risolviProfiloAttivo,
     resolveActiveProfileId,
     defaultGlobalProfile,
+    fetchProfileContext,
+
+    // Staleness e sincronizzazione (Ticket 41)
+    PROFILE_SYNC_INTERVAL_MS,
+    STREMMIO_SYNC_INTERVAL_MS,
+    isProfileSyncDue,
+    isStremioSyncDue,
+
+    // Analisi vettoriale e preferenze di gusto (Ticket 41)
+    extractVectorByPrefix,
+    computeTopElements,
+    computeTopGenres,
+    computeTopKeywords,
 
     // Gestione UI State (Ticket 26, Decisione 2)
     leggiUiState,
@@ -74,3 +106,4 @@ module.exports = {
     ProfileScorer,
     studioProfile
 };
+
