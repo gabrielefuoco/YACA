@@ -46,6 +46,14 @@ const ProfileBuilder = require('./ProfileBuilder');
 const ProfileScorer = require('./ProfileScorer');
 const studioProfile = require('./studioProfile');
 
+// Staleness del profilo (Ticket 41 - Fetta 1)
+const {
+    PROFILE_SYNC_INTERVAL_MS,
+    STREMMIO_SYNC_INTERVAL_MS,
+    isProfileSyncDue,
+    isStremioSyncDue
+} = require('./profileStaleness');
+
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
     profiliDi,
@@ -56,6 +64,12 @@ module.exports = {
     risolviProfiloAttivo,
     resolveActiveProfileId,
     defaultGlobalProfile,
+
+    // Staleness e sincronizzazione (Ticket 41)
+    PROFILE_SYNC_INTERVAL_MS,
+    STREMMIO_SYNC_INTERVAL_MS,
+    isProfileSyncDue,
+    isStremioSyncDue,
 
     // Gestione UI State (Ticket 26, Decisione 2)
     leggiUiState,
