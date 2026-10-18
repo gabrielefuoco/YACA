@@ -16,7 +16,7 @@ const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec } = require('../catalog/registry');
-const { fetchProfileContext } = require('../engines/hybrid/dataFetchers');
+const { fetchProfileContext } = require('../profile');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const graphClient = require('../clients/graphClient');

@@ -72,6 +72,9 @@ const conversionStateMachine = require('./ingestion/conversionStateMachine');
 const libraryConversionAdmission = require('./ingestion/libraryConversionAdmission');
 const libraryConversionOutcome = require('./ingestion/libraryConversionOutcome');
 
+// Estrazione fatti Trakt (Ticket 41 - Fetta 1)
+const traktFetchers = require('./traktFetchers');
+
 /**
  * Write path unificato per la sincronizzazione dei dati Stremio nella libreria e cronologia (Ticket 16, Emendamento 2).
  *
@@ -151,6 +154,13 @@ module.exports = {
 
     // Scrittore Stremio fuori da qualsiasi lista (Ticket 16, Emendamento 2)
     ingestStremioData,
+
+    // Estrazione fatti Trakt (Ticket 41 - Fetta 1)
+    safeTraktFetchDetailed: (...args) => traktFetchers.safeTraktFetchDetailed(...args),
+    safeTraktFetch: (...args) => traktFetchers.safeTraktFetch(...args),
+    fetchRecentHistory: (...args) => traktFetchers.fetchRecentHistory(...args),
+    fetchRecentRatings: (...args) => traktFetchers.fetchRecentRatings(...args),
+    traktFetchers,
 
     // Servizi di Ingestione (Ticket 16)
     LibrarySyncService,

@@ -10,6 +10,14 @@ jest.mock('../src/engines/hybrid/dataFetchers', () => ({
     fetchPopularFallbackIds: jest.fn().mockResolvedValue(['tmdb:1'])
 }));
 
+jest.mock('../src/profile', () => {
+    const actual = jest.requireActual('../src/profile');
+    return {
+        ...actual,
+        fetchProfileContext: jest.fn().mockResolvedValue({ profile: {}, user: {} })
+    };
+});
+
 const graphClient = require('../src/clients/graphClient');
 const {
     buildSharedHeroCacheKey,

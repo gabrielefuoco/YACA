@@ -52,6 +52,8 @@ const {
     STREMMIO_SYNC_INTERVAL_MS,
     isProfileSyncDue,
     isStremioSyncDue
+} = require('./profileStaleness');
+
 // Deduzioni e analisi vettoriale (Ticket 41 - Fetta 1)
 const {
     extractVectorByPrefix,
@@ -59,6 +61,9 @@ const {
     computeTopGenres,
     computeTopKeywords
 } = require('./vectorElements');
+
+// Estrazione contesto del profilo (Ticket 41 - Fetta 1)
+const { fetchProfileContext } = require('./profileContext');
 
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
@@ -70,6 +75,7 @@ module.exports = {
     risolviProfiloAttivo,
     resolveActiveProfileId,
     defaultGlobalProfile,
+    fetchProfileContext,
 
     // Staleness e sincronizzazione (Ticket 41)
     PROFILE_SYNC_INTERVAL_MS,
