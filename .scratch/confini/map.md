@@ -694,3 +694,32 @@ catalogo che muore — ma **`src/indice/candidati.js` resta**, è il pezzo riusa
 `nicchia_di_qualita`). E la cancellazione del vecchio motore diventa possibile **subito dopo**: `catalogStrategies`
 (1.598) + la parte di `dataFetchers` (416) che serve solo quei cataloghi → **−2.016 righe**, senza reimplementare
 niente.
+
+### 27. Il motore si invoca in UN PUNTO SOLO (e la sostituzione non è definitiva)
+
+**18/10/2026, decisione dell'utente.** La sostituzione del motore del gusto **non è definitiva**: ci sarà un
+**tuning futuro** (il risultato non soddisfa al 100%). Da qui un vincolo architetturale che vale da subito:
+
+> **Il client deve invocare il codice del modulo in un punto solo, in modo preciso e pulito** — così il tuning
+> futuro è un cambio in **un posto**, non una caccia ai punti di chiamata.
+
+Conseguenze pratiche:
+- le **superfici** (i cataloghi del feed) sono **dati** nel registro, non rami di codice: aggiungere o togliere una
+  riga non deve significare toccare il percorso di servizio;
+- il percorso di servizio (`catalogHandler` / `CatalogRouter` / il registro delle fonti) chiama il motore del gusto
+  attraverso **una funzione sola** — il «compositore» — e non conosce né il grafo, né DuckDB, né il vecchio motore;
+- quindi il tuning (parametri del grafo, pesi, quote di diversità, nuove strategie) si fa **dentro** quella porta.
+
+### 28. La misura che serve: `nicchia_di_qualita` (grafo) contro `hidden_gems` (vecchio)
+
+**18/10/2026.** Il metro (ticket 45) **non** deve confrontare il nuovo fornitore con sé stesso: deve confrontare
+**ciò che sostituisce**. Quindi: **`nicchia_di_qualita` del grafo** contro **`hidden_gems` del vecchio motore**, sul
+`oro_preso`.
+
+**Asimmetria da dichiarare** (non aggirabile): il vecchio motore ha bisogno di un **profilo di gusto su Mongo** →
+misurabile solo sui **2 utenti reali**; il grafo e la ricetta girano sui **400 utenti Trakt** del corpus. Quindi la
+misura si fa su **due piani**, dichiarandoli: (a) testa-a-testa sui 2 utenti di Mongo, con entrambi i motori;
+(b) lato grafo sui 400 utenti del corpus, per la distribuzione. Un confronto su un piano solo sarebbe una mezza verità.
+
+E va fatta **mentre il vecchio codice esiste ancora**: dopo il ticket 46 `hidden_gems` sparisce da `main`. Il punto
+di riferimento è il commit **prima** di quel merge — va scritto nel ticket, se no la misura diventa archeologia.
