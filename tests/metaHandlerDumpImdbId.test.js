@@ -105,7 +105,7 @@ jest.mock('../src/clients/tmdb', () => ({
     })
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbMetaDetails: jest.fn()
 }));
 
@@ -116,7 +116,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 const { metaHandler } = require('../src/meta');
 const { resolveImdbId } = require('../src/clients/tmdb');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
 const { animeMappingStore } = require('../src/anime');
 
 const ID_IMDB = 'tt0108778';

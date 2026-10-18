@@ -160,6 +160,7 @@ module.exports = {
 
     // Definizione e Cache dei Cataloghi
     get BADGE_CATALOG_VERSION() { return require('./catalogDefinition').BADGE_CATALOG_VERSION; },
+    get buildCatalogDesc() { return require('./catalogDefinition').buildCatalogDesc; },
     get buildCatalogCacheKey() { return require('./catalogDefinition').buildCatalogCacheKey; },
     get canonicalCatalogDefinition() { return require('./catalogDefinition').canonicalCatalogDefinition; },
     get resolveCatalogDefinition() { return require('./catalogDefinition').resolveCatalogDefinition; },
@@ -167,6 +168,9 @@ module.exports = {
     get applyPostCacheBadges() { return require('./badges').applyPostCacheBadges; },
     get annotationKeyFor() { return require('./badges').annotationKeyFor; },
     get resolveImdbMap() { return require('./badges').resolveImdbMap; },
+    get DAILY_WINDOW_CATALOG_IDS() { return require('./registry').DAILY_WINDOW_CATALOG_IDS; },
+    get isDailyWindowCatalog() { return require('./registry').isDailyWindowCatalog; },
+    get applyCatalogSpecialOrdering() { return require('./catalogSorting').applyCatalogSpecialOrdering; },
 
     // Debito Ticket 42 / Fetta 3: Esposizione controllata tramite lazy getter.
     // L'export eager spalmato è deliberatamente evitato per due motivi:

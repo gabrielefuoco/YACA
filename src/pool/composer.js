@@ -1,21 +1,22 @@
-const { ITEMS_PER_PAGE } = require('../config');
-const cache = require('../cache');
-const { buildRecommendationCacheKey } = require('../cache');
+/**
+ * src/pool/composer.js
+ *
+ * Compositore di righe candidate del Pool (Ticket 41 - Decisione 26).
+ *
+ * Il pool mantiene ESCLUSIVAMENTE la composizione delle righe:
+ * - composeCandidateIds: risoluzione degli ID candidati (Hero pool, preset o fallback popolare)
+ * - buildDirectPresetCatalog: composizione da preset DuckDB
+ * - fetchPopularFallbackIds: composizione fallback con tie-breakers e dedup regista/collezione
+ *
+ * Tutte le responsabilità di serving (staleness, sync, cache a 7 giorni, idratazione, impressioni)
+ * sono state dissolte e riallocate ai rispettivi proprietari di dominio in src/catalog/providers/HybridProvider.js.
+ */
+
 const { isHeroCatalogId } = require('../catalog/registry');
 const { normalizeContentId } = require('../catalog/contentId');
 const { isItemInappropriateForKids, applyKidsMode } = require('../catalog/kidsModeFilters');
-
-// Modulo profilo: staleness, accesso profilo e impressioni (Ticket 41)
-const { isProfileSyncDue, getTasteProfile, registraImpressioni } = require('../profile');
-
-// Modulo libreria: sincronizzazione raccomandazioni (Ticket 41)
-const { syncIncrementalRecommendations } = require('../library');
-
-// Modulo indice: query e idratazione candidati (Ticket 41)
-const indice = require('../indice');
-const { idrataEImpaginaCandidati } = require('../indice/idratazione');
-
 const { isItemAnime } = require('../anime');
+const indice = require('../indice');
 
 const MAX_HERO_FALLBACK_FETCH = 260;
 const HERO_FALLBACK_LIMIT = 160;
@@ -139,7 +140,6 @@ async function fetchPopularFallbackIds(tmdbApiKey, mediaType, limit = HERO_FALLB
 
 function matchesTypeSelectors(item, typeSelectors, tipo) {
     if (!typeSelectors) return true;
-    const { isItemAnime } = require('../anime');
     const animeSelector = typeSelectors.anime;
     if (animeSelector === 'only') {
         return isItemAnime(item, tipo);
@@ -195,63 +195,23 @@ async function buildDirectPresetCatalog(presetId, userId, context, tmdbApiKey, m
 }
 
 /**
- * Main endpoint: handles request for a profiled hybrid catalog.
+ * Composizione pura delle righe di candidati per un catalogo del pool.
  */
-async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId, activeProfileId = 'global', userConfig = null) {
-    const { getPresets } = require('../catalog/presets');
-    const presetsList = getPresets();
-    const matchedPreset = presetsList.find(p => p.id === catalogId);
-    let mediaType = (catalogId.includes('series') || catalogId.includes('tv')) ? 'series' : 'movie';
-    if (matchedPreset && matchedPreset.type) {
-        mediaType = matchedPreset.type === 'series' ? 'series' : 'movie';
-    }
-
-    const { contestoDi } = require('../profile/context');
-    const ctx = userConfig?.context || await contestoDi({
-        userId,
-        profileId: activeProfileId,
-        user: userConfig
-    });
-    const context = ctx.profileId;
-    const isKidsMode = ctx.kidsMode;
-    const effectiveTypeSelectors = ctx.selettoriEffettivi;
-    const effectiveSliders = ctx.sliders || ctx.slider || userConfig?.activeProfileSettings?.sliders || userConfig?.activeProfileSettings?.slider;
-    let profile = null;
-    try {
-        profile = await getTasteProfile(userId, context);
-    } catch (_e) {}
-    const isHero = isHeroCatalogId(catalogId);
-    console.log(`[Hybrid Debug] getHybridCatalog called with catalogId=${catalogId}, userId=${userId}, context=${context}`);
-    console.log(`[Hybrid Debug] profile loaded: ${!!profile}, isKidsMode=${isKidsMode}`);
-
-    const recDesc = {
-        nome: 'recommendations',
-        dipendenze: {
-            varia: {
-                utente: userId,
-                profilo: context,
-                catalogo: catalogId,
-                kids: isKidsMode,
-                selettori: effectiveTypeSelectors,
-                ...(effectiveSliders ? { slider: effectiveSliders } : {})
-            }
-        },
-        ttl: 7 * 24 * 60 * 60 * 1000 // 7 giorni
-    };
-
-    if (profile) {
-        if (isProfileSyncDue(profile.lastUpdated, new Date())) {
-            syncIncrementalRecommendations(userId, mediaType, traktToken, tmdbApiKey, context, userConfig).then(async (synced) => {
-                if (synced) {
-                    await cache.cancella(recDesc);
-                }
-            }).catch(err => console.error("Errore check stale profile:", err.message));
-        }
-    }
-
-    let recommendationIds;
-    if (isHero) {
-        const { getHeroPool } = require('.');
+async function composeCandidateIds({
+    catalogId,
+    userId,
+    context,
+    mediaType,
+    traktToken,
+    tmdbApiKey,
+    isKidsMode = false,
+    userConfig = null,
+    effectiveTypeSelectors = null,
+    effectiveSliders = null,
+    matchedPreset = null
+}) {
+    if (isHeroCatalogId(catalogId)) {
+        const { getHeroPool } = require('./index');
         const poolResults = await getHeroPool({
             userId,
             context,
@@ -264,69 +224,36 @@ async function getHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userId,
             sliders: effectiveSliders,
             slider: effectiveSliders
         });
-        recommendationIds = poolResults[catalogId] || poolResults.catalogs?.[catalogId] || [];
-        console.log(`[HeroPool] ${catalogId}: ${recommendationIds.length} assigned IDs`);
-    } else {
-        const buildRecommendIds = async () => {
-            if (matchedPreset) {
-                const ids = await buildDirectPresetCatalog(catalogId, userId, context, tmdbApiKey, mediaType, isKidsMode, effectiveTypeSelectors);
-                if (ids.length > 0) {
-                    await cache.scrivi(recDesc, { ids });
-                    return ids;
-                }
-            }
-            const ids = [];
-            await cache.scrivi(recDesc, { ids });
-            return ids;
-        };
-
-        const { value: cachedEntry, status: cacheStatus } = await cache.leggi(recDesc);
-        console.log(`[Hybrid Debug] cache status for ${catalogId}: ${cacheStatus}`);
-        if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
-            recommendationIds = cachedEntry.ids;
-            console.log(`[Hybrid Debug] returning ${recommendationIds.length} IDs from cache`);
-            if (cacheStatus === 'stale') {
-                console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
-                buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
-            }
-        }
-
-        if (!recommendationIds) {
-            console.log(`[Hybrid Debug] building new recommend IDs for ${catalogId}`);
-            recommendationIds = await buildRecommendIds();
-        }
-
-        if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
-            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
-            if (recommendationIds.length > 0) {
-                await cache.scrivi(recDesc, { ids: recommendationIds });
-            }
-        }
+        return poolResults[catalogId] || poolResults.catalogs?.[catalogId] || [];
     }
 
-    if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
-        return [];
+    if (matchedPreset) {
+        const ids = await buildDirectPresetCatalog(
+            catalogId,
+            userId,
+            context,
+            tmdbApiKey,
+            mediaType,
+            isKidsMode,
+            effectiveTypeSelectors
+        );
+        if (ids.length > 0) return ids;
     }
 
-    const pageResults = await idrataEImpaginaCandidati({
-        recommendationIds,
-        skip,
-        limit: ITEMS_PER_PAGE,
-        tmdbApiKey,
-        mediaType,
-        isKidsMode,
-        effectiveTypeSelectors
-    });
+    return [];
+}
 
-    if (skip === 0 && pageResults.length > 0) {
-        registraImpressioni(userId, context, catalogId, pageResults);
-    }
-
-    return pageResults;
+/**
+ * Delegatore sottile per compatibilità verso HybridProvider (Ticket 41 - Decisione 26).
+ */
+async function getHybridCatalog(...args) {
+    const { getHybridCatalog: serve } = require('../catalog/providers/HybridProvider');
+    return serve(...args);
 }
 
 module.exports = {
-    getHybridCatalog,
+    composeCandidateIds,
     fetchPopularFallbackIds,
-    buildDirectPresetCatalog
+    buildDirectPresetCatalog,
+    getHybridCatalog
 };

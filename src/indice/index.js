@@ -132,9 +132,9 @@ class IndiceModule {
      */
     async getMetaDetails(tmdbId, type = 'movie') {
         try {
-            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
-            if (typeof DuckDbProvider.getDuckDbMetaDetails === 'function') {
-                return await DuckDbProvider.getDuckDbMetaDetails(tmdbId, type);
+            const duckDbProvider = require('./duckDbProvider');
+            if (typeof duckDbProvider.getDuckDbMetaDetails === 'function') {
+                return await duckDbProvider.getDuckDbMetaDetails(tmdbId, type);
             }
         } catch (_e) {}
         return null;
@@ -152,12 +152,29 @@ class IndiceModule {
      */
     async getCatalogFromFilters(filters, type = 'movie', skip = 0, limit = 100, options = {}) {
         try {
-            const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
-            if (typeof DuckDbProvider.getDuckDbCatalogFromFilters === 'function') {
-                return await DuckDbProvider.getDuckDbCatalogFromFilters(filters, type, skip, limit, options);
+            const duckDbProvider = require('./duckDbProvider');
+            if (typeof duckDbProvider.getDuckDbCatalogFromFilters === 'function') {
+                return await duckDbProvider.getDuckDbCatalogFromFilters(filters, type, skip, limit, options);
             }
         } catch (_e) {}
         return [];
+    }
+
+    /**
+     * Risolve un catalogo di titoli a partire da un preset DuckDb.
+     */
+    async getCatalogFromPreset(preset, skip = 0, limit = 100, options = {}) {
+        try {
+            const duckDbProvider = require('./duckDbProvider');
+            if (typeof duckDbProvider.getDuckDbCatalogFromPreset === 'function') {
+                return await duckDbProvider.getDuckDbCatalogFromPreset(preset, skip, limit, options);
+            }
+        } catch (_e) {}
+        return [];
+    }
+
+    async getDuckDbCatalogFromPreset(preset, skip = 0, limit = 100, options = {}) {
+        return this.getCatalogFromPreset(preset, skip, limit, options);
     }
 
     /**
@@ -211,13 +228,13 @@ class IndiceModule {
 // Singleton di default per l'applicazione
 const indice = new IndiceModule();
 
-const idratazione = require('./idratazione');
-
 module.exports = indice;
 module.exports.IndiceModule = IndiceModule;
 module.exports.compiler = compiler;
 module.exports.tier2 = tier2;
-module.exports.idratazione = idratazione;
-module.exports.resolveCardDetails = idratazione.resolveCardDetails;
-module.exports.cardSurvivesFilters = idratazione.cardSurvivesFilters;
-module.exports.idrataEImpaginaCandidati = idratazione.idrataEImpaginaCandidati;
+module.exports.duckDbProvider = require('./duckDbProvider');
+module.exports.buildPresetFromFilters = (...args) => require('./duckDbProvider').buildPresetFromFilters(...args);
+module.exports.mapDuckDbRowToMeta = (...args) => require('./duckDbProvider').mapDuckDbRowToMeta(...args);
+module.exports.getDuckDbMetaDetails = (...args) => indice.getMetaDetails(...args);
+module.exports.getDuckDbCatalogFromFilters = (...args) => indice.getCatalogFromFilters(...args);
+module.exports.getDuckDbCatalogFromPreset = (...args) => indice.getCatalogFromPreset(...args);

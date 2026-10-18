@@ -30,7 +30,7 @@ jest.mock('../src/models/UserConfig', () => ({
     resolveUserConfig: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn()
 }));
 
@@ -47,7 +47,7 @@ describe('dataFetchers', () => {
 
     describe('fetchPopularFallbackIds', () => {
         it('should fetch from TMDB discover (now DuckDb)', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
             getDuckDbCatalogFromFilters.mockResolvedValue([{ id: 101 }, { id: 102 }]);
             const result = await fetchPopularFallbackIds('key', 'movie');
             expect(result).toEqual(['101', '102']);
@@ -56,7 +56,7 @@ describe('dataFetchers', () => {
 
     describe('fallback deduplicazione collection e regista', () => {
         it('deduplica collection e regista anche nei fallback', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
             getDuckDbCatalogFromFilters.mockResolvedValue([
                 { id: 1, popularity: 30, collection_id: 900, directors: [{ id: 55, job: 'Director' }] },
                 { id: 2, popularity: 20, collection_id: 900, directors: [{ id: 66, job: 'Director' }] },
@@ -161,7 +161,7 @@ describe('dataFetchers', () => {
 
     describe('fallback with isKidsMode', () => {
         it('fetchPopularFallbackIds filters out adult items when isKidsMode is true', async () => {
-            const { getDuckDbCatalogFromFilters } = require('../src/catalog/providers/DuckDbProvider');
+            const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
             getDuckDbCatalogFromFilters.mockResolvedValue([
                 { id: 101, title: 'Safe Movie', genre_ids: [28, 12] },
                 { id: 102, title: 'Horror Movie', genre_ids: [27] }

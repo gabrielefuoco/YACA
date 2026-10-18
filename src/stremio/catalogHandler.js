@@ -30,9 +30,12 @@ const {
     BADGE_CATALOG_VERSION,
     canonicalCatalogDefinition,
     resolveCatalogDefinition,
+    buildCatalogDesc,
     buildCatalogCacheKey,
     getPresetIds
 } = require('../catalog/catalogDefinition');
+const { applyCatalogSpecialOrdering } = require('../catalog/catalogSorting');
+const { isDailyWindowCatalog } = require('../catalog/registry');
 const { applyPostCacheBadges } = require('../catalog/badges');
 const { allineaIdFilm } = require('../meta');
 
@@ -87,34 +90,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
     // Check Full CACHE Request. La chiave nasce DOPO la risoluzione del catalogo,
     // perché la sua definizione è uno degli ingredienti.
-    const presetIds = getPresetIds();
-    const condiviso = presetIds.has(baseId);
-    const catalogDesc = {
-        nome: 'catalog_page',
-        versione: BADGE_CATALOG_VERSION,
-        dipendenze: {
-            varia: {
-                id,
-                baseId,
-                type,
-                extra,
-                directFilters,
-                skip,
-                catalogMeta,
-                utente: condiviso ? null : userConfig?.userId,
-                profilo: condiviso ? null : userConfig?.activeProfileId,
-                kids: activeProfileSettings?.kidsMode,
-                selettori: activeProfileSettings?.typeSelectors,
-                landscape: Boolean(activeProfileSettings?.isLandscapeEnabled),
-                ...(activeProfileSettings?.sliders ? { slider: activeProfileSettings.sliders } : {}),
-                condiviso
-            },
-            invalida: {
-                badgeVersion: BADGE_CATALOG_VERSION,
-                catalogDef: canonicalCatalogDefinition(catalogMeta)
-            }
-        }
-    };
+    const catalogDesc = buildCatalogDesc({
+        id,
+        baseId,
+        type,
+        extra,
+        directFilters,
+        skip,
+        catalogMeta,
+        userConfig,
+        activeProfileSettings
+    });
 
     // managed SWR: Fetch or Revalidate
     const { ttl } = getCacheConfig(userConfig.ttl);
@@ -212,37 +198,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 await hydrateEpisodeBadgesFromCache(finalResults, tmdbApiKey);
             }
 
-            if (baseId === 'preset_new_series_eps') {
-                finalResults.forEach(item => {
-                    let latestDateStr = null;
-                    if (item.videos && item.videos.length > 0) {
-                        for (const vid of item.videos) {
-                            if (vid.released) {
-                                const dStr = vid.released instanceof Date ? vid.released.toISOString() : String(vid.released);
-                                if (!latestDateStr || dStr > latestDateStr) {
-                                    latestDateStr = dStr;
-                                }
-                            }
-                        }
-                    }
-                    if (!latestDateStr && item.rawTMDB) {
-                        const lastEp = item.rawTMDB.last_episode_to_air;
-                        if (lastEp && lastEp.air_date) {
-                            latestDateStr = String(lastEp.air_date);
-                        }
-                    }
-                    item._latestAirDate = latestDateStr;
-                });
-                
-                finalResults.sort((a, b) => {
-                    if (a._latestAirDate && b._latestAirDate) {
-                        return b._latestAirDate.localeCompare(a._latestAirDate);
-                    }
-                    if (a._latestAirDate) return -1;
-                    if (b._latestAirDate) return 1;
-                    return 0;
-                });
-            }
+            applyCatalogSpecialOrdering(finalResults, baseId);
 
             // 4. FORMATTAZIONE (STREMIO)
             const isLandscape = activeProfileSettings.isLandscapeEnabled || catalogMeta?.isLandscape || false;
@@ -272,30 +228,16 @@ async function catalogHandler(args, userConfig, hostUrl) {
         }
     };
 
-    const WATCHLIST_TTL_MS = 2 * 60 * 1000;
     const isWatchlistCatalog = typeof id === 'string' && id.startsWith('yaca_watchlist');
-
-    const DAILY_WINDOW_CATALOG_IDS = new Set([
-        'preset_new_movies',
-        'preset_new_series',
-        'preset_new_series_eps',
-        'preset_anime_shonen',
-        'preset_anime_shoujo',
-        'preset_anime_mecha',
-        'preset_anime_isekai'
-    ]);
-    const DAILY_WINDOW_TTL_MS = 36 * 60 * 60 * 1000;
-    const isDailyWindowCatalog = typeof id === 'string' && DAILY_WINDOW_CATALOG_IDS.has(id);
-
-    const SIMULCAST_TTL_MS = 20 * 60 * 1000;
+    const isDailyWindow = isDailyWindowCatalog(id);
     const isAiringStateCatalogId = isAiringStateCatalog(baseId, catalogMeta);
 
-    let effectiveTtl = ttl;
-    if (isWatchlistCatalog) effectiveTtl = Math.min(effectiveTtl, WATCHLIST_TTL_MS);
-    if (isDailyWindowCatalog) effectiveTtl = Math.min(effectiveTtl, DAILY_WINDOW_TTL_MS);
-    if (isAiringStateCatalogId) effectiveTtl = Math.min(effectiveTtl, SIMULCAST_TTL_MS);
-
-    catalogDesc.ttl = effectiveTtl;
+    catalogDesc.ttl = cache.resolveCatalogTtl({
+        baseTtl: ttl,
+        isWatchlist: isWatchlistCatalog,
+        isDailyWindow,
+        isAiringState: isAiringStateCatalogId
+    });
 
     const requestStartedAt = Date.now();
     let responseData;

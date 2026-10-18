@@ -1,23 +1,26 @@
 /**
- * src/indice/idratazione.js
+ * src/catalog/idratazione.js
  *
- * Risoluzione metadati, idratazione card e paginazione dei candidati (Ticket 41 - Fetta 1).
- * Spostato da src/engines/hybridRecommendations.js nel modulo src/indice ("il modulo indice possiede metadati e idratazione").
+ * Risoluzione metadati, idratazione card Stremio e paginazione dei candidati (Ticket 41 - Decisione 26/27).
+ *
+ * Il modulo catalog/serving possiede la composizione delle risposte (card preview Stremio)
+ * e la garanzia contrattuale di paginazione post-filtro (Ticket 12/38).
+ * L'indice (src/indice) è liberato da HTTP e dalla composizione delle risposte (map §16).
  */
 
 const { ITEMS_PER_PAGE } = require('../config');
 const tmdb = require('../clients/tmdb');
 const { prioritizeLocalizedImages } = require('../clients/tmdb');
-const { normalizeContentId } = require('../catalog/contentId');
+const { normalizeContentId } = require('./contentId');
 const { rateLimitedMap } = require('../infra/rateLimiter');
-const { isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
+const { isItemInappropriateForKids } = require('./kidsModeFilters');
 const { isItemAnime } = require('../anime');
 
 async function getDuckDbMetaDetailsSafe(id, type) {
     try {
-        const DuckDbProvider = require('../catalog/providers/DuckDbProvider');
-        if (typeof DuckDbProvider.getDuckDbMetaDetails === 'function') {
-            return await DuckDbProvider.getDuckDbMetaDetails(id, type);
+        const duckDbProvider = require('../indice/duckDbProvider');
+        if (typeof duckDbProvider.getDuckDbMetaDetails === 'function') {
+            return await duckDbProvider.getDuckDbMetaDetails(id, type);
         }
     } catch (_e) {}
     return null;

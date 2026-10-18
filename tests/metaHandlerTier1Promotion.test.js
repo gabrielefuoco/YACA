@@ -39,7 +39,7 @@ jest.mock('../src/clients/tmdb', () => ({
     createTmdbClient: jest.fn(() => ({}))
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbMetaDetails: jest.fn()
 }));
 
@@ -49,7 +49,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 
 const { metaHandler } = require('../src/meta');
 const { getTmdbMetaDetails } = require('../src/clients/tmdb');
-const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
 const { schedulePromotion } = require('../src/db/tier1LazyPromotion');
 
 const API_KEY = 'test-key';

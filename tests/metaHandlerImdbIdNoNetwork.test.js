@@ -91,7 +91,7 @@ jest.mock('../src/anime', () => ({
     }
 }));
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
+jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbMetaDetails: jest.fn()
 }));
 
@@ -101,7 +101,7 @@ jest.mock('../src/db/tier1LazyPromotion', () => ({
 
 const { metaHandler } = require('../src/meta');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { getDuckDbMetaDetails } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
 
 /**
  * Scheda come la produce il provider DuckDB per una serie, con la griglia episodi già dentro

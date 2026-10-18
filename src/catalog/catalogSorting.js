@@ -361,6 +361,46 @@ function applySortWithTieBreakers(catalogMeta, sortBy, type = 'movie') {
     return `${newPrimary}, ${extraTieBreakers.join(', ')}`;
 }
 
+/**
+ * Ordinamento post-fetch specifico per preset Stremio (es. preset_new_series_eps).
+ * Mantiene la logica di dominio dentro il modulo catalogo.
+ */
+function applyCatalogSpecialOrdering(items, baseId) {
+    if (!Array.isArray(items) || items.length === 0) return items;
+    if (baseId === 'preset_new_series_eps') {
+        items.forEach(item => {
+            let latestDateStr = null;
+            if (item.videos && item.videos.length > 0) {
+                for (const vid of item.videos) {
+                    if (vid.released) {
+                        const dStr = vid.released instanceof Date ? vid.released.toISOString() : String(vid.released);
+                        if (!latestDateStr || dStr > latestDateStr) {
+                            latestDateStr = dStr;
+                        }
+                    }
+                }
+            }
+            if (!latestDateStr && item.rawTMDB) {
+                const lastEp = item.rawTMDB.last_episode_to_air;
+                if (lastEp && lastEp.air_date) {
+                    latestDateStr = String(lastEp.air_date);
+                }
+            }
+            item._latestAirDate = latestDateStr;
+        });
+
+        items.sort((a, b) => {
+            if (a._latestAirDate && b._latestAirDate) {
+                return b._latestAirDate.localeCompare(a._latestAirDate);
+            }
+            if (a._latestAirDate) return -1;
+            if (b._latestAirDate) return 1;
+            return 0;
+        });
+    }
+    return items;
+}
+
 module.exports = {
     FAMILY_SORT_DEFAULTS,
     SORT_OPTIONS,
@@ -375,5 +415,6 @@ module.exports = {
     getSortByValue,
     splitSqlOrderClauses,
     extractSecondaryTieBreakers,
-    applySortWithTieBreakers
+    applySortWithTieBreakers,
+    applyCatalogSpecialOrdering
 };

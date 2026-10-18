@@ -3,7 +3,7 @@ const { syncIncrementalRecommendations } = require('../src/library');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
-const { getDuckDbMetaDetails, mapDuckDbRowToMeta } = require('../src/catalog/providers/DuckDbProvider');
+const { getDuckDbMetaDetails, mapDuckDbRowToMeta } = require('../src/indice/duckDbProvider');
 const traktFetchers = require('../src/library/traktFetchers');
 const { F } = require('../src/catalog/filters');
 
@@ -33,8 +33,8 @@ jest.mock('../src/library/traktFetchers', () => {
     };
 });
 
-jest.mock('../src/catalog/providers/DuckDbProvider', () => {
-    const actual = jest.requireActual('../src/catalog/providers/DuckDbProvider');
+jest.mock('../src/indice/duckDbProvider', () => {
+    const actual = jest.requireActual('../src/indice/duckDbProvider');
     return {
         ...actual,
         getDuckDbMetaDetails: jest.fn()

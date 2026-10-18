@@ -359,12 +359,28 @@ function getRegistryHash() {
 const HERO_IDS = Object.freeze(HERO_SYSTEM_CATALOGS.map(r => r.id));
 const HERO_CATALOG_IDS_SET = new Set(HERO_IDS);
 
+const DAILY_WINDOW_CATALOG_IDS = Object.freeze(new Set([
+    'preset_new_movies',
+    'preset_new_series',
+    'preset_new_series_eps',
+    'preset_anime_shonen',
+    'preset_anime_shoujo',
+    'preset_anime_mecha',
+    'preset_anime_isekai'
+]));
+
+function isDailyWindowCatalog(id) {
+    return typeof id === 'string' && DAILY_WINDOW_CATALOG_IDS.has(id);
+}
+
 module.exports = {
     HERO_REGISTRY,
     HERO_SYSTEM_CATALOGS,
     HERO_PREFIXES,
     HERO_IDS,
     HERO_CATALOG_IDS_SET,
+    DAILY_WINDOW_CATALOG_IDS,
+    isDailyWindowCatalog,
     getManifestHeroCatalogs,
     getHeroCatalogFingerprintRows,
     getHeroCatalogModes,
