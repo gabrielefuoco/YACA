@@ -46,19 +46,7 @@ async function resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHold
         } catch (_e) {}
 
         if (!item) {
-            item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType, { cacheOnly: true });
-        }
-
-        if (!item) {
-            if (!tmdbClientHolder.client) tmdbClientHolder.client = tmdb.createTmdbClient(tmdbApiKey);
-            const endpoint = tmdbType === 'movie' ? `/movie/${normalizedId}` : `/tv/${normalizedId}`;
-            const res = await tmdbClientHolder.client.get(endpoint, {
-                params: {
-                    append_to_response: 'images,keywords',
-                    include_image_language: 'it,en,null'
-                }
-            });
-            item = res.data;
+            item = await tmdb.getTmdbMovieDetails(tmdbApiKey, normalizedId, tmdbType);
         }
 
         if (!item) return null;
