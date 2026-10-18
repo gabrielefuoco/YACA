@@ -267,3 +267,59 @@ Le due opzioni, dichiarate:
 grande che questa mappa abbia mai avuto, e un deploy mai provato che cresce è il modo di rendere impossibile
 attribuire un guasto. Le tre fette non toccano il feed, quindi non hanno fretta — e si fanno **dopo**, con la
 produzione allineata e i numeri veri in mano.
+
+## Esito (Fetta 1: La facciata del gusto — 18/10/2026)
+
+### 1. Cosa si è mosso e dove (File:Linee → Moduli di Destinazione)
+La fetta 1 ha disaggregato le 1.003 righe della facciata del gusto e le sue dipendenze dirette sui moduli che ne possiedono la responsabilità di dominio:
+
+1. **`src/engines/profileStaleness.js` (78 righe) → `src/profile/`**:
+   - Spostato interamente in `src/profile/profileStaleness.js`: costanti di cadenza (`PROFILE_SYNC_INTERVAL_MS`, `STREMMIO_SYNC_INTERVAL_MS`) e predicati puri (`isProfileSyncDue`, `isStremioSyncDue`).
+   - Riesposto pubblicamente dalla porta `src/profile/index.js`.
+   - `src/engines/profileStaleness.js` ridotto a delegatore trasparente per non rompere i test preesistenti.
+2. **`src/engines/hybrid/scoringEngine.js` (134 righe) → Decisione e `src/profile/`**:
+   - **Decisione documentata con prove**:
+     - `calculateHybridScore`: **MORTO in produzione** (dismesso a seguito del ticket 46 con la rimozione di `catalogStrategies.js` e il passaggio a grafo per i cataloghi hero); mantenuto nel file originale per pura retrocompatibilità con i test unitari.
+     - `computeTopGenres`, `computeTopKeywords`, `extractVectorByPrefix`: **VIVI in produzione** (richiesti da `AiDiscoveryProvider` e per il calcolo delle preferenze DNA). Spostati in `src/profile/vectorElements.js` ed esportati da `src/profile/index.js`.
+3. **`src/engines/hybrid/dataFetchers.js` (279 righe) → `src/profile/` & `src/library/`**:
+   - `fetchProfileContext`: migrato in `src/profile/profileContext.js` ed esportato dalla porta `src/profile/index.js`.
+   - Fatti Trakt (`safeTraktFetchDetailed`, `safeTraktFetch`, `fetchRecentHistory`, `fetchRecentRatings`): migrati in `src/library/traktFetchers.js` ed esportati da `src/library/index.js`.
+   - `src/engines/hybrid/dataFetchers.js` delegante verso le nuove porte, mantenendo solo i fallback stabili di catalogo (`fetchPopularFallbackIds`).
+4. **`src/engines/hybridRecommendations.js` (512 righe) → `src/library/`, `src/indice/`, `src/cache/`, `src/profile/`**:
+   - **Sincronizzazione Trakt/Stremio**: migrata in `src/library/syncRecommendations.js` (`syncIncrementalRecommendations`, `isStremioSyncDueForUser`).
+   - **Tracciamento Impressioni**: migrato in `src/library/impressions.js` (`registraImpressioni` su `RecommendationImpression`).
+   - **Idratazione e Filtri**: migrati in `src/indice/idratazione.js` (`resolveCardDetails`, `cardSurvivesFilters`, `idrataEImpaginaCandidati`).
+   - `src/engines/hybridRecommendations.js` è ora una facciata disaccoppiata e snella (~260 righe) che orchestra i moduli senza possedere logica interna di dominio.
+5. **`src/pool/index.js` (539 righe)**:
+   - Rimane il compositore: invarianti di disgiunzione (`claimedIds`), ordine righe e chiave di cache condivisa (`heroes_v15`) rigorosamente preservati.
+
+### 2. Rilievo della Review Chiuso (Parità Degrado Controllato)
+- Chiuso il rilievo su `src/pool/index.js`: i runner delle strategie hero sono stati avvolti nella funzione di guardia `runPoolBuilder`.
+- Qualsiasi throw non gestito sollevato da un builder viene intercettato: `graphCallFailed` viene impostato a `true`, l'errore viene loggato senza interrompere il `Promise.all`, e il catalogo degrada silenziosamente sui fallback senza far cadere il pool.
+- Validato con test dedicato in `tests/graphClientPoolIntegration.test.js`: `runPoolBuilder intercetta eccezioni sollevate dal builder impedendo il crash del pool` (PASS).
+
+### 3. Prova: Conteggi delle Righe Hero Prima e Dopo (IDENTICI)
+Verifica effettuata tramite esecuzione del compositore `getHeroPool` con lo stesso fixture di semi e risposte grafo previsto dal contratto del ticket 46:
+
+**Comando di misura**:
+```bash
+node -e "const TasteProfile = require('./src/models/TasteProfile'); TasteProfile.findOne = async () => null; const { getHeroPool } = require('./src/pool'); const graphClient = require('./src/clients/graphClient'); const library = require('./src/library'); library.semiDi = async () => ({ seeds: new Map([['603', 4], ['314', 3]]), counts: { loved: 1, liked: 1, watched: 0, library: 0 } }); graphClient.raccomanda = async () => ({ contratto: 1, versioni: { artefatto: 'art-46', ricetta: 'ric-46' }, semi: { n: 2, da_catalogo: false }, liste: [ { ruolo: 'il_tuo_mondo', mondo: 1084, titoli: [{ tmdbId: 603, medium: 'movie' }, { tmdbId: 604, medium: 'movie' }] }, { ruolo: 'un_passo_fuori', mondo: null, titoli: [{ tmdbId: 701, medium: 'movie' }, { tmdbId: 702, medium: 'movie' }] }, { ruolo: 'uscite_nuove', mondo: null, titoli: [{ tmdbId: 801, medium: 'movie' }, { tmdbId: 802, medium: 'movie' }, { tmdbId: 803, medium: 'movie' }] }, { ruolo: 'nicchia_di_qualita', mondo: null, titoli: [{ tmdbId: 901, medium: 'movie' }, { tmdbId: 902, medium: 'movie' }] } ] }); (async () => { const res = await getHeroPool({ userId: 'u_test', context: 'p_test', mediaType: 'movie' }); const counts = {}; for (const [k, v] of Object.entries(res)) { if (k.startsWith('yaca_')) counts[k] = v.length; } console.log(JSON.stringify(counts)); process.exit(0); })();"
+```
+
+| Catalogo Hero | Conteggio PRIMA | Conteggio DOPO | Esito Parità |
+|---|---|---|---|
+| `yaca_mondi_movies` | **2** | **2** | IDENTICO |
+| `yaca_passo_fuori_movies` | **2** | **2** | IDENTICO |
+| `yaca_uscite_nuove_movies` | **3** | **3** | IDENTICO |
+| `yaca_nicchia_di_qualita_movies` | **2** | **2** | IDENTICO |
+| **Totale Titoli Hero** | **9** | **9** | **100% IDENTICO** |
+
+Tutti i test di regressione del grafo, del pool e della sincronizzazione (`feedProtocolAndCatalogs`, `graphRowsInvariant`, `heroMovieDateRegression`, `heroPoolAnimeExcludeCap`, `stremioSyncCadence`, `hybridRecommendations`) risultano superati al 100%.
+
+### 4. Cosa Resta per la Fetta 2
+- **Fetta 2: Il serving** (`src/handlers/catalogHandler.js` 1.037 righe + `src/handlers/metaHandler.js` 680 righe = **1.717 righe**):
+  - Migrazione del serving Stremio verso i moduli puliti (`catalog`, `meta`, `anime`), consolidando ad **una sola invocazione** del motore (decisione 27).
+  - Prova di accettazione per fetta 2: suite `tests/stremio*.test.js` e i 33 test correlati verdi senza modifiche al protocollo né al manifest.
+- **Fetta 3: La cancellazione**:
+  - `git rm` del vecchio stack `src/engines/` una volta orfano di chiamanti esterni, e bonifica o ripuntamento dei test.
+
