@@ -48,7 +48,7 @@ const TasteProfile = require('../src/models/TasteProfile');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const tmdb = require('../src/clients/tmdb');
-const { getHybridCatalog } = require('../src/engines/hybridRecommendations');
+const { getHybridCatalog } = require('../src/pool/composer');
 
 function cachedMovieHeroGroup(ids) {
     const catalogs = {};

@@ -21,151 +21,8 @@ jest.mock('../src/clients/trakt', () => ({
 
 
 
-const { calculateHybridScore, recommendationsCache } = require('../src/engines/hybridRecommendations');
+const { recommendationsCache } = require('../src/pool/composer');
 
-describe('calculateHybridScore', () => {
-    it('should give position-based score for Trakt recommendations', () => {
-        const item = { tmdbId: 100, position: 1 };
-        const tmdbCounts = new Map();
-        const topGenres = [];
-        const itemGenres = [];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        // 50 - 1 = 49
-        expect(score).toBe(49);
-    });
-
-    it('should give lower score for later positions', () => {
-        const item = { tmdbId: 100, position: 40 };
-        const tmdbCounts = new Map();
-        const topGenres = [];
-        const itemGenres = [];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        // 50 - 40 = 10
-        expect(score).toBe(10);
-    });
-
-    it('should add TMDB bonus for 1 appearance (+100)', () => {
-        const item = { tmdbId: 200, position: null };
-        const tmdbCounts = new Map([[200, 1]]);
-        const topGenres = [];
-        const itemGenres = [];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(100);
-    });
-
-    it('should anchor the most-supported candidate of the pool to 100 (count = max)', () => {
-        const item = { tmdbId: 200, position: null };
-        const tmdbCounts = new Map([[200, 2]]);
-        const topGenres = [];
-        const itemGenres = [];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(100);
-    });
-
-    it('should saturate with log growth instead of collapsing (3 segnali su pool max 10)', () => {
-        const item = { tmdbId: 200, position: null };
-        const tmdbCounts = new Map([[200, 3], [201, 10]]);
-        const topGenres = [];
-        const itemGenres = [];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        // Ticket 13: 100 * log1p(3) / log1p(10) ≈ 57,8 (con la vecchia 100/2^(n-1) era 25)
-        expect(score).toBeCloseTo(57.81, 1);
-    });
-
-    it('should add genre boost for top genre #1 (+30)', () => {
-        const item = { tmdbId: 300, position: null };
-        const tmdbCounts = new Map();
-        const topGenres = [28, 35, 18];
-        const itemGenres = [28];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(30);
-    });
-
-    it('should add genre boost for top genre #2 (+15)', () => {
-        const item = { tmdbId: 300, position: null };
-        const tmdbCounts = new Map();
-        const topGenres = [28, 35, 18];
-        const itemGenres = [35];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(15);
-    });
-
-    it('should add genre boost for top genre #3 (+5)', () => {
-        const item = { tmdbId: 300, position: null };
-        const tmdbCounts = new Map();
-        const topGenres = [28, 35, 18];
-        const itemGenres = [18];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(5);
-    });
-
-    it('should sum all three boosts when all conditions are met', () => {
-        const item = { tmdbId: 400, position: 5 };
-        const tmdbCounts = new Map([[400, 2]]);
-        const topGenres = [28, 35, 18];
-        const itemGenres = [28, 35, 18];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        // Trakt: 50 - 5 = 45
-        // TMDB: 100 * log1p(2)/log1p(2) = 100 (item più sostenuto del pool)
-        // Genre: 30 + 15 + 5 = 50
-        expect(score).toBe(45 + 100 + 50);
-    });
-
-    it('should return 0 for item with no position, no appearances, no matching genres', () => {
-        const item = { tmdbId: 500, position: null };
-        const tmdbCounts = new Map();
-        const topGenres = [28, 35, 18];
-        const itemGenres = [99]; // Documentary, not in top 3
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(0);
-    });
-
-    it('applica il mapping cross-type nel bonus genere ibrido', () => {
-        const counts = new Map();
-        expect(calculateHybridScore(
-            { tmdbId: 800, position: null }, counts, [53], [9648]
-        )).toBe(30);
-        expect(calculateHybridScore(
-            { tmdbId: 801, position: null }, counts, [10749], [18]
-        )).toBe(30);
-        expect(calculateHybridScore(
-            { tmdbId: 802, position: null }, counts, [9648], [53]
-        )).toBe(30);
-        expect(calculateHybridScore(
-            { tmdbId: 803, position: null }, counts, [18], [10749]
-        )).toBe(30);
-    });
-
-    it('should handle fewer than 3 top genres gracefully', () => {
-        const item = { tmdbId: 600, position: null };
-        const tmdbCounts = new Map();
-        const topGenres = [28]; // only 1 genre
-        const itemGenres = [28];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(30);
-    });
-
-    it('should handle empty topGenres gracefully', () => {
-        const item = { tmdbId: 700, position: null };
-        const tmdbCounts = new Map();
-        const topGenres = [];
-        const itemGenres = [28, 35];
-
-        const score = calculateHybridScore(item, tmdbCounts, topGenres, itemGenres);
-        expect(score).toBe(0);
-    });
-});
 
 describe('recommendationsCache', () => {
     beforeEach(async () => {
@@ -210,13 +67,12 @@ describe('config RECOMMENDATIONS_CACHE_TTL_MS', () => {
     });
 });
 
-describe('hybridRecommendations module exports', () => {
+describe('composer module exports', () => {
     it('should export all required functions', () => {
-        const engine = require('../src/engines/hybridRecommendations');
-        expect(typeof engine.getHybridCatalog).toBe('function');
-        expect(typeof engine.calculateHybridScore).toBe('function');
-        expect(typeof engine.fetchRecentHistory).toBe('function');
-        expect(typeof engine.computeTopGenres).toBe('function');
+        const composer = require('../src/pool/composer');
+        expect(typeof composer.getHybridCatalog).toBe('function');
+        expect(typeof composer.fetchPopularFallbackIds).toBe('function');
+        expect(typeof composer.buildDirectPresetCatalog).toBe('function');
     });
 });
 

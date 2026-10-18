@@ -8,7 +8,6 @@
 const TasteProfile = require('../models/TasteProfile');
 const { isStremioSyncDue } = require('../profile/profileStaleness');
 const { fetchRecentHistory, fetchRecentRatings } = require('./traktFetchers');
-const dataFetchers = require('../engines/hybrid/dataFetchers');
 
 /**
  * La parte Stremio (likes/loved) ha una cadenza PROPRIA, scritta sulla configurazione a
@@ -56,11 +55,9 @@ async function syncIncrementalRecommendations(userId, mediaType, traktToken, tmd
         }
 
         const traktType = mediaType === 'movie' ? 'movies' : 'shows';
-        const fetchHistoryFn = typeof dataFetchers?.fetchRecentHistory === 'function' ? dataFetchers.fetchRecentHistory : fetchRecentHistory;
-        const fetchRatingsFn = typeof dataFetchers?.fetchRecentRatings === 'function' ? dataFetchers.fetchRecentRatings : fetchRecentRatings;
         const [history, ratings] = await Promise.all([
-            fetchHistoryFn(traktToken, traktType, 40, userConfig),
-            fetchRatingsFn(traktToken, traktType, 40, userConfig)
+            fetchRecentHistory(traktToken, traktType, 40, userConfig),
+            fetchRecentRatings(traktToken, traktType, 40, userConfig)
         ]);
         const combined = [...(history || []), ...(ratings || [])];
 

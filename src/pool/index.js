@@ -552,5 +552,11 @@ module.exports = {
     SLUG_ADDITIVI,
     HERO_STRATEGIES,
     runPoolBuilder,
-    graphClient
+    graphClient,
+    get getHybridCatalog() {
+        return require('./composer').getHybridCatalog;
+    },
+    get composer() {
+        return require('./composer');
+    }
 };

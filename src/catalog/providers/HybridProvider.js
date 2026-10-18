@@ -1,6 +1,6 @@
 // src/catalog/providers/HybridProvider.js
 
-const { getHybridCatalog } = require('../../engines/hybridRecommendations');
+const { getHybridCatalog } = require('../../pool/composer');
 const { HERO_CATALOG_IDS_SET } = require('../registry');
 
 const TASTE_BASED_IDS = HERO_CATALOG_IDS_SET;

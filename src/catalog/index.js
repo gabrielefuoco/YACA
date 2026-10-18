@@ -159,5 +159,21 @@ module.exports = {
     // Serving (Ticket 41 - Fetta 2)
     get catalogHandler() {
         return require('../handlers/catalogHandler').catalogHandler;
-    }
+    },
+
+    // Debito Ticket 42 / Fetta 3: Esposizione controllata tramite lazy getter.
+    // L'export eager spalmato è deliberatamente evitato per due motivi:
+    // 1. Evitare collisioni di nomi (es. applyKidsMode presente sia in filters che in kidsModeFilters).
+    // 2. Preservare l'isolamento dei mock Jest: presets.js invoca buildPresetFromFilters all'avvio;
+    //    un require eager romperebbe i test che mockano parzialmente DuckDbProvider.
+    get filters() { return require('./filters'); },
+    get presets() { return require('./presets'); },
+    get kidsModeFilters() { return require('./kidsModeFilters'); },
+    get contentId() { return require('./contentId'); },
+    get normalizeContentId() { return require('./contentId').normalizeContentId; },
+    get getPresets() { return require('./presets').getPresets; },
+    get F() { return require('./filters').F; },
+    get G() { return require('./filters').G; },
+    get applyKidsMode() { return require('./kidsModeFilters').applyKidsMode; },
+    get isItemInappropriateForKids() { return require('./kidsModeFilters').isItemInappropriateForKids; }
 };

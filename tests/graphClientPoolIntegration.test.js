@@ -5,11 +5,6 @@
  * - Contratto E5: Guasto transitorio (timeout, 503, ECONNREFUSED) non memorizzato a 7 giorni (TTL 60s)
  */
 
-jest.mock('../src/engines/hybrid/dataFetchers', () => ({
-    fetchProfileContext: jest.fn().mockResolvedValue({ profile: {}, user: {} }),
-    fetchPopularFallbackIds: jest.fn().mockResolvedValue(['tmdb:1'])
-}));
-
 jest.mock('../src/profile', () => {
     const actual = jest.requireActual('../src/profile');
     return {

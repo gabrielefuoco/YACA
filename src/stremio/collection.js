@@ -2,7 +2,6 @@ const { stremioClient, stremioLikesClient } = require('./client');
 const { accountDi, traktDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
-const { getPresets } = require('../catalog/presets');
 const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
 const { isAllowedUrl } = require('../infra/helpers');
 
@@ -294,6 +293,7 @@ async function pushToTrakt(userId, data) {
 async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
     if (!catalogs || !Array.isArray(catalogs) || !tmdbApiKey) return [];
 
+    const { getPresets } = require('../catalog/presets');
     const allPresets = getPresets();
     const presetMap = new Map(allPresets.map(p => [p.id, p]));
     const tmdbClient = createTmdbClient(tmdbApiKey);

@@ -5,7 +5,8 @@ const {
     traktClient,
     classifyRefreshError
 } = require('../src/clients/trakt');
-const { safeTraktFetchDetailed, fetchProfileContext } = require('../src/engines/hybrid/dataFetchers');
+const { safeTraktFetchDetailed } = require('../src/library/traktFetchers');
+const { fetchProfileContext } = require('../src/profile/profileContext');
 const jwt = require('jsonwebtoken');
 const { traktHealthHandler, getJwtSecret } = require('../src/api/auth/index.js');
 const UserAccount = require('../src/models/UserAccount');

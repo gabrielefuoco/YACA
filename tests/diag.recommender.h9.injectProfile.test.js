@@ -33,7 +33,7 @@ jest.mock('../src/catalog/providers/DuckDbProvider', () => ({
     getDuckDbCatalogFromFilters: jest.fn()
 }));
 
-jest.mock('../src/engines/hybridRecommendations', () => ({
+jest.mock('../src/profile', () => ({
     computeTopGenres: jest.fn(() => ['28', '16']),
     computeTopKeywords: jest.fn(() => [])
 }));
@@ -42,7 +42,7 @@ const router = require('../src/ricerca/router');
 
 const TasteProfile = require('../src/models/TasteProfile');
 const DuckDbProvider = require('../src/catalog/providers/DuckDbProvider');
-const { computeTopKeywords } = require('../src/engines/hybridRecommendations');
+const { computeTopKeywords } = require('../src/profile');
 
 describe('H9 — l\'iniezione profilo trasforma with_genres AND in OR', () => {
     beforeEach(() => {

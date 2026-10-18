@@ -35,7 +35,7 @@ describe('hybrid recommendations module resolution', () => {
                 }
             }));
 
-            expect(() => require('../src/engines/hybridRecommendations')).not.toThrow();
+            expect(() => require('../src/pool/composer')).not.toThrow();
         });
     });
 });

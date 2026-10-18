@@ -3,7 +3,7 @@ const {
     isProfileSyncDue,
     STREMMIO_SYNC_INTERVAL_MS,
     isStremioSyncDue
-} = require('../src/engines/profileStaleness');
+} = require('../src/profile/profileStaleness');
 
 describe('isProfileSyncDue', () => {
     const NOW = new Date('2026-10-05T12:00:00.000Z').getTime();

@@ -1,4 +1,4 @@
-const scoringEngine = require('../src/engines/hybrid/scoringEngine');
+const scoringEngine = require('../src/profile/vectorElements');
 const tmdb = require('../src/clients/tmdb');
 const ProfileScorer = require('../src/profile/ProfileScorer');
 

@@ -1,9 +1,9 @@
-const { getHybridCatalog, syncIncrementalRecommendations } = require('../src/engines/hybridRecommendations');
+const { getHybridCatalog, syncIncrementalRecommendations, fetchPopularFallbackIds } = require('../src/pool/composer');
 const TasteProfile = require('../src/models/TasteProfile');
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const { getDuckDbMetaDetails, mapDuckDbRowToMeta } = require('../src/catalog/providers/DuckDbProvider');
-const dataFetchers = require('../src/engines/hybrid/dataFetchers');
+const traktFetchers = require('../src/library/traktFetchers');
 const { F } = require('../src/catalog/filters');
 
 jest.mock('../src/models/TasteProfile', () => ({
@@ -23,8 +23,8 @@ jest.mock('../src/profile/ProfileBuilder', () => ({
     syncUserHistory: jest.fn().mockResolvedValue(true)
 }));
 
-jest.mock('../src/engines/hybrid/dataFetchers', () => {
-    const actual = jest.requireActual('../src/engines/hybrid/dataFetchers');
+jest.mock('../src/library/traktFetchers', () => {
+    const actual = jest.requireActual('../src/library/traktFetchers');
     return {
         ...actual,
         fetchRecentHistory: jest.fn(),
@@ -245,8 +245,8 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
 
     describe('BUG-3: Stale profile sync without interactions prevents cache invalidation', () => {
         it('returns false and does not invalidate recommendations cache when Trakt history/ratings are empty', async () => {
-            dataFetchers.fetchRecentHistory.mockResolvedValueOnce([]);
-            dataFetchers.fetchRecentRatings.mockResolvedValueOnce([]);
+            traktFetchers.fetchRecentHistory.mockResolvedValueOnce([]);
+            traktFetchers.fetchRecentRatings.mockResolvedValueOnce([]);
 
             const result = await syncIncrementalRecommendations('user_1', 'movie', 'token', 'key', 'global');
 
@@ -259,8 +259,8 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
         });
 
         it('returns true and syncs history when Trakt interactions are present', async () => {
-            dataFetchers.fetchRecentHistory.mockResolvedValueOnce([{ movie: { ids: { tmdb: 11 } } }]);
-            dataFetchers.fetchRecentRatings.mockResolvedValueOnce([]);
+            traktFetchers.fetchRecentHistory.mockResolvedValueOnce([{ movie: { ids: { tmdb: 11 } } }]);
+            traktFetchers.fetchRecentRatings.mockResolvedValueOnce([]);
 
             const result = await syncIncrementalRecommendations('user_1', 'movie', 'token', 'key', 'global');
 
@@ -337,13 +337,13 @@ describe('Hero Catalogs Audit 02 Fixes', () => {
             const duckDb = require('../src/catalog/providers/DuckDbProvider');
             const spyFilters = jest.spyOn(duckDb, 'getDuckDbCatalogFromFilters').mockResolvedValue([]);
 
-            await dataFetchers.fetchPopularFallbackIds('fake_key', 'movie', 20);
+            await fetchPopularFallbackIds('fake_key', 'movie', 20);
             expect(spyFilters).toHaveBeenCalled();
             const movieCallFilters = spyFilters.mock.calls[0][0];
             expect(movieCallFilters['with_runtime.gte']).toBe(60);
 
             spyFilters.mockClear();
-            await dataFetchers.fetchPopularFallbackIds('fake_key', 'tv', 20);
+            await fetchPopularFallbackIds('fake_key', 'tv', 20);
             expect(spyFilters).toHaveBeenCalled();
             const seriesCallFilters = spyFilters.mock.calls[0][0];
             expect(seriesCallFilters['with_runtime.gte']).toBeUndefined();

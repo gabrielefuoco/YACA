@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 <!-- Triato il 18/10/2026: il piano è la sezione RE-TRIAGE in fondo; le tre fette sono indipendenti dal deploy.
@@ -424,14 +424,104 @@ Tests:       8 failed, 1 skipped, 1881 passed, 1890 total
 
 Nessun nuovo fallimento o regressione introdotta.
 
-### 4. Cosa Resta per la Fetta 3 (La cancellazione)
-1. Rimozione fisica (`git rm`) dei file orfani in `src/engines/`:
-   - `src/engines/hybridRecommendations.js`
-   - `src/engines/hybrid/dataFetchers.js`
-   - `src/engines/hybrid/scoringEngine.js`
-   - `src/engines/profileStaleness.js`
-2. Aggiornamento delle suite di test che importano direttamente dai percorsi `src/engines/` per ripuntare ai moduli definitivi (`src/profile/`, `src/library/`, `src/indice/`, `src/meta/`, `src/catalog/`).
-3. Aggiornamento finale di `AiDiscoveryProvider.js` per importare direttamente da `src/profile`.
+---
+
+## Esito (fetta 3: la cancellazione)
+
+### 1. Misurazione Reale e Cancellazione dei File del Vecchio Stack
+I file rimanenti in `src/engines/` sono stati misurati con `wc -l` prima della rimozione. Per ciascuno di essi è stata verificata l'assenza totale di consumatori residui in `src/`, `index.js`, `ops/`, `scripts/`:
+
+| File | Righe misurate | Azione | Prova assenza consumatori esterni |
+|---|---|---|---|
+| `src/engines/profileStaleness.js` | 15 | `git rm` (commit `bdd8aa7`) | Solo delegatore e test. La logica pura vive in `src/profile/profileStaleness.js`. |
+| `src/engines/hybrid/scoringEngine.js` | 61 | `git rm` (commit `b795bff`) | Solo delegatore e test. La logica pura dei vettori vive in `src/profile/vectorElements.js`. |
+| `src/engines/hybrid/dataFetchers.js` | 159 | `git rm` (commit `4042547`) | `fetchPopularFallbackIds` integrata in `composer.js`. Fatti storici in `src/library/traktFetchers.js`, contesto in `src/profile/profileContext.js`. |
+| `src/engines/bolle/README.md` | 80 | `git rm` (commit `8cd522a`) | Documentazione obsoleta relativa a percorsi storici non più esistenti. |
+| `src/engines/hybridRecommendations.js` | 393 | Rinominato in `src/pool/composer.js` (commit `8cd522a`) | È il **compositore entry point** delle righe hero per `HybridProvider`. Promosso a modulo `src/pool/composer.js` e ri-esposto da `src/pool/index.js` via getter pigri. |
+
+**Esito Directory**: La cartella `src/engines/` è stata **completamente eliminata** dal repository (`Test-Path src/engines` restituisce `False`). Non rimane alcun pezzo del vecchio stack in `src/engines/`.
+
+---
+
+### 2. Risoluzione dei Due Debiti Tecnici Ereditati
+1. **Debito da Fetta 2 (AiDiscoveryProvider)**:
+   - In `src/catalog/providers/AiDiscoveryProvider.js`, `computeTopGenres` e `computeTopKeywords` venivano ancora importati dalla facciata legacy `../../engines/hybridRecommendations`.
+   - Il file è stato ripuntato direttamente a `../../profile`.
+   - Per neutralizzare la trappola di Jest (i mock parziali di `DuckDbProvider` fallivano con `TypeError: buildPresetFromFilters is not a function` sui require transitivi di `presets.js`), l'import di `getPresets` in `src/stremio/collection.js` è stato reso pigro all'interno di `syncCatalogData`.
+   - Le tre suite che mockavano il percorso legacy (`tests/aiSearchLexicalFallback.test.js`, `tests/diag.recommender.h5.pagination.test.js`, `tests/diag.recommender.h9.injectProfile.test.js`) sono state allineate per mockare `../src/profile`. Tutte e 3 passano (commit `695c756`).
+2. **Debito da Ticket 42 (Re-export della porta catalogo)**:
+   - `src/catalog/index.js` è stato arricchito con getter pigri non-breaking per `filters`, `presets`, `kidsModeFilters`, `contentId`, `normalizeContentId`, `getPresets`, `F`, `G`, `applyKidsMode`, `isItemInappropriateForKids`.
+   - L'appiattimento eager è stato deliberatamente evitato per prevenire collisioni di denominazione ed esecuzioni precoci del costruttore di `DuckDbProvider` durante l'import (commit `433d492`).
+
+---
+
+### 3. Decisione e Destinazione delle Suite di Test
+Ogni suite che esercitava il vecchio stack è stata valutata e ripuntata o rimossa con esplicita giustificazione del soggetto:
+
+| Suite di Test | Azione | Giustificazione |
+|---|---|---|
+| `tests/profileStaleness.test.js` | Ripuntata a `src/profile/profileStaleness` | Il soggetto del test (freschezza profilo) vive ora nel modulo `profile`. (PASS 15/15) |
+| `tests/scoringEngine.test.js` | Ripuntata a `src/profile/vectorElements` e `src/profile` | Il soggetto del test (elementi vettoriali e top keywords) vive in `profile`. (PASS 6/6) |
+| `tests/dnaKeywordIdentity.test.js` | Ripuntata a `src/profile/vectorElements` | Test su estrazione DNA keywords. (PASS 4/4) |
+| `tests/ticket15.dnaFixes.test.js` | Ripuntata a `src/profile/vectorElements` | Regressioni DNA keywords. (PASS 1/1) |
+| `tests/ticket24KeywordDna.test.js` | Ripuntata a `src/profile/vectorElements` | Calcolo keywords DNA. (PASS 10/10) |
+| `tests/traktHardening.test.js` | Ripuntata a `src/library/traktFetchers` | Chiamate e fetcher Trakt isolati in `library`. (PASS 33/33) |
+| `tests/graphClientPoolIntegration.test.js` | Ripuntata a `src/library/traktFetchers` | Fetcher della cronologia Trakt. (PASS 8/8) |
+| `tests/sliderWiringAndModulation.test.js` | Ripuntata a `src/library/traktFetchers` | Fetcher della cronologia Trakt. (PASS 11/11) |
+| `tests/dataFetchers.test.js` | Ripuntata a `src/profile`, `src/library/traktFetchers`, `src/pool/composer` | Test delle singole funzioni riposizionate nei moduli proprietari. (PASS 13/13) |
+| `tests/heroMovieDateRegression.test.js` | Ripuntata a `src/pool/composer` | Test di ordinamento fallback hero. (PASS 2/2) |
+| `tests/hybridRecommendations.test.js` | **Cancellazione mirata** di `describe('calculateHybridScore')` (righe 26–168); **conservazione e ripuntamento** delle restanti sezioni a `src/pool/composer` | **Soggetto morto**: `calculateHybridScore` è morto nel Ticket 46 con l'eliminazione di `catalogStrategies.js` e la sostituzione con il grafo gerarchico. Le sezioni vive (`recommendationsCache`, `RECOMMENDATIONS_CACHE_TTL_MS`, composer exports, routing catalogHandler) sono state preservate e ripuntate a `src/pool/composer`. (PASS 9/9) |
+| `tests/feedProtocolAndCatalogs.test.js` | Ripuntata a `src/pool/composer` | Integrazione catalogo hero. (PASS 10/10) |
+| `tests/graphRowsInvariant.test.js` | Ripuntata a `src/pool/composer` | Invariante righe grafo e hero. (PASS 1/1) |
+| `tests/heroCacheKeyNoVersion.test.js` | Ripuntata a `src/pool/composer` | Chiavi di cache condivise hero. (PASS 1/1) |
+| `tests/heroPoolAnimeExcludeCap.test.js` | Ripuntata a `src/pool/composer` | Cap dopo i filtri anime su riga hero. (PASS 1/1) |
+| `tests/hybridRatingsSync.test.js` | Ripuntata a `src/pool/composer` | Sincronizzazione rating e composizione. (PASS 4/4) |
+| `tests/stremioSyncCadence.test.js` | Ripuntata a `src/library/syncRecommendations` | Cadenza di sync Stremio. (PASS 1/1) |
+| `tests/hybridRecommendationsModuleResolution.test.js` | Ripuntata a `src/pool/composer` | Risoluzione moduli compositore. (PASS 1/1) |
+| `tests/proprietaDocumenti.test.js` | Aggiornata allowlist con `'src/pool/composer.js'` | Controllo formati documentali. (PASS 15/15) |
+
+---
+
+### 4. Evidenze e Verifiche di Accettazione
+
+#### A. Invarianza Byte-a-Byte del Manifest Stremio
+Comando:
+```bash
+node -e "const crypto = require('crypto'); const { buildManifest, buildRootManifest } = require('./src/stremio/manifest'); const m1 = JSON.stringify(buildManifest({})); const h1 = crypto.createHash('sha256').update(m1).digest('hex'); const m2 = JSON.stringify(buildRootManifest()); const h2 = crypto.createHash('sha256').update(m2).digest('hex'); console.log('buildManifest hash:', h1); console.log('buildRootManifest hash:', h2); process.exit(0);"
+```
+Output:
+```
+buildManifest hash: dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178
+buildRootManifest hash: 91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2
+```
+Gli hash SHA-256 coincidono **esattamente al byte** con la baseline di `main`.
+
+#### B. Suite Completa (`npx jest --forceExit`)
+Comando:
+```bash
+npx jest --forceExit
+```
+Output:
+```
+Summary of all failing tests
+FAIL tests/duckDbAndMatchmaker.test.js
+FAIL tests/candidateProvider.test.js
+FAIL tests/animeOverridesCertify.test.js
+FAIL tests/donghuaCatalog.test.js
+FAIL tests/presetBurtonOrdering.test.js
+
+Test Suites: 5 failed, 181 passed, 186 total
+Tests:       8 failed, 1 skipped, 1868 passed, 1877 total
+Snapshots:   0 total
+Time:        71.558 s
+```
+Le 5 suite fallite sono **esattamente e soltanto** le 5 suite ambientali previste dai criteri di accettazione (dovute all'assenza locale dei parquet TMDB), con 8 test falliti e zero regressioni.
+
+### 5. Chiusura del Ticket
+Tutte e 3 le fette del Ticket 41 sono state completate con successo:
+- Fetta 1: La facciata del gusto (isolamento profilo, libreria, indice)
+- Fetta 2: Il serving (catalogHandler e metaHandler unificati su src/meta e catalog)
+- Fetta 3: La cancellazione (rimozione totale di `src/engines/`, promozione a `src/pool/composer.js`, chiusura dei debiti e pulizia test)
 
 
 

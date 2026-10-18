@@ -18,7 +18,7 @@ const {
     setFlagNewHiddenGems,
     getRecommendationId
 } = require('../../src/pool');
-const { fetchProfileContext } = require('../../src/engines/hybrid/dataFetchers');
+const { fetchProfileContext } = require('../../src/profile');
 
 // DNA di fallback sintetico e realistico (dal profilo cinefilo di QA) nel caso in cui MongoDB non sia raggiungibile
 const FALLBACK_TASTE_PROFILE = {

@@ -16,7 +16,7 @@ function getTmdbVoteScore(item) {
     return Number.isFinite(vote) ? vote : 0;
 }
 
-const { computeTopGenres, computeTopKeywords } = require('../../engines/hybridRecommendations');
+const { computeTopGenres, computeTopKeywords } = require('../../profile');
 
 function applyAiQualityFilters(query) {
     if (query.strategy === 'discovery') {

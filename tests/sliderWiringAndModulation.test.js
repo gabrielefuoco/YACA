@@ -18,11 +18,6 @@
  *      mentre un filtro rigido farebbe crollare il numero di titoli.
  */
 
-jest.mock('../src/engines/hybrid/dataFetchers', () => ({
-    fetchProfileContext: jest.fn().mockResolvedValue({ profile: {}, user: {} }),
-    fetchPopularFallbackIds: jest.fn().mockResolvedValue(['tmdb:1'])
-}));
-
 const axios = require('axios');
 const graphClient = require('../src/clients/graphClient');
 const {

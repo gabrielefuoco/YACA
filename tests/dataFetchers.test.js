@@ -1,10 +1,9 @@
+const { fetchPopularFallbackIds } = require('../src/pool/composer');
 const {
-    fetchProfileContext,
-    fetchPopularFallbackIds,
     safeTraktFetch,
     fetchRecentHistory,
     fetchRecentRatings
-} = require('../src/engines/hybrid/dataFetchers');
+} = require('../src/library/traktFetchers');
 const tmdb = require('../src/clients/tmdb');
 const { getTmdbPopularCache, getTmdbTopRatedCache } = require('../src/cache/cacheInstances');
 const UserConfig = require('../src/models/UserConfig');
@@ -73,7 +72,7 @@ describe('dataFetchers', () => {
 
     describe('trakt fetchers', () => {
         const { traktClient } = require('../src/clients/trakt');
-        const { safeTraktFetch, fetchRecentHistory, fetchRecentRatings } = require('../src/engines/hybrid/dataFetchers');
+        const { safeTraktFetch, fetchRecentHistory, fetchRecentRatings } = require('../src/library/traktFetchers');
 
         it('safeTraktFetch should return empty on missing token', async () => {
             const result = await safeTraktFetch('/test', null);
