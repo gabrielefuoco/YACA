@@ -100,7 +100,11 @@ class IndiceModule {
      * @returns {Array<Object>}
      */
     searchTier2(rawQuery, { type = 'movie', limit = 20 } = {}) {
-        return this._tier2Client.search(rawQuery, { type, limit });
+        // Il client è pigro (getter): istanziarlo qui eviterebbe l'unico scopo del getter —
+        // non costruire Tier 2 quando l'indice viene solo importato (mock Jest, boot).
+        // Leggere `_tier2Client` direttamente dava `TypeError: Cannot read properties of null`,
+        // perché il campo è null finché il getter non lo crea.
+        return this.tier2Client.search(rawQuery, { type, limit });
     }
 
     /**
