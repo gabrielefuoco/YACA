@@ -111,7 +111,7 @@ jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbMetaDetails: jest.fn()
 }));
 
-jest.mock('../src/db/tier1LazyPromotion', () => ({
+jest.mock('../src/indice/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 

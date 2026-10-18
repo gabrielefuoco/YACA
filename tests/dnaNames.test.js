@@ -5,7 +5,7 @@ const {
     getReadableFallback,
     getCacheKey,
     clearDnaNamesCache
-} = require('../src/utils/tmdbNameResolver');
+} = require('../src/profile/tmdbNameResolver');
 const { processProfiles } = require('../src/api/configure/profileProcessor');
 const UserConfig = require('../src/models/UserConfig');
 

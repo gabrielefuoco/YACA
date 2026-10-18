@@ -3,7 +3,7 @@ const path = require('path');
 const TmdbDumpStore = require('./tmdbDumpStore');
 const TmdbDumpClient = require('./tmdbDumpClient');
 const { loadTrackedAiringIds, isTrackedAiringId } = require('./tmdbIngestPolicy');
-const { chiaveGlobale } = require('../configurazione');
+const { chiaveGlobale } = require('../../src/configurazione');
 
 const apiKey = chiaveGlobale('tmdb');
 
@@ -78,7 +78,7 @@ function isParquetFresh(store, duckDbStore) {
 
 async function buildTier2Index() {
     try {
-        const { buildTier2 } = require('../indice/tier2');
+        const { buildTier2 } = require('../../src/indice/tier2');
         console.log('[TmdbDump] Ricostruzione indice Tier 2 e SQLite FTS5 su disco...');
         const res = await buildTier2();
         console.log(`[TmdbDump] Indice Tier 2 completato: ${res.count} record in ${res.durationSeconds}s`);
@@ -99,7 +99,7 @@ async function convertAndReloadDuckDb(store) {
         });
 
         console.log('[TmdbDump] Ricostruzione DuckDB da Parquet...');
-        const duckDbStore = require('../indice/duckDbStore');
+        const duckDbStore = require('../../src/indice/duckDbStore');
         await duckDbStore.close();
         await duckDbStore.init({ forceRebuild: true });
         console.log('[TmdbDump] DuckDB pronto su database persistente.');
@@ -363,7 +363,7 @@ async function runTmdbDumpDaemon(options = {}) {
 
     try {
         const client = new TmdbDumpClient(apiKey);
-        const duckDbStore = require('../indice/duckDbStore');
+        const duckDbStore = require('../../src/indice/duckDbStore');
         
         // Conversione al boot: se i parquet esistono e sono freschi, salta convert_to_parquet.js
         if (isFirstRun) {
@@ -450,7 +450,7 @@ async function runTmdbDumpDaemon(options = {}) {
     }
 }
 
-// Supporto CLI autonomo: node src/utils/tmdbDumpDaemon.js [--once|--status|--health-check]
+// Supporto CLI autonomo: node services/tmdb-daemon/tmdbDumpDaemon.js [--once|--status|--health-check]
 if (require.main === module) {
     const args = process.argv.slice(2);
     const once = args.includes('--once');

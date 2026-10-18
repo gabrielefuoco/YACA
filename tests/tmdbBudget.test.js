@@ -4,7 +4,7 @@ const {
     DECLARED_TTLS,
     determineCategory,
     TmdbBudgetTracker
-} = require('../src/utils/tmdbBudget');
+} = require('../src/clients/tmdbBudget');
 const { createTmdbClient } = require('../src/clients/tmdb');
 
 describe('TMDB Budget & Spesa (Ticket #38)', () => {
@@ -233,7 +233,7 @@ describe('TMDB Budget & Spesa (Ticket #38)', () => {
         });
 
         test('TmdbDumpClient.fetchWithRetry registra le chiamate BACKFILL e rispetta il cap con degrado morbido', async () => {
-            const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
+            const TmdbDumpClient = require('../services/tmdb-daemon/tmdbDumpClient');
             const axios = require('axios');
             const dumpClient = new TmdbDumpClient('dummy_dump_key');
 

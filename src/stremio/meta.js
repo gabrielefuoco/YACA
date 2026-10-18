@@ -20,7 +20,7 @@ const {
     normalizeAnimeMarker,
     extractAnimeTmdbId
 } = require('../anime');
-const { schedulePromotion } = require('../db/tier1LazyPromotion');
+const { schedulePromotion } = require('../indice/tier1LazyPromotion');
 const indice = require('../indice');
 const itaAnnotations = require('../catalog/itaAnnotations');
 

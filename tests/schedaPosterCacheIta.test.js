@@ -38,7 +38,7 @@ jest.mock('../src/clients/tmdb', () => ({
     fetchTmdbEpisodes: jest.fn(async () => [])
 }));
 
-jest.mock('../src/db/tier1LazyPromotion', () => ({
+jest.mock('../src/indice/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 

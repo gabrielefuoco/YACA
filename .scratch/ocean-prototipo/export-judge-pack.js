@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const duckdb = require('duckdb');
-const { GENRE_ID_TO_NAME } = require('../../src/utils/tmdbNameResolver');
+const { GENRE_ID_TO_NAME } = require('../../src/profile/tmdbNameResolver');
 
 const [RUN_A, RUN_B, OUT_DIR] = process.argv.slice(2);
 const PARQUET_DIR = path.join(__dirname, '../../.cache/tmdb').split(String.fromCharCode(92)).join('/');

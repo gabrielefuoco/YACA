@@ -1,4 +1,4 @@
-const { animeAiringState } = require('../anime');
+const { animeAiringState } = require('../../src/anime');
 
 /**
  * tmdbIngestPolicy.js

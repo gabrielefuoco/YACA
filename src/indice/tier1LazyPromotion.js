@@ -83,7 +83,7 @@ async function promoteOnOpen({ tmdbId, type, apiKey, dataDir = null, fetchDetail
     // I dettagli: stessa sorgente e stessa forma delle righe già nel file. Il default è il
     // TmdbDumpClient, che richiede axios e il budget TMDB: si carica qui, non all'import del modulo.
     const carica = fetchDetails || (async (tipoNorm) => {
-        const TmdbDumpClient = require('../utils/tmdbDumpClient');
+        const TmdbDumpClient = require('../../services/tmdb-daemon/tmdbDumpClient');
         const client = new TmdbDumpClient(apiKey);
         return tipoNorm === 'tv' ? client.fetchTv(id) : client.fetchMovie(id);
     });

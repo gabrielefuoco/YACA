@@ -43,14 +43,14 @@ jest.mock('../src/indice/duckDbProvider', () => ({
     getDuckDbMetaDetails: jest.fn()
 }));
 
-jest.mock('../src/db/tier1LazyPromotion', () => ({
+jest.mock('../src/indice/tier1LazyPromotion', () => ({
     schedulePromotion: jest.fn()
 }));
 
 const { metaHandler } = require('../src/stremio/meta');
 const { getTmdbMetaDetails } = require('../src/clients/tmdb');
 const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
-const { schedulePromotion } = require('../src/db/tier1LazyPromotion');
+const { schedulePromotion } = require('../src/indice/tier1LazyPromotion');
 
 const API_KEY = 'test-key';
 
@@ -159,7 +159,7 @@ describe('tier1LazyPromotion: dedup e silenzio del memo', () => {
     /** Modulo reale, con memo fresco. */
     function moduloReale() {
         jest.resetModules();
-        return jest.requireActual('../src/db/tier1LazyPromotion');
+        return jest.requireActual('../src/indice/tier1LazyPromotion');
     }
 
     afterAll(() => {

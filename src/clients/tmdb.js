@@ -23,7 +23,7 @@ const {
 const { rateLimitedMap } = require('../infra/rateLimiter');
 const { generateRequestHash } = require('../cache/requestHash');
 const { logError } = require('../infra/logger');
-const { tmdbBudget, TMDB_CATEGORIES } = require('../utils/tmdbBudget');
+const { tmdbBudget, TMDB_CATEGORIES } = require('./tmdbBudget');
 
 
 const CacheManager = require('../cache/CacheManager');

@@ -55,7 +55,7 @@ jest.mock('../src/cache/CacheManager', () => {
 });
 
 /** Budget TMDB sempre aperto: il test misura la cache, non i cap di spesa. */
-jest.mock('../src/utils/tmdbBudget', () => ({
+jest.mock('../src/clients/tmdbBudget', () => ({
     tmdbBudget: {
         determineCategory: () => 'meta_click',
         checkBudget: () => ({ allowed: true }),
