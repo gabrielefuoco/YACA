@@ -33,7 +33,7 @@ async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userI
     const { getTasteProfile, isProfileSyncDue, registraImpressioni } = require('../../profile');
     const { syncIncrementalRecommendations } = require('../../library');
     const { composeCandidateIds, fetchPopularFallbackIds } = require('../../pool/composer');
-    const { idrataEImpaginaCandidati } = require('../../indice/idratazione');
+    const { idrataEImpaginaCandidati } = require('../idratazione');
     const { isHeroCatalogId } = require('../registry');
 
     const ctx = userConfig?.context || await contestoDi({
