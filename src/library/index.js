@@ -75,7 +75,6 @@ const libraryConversionOutcome = require('./ingestion/libraryConversionOutcome')
 // Estrazione fatti Trakt e sincronizzazione raccomandazioni (Ticket 41 - Fetta 1)
 const traktFetchers = require('./traktFetchers');
 const syncRecommendations = require('./syncRecommendations');
-const impressions = require('./impressions');
 
 /**
  * Write path unificato per la sincronizzazione dei dati Stremio nella libreria e cronologia (Ticket 16, Emendamento 2).
@@ -166,8 +165,6 @@ module.exports = {
     isStremioSyncDueForUser: syncRecommendations.isStremioSyncDueForUser,
     syncIncrementalRecommendations: syncRecommendations.syncIncrementalRecommendations,
     syncRecommendations,
-    registraImpressioni: impressions.registraImpressioni,
-    impressions,
 
     // Servizi di Ingestione (Ticket 16)
     LibrarySyncService,
