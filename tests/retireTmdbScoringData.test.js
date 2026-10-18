@@ -53,7 +53,9 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
             const filePath = path.join(__dirname, '../src/stremio/processors/MetadataHydrator.js');
             const fileContent = fs.readFileSync(filePath, 'utf8');
             expect(fileContent).not.toContain('TmdbScoringData');
-            expect(fileContent).toContain('indice');
+            // Non basta che il file NOMINI l'indice: deve passare dalla sua porta, non dal file interno.
+            expect(fileContent).toContain("require('../../indice')");
+            expect(fileContent).not.toContain('indice/duckDbStore');
         });
 
         test('metaHandler does not import TmdbScoringData or call updateScoringCache', () => {
