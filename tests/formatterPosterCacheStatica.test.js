@@ -20,7 +20,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
+const { sanitizeCatalogMeta } = require('../src/stremio/formatters/StremioFormatter');
 
 const HOST = 'http://localhost:7860';
 const ERDB_CHIAVE = 'Tk-prova';

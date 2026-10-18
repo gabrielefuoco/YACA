@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { hydrateResultsFromLocalDetailsCache } = require('../src/catalog/processors/MetadataHydrator');
+const { hydrateResultsFromLocalDetailsCache } = require('../src/stremio/processors/MetadataHydrator');
 const { metaHandler } = require('../src/meta');
 
 describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () => {
@@ -50,7 +50,7 @@ describe('Retire TmdbScoringData: Catalogs & Meta populate WITHOUT Mongo', () =>
 
     describe('1. Static Code Analysis: No references in runtime pipelines', () => {
         test('MetadataHydrator does not import or reference TmdbScoringData', () => {
-            const filePath = path.join(__dirname, '../src/catalog/processors/MetadataHydrator.js');
+            const filePath = path.join(__dirname, '../src/stremio/processors/MetadataHydrator.js');
             const fileContent = fs.readFileSync(filePath, 'utf8');
             expect(fileContent).not.toContain('TmdbScoringData');
             expect(fileContent).toContain('duckDbStore');

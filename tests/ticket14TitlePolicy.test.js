@@ -14,7 +14,7 @@ const path = require('path');
 const TmdbDumpClient = require('../src/utils/tmdbDumpClient');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { mapDuckDbRowToMeta } = require('../src/indice/duckDbProvider');
-const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
+const { sanitizeCatalogMeta } = require('../src/stremio/formatters/StremioFormatter');
 
 describe('Ticket 14: Policy IT -> EN -> JA nel dump TMDB e DuckDB Provider', () => {
     afterEach(() => {

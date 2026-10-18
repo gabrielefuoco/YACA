@@ -17,8 +17,8 @@ const { getPresets } = require('../catalog/presets');
 const { EPISODE_CATALOG_IDS } = require('../catalog/constants');
 
 const { routeCatalogRequest } = require('../catalog/CatalogRouter');
-const { hydrateEpisodeBadgesFromCache } = require('../catalog/processors/MetadataHydrator');
-const { formatStremioCatalog } = require('../catalog/formatters/StremioFormatter');
+const { hydrateEpisodeBadgesFromCache } = require('../stremio/processors/MetadataHydrator');
+const { formatStremioCatalog } = require('../stremio/formatters/StremioFormatter');
 const {
     normalizeAnimeMarker,
     isAiringStateCatalog,

@@ -8,7 +8,7 @@ jest.mock('../src/library/ingestion/LibrarySyncService', () => ({
 
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { getWatchlistCatalog } = require('../src/catalog/providers/WatchlistProvider');
+const { getWatchlistCatalog } = require('../src/stremio/providers/WatchlistProvider');
 const { applyKidsMode, isItemInappropriateForKids } = require('../src/catalog/kidsModeFilters');
 
 function mockLibraryItems(items) {

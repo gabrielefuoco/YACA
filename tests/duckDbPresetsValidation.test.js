@@ -1,7 +1,7 @@
 const { getPresets } = require('../src/catalog/presets');
 const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
-const { sanitizeCatalogMeta } = require('../src/catalog/formatters/StremioFormatter');
+const { sanitizeCatalogMeta } = require('../src/stremio/formatters/StremioFormatter');
 const { aiPromptCache, catalogRequestCache, catalogFallbackCache, simulcastDatesCache } = require('../src/cache/cacheInstances');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const CacheManager = require('../src/cache/CacheManager');

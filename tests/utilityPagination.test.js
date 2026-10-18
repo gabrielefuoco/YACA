@@ -20,16 +20,16 @@ jest.mock('../src/stremio/hybridServing', () => ({
     getEngineHybridCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/TraktProvider', () => ({
+jest.mock('../src/stremio/providers/TraktProvider', () => ({
     getTraktCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeCombinedSearch: jest.fn(),
     executeUniversalPipeline: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/AiringStateProvider', () => ({
+jest.mock('../src/stremio/providers/AiringStateProvider', () => ({
     getAiringStateCatalog: jest.fn()
 }));
 
@@ -38,7 +38,7 @@ const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
 const {
     getWatchlistCatalog,
     WATCHLIST_PAGE_SIZE
-} = require('../src/catalog/providers/WatchlistProvider');
+} = require('../src/stremio/providers/WatchlistProvider');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const { compileQuery } = require('../src/indice/compiler');
 

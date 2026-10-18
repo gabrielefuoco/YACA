@@ -85,7 +85,7 @@ jest.mock('../src/indice/duckDbProvider', () => ({
     mapDuckDbRowToMeta: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeCombinedSearch: jest.fn(),
     executeUniversalPipeline: jest.fn()
 }));

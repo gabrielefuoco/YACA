@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 
 const dumpList = require('../scripts/erdb-builder/dump-list');
-const { getErdbId } = require('../src/catalog/formatters/StremioFormatter');
+const { getErdbId } = require('../src/stremio/formatters/StremioFormatter');
 
 /**
  * Runner che passa il dump ma segna gli avvisi di Node. Il warning del leak di listener

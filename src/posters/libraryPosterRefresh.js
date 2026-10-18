@@ -30,7 +30,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { BADGE_IMG_VERSION } = require('../catalog/formatters/posterBadgeVersion');
+const { BADGE_IMG_VERSION } = require('../stremio/formatters/posterBadgeVersion');
 // I moduli CONCRETI, non la porta: `./index` richiede questo file (lo espone come
 // `refreshLibraryPoster`), quindi chiederlo alla porta chiude un ciclo — e Node lo segnala con
 // «Accessing non-existent property ... inside circular dependency» (il test di `erdbList` lo

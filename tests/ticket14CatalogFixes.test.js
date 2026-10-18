@@ -1,10 +1,10 @@
 const stremioRouter = require('../src/api/stremio');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
-const { getWatchlistCatalog } = require('../src/catalog/providers/WatchlistProvider');
+const { getWatchlistCatalog } = require('../src/stremio/providers/WatchlistProvider');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const { normalizeLegacyId } = require('../scripts/migrate_library_itemid_null');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
-const { executeUniversalPipeline } = require('../src/catalog/providers/AiDiscoveryProvider');
+const { executeUniversalPipeline } = require('../src/stremio/providers/AiDiscoveryProvider');
 
 jest.mock('../src/library/models/UserLibraryItem');
 jest.mock('../src/models/AddonConfig', () => ({
@@ -13,7 +13,7 @@ jest.mock('../src/models/AddonConfig', () => ({
 jest.mock('../src/models/UserAccount', () => ({
     findOne: jest.fn().mockResolvedValue(null)
 }));
-jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeCombinedSearch: jest.fn(),
     executeUniversalPipeline: jest.fn()
 }));

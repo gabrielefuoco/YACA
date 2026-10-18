@@ -18,7 +18,7 @@ jest.mock('../src/indice/duckDbProvider', () => ({
     mapDuckDbRowToMeta: jest.fn((row) => row)
 }));
 
-jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeCombinedSearch: jest.fn(),
     executeUniversalPipeline: jest.fn()
 }));
@@ -30,7 +30,7 @@ jest.mock('../src/db/learnedNames', () => ({
 
 const { Tier2SearchClient } = require('../src/indice/tier2');
 const { getDuckDbCatalogFromFilters } = require('../src/indice/duckDbProvider');
-const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');
+const { executeCombinedSearch } = require('../src/stremio/providers/AiDiscoveryProvider');
 const { routeCatalogRequest } = require('../src/catalog/CatalogRouter');
 const http = require('http');
 const https = require('https');

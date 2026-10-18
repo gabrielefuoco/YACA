@@ -55,7 +55,7 @@ function sanitizePart(value) {
 
 // La versione del poster la calcola questo modulo condiviso: e' l'unico modo perche'
 // l'app e il dump offline costruiscano lo STESSO nome per lo stesso poster.
-const { calcolaVersionePoster } = require('../../catalog/formatters/posterBadgeVersion');
+const { calcolaVersionePoster } = require('../../stremio/formatters/posterBadgeVersion');
 
 /**
  * Nome file deterministico per un poster: `tmdb-movie-27205-a1b2c3d4_ITA.jpg`.

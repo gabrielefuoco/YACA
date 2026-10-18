@@ -86,6 +86,6 @@ Sul percorso di runtime la domanda è un'altra — «da questo evento TMDB devo 
 > [!CAUTION]
 > Il parsing automatico dei «Part 2» sui titoli Kitsu **non esiste più**, e con lui la ragione per cui il badge `Pt2`/`Pt3` restava pulito rispetto ai falsi positivi (tipo «Season 4»).
 >
-> Il badge è ancora previsto nel formatter (`src/catalog/formatters/StremioFormatter.js:262`, `if (item._kitsuPart)`), ma **nessun codice scrive più `_kitsuPart`**: il produttore era `src/clients/kitsu.js`, rimosso il 2026-07-09 insieme a `TmdbToKitsuMapper.js`, `KitsuProvider` e al modello `TmdbToKitsuMapping` — è il commit `a028ff6`, lo stesso che ha introdotto l'attuale `animeMappingStore`. Il ramo è dormiente: si può reintrodurre il rilevamento, ma non va raccontato come una funzione attiva né usato come indicazione del comportamento corrente.
+> Il badge è ancora previsto nel formatter (`src/stremio/formatters/StremioFormatter.js:262`, `if (item._kitsuPart)`), ma **nessun codice scrive più `_kitsuPart`**: il produttore era `src/clients/kitsu.js`, rimosso il 2026-07-09 insieme a `TmdbToKitsuMapper.js`, `KitsuProvider` e al modello `TmdbToKitsuMapping` — è il commit `a028ff6`, lo stesso che ha introdotto l'attuale `animeMappingStore`. Il ramo è dormiente: si può reintrodurre il rilevamento, ma non va raccontato come una funzione attiva né usato come indicazione del comportamento corrente.
 
 Alcuni anime vengono divisi in due metà (split-cour): i titoli Kitsu originali possono avere diciture come «Part 2». *Questa parte della sezione è superata, si veda l'avviso sopra.*

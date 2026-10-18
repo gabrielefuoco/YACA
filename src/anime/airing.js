@@ -768,7 +768,7 @@ async function applyAiringStateBadges(metas, {
             userConfig,
             hostUrl
         };
-        const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+        const { sanitizeCatalogMeta } = require('../stremio/formatters/StremioFormatter');
         const mStore = mappingStore || require('./mapping');
 
         const processed = [];

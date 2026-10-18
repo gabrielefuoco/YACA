@@ -208,7 +208,7 @@ const traktSourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { getTraktCatalog } = require('../catalog/providers/TraktProvider');
+        const { getTraktCatalog } = require('../stremio/providers/TraktProvider');
         return await getTraktCatalog(ctx.baseId, ctx.skip || 0, ctx.userConfig, ctx.tmdbApiKey, ctx.extra?.hostUrl);
     },
 
@@ -237,7 +237,7 @@ const watchlistSourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { getWatchlistCatalog } = require('../catalog/providers/WatchlistProvider');
+        const { getWatchlistCatalog } = require('../stremio/providers/WatchlistProvider');
         return await getWatchlistCatalog(ctx.id, ctx.type, ctx.skip || 0, ctx.userConfig, ctx.activeProfileSettings);
     },
 
@@ -265,7 +265,7 @@ const airingStateSourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { getAiringStateCatalog } = require('../catalog/providers/AiringStateProvider');
+        const { getAiringStateCatalog } = require('../stremio/providers/AiringStateProvider');
         return await getAiringStateCatalog(ctx.skip || 0);
     },
 
@@ -293,7 +293,7 @@ const aiDiscoverySourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { executeCombinedSearch, executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
+        const { executeCombinedSearch, executeUniversalPipeline } = require('../stremio/providers/AiDiscoveryProvider');
         const { normalizeToUniversalSchema } = require('../infra/resultMerger');
 
         if (ctx.search) {
@@ -335,7 +335,7 @@ const aiDiscoverySourceEntry = defineSourceEntry({
 
     async search(searchCtx) {
         try {
-            const { executeCombinedSearch } = require('../catalog/providers/AiDiscoveryProvider');
+            const { executeCombinedSearch } = require('../stremio/providers/AiDiscoveryProvider');
             return await executeCombinedSearch(
                 searchCtx.q,
                 searchCtx.userConfig || {},

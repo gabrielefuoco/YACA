@@ -18,7 +18,7 @@ const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const UserAccount = require('../src/models/UserAccount');
 const AddonConfig = require('../src/models/AddonConfig');
 const { stremioClient } = require('../src/stremio');
-const { BADGE_IMG_VERSION } = require('../src/catalog/formatters/posterBadgeVersion');
+const { BADGE_IMG_VERSION } = require('../src/stremio/formatters/posterBadgeVersion');
 
 const HOST = 'https://yaca.test';
 const ERDB = 'https://easyratingsdb.com/Tk-x/poster/tmdb%3Amovie%3A12477.jpg';

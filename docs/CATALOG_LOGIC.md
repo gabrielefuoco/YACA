@@ -55,7 +55,7 @@ graph TD
    - **Boundary anime**: ogni item in uscita dal routing passa da `normalizeAnimeMarker`, che espone `_isAnime`. È il punto in cui si decide tutto ciò che riguarda gli anime: clone ITA, filtri e badge (vedi § 1.1 e [KITSU_MAPPING.md](KITSU_MAPPING.md)).
    - **Hydration & Badge**: Se il catalogo prevede badge per gli episodi (es. simulcast o nuove uscite), arricchisce i metadati recuperando le informazioni sugli episodi.
    - **Simulcast Sorting**: per il catalogo novità anime (`preset_anime_simulcast`) l'ordinamento temporale è già applicato da `AiringStateProvider.js` leggendo `homeReleases` di `anime_airing_state` (l'ultimo episodio che la home ha mostrato come uscito): quel ramo esce prima di qualsiasi ordinamento qui sotto.
-8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/catalog/formatters/StremioFormatter.js).
+8. **Formattazione Stremio**: I metadati normalizzati vengono convertiti nel formato finale Stremio Meta Preview tramite [StremioFormatter.js](../src/stremio/formatters/StremioFormatter.js).
 
 ### 1.1 Il selettore `Solo Anime` / `No Anime`
 
@@ -87,7 +87,7 @@ Tre confini da non confondere:
 
 ## 2. La Universal Pipeline (query multiple e consenso)
 
-Per i cataloghi generati dall'intelligenza artificiale che compongono più query, YACA usa la **Universal Pipeline** dentro [AiDiscoveryProvider.js](../src/catalog/providers/AiDiscoveryProvider.js): le query vengono eseguite in parallelo e i risultati combinati con il **Consensus Scoring**:
+Per i cataloghi generati dall'intelligenza artificiale che compongono più query, YACA usa la **Universal Pipeline** dentro [AiDiscoveryProvider.js](../src/stremio/providers/AiDiscoveryProvider.js): le query vengono eseguite in parallelo e i risultati combinati con il **Consensus Scoring**:
 
 ```mermaid
  graph TD
@@ -113,7 +113,7 @@ YACA combina i risultati di query multiple premiando la convergenza tramite `app
 
 ## 3. Catalog Providers
 
-La risoluzione fisica dei dati è delegata ai provider dedicati in `src/catalog/providers/`:
+La risoluzione fisica dei dati è delegata ai provider dedicati in `src/stremio/providers/`:
 
 - **DuckDbProvider.js**: Motore principale. Genera risultati analitici a latenza zero partendo da file Parquet TMDB off-grid. Utilizza il modulo `queryBuilder.js` per risolvere i filtri in codice SQL nativo (inclusa la Full-Text Search).
 - **AiDiscoveryProvider.js**: Si occupa dei task generativi (Universal Pipeline). Sebbene elabori query intelligenti, alla base demanda a `DuckDbProvider` la vera e propria interrogazione passando i filtri normalizzati (`AiQueryNormalizer.js`) a `getDuckDbCatalogFromFilters` e `queryBuilder.js`. (L'antico adattatore `legacyTmdbAdapter.js` è stato rimosso il **2026-07-23**, commit `73a023d`).

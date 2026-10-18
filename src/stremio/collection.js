@@ -2,7 +2,7 @@ const { stremioClient, stremioLikesClient } = require('./client');
 const { accountDi, traktDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
 const { createTmdbClient } = require('../clients/tmdb');
-const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+const { sanitizeCatalogMeta } = require('../stremio/formatters/StremioFormatter');
 const { isAllowedUrl } = require('../infra/helpers');
 
 const ADDON_ID = 'org.stremio.yaca.catalog';
@@ -315,7 +315,7 @@ async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
             }
 
             if (catalogMeta) {
-                const { executeUniversalPipeline } = require('../catalog/providers/AiDiscoveryProvider');
+                const { executeUniversalPipeline } = require('../stremio/providers/AiDiscoveryProvider');
                 const results = await executeUniversalPipeline(
                     catalogMeta,
                     tmdbClient,

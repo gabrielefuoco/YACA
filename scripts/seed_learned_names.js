@@ -66,7 +66,7 @@ const INTERVALLO_ATTESA_REDIS_MS = 100;
  *     il tipo **Stremio**: `'series'` (`src/handlers/metaHandler.js`, `loadDetailsFromTmdb` in
  *     `src/catalog/tier2Enrich.js` passa `'series'`);
  *   - la famiglia `v2:*` nasce da `getTmdbMovieDetails`, che invece riceve gia' `'tv'`
- *     (`src/catalog/processors/MetadataHydrator.js`).
+ *     (`src/stremio/processors/MetadataHydrator.js`).
  * Quindi in Redis le serie compaiono con **due** nomi diversi, e vanno entrambe lette come `tv`:
  * e' il valore che l'app usa in scrittura (`toLearnableRow` in `src/db/learnedNames.js`) e che
  * chiede in lettura (`toTier2Type` in `src/catalog/tier2Search.js`, che filtra per

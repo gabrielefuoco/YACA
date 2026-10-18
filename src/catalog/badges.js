@@ -17,7 +17,7 @@ const {
     applyAiringStateBadges,
     findAiringStateDocument
 } = require('../anime');
-const { sanitizeCatalogMeta } = require('./formatters/StremioFormatter');
+const { sanitizeCatalogMeta } = require('../stremio/formatters/StremioFormatter');
 
 const extractTmdbId = extractAnimeTmdbId;
 

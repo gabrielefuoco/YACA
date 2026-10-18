@@ -1,7 +1,7 @@
 const {
     clearAiFilterResolutionCache,
     normalizeAiDiscoveryQueries
-} = require('../src/catalog/providers/AiQueryNormalizer');
+} = require('../src/stremio/providers/AiQueryNormalizer');
 const { buildPresetFromFilters } = require('../src/indice/duckDbProvider');
 const { F } = require('../src/indice/filters');
 

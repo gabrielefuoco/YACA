@@ -10,7 +10,7 @@
  * (gruppo AND originale). Oggi la virgola sparisce.
  */
 
-const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');
+const { executeCombinedSearch } = require('../src/stremio/providers/AiDiscoveryProvider');
 
 jest.mock('../src/clients/tmdb', () => ({
     createTmdbClient: jest.fn(() => ({ get: jest.fn() })),
@@ -25,7 +25,7 @@ jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
+jest.mock('../src/stremio/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));
 

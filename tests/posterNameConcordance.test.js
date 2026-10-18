@@ -21,11 +21,11 @@ const {
 } = require('../scripts/erdb-builder/build');
 const {
     urlPosterComposto
-} = require('../src/catalog/formatters/StremioFormatter');
+} = require('../src/stremio/formatters/StremioFormatter');
 const {
     calcolaVersionePoster,
     BADGE_IMG_VERSION
-} = require('../src/catalog/formatters/posterBadgeVersion');
+} = require('../src/stremio/formatters/posterBadgeVersion');
 
 const HOST = 'https://esempio.test';
 

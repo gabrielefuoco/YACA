@@ -10,7 +10,7 @@
  * devono produrre insiemi di ID disgiunti.
  */
 
-const { executeUniversalPipeline } = require('../src/catalog/providers/AiDiscoveryProvider');
+const { executeUniversalPipeline } = require('../src/stremio/providers/AiDiscoveryProvider');
 
 jest.mock('../src/clients/tmdb', () => ({
     createTmdbClient: jest.fn(() => ({ get: jest.fn() })),
@@ -31,7 +31,7 @@ jest.mock('../src/profile', () => ({
     computeTopKeywords: jest.fn(() => [])
 }));
 
-jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
+jest.mock('../src/stremio/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));
 

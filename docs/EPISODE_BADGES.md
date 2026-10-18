@@ -3,7 +3,7 @@
 In Stremio, i cataloghi generati da YACA offrono all'utente un'informazione visiva immediata sul progresso di una serie in corso attraverso i "Badge" posizionati agli angoli dei poster (Top-Right e Top-Left).
 
 ## Architettura dei Badge
-La generazione dei badge avviene primariamente all'interno di `src/catalog/formatters/StremioFormatter.js`.
+La generazione dei badge avviene primariamente all'interno di `src/stremio/formatters/StremioFormatter.js`.
 
 YACA applica due tipi principali di badge:
 1. **Top-Left (Stagione / Lingua)**: Indica la stagione corrente della serie o la lingua del flusso audio (es. `S4`, `S2 - Pt2`, `ITA - S1`).

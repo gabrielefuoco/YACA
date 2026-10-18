@@ -13,9 +13,9 @@ jest.mock('../src/indice/duckDbProvider', () => {
 
 const { animeAiringState, animeMappingStore } = require('../src/anime');
 const { getDuckDbCatalogFromPreset } = require('../src/indice/duckDbProvider');
-const { getAiringStateCatalog, PAGE_SIZE } = require('../src/catalog/providers/AiringStateProvider');
+const { getAiringStateCatalog, PAGE_SIZE } = require('../src/stremio/providers/AiringStateProvider');
 const { applyAiringStateBadges, isAiringStateCatalog } = require('../src/anime');
-const { sanitizeCatalogMeta, formatStremioCatalog } = require('../src/catalog/formatters/StremioFormatter');
+const { sanitizeCatalogMeta, formatStremioCatalog } = require('../src/stremio/formatters/StremioFormatter');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 22, 12, 0, 0); // 2026-09-22T12:00:00Z

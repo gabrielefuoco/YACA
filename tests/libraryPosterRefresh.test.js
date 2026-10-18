@@ -17,7 +17,7 @@ const {
     refreshStaticPoster,
     unwrapComposedSource
 } = require('../src/posters/libraryPosterRefresh');
-const { BADGE_IMG_VERSION } = require('../src/catalog/formatters/posterBadgeVersion');
+const { BADGE_IMG_VERSION } = require('../src/stremio/formatters/posterBadgeVersion');
 
 const HOST = 'https://yaca.test';
 const ERDB = 'https://easyratingsdb.com/Tk-x/poster/tmdb%3Amovie%3A12477.jpg';

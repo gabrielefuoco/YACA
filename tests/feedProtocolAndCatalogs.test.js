@@ -63,8 +63,8 @@ jest.mock('../src/indice/duckDbProvider', () => {
     };
 });
 
-const AiringStateProvider = require('../src/catalog/providers/AiringStateProvider');
-const WatchlistProvider = require('../src/catalog/providers/WatchlistProvider');
+const AiringStateProvider = require('../src/stremio/providers/AiringStateProvider');
+const WatchlistProvider = require('../src/stremio/providers/WatchlistProvider');
 
 describe('Ticket 46: Feed & Protocol Verification for New Graph Catalogs', () => {
     const userConfig = {

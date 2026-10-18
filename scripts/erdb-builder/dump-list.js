@@ -25,7 +25,7 @@ const fs = require('fs');
 const path = require('path');
 const duckdb = require('duckdb');
 
-const { getErdbId } = require('../../src/catalog/formatters/StremioFormatter');
+const { getErdbId } = require('../../src/stremio/formatters/StremioFormatter');
 
 const DEFAULT_PARQUET_DIR = '/data/tmdb';
 const BADGE_ITA = 'ITA';

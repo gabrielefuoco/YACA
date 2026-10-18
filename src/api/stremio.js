@@ -24,7 +24,7 @@ const axios = require('axios');
 const path = require('path');
 const crypto = require('crypto');
 
-const { urlPosterDaRottaLegacy } = require('../catalog/formatters/StremioFormatter');
+const { urlPosterDaRottaLegacy } = require('../stremio/formatters/StremioFormatter');
 const { catalogHandler } = require('../stremio');
 const { metaHandler, isMetaDubbed } = require('../meta');
 const { parseExtra } = require('../infra/helpers');
@@ -257,7 +257,7 @@ router.get(['/:userHandle/meta/:type/:id.json', '/:userHandle/:configVersion/met
         const response = await metaHandler(args, userConfig);
         
         if (response && response.meta) {
-            const { sanitizeCatalogMeta } = require('../catalog/formatters/StremioFormatter');
+            const { sanitizeCatalogMeta } = require('../stremio/formatters/StremioFormatter');
             const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
             
             // Apply ERDB styling to meta response

@@ -11,7 +11,7 @@ jest.mock('../src/models/TasteProfile', () => ({
     findOne: jest.fn()
 }));
 
-jest.mock('../src/catalog/processors/MetadataHydrator', () => ({
+jest.mock('../src/stremio/processors/MetadataHydrator', () => ({
     hydrateResultsFromLocalDetailsCache: jest.fn(async () => {})
 }));
 
@@ -25,7 +25,7 @@ jest.mock('../src/profile', () => ({
     getTasteProfile: jest.fn((userId, context) => require('../src/models/TasteProfile').findOne({ owner: userId, context }))
 }));
 
-const { executeCombinedSearch } = require('../src/catalog/providers/AiDiscoveryProvider');
+const { executeCombinedSearch } = require('../src/stremio/providers/AiDiscoveryProvider');
 const router = require('../src/ricerca/router');
 
 const TasteProfile = require('../src/models/TasteProfile');

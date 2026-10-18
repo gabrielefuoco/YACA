@@ -12,20 +12,20 @@ jest.mock('../src/stremio/hybridServing', () => ({
     getEngineHybridCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/TraktProvider', () => ({
+jest.mock('../src/stremio/providers/TraktProvider', () => ({
     getTraktCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/AiDiscoveryProvider', () => ({
+jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
     executeCombinedSearch: jest.fn(),
     executeUniversalPipeline: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/AiringStateProvider', () => ({
+jest.mock('../src/stremio/providers/AiringStateProvider', () => ({
     getAiringStateCatalog: jest.fn()
 }));
 
-jest.mock('../src/catalog/providers/WatchlistProvider', () => ({
+jest.mock('../src/stremio/providers/WatchlistProvider', () => ({
     getWatchlistCatalog: jest.fn()
 }));
 

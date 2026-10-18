@@ -1,4 +1,4 @@
-const { executePaginatedFetch } = require('../src/catalog/providers/paginationHelper');
+const { executePaginatedFetch } = require('../src/stremio/providers/paginationHelper');
 
 describe('paginationHelper (1 fetch per richiesta)', () => {
     it('esegue esattamente 1 singola invocazione di fetchFn con lo skip indicato', async () => {
