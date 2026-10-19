@@ -89,3 +89,23 @@ ricostruire e riavviare l'addon**, e un export rotto smette di vivere nel proces
 stacca anche quando ha un **dominio di guasto** o una **cadenza di rilascio** diversi — non solo un profilo di
 risorse diverso. Qui il profilo è lo stesso (due processi Node magri); sono il guasto e la cadenza a essere
 diversi.
+
+## Il meccanismo (deciso il 19/10/2026)
+
+Un volume vuole **file su disco**, e la CI non li mette lì da sola. La forma più pigra che funziona:
+
+1. **`.github/workflows/deploy-frontend.yml`**: costruisce `frontend/` (già `output: 'export'`) e pubblica
+   `frontend/out` come **tarball in una GitHub Release** (o come artefatto scaricabile via `gh`). Niente
+   immagine: quello che serve è una cartella, non un processo.
+2. **`ops/frontend-aggiorna.sh`** sul mate: scarica il tarball, lo scompatta in `/srv/yaca/frontend-out` (nuova
+   cartella, non dentro il repo), e **non riavvia niente** — `express.static` rilegge da disco a ogni richiesta,
+   quindi i file nuovi si servono da soli.
+3. **`docker-compose.yml`**: `./frontend-out:/app/frontend/out:ro` sul servizio `app`.
+4. **`Dockerfile`**: lo stadio `frontend-builder` e la riga `COPY --from=frontend-builder /app/frontend/out`
+   **spariscono**; l'immagine dell'app smette di contenere il frontend.
+5. `index.js` **non cambia**: `express.static(path.join(__dirname, 'frontend', 'out'))` continua a funzionare, e
+   con `:memory:`-style fallback se il volume è vuoto (una cartella vuota non deve far cadere l'app: le pagine
+   mancano, l'addon no).
+
+**Il criterio della decisione 35 è rispettato**: nessun container nuovo, nessun ingresso nuovo, nessuna rotta
+cambiata. Cambia *chi costruisce* e *quando*, che è il punto.
