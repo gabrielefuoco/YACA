@@ -165,7 +165,11 @@ const corri = (argv, dip = {}) => main(
     { coda: creaCoda([]), fetchImpl: creaFetch({}), store: null, redisClient: redis, log, ...dip }
 );
 
-const filePresenti = () => fs.readdirSync(dir).sort();
+// I poster scritti nel volume, ordinati. Il contratto del volume (`versioni.json`, ticket 57) vive
+// nella stessa cartella ma non è un poster: i test qui sotto parlano di poster, quindi si esclude.
+// Non è un'asserzione indebolita — è la stessa domanda ("quali poster ha scritto il drenatore?") con
+// l'unico file che non è un poster tolto di mezzo.
+const filePresenti = () => fs.readdirSync(dir).filter((f) => f !== 'versioni.json').sort();
 // La riga di chiusura del giro: quella dei numeri, o quella del giro saltato (che non ha
 // numeri da mostrare, e non deve fingere di averli).
 const riepilogo = () => log.linee.log.concat(log.linee.warn)

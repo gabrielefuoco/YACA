@@ -351,10 +351,13 @@ async function gira({
         _notaRedis(stato, redis, log);
 
         try {
-            const vPath = path.join(outDir, VERSIONI_FILE_NAME);
-            if (fs.existsSync(vPath)) {
-                await scriviVersioniVolume(outDir, { produttore: 'drena-coda-poster' });
-            }
+            // Il drenatore è un PRODUTTORE: dichiara il contratto del volume SEMPRE, non solo se
+            // qualcun altro l'ha già fatto. Con la guardia `existsSync` il volume restava senza
+            // `versioni.json` finché non ci passavano ERDB o il builder offline, e
+            // `/erdb-poster/health` restava rosso per giorni: un allarme sempre acceso è un
+            // allarme che nessuno guarda più — cioè proprio il difetto che questo ticket esiste
+            // per togliere. Se il volume non è scrivibile, lo dice il catch qui sotto.
+            await scriviVersioniVolume(outDir, { produttore: 'drena-coda-poster' });
         } catch (err) {
             log.warn(`[Drena] impossibile aggiornare ${VERSIONI_FILE_NAME}: ${err && err.message ? err.message : err}`);
         }

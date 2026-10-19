@@ -214,3 +214,40 @@ Verificato da me: le rotte `health` e `versioni` sono registrate **prima** di `/
 **Smell dichiarato, non bloccante**: `leggiVersioniVolume` ripete sei ritorni quasi identici (la forma completa dello stato per ogni modo di fallimento). È verboso, non sbagliato: se cresce ancora, si estrae un costruttore di stato.
 
 **Al primo avvio in produzione** `/erdb-poster/health` risponderà **503** finché il volume non contiene `versioni.json` — è il segnale onesto che il volume non dichiara ancora la sua convenzione. Il prossimo giro del drenatore o del builder lo scrive.
+
+---
+
+**Correzione dell'integratore (19/10/2026), dopo il deploy — un bug latente che l'Esito dava per funzionante.**
+
+L'Esito dichiarava: *«Aggiornamento di `versioni.json` nei cicli di drenaggio se il file è già presente nella
+directory»*. Il codice era:
+
+```js
+try {
+    const vPath = path.join(outDir, VERSIONI_FILE_NAME);
+    if (fs.existsSync(vPath)) {            // ← `fs` NON è importato in questo file
+        await scriviVersioniVolume(outDir, { produttore: 'drena-coda-poster' });
+    }
+} catch (err) {
+    log.warn(`[Drena] impossibile aggiornare ${VERSIONI_FILE_NAME}: ...`);   // ← e il ReferenceError finiva qui
+}
+```
+
+`drenaCodaPoster.js` **non importa `fs`**: quella riga lanciava `ReferenceError`, il `catch` la inghiottiva e
+loggava un warning. Quindi il drenatore — il produttore più frequente, ogni 10 minuti — **non ha mai scritto
+`versioni.json`**, e `/erdb-poster/health` sarebbe rimasto **503** finché non ci fosse passato ERDB. Un allarme
+sempre acceso è un allarme che nessuno guarda: esattamente il difetto che questo ticket esiste per togliere.
+
+**Corretto**: la guardia `existsSync` è sparita (un produttore dichiara il contratto **sempre**, non solo se
+qualcun altro l'ha già fatto) e la riga morta con essa. Verificato che su un volume nuovo il drenatore ora scrive
+`versioni.json` (`presente: true, valido: true, produttore: drena-coda-poster, contratto: 1`).
+
+**Perché i test non l'avevano preso**: `tests/posterVolumeContract.test.js` prova `volumeContract` da solo, non il
+drenatore; e i test del drenatore asserivano l'elenco esatto dei file nella cartella, quindi la riga morta non
+cambiava nulla e restava invisibile. Dopo la correzione quei test sono stati aggiornati in **un punto solo**
+(`filePresenti()` esclude `versioni.json`): l'asserzione non è indebolita, è la stessa domanda — «quali poster ha
+scritto il drenatore?» — con l'unico file che poster non è tolto di mezzo.
+
+**La lezione, che vale oltre questo ticket**: un `catch` che logga e prosegue **nasconde gli errori di
+programmazione** (un nome non definito, un import dimenticato), non solo i guasti transitori. Un `try/catch` largo
+attorno a un blocco che usa qualcosa di non importato è una bugia silenziosa.
