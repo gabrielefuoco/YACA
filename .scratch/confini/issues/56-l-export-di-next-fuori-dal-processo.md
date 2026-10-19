@@ -177,3 +177,30 @@ volume vuoto  -> / : 404   |   /manifest.json : 200
 ```
 
 **Conseguenza operativa, da non dimenticare al deploy**: l'immagine dell'app **non contiene più il frontend**. Dopo che la nuova immagine va in produzione, l'interfaccia web resta **vuota** finché sul mate non gira `ops/frontend-aggiorna.sh`. L'addon Stremio non è toccato in nessuno dei due casi. Ordine consigliato: prima il workflow del frontend pubblica la release, poi si popola `/srv/yaca/frontend-out`, poi si aggiorna l'immagine.
+
+---
+
+**Deploy del 19/10/2026 — il distacco è in produzione, e verificato.**
+
+Il workflow del frontend è passato al primo giro e ha pubblicato la release `frontend-latest`
+(`frontend-out.tar.gz`, 892 KB, 44 voci, `index.html` presente). Sul mate `ops/frontend-aggiorna.sh` ha scaricato
+via `curl` (il repo è pubblico) e popolato `/srv/yaca/frontend-out` (35 file) **preservando l'inode**, poi
+`docker compose pull` + `up -d --no-build` (il compose era cambiato: Watchtower non lo applica).
+
+**Misurato dal vivo, dopo il deploy** (porta 7860, handle vero):
+
+| richiesta | esito |
+|---|---|
+| `/` | **200**, `text/html` — l'export, servito dal volume |
+| `/<handle>/manifest.json` | **200**, 36 cataloghi |
+| `/<handle>/catalog/series/yaca_mondi_series.json` | **200**, 20 titoli |
+| `/erdb-poster/health` | **200**, `ok: true, contratto: 1, volume.allineato: true` |
+
+**La prova del distacco**: l'immagine, avviata **senza** il volume, ha `/app/frontend/out` **vuota** (0 file) — solo
+la cartella creata da `RUN mkdir -p`. Il frontend arriva interamente dal bind mount
+(`/srv/yaca/frontend-out -> /app/frontend/out (ro)`). Immagine: **650 MB**.
+
+**Nota onesta sulla dimensione**: togliere lo stadio `frontend-builder` **non** fa risparmiare i ~300 MB di
+toolchain, perché in un multi-stage quello stadio non entrava già nell'immagine finale. Quello che si è tolto è
+il payload `frontend/out` (~2-3 MB) e, soprattutto, la **costruzione accoppiata** — che è il vero motivo del
+ticket, come dice la decisione 35. Il numero grosso del ticket («~830 MB») non era il punto.
