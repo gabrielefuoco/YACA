@@ -28,6 +28,7 @@ class IndiceModule {
         this.getStagingDbPath = this.getStagingDbPath.bind(this);
         this.getTargetDbPath = this.getTargetDbPath.bind(this);
         this.rebuildAndSwap = this.rebuildAndSwap.bind(this);
+        this.ensureFreshHandle = this.ensureFreshHandle.bind(this);
         this.close = this.close.bind(this);
     }
 
@@ -314,6 +315,15 @@ class IndiceModule {
     }
 
     /**
+     * Verifica la freschezza dell'handle DuckDB e riapre se il database è stato scambiato (Ticket 59).
+     */
+    async ensureFreshHandle(forceCheck = false) {
+        if (this.duckDb && typeof this.duckDb.ensureFreshHandle === 'function') {
+            return this.duckDb.ensureFreshHandle(forceCheck);
+        }
+    }
+
+    /**
      * Chiusura pulita delle risorse.
      */
     async close(callback) {
@@ -347,6 +357,8 @@ module.exports.swapDatabase = indice.swapDatabase.bind(indice);
 module.exports.getStagingDbPath = indice.getStagingDbPath.bind(indice);
 module.exports.getTargetDbPath = indice.getTargetDbPath.bind(indice);
 module.exports.rebuildAndSwap = indice.rebuildAndSwap.bind(indice);
+// Riapertura automatica dopo scambio DuckDB (Ticket 59)
+module.exports.ensureFreshHandle = indice.ensureFreshHandle.bind(indice);
 // La promozione Tier 2 -> Tier 1 è dell'indice: si chiede dalla porta, non dal file interno.
 module.exports.schedulePromotion = (...args) => require('./tier1LazyPromotion').schedulePromotion(...args);
 

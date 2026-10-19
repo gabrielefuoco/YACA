@@ -39,6 +39,16 @@ class DuckDbStore {
         // così un titolo promosso a Tier 1 dopo è visibile subito).
         this.tmdbImdbIdCache = new Map();
         this.dfMap = null;
+
+        // Tracciamento identità file e riapertura automatica dopo scambio (Ticket 59)
+        this.fileIdentity = null;
+        this.lastIdentityCheckTime = 0;
+        const envCheck = Number(process.env.DUCKDB_CHECK_INTERVAL_MS);
+        this.checkIntervalMs = Number.isFinite(envCheck) && envCheck >= 0 ? envCheck : 10000;
+        this.activeQueries = 0;
+        this.reopenPromise = null;
+        this._zeroActiveQueriesWaiters = [];
+        this.disableAutoReopen = false;
     }
 
     getStagingDbPath() {
@@ -87,14 +97,15 @@ class DuckDbStore {
         // Swap atomico con retry limitato per Windows
         let renamed = false;
         let lastError = null;
-        for (let attempt = 1; attempt <= 5; attempt++) {
+        for (let attempt = 1; attempt <= 20; attempt++) {
             try {
                 fs.renameSync(fromPath, toPath);
                 renamed = true;
                 break;
             } catch (err) {
                 lastError = err;
-                if (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY') {
+                console.warn(`[swap attempt ${attempt}] ${err.code}: ${err.message}`);
+                if (err.code === 'EEXIST') {
                     try { fs.unlinkSync(toPath); } catch (_) {}
                     try {
                         fs.renameSync(fromPath, toPath);
@@ -223,7 +234,16 @@ class DuckDbStore {
         if (!db) return Promise.resolve();
         return new Promise((resolve) => {
             try {
-                db.close(() => resolve());
+                db.close(() => {
+                    if (process.platform === 'win32') {
+                        if (global.gc) {
+                            try { global.gc(); } catch (_) {}
+                        } else {
+                            try { for (let i = 0; i < 50; i++) Buffer.alloc(1024 * 1024); } catch (_) {}
+                        }
+                    }
+                    resolve();
+                });
             } catch (_) {
                 resolve();
             }
@@ -258,6 +278,161 @@ class DuckDbStore {
         return true;
     }
 
+    _recordFileIdentity(filePath = this.dbPath) {
+        if (!filePath || filePath === ':memory:') {
+            this.fileIdentity = null;
+            this.lastIdentityCheckTime = Date.now();
+            return;
+        }
+        try {
+            if (fs.existsSync(filePath)) {
+                const stat = fs.statSync(filePath);
+                this.fileIdentity = { mtimeMs: stat.mtimeMs, size: stat.size };
+                this.lastIdentityCheckTime = Date.now();
+            } else {
+                this.fileIdentity = null;
+            }
+        } catch (_) {
+            this.fileIdentity = null;
+        }
+    }
+
+    async _openPersistentWithRetry(options = {}) {
+        const maxRetries = Number(options.maxRetries || process.env.DUCKDB_LOCK_MAX_RETRIES || 3);
+        const retryDelayMs = Number(options.retryDelayMs || process.env.DUCKDB_LOCK_RETRY_DELAY_MS || 2000);
+        let lastErr = null;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            let testDb = null;
+            let testCon = null;
+            try {
+                testDb = await this._openDb(this.dbPath);
+                testCon = testDb.connect();
+                await this._exec(testCon, "INSTALL fts;");
+                await this._exec(testCon, "LOAD fts;");
+                await this._exec(testCon, "SET scalar_subquery_error_on_multiple_rows=false;");
+                await this._verifyDatabase(testCon);
+
+                this.db = testDb;
+                this.con = testCon;
+                this._recordFileIdentity(this.dbPath);
+                return { success: true };
+            } catch (err) {
+                lastErr = err;
+                await this._closeCon(testCon);
+                await this._closeDb(testDb);
+                testCon = null;
+                testDb = null;
+
+                if (this._isLockConflictError(err) && attempt < maxRetries) {
+                    const delay = retryDelayMs * attempt;
+                    console.warn(`[DuckDB Store] Lock conteso su ${this.dbPath} (tentativo ${attempt}/${maxRetries}: ${err.message}). Attesa di ${delay}ms...`);
+                    await new Promise(r => setTimeout(r, delay));
+                    continue;
+                }
+                break;
+            }
+        }
+        return { success: false, error: lastErr };
+    }
+
+    async ensureFreshHandle(forceCheck = false, options = {}) {
+        if (this.disableAutoReopen) {
+            return;
+        }
+
+        if (!this.isInitialized || !this.dbPath || this.dbPath === ':memory:') {
+            return;
+        }
+
+        // Se siamo su staging (.new), è la build del daemon: la riapertura serve solo all'app sul file target
+        if (this.stagingDbPath && this.dbPath === this.stagingDbPath) {
+            return;
+        }
+
+        if (this.reopenPromise) {
+            await this.reopenPromise;
+            return;
+        }
+
+        const now = Date.now();
+        if (!forceCheck && (now - this.lastIdentityCheckTime < this.checkIntervalMs)) {
+            return;
+        }
+
+        this.lastIdentityCheckTime = now;
+
+        let currentStat = null;
+        try {
+            if (fs.existsSync(this.dbPath)) {
+                currentStat = fs.statSync(this.dbPath);
+            }
+        } catch (_) {
+            return;
+        }
+
+        if (!currentStat) {
+            return;
+        }
+
+        if (!this.fileIdentity) {
+            this.fileIdentity = { mtimeMs: currentStat.mtimeMs, size: currentStat.size };
+            return;
+        }
+
+        const hasChanged = currentStat.mtimeMs !== this.fileIdentity.mtimeMs 
+            || currentStat.size !== this.fileIdentity.size;
+
+        if (!hasChanged) {
+            return;
+        }
+
+        this.reopenPromise = this._reopenDueToSwap(options);
+        try {
+            await this.reopenPromise;
+        } finally {
+            this.reopenPromise = null;
+        }
+
+        // Post-reapertura: aggiornamento anime mappings e cache DF sul nuovo handle
+        try {
+            const { animeMappingStore } = require('../anime');
+            if (animeMappingStore && (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow)) {
+                const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
+                const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
+                if (movieIds.length > 0 || tvIds.length > 0) {
+                    await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-reopen:', e));
+                }
+            }
+        } catch (_) {}
+
+        await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache post-reopen:', e.message));
+    }
+
+    async _reopenDueToSwap(options = {}) {
+        while (this.activeQueries > 0) {
+            await new Promise(resolve => {
+                this._zeroActiveQueriesWaiters.push(resolve);
+            });
+        }
+
+        const oldCon = this.con;
+        const oldDb = this.db;
+        this.con = null;
+        this.db = null;
+
+        await this._closeCon(oldCon);
+        await this._closeDb(oldDb);
+
+        const res = await this._openPersistentWithRetry(options);
+        if (!res.success) {
+            console.error(`[DuckDB Store] Impossibile riaprire il database scambiato da ${this.dbPath}:`, res.error);
+            throw res.error || new Error(`Impossibile riaprire ${this.dbPath} dopo lo scambio`);
+        }
+
+        console.log('[DuckDB Store] Database scambiato: riaperto');
+    }
+
     async init(options = {}) {
         const forceRebuild = Boolean(options && options.forceRebuild);
         const staging = Boolean(options && options.staging);
@@ -280,46 +455,13 @@ class DuckDbStore {
 
             // 1. Prova a riaprire il database persistente esistente se fresco e non forzato
             if (!isMemory && !forceRebuild && !staging && this._isDatabaseFresh()) {
-                const maxRetries = Number(options.maxRetries || process.env.DUCKDB_LOCK_MAX_RETRIES || 3);
-                const retryDelayMs = Number(options.retryDelayMs || process.env.DUCKDB_LOCK_RETRY_DELAY_MS || 2000);
-                let lastErr = null;
-
-                for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                    let testDb = null;
-                    let testCon = null;
-                    try {
-                        testDb = await this._openDb(this.dbPath);
-                        testCon = testDb.connect();
-                        await this._exec(testCon, "INSTALL fts;");
-                        await this._exec(testCon, "LOAD fts;");
-                        await this._exec(testCon, "SET scalar_subquery_error_on_multiple_rows=false;");
-                        await this._verifyDatabase(testCon);
-
-                        this.db = testDb;
-                        this.con = testCon;
-                        reopened = true;
-                        console.log(`[DuckDB Store] Database persistente valido riaperto con successo da ${this.dbPath}.`);
-                        break;
-                    } catch (err) {
-                        lastErr = err;
-                        await this._closeCon(testCon);
-                        await this._closeDb(testDb);
-                        testCon = null;
-                        testDb = null;
-
-                        if (this._isLockConflictError(err) && attempt < maxRetries) {
-                            const delay = retryDelayMs * attempt;
-                            console.warn(`[DuckDB Store] Lock conteso su ${this.dbPath} (tentativo ${attempt}/${maxRetries}: ${err.message}). Attesa di ${delay}ms...`);
-                            await new Promise(r => setTimeout(r, delay));
-                            continue;
-                        }
-                        break;
-                    }
-                }
-
-                if (!reopened) {
-                    console.warn(`[DuckDB Store] Database persistente esistente non valido o corrotto (${lastErr ? lastErr.message : 'sconosciuto'}). Ricostruzione da zero...`);
-                    if (!this._isLockConflictError(lastErr)) {
+                const res = await this._openPersistentWithRetry(options);
+                if (res.success) {
+                    reopened = true;
+                    console.log(`[DuckDB Store] Database persistente valido riaperto con successo da ${this.dbPath}.`);
+                } else {
+                    console.warn(`[DuckDB Store] Database persistente esistente non valido o corrotto (${res.error ? res.error.message : 'sconosciuto'}). Ricostruzione da zero...`);
+                    if (!this._isLockConflictError(res.error)) {
                         this._cleanupDbFiles(this.dbPath);
                     }
                     reopened = false;
@@ -381,6 +523,7 @@ class DuckDbStore {
                         this.db = buildDb;
                         this.con = buildCon;
                         this.dbPath = this.stagingDbPath;
+                        this._recordFileIdentity(this.stagingDbPath);
                     } else if (!isMemory) {
                         await this._closeCon(buildCon);
                         buildCon = null;
@@ -394,9 +537,11 @@ class DuckDbStore {
                         await this._exec(this.con, "INSTALL fts;");
                         await this._exec(this.con, "LOAD fts;");
                         await this._exec(this.con, "SET scalar_subquery_error_on_multiple_rows=false;");
+                        this._recordFileIdentity(this.dbPath);
                     } else {
                         this.db = buildDb;
                         this.con = buildCon;
+                        this.fileIdentity = null;
                     }
                 } catch (buildErr) {
                     await this._closeCon(buildCon);
@@ -426,6 +571,8 @@ class DuckDbStore {
     }
 
     async updateAnimeMapping(idsByType) {
+        await this.ensureFreshHandle();
+
         if (!this.isInitialized) {
             await this.init();
         }
@@ -475,39 +622,51 @@ class DuckDbStore {
         const movieNorm = normalizeList(idsByType.movie);
         const tvNorm = normalizeList(idsByType.tv);
 
-        return new Promise((resolve, reject) => {
-            let sql = `
-                DROP TABLE IF EXISTS anime_mappings;
-                CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));
-            `;
+        this.activeQueries++;
+        try {
+            return await new Promise((resolve, reject) => {
+                let sql = `
+                    DROP TABLE IF EXISTS anime_mappings;
+                    CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));
+                `;
 
-            const rows = [
-                ...movieNorm.uniqueIds.map(id => `(${id}, 'movie')`),
-                ...tvNorm.uniqueIds.map(id => `(${id}, 'tv')`)
-            ];
+                const rows = [
+                    ...movieNorm.uniqueIds.map(id => `(${id}, 'movie')`),
+                    ...tvNorm.uniqueIds.map(id => `(${id}, 'tv')`)
+                ];
 
-            if (rows.length > 0) {
-                // Inserimento a blocchi per evitare limiti su dimensioni query SQL
-                const chunkSize = 2000;
-                for (let i = 0; i < rows.length; i += chunkSize) {
-                    const chunk = rows.slice(i, i + chunkSize);
-                    sql += `\nINSERT INTO anime_mappings VALUES ${chunk.join(',')};`;
+                if (rows.length > 0) {
+                    // Inserimento a blocchi per evitare limiti su dimensioni query SQL
+                    const chunkSize = 2000;
+                    for (let i = 0; i < rows.length; i += chunkSize) {
+                        const chunk = rows.slice(i, i + chunkSize);
+                        sql += `\nINSERT INTO anime_mappings VALUES ${chunk.join(',')};`;
+                    }
                 }
-            }
 
-            this.con.exec(sql, (err) => {
-                if (err) {
-                    console.error('[DuckDB Store] Errore aggiornamento tabella anime_mappings:', err);
-                    return reject(err);
-                }
-                const totalInserted = movieNorm.uniqueIds.length + tvNorm.uniqueIds.length;
-                console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${totalInserted} anime certificati (${movieNorm.uniqueIds.length} movie, ${tvNorm.uniqueIds.length} tv).`);
-                resolve();
+                this.con.exec(sql, (err) => {
+                    if (err) {
+                        console.error('[DuckDB Store] Errore aggiornamento tabella anime_mappings:', err);
+                        return reject(err);
+                    }
+                    const totalInserted = movieNorm.uniqueIds.length + tvNorm.uniqueIds.length;
+                    console.log(`[DuckDB Store] Tabella anime_mappings creata in RAM con ${totalInserted} anime certificati (${movieNorm.uniqueIds.length} movie, ${tvNorm.uniqueIds.length} tv).`);
+                    resolve();
+                });
             });
-        });
+        } finally {
+            this.activeQueries--;
+            if (this.activeQueries === 0 && this._zeroActiveQueriesWaiters.length > 0) {
+                const waiters = this._zeroActiveQueriesWaiters.slice();
+                this._zeroActiveQueriesWaiters.length = 0;
+                for (const w of waiters) w();
+            }
+        }
     }
 
     async query(sql, params = []) {
+        await this.ensureFreshHandle();
+
         if (!this.isInitialized) {
             await this.init();
         }
@@ -517,24 +676,41 @@ class DuckDbStore {
             sql = sql.sql;
         }
 
-        return new Promise((resolve, reject) => {
-            // Protezione query a tabelle vuote
-            if (/\bFROM\s+movies\b/i.test(sql) && !fs.existsSync(this.moviesParquetPath)) {
-                return resolve([]); 
-            }
-            if (/\bFROM\s+tv\b/i.test(sql) && !fs.existsSync(this.tvParquetPath)) {
-                return resolve([]); 
-            }
-            
-            // Usiamo con.all per ottenere tutti i risultati come array di oggetti JS
-            this.con.all(sql, ...params, (err, res) => {
-                if (err) {
-                    console.error(`[DuckDB Store] Errore Query: ${sql}`, err);
-                    return reject(err);
+        this.activeQueries++;
+        try {
+            return await new Promise((resolve, reject) => {
+                // Protezione query a tabelle vuote
+                if (/\bFROM\s+movies\b/i.test(sql) && !fs.existsSync(this.moviesParquetPath)) {
+                    return resolve([]); 
                 }
-                resolve(res);
+                if (/\bFROM\s+tv\b/i.test(sql) && !fs.existsSync(this.tvParquetPath)) {
+                    return resolve([]); 
+                }
+                
+                // Usiamo con.all per ottenere tutti i risultati come array di oggetti JS
+                this.con.all(sql, ...params, (err, res) => {
+                    if (err) {
+                        console.error(`[DuckDB Store] Errore Query: ${sql}`, err);
+                        return reject(err);
+                    }
+                    resolve(res);
+                });
             });
-        });
+        } finally {
+            this.activeQueries--;
+            if (this.activeQueries === 0 && this._zeroActiveQueriesWaiters.length > 0) {
+                const waiters = this._zeroActiveQueriesWaiters.slice();
+                this._zeroActiveQueriesWaiters.length = 0;
+                for (const w of waiters) w();
+            }
+        }
+    }
+
+    async queryRaw(sql, params) {
+        if (params !== undefined) {
+            return this.query(sql, params);
+        }
+        return this.query(sql);
     }
 
     /**
@@ -767,6 +943,11 @@ class DuckDbStore {
         this.initPromise = null;
         this.isInitialized = false;
         this.dfMap = null;
+        this.fileIdentity = null;
+        this.lastIdentityCheckTime = 0;
+        this.activeQueries = 0;
+        this.reopenPromise = null;
+        this._zeroActiveQueriesWaiters = [];
         if (this.stagingDbPath && this.dbPath === this.stagingDbPath && this.targetDbPath) {
             this.dbPath = this.targetDbPath;
         }
