@@ -890,3 +890,9 @@ costruisce**. La prova è stata riportata nella sonda (che chiama `_reopenDueToS
 attendere il ripopolamento) e il ramo è stato rimosso. Vale come regola generale: **niente `simulate*` nel
 percorso caldo**; l'unica eccezione ammessa è un parametro interno che impedisce la **ricorsione** (`skipFreshCheck`),
 perché quello non simula un difetto: evita un ciclo vero.
+
+**Seconda applicazione, lo stesso giorno** (review del 19/10/2026, ticket 59): anche `duckDbStore` teneva un
+campo `this.disableAutoReopen` che esisteva solo perché la sonda potesse spegnere la riapertura e mostrare il
+guasto. Rimosso: la sonda ora **sostituisce il metodo sull'istanza** (`appStore.ensureFreshHandle = async () => {}`)
+e si dimostra da sola. Il campo è passato da «utile alla prova» a «peso nel prodotto» nel momento in cui la
+regola è stata scritta — ed è il segno che la regola valeva la pena di scriverla.
