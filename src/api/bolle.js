@@ -8,10 +8,11 @@
  *
  * LA FORMA DELLA RISPOSTA e' quella che il motore restituisce e nient'altro:
  *   { ok, liste, items, versioni, esclusi }
- * `liste` sono i mondi accesi, ognuno coi suoi `items` e la sua spiegazione; due delle quattro liste
- * tornano vuote con `da_comporre: true`, perche' `uscite_nuove` ha bisogno degli anni e
- * `nicchia_di_qualita` di popolarita' e voto medio — che stanno nel catalogo del prodotto, non nel
- * grafo. Il posto e' riservato nell'ordine, cosi' chi le compone non deve anche ricordarsi dove vanno.
+ * `liste` sono le righe restituite dal servizio grafo (es. `il_tuo_mondo`, `un_passo_fuori`,
+ * `uscite_nuove`, `nicchia_di_qualita`), ciascuna coi suoi `titoli` popolati e la sua spiegazione;
+ * ruoli derivati come `uscite_nuove` e `nicchia_di_qualita` sono generati dal motore Python e marcati
+ * `parziale: true` nel contratto HTTP per consentire eventuali rifiniture con dati locali. Nessuna
+ * lista torna vuota con `da_comporre: true` (pattern storico dismesso con il ritiro del vecchio ponte JS).
  *
  * COSA NON FA: non risolve i poster, non tocca TMDB, non scrive niente. E' una lettura.
  */
