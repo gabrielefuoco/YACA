@@ -75,3 +75,17 @@ togliere senza processo nuovo, senza ingresso nuovo e senza toccare una rotta: i
 file**, e l'app lo riceve come **volume** al posto della copia nell'immagine. L'app continua a servirlo con la
 stessa riga di `express.static`. Immagine dell'app più piccola, rilascio del frontend indipendente, zero
 ingressi nuovi, zero rotte cambiate.
+
+## Decisione del triage (19/10/2026)
+
+**Scelta: workflow suo + `frontend/out` come volume.** Il frontend si costruisce in un workflow proprio e
+pubblica l'export; l'app lo riceve come **volume** al posto della copia nell'immagine, e continua a servirlo con
+la stessa riga di `express.static`. Nessun container nuovo, nessun ingresso nuovo, nessuna rotta cambiata.
+
+Le due conseguenze vere che questo compra, e che sono il motivo del ticket: **il rilascio del frontend smette di
+ricostruire e riavviare l'addon**, e un export rotto smette di vivere nel processo che serve Stremio.
+
+**Il criterio della decisione 32 va allargato**, e questa è la decisione che il 56 ha prodotto: un pezzo si
+stacca anche quando ha un **dominio di guasto** o una **cadenza di rilascio** diversi — non solo un profilo di
+risorse diverso. Qui il profilo è lo stesso (due processi Node magri); sono il guasto e la cadenza a essere
+diversi.

@@ -61,3 +61,17 @@ crearne un altro.
 **Conclusione del triage.** La parte che vale di questo ticket non è la separazione del processo: è il
 **contratto sul volume** — la stessa forma della rottura silenziosa dell'artefatto anime. Il drenatore è già
 fuori dal processo (timer di sistema), e va bene così.
+
+## Decisione del triage (19/10/2026)
+
+**Scelta: non si separa. Si aggiunge il contratto sul volume.** Il processo resta com'è — il drenatore è già
+fuori dal processo dell'app, pilotato da un timer di sistema — e il lavoro diventa:
+
+1. **una versione dichiarata del volume** `yaca_erdb_cache`, come il grafo fa con `versioni`;
+2. **una verifica** che dica se il volume contiene ciò che i nomi promettono: oggi un nome che non corrisponde a
+   un file produce **un poster invisibile e zero errori**, che è la stessa forma della rottura silenziosa trovata
+   sull'artefatto anime.
+
+Separare `posterResolver` e `erdb/build.js` è stato **escluso**: sono funzioni **pure** chiamate dall'ingestione
+della libreria e dal formattatore Stremio, e spostarle dietro un servizio metterebbe una chiamata di rete dentro
+il percorso di ingestione — rompere un confine per crearne un altro.

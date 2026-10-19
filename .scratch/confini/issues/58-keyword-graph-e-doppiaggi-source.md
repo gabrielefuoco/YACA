@@ -60,10 +60,46 @@ Da decidere: si **dichiara** (una riga nel README del servizio + la regola nel `
 drenatore), o si **containerizza** (Dockerfile + servizio + workflow) — con l'avvertenza che un container che gira
 due volte al giorno è un `docker run` da timer, non un servizio always-on.
 
-**`keyword-graph` è orfano: zero riferimenti.** `grep -rn "keyword-graph"` su tutto il repo (fuori da `.scratch`
-e da `.git`) **non trova niente**: né nel compose, né nei workflow, né in `ops/`, né in `src/`, né in un altro
-servizio. Non è «un servizio non ancora collegato»: è codice che nessuno raggiunge. Il criterio della decisione 32
-dice ritirarlo.
+**`keyword-graph` NON è orfano — e la prima stesura di questo triage diceva il falso.**
+
+Un `grep -rn "keyword-graph"` su tutto il repo non trova **niente**: nessuno nomina la cartella. Da lì avevo
+concluso «codice che nessuno raggiunge, si ritira». **Sbagliato**: il collegamento non è il nome della cartella,
+è l'**output**.
+
+`services/keyword-graph/build_graph.py:520` scrive **`../src/data/hierarchical_graph.json`** — cioè **il grafo
+gerarchico**: quello che l'app carica in `src/indice/HierarchicalGraph.js` (1,0 MB dentro l'immagine) e che
+`services/graph/upstream/spazi-trakt.py:128` legge come input. **È il produttore di un artefatto vivo, caricato
+da due consumatori.**
+
+**Il difetto vero è il README, che mente.** Dice: *«Il risultato finale sarà generato in `../src/data/graph_data.json`»*
+e descrive tre chiavi (`keyword_to_cluster`, `cluster_adjacency`, `cluster_members`) che non esistono più.
+`graph_data.json` **è stato committato e poi cancellato** il 23/07/2026 da `482fa3d` («clean unused files»), e
+nessuno lo legge. Lo script ha **due** output: il primo stadio (riga 18) e quello finale (riga 520), e il README
+documenta solo il primo, morto.
+
+**Conclusione: si tiene, e si corregge la documentazione.** `keyword-graph` non è un servizio e non deve
+diventarlo — è un **costruttore offline** con requisiti suoi (Python 3.10, ~1 GB di VRAM per gli embedding,
+`BAAI/bge-small-en-v1.5`, clustering Leiden), esattamente come `scripts/erdb-builder` lo è per i poster. Non
+sta nel compose **giustamente**. Va però detto: che produce `hierarchical_graph.json`, che va rilanciato a mano
+quando quel file cambia, e che il suo README va riportato al vero.
+
+**Sul `hierarchical_graph.json` (la «copia da uccidere»)**: nel repo ce n'è **una sola**, `src/data/`, 1,0 MB,
+dentro l'immagine dell'app. Il secondo consumatore è il **grafo**: `services/graph/upstream/spazi-trakt.py:128`
+la legge da `ROOT/src/data/`. Quindi non sono due copie divergenti: è **un file di dati condiviso che vive
+nell'albero dell'app** ed è usato anche da un altro servizio. Da decidere dove sta il posto giusto (accanto
+all'artefatto del grafo, o dove sta ora con un contratto che lo dichiara).
+
+## Decisioni del triage (19/10/2026)
+
+- **`keyword-graph`: si tiene.** È il produttore di `hierarchical_graph.json`; il README va corretto (dichiara un
+  output cancellato) e il servizio va dichiarato come **costruttore offline**, non come servizio da containerizzare.
+- **`doppiaggi-source`: si tiene e si dichiara.** Gira da un timer di sistema dell'host due volte al giorno e
+  produce `ita_annotations.jsonl`, che l'app legge. Non si containerizza: si scrive nel suo README e nella
+  documentazione del server che è un **produttore pilotato dall'host**, come il drenatore dei poster.
+
+**La lezione, che vale oltre questo ticket**: *«nessuno lo nomina» non vuol dire «nessuno lo usa»*. Un `grep` sul
+**nome** di una cartella non vede chi consuma ciò che la cartella **produce**. La prossima volta si cerca prima
+l'output (`git log --all -- <file>`, e chi lo legge) e poi si conclude.
 
 **Sul `hierarchical_graph.json` (la «copia da uccidere»)**: nel repo ce n'è **una sola**, `src/data/`, 1,0 MB,
 dentro l'immagine dell'app. Il secondo consumatore è il **grafo**: `services/graph/upstream/spazi-trakt.py:128`
