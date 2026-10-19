@@ -8,7 +8,12 @@ definitive "questo titolo è doppiato in italiano".
 > Questo modulo **non è nel `docker-compose.yml` e non gira come container**: gira direttamente sull'host tramite il timer di sistema **`yaca-doppiaggi.timer`** (`ops/yaca-doppiaggi.timer`), che invoca **`ops/yaca-doppiaggi.sh`** due volte al giorno (alle **04:00** e alle **16:00**).
 > Lo script configura `SERVICE_DIR="${BASE_DIR}/services/doppiaggi-source"`, rileva l'interprete Node dell'host (cercando nei path di sistema e negli install mise), gestisce la cache locale in `services/doppiaggi-source/.cache` ed esegue `cli.js`.
 > 
-> **Perché non in un container**: un container Node always-on per un job batch che dura appena ~6 secondi a giro (12 secondi al giorno) sprecherebbe 150-250 MB di RAM su un server da 8 GB. Eseguendosi sull'host con Node, accede direttamente al percorso dei dump (`master_movies.jsonl`, `master_tv.jsonl` nel volume `yaca_tmdb`) e scrive `ita_annotations.jsonl`, `ita_annotations.meta.json` e `ita_annotations.diff.json`.
+> **Perché non in un container**: un container Node always-on per un job batch che dura **~7 secondi a giro**
+> (misurato sul mate il 19/10/2026: `yaca-doppiaggi.service` è partito alle 04:01:09 e uscito con stato 0 alle
+> 04:01:16) sprecherebbe **~150-250 MB di RAM** su un server da 8 GB. Il numero non è stimato: il container Node
+> `yaca-anime-source` sullo stesso host, sempre in piedi, occupa **164 MiB** (`docker stats`). Eseguendosi
+> sull'host con Node, accede direttamente al percorso dei dump (`master_movies.jsonl`, `master_tv.jsonl` nel
+> volume `yaca_tmdb`) e scrive `ita_annotations.jsonl`, `ita_annotations.meta.json` e `ita_annotations.diff.json`.
 > L'artefatto `ita_annotations.jsonl` è consumato direttamente dal core dell'app (`src/catalog/itaAnnotations.js:31`).
 > Guida completa all'installazione, verifica e monitoraggio: vedi **[`docs/TIMER_DOPPIAGGI.md`](../../docs/TIMER_DOPPIAGGI.md)** e **[`docs/DEPLOYMENT_HOME_SERVER.md`](../../docs/DEPLOYMENT_HOME_SERVER.md)**.
 

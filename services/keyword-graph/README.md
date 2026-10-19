@@ -21,12 +21,15 @@ Questo file (~1.0 MB) vive nell'albero dei sorgenti dell'applicazione ed è un *
 2. **Il servizio Grafo delle Raccomandazioni** (`services/graph/upstream/spazi-trakt.py:128`): lo legge all'avvio o in fase di ingestione spazi Trakt (`ROOT / "src" / "data" / "hierarchical_graph.json"`).
 
 ### Struttura del JSON Generato
-Il file `hierarchical_graph.json` generato contiene:
-- `metadata`: versione (`"2.0"`), conteggio keyword e conteggi dei cluster per livello (`L1_count` … `L5_count`).
+Verificata leggendo il file (`node -e 'console.log(Object.keys(require("./src/data/hierarchical_graph.json")))'`):
+- `metadata`: versione (**`"2.3"`**), `total_keywords` (**6125**), e i conteggi per livello (`L1_count` 1382, `L2_count` 469, `L3_count` 131, `L4_count` 70, `L5_count` 5).
 - `kw_to_L1`: mappatura da ciascuna keyword TMDB normalizzata al relativo ID di micro-cluster L1.
 - `L1`: dizionario dei cluster di primo livello con label e membri.
-- `L1_adjacency`: lista di adiacenza sparsa pesata tra cluster L1.
 - `L2`, `L3`, `L4`, `L5`: livelli superiori di astrazione gerarchica dei cluster.
+
+> **Le chiavi sono queste sette, e sono tutte.** Non esiste una `L1_adjacency`: l'adiacenza fra cluster non è nel
+> file. Se un consumatore la cercasse, non la troverebbe — e non lo direbbe. (Verificato il 19/10/2026; una prima
+> stesura di questa sezione la nominava per errore, insieme a una versione `"2.0"` che il file non ha.)
 
 > [!WARNING]
 > **Output storico `graph_data.json` rimosso**: In versioni precedenti il README indicava come output `../src/data/graph_data.json` con chiavi `keyword_to_cluster`, `cluster_adjacency` e `cluster_members`. Quel file è stato rimosso dal repository il 23/07/2026 (commit `482fa3d`, *"clean unused files"*) e **nessun componente lo legge più**. La costante a riga 18 di `build_graph.py` è un retaggio del primo stadio; l'unico output finale vivo è `hierarchical_graph.json` (riga 520).
