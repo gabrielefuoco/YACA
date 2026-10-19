@@ -210,3 +210,6 @@ services/graph/log/
 
 # L'artefatto non vive più nel prodotto (ticket 09)
 src/data/bolle.json
+
+# Export statico del frontend (volume runtime, ticket 56)
+frontend-out/

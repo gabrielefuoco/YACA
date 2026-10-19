@@ -1,17 +1,4 @@
-# --- Stage 1: Build Frontend ---
-FROM node:20-slim AS frontend-builder
-LABEL version="1.0.4"
-WORKDIR /app/frontend
-
-# Copia i file di configurazione del frontend
-COPY frontend/package*.json ./
-RUN npm install
-
-# Copia il resto dell'app frontend e costruisci (static export)
-COPY frontend/ ./
-RUN npm run build
-
-# --- Stage 2: Dipendenze backend (compila i moduli nativi) ---
+# --- Stage 1: Dipendenze backend (compila i moduli nativi) ---
 # `better-sqlite3` è un modulo nativo: se il binario precompilato non è disponibile per
 # questa piattaforma, npm ripiega sulla compilazione da sorgente e servono python3/make/g++.
 # Il toolchain resta in questo stadio: al runner passano solo i `node_modules` già compilati.
@@ -23,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-# --- Stage 3: Backend & Runtime ---
+# --- Stage 2: Backend & Runtime ---
 FROM node:20-slim AS runner
 WORKDIR /app
 
@@ -44,14 +31,10 @@ COPY --from=backend-deps /app/node_modules ./node_modules
 # Copia il resto dell'applicazione backend
 COPY . .
 
-# Copia il frontend buildato dalla cartella 'out' generata nel primo stage.
-# Decisione architetturale (ticket 17): l'export statico del frontend viene servito direttamente
-# da Express nello stesso processo e sulla stessa porta del backend/addon Stremio.
-# Questa scelta garantisce:
-# 1. Cookie di sessione (yaca_session) HttpOnly same-origin senza complessità CORS o cookie cross-site
-# 2. Singola immagine Docker in CI (GHCR) e singolo container deployato/aggiornato da Watchtower
-# 3. Overhead statico trascurabile per Express (asset pre-compilati con cache HTTP)
-COPY --from=frontend-builder /app/frontend/out ./frontend/out
+# Creazione cartella di mount per l'export statico del frontend (ticket 56).
+# Il frontend non viene più incorporato nell'immagine: viene montato come volume
+# in ./frontend/out da docker-compose.yml e aggiornato indipendentemente da ops/frontend-aggiorna.sh.
+RUN mkdir -p frontend/out
 
 # Rendi lo script di avvio eseguibile
 RUN chmod +x start.sh

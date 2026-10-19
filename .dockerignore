@@ -1,8 +1,7 @@
 node_modules
 npm-debug.log
-frontend/node_modules
-frontend/.next
-frontend/out
+frontend/
+frontend-out/
 .cache
 .scratch
 .git
