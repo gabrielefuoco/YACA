@@ -35,7 +35,7 @@ const {
     getPresetIds
 } = require('../catalog/catalogDefinition');
 const { applyCatalogSpecialOrdering } = require('../catalog/catalogSorting');
-const { isDailyWindowCatalog } = require('../catalog/registry');
+const { isDailyWindowCatalog, isHeroCatalogId } = require('../catalog/registry');
 const { applyPostCacheBadges } = require('./badges');
 const { allineaIdFilm } = require('./meta');
 
@@ -88,6 +88,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
         return { metas: [] };
     }
 
+    const isHero = isHeroCatalogId(id) || isHeroCatalogId(baseId);
+    let graphVersions = undefined;
+    if (isHero) {
+        try {
+            const { graphClient } = require('../clients');
+            graphVersions = await graphClient.getGraphHealthVersions();
+        } catch (_e) {
+            graphVersions = null;
+        }
+    }
+
     // Check Full CACHE Request. La chiave nasce DOPO la risoluzione del catalogo,
     // perché la sua definizione è uno degli ingredienti.
     const catalogDesc = buildCatalogDesc({
@@ -99,7 +110,8 @@ async function catalogHandler(args, userConfig, hostUrl) {
         skip,
         catalogMeta,
         userConfig,
-        activeProfileSettings
+        activeProfileSettings,
+        graphVersions
     });
 
     // managed SWR: Fetch or Revalidate

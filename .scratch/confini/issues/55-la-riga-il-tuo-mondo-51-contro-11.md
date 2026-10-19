@@ -71,3 +71,93 @@ GET /…/yaca_nicchia_di_qualita_series → 20
 
 Appendici un `## Esito` in italiano: i due conteggi a parità di ingressi, la misura per ogni filtro, la causa, e cosa
 **non** hai fatto. Lascia `Status: ready-for-agent`: chiude l'integratore.
+
+## Esito
+
+### 1. I due conteggi a parità di ingressi
+Misurati eseguendo la sonda `scripts/qa/probe-ticket-55-mondi.js` sia in ambiente reale (su container di produzione `yaca-app` con Mongo/Atlas e Redis) sia tramite `--fixture`:
+- **Semi in ingresso passati all'app**: **28 semi** (estratti da `semiDi` per `REOZrGNRr3`, profilo `4159713d`).
+- **Semi inviati al grafo dopo politica anime**: **28 semi** (politica `neutral`, nessun seme escluso).
+- **Risposta grezza del grafo (`il_tuo_mondo`)**: **51 titoli** (accumulati da mondi multipli per superare la soglia ≥ 50 di Ticket 40).
+- **Assegnazione candidati Pool Hero (`yaca_mondi_series`)**: **51 candidati** (nessun taglio né perdita nel pool).
+- **Idratazione (`idrataEImpaginaCandidati`, `ITEMS_PER_PAGE = 20`)**:
+  - Pagina 1 (`skip=0`): **20 titoli**
+  - Pagina 2 (`skip=20`): **20 titoli**
+  - Pagina 3 (`skip=40`): **11 titoli**
+  - **Totale idratato su 3 pagine**: **51 titoli**.
+- **Risposta pubblica Stremio (`catalogHandler`)**:
+  - Pagina 1 (`skip=0`): **20 titoli**
+  - Pagina 2 (`skip=20`): **20 titoli**
+  - Pagina 3 (`skip=40`): **11 titoli**
+  - **Totale servito pubblicamente**: **51 titoli**.
+
+### 2. Misura per ogni filtro e passaggio
+1. **Semi grezzi da `semiDi`**: 28 semi.
+2. **Filtro politica anime (`src/pool/index.js:170-190`)**: 28 semi sopravvissuti (profilo con anime neutral).
+3. **Chiamata grafo (`POST /raccomanda`, cap: 60, opzioni: sliders)**: 51 titoli in `il_tuo_mondo`.
+4. **Filtro dopo composizione nel Pool**: 51 candidati assegnati a `yaca_mondi_series`.
+5. **Filtro `kidsMode`**: `kidsMode: false` → 51 candidati sopravvissuti.
+6. **Filtro già visti**: i titoli restituiti da `il_tuo_mondo` sono già non visti dal grafo → 51 candidati.
+7. **Paginazione Stremio (`ITEMS_PER_PAGE = 20`)**:
+   - `skip: 0` → 20 titoli serviti.
+   - `skip: 20` → 20 titoli serviti.
+   - `skip: 40` → 11 titoli serviti.
+   - Totale servito = 20 + 20 + 11 = 51 titoli.
+
+### 3. La Causa (Perché la rotta pubblica rispondeva 11 titoli)
+L'**ipotesi 2** ("non è la cache dell'app") era stata erroneamente considerata esclusa nel brief.
+Il brief assumeva che, poiché la cache interna del pool (`heroes`, `src/pool/index.js:61-63`) invalida su `artefatto` e `ricetta`, la cache fosse esclusa.
+Tuttavia:
+1. La rotta pubblica HTTP di Stremio è avvolta da una **cache di livello superiore** in `catalogHandler` (`src/stremio/catalogHandler.js`), con nome `catalog_page` (memorizzata in Redis sotto il namespace `tmdb_catalog`) con un **TTL di 14 giorni** (`1209600000 ms`).
+2. La chiave di `catalog_page` generata da `buildCatalogDesc` (`src/catalog/catalogDefinition.js`) e `generateRequestHash` (`src/cache/index.js`) conteneva solo `{ badgeVersion, catalogDef }` in `invalida`. **Non includeva né `artefatto` né `ricetta`**.
+3. Alle ore 09:55 UTC (prima del rebuild del grafo per il Ticket 40 delle 12:15 UTC), la rotta pubblica `/catalog/series/yaca_mondi_series.json` era stata richiesta e memorizzata nella cache Redis (`tmdb_catalog:1ea30c1298f6924b6516421623aac00b4c3bb51cba841eba6cb0ef7213a5aa41`). In quel momento `il_tuo_mondo` conteneva solo il singolo mondo `mondo_1739` con **11 titoli**.
+4. Quando alle 12:15 UTC il grafo è stato ricompilato col Ticket 40 producendo la nuova ricetta `2330b143...`, la cache interna `heroes` si è invalidata, ma la cache Redis `catalog_page` è rimasta valida per 14 giorni! `catalogHandler` ha trovato il cache hit (`cache=hit ms=1 titles=11`) e ha continuato a servire la vecchia risposta da 11 titoli memorizzata alle 09:55.
+5. Invalidando/eliminando quella specifica chiave Redis obsoleta, la rotta pubblica ha risposto immediatamente con 20 titoli a `skip=0`, 20 a `skip=20` e 11 a `skip=40` (totale 51).
+
+### 4. La Correzione
+- In `src/catalog/catalogDefinition.js` (`buildCatalogDesc`):
+  Se il catalogo è una riga hero (`isHeroCatalogId(id) || isHeroCatalogId(baseId)`), include `artefatto` e `ricetta` (da `graphVersions` o sincronamente da `graphClient.getGraphHealthVersionsCached()`) nel blocco `dipendenze.invalida`.
+- In `src/cache/index.js` (`case 'catalog_page'`):
+  Estrae `artefatto` e `ricetta` da `invalida`/`varia` e li inserisce nei `params` per `generateRequestHash`. Così, quando l'artefatto o la ricetta del grafo cambiano, l'hash della pagina di catalogo hero cambia automaticamente, invalidando le vecchie voci a 14 giorni.
+- In `src/stremio/catalogHandler.js`:
+  Per le righe hero, recupera `graphVersions` via `graphClient.getGraphHealthVersions()` e lo passa a `buildCatalogDesc`.
+- Per tutti i cataloghi non-hero (preset, watchlist), `artefatto` e `ricetta` restano indefiniti e non entrano nei parametri di hash, preservando gli hash congelati e i contratti esistenti.
+
+### 5. File toccati fuori dalla lista predefinita (Dichiarazione esplicita)
+Come richiesto dalle istruzioni del ticket, si dichiarano le modifiche a file esterni alla lista predefinita:
+- `src/catalog/catalogDefinition.js`: aggiunta gestione `graphVersions` in `buildCatalogDesc` per righe hero.
+- `src/cache/index.js`: propagazione di `artefatto`/`ricetta` nei parametri hash di `catalog_page`.
+- `src/stremio/catalogHandler.js`: risoluzione versioni grafo e passaggio al costruttore del descrittore per righe hero.
+*Nessun file toccato in `src/indice/**`, `services/tmdb-daemon/**` o `frontend/**`.*
+
+### 6. Verifiche e Prove
+- **Sonda committata**: `scripts/qa/probe-ticket-55-mondi.js` supporta sia esecuzione live contro Mongo/Graph che `--fixture`.
+  Esecuzione: `node scripts/qa/probe-ticket-55-mondi.js --fixture`
+  Esito: 28 semi in ingresso → 51 dal grafo raw → 51 nel pool → 20 idratati p1 → 20 pubblici p1, 20 p2, 11 p3 (totale 51).
+- **Test dedicato**: `tests/ticket55MondiCacheInvalidation.test.js` (4/4 passed):
+  1. Verifica cambio chiave `catalog_page` per `yaca_mondi_series` al cambio di ricetta grafo.
+  2. Verifica che i cataloghi non-hero ignorano `graphVersions` e mantengono la chiave stabile.
+  3. Verifica che con 51 titoli il percorso dell'app serve 20 alla pag 1 e 51 totali attraverso le pagine (> 20).
+  4. Verifica che l'aggiornamento della ricetta impedisce il riuso della cache vecchia da 11 titoli.
+- **Probe hero counts**: `node scripts/qa/probe-hero-counts.js --fixture`
+  - Film: 9 titoli (Disgiunti: true)
+  - Serie: 9 titoli (Disgiunti: true)
+- **Hash dei manifest invariati (byte-for-byte)**:
+  - `buildManifest({})`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178`
+  - `buildRootManifest()`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2`
+- **Baseline Jest completa (`npx jest --forceExit`)**:
+  - Test Suites: 5 failed, 184 passed, 189 total
+  - Tests: 8 failed, 1 skipped, 1885 passed, 1894 total
+  - FAIL list (esattamente le 5 suite permesse):
+    - `tests/presetBurtonOrdering.test.js`
+    - `tests/donghuaCatalog.test.js`
+    - `tests/animeOverridesCertify.test.js`
+    - `tests/candidateProvider.test.js`
+    - `tests/duckDbAndMatchmaker.test.js`
+
+### 7. Cosa NON è stato fatto
+- NON toccato `src/indice/**` né `services/tmdb-daemon/**` (riservati al task parallelo Ticket 54).
+- NON toccato `frontend/**`.
+- NON eseguiti `git push` né `npm run build` / `tsc`.
+- Non alterate le definizioni né i TTL dei preset utente o di sistema.
+
