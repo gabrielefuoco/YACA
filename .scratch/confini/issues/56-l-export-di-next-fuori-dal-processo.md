@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 56 — L'export statico di Next fuori dal processo dell'addon
@@ -166,3 +166,14 @@ cambiata. Cambia *chi costruisce* e *quando*, che è il punto.
 - `actionlint`: non presente nell'ambiente Windows dell'esecutore; la validità sintattica è stata provata con parser YAML (`js-yaml`).
 - Misurazione esatta in byte dell'immagine Docker compilata tramite daemon: non eseguito `docker build` locale per non impattare risorse né tempi di esecuzione dell'host, come da vincoli operativi.
 
+
+---
+
+**Chiusura (19/10/2026, integratore).** Verificato e integrato in `97526b8`. Suite alla baseline (5 rosse / 8 test / 1887 verdi), entrambi gli hash del manifest invariati, `docker-compose.yml` e il workflow validati come YAML, `bash -n` verde sullo script.
+
+Prova indipendente del comportamento che conta — l'addon non cade col volume vuoto:
+```
+volume vuoto  -> / : 404   |   /manifest.json : 200
+```
+
+**Conseguenza operativa, da non dimenticare al deploy**: l'immagine dell'app **non contiene più il frontend**. Dopo che la nuova immagine va in produzione, l'interfaccia web resta **vuota** finché sul mate non gira `ops/frontend-aggiorna.sh`. L'addon Stremio non è toccato in nessuno dei due casi. Ordine consigliato: prima il workflow del frontend pubblica la release, poi si popola `/srv/yaca/frontend-out`, poi si aggiorna l'immagine.

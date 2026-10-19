@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 57 — I poster: da percorso interno a servizio con un contratto
@@ -204,3 +204,13 @@ Lista FAIL (esattamente le sole 5 suite preesistenti dovute all'assenza di parqu
 - Non sono stati modificati `frontend/**`, `src/indice/**`, `services/**`.
 - Nessun flag di test (`simulate*`) aggiunto al codice di produzione (Decisione 34).
 - Nessun `git push`, nessun `npm run build` o `tsc`.
+
+---
+
+**Chiusura (19/10/2026, integratore).** Verificato e integrato in `98c1f24`. Suite **5 rosse / 8 test / 1898 verdi** (190 suite: +11 test, +1 suite), nessuna regressione, entrambi gli hash del manifest invariati, sonda verde e **fallisce con `--disable-verification`** (exit 1) — un guardiano vero.
+
+Verificato da me: le rotte `health` e `versioni` sono registrate **prima** di `/erdb-poster/:file`, quindi non vengono ombreggiate; il seam è un **oggetto patchabile dall'esterno**, non un flag nel prodotto (decisione 34 rispettata).
+
+**Smell dichiarato, non bloccante**: `leggiVersioniVolume` ripete sei ritorni quasi identici (la forma completa dello stato per ogni modo di fallimento). È verboso, non sbagliato: se cresce ancora, si estrae un costruttore di stato.
+
+**Al primo avvio in produzione** `/erdb-poster/health` risponderà **503** finché il volume non contiene `versioni.json` — è il segnale onesto che il volume non dichiara ancora la sua convenzione. Il prossimo giro del drenatore o del builder lo scrive.
