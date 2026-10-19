@@ -109,3 +109,77 @@ finestre di rischio. Il costo accettato è che la produzione resta su `338d7d4` 
 specifica) → resto del 41 → push (eseguito dall'integratore, non da uno slave, con i numeri prima e dopo).
 
 La checklist qui sopra resta valida: va eseguita **al momento del push**, non prima.
+
+---
+
+## La procedura, in ordine (riscritta il 19/10/2026, dopo il preflight)
+
+Il deploy del 19/10 è partito con **242 commit** (`338d7d4` → `94c738e`). Questa è la sequenza che
+**funziona davvero**, con la verifica di ogni passo. Nasce da tre rotture silenziose trovate *mentre* si
+preparava — nessuna delle quali avrebbe fatto cadere un container:
+
+### Le tre rotture silenziose (e cosa è stato corretto nel repo)
+
+1. **Il compose puntava a un artefatto che nessuno produceva.** `ANIME_MAPPING_PATH` cercava
+   `anime-mappings.json` nel volume condiviso, ma **l'immagine del produttore era del 5 ottobre** e non
+   conteneva il codice che lo pubblica (`caa4267` era fra i commit non pushati). Il mount c'era, il file no:
+   l'app avrebbe degradato i cataloghi anime loggando *«File artefatto assente»* e nient'altro.
+   → **corretto dal push** (il workflow `deploy-anime-source.yml` ricostruisce l'immagine: `paths: services/anime-source/**`).
+   Il consumatore ha **TTL 60 s**, quindi si riprende da sé appena l'artefatto appare: **non serve riavviare l'app**.
+2. **Due scrittori sullo stesso volume.** Il ticket 34 aveva aggiunto **sia** il container `tmdb-daemon`
+   **sia** due unità systemd che lanciavano lo stesso cli dentro `yaca-app`, entrambi su `yaca_tmdb`.
+   Il README del servizio dice esplicitamente *«Perché Container e non Unità Systemd»*.
+   → **rimosse** `ops/yaca-tmdb-daemon.service` e `.timer`.
+3. **Watchtower non applica il `docker-compose.yml`.** Aggiorna le immagini e ricrea il container con la
+   configurazione **vecchia**: mount e variabili nuovi non entrano mai, e il container resta `healthy`.
+   → **regola scritta** in `docs/DEPLOYMENT_HOME_SERVER.md` §7.4, e **guardiano committato**:
+   `node scripts/qa/preflight-deploy.js` (esce **1** se una di queste cose non torna).
+
+### La sequenza
+
+```bash
+# 0. il guardiano: PRIMA di toccare la produzione
+node scripts/qa/preflight-deploy.js          # esce 0 = si può deployare
+
+# 1. push → due workflow (app e produttore anime)
+git push origin main
+gh run list --limit 3                        # attendere entrambi verdi
+
+# 2. sul mate: compose applicato, non solo immagine aggiornata
+ssh matebook
+git -C /srv/yaca pull
+cd /srv/yaca && docker compose pull
+docker compose up -d --no-build              # ← il passo che Watchtower non fa
+docker compose ps                            # yaca-app, yaca-graph, yaca-tmdb-daemon healthy
+
+# 3. le unità che il mate deve avere (i poster: sono nel clone, non nel container)
+sudo cp /srv/yaca/ops/yaca-poster-eventi.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl restart yaca-poster-eventi.timer
+systemctl list-timers | grep yaca-poster     # il prossimo giro
+
+# 4. l'artefatto anime: il produttore lo pubblica al primo ciclo (TTL app 60 s)
+docker exec yaca-anime-source ls -la /app/.cache/anime-mappings.json
+docker exec yaca-app ls -la /data/anime-source/anime-mappings.json
+docker logs yaca-app 2>&1 | grep -i "artefatto assente" | tail -3   # NESSUNA riga
+
+# 5. il grafo: `services/graph` è cambiato e il suo workflow non esiste (ticket 18)
+cd /srv/yaca && docker compose build graph && docker compose up -d graph
+
+# 6. le migrazioni, UNA VOLTA, dopo il deploy
+docker exec --workdir /app yaca-app node scripts/migrate_library_order.js --apply
+docker exec --workdir /app yaca-app node scripts/migrate_hero_presets.js --apply
+```
+
+### I numeri da leggere (la prova vera, non la CI verde)
+
+| cosa | atteso | comando |
+|---|---|---|
+| boot | **~1,6 s** al DuckDB, non 18 | `docker inspect -f '{{.State.StartedAt}}' yaca-app` contro `docker logs -t` |
+| RAM | **~284 MiB** a freddo, non 747 | `docker stats --no-stream yaca-app` |
+| righe del grafo | conteggi > 0 | `curl .../catalog/series/yaca_mondi_series.json` e `yaca_passo_fuori_series.json` |
+| superficie | risponde | `POST /api/profilo`, `GET /api/dashboard` |
+| artefatto anime | presente e letto | `docker exec yaca-app ls -la /data/anime-source/` + nessun *«artefatto assente»* |
+
+**Rollback**: l'immagine precedente è `ghcr.io/gabrielefuoco/yaca@sha256:85e01dd9…`; si torna lì con un
+`docker compose up -d` col tag vecchio. Se una misura non torna, **si decide in un minuto**.

@@ -464,6 +464,27 @@ Non installare agenti pesanti sul server. Configurare un servizio esterno gratui
 - Notifiche: via Email, Telegram o Discord in caso di mancata risposta (blackout, crash o disconnessione internet).
 
 ### 7.4 Manutenzione Ordinaria
+
+> ⚠️ **Watchtower aggiorna le IMMAGINI, non il `docker-compose.yml`.** Quando un push cambia il compose
+> (un volume nuovo, una variabile, un servizio in più), Watchtower scarica la nuova immagine ma **ricrea il
+> container con la vecchia configurazione**: il mount e le env nuove non entrano mai, e il container resta
+> `healthy` mentre il pezzo nuovo non c'è. È una rottura silenziosa, ed è già costata una diagnosi
+> (19/10/2026: il volume dell'artefatto anime montato in un compose che nessuno applicava).
+>
+> **Dopo ogni push che tocca `docker-compose.yml`**, sul mate:
+> ```bash
+> ssh matebook
+> git -C /srv/yaca pull                          # il compose e ops/ sono nel clone
+> cd /srv/yaca && docker compose pull            # le immagini nuove
+> docker compose up -d --no-build                # ← questo applica il compose
+> docker compose ps                              # tutto healthy?
+> ```
+> E la verifica che il pezzo nuovo ci sia davvero: `docker inspect <container> --format '{{range .Mounts}}{{.Destination}} {{end}}'`
+> deve elencare il volume nuovo, e `docker inspect <container> --format '{{range .Config.Env}}{{println .}}{{end}}' | grep <VARIABILE>`
+> deve trovare la variabile nuova. **Senza il `up -d --no-build`, il deploy è a metà e sembra riuscito.**
+>
+> Il guardiano di questo e di altri silenzi: `node scripts/qa/preflight-deploy.js` (esce 1 se qualcosa non torna).
+
 - **Aggiornamenti automatici app**: Watchtower controlla GHCR ogni 3600 secondi (1 ora). Quando una nuova commit entra su `main`, la GitHub Action compila l'immagine, Watchtower effettua il pull ed esegue il restart a zero downtime dell'app, rimuovendo la vecchia immagine.
   L'immagine di Watchtower **non è `containrrr/watchtower`**: il compose usa il fork mantenuto `ghcr.io/nicholas-fedor/watchtower`. Il progetto originale non è più aggiornato e il suo client parla l'API Docker 1.25 mentre Engine 29 richiede ≥ 1.40, quindi va in crash-loop. Il fork è drop-in: stesse label `com.centurylinklabs.watchtower.enable` e stesse variabili `WATCHTOWER_*`. Non "sostituirlo" con l'upstream.
 - **Pulizia spazio disco**: Quando lo spazio libero scende verso i 30 GB, ripulire le cache di build e immagini orfane:
