@@ -188,6 +188,32 @@ def test_ripescaggio_e_liste():
     titoli_tuo = [t[0] for t in tuo_mondo["titoli"]]
     print(f"Titoli usciti in 'il_tuo_mondo': {titoli_tuo}")
 
+    watchlist_set = {"movie:101", "movie:103", "movie:104"}
+    totale_watchlist = sum(
+        1 for li in liste for t in li["titoli"] if t[0] in watchlist_set
+    )
+
+    # Confronto empirico PRIMA vs DOPO:
+    # ----------------------------------------------------------------------------------------
+    # PRIMA del Ticket 02:
+    # - visti non conteneva i titoli library (if t != "library")
+    # - PESO_TIPO["library"] era 1.5
+    # - Nessun calcolo di massa indotta né filtro VAVE né tetto max 2
+    w_pre = np.array([1.0, 1.5, 1.5, 1.5], dtype=float)
+    r_pre = C.ppr(Tr, np.array([0, 1, 3, 4], dtype=np.int64), pesi=w_pre, alpha=P.ALPHA, normalizza=True)
+    visti_pre = {0} # solo watched era nei visti!
+    cand_pre = [x for x in m.MEMBRI[0] if x not in visti_pre]
+    out_pre = sorted([(B.KEYS[x], float(r_pre[x])) for x in cand_pre], key=lambda t: -t[1])[:10]
+    titoli_pre = [t[0] for t in out_pre]
+    wl_pre = [t for t in titoli_pre if t in watchlist_set]
+
+    print("--- CONFRONTO DIRETTO PRIMA vs DOPO IL TICKET 02 ---")
+    print(f"PRIMA: il_tuo_mondo = {titoli_pre}")
+    print(f"       Watchlist uscite = {wl_pre} ({len(wl_pre)} titoli: violati esclusione, VAVE e tetto max 2!)")
+    print(f"DOPO:  il_tuo_mondo = {titoli_tuo}")
+    print(f"       Watchlist uscite = {[t for t in titoli_tuo if t in watchlist_set]} ({totale_watchlist} titolo: rispettati gate indotta, VAVE >= 7.0 e tetto max 2)")
+    print("-----------------------------------------------------")
+
     # VERIFICA (a):
     # - Il nodo 4 (movie:104) è in watchlist ma isolato (r_indotta non nel top 15%):
     #   NON DEVE comparire per il solo fatto di essere in watchlist!
@@ -208,10 +234,6 @@ def test_ripescaggio_e_liste():
 
     # VERIFICA (b):
     # Conteggio totale di titoli da watchlist nell'intero output
-    watchlist_set = {"movie:101", "movie:103", "movie:104"}
-    totale_watchlist = sum(
-        1 for li in liste for t in li["titoli"] if t[0] in watchlist_set
-    )
     print(f"Conteggio totale titoli da watchlist usciti: {totale_watchlist}")
     assert totale_watchlist <= 2, f"FALLIMENTO (b): troppi titoli watchlist ({totale_watchlist} > 2)"
     print(f"   -> OK (b): Conteggio titoli watchlist in output ({totale_watchlist}) <= 2.")
@@ -270,6 +292,7 @@ def test_max_due_ripescaggi():
     m.QUOTA_COZY = np.zeros(NB, dtype=np.float32)
     m.QUOTA_IMP = np.zeros(NB, dtype=np.float32)
     m.LISTDEG = np.zeros(N, dtype=np.float32)
+    m.TIT = np.array([f"Title {100+i}" for i in range(N)])
     m.artefatto = "test-sha"
 
     keys_mock = [f"movie:{100+i}" for i in range(N)]
@@ -298,10 +321,115 @@ def test_max_due_ripescaggi():
     print()
 
 
+def test_servizio_grafo():
+    print("=" * 80)
+    print("PROVA SERVIZIO GRAFO (servizio.py): IMPORT, HEALTH E RACCOMANDA SU FIXTURE")
+    print("=" * 80)
+
+    import json
+    import threading
+    import urllib.request
+    from graph import servizio as S
+
+    # Setup motore fixture
+    N, NB = 25, 2
+    rows, cols, data = [], [], []
+    def add_edge(u, v, w):
+        rows.append(u); cols.append(v); data.append(w)
+        rows.append(v); cols.append(u); data.append(w)
+
+    add_edge(0, 2, 8.0); add_edge(0, 5, 8.0); add_edge(0, 6, 7.0); add_edge(0, 7, 7.0); add_edge(0, 8, 6.0); add_edge(0, 9, 5.0)
+    add_edge(0, 3, 8.0); add_edge(0, 1, 8.0)
+    add_edge(4, 13, 0.5); add_edge(13, 14, 1.0); add_edge(9, 10, 1.0); add_edge(10, 11, 1.0); add_edge(11, 12, 1.0)
+    for b in range(15, 24): add_edge(b, b + 1, 2.0)
+
+    W = sp.csr_matrix((data, (rows, cols)), shape=(N, N))
+    deg = np.asarray(W.sum(1)).ravel(); deg[deg <= 0] = 1.0
+    Tr = sp.diags(1.0 / deg) @ W
+
+    m = object.__new__(MO.Motore)
+    m.N, m.NB, m.Tr = N, NB, Tr
+    m.MEM = np.array([0] * 15 + [1] * 10, dtype=np.int32)
+    m.SZ = np.array([15, 10], dtype=np.int32)
+    m.MEMBRI = [np.arange(0, 15, dtype=np.int32), np.arange(15, 25, dtype=np.int32)]
+    m.VICINI = [np.array([1], dtype=np.int32), np.array([0], dtype=np.int32)]
+    m.VAVE = np.full(N, 7.2, dtype=np.float32)
+    m.VAVE[1], m.VAVE[3], m.VAVE[4] = 6.5, 8.2, 8.5
+    m.VOT = np.full(N, 1000.0, dtype=np.float32)
+    m.VOTMED = np.array([1000.0, 1000.0], dtype=np.float32)
+    m.POP = np.full(N, 50.0, dtype=np.float32)
+    m.ANNO = np.full(N, 2020, dtype=np.int32)
+    m.NEP = np.full(N, 1.0, dtype=np.float32)
+    m.COZY, m.IMP, m.LISTDEG = np.zeros(N, dtype=np.float32), np.zeros(N, dtype=np.float32), np.zeros(N, dtype=np.float32)
+    m.QUOTA_TV, m.QUOTA_COZY, m.QUOTA_IMP = np.zeros(NB, dtype=np.float32), np.zeros(NB, dtype=np.float32), np.zeros(NB, dtype=np.float32)
+    m.TIT = np.array([f"Title {100+i}" for i in range(N)])
+    m.artefatto = "mock-artefatto-ticket-02"
+
+    B.KEYS = [f"movie:{100+i}" for i in range(N)]
+    B.ROW_OF = {k: i for i, k in enumerate(B.KEYS)}
+    B.IS_TV = np.zeros(N, dtype=bool)
+
+    # 1. Test chiamata diretta a esegui_richiesta
+    req = {
+        "semi": [
+            {"tmdbId": 100, "medium": "movie", "tipo": "watched"},
+            {"tmdbId": 101, "medium": "movie", "tipo": "library"},
+            {"tmdbId": 103, "medium": "movie", "tipo": "library"},
+            {"tmdbId": 104, "medium": "movie", "tipo": "library"}
+        ],
+        "medium": "movie",
+        "opzioni": {"largo": 1},
+        "cap": 10
+    }
+    status, resp = S.esegui_richiesta(req, m)
+    assert status == 200, f"Atteso status 200, ottenuto {status}"
+    assert resp["contratto"] == 1
+    assert len(resp["liste"]) > 0
+    print("1. esegui_richiesta: status 200, contratto 1, liste generate con successo.")
+    print(f"   Primi 3 titoli di 'il_tuo_mondo': {resp['liste'][0]['titoli'][:3]}")
+
+    # 2. Test server HTTP end-to-end
+    port = 7899
+    server, _ = S.crea_server(host="127.0.0.1", port=port, motore=m)
+    t = threading.Thread(target=server.serve_forever)
+    t.daemon = True
+    t.start()
+
+    try:
+        # GET /health
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health") as r:
+            health_resp = json.loads(r.read())
+            assert r.status == 200
+            assert health_resp["ok"] is True
+            print(f"2. GET /health -> status {r.status}, ok: {health_resp['ok']}, ricetta: {health_resp['versioni']['ricetta']}")
+
+        # POST /raccomanda
+        req_bytes = json.dumps(req).encode("utf-8")
+        http_req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/raccomanda",
+            data=req_bytes,
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(http_req) as r:
+            post_resp = json.loads(r.read())
+            assert r.status == 200
+            assert len(post_resp["liste"]) > 0
+            primo_titolo = post_resp["liste"][0]["titoli"][0]
+            assert primo_titolo["tmdbId"] == 103
+            print(f"3. POST /raccomanda -> status {r.status}, liste: {len(post_resp['liste'])}, primo titolo ripescato: tmdbId={primo_titolo['tmdbId']}, score={primo_titolo['punteggio']}")
+    finally:
+        server.shutdown()
+        server.server_close()
+        print("4. Server HTTP del grafo arrestato correttamente.")
+    print()
+
+
 if __name__ == "__main__":
     test_pesi_e_tipo()
     test_ripescaggio_e_liste()
     test_max_due_ripescaggi()
+    test_servizio_grafo()
     print("=" * 80)
     print("TUTTE LE VERIFICHE SUPERATE CON SUCCESSO (TASK_OK)")
     print("=" * 80)
+
