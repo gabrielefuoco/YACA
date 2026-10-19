@@ -183,3 +183,54 @@ docker exec --workdir /app yaca-app node scripts/migrate_hero_presets.js --apply
 
 **Rollback**: l'immagine precedente è `ghcr.io/gabrielefuoco/yaca@sha256:85e01dd9…`; si torna lì con un
 `docker compose up -d` col tag vecchio. Se una misura non torna, **si decide in un minuto**.
+
+---
+
+## Il deploy è stato eseguito — 19/10/2026
+
+**`main` `7579d8f` → `a3d07ae`**, CI verde su entrambi i workflow, produzione aggiornata.
+
+### I numeri, letti dai log e dai contatori
+
+| cosa | atteso | misurato |
+|---|---|---|
+| boot (DuckDB persistente riaperto) | ~1,6 s | **~2,4 s** dall'avvio (`10:01:29.55` → `10:01:31.94`) ✓ |
+| RAM di `yaca-app` | ~284 MiB | **148,6 MiB** ✓ |
+| `yaca-graph` | healthy | 200, `contratto: 1`, `versioni: {artefatto: cf1d80dc…, ricetta: 8b2d7932…}` ✓ |
+| righe del grafo | conteggi > 0 | mondi **11**, passo_fuori **20**, uscite_nuove **2**, nicchia **20** ✓ |
+| manifest | risponde | 200 ✓ |
+| artefatto anime | letto, non degradato | `degraded: false`, `error: nessuno`, `generatedAt 09:52` ✓ |
+
+### Le migrazioni (dopo il deploy, una volta)
+
+- `migrate_library_order.js --apply` → 10 profili analizzati, **0 con `libraryOrder`** → 0 record (non c'era nulla da migrare).
+- `migrate_hero_presets.js --apply` → **10 record scritti** ✓ (i profili legacy non perdono le righe hero: ticket 47).
+
+### Cosa è stato trovato e corretto **durante** il deploy
+
+1. **Watchtower aveva già aggiornato l'app senza il compose nuovo**: il container girava il codice nuovo
+   **senza** il mount anime, e i log dicevano `File artefatto assente: "/data/tmdb/anime_mapping.json"`.
+   La degradazione era **in corso** mentre preparavo il deploy. Chiuso con `docker compose up -d --no-build`
+   (la regola è ora scritta in `docs/DEPLOYMENT_HOME_SERVER.md` §7.4 e nella skill `matebook`).
+2. **Il produttore non aveva mai pubblicato l'artefatto**: l'immagine in produzione era del **5 ottobre** e non
+   conteneva `caa4267`. Dopo il push il workflow `deploy-anime-source.yml` l'ha ricostruita, e il file
+   (`anime-mappings.json`, 10.469.755 byte) è apparso nel volume alle 07:58.
+3. **Due scrittori del dump**: il container `tmdb-daemon` **e** due unità systemd sullo stesso volume.
+   → unità **rimosse** (il README del servizio dice *«Perché Container e non Unità Systemd»*).
+4. **Quattro migrazioni rotte** dal refactor di `src/infra`: chiamavano `connectMongo()` **senza URI** e
+   sarebbero uscite con `uri must be a string` — e il deploy ne esegue una. Corrette tutte e quattro
+   (`migrate_library_order`, `migrate_profile_ui_state`, `migrate_trakt_credentials`, `migrate_user_credentials`),
+   e il **preflight** ora le prende (`node scripts/qa/preflight-deploy.js`, 9 verifiche).
+
+### Due cose che restano, dichiarate
+
+1. **Il grafo gira l'immagine vecchia** (costruita sul mate 2 giorni fa): `services/graph` è cambiato
+   (`parametri.py` `DELTA_FASCIA`, `motore.py`), e il **package `yaca-graph` non esiste su ghcr** — il suo
+   workflow non c'è (ticket 18: manca lo scope `workflow` sul token). `docker compose pull` lo **nega**.
+   Funziona (200, contratto 1) ma con la ricetta vecchia. Due strade: `docker compose build graph` sul mate
+   (il compose è scritto per questo, ma la regola dice «il server non compila mai»), oppure aggiungere il
+   workflow e lasciare che lo costruisca la CI.
+2. **Il lock di DuckDB è conteso quando il daemon gira**: l'app ricostruisce da parquet (~9 s invece di ~2,4 s)
+   e logga `Conflicting lock is held`. Degrada correttamente, ma il boot lento torna **ogni volta che i due
+   coincidono**. Non è una regressione del deploy: è l'effetto della separazione del ticket 34, e merita un
+   ticket suo (DuckDB in sola lettura per l'app, o chiusura del DB da parte del daemon dopo la build).
