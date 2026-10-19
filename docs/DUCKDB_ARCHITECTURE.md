@@ -26,13 +26,16 @@ Ogni funzione restituisce un frammento SQL.
 - `F.releasedAfter('2023-01-01')` -> Filtra i timestamp.
 - **Logica dell'Array**: Gli elementi nell'array `where` fornito da un preset sono uniti implicitamente da un `AND` al vertice della query.
 
-### B. `src/db/queryBuilder.js`
-È il generatore SQL. Prende un oggetto *preset* e lo compila in una robusta sintassi SQL DuckDB compatibile con i parquet (o con i file JSON estratti per fallback).
+### B. `src/indice/compiler.js` — il compilatore SQL
+È il generatore SQL. Prende un oggetto *preset* e lo compila in sintassi SQL DuckDB compatibile con i parquet.
 - Se presente il parametro `{ _fts: "termine" }`, concatena stringhe ed esegue una `BM25` search.
 - Se presente il parametro `{ _similar: 1234 }`, effettua l'estrazione dai campi `recommendations` stoccati in pre-computazione nel database locale.
 
+> Il vecchio `src/db/queryBuilder.js` **non esiste più**: il compilatore è passato all'indice nel ticket 41 (map §16:
+> l'indice possiede DuckDB, FTS5, Tier 2 e il compilatore). Vedi `src/indice/compiler.js` (l'SQL) e `src/indice/filters.js` (la DSL: `F`, `S`, `SortExpr`).
+
 ### C. `src/indice/duckDbProvider.js`
-Il provider che connette la logica astratta al database fisico di esecuzione. Esegue `queryBuilder.js`, incanala i dati grezzi estratti (spesso in ~10-15ms) e mappa le colonne lette nella sintassi unificata di risposta *Stremio Light Meta*, che arricchirà il frontend senza effettuare alcuna richiesta web.
+Il provider che connette la logica astratta al database fisico di esecuzione. Esegue il compilatore dell'indice (`src/indice/compiler.js`), incanala i dati grezzi estratti (spesso in ~10-15ms) e mappa le colonne lette nella sintassi unificata di risposta *Stremio Light Meta*, che arricchirà il frontend senza effettuare alcuna richiesta web.
 
 ### D. Il dump TMDB e la politica dei titoli
 
@@ -62,7 +65,7 @@ Come funziona oggi:
 
 Il **Vector Space Model (VSM)** e il motore bayesiano generano query analitiche che vengono risolte in DuckDB:
 1. `AiDiscoveryProvider.js` elabora le strategie generative e normalizza i filtri tramite `AiQueryNormalizer.js`.
-2. I filtri vengono passati direttamente a `DuckDbProvider.getDuckDbCatalogFromFilters`, che si appoggia a `src/db/queryBuilder.js` per compilare il codice SQL nativo (inclusi i filtri di qualità e la Full-Text Search).
+2. I filtri vengono passati direttamente a `DuckDbProvider.getDuckDbCatalogFromFilters`, che si appoggia al compilatore dell'indice (`src/indice/filters.js`) per compilare il codice SQL nativo (inclusi i filtri di qualità e la Full-Text Search).
 
 > [!NOTE]
 > Inizialmente (fino a luglio 2026) esisteva l'adattatore ponte `src/utils/legacyTmdbAdapter.js`. È stato rimosso definitivamente il **2026-07-23** (commit `73a023d`, «cleanup dead code… native DuckDB sql»): la traduzione delle query TMDB-like verso SQL DuckDB avviene direttamente nei provider dedicati senza passare da adattatori intermedi.

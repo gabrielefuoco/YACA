@@ -92,14 +92,11 @@ function buildCatalogDesc({
     const condiviso = presetIds.has(baseId);
     const { isHeroCatalogId } = require('./registry');
     const isHero = isHeroCatalogId(id) || isHeroCatalogId(baseId);
-    let resolvedGraphVersions = graphVersions;
-    if (isHero && resolvedGraphVersions === undefined) {
-        try {
-            const { graphClient } = require('../clients');
-            resolvedGraphVersions = graphClient.getGraphHealthVersionsCached();
-        } catch (_err) {
-            resolvedGraphVersions = null;
-        }
+    // Le versioni del grafo le porta il CHIAMANTE: il catalogo è un tipo e non conosce i client di rete
+    // (decisione 29). Se mancano su una riga hero lo diciamo invece di tacere: senza di esse la chiave
+    // non si invalida quando il grafo cambia ricetta, ed è la classe di guasto del 19/10/2026.
+    if (isHero && graphVersions === undefined) {
+        console.warn('[catalogDefinition] Chiave di una riga hero senza graphVersions: la cache non si invaliderà al cambio di ricetta.');
     }
 
     return {
@@ -125,8 +122,8 @@ function buildCatalogDesc({
             invalida: {
                 badgeVersion,
                 catalogDef: canonicalCatalogDefinition(catalogMeta),
-                ...(isHero && resolvedGraphVersions?.artefatto ? { artefatto: resolvedGraphVersions.artefatto } : {}),
-                ...(isHero && resolvedGraphVersions?.ricetta ? { ricetta: resolvedGraphVersions.ricetta } : {})
+                ...(isHero && graphVersions?.artefatto ? { artefatto: graphVersions.artefatto } : {}),
+                ...(isHero && graphVersions?.ricetta ? { ricetta: graphVersions.ricetta } : {})
             }
         },
         ...(ttl !== undefined ? { ttl } : {})

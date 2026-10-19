@@ -102,11 +102,9 @@ async function convertAndReloadDuckDb(store) {
 
         console.log('[TmdbDump] Ricostruzione DuckDB da Parquet (staging + swap atomico)...');
         const indice = require('../../src/indice');
-        await indice.close();
-        await indice.init({ forceRebuild: true, staging: true });
-        console.log('[TmdbDump] DuckDB pronto su file di staging.');
-        await indice.close(); // Chiusura immediata: rilascia il lock prima dello scambio
-        await indice.swapDatabase();
+        // Una chiamata sola: la sequenza (chiudi → costruisci su staging → chiudi → scambia) e i percorsi
+        // restano dentro l'indice. Il daemon non conosce né `.new` né il file di destinazione (decisione 31/53).
+        await indice.rebuildAndSwap();
         console.log('[TmdbDump] DuckDB scambiato atomicamente su database persistente.');
 
         // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)

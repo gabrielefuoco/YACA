@@ -12,7 +12,7 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 *   Rarità dolce, saturazione logaritmica e decadimento temporale vivono nello stesso motore (vedi sopra).
 *   [src/engines/hybrid/animePolicy.js](../src/engines/hybrid/animePolicy.js): Risoluzione della politica anime e relativi moltiplicatori di score.
 *   [src/utils/animeIdentity.js](../src/utils/animeIdentity.js): Regola canonica di identità anime (unico default del marker `_isAnime`).
-*   [src/db/queryBuilder.js](../src/db/queryBuilder.js): Compilazione delle query DuckDB: paginazione deterministica, ordinamenti e FTS.
+*   [src/indice/compiler.js](../src/indice/compiler.js): Compilazione delle query DuckDB: paginazione deterministica, ordinamenti e FTS.
 *   [src/stremio/CatalogRouter.js](../src/stremio/CatalogRouter.js): Instradamento dei cataloghi e dimensione delle pagine.
 
 ---
@@ -199,10 +199,10 @@ Queste regole valgono per ogni catalogo e sono la ragione per cui la stessa rich
 `PRESET_PAGE_SIZE = 20` ([CatalogRouter.js](../src/stremio/CatalogRouter.js#L14)) si applica **solo** ai cataloghi `preset_*`; il percorso DuckDB degli altri passa `100` ([CatalogRouter.js](../src/stremio/CatalogRouter.js#L84)). Non esiste refill: una pagina restituita vale per quello che è. Attenzione che 20 è la misura di YACA anche fuori dai preset — hero (`ITEMS_PER_PAGE`), watchlist, ricerca, simulcast — mentre la pagina canonica del client Stremio è 100 e una risposta più corta gli dice «catalogo finito»: la conseguenza completa è in [STREMIO_INTERNALS.md §3.A](STREMIO_INTERNALS.md#a-paginazione-dinamica-skip-e-lookahead).
 
 ### 6.2 Ordinamento deterministico (il tie-breaker `id ASC`)
-`buildCatalogQuery()` appende `, id ASC` a **ogni** `ORDER BY` che non lo contiene già ([queryBuilder.js](../src/db/queryBuilder.js#L96)). Senza quel termine il motore può restituire le righe concludenti in ordine arbitrario: la seconda pagina ripeteva la prima e la terza correggeva la seconda. Il contratto completo dell'ordinamento di un preset è quindi *il suo `orderBy` seguito da `id ASC`*, e va verificato così — per esempio `preset_burton`: `"popularity" DESC NULLS LAST, "vote_count" DESC, "id" ASC`, testato sul **contratto** (popolarità ↓, poi voti ↓, poi id ↑) e non sui titoli specifici, che cambiano a ogni aggiornamento del dump TMDB.
+`buildCatalogQuery()` appende `, id ASC` a **ogni** `ORDER BY` che non lo contiene già ([compiler.js](../src/indice/compiler.js)). Senza quel termine il motore può restituire le righe concludenti in ordine arbitrario: la seconda pagina ripeteva la prima e la terza correggeva la seconda. Il contratto completo dell'ordinamento di un preset è quindi *il suo `orderBy` seguito da `id ASC`*, e va verificato così — per esempio `preset_burton`: `"popularity" DESC NULLS LAST, "vote_count" DESC, "id" ASC`, testato sul **contratto** (popolarità ↓, poi voti ↓, poi id ↑) e non sui titoli specifici, che cambiano a ogni aggiornamento del dump TMDB.
 
 ### 6.3 Filtro obbligatorio e dedup
-Ogni query parte da `adult = false` ([queryBuilder.js](../src/db/queryBuilder.js#L23)). I preset che possono restituire righe duplicate dal dump usano `uniqueById`, risolto con `row_number() OVER (PARTITION BY id)` ([queryBuilder.js](../src/db/queryBuilder.js#L98-L100)).
+Ogni query parte da `adult = false` ([compiler.js](../src/indice/compiler.js)). I preset che possono restituire righe duplicate dal dump usano `uniqueById`, risolto con `row_number() OVER (PARTITION BY id)` ([compiler.js](../src/indice/compiler.js)).
 
 ### 6.4 Ricerca testuale (FTS)
 La ricerca DuckDB non è un `LIKE` libero: BM25 fa da candidato veloce, ma ogni termine della query deve comparire nel titolo (`title`/`name` + `original_title`/`original_name`), e **il titolo esatto ha un boost esplicito** come primo criterio di ordinamento:

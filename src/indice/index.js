@@ -25,10 +25,7 @@ class IndiceModule {
         this.resolveImdbIds = this.resolveImdbIds.bind(this);
         this.resolveTmdbToImdb = this.resolveTmdbToImdb.bind(this);
         this.swapDatabase = this.swapDatabase.bind(this);
-        this.getStagingDbPath = this.getStagingDbPath.bind(this);
-        this.getTargetDbPath = this.getTargetDbPath.bind(this);
         this.rebuildAndSwap = this.rebuildAndSwap.bind(this);
-        this.ensureFreshHandle = this.ensureFreshHandle.bind(this);
         this.close = this.close.bind(this);
     }
 
@@ -287,22 +284,9 @@ class IndiceModule {
         return { swapped: false, reason: 'unsupported' };
     }
 
-    getStagingDbPath() {
-        if (typeof this.duckDb.getStagingDbPath === 'function') {
-            return this.duckDb.getStagingDbPath();
-        }
-        return null;
-    }
-
-    getTargetDbPath() {
-        if (typeof this.duckDb.getTargetDbPath === 'function') {
-            return this.duckDb.getTargetDbPath();
-        }
-        return null;
-    }
-
     /**
      * Ricostruzione completa su file temporaneo e swap atomico su target (Ticket 54).
+     * È l'unica cosa che il daemon deve sapere: la sequenza e i percorsi restano qui.
      */
     async rebuildAndSwap(options = {}) {
         if (typeof this.duckDb.rebuildAndSwap === 'function') {
@@ -312,15 +296,6 @@ class IndiceModule {
         await this.init({ ...options, forceRebuild: true, staging: true });
         await this.close();
         return this.swapDatabase();
-    }
-
-    /**
-     * Verifica la freschezza dell'handle DuckDB e riapre se il database è stato scambiato (Ticket 59).
-     */
-    async ensureFreshHandle(forceCheck = false) {
-        if (this.duckDb && typeof this.duckDb.ensureFreshHandle === 'function') {
-            return this.duckDb.ensureFreshHandle(forceCheck);
-        }
     }
 
     /**
@@ -354,11 +329,8 @@ module.exports.getDfCache = indice.getDfCache.bind(indice);
 module.exports.parquetStats = indice.parquetStats.bind(indice);
 // Swap atomico DuckDB (Ticket 54): porta di scambio senza conoscere percorsi interni (decisione 31/53)
 module.exports.swapDatabase = indice.swapDatabase.bind(indice);
-module.exports.getStagingDbPath = indice.getStagingDbPath.bind(indice);
-module.exports.getTargetDbPath = indice.getTargetDbPath.bind(indice);
 module.exports.rebuildAndSwap = indice.rebuildAndSwap.bind(indice);
 // Riapertura automatica dopo scambio DuckDB (Ticket 59)
-module.exports.ensureFreshHandle = indice.ensureFreshHandle.bind(indice);
 // La promozione Tier 2 -> Tier 1 è dell'indice: si chiede dalla porta, non dal file interno.
 module.exports.schedulePromotion = (...args) => require('./tier1LazyPromotion').schedulePromotion(...args);
 

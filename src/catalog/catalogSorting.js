@@ -8,7 +8,7 @@
  * -----------------------------------------------------------------------------
  * 1. DISCOVERY (DuckDB preset / search SQL):
  *    - Default: Popolarità decrescente (`S.POPULAR` -> "popularity" DESC NULLS LAST).
- *    - Tie-breaker deterministico garantito a livello SQL da queryBuilder: `id ASC`.
+ *    - Tie-breaker deterministico garantito a livello SQL dal compilatore dell'indice: `id ASC`.
  *    - Ordinabile dall'utente: SÌ (sortable: true, espone options nel manifest).
  *
  * 2. SIMULCAST (Anime Novità / anime_airing_state):

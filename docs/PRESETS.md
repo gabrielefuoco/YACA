@@ -81,7 +81,7 @@ Il flusso dei preset è gestito in modalità 100% offline:
 1. Stremio richiede il catalogo `yaca_preset_nolan`.
 2. Il `CatalogRouter` individua il preset.
 3. Trovando la chiave `where`, la richiesta viene delegata al [DuckDbProvider](../src/indice/duckDbProvider.js).
-4. Il provider converte le chiamate `F.*` in un'unica stringa SQL grazie al `queryBuilder.js`.
+4. Il provider converte le chiamate `F.*` in un'unica stringa SQL grazie al compilatore dell'indice (`src/indice/compiler.js`).
 5. DuckDB esegue la query in memoria (tempo tipico: < 15ms) e ritorna il result-set.
 6. Il result-set viene convertito nel formato compatto LightMeta e passato allo `StremioFormatter`.
 
