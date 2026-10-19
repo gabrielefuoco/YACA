@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 58 — `keyword-graph` e `doppiaggi-source`: o si completano, o si ritirano
@@ -189,3 +189,22 @@ Il ticket 58 è stato completato come intervento di **documentazione e verità a
 - Nessun `git push`. Nessun `npm run build`/`tsc`.
 - Stato del ticket: lasciato `Status: ready-for-agent` (chiusura riservata all'orchestratore/integratore).
 
+
+---
+
+**Chiusura (19/10/2026, integratore).** Verificato e integrato in `3d29b0b`. Suite alla baseline (5 rosse / 8
+test / 1887 verdi), entrambi gli hash del manifest invariati.
+
+**Due bugie nuove, introdotte mentre si correggevano le vecchie** — corrette prima di mergiare, ed è la cosa da
+ricordare di questo ticket:
+
+1. il README riscritto elencava una chiave **`L1_adjacency`** che nel file **non esiste** (le chiavi sono sette:
+   `metadata`, `kw_to_L1`, `L1`, `L2`, `L3`, `L4`, `L5`) e dichiarava la versione **`"2.0"`** mentre
+   `metadata.version` è **`"2.3"`**;
+2. le durate erano **enunciate invece che misurate**: «~6 secondi» (vero: **7 s**, `yaca-doppiaggi.service`
+   04:01:09 → 04:01:16) e «~0,7 secondi» (i timestamp di systemd hanno risoluzione di un secondo: si può dire
+   **1 s**, non 0,7).
+
+Un ticket sulla verità dei documenti ha prodotto due affermazioni non verificate: **il rischio non è scrivere
+poco, è scrivere con sicurezza**. Da qui la regola applicata: ogni numero in un doc porta accanto il comando che
+l'ha prodotto.
