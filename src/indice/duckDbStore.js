@@ -48,7 +48,6 @@ class DuckDbStore {
         this.activeQueries = 0;
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
-        this.disableAutoReopen = false;
     }
 
     getStagingDbPath() {
@@ -106,6 +105,14 @@ class DuckDbStore {
                 lastError = err;
                 console.warn(`[swap attempt ${attempt}] ${err.code}: ${err.message}`);
                 if (err.code === 'EEXIST') {
+                    // ATTENZIONE — su Windows questo ramo NON è atomico, e su Linux non si prende mai.
+                    // `fs.renameSync` sostituisce il file in un colpo solo su POSIX; su Windows solleva
+                    // EEXIST se la destinazione esiste, quindi qui si deve cancellare e rinominare, e fra
+                    // le due c'è una finestra in cui il target NON esiste: un lettore che la intercetta
+                    // trova il file assente e riparte da un database vuoto ("Ricostruzione da zero").
+                    // La produzione gira su Linux (mate), dove il ramo è irraggiungibile: le sonde e lo
+                    // sviluppo su Windows sì. Non è una svista da correggere qui — su Windows non esiste
+                    // una sostituzione atomica via rename — ma non va nemmeno chiamata «atomica» e basta.
                     try { fs.unlinkSync(toPath); } catch (_) {}
                     try {
                         fs.renameSync(fromPath, toPath);
@@ -350,10 +357,6 @@ class DuckDbStore {
     }
 
     async ensureFreshHandle(forceCheck = false, options = {}) {
-        if (this.disableAutoReopen) {
-            return;
-        }
-
         if (!this.isInitialized || !this.dbPath || this.dbPath === ':memory:') {
             return;
         }

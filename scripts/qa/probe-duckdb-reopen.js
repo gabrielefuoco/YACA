@@ -130,10 +130,12 @@ async function runProbe() {
         await daemonIndice2.swapDatabase(daemonStore2.getStagingDbPath(), daemonStore2.getTargetDbPath());
         console.log('[Probe] Daemon ha completato lo swap atomico: targetDbPath contiene ora il nuovo catalogo.');
 
-        // Se siamo in modalità dimostrazione fallimento, disabilitiamo la riapertura nell'app
+        // Se siamo in modalità dimostrazione fallimento, disabilitiamo la riapertura nell'app.
+        // Si fa DALLA SONDA, non con un interruttore dentro il prodotto (decisione 34: la prova
+        // che una barriera serve non vive nel codice che la costruisce).
         if (disableReopen) {
-            appStore.disableAutoReopen = true;
-            console.log('[Probe] Riapertura automatica app DISABILITATA per testare il fallimento.');
+            appStore.ensureFreshHandle = async () => {};
+            console.log('[Probe] Riapertura automatica app DISABILITATA (patch della sonda) per testare il fallimento.');
         }
 
         // -----------------------------------------------------------------

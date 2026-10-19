@@ -235,3 +235,30 @@ docker exec --workdir /app yaca-app node scripts/migrate_hero_presets.js --apply
    e logga `Conflicting lock is held`. Degrada correttamente, ma il boot lento torna **ogni volta che i due
    coincidono**. Non è una regressione del deploy: è l'effetto della separazione del ticket 34, e merita un
    ticket suo (DuckDB in sola lettura per l'app, o chiusura del DB da parte del daemon dopo la build).
+
+### I requisiti, uno per uno — cosa è stato eseguito e cosa no
+
+Aggiunto il 19/10/2026 dopo la review a due assi: il requisito **3** era stato declassato **dentro le note**
+invece che nel corpo del ticket, quindi leggendo i requisiti numerati restava scritto come non fatto. Qui la
+contabilità esplicita.
+
+| # | requisito | stato |
+|---|---|---|
+| 1 | il boot e le superfici rispondono | **fatto** — boot ~2,4 s, RAM 148,6 MiB, le rotte di dominio rispondono |
+| 2 | le misure lette dai log e dai contatori | **fatto** — nel verbale sopra |
+| 3 | le unità sul mate (`cp ops/yaca-poster-eventi.service`, `daemon-reload`, `restart`) | **NON eseguito — declassato**, vedi sotto |
+| 4 | gli shim spariscono (ticket 28) | **aperto**, bloccato dal 3: `scripts/drena-coda-poster.js` esiste ancora |
+| 5 | il grafo si ricostruisce | **fatto dopo** — ricetta `2330b143bc8845a7`, il residuo 1 qui sotto è chiuso |
+
+**Sul 3 (declassato, e perché).** L'unità del mate non esegue uno script dell'host: fa
+`docker exec --workdir /app … yaca-app node src/posters/drenaCodaPoster.js`, cioè gira **dentro il container**,
+dove il percorso nuovo esiste già. Il `ExecStart` in `ops/` punta già al percorso nuovo (lo shim resta come
+rete di sicurezza). Aggiornare l'unità sul mate è quindi **igiene, non necessità**: non è stato fatto e non
+cambia il comportamento. La conseguenza è che il **4 resta aperto**: finché lo shim esiste per prudenza, non si
+può togliere — e va deciso se toglierlo dopo aver verificato l'unità sul mate.
+
+**Sul 5 (chiuso dopo il verbale).** Il grafo è stato ricostruito sul mate con `docker compose build graph`, come
+il compose prevede: la ricetta servita è ora `2330b143bc8845a7` (era `8b2d7932`). Il residuo «il grafo gira
+l'immagine vecchia» **non è più vero**. Resta vera la causa di fondo: il package `yaca-graph` su ghcr non esiste
+perché manca lo scope `workflow` sul token (ticket 18), quindi la CI non può costruirlo e ogni ricostruzione
+torna a essere un gesto a mano sul server.
