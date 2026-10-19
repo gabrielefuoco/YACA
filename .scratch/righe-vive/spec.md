@@ -14,6 +14,28 @@
 - L'artefatto e la ricetta restano quelli (`2330b143bc8845a7` / `cf1d80dcba3eddce`): chi legge una riga hero
   **deve** continuare a vedere l'invalidazione della cache legata alle versioni del grafo.
 
+## 0.1 L'ordine **vero** degli stadi (verificato il 19/10/2026)
+
+La prima stesura di questa specifica elencava gli stadi come *semi → grezzo → sovrapposizione → **filtri** →
+idratazione → pagine*. **Era sbagliato**, e la review del ticket 01 l'ha dimostrato:
+
+`src/stremio/idratazione.js:125` — `cardSurvivesFilters` legge i **metadati TMDB**, cioè quelli che produce
+l'idratazione. Quindi nella realtà l'ordine è:
+
+| # | stadio | nota |
+|---|---|---|
+| 1 | **semi** | per tipo: `loved` / `liked` / `watched` / `library` |
+| 2 | **grezzo** | la risposta di `/raccomanda`, per `ruolo` |
+| 3 | **sovrapposizione** | quanti titoli compaiono in più di una riga |
+| 4 | **idratazione** | quanti si idratano, e **quali** non (col motivo) |
+| 5 | **filtri** | `kidsMode` / `animePolicy`, e **quanto toglie ciascuno** |
+| 6 | **pagine** | quanti escono nelle pagine servite |
+
+Chi inverte 4 e 5 produce una tabella **incoerente** in cui lo stadio 5 sembra *resuscitare* titoli scartati dallo
+stadio 4. Se un numero non torna, si guarda **prima** l'ordine.
+
+---
+
 ## 1. Semi — la materia prima della pertinenza
 
 | Regola | Oggi | Dopo | Perché |
