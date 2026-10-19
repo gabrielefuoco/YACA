@@ -175,6 +175,8 @@ function deriva(descrizione) {
             const badgeV = invalida.badgeVersion ?? invalida.versione ?? versione ?? 24;
             const catalogDef = invalida.catalogDef;
             const slCat = varia.slider ?? varia.sliders;
+            const artefatto = invalida.artefatto ?? varia.artefatto ?? varia.graphVersions?.artefatto;
+            const ricetta = invalida.ricetta ?? varia.ricetta ?? varia.graphVersions?.ricetta;
 
             const params = {
                 type,
@@ -186,7 +188,9 @@ function deriva(descrizione) {
                 ...(condiviso ? {} : { user, profile }),
                 landscape: Boolean(varia.landscape),
                 ...(slCat ? { slider: slCat } : {}),
-                badgeV
+                badgeV,
+                ...(artefatto ? { artefatto } : {}),
+                ...(ricetta ? { ricetta } : {})
             };
 
             chiave = generateRequestHash(id, params, skip, type);

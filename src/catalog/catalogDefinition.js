@@ -85,10 +85,23 @@ function buildCatalogDesc({
     userConfig,
     activeProfileSettings,
     badgeVersion = BADGE_CATALOG_VERSION,
+    graphVersions,
     ttl
 } = {}) {
     const presetIds = getPresetIds();
     const condiviso = presetIds.has(baseId);
+    const { isHeroCatalogId } = require('./registry');
+    const isHero = isHeroCatalogId(id) || isHeroCatalogId(baseId);
+    let resolvedGraphVersions = graphVersions;
+    if (isHero && resolvedGraphVersions === undefined) {
+        try {
+            const { graphClient } = require('../clients');
+            resolvedGraphVersions = graphClient.getGraphHealthVersionsCached();
+        } catch (_err) {
+            resolvedGraphVersions = null;
+        }
+    }
+
     return {
         nome: 'catalog_page',
         versione: badgeVersion,
@@ -111,7 +124,9 @@ function buildCatalogDesc({
             },
             invalida: {
                 badgeVersion,
-                catalogDef: canonicalCatalogDefinition(catalogMeta)
+                catalogDef: canonicalCatalogDefinition(catalogMeta),
+                ...(isHero && resolvedGraphVersions?.artefatto ? { artefatto: resolvedGraphVersions.artefatto } : {}),
+                ...(isHero && resolvedGraphVersions?.ricetta ? { ricetta: resolvedGraphVersions.ricetta } : {})
             }
         },
         ...(ttl !== undefined ? { ttl } : {})
