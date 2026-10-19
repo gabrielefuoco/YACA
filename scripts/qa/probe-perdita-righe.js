@@ -25,7 +25,7 @@ const library = require('../../src/library');
 const seedsModule = require('../../src/library/seeds');
 const { graphClient } = require('../../src/clients');
 const { resolveCardDetails, cardSurvivesFilters } = require('../../src/stremio/idratazione');
-const { isAnimeContent } = require('../../src/anime');
+const { convertiSemiPerGrafo } = require('../../src/pool');
 const { ITEMS_PER_PAGE } = require('../../src/config');
 const duckDbProvider = require('../../src/indice/duckDbProvider');
 const tmdb = require('../../src/clients/tmdb');
@@ -134,26 +134,8 @@ async function measureMediumPipeline(medium, userConfig) {
         throw new Error(`[ERRORE FATALE] Stadio 1: Semi per medium ${med} sono 0. Il fixture non è entrato.`);
     }
 
-    // -------------------------------------------------------------------------
-    // DEBITO TECNICO DICHIARATO (Vincolo 2 vs Divieto di toccare il prodotto):
-    // La conversione Map seeds -> semiPerGrafo qui sotto duplica la logica inline
-    // di `src/pool/index.js` (righe 188–207).
-    // Oggi non può essere importata perché vive inline dentro `HERO_STRATEGIES[0].run`
-    // e questo ticket (01) ha divieto esplicito di modificare src/pool/ o il prodotto.
-    // DA ELIMINARE e sostituire con la funzione condivisa appena il Ticket 02 toccherà il pool.
-    // -------------------------------------------------------------------------
-    const filteredSeeds = [...seeds.entries()].filter(([id]) => {
-        if (animePolicy === 'exclude') return !isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-        if (animePolicy === 'only') return isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-        return true;
-    });
-
-    const semiPerGrafo = filteredSeeds.map(([id, w]) => ({
-        tmdbId: Number(id),
-        medium: med,
-        tipo: w >= 4 ? 'loved' : (w >= 3 ? 'liked' : (w === 1 ? 'library' : 'watched')),
-        peso: w
-    }));
+    // Debito tecnico estinto (Ticket 02): riusa la funzione estratta da src/pool
+    const semiPerGrafo = convertiSemiPerGrafo(seeds, { medium: med, animePolicy });
 
     // === 2. GREZZO (/raccomanda per ruolo) ===
     const resGraph = await graphClient.raccomanda({ semi: semiPerGrafo, medium: med, opzioni: sliders, cap: 60 });
