@@ -55,20 +55,24 @@ SCHEDA = [
      "sostiene e' l'EQUILIBRIO, non il lift: con il cap a 20, a un utente di soli film le serie "
      "prendevano il 67% del peso del seme (fino all'85%); con la specifica, il 31%.",
      "measure/equilibrio.py (253 utenti)"),
-    ("PESO_TIPO", {"loved": 3.0, "liked": 2.0, "library": 1.5, "watched": 1.0}, "INVENTATO",
+    ("PESO_TIPO", {"loved": 3.0, "liked": 2.0, "library": 1.0, "watched": 1.0}, "DICHIARATO",
      "IL MOLTIPLICATORE DEL TIPO DI SEGNALE. Fino a ieri il motore conosceva UN SOLO tipo — «visto», "
      "pesato con le ri-visioni — e buttava via i segnali espliciti, che sono i piu' forti: un «love» e' "
      "l'utente che DICE una cosa, non che la fa. Il prodotto ne distingue quattro "
      "(SEED_SIGNAL_LIMITS = loved, liked, watched, library) e li usa gia'. "
-     "I moltiplicatori qui sono INVENTATI: non c'e' modo di calibrarli offline, perche' like, love, "
-     "libreria e voti stanno nel database del PRODOTTO, non nella cache Trakt. Vanno tarati quando i "
-     "dati esisteranno — e allora la calibrazione di §3b va RIFATTA, perche' e' stata fatta sulle "
-     "ri-visioni sole. NOTA: la libreria e' INTENZIONE, non visione — un titolo in libreria NON va "
-     "escluso dai suggerimenti come se fosse visto. "
-     "ED ERA FUORI DA QUESTA TABELLA: il dizionario viveva cablato in `camminata.py` e l'impronta della "
-     "ricetta non lo copriva — quindi cambiare un fattore non invalidava la cache del prodotto, che e' "
-     "la stessa classe di errore di `PESI_TOKEN` scritto in due posti (ticket 13).",
+     "Ticket 02 porta library a 1.0: una lista di desideri non e' un gusto, e non deve pesare piu' di "
+     "un film visto. Inoltre i titoli in watchlist entrano nei visti e vengono esclusi dall'output "
+     "salvo ripescaggio controllato (max 2 per riga, r_indotta top 15% e VAVE >= 7.0).",
      "graph/camminata.py + parametri.py"),
+    ("RIPESCAGGIO_MAX", 2, "DICHIARATO",
+     "Massimo numero di titoli in watchlist ripescabili per riga hero (Ticket 02).",
+     "motore.py"),
+    ("RIPESCAGGIO_TOP_PCT", 0.15, "DICHIARATO",
+     "Percentile minimo di r_indotta rispetto ai candidati non visti per il ripescaggio watchlist (Ticket 02).",
+     "motore.py"),
+    ("RIPESCAGGIO_VAVE_MIN", 7.0, "DICHIARATO",
+     "Voto medio minimo TMDB per il ripescaggio di un titolo dalla watchlist (Ticket 02).",
+     "motore.py"),
     ("PESO_SERIE_BASE", 1.0, "DICHIARATO",
      "Il peso minimo di una serie. Insieme a PESO_SERIE_FASCIA definisce «una serie di 100 episodi "
      "deve valere come 2/3 film, non come 100».", "measure/pesi.py"),

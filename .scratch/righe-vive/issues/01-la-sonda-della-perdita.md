@@ -218,7 +218,7 @@ Output:
 
 ### 5. Residui dichiarati
 
-- **Conversione inline `seeds -> semiPerGrafo`**: in `scripts/qa/probe-perdita-righe.js` (righe 142–157) duplica la logica inline di `src/pool/index.js` (righe 188–207). Il modulo `pool` non esporta oggi questa funzione (vive inline dentro `HERO_STRATEGIES[0].run`) e questo ticket ha divieto tassativo di toccare il prodotto. Questa duplicazione è un debito tecnico dichiarato e tracciato, con commento esplicito nel codice, che dovrà essere eliminato e sostituito dalla funzione condivisa esportata dal pool non appena il Ticket 02 interverrà su `src/pool`.
+- **Conversione inline `seeds -> semiPerGrafo` (ESTINTO NEL TICKET 02)**: funzione estratta ed esportata da `src/pool/index.js` come `convertiSemiPerGrafo`, riusata nella sonda eliminando la duplicazione.
 - **Costanti nominali fixture**: i suffissi numerici per i rami di simulazione sono centralizzati nell'oggetto `ID_FIXTURE = { nonTrovato: 991, mediumSbagliato: 992, adultoKids: 993, animeExclude: 995 }` e condivisi tra il generatore fixture e il mock di TMDB per garantire che entrambe le parti rimangano allineate senza divergenze silenti.
 - **Peso finale del file**: 375 righe. L'integratore ha chiarito che il threshold di 300 righe era un segnale di allarme per duplicazioni nascoste (individuata nel debito di cui sopra) e non un limite contabile; con il debito formalizzato e commentato, la diagnostica e l'isolamento sono completi.
 

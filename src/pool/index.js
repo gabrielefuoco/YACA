@@ -149,6 +149,49 @@ function normalizePoolResult(result) {
 }
 
 /**
+ * Converte i seed (Map o entries) nel formato per il servizio del grafo.
+ * Filtra per politica anime e assegna il tipo di segnale (loved, liked, watched, library).
+ *
+ * Scelta architetturale Ticket 02: il pool NON manda il peso numerico esplicito
+ * (non invia `peso: w`) affinché PESO_TIPO nel motore Python non venga sovrascritto
+ * e tornino ad applicarsi la curva delle serie 1 + 2*(plays/NEP) e i tetti dei film.
+ *
+ * @param {Map<number|string, number>|Array<[number|string, number]>} seeds
+ * @param {Object} [options]
+ * @param {string} [options.medium='movie'] - 'movie' o 'series'/'tv'
+ * @param {string} [options.animePolicy='neutral'] - 'exclude' | 'only' | 'neutral'
+ * @returns {Array<{tmdbId: number, medium: string, tipo: string}>}
+ */
+function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral' } = {}) {
+    const med = medium === 'series' || medium === 'tv' ? 'series' : 'movie';
+    const tipoSeed = med === 'movie' ? 'movie' : 'tv';
+    const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
+
+    const rawSeeds = seeds instanceof Map
+        ? [...seeds.entries()]
+        : (Array.isArray(seeds) ? seeds : Object.entries(seeds || {}));
+
+    const filteredSeeds = rawSeeds.filter(([id]) => {
+        if (animePolicy === 'exclude') return !isAnimeSeed(id);
+        if (animePolicy === 'only') return isAnimeSeed(id);
+        return true;
+    });
+
+    return filteredSeeds.map(([id, w]) => {
+        const tmdbId = Number(id);
+        let tipo = 'watched';
+        if (w >= 4) tipo = 'loved';
+        else if (w >= 3) tipo = 'liked';
+        else if (w === 1) tipo = 'library';
+        return {
+            tmdbId,
+            medium: med,
+            tipo
+        };
+    });
+}
+
+/**
  * Definizione a lista delle strategie nel modulo pool.
  * Le quattro strategie storiche sono state rimosse (Ticket 46).
  * Il grafo genera le 4 righe additive: mondi, passo_fuori, uscite_nuove, nicchia_di_qualita.
@@ -184,27 +227,7 @@ const HERO_STRATEGIES = [
                     || ctx.userConfig?.typeSelectors?.anime;
 
                 const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-
-                const rawSeeds = [...seeds.entries()];
-                const filteredSeeds = rawSeeds.filter(([id]) => {
-                    if (animePolicy === 'exclude') return !isAnimeSeed(id);
-                    if (animePolicy === 'only') return isAnimeSeed(id);
-                    return true;
-                });
-
-                const semi = filteredSeeds.map(([id, w]) => {
-                    const tmdbId = Number(id);
-                    let tipo = 'watched';
-                    if (w >= 4) tipo = 'loved';
-                    else if (w >= 3) tipo = 'liked';
-                    else if (w === 1) tipo = 'library';
-                    return {
-                        tmdbId,
-                        medium: med,
-                        tipo,
-                        peso: w
-                    };
-                });
+                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy });
                 const visti = new Set(semi.map((s) => s.tmdbId));
                 let traktCount = 0;
                 if (rawTraktResult?.traktAvailable) {
@@ -214,7 +237,7 @@ const HERO_STRATEGIES = [
                         if (animePolicy === 'exclude' && isAnimeSeed(id)) continue;
                         if (animePolicy === 'only' && !isAnimeSeed(id)) continue;
                         visti.add(id);
-                        semi.push({ tmdbId: id, medium: med, tipo: 'liked', peso: 3 });
+                        semi.push({ tmdbId: id, medium: med, tipo: 'liked' });
                         traktCount++;
                     }
                 }
@@ -288,7 +311,7 @@ const HERO_STRATEGIES = [
                 const nPasso = (assigned[catPasso] || []).length;
                 const nUscite = (assigned[catUscite] || []).length;
                 const nNicchia = (assigned[catNicchia] || []).length;
-                console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${filteredSeeds.length}, da Trakt ${traktCount}` +
+                console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${semi.length - traktCount}, da Trakt ${traktCount}` +
                     ` · mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}`);
                 if (semi.length > 0 && nMondi === 0 && nPasso === 0 && nUscite === 0 && nNicchia === 0) {
                     console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in tutte le righe ` +
@@ -552,6 +575,7 @@ module.exports = {
     SLUG_ADDITIVI,
     HERO_STRATEGIES,
     runPoolBuilder,
+    convertiSemiPerGrafo,
     graphClient,
     get composer() {
         return require('./composer');

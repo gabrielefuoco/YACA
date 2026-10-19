@@ -279,12 +279,14 @@ class Motore:
         att, r = self.diffondi(righe, plays, tipi=tipi, pesi=pesi)
         att_s = self.modula(att, slider, dedotto)
         visti = set(righe.tolist())
-        # LA LIBRERIA E' INTENZIONE, NON VISIONE: un titolo che l'utente ha messo in libreria NON va
-        # escluso dai suggerimenti come se l'avesse visto. Si escludono i soli titoli visti/amati.
-        # E2: "catalogo" non e' "library", quindi resta in visti e NON compare fra i suggerimenti.
-        if any(t == "library" for t in tipi):
-            visti = {int(r_) for r_, t in zip(righe, tipi) if t != "library"}
+        # TICKET 02: I titoli in watchlist entrano nei visti come tutti gli altri semi
+        # (non compaiono automaticamente tra i suggerimenti per il solo fatto di essere in watchlist).
         visti_list = list(visti)
+
+        w_semi = self.pesi_semi(righe, plays, tipi=tipi, pesi=pesi)
+        e_init = np.zeros(self.N, np.float64)
+        np.add.at(e_init, righe, w_semi)
+        e_init /= max(float(e_init.sum()), 1e-12)
 
         def non_visti_mondo(b):
             m = np.setdiff1d(self.MEMBRI[b], visti_list)
@@ -328,9 +330,43 @@ class Motore:
                 fuori = sorted(fuori, key=lambda t: -t[1])[:quanti]
             return fuori
 
+        # TICKET 02: Ripescaggio controllato, max 2:
+        # Per i soli semi di tipo library si calcola r_indotta[x] = r[x] - ALPHA * e[x].
+        # Un titolo si ripesca solo se r_indotta[x] sta nel top 15% dei candidati non visti e VAVE[x] >= 7.0.
+        # Massimo 2 per riga, nelle prime posizioni.
+        lib_seeds = [int(r_) for r_, t in zip(righe, tipi) if t == "library"]
+        if medium == "series":
+            lib_seeds = [x for x in lib_seeds if B.IS_TV[x]]
+        elif medium == "movie":
+            lib_seeds = [x for x in lib_seeds if not B.IS_TV[x]]
+
+        ripescati_mondo = []
+        if lib_seeds and len(bolle) > 0:
+            cand_mondo = [x for b in bolle for x in non_visti_mondo(b)]
+            if len(cand_mondo) > 0:
+                soglia_top_pct = getattr(P, "RIPESCAGGIO_TOP_PCT", 0.15)
+                soglia_top15 = float(np.percentile(r[cand_mondo], 100 * (1.0 - soglia_top_pct)))
+                vave_min = getattr(P, "RIPESCAGGIO_VAVE_MIN", 7.0)
+                bolle_set = set(bolle)
+                qualificati = [
+                    x for x in lib_seeds
+                    if int(self.MEM[x]) in bolle_set
+                    and float(self.VAVE[x]) >= vave_min
+                    and float(r[x] - P.ALPHA * e_init[x]) >= soglia_top15
+                ]
+                qualificati.sort(key=lambda x: -float(r[x] - P.ALPHA * e_init[x]))
+                ripescati_mondo = qualificati[:int(getattr(P, "RIPESCAGGIO_MAX", 2))]
+
         liste = []
         quanti_tuo = max(P.IL_TUO_MONDO_MIN_TITOLI, cap_main) if cap is None or cap >= P.IL_TUO_MONDO_MIN_TITOLI else cap_main
-        liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": righe_titoli(bolle, quanti_tuo)})
+        if ripescati_mondo:
+            titoli_rip = [(B.KEYS[x], float(r[x])) for x in ripescati_mondo]
+            quanti_unseen = max(0, quanti_tuo - len(ripescati_mondo))
+            titoli_uns = righe_titoli(bolle, quanti_unseen)
+            titoli_tuo = sorted(titoli_rip + titoli_uns, key=lambda t: -t[1])[:quanti_tuo]
+            liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo})
+        else:
+            liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": righe_titoli(bolle, quanti_tuo)})
         liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini)})
         # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
         nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
