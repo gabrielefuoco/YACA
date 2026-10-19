@@ -57,3 +57,150 @@ Blocked by: 01
 - **Ogni riga che non si riesce a riempire lo dichiara**: il difetto di `uscite_nuove` è nato da un silenzio
   (`if not titoli_raw: continue`). Nessuna lista sparisce senza dirlo.
 - **Il pavimento di qualità non si abbassa per riempire.**
+
+## Esito
+
+### 1. Decisione architetturale sul peso (`pesi_semi` vs `pool`)
+È stata scelta la strada: **il pool smette di mandare il `peso` numerico esplicito** (`peso: w`).
+- **Motivazione**: Separa nettamente le responsabilità di dominio: Node (`src/pool`) trasmette i segnali utente identificandone il tipo (`loved`, `liked`, `watched`, `library`), mentre il motore Python (`services/graph`) determina quantitativamente il peso effettivo moltiplicando `PESO_TIPO` per la funzione di base (`base = C.pesi_semi(...)`), ripristinando integralmente la curva delle serie `1 + 2*(plays/NEP)` e il tetto di ri-visione film `min(plays, 3.0)`. L'invio di `peso: w` da Node forzava pesi grezzi arbitrari (`w = 4, 3, 2, 1` o decadimenti orari) che scavalcavano totalmente la tabella calibrata in `parametri.py`.
+
+### 2. Modifiche apportate
+1. **`services/graph/parametri.py`**:
+   - `PESO_TIPO["library"] = 1.0` (in precedenza 1.5, stato elevato a `DICHIARATO`).
+   - Aggiunti parametri `RIPESCAGGIO_MAX = 2`, `RIPESCAGGIO_TOP_PCT = 0.15`, `RIPESCAGGIO_VAVE_MIN = 7.0`.
+2. **`services/graph/motore.py`**:
+   - Inclusione incondizionata dei semi `library` dentro `visti` (`visti = set(righe.tolist())`), impedendo l'auto-illuminazione spuria causata dal restart di PageRank (`ALPHA = 0.60`).
+   - Calcolo della massa iniziale `e_init` e della massa indotta `r_indotta[x] = r[x] - ALPHA * e[x]`.
+   - Ripescaggio controllato in `il_tuo_mondo`: ammessi al massimo 2 titoli di tipo `library` appartenenti alle bolle della riga solo se `r_indotta[x] >= percentile(r[cand_mondo], 85)` e `VAVE[x] >= 7.0`, ordinati nelle prime posizioni rispettando il contratto di monotonicità.
+3. **`src/pool/index.js`**:
+   - Estrazione ed esportazione di `convertiSemiPerGrafo(seeds, { medium, animePolicy })`.
+   - Rimozione dell'invio esplicito di `peso: w` (e di `peso: 3` per i seed Trakt).
+4. **`scripts/qa/probe-perdita-righe.js`**:
+   - Riuso di `convertiSemiPerGrafo` esportato da `src/pool/index.js`, eliminando la duplicazione inline e saldando il debito tecnico del Ticket 01.
+
+### 3. Prova d'impatto e verifiche eseguite
+
+#### A. Sonda di misura a sei stadi (`probe-perdita-righe.js --fixture`)
+Output prima:
+```text
+========================================================================================================================
+  TABELLA A SEI STADI — MISURA PERDITA RIGHE [SERIES] (kidsMode: true, animePolicy: exclude)
+========================================================================================================================
+| Riga (Ruolo)         | 1. Semi         | 2. Grezzo | 3. Sovrapp. | 4. Idratazione | 5. Filtri (kids/anime)  | 6. Pagine (cap 20)      |
+|----------------------|-----------------|-----------|-------------|----------------|-------------------------|-------------------------|
+| il_tuo_mondo         | 28 (5L/18l/5w)  | 51        | 7 sovrapp.  | 49 (err: 2)    | 45 (-2k/-2a)            | 20 + 20 + 5 = 45 (3 pag.) |
+| un_passo_fuori       | 28 (5L/18l/5w)  | 40        | 2 sovrapp.  | 40 (err: 0)    | 40 (-0k/-0a)            | 20 + 20 = 40 (2 pag.)   |
+| uscite_nuove         | 28 (5L/18l/5w)  | 1         | 0 sovrapp.  | 1 (err: 0)     | 1 (-0k/-0a)             | 1 = 1 (1 pag.)          |
+| nicchia_di_qualita   | 28 (5L/18l/5w)  | 39        | 1 sovrapp.  | 38 (err: 1)    | 38 (-0k/-0a)            | 20 + 18 = 38 (2 pag.)   |
+========================================================================================================================
+
+========================================================================================================================
+  TABELLA A SEI STADI — MISURA PERDITA RIGHE [MOVIE] (kidsMode: true, animePolicy: exclude)
+========================================================================================================================
+| Riga (Ruolo)         | 1. Semi         | 2. Grezzo | 3. Sovrapp. | 4. Idratazione | 5. Filtri (kids/anime)  | 6. Pagine (cap 20)      |
+|----------------------|-----------------|-----------|-------------|----------------|-------------------------|-------------------------|
+| il_tuo_mondo         | 25 (4L/16l/4w)  | 51        | 7 sovrapp.  | 49 (err: 2)    | 45 (-2k/-2a)            | 20 + 20 + 5 = 45 (3 pag.) |
+| un_passo_fuori       | 25 (4L/16l/4w)  | 40        | 2 sovrapp.  | 40 (err: 0)    | 40 (-0k/-0a)            | 20 + 20 = 40 (2 pag.)   |
+| uscite_nuove         | 25 (4L/16l/4w)  | 1         | 0 sovrapp.  | 1 (err: 0)     | 1 (-0k/-0a)             | 1 = 1 (1 pag.)          |
+| nicchia_di_qualita   | 25 (4L/16l/4w)  | 39        | 1 sovrapp.  | 38 (err: 1)    | 38 (-0k/-0a)            | 20 + 18 = 38 (2 pag.)   |
+========================================================================================================================
+```
+
+Output dopo (con `convertiSemiPerGrafo` condivisa):
+```text
+========================================================================================================================
+  TABELLA A SEI STADI — MISURA PERDITA RIGHE [SERIES] (kidsMode: true, animePolicy: exclude)
+========================================================================================================================
+| Riga (Ruolo)         | 1. Semi         | 2. Grezzo | 3. Sovrapp. | 4. Idratazione | 5. Filtri (kids/anime)  | 6. Pagine (cap 20)      |
+|----------------------|-----------------|-----------|-------------|----------------|-------------------------|-------------------------|
+| il_tuo_mondo         | 28 (5L/18l/5w)  | 51        | 7 sovrapp.  | 49 (err: 2)    | 45 (-2k/-2a)            | 20 + 20 + 5 = 45 (3 pag.) |
+| un_passo_fuori       | 28 (5L/18l/5w)  | 40        | 2 sovrapp.  | 40 (err: 0)    | 40 (-0k/-0a)            | 20 + 20 = 40 (2 pag.)   |
+| uscite_nuove         | 28 (5L/18l/5w)  | 1         | 0 sovrapp.  | 1 (err: 0)     | 1 (-0k/-0a)             | 1 = 1 (1 pag.)          |
+| nicchia_di_qualita   | 28 (5L/18l/5w)  | 39        | 1 sovrapp.  | 38 (err: 1)    | 38 (-0k/-0a)            | 20 + 18 = 38 (2 pag.)   |
+========================================================================================================================
+
+========================================================================================================================
+  TABELLA A SEI STADI — MISURA PERDITA RIGHE [MOVIE] (kidsMode: true, animePolicy: exclude)
+========================================================================================================================
+| Riga (Ruolo)         | 1. Semi         | 2. Grezzo | 3. Sovrapp. | 4. Idratazione | 5. Filtri (kids/anime)  | 6. Pagine (cap 20)      |
+|----------------------|-----------------|-----------|-------------|----------------|-------------------------|-------------------------|
+| il_tuo_mondo         | 25 (4L/16l/4w)  | 51        | 7 sovrapp.  | 49 (err: 2)    | 45 (-2k/-2a)            | 20 + 20 + 5 = 45 (3 pag.) |
+| un_passo_fuori       | 25 (4L/16l/4w)  | 40        | 2 sovrapp.  | 40 (err: 0)    | 40 (-0k/-0a)            | 20 + 20 = 40 (2 pag.)   |
+| uscite_nuove         | 25 (4L/16l/4w)  | 1         | 0 sovrapp.  | 1 (err: 0)     | 1 (-0k/-0a)             | 1 = 1 (1 pag.)          |
+| nicchia_di_qualita   | 25 (4L/16l/4w)  | 39        | 1 sovrapp.  | 38 (err: 1)    | 38 (-0k/-0a)            | 20 + 18 = 38 (2 pag.)   |
+========================================================================================================================
+```
+
+#### B. Sonda dedicata per il Ticket 02 (`py scripts/qa/probe-ticket-02-watchlist.py`)
+Comando:
+```bash
+py scripts/qa/probe-ticket-02-watchlist.py
+```
+Output verbatim:
+```text
+================================================================================
+PROVA (c) e (d): PESO_TIPO, PESO_SEMI E CURVE BASE
+================================================================================
+1. PESO_TIPO: {'loved': 3.0, 'liked': 2.0, 'library': 1.0, 'watched': 1.0}
+   -> OK: PESO_TIPO['library'] == 1.0 (prima era 1.5, cioe' superiore a watched).
+2. Pesi film base per plays=[1, 2, 3, 5]: [1.0, 2.0, 3.0, 3.0]
+   -> OK: Tetto film min(plays, 3.0) attivo.
+3. Pesi film combinati con tipi ['library', 'watched', 'watched', 'loved']: [1.0, 2.0, 3.0, 9.0]
+   -> OK: Contributo library (1.0) <= watched con re-watch (2.0).
+4. Pesi serie: NEP=10, plays=[0.0, 5.0, 10.0, 20.0], tipi=['library', 'watched', 'watched', 'liked']: [1.0, 2.0, 3.0, 6.0]
+   -> OK: Curva serie 1 + 2*(plays/NEP) applicata con moltiplicatore PESO_TIPO.
+5. motore.pesi_semi con pesi=None: produce esattamente C.pesi_semi con PESO_TIPO.
+   -> OK: Dimostrato che quando il pool omette 'peso', PESO_TIPO governa pienamente.
+
+================================================================================
+PROVA (a) e (b): RIPESCAGGIO WATCHLIST E ASSENZA AUTO-ILLUMINAZIONE
+================================================================================
+Titoli usciti in 'il_tuo_mondo': ['movie:103', 'movie:113', 'movie:114', 'movie:102', 'movie:105', 'movie:106', 'movie:107', 'movie:108', 'movie:109', 'movie:110']
+   -> OK (a): movie:104 (watchlist isolata) NON compare in il_tuo_mondo.
+   -> OK: movie:101 con VAVE < 7.0 NON e' stato ripescato.
+   -> OK: movie:103 idoneo (r_indotta top 15% + VAVE >= 7.0) e' stato ripescato in testa.
+Conteggio totale titoli da watchlist usciti: 1
+   -> OK (b): Conteggio titoli watchlist in output (1) <= 2.
+
+================================================================================
+PROVA (b): TETTO RIGIDO MAX 2 QUANDO 4 TITOLI WATCHLIST QUALIFICANO
+================================================================================
+Titoli watchlist qualificati (4 totali), usciti in il_tuo_mondo: ['movie:101', 'movie:102']
+   -> OK (b): Tetto max 2 rigorosamente rispettato (selezionati i 2 con r_indotta maggiore).
+
+================================================================================
+TUTTE LE VERIFICHE SUPERATE CON SUCCESSO (TASK_OK)
+================================================================================
+```
+
+### 4. Manifest e Test Suite Baseline
+
+- **Manifest Hashes**:
+  ```bash
+  node -e "const { buildManifest, buildRootManifest } = require('./src/stremio/manifest'); const crypto = require('crypto'); console.log('buildManifest:', crypto.createHash('sha256').update(JSON.stringify(buildManifest({}))).digest('hex')); console.log('buildRootManifest:', crypto.createHash('sha256').update(JSON.stringify(buildRootManifest())).digest('hex')); process.exit(0);"
+  ```
+  - `buildManifest`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (identico)
+  - `buildRootManifest`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (identico)
+
+- **Test Suite Jest**:
+  ```bash
+  npx jest --forceExit
+  ```
+  Totali: `Test Suites: 5 failed, 185 passed, 190 total` / `Tests: 8 failed, 1 skipped, 1898 passed, 1907 total`.
+  Lista esatta delle 5 suite rosse (identiche alla baseline di partenza, dipendenti da parquet locali):
+  - `tests/presetBurtonOrdering.test.js`
+  - `tests/donghuaCatalog.test.js`
+  - `tests/animeOverridesCertify.test.js`
+  - `tests/duckDbAndMatchmaker.test.js`
+  - `tests/candidateProvider.test.js`
+
+### 5. Debito tecnico estinto
+- Saldato il debito dichiarato del Ticket 01: la funzione di conversione Map seeds -> `semiPerGrafo` è ora implementata ed esportata una sola volta da `src/pool/index.js` (`convertiSemiPerGrafo`), eliminando la copia inline da `scripts/qa/probe-perdita-righe.js`.
+
+### 6. Cosa NON è stato fatto
+- Nessun tocco al valore `ALPHA = 0.60` (rimasto costante misurato).
+- Nessuna modifica a `frontend/**`.
+- Nessun `git push`, nessun `npm run build` o `tsc`.
+- Nessun riavvio o interferenza con i container di produzione su server mate.
+- Nessuna alterazione al pavimento di qualità.
+
