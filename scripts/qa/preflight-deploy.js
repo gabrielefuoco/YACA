@@ -133,6 +133,29 @@ verifica('esiste la regola scritta: Watchtower non applica il compose', () => {
     return 'regola documentata';
 });
 
+verifica('nessuno script connette Mongo senza l\'URI (le migrazioni devono partire)', () => {
+    // La porta `src/infra/mongoConnect` chiede l'URI come PRIMO argomento: una chiamata a vuoto
+    // solleva `uri must be a string` e la migrazione non parte. Trovato il 19/10/2026: quattro
+    // migrazioni erano rotte dal refactor, e una di quelle (library_order) il deploy la esegue.
+    const rotti = [];
+    const cartelle = ['scripts', 'src', 'services'];
+    const visita = (dir) => {
+        for (const voce of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+            const rel = path.join(dir, voce.name);
+            if (voce.isDirectory()) {
+                if (voce.name === 'node_modules' || voce.name === '.git') continue;
+                visita(rel);
+            } else if (voce.name.endsWith('.js') && rel !== path.join('src', 'infra', 'mongoConnect.js') && rel !== path.join('scripts', 'qa', 'preflight-deploy.js')) {
+                const testo = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+                if (/connectMongo\(\s*\)/.test(testo)) rotti.push(rel);
+            }
+        }
+    };
+    for (const c of cartelle) visita(c);
+    if (rotti.length) throw new Error(`connectMongo() senza URI in: ${rotti.join(', ')}`);
+    return 'tutti passano l\'URI';
+});
+
 // ---------------------------------------------------------------- report
 console.log('\nPreflight del deploy — le rotture silenziose\n' + '='.repeat(52));
 for (const e of esiti) {

@@ -87,7 +87,11 @@ async function migrateUserCredentials(options = {}) {
 async function main() {
     let exitCode = 0;
     try {
-        await connectMongo();
+        // La porta chiede l'URI come primo argomento (dal refactor di src/infra): senza,
+        // mongoose solleva "uri must be a string" e la migrazione non parte (trovato il 19/10/2026).
+        const mongoUri = process.env.MONGODB_URI;
+        if (!mongoUri) throw new Error('MONGODB_URI mancante nelle variabili di ambiente.');
+        await connectMongo(mongoUri);
         await migrateUserCredentials();
     } catch (err) {
         console.error('Errore critico durante la migrazione delle credenziali:', err);
