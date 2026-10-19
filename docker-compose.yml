@@ -45,6 +45,8 @@ services:
       - yaca_erdb_cache:/data/erdb-cache
       # L'artefatto del servizio anime, in SOLA LETTURA: lo produce `anime-source`, lo legge l'app.
       - yaca_anime_source_cache:/data/anime-source:ro
+      # Export statico di Next (ticket 56): volume bind-mount popolato da ops/frontend-aggiorna.sh
+      - ./frontend-out:/app/frontend/out:ro
     mem_limit: 1536m
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

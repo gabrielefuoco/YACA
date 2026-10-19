@@ -1,0 +1,60 @@
+name: 🚀 Build & Deploy Frontend (Static Export)
+
+# Ticket 56: Il frontend Next.js viene esportato staticamente ('output: export')
+# e pubblicato come tarball indipendente, separato dall'immagine Docker dell'app.
+# Sul server mate, ops/frontend-aggiorna.sh scarica il tarball e lo estrae nel volume
+# montato su /app/frontend/out, senza richiedere riavvio dell'addon né ricostruzione Docker.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: 🏗️ Build frontend static export
+        working-directory: frontend
+        run: npm run build
+
+      - name: 🗜️ Package static export tarball
+        run: |
+          tar -czf frontend-out.tar.gz -C frontend/out .
+
+      - name: 📤 Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-out
+          path: frontend-out.tar.gz
+          retention-days: 30
+
+      - name: 🏷️ Publish release asset (frontend-latest)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload frontend-latest frontend-out.tar.gz --clobber || \
+          gh release create frontend-latest frontend-out.tar.gz \
+            --title "Frontend Static Export" \
+            --notes "Artefatto statico esportato da Next.js (ticket 56). Scompattare in /srv/yaca/frontend-out."

@@ -221,10 +221,18 @@ const configureLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHea
 app.post('/api/configure', cookieParser(), configureLimiter, configureRoute);
 
 
-// Catch-all route per gestire il routing lato client di Next.js
-// Catch-all route per gestire il routing lato client di Next.js (Solo per richieste che sembrano pagine)
+// Catch-all route per gestire il routing lato client di Next.js (Solo per richieste che sembrano pagine).
+// Se il volume frontend/out è vuoto o assente (ticket 56), l'addon non deve cadere né sollevare eccezioni:
+const frontendIndexPath = path.join(__dirname, 'frontend', 'out', 'index.html');
 app.get(/^(?!\/api|\/manifest\.json|.*\.(png|jpg|jpeg|gif|svg|ico|js|css|json|mp4|webm)).*$/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'out', 'index.html'));
+    if (fs.existsSync(frontendIndexPath)) {
+        return res.sendFile(frontendIndexPath, (err) => {
+            if (err && !res.headersSent) {
+                res.status(404).type('text/html').send('<!DOCTYPE html><html><body><h1>YACA Addon</h1><p>Frontend static export not found.</p></body></html>');
+            }
+        });
+    }
+    res.status(404).type('text/html').send('<!DOCTYPE html><html><body><h1>YACA Addon</h1><p>Frontend static export not found or volume not mounted.</p></body></html>');
 });
 
 // Centralized error handler (must be last)
