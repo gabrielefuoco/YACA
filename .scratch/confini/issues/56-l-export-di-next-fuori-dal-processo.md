@@ -109,3 +109,60 @@ Un volume vuole **file su disco**, e la CI non li mette lì da sola. La forma pi
 
 **Il criterio della decisione 35 è rispettato**: nessun container nuovo, nessun ingresso nuovo, nessuna rotta
 cambiata. Cambia *chi costruisce* e *quando*, che è il punto.
+
+## Esito (19/10/2026)
+
+### 1. Cosa è cambiato
+1. **`.github/workflows/deploy-frontend.yml`**: creato il workflow dedicato che builda `frontend/` (`npm ci && npm run build`), genera l'archivio `frontend-out.tar.gz`, lo carica come artefatto di run (`actions/upload-artifact@v4`) e lo pubblica/aggiorna nella release rolling `frontend-latest` tramite `gh release`.
+2. **`ops/frontend-aggiorna.sh`**: creato lo script host per il server mate che scarica l'archivio (tramite `gh` o `curl`), svuota il contenuto interno di `/srv/yaca/frontend-out` preservando l'inode della directory (indispensabile per non corrompere il bind mount Docker del container attivo) ed estrae il nuovo export statico. L'operazione non esegue alcun restart di Docker o dell'app (`express.static` legge da disco ad ogni richiesta).
+3. **`docker-compose.yml`**: aggiunto il bind-mount in sola lettura `./frontend-out:/app/frontend/out:ro` sul servizio `app`.
+4. **`Dockerfile`**: rimosso lo stadio `frontend-builder` e la riga `COPY --from=frontend-builder /app/frontend/out ./frontend/out`. Aggiunta la creazione della cartella `RUN mkdir -p frontend/out` come punto di mount nel runner. L'immagine Docker dell'app non contiene più il frontend né il suo toolchain.
+5. **`index.js`**: reso esplicito e sicuro il fallback della rotta catch-all: se `frontend/out/index.html` non esiste o la cartella è vuota, risponde HTTP 404 senza sollevare eccezioni né innescare l'error handler 500, mantenendo Stremio (`/manifest.json`, `/catalog/*`) e le rotte API perfettamente funzionanti.
+6. **`.dockerignore` e `.gitignore`**: aggiunti `frontend/` e `frontend-out/` a `.dockerignore` per non copiare sorgenti né artefatti runtime nell'immagine Docker; aggiunto `frontend-out/` a `.gitignore` per preservare pulito il repository sul mate.
+
+### 2. Comandi eseguiti e prove
+
+- **Validazione sintassi YAML**:
+  - `node -e "const jsYaml = require('js-yaml'); const fs = require('fs'); jsYaml.load(fs.readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')); jsYaml.load(fs.readFileSync('docker-compose.yml', 'utf8')); console.log('YAML valid');"`
+  - Esito: `YAML valid` (sia il workflow sia `docker-compose.yml` analizzati e conformi).
+- **Verifica script ops**:
+  - `bash -n ops/frontend-aggiorna.sh` -> sintassi shell corretta (exit code 0).
+  - Test esecuzione `--help` ed estrazione archivio mock tarball con opzione `--force-local` -> estrazione avvenuta con successo, `index.html` verificato, inode directory preservato.
+- **Probe HTTP di resilienza (volume vuoto vs popolato)**:
+  - Esecuzione sonda Node su Express con MongoDB simulato:
+    - Con volume vuoto/assente:
+      - `GET /` -> 404 (messaggio HTML pulito: `YACA Addon: Frontend static export not found or volume not mounted`, nessun crash, nessun errore non gestito).
+      - `GET /manifest.json` -> 200 OK.
+      - `GET /testuser/catalog/movie/popular.json` -> 200 OK.
+    - Con volume popolato (`index.html` presente):
+      - `GET /` -> 200 OK (restituisce il contenuto dell'export statico).
+      - `GET /manifest.json` -> 200 OK.
+      - `GET /testuser/catalog/movie/popular.json` -> 200 OK.
+- **Hash dei manifest invariati (byte-for-byte)**:
+  - `buildManifest({})` SHA-256: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178`
+  - `buildRootManifest()` SHA-256: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2`
+- **Baseline Jest completa (`npx jest --forceExit`)**:
+  - Test Suites: 5 failed, 184 passed, 189 total
+  - Tests: 8 failed, 1 skipped, 1887 passed, 1896 total
+  - FAIL list (esattamente le 5 suite consentite):
+    - `tests/animeOverridesCertify.test.js`
+    - `tests/donghuaCatalog.test.js`
+    - `tests/presetBurtonOrdering.test.js`
+    - `tests/duckDbAndMatchmaker.test.js`
+    - `tests/candidateProvider.test.js`
+
+### 3. Differenza dimensioni immagine
+- Sorgenti frontend esclusi dal runner tramite `.dockerignore`: 61 file, 1.021.665 byte (~1 MB).
+- Stadio `frontend-builder` eliminato: rimossa interamente la fase `npm install` e `npm run build` dal build Docker del backend (risparmiati ~300+ MB di toolchain di compilazione temporanea e la copia dello strato `COPY --from=frontend-builder /app/frontend/out`).
+
+### 4. Cosa NON è stato fatto
+- NON toccato alcun sorgente in `frontend/**` (rispettata la regola del 19/10/2026).
+- NON toccato `docs/DEPLOYMENT_HOME_SERVER.md` (in modifica concorrente).
+- NON eseguiti `git push` né `npm run build` / `tsc`.
+- NON toccati `src/posters/**`, `src/indice/**`, `services/**`.
+- NON eseguito `docker compose up` su ambienti di produzione.
+
+### 5. Cosa non è stato possibile verificare
+- `actionlint`: non presente nell'ambiente Windows dell'esecutore; la validità sintattica è stata provata con parser YAML (`js-yaml`).
+- Misurazione esatta in byte dell'immagine Docker compilata tramite daemon: non eseguito `docker build` locale per non impattare risorse né tempi di esecuzione dell'host, come da vincoli operativi.
+
