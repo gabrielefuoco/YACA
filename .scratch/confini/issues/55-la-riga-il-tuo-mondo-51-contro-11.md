@@ -1,4 +1,4 @@
-Status: claimed
+Status: resolved
 Type: task
 
 # 55 — La riga «il tuo mondo»: il grafo sa fare 51 titoli, l'app ne serve 11
@@ -161,3 +161,7 @@ Come richiesto dalle istruzioni del ticket, si dichiarano le modifiche a file es
 - NON eseguiti `git push` né `npm run build` / `tsc`.
 - Non alterate le definizioni né i TTL dei preset utente o di sistema.
 
+
+---
+
+**Chiusura (19/10/2026, integratore).** Review a due assi completata: spec senza mancanze funzionali, standards con tre violazioni e quattro smell — tutte corrette in `0784cbe` (il catalogo non importa piu i client; la porta dell indice non espone piu percorsi del filesystem; il daemon usa `rebuildAndSwap` invece di orchestrare a mano; i cinque doc che nominavano il `queryBuilder` eliminato sono stati corretti). Il difetto di concorrenza trovato qui e finito nel **ticket 60**, chiuso in `eef16e3` con la sua sonda. Verificato dalla main: suite alla baseline misurata (5 rosse / 8 test / 1885 verdi), entrambi gli hash del manifest invariati, le sonde verdi.

@@ -1,4 +1,4 @@
-Status: claimed
+Status: resolved
 Type: task
 
 # 54 — Il lock del DuckDB: il daemon costruisce e **scambia**, l'app non apre mai un file in scrittura
@@ -191,3 +191,7 @@ Esattamente le 5 suite previste e ammesse dalla baseline di `main`, con **1881 t
 - Non è stato rimosso il meccanismo di fallback a caldo (`Ricostruzione da zero`), che rimane attivo come ultima spiaggia.
 - Non sono stati toccati file in `frontend/**`, non è stato eseguito `npm run build` o `tsc`, non è stato effettuato alcun `git push`.
 
+
+---
+
+**Chiusura (19/10/2026, integratore).** Review a due assi completata: spec senza mancanze funzionali, standards con tre violazioni e quattro smell — tutte corrette in `0784cbe` (il catalogo non importa piu i client; la porta dell indice non espone piu percorsi del filesystem; il daemon usa `rebuildAndSwap` invece di orchestrare a mano; i cinque doc che nominavano il `queryBuilder` eliminato sono stati corretti). Il difetto di concorrenza trovato qui e finito nel **ticket 60**, chiuso in `eef16e3` con la sua sonda. Verificato dalla main: suite alla baseline misurata (5 rosse / 8 test / 1885 verdi), entrambi gli hash del manifest invariati, le sonde verdi.

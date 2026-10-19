@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 59 — Dopo lo scambio il DuckDB, l'app deve accorgersene e riaprire
@@ -229,3 +229,7 @@ Le sole suite fallite corrispondono esattamente alla baseline attesa (5 suite / 
 - Nessuna modifica a percorsi o file riservati ad altri ticket paralleli (`src/pool/index.js`, `src/stremio/hybridServing.js`, `src/clients/graphClient.js`).
 - Nessun `git push`, nessun `npm run build` o compilazione `tsc`, nessun file toccato in `frontend/**`.
 
+
+---
+
+**Chiusura (19/10/2026, integratore).** Review a due assi completata: spec senza mancanze funzionali, standards con tre violazioni e quattro smell — tutte corrette in `0784cbe` (il catalogo non importa piu i client; la porta dell indice non espone piu percorsi del filesystem; il daemon usa `rebuildAndSwap` invece di orchestrare a mano; i cinque doc che nominavano il `queryBuilder` eliminato sono stati corretti). Il difetto di concorrenza trovato qui e finito nel **ticket 60**, chiuso in `eef16e3` con la sua sonda. Verificato dalla main: suite alla baseline misurata (5 rosse / 8 test / 1885 verdi), entrambi gli hash del manifest invariati, le sonde verdi.
