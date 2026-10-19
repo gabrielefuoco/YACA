@@ -42,11 +42,20 @@ async function runProbe() {
     fs.mkdirSync(probeDir, { recursive: true });
 
     const capturedLogs = [];
+    // Gancio per il rilascio guidato dall'evento: la sonda (d) lo imposta quando prende il lock,
+    // e la cattura dei log lo invoca appena vede la contesa registrata dal retry.
+    let rilasciaLockSuContesa = null;
     const origWarn = console.warn;
     const origLog = console.log;
 
     console.warn = (...args) => {
-        capturedLogs.push({ level: 'warn', text: args.join(' ') });
+        const testo = args.join(' ');
+        capturedLogs.push({ level: 'warn', text: testo });
+        if (rilasciaLockSuContesa && /Lock conteso/i.test(testo)) {
+            const rilascia = rilasciaLockSuContesa;
+            rilasciaLockSuContesa = null;
+            rilascia();
+        }
         origWarn(...args);
     };
     console.log = (...args) => {
@@ -147,20 +156,30 @@ async function runProbe() {
         await setupStore.init({ forceRebuild: true });
         await setupStore.close();
 
-        // Trattieni un lock esclusivo grezzo per 100ms
+        // Trattieni un lock esclusivo grezzo finché il retry non lo vede.
+        // NON un tempo fisso: sotto carico (più suite in parallelo) `init()` può impiegare più di
+        // 100 ms prima di tentare l'apertura, il lock verrebbe rilasciato troppo presto e la sonda
+        // non osserverebbe la contesa — cioè fallirebbe senza che ci sia un guasto (19/10/2026).
         const rawDbPath = path.join(retryDir, 'catalog.duckdb');
         const lockHolderDb = new duckdb.Database(rawDbPath);
         const lockHolderCon = lockHolderDb.connect();
 
-        setTimeout(() => {
+        let lockReleased = false;
+        const rilasciaLock = (motivo) => {
+            if (lockReleased) return;
+            lockReleased = true;
             try {
                 lockHolderCon.close(() => {
                     lockHolderDb.close(() => {
-                        console.log('[Probe] Lock esclusivo transitorio rilasciato.');
+                        console.log(`[Probe] Lock esclusivo transitorio rilasciato (${motivo}).`);
                     });
                 });
             } catch (_) {}
-        }, 100);
+        };
+        // Rete di sicurezza: se la contesa non arriva mai, si libera comunque e la sonda lo dirà.
+        setTimeout(() => rilasciaLock('timeout di sicurezza'), 5000);
+        // Il rilascio è guidato dall'evento: appena il retry registra la contesa, il lock sparisce.
+        rilasciaLockSuContesa = () => rilasciaLock('contesa osservata');
 
         capturedLogs.length = 0;
         const retryStore = createIsolatedStore(retryDir);
