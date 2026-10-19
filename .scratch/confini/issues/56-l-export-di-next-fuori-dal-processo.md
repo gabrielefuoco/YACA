@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: ready-for-agent
 Type: task
 
 # 56 — L'export statico di Next fuori dal processo dell'addon

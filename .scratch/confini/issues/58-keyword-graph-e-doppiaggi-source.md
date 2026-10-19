@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: ready-for-agent
 Type: task
 
 # 58 — `keyword-graph` e `doppiaggi-source`: o si completano, o si ritirano

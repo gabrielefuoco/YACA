@@ -896,3 +896,25 @@ campo `this.disableAutoReopen` che esisteva solo perché la sonda potesse spegne
 guasto. Rimosso: la sonda ora **sostituisce il metodo sull'istanza** (`appStore.ensureFreshHandle = async () => {}`)
 e si dimostra da sola. Il campo è passato da «utile alla prova» a «peso nel prodotto» nel momento in cui la
 regola è stata scritta — ed è il segno che la regola valeva la pena di scriverla.
+
+### 35. Il criterio del distacco si allarga: anche il guasto e la cadenza
+
+**19/10/2026, triage del ticket 56.** La decisione 32 diceva: un pezzo si stacca in un processo suo **solo** se ha
+un **profilo di risorse** diverso. Il frontend statico l'ha messo in crisi: servire file statici da Express non
+costa RAM né boot misurabili, quindi il profilo dell'export e quello dell'addon sono **lo stesso profilo**.
+
+Eppure il distacco serve, per due motivi che il criterio non nominava:
+
+- **il dominio di guasto**: un export rotto, un asset che manca, una pagina che non compila — oggi vivono nel
+  processo che serve Stremio, e il pezzo che non deve cadere è l'addon;
+- **la cadenza di rilascio**: pubblicare una pagina costa la ricostruzione e il **riavvio dell'addon**.
+
+**La regola, corretta**: un pezzo si stacca quando ha un profilo di risorse **o** un dominio di guasto **o** una
+cadenza di rilascio diversi. Il profilo resta il criterio più forte — è quello che dice *dove* passa il confine —
+ma non è l'unico. E il distacco resta **il minimo che serve**: nel caso del frontend è un workflow proprio e un
+volume, non un container nuovo e un ingresso nuovo.
+
+**Controprova, dallo stesso triage (ticket 57)**: i poster **non** si staccano. `posterResolver` è una funzione
+pura chiamata dall'ingestione della libreria; spostarla dietro un servizio metterebbe una chiamata di rete dentro
+il percorso di ingestione. Il criterio allargato **non** apre la porta a ogni separazione: apre la porta a quella
+che compra isolamento o indipendenza, e la chiude a quella che sposta il problema.

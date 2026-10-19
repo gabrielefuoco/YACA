@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: ready-for-agent
 Type: task
 
 # 57 — I poster: da percorso interno a servizio con un contratto
