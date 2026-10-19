@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: research
 
 # 01 — La sonda della perdita: dove si perde l'oro, stadio per stadio
