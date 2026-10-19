@@ -56,6 +56,12 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 
 `01` — la sonda end-to-end. Senza sapere **dove** si perde l'oro, ogni intervento è una scommessa.
 
+## I debiti dichiarati dalle review
+
+- **`17`** — *il tipo dedotto dal peso*: `convertiSemiPerGrafo` indovina `loved`/`liked`/`watched` da soglie
+  numeriche (`w >= 4`, `w >= 3`, `w === 1`). È la **causa strutturale** di ciò che il `02` ha curato per sintomo
+  (il peso esplicito che scavalca `PESO_TIPO`), più lo score gonfiato del titolo ripescato.
+
 ## L'ultimo passo (deciso il 19/10/2026)
 
 `16` — **la seconda passata dei documenti**. Il ticket `15` corregge ciò che oggi è falso e lascia le righe nuove
