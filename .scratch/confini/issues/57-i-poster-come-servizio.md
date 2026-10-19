@@ -1,0 +1,41 @@
+Status: needs-triage
+Type: task
+
+# 57 — I poster: da percorso interno a servizio con un contratto
+
+## Perché è un candidato (decisione 32)
+
+Il criterio: **profilo di risorse diverso**. I poster ce l'hanno, e sono già **quasi** un servizio:
+- ERDB (l'istanza patchata per i badge `ITA`) è **un'altra immagine**, con un suo tetto di RAM e una sua rete;
+- la composizione dei poster è **rete pesante e lenta** (il giro grosso è una passata una tantum da ~2 ore);
+- il **drenatore** è già pilotato da un **timer di sistema** (`yaca-poster-eventi.timer`), cioè da fuori dal
+  processo dell'app.
+
+Ma il confine è tracciato a metà: il modulo `src/posters/` vive nell'app, e i **poster composti** arrivano all'app
+da un **volume** (`yaca_erdb_cache:/data/erdb-cache`), senza contratto né versione. È la stessa forma della rottura
+silenziosa trovata il 19/10/2026 sull'artefatto anime: *un volume come interfaccia, e nessuno che verifichi il
+formato*.
+
+## Cosa c'è da decidere
+
+1. **Cosa diventa servizio**: il **drenatore** (già quasi: gira da un timer) o **anche la risoluzione/composizione**
+   (`src/posters/posterResolver.js`, `src/posters/erdb/build.js`)?
+2. **Il contratto**: oggi il confine è «un file in una cartella con un nome concordato» (la convenzione dei nomi
+   la produce `scripts/erdb-builder/build.js` e la chiede la rotta `/erdb-poster/:file`: **un nome inventato
+   produce poster invisibili, zero errori**). Serve una **versione** e una verifica, come il grafo fa con
+   `versioni`.
+3. **Chi legge il volume**: l'app continua a servire i file statici, o è il servizio a servirli?
+4. **Il drenatore**: resta un timer di sistema (come ora) o diventa un loop del servizio?
+
+## La prova (quando si eseguirà)
+
+- I poster serviti **come prima**: una scheda con poster composto risponde con lo stesso file (byte-a-byte o
+  almeno stessa dimensione).
+- Il drenatore dal percorso nuovo esce **0** quando ERDB o Redis sono giù (è il contratto già scritto nella unità:
+  *«Redis o ERDB giù NON sono un guasto di questa unità»*) e **1** solo quando manca la configurazione.
+- La baseline della suite e i due hash del manifest, come per ogni ticket di questa mappa.
+
+## Note
+
+- Nasce da un brainstorming: **va triato** prima di essere eseguibile.
+- Il ticket 28 (gli shim) e il 30 (il deploy) hanno già toccato questo terreno: leggere i loro Esiti prima.
