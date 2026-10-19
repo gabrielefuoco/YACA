@@ -846,3 +846,25 @@ migrazioni. Restano **non fatte e non pianificate** — chi le vuole, le propone
 **Una copia da uccidere, quando si toccherà il tema**: l'app carica **anche** `hierarchical_graph.json` (1,0 MB,
 `require()` dentro l'immagine, `src/indice/HierarchicalGraph.js:20`) mentre il servizio Python ha il suo artefatto.
 **Due grafi, due proprietari, nessun contratto fra loro.**
+
+### 33. Chi vede il nuovo database dopo uno scambio
+
+**19/10/2026, conseguenza del ticket 54.** Il daemon costruisce il DuckDB su staging e lo **scambia**
+(`fs.renameSync`): il percorso cambia, l'inode no. L'app tiene il database aperto per tutta la vita del processo,
+quindi dopo uno scambio **continua a leggere il vecchio inode** — servirebbe il catalogo di prima finché non
+riavvia, e il daemon ricostruisce **una volta al giorno**: l'app potrebbe servire dati vecchi di giorni senza che
+nulla lo dica.
+
+**La regola**: **chi tiene aperto un file che qualcun altro può scambiare deve accorgersene e riaprire.** Il
+meccanismo è il confronto d'identità (`{mtimeMs, size}`) alla prima lettura dopo il cambio, con un throttle, e la
+riapertura **fra due query**, mai dentro una. Non si riavvia l'altro servizio, non si mette un timer che ricarica
+d'ufficio: si ricarica quando serve.
+
+**Una precisazione che corregge un timore sbagliato** (verificato il 19/10/2026): le scritture dell'app **non si
+perdono**, perché **non sono nel DuckDB**. La promozione Tier 2 → Tier 1 scrive nel **JSONL**
+(`src/indice/tier1Promotion.js`, solo append) e il DuckDB è **derivato**; `anime_mappings` è derivato
+dall'artefatto anime. Quindi uno scambio non distrugge nulla di durevole: il problema è la **freschezza**, non la
+perdita.
+
+**Conseguenza generale**, da riusare: **un artefatto scambiato in modo atomico è sicuro solo se chi lo legge lo
+riapre.** Vale per il DuckDB (ticket 59) e vale per ogni altro file condiviso fra processi.
