@@ -1,0 +1,63 @@
+name: 🚀 Build & Deploy Graph to GHCR
+
+# Ticket 18: il servizio del grafo aveva un buco — il compose dichiara
+# `image: ghcr.io/gabrielefuoco/yaca-graph` con `watchtower.enable=true`, ma nessuno la pubblicava.
+# Sul mate l'immagine si costruiva a mano (`docker compose build graph`), cioè il server compilava —
+# la cosa che la dottrina di deploy vieta. Questo workflow la pubblica come per `yaca` e
+# `yaca-anime-source`, così il mate la **tira** e il grafo si aggiorna con Watchtower come il resto.
+#
+# Gira quando cambia il servizio (o a mano): il grafo non si ricostruisce a ogni commit del prodotto.
+# L'artefatto dati (i ~138 MB in `services/graph/data`) NON è nell'immagine e non è in git: resta il
+# bind mount read-only dal disco del mate (`/srv/yaca/services/graph/data`), decisione del ticket 07.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/graph/**'
+      - '.github/workflows/deploy-graph.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # GHCR richiede nomi immagine minuscoli
+          images: ghcr.io/${{ github.repository_owner }}/yaca-graph
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ github.sha }}
+
+      - name: 📦 Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          # Il contesto è la cartella del servizio, non la radice: è la stessa scelta del compose,
+          # così il `.dockerignore` di root (che esclude `services/`) non entra in gioco.
+          context: ./services/graph
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

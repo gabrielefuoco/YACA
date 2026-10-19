@@ -1,4 +1,4 @@
-Status: wontfix
+Status: claimed
 Type: task
 Blocked by: 07
 
@@ -140,3 +140,22 @@ passo manuale, ed è già stato fatto il 17/10/2026 e il 18/10/2026.
 **Quindi**: questo ticket non ha più lavoro di codice. Il residuo — pubblicare l'immagine del grafo da CI come per
 `yaca` e `yaca-anime-source` — è **comodità, non necessità**: si riapre solo se i rebuild manuali diventano
 fastidiosi. Lo stato passa a `wontfix` con questa motivazione, e il passo manuale vive nel ticket 30.
+
+---
+
+## Riapertura (19/10/2026): lo scope `workflow` c'è, e il residuo non è più comodità
+
+Il `wontfix` del 18/10 diceva: *«si riapre solo se i rebuild manuali diventano fastidiosi»*. Il 19/10 si è rotto
+qualcosa di più grande di una comodità: senza il workflow, **il server compila** — e il 19/10 il grafo è stato
+ricostruito a mano sul mate proprio perché il package su ghcr non esisteva. La dottrina di
+`docs/DEPLOYMENT_HOME_SERVER.md` dice che il server non compila mai: quel vincolo, oggi, è violato **da questo
+buco**.
+
+Nel frattempo `gh auth refresh -s workflow` è stato eseguito: l'ostacolo che aveva motivato il `wontfix` non c'è
+più.
+
+**Fatto**: `.github/workflows/deploy-graph.yml`, sul modello di `deploy-anime-source.yml` — costruisce
+`services/graph/Dockerfile` con contesto `./services/graph` (la stessa scelta del compose), pubblica
+`ghcr.io/gabrielefuoco/yaca-graph` con i tag `latest` e `${{ github.sha }}`, e gira **solo** quando cambia
+`services/graph/**` o a mano. L'artefatto dati (~138 MB) **resta fuori dall'immagine**: bind mount read-only dal
+disco del mate, come decise il ticket 07.
