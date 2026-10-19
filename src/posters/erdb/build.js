@@ -21,6 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { scriviVersioniVolume } = require('../volumeContract');
 
 const DEFAULT_DELAY = 300;
 const DEFAULT_CONCURRENCY = 1;
@@ -358,6 +359,12 @@ async function run({
         `${JSON.stringify(report, null, 2)}\n`,
         'utf8'
     );
+
+    try {
+        await scriviVersioniVolume(outDir, { produttore: 'erdb-builder' });
+    } catch (err) {
+        console.warn(`[ErdbBuilder] impossibile scrivere versioni del volume: ${err.message}`);
+    }
 
     return report;
 }

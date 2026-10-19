@@ -11,6 +11,13 @@ module.exports.getCacheDir = getCacheDir;
 module.exports.DEFAULT_CACHE_DIR = DEFAULT_CACHE_DIR;
 
 const { erdbIdDaNomeFile, eventoDaNomeFile, posterUrl, scarica, scrivi } = require('../posters');
+const {
+    registraRichiestaPoster,
+    getStatoVolume,
+    leggiVersioniVolume,
+    scriviVersioniVolume,
+    VERSIONI_FILE_NAME
+} = require('../posters/volumeContract');
 
 // I file serviti sono immutabili (produotti altrove e copiati sul server): 24 ore va bene.
 // Il 404 invece dura pochi minuti, così se il poster arriva dopo compare subito.
@@ -212,8 +219,35 @@ const chiediPosterAErdb = async (fileName, filePath, badge) => {
     }
 
     console.log(`[StaticPosters] reso al volo da ERDB: ${fileName}`);
+    try {
+        const vInfo = leggiVersioniVolume(getCacheDir());
+        if (!vInfo.presente) {
+            await scriviVersioniVolume(getCacheDir(), { produttore: 'static-posters' });
+        }
+    } catch (_) {}
     return true;
 };
+
+// 1. Health check e versioni del volume (Ticket 57)
+// Espone contratto, versioni dichiarate e statistiche di discrepanza (mancanti/richieste)
+router.get('/erdb-poster/health', (req, res) => {
+    const dir = getCacheDir();
+    const stato = getStatoVolume(dir);
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.status(stato.ok ? 200 : 503).json(stato);
+});
+
+router.get('/erdb-poster/versioni', (req, res) => {
+    const dir = getCacheDir();
+    const stato = getStatoVolume(dir);
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.status(stato.ok ? 200 : 503).json({
+        ok: stato.ok,
+        contratto: stato.contratto,
+        versioni: stato.versioni,
+        volume: stato.volume
+    });
+});
 
 router.get('/erdb-poster/:file', (req, res) => {
     const fileName = req.params.file;
@@ -250,8 +284,13 @@ router.get('/erdb-poster/:file', (req, res) => {
         // Se il file ora c'è lo si serve da disco (stessi header di un file già presente:
         // il `Cache-Control` è quello da HIT perché il file è in cartella, ora).
         if (reso || filePresente(filePath)) {
+            registraRichiestaPoster({ fileName, trovato: true, cacheDir: getCacheDir() });
             return inviaFile(res, filePath, contentType);
         }
+
+        // Il nome richiesto non corrisponde a nessun file nel volume (caso silenzioso reso osservabile)
+        registraRichiestaPoster({ fileName, trovato: false, cacheDir: getCacheDir() });
+
         const fallback = fallbackAmmesso(req.query.fallback);
         if (fallback) return res.redirect(302, fallback);
         return sendNotFound(res);
@@ -259,6 +298,7 @@ router.get('/erdb-poster/:file', (req, res) => {
 
     if (!filePresente(filePath)) return chiedi();
 
+    registraRichiestaPoster({ fileName, trovato: true, cacheDir: getCacheDir() });
     return inviaFile(res, filePath, contentType);
 });
 
@@ -292,3 +332,5 @@ module.exports = registerStaticPostersRoute;
 module.exports.registerStaticPostersRoute = registerStaticPostersRoute;
 module.exports.getCacheDir = getCacheDir;
 module.exports.DEFAULT_CACHE_DIR = DEFAULT_CACHE_DIR;
+module.exports.getStatoVolume = getStatoVolume;
+module.exports.leggiVersioniVolume = leggiVersioniVolume;

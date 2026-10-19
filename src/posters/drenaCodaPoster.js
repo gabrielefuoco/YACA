@@ -17,6 +17,7 @@
 const drenaPoster = require('./drenaPoster');
 const { drena, eventoDaErdbId, classificaMotivo, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS } = drenaPoster;
 const { erdbIdsDaEvento, nomeFileDaEvento } = require('./posterDaEvento');
+const { scriviVersioniVolume, VERSIONI_FILE_NAME } = require('./volumeContract');
 const DEFAULT_CACHE_DIR = '/data/erdb-cache';
 const getCacheDir = () => process.env.ERDB_CACHE_DIR || DEFAULT_CACHE_DIR;
 
@@ -348,6 +349,15 @@ async function gira({
         stato.falliti = riepilogo.falliti;
         _contaMotivi(stato, riepilogo);
         _notaRedis(stato, redis, log);
+
+        try {
+            const vPath = path.join(outDir, VERSIONI_FILE_NAME);
+            if (fs.existsSync(vPath)) {
+                await scriviVersioniVolume(outDir, { produttore: 'drena-coda-poster' });
+            }
+        } catch (err) {
+            log.warn(`[Drena] impossibile aggiornare ${VERSIONI_FILE_NAME}: ${err && err.message ? err.message : err}`);
+        }
     }
 
     return stato;
