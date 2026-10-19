@@ -80,3 +80,152 @@ Il timore era: *le scritture dell'app vanno sul vecchio inode e si perdono*. **V
 Appendici un `## Esito` in italiano: dove sta la riapertura, la sonda e il suo output (e la prova che fallisce se
 la si disattiva), la lista `FAIL` e i totali, i due hash, cosa **non** hai fatto. Lascia `Status: ready-for-agent`:
 chiude l'integratore.
+
+## Esito
+
+### 1. Dove risiede la riapertura
+La logica di rilevamento dello scambio atomico e riapertura automatica del DuckDB risiede in:
+- `src/indice/duckDbStore.js`:
+  - `this.fileIdentity`: memorizzazione di `{ mtimeMs, size }` all'apertura del database persistente (`_recordFileIdentity`); pulito/no-op per `:memory:`.
+  - `this.lastIdentityCheckTime` e `this.checkIntervalMs` (10 000 ms di default): throttle del confronto tramite `fs.statSync` per mantenere freddo il percorso critico.
+  - `this.activeQueries` e `this._zeroActiveQueriesWaiters`: contatore delle query in volo per garantire che la chiusura e riapertura avvenga rigorosamente *fra* due query e mai *durante* una query in esecuzione.
+  - `ensureFreshHandle(forceCheck, options)`: metodo di guardia invocato all'ingresso di `query()`, `queryRaw()` e `updateAnimeMapping()`. Se il file sul disco ha `mtimeMs` o `size` diversi rispetto all'identità memorizzata, attende lo svuotamento delle query in volo, chiude l'handle stantio e riapre il database persistente con il meccanismo di retry con backoff esponenziale già consolidato nel ticket 54.
+  - Log obbligatorio emesso alla riapertura: `[DuckDB Store] Database scambiato: riaperto`.
+  - Chiusura dell'handle (`_closeDb`): rilascio forzato del descrittore di file nativo DuckDB (inclusa la pulizia garbage collection / buffer V8 per evitare lock residui su piattaforme Windows NT).
+- `src/indice/index.js`:
+  - Esportazione ed esposizione di `ensureFreshHandle` legata con `.bind(indice)` su `IndiceModule` e `module.exports`, garantendo che tutti i punti di lettura (`query`, `queryRaw`, `getById`, `getMetaDetails`, `getCatalogFrom*`, `candidati`) beneficino della riapertura trasparente senza ricorsione o rottura dei mock.
+
+### 2. Sonda QA e Dimostrazione di Veridicità
+È stata aggiunta e committata la sonda `scripts/qa/probe-duckdb-reopen.js`.
+La sonda crea un catalogo iniziale con una riga A (100001), apre il DB con l'app, fa compilare al daemon un nuovo DB con riga B (100002) su staging (`.new`), esegue lo swap atomico e verifica che l'app veda la riga nuova e riceva il log di riapertura senza riavviare il processo.
+
+#### Output Verifica Normale (`node scripts/qa/probe-duckdb-reopen.js`):
+```text
+=======================================================
+[SONDA QA] Riapertura Automatica DuckDB Dopo Scambio (Ticket 59)
+Modalità: VERIFICA NORMALE (Riapertura Attiva)
+=======================================================
+
+--- (a) Creazione DB iniziale da parte del daemon con Riga A (100001) ---
+[DuckDB Store] Inizializzazione in corso...
+[DuckDB Store] Attenzione: File Parquet non trovati in C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476.
+[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js
+[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
+[HierarchicalGraph] Grafo gerarchico caricato in RAM con successo.
+[DuckDB Store] Swap atomico completato con successo: C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476\catalog.duckdb.new -> C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476\catalog.duckdb
+[Probe] Database iniziale creato su target con riga 100001.
+
+--- (b) L'App apre il database persistente e verifica la riga iniziale ---
+[DuckDB Store] Inizializzazione in corso...
+[DuckDB Store] Attenzione: File Parquet non trovati in C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476.
+[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js
+[DuckDB Store] Database persistente valido riaperto con successo da C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476\catalog.duckdb.
+[Probe] App inizializzata: riga iniziale 100001 letta correttamente (mtime: 1792408830615.8225, size: 798720).
+
+--- (c) Daemon compila nuovo catalogo su staging (.new) con Riga B (100002) e scambia ---
+[DuckDB Store] Inizializzazione in corso...
+[DuckDB Store] Attenzione: File Parquet non trovati in C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476.
+[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js
+[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
+[Probe] Daemon ha terminato la build su staging (.new).
+[DuckDB Store] Swap atomico completato con successo: C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476\catalog.duckdb.new -> C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408830476\catalog.duckdb
+[Probe] Daemon ha completato lo swap atomico: targetDbPath contiene ora il nuovo catalogo.
+
+--- (d) Esecuzione query dal lato App senza riavviare il processo ---
+[DuckDB Store] Database scambiato: riaperto
+
+[Probe] Risultati con riapertura automatica attiva:
+  - Log riapertura intercettato: SÌ
+  - Riga nuova (100002) trovata: SÌ
+  - Riga vecchia (100001) rimossa: SÌ
+
+=======================================================
+Esito Sonda: SUCCESSO — l'app riapre dopo lo scambio e serve dati freschi.
+=======================================================
+```
+
+#### Output Dimostrazione Fallimento con Riapertura Disattivata (`node scripts/qa/probe-duckdb-reopen.js --disable-reopen`):
+*(Exit code: 1)*
+```text
+=======================================================
+[SONDA QA] Riapertura Automatica DuckDB Dopo Scambio (Ticket 59)
+Modalità: DIMOSTRAZIONE FALLIMENTO (Riapertura Disattivata)
+=======================================================
+
+--- (a) Creazione DB iniziale da parte del daemon con Riga A (100001) ---
+[DuckDB Store] Inizializzazione in corso...
+[DuckDB Store] Attenzione: File Parquet non trovati in C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415.
+[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js
+[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
+[HierarchicalGraph] Grafo gerarchico caricato in RAM con successo.
+[DuckDB Store] Swap atomico completato con successo: C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415\catalog.duckdb.new -> C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415\catalog.duckdb
+[Probe] Database iniziale creato su target con riga 100001.
+
+--- (b) L'App apre il database persistente e verifica la riga iniziale ---
+[DuckDB Store] Inizializzazione in corso...
+[DuckDB Store] Attenzione: File Parquet non trovati in C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415.
+[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js
+[DuckDB Store] Database persistente valido riaperto con successo da C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415\catalog.duckdb.
+[Probe] App inizializzata: riga iniziale 100001 letta correttamente (mtime: 1792408838550.4697, size: 798720).
+
+--- (c) Daemon compila nuovo catalogo su staging (.new) con Riga B (100002) e scambia ---
+[DuckDB Store] Inizializzazione in corso...
+[DuckDB Store] Attenzione: File Parquet non trovati in C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415.
+[DuckDB Store] DuckDB è avviato in memoria vuota. Per favore attendi la fine del sync o lancia scripts/convert_to_parquet.js
+[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
+[Probe] Daemon ha terminato la build su staging (.new).
+[DuckDB Store] Swap atomico completato con successo: C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415\catalog.duckdb.new -> C:\Users\gabri\APP\.YACA.worktrees\activity-t59-riapertura-mvf4vj8w\.cache\tmdb_probe_reopen_1792408838415\catalog.duckdb
+[Probe] Daemon ha completato lo swap atomico: targetDbPath contiene ora il nuovo catalogo.
+[Probe] Riapertura automatica app DISABILITATA per testare il fallimento.
+
+--- (d) Esecuzione query dal lato App senza riavviare il processo ---
+
+[Probe] Risultato con riapertura disattivata:
+  - Riga nuova (100002) vista: NO (previsto: continua a leggere il vecchio inode)
+  - Riga vecchia (100001) ancora presente: SÌ
+  - Log di riapertura emesso: NO
+
+=======================================================
+Esito Sonda: FALLIMENTO DIMOSTRATIVO ACCERTATO — senza riapertura l'app resta stantia.
+=======================================================
+```
+
+### 3. Baseline Jest (`npx jest --forceExit`)
+```text
+Summary of all failing tests
+FAIL tests/animeOverridesCertify.test.js
+FAIL tests/presetBurtonOrdering.test.js
+FAIL tests/donghuaCatalog.test.js
+FAIL tests/candidateProvider.test.js
+FAIL tests/duckDbAndMatchmaker.test.js
+
+Test Suites: 5 failed, 183 passed, 188 total
+Tests:       8 failed, 1 skipped, 1881 passed, 1890 total
+Snapshots:   0 total
+Time:        43.635 s
+```
+Le sole suite fallite corrispondono esattamente alla baseline attesa (5 suite / 8 test falliti / 1881 passati).
+
+### 4. Hash del Manifest Invariati
+- `buildManifest({})` SHA-256: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (invariato)
+- `buildRootManifest()` SHA-256: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (invariato)
+
+### 5. Prove Concorrenti e Non-Regressione
+- `node scripts/qa/probe-hero-counts.js --fixture`:
+  ```text
+  Esito Sonda:
+  - Film : 9 titoli (Disgiunti: true)
+  - Serie: 9 titoli (Disgiunti: true)
+  ```
+- Sonda Ticket 54 (`node scripts/qa/probe-duckdb-lock.js`):
+  ```text
+  Esito Sonda: SUCCESSO — nessun Conflicting lock, il DB si apre.
+  ```
+
+### 6. Cosa NON è stato fatto
+- Non si tocca il file dal lato app (`unlink`, `rename`): lo swap è esclusivo del daemon.
+- Nessun `setInterval` a orologio per ricaricare su base temporale fissa.
+- Nessun riavvio del processo dell'app dal daemon.
+- Nessuna modifica a percorsi o file riservati ad altri ticket paralleli (`src/pool/index.js`, `src/stremio/hybridServing.js`, `src/clients/graphClient.js`).
+- Nessun `git push`, nessun `npm run build` o compilazione `tsc`, nessun file toccato in `frontend/**`.
+
