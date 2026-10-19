@@ -815,3 +815,34 @@ sulla porta dell'indice `module.exports.getDfCache = (...a) => indice.getDfCache
 dell'indice tutto ciò che serve (query grezza, `resolveImdbIds`, `getDfCache`, …) e ripuntare 11 moduli **coi
 loro mock**, che è il lavoro dove questo repo sbaglia più spesso. **Ticket suo.** Anche `clients/graphClient` non è esposto sulla porta dei clients (lo prendono per percorso `api/bolle`, `api/mondi`, `pool`): stessa sorte, stesso ticket. Non è una regressione: la suite
 è alla baseline e il feed è byte-a-byte.
+
+### 32. Microservizi: no. I servizi si fanno dove il **profilo di risorse** lo impone
+
+**19/10/2026, decisione dell'utente** dopo il brainstorming sull'architettura a microservizi. Conferma la
+decisione 1 e ne fissa il **criterio**, così la domanda non torna ogni volta.
+
+**Il criterio**: un pezzo si stacca in un processo suo **solo** se ha un **runtime diverso** o un **profilo di
+risorse diverso** (RAM, CPU, rete, durata). **Mai** perché «è un modulo»: i moduli hanno già i loro confini e le
+loro porte, e quelli si sono pagati.
+
+**Perché i microservizi pieni non si fanno** (la misura, non il gusto): `24` file toccano i modelli Mongoose,
+`15` Redis, `30` l'indice DuckDB. Dividere in servizi moduli che **condividono** lo stato aggiunge salti di rete e
+stato distribuito **senza togliere lo stato condiviso**: si paga il costo e non si incassa il beneficio. E il
+seguito è già visibile: il **lock del DuckDB** fra app e daemon (ticket 54) è il problema di due processi sullo
+stesso file, e diventerebbe la norma.
+
+**Scartate, come «cose extra»** (utili in teoria, non richieste): i contratti versionati per ogni artefatto, la
+proprietà formale delle collezioni, un workflow per immagine, il correlation id nei log, il runner delle
+migrazioni. Restano **non fatte e non pianificate** — chi le vuole, le propone.
+
+**I prossimi candidati**, scelti col criterio sopra (non con «è un modulo»):
+
+| candidato | perché ha un profilo diverso |
+|---|---|
+| **l'export statico di Next** | oggi vive **nello stesso processo** dell'addon: due profili di risorse opposti (statico vs richieste Stremio) che si toccano a vicenda su RAM e boot |
+| **i poster** (ERDB + composizione) | rete pesante, volume suo, e già un drenatore pilotato da un timer di sistema |
+| **`keyword-graph` e `doppiaggi-source`** | esistono come codice ma **non sono nel compose né in CI**: oggi sono lavoro a metà — o si completano o si ritirano |
+
+**Una copia da uccidere, quando si toccherà il tema**: l'app carica **anche** `hierarchical_graph.json` (1,0 MB,
+`require()` dentro l'immagine, `src/indice/HierarchicalGraph.js:20`) mentre il servizio Python ha il suo artefatto.
+**Due grafi, due proprietari, nessun contratto fra loro.**
