@@ -49,7 +49,6 @@ class DuckDbStore {
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
         this.disableAutoReopen = false;
-        this._simulateEarlyRelease = false;
     }
 
     getStagingDbPath() {
@@ -405,20 +404,6 @@ class DuckDbStore {
             await this.buildDfCache({ skipFreshCheck: true })
                 .catch(e => console.warn('[DuckDB Store] Warning buildDfCache post-reopen:', e.message));
         };
-
-        if (this._simulateEarlyRelease || options.simulateEarlyRelease) {
-            // Modalità dimostrazione difetto (Ticket 60): azzera la promise prima del ripopolamento
-            this.reopenPromise = this._reopenDueToSwap(options);
-            try {
-                await this.reopenPromise;
-            } finally {
-                this.reopenPromise = null;
-            }
-            // Cede il tick all'event loop per permettere a query concorrenti di interrogare il DB prima del ripopolamento
-            await new Promise(r => setImmediate(r));
-            await repopulatePostReopen();
-            return;
-        }
 
         // Ticket 60: La barriera copre l'INTERA operazione (riapertura file E ripopolamento tabelle/cache)
         this.reopenPromise = (async () => {
@@ -982,7 +967,6 @@ class DuckDbStore {
         this.activeQueries = 0;
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
-        this._simulateEarlyRelease = false;
         if (this.stagingDbPath && this.dbPath === this.stagingDbPath && this.targetDbPath) {
             this.dbPath = this.targetDbPath;
         }

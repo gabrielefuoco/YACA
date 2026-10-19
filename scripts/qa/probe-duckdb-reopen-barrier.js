@@ -10,9 +10,9 @@
  *       popolato, mai esposto a metà.
  *   (3) Una query concorrente lanciata DURANTE la riapertura attende il termine dell'intero
  *       ripopolamento e non vede mai la tabella anime_mappings incompleta o a zero.
- *   (4) Se la barriera viene azzerata prematuramente prima del ripopolamento (difetto o
- *       flag --disable-fix / --early-release), la sonda intercetta la lettura sporca
- *       e fallisce dimostrativamente con codice di uscita 1.
+ *   (4) Se si dimostra l'assenza della barriera sul ripopolamento (flag --disable-fix),
+ *       la sonda esegue la sola riapertura senza attendere il ripopolamento, intercetta la lettura
+ *       sporca (anime_mappings vuoto o parziale) e fallisce dimostrativamente con codice di uscita 1.
  *
  * Utilizzo:
  *   node scripts/qa/probe-duckdb-reopen-barrier.js               -> SUCCESSO (exit code 0)
@@ -40,11 +40,11 @@ function createIsolatedStore(probeDir) {
 }
 
 async function runBarrierProbe() {
-    const disableFix = process.argv.includes('--disable-fix') || process.argv.includes('--early-release');
+    const disableFix = process.argv.includes('--disable-fix') || process.argv.includes('--early-release') || process.argv.includes('--defect');
 
     console.log('=======================================================');
     console.log('[SONDA QA] Barriera Completa Riapertura DuckDB (Ticket 60)');
-    console.log(`Modalità: ${disableFix ? 'DIMOSTRAZIONE FALLIMENTO (Barriera Prematura / Difetto Attivo)' : 'VERIFICA NORMALE (Barriera Completa Attiva)'}`);
+    console.log(`Modalità: ${disableFix ? 'DIMOSTRAZIONE FALLIMENTO (Riapertura senza barriera su ripopolamento)' : 'VERIFICA NORMALE (Barriera Completa Attiva)'}`);
     console.log('=======================================================');
 
     const probeDir = path.resolve(__dirname, '../../.cache/tmdb_probe_barrier_' + Date.now());
@@ -100,10 +100,6 @@ async function runBarrierProbe() {
         // -----------------------------------------------------------------
         console.log('\n--- (b) L\'App si avvia e verifica anime_mappings iniziale ---');
         appStore = createIsolatedStore(probeDir);
-        if (disableFix) {
-            appStore._simulateEarlyRelease = true;
-            console.log('[Probe] Simulazione rilascio prematuro barriera ATTIVATA (--disable-fix).');
-        }
         appIndice = new IndiceModule({ duckDb: appStore });
         await appIndice.init();
 
@@ -144,8 +140,52 @@ async function runBarrierProbe() {
         console.log('[Probe] Swap atomico completato: il nuovo file su targetDbPath attende la riapertura dell\'app.');
 
         // -----------------------------------------------------------------
-        // (d) Gara di concorrenza: Query 1 attiva la riapertura, Query 2 e 3 leggono durante
+        // (d) Gara di concorrenza / Dimostrazione difetto
         // -----------------------------------------------------------------
+        if (disableFix) {
+            console.log('\n--- (d) Dimostrazione difetto: riapertura isolata SENZA attendere il ripopolamento ---');
+            capturedLogs.length = 0;
+
+            // Dimostrazione del difetto dal lato sonda (senza flag in codice di produzione):
+            // 1. Chiamata diretta a _reopenDueToSwap (il solo reopen, simulando l'ordinamento precario)
+            await appStore._reopenDueToSwap();
+
+            // 2. Query concorrenti lanciate SENZA attendere updateAnimeMapping / buildDfCache
+            const [res2, res3, res4] = await Promise.all([
+                appIndice.queryRaw(
+                    "SELECT count(*) AS n FROM anime_mappings WHERE tmdb_id IN (990001, 990002, 990003, 991501, 991502);"
+                ),
+                appIndice.queryRaw(
+                    "SELECT count(*) AS n FROM anime_mappings WHERE tmdb_id >= 990001 AND tmdb_id <= 992000;"
+                ),
+                appIndice.queryRaw(
+                    "SELECT tmdb_id, tipo FROM anime_mappings WHERE tmdb_id = 990001;"
+                )
+            ]);
+
+            const sampleCount = Number(res2?.[0]?.n ?? -1);
+            const totalCountSeen = Number(res3?.[0]?.n ?? -1);
+            const singleRowSeen = Array.isArray(res4) && res4.length === 1 && Number(res4[0].tmdb_id) === 990001;
+
+            console.log(`[Probe] Esito esecuzione senza attendere il ripopolamento:`);
+            console.log(`  - Campione visto da query simultanea (Q2): ${sampleCount}/5`);
+            console.log(`  - Totale visto da query (Q3): ${totalCountSeen}/${TEST_CERTIFIED_IDS.length}`);
+            console.log(`  - Riga certificata 990001 trovata con tipo corretto: ${singleRowSeen ? 'SÌ' : 'NO'}`);
+
+            // In modalità difetto dimostrativo: le query SENZA barriera DEVONO aver visto la tabella incompleta o a zero
+            const isCorrupted = sampleCount < 5 || totalCountSeen < TEST_CERTIFIED_IDS.length || !singleRowSeen;
+            if (!isCorrupted) {
+                throw new Error('[ANOMALIA] Chi non ha atteso il ripopolamento ha comunque visto tutti i dati!');
+            }
+
+            console.log('\n=======================================================');
+            console.log('Esito Sonda: FALLIMENTO DIMOSTRATIVO ACCERTATO — senza barriera completa, le query concorrenti vedono dati incompleti.');
+            console.log(`Conteggi riscontrati durante il difetto: Q2=${sampleCount}/5, Q3=${totalCountSeen}/${TEST_CERTIFIED_IDS.length}`);
+            console.log('=======================================================');
+            await appIndice.close();
+            process.exit(1);
+        }
+
         console.log('\n--- (d) Esecuzione concorrente: Query 1 riapre, Query 2 e 3 leggono DURANTE la riapertura ---');
         capturedLogs.length = 0;
 
@@ -188,19 +228,6 @@ async function runBarrierProbe() {
         console.log(`  - Campione visto da query simultanea (Q2): ${sampleCount}/5`);
         console.log(`  - Totale visto da query a metà finestra (Q3): ${totalCountSeen}/${TEST_CERTIFIED_IDS.length}`);
         console.log(`  - Riga certificata 990001 trovata con tipo corretto: ${singleRowSeen ? 'SÌ' : 'NO'}`);
-
-        if (disableFix) {
-            // In modalità difetto dimostrativo: almeno una delle query concorrenti DEVE aver visto la tabella incompleta o a zero
-            const isCorrupted = sampleCount < 5 || totalCountSeen < TEST_CERTIFIED_IDS.length || !singleRowSeen;
-            if (!isCorrupted) {
-                throw new Error('[ANOMALIA] La barriera era disabilitata ma le query concorrenti hanno comunque visto tutti i dati!');
-            }
-            console.log('\n=======================================================');
-            console.log('Esito Sonda: FALLIMENTO DIMOSTRATIVO ACCERTATO — senza barriera completa, le query concorrenti vedono dati incompleti.');
-            console.log(`Conteggi riscontrati durante il difetto: Q2=${sampleCount}/5, Q3=${totalCountSeen}/${TEST_CERTIFIED_IDS.length}`);
-            console.log('=======================================================');
-            process.exit(1);
-        }
 
         // In modalità normale (con fix): le query concorrenti DEVONO attendere e vedere la totalità dei dati
         if (!sawReopenLog) {
