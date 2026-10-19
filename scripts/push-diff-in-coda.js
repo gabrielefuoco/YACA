@@ -46,7 +46,7 @@
  * dopo non lo riporterà (il diff è un delta), quel poster resta vecchio fino al TTL della sua
  * fascia — fino a 200 giorni — e nessuno se ne accorge. Quindi, prima della prima `push`, si
  * aspetta il client: stesso rimedio e stesse parole di `aspettaRedis` in
- * `scripts/drena-coda-poster.js`, che beve dalla stessa coda.
+ * `src/posters/drenaCodaPoster.js`, che beve dalla stessa coda.
  *
  * PERCHÉ LA CORREZIONE STA QUI E NON IN `src/cache/codaEventi.js`: quel modulo è condiviso con
  * l'app e la sua coda **deve** degradare quando Redis non c'è (l'app è una cache: si ricostruisce,
@@ -173,7 +173,7 @@ function interoPositivo(valore, flag, defaulto) {
 /**
  * Aspetta che il client Redis sia davvero connesso, **prima della prima `push`**.
  *
- * Stesso contratto di `aspettaRedis` (`scripts/drena-coda-poster.js`), che beve dalla stessa
+ * Stesso contratto di `aspettaRedis` (`src/posters/drenaCodaPoster.js`), che beve dalla stessa
  * coda e ha lo stesso difetto: `isAvailable` è una **getter**, non c'è nessun evento da
  * ascoltare, quindi si interroga a brevi intervalli e si esce comunque al tetto. Un client che
  * non espone la proprietà (uno stub, un fake) non ha niente da aspettare: niente attesa

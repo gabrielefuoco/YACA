@@ -8,7 +8,9 @@ Wants=network-online.target
 # Se `docker` non sta in /usr/bin sul server, cambia quel percorso qui dentro.
 #
 # PERCHÉ `docker exec` E NON NODE SULL'HOST (a differenza degli altri timer, che girano nativi):
-# il comando è `src/posters/drenaCodaPoster.js` (con `scripts/drena-coda-poster.js` come shim), quindi ha bisogno delle dipendenze DELL'APP
+# il comando è `src/posters/drenaCodaPoster.js` (era `scripts/drena-coda-poster.js`: lo shim è stato
+# rimosso il 19/10/2026, dopo aver verificato che questa unità — quella installata in /etc — già puntava
+# al percorso nuovo), quindi ha bisogno delle dipendenze DELL'APP
 # (ioredis per la coda, better-sqlite3/DuckDB per la mappa anime) e della rete del compose
 # (`REDIS_URL=redis://redis:6379` non è risolvibile dall'host: `redis` è un nome interno).
 # Dentro `yaca-app` inoltre `ERDB_CACHE_DIR=/data/erdb-cache` è il volume `yaca_erdb_cache`,

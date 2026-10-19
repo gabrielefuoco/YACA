@@ -247,7 +247,7 @@ contabilità esplicita.
 | 1 | il boot e le superfici rispondono | **fatto** — boot ~2,4 s, RAM 148,6 MiB, le rotte di dominio rispondono |
 | 2 | le misure lette dai log e dai contatori | **fatto** — nel verbale sopra |
 | 3 | le unità sul mate (`cp ops/yaca-poster-eventi.service`, `daemon-reload`, `restart`) | **NON eseguito — declassato**, vedi sotto |
-| 4 | gli shim spariscono (ticket 28) | **aperto**, bloccato dal 3: `scripts/drena-coda-poster.js` esiste ancora |
+| 4 | gli shim spariscono (ticket 28) | **fatto il 19/10/2026**: lo shim `scripts/drena-coda-poster.js` è stato rimosso, vedi sotto |
 | 5 | il grafo si ricostruisce | **fatto dopo** — ricetta `2330b143bc8845a7`, il residuo 1 qui sotto è chiuso |
 
 **Sul 3 (declassato, e perché).** L'unità del mate non esegue uno script dell'host: fa
@@ -278,3 +278,27 @@ barriera del 60, e le tre correzioni della review (il grafo che non si memorizza
 chiesti al proprietario, l'URI di Mongo risolta in un posto solo); il seam `disableAutoReopen` **assente**.
 Righe hero dal vivo, con le pagine: `mondi` **20+20+11 = 51**, `passo_fuori` **20+20+2 = 42**, `nicchia`
 **20+20+1 = 41**.
+
+### Il requisito 4 è chiuso (19/10/2026)
+
+Lo shim `scripts/drena-coda-poster.js` **è stato rimosso**, e la ragione per cui era rimasto non c'era più.
+
+La prudenza del ticket 28 («lo shim serve perché il timer sul mate potrebbe puntare ancora al vecchio
+percorso») è stata **misurata invece che supposta**: l'unità installata in `/etc/systemd/system/` e quella del
+repo hanno lo stesso `ExecStart`, e punta già a `src/posters/drenaCodaPoster.js`. Il timer non ha mai chiamato
+lo shim.
+
+Cosa è cambiato insieme alla rimozione — perché togliere il file e lasciare i documenti che lo nominano sarebbe
+stato il difetto della giornata:
+
+- `tests/drenaCodaPoster.test.js` carica il modulo vero (era l'unico `require` reale dello shim);
+- 18 occorrenze del **percorso** in 8 file: `docs/TIMER_POSTER.md` (7), `docs/DEPLOYMENT_HOME_SERVER.md` (1),
+  `ops/yaca-poster-eventi.service` (1, più la frase «come shim» corretta a mano), e i commenti in
+  `push-diff-in-coda.js`, `seed_learned_names.js`, `staticPosters.js`, `drenaPoster.js`, `seedLearnedNames.test.js`;
+- **il token nudo `drena-coda-poster` NON è stato toccato**: è anche il nome del produttore scritto dentro
+  `versioni.json` dal ticket 57 (`{ produttore: 'drena-coda-poster' }`), e quello è un valore del contratto, non
+  un percorso. Sostituirlo alla cieca avrebbe rotto il contratto appena nato.
+
+Verificato: `node src/posters/drenaCodaPoster.js` esce con il messaggio di configurazione atteso (codice 1), il
+modulo espone `main` e `aspettaRedis`, nessun `exec`/`spawn` nel prodotto lancia il vecchio percorso, e la suite
+resta alla baseline.

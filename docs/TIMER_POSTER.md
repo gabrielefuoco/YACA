@@ -1,6 +1,6 @@
 # Timer Drenatore Poster: Rifare i Poster dalla Coda Eventi
 
-Questo documento descrive il funzionamento, l'installazione, la verifica e la disinstallazione del timer di sistema per [`scripts/drena-coda-poster.js`](../scripts/drena-coda-poster.js) su ambiente Linux (host home server `mate`).
+Questo documento descrive il funzionamento, l'installazione, la verifica e la disinstallazione del timer di sistema per [`src/posters/drenaCodaPoster.js`](../src/posters/drenaCodaPoster.js) su ambiente Linux (host home server `mate`).
 
 ---
 
@@ -8,7 +8,7 @@ Questo documento descrive il funzionamento, l'installazione, la verifica e la di
 
 I poster composti sono file statici serviti dalla rotta `/erdb-poster/<file>` (`src/api/staticPosters.js`) e, finché il titolo non cambia, quel file va bene per mesi. Ma quando un titolo **diventa doppiato** (o non lo è più) quel file è vecchio, e aspettare il TTL non è un'opzione: il catalogo darebbe una risposta con la grafica sbagliata.
 
-Il giro di `services/doppiaggi-source` scrive a ogni passata un `ita_annotations.diff.json` con **quali titoli hanno cambiato doppiaggio**; `scripts/push-diff-in-coda.js` lo legge e mette in coda (`src/cache/codaEventi.js`, su Redis) un evento per ogni cambiamento. **`scripts/drena-coda-poster.js` è l'altra metà**: beve quella coda e rifà i file, uno per uno.
+Il giro di `services/doppiaggi-source` scrive a ogni passata un `ita_annotations.diff.json` con **quali titoli hanno cambiato doppiaggio**; `scripts/push-diff-in-coda.js` lo legge e mette in coda (`src/cache/codaEventi.js`, su Redis) un evento per ogni cambiamento. **`src/posters/drenaCodaPoster.js` è l'altra metà**: beve quella coda e rifà i file, uno per uno.
 
 **La coda ha due produttori, non uno.** Oltre al diff, anche la rotta `/erdb-poster/<file>`: quando un file non è in cartella e l'istanza ERDB locale non lo rende entro il suo tetto di 5 s (`TIMEOUT_ERDB_MS`), la rotta risponde 404 come ha sempre risposto e **inoltra l'evento in coda** (`mettiInCoda` in `src/api/staticPosters.js`) invece di arrendersi. Il tetto di 5 s è volutamente più corto del render a freddo di un anime (8-12 s misurati, perché l'istanza ritenta sull'API degli anime irraggiungibile dal mate): senza la push quei poster resterebbero 404 per sempre, perché nessuno li produce e nessuno li chiede. Con la push il drenatore, che ha 20 s, li rende al giro dopo e la richiesta successiva arriva dalla cache. La push è lanciata e dimenticata (un guasto di Redis non può trasformarsi in un guasto della rotta) e la deduplica è della coda, quindi un utente che ricarica può ripeterla senza problemi.
 
@@ -41,7 +41,7 @@ Il `--dry-run` esiste per lo stesso motivo: dentro un timer un errore non gestit
 
 - [`ops/yaca-poster-eventi.service`](../ops/yaca-poster-eventi.service): unità systemd `oneshot`.
   - `EnvironmentFile=-/srv/yaca/.env`: da lì arrivano `ERDB_LOCAL_BASE` e `ERDB_CACHE_DIR`, passate dentro il container con `-e`.
-  - `ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=… -e ERDB_CACHE_DIR=… yaca-app node scripts/drena-coda-poster.js`.
+  - `ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=… -e ERDB_CACHE_DIR=… yaca-app node src/posters/drenaCodaPoster.js`.
   - `Restart=no`: Redis o ERDB giù non fanno fallire l'unità (lo script esce 0). Se `docker` non è in `/usr/bin` sul server, va cambiato quel percorso.
   - `TimeoutStartSec=15min`: il default (90 s) taglierebbe un giro che sta caricando la mappa anime; a tagliare sul serio c'è già il watchdog interno dello script (10 minuti).
   - `StandardOutput/StandardError=journal`: `journalctl -u` basta.
@@ -103,7 +103,7 @@ Per innescare immediatamente un ciclo senza attendere i dieci minuti:
 sudo systemctl start yaca-poster-eventi.service
 
 # Oppure, come fa la unit, direttamente nel container
-cd /srv/yaca && docker exec --workdir /app yaca-app node scripts/drena-coda-poster.js
+cd /srv/yaca && docker exec --workdir /app yaca-app node src/posters/drenaCodaPoster.js
 ```
 
 ### 5.3 Prova a mano senza toccare nulla (`--dry-run`)
@@ -111,7 +111,7 @@ Il `--dry-run` prende gli eventi e **dice** quali file scriverebbe: nessun downl
 ```bash
 cd /srv/yaca && docker exec --workdir /app \
   -e ERDB_LOCAL_BASE="$(grep '^ERDB_LOCAL_BASE=' /srv/yaca/.env | cut -d= -f2-)" \
-  yaca-app node scripts/drena-coda-poster.js --dry-run
+  yaca-app node src/posters/drenaCodaPoster.js --dry-run
 ```
 Se la coda è vuota l'ultima riga è `coda vuota: niente da rifare`. Altrimenti elenca un `da rifare <file> (n/N)` per ogni file che il giro vero avrebbe scritto.
 
@@ -158,4 +158,4 @@ sudo rm -f /etc/systemd/system/yaca-poster-eventi.service /etc/systemd/system/ya
 sudo systemctl daemon-reload
 ```
 
-La coda non si svuota disinstallando il timer: gli eventi restano in Redis e vengono presi al giro successivo, quando il timer torna su. Se non torna mai più, vanno presi a mano con `docker exec … node scripts/drena-coda-poster.js`.
+La coda non si svuota disinstallando il timer: gli eventi restano in Redis e vengono presi al giro successivo, quando il timer torna su. Se non torna mai più, vanno presi a mano con `docker exec … node src/posters/drenaCodaPoster.js`.

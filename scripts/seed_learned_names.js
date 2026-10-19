@@ -24,7 +24,7 @@
  * processo una tantum (`docker exec`) il socket non e' ancora pronto quando lo script guarda
  * `isAvailable`: era quindi **sempre** "Redis non raggiungibile", anche con Redis perfettamente
  * sano. Il rimedio e' lo stesso del drenatore dei poster (`aspettaRedis` in
- * `scripts/drena-coda-poster.js`): si interroga a brevi intervalli, con un tetto, e se scade si
+ * `src/posters/drenaCodaPoster.js`): si interroga a brevi intervalli, con un tetto, e se scade si
  * dice che il motivo e' quello e non una tabella vuota.
  *
  * Uso:  node scripts/seed_learned_names.js [--dry-run] [--attesa-redis <ms>]
@@ -50,7 +50,7 @@ const {
 const KEY_PATTERNS = ['tmdb_details_raw:full:v2:*', 'tmdb_details_raw:v2:*'];
 
 // Tetto dell'attesa e passo fra un'interrogazione e l'altra: stessi numeri (e stesso motivo) di
-// `scripts/drena-coda-poster.js`. Il tetto non e' un'attesa di guarigione, e' il tempo entro cui
+// `src/posters/drenaCodaPoster.js`. Il tetto non e' un'attesa di guarigione, e' il tempo entro cui
 // una connessione sana e' gia' arrivata.
 const DEFAULT_ATTESA_REDIS_MS = 10000;
 const INTERVALLO_ATTESA_REDIS_MS = 100;
@@ -89,7 +89,7 @@ function _dormi(ms) {
 /**
  * Aspetta che il client Redis sia davvero connesso, **prima della prima lettura**.
  *
- * Copia del pattern di `aspettaRedis` (`scripts/drena-coda-poster.js`), con lo stesso
+ * Copia del pattern di `aspettaRedis` (`src/posters/drenaCodaPoster.js`), con lo stesso
  * contratto: `isAvailable` e' una **getter**, non c'e' nessun evento da ascoltare, quindi si
  * interroga a brevi intervalli e si esce comunque al tetto. Un client che non espone la
  * proprieta' (uno stub, un fake) non ha niente da aspettare: niente attesa inventata.

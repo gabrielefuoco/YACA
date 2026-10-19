@@ -111,7 +111,7 @@ const badgeDallaQuery = (value) => {
 };
 
 /**
- * Mette l'evento in coda perché il drenatore (`scripts/drena-coda-poster.js`, ogni 10 minuti)
+ * Mette l'evento in coda perché il drenatore (`src/posters/drenaCodaPoster.js`, ogni 10 minuti)
  * renda il poster più tardi, con i suoi 20 s di tempo.
  *
  * PERCHÉ: il tetto di 5 s di questa rotta è più corto del render a freddo di un anime

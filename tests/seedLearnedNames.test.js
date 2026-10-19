@@ -6,7 +6,7 @@
  *    primo `isAvailable === false` in un `docker exec` non vuol dire "Redis giù". Qui un client
  *    che diventa pronto dopo N interrogazioni viene **aspettato**, e uno che non diventa mai fa
  *    scadere il tetto con un messaggio che nomina Redis (non "archivio vuoto"): stesso contratto
- *    di `aspettaRedis` in `scripts/drena-coda-poster.js`, stesse chiavi di lettura delle chiavi;
+ *    di `aspettaRedis` in `src/posters/drenaCodaPoster.js`, stesse chiavi di lettura delle chiavi;
  *  - **le due famiglie di chiavi**: `tmdb_details_raw:full:v2:*` e `tmdb_details_raw:v2:*`
  *    contengono entrambe il nome italiano, e lo script deve leggerle entrambe.
  *

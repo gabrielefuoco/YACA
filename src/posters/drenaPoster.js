@@ -10,7 +10,7 @@
  * **TUTTO INIETTATO.** Questo file non importa la coda, né Redis, né `fetch`: `take`, `done`,
  * `fail`, `cercaKitsu`, `base`, `outDir`, `fetchImpl` e `batch` arrivano da chi chiama. Così i
  * test girano con coda e `fetch` finti, senza rete e senza Redis, e il chiamante (lo script
- * `scripts/drena-coda-poster.js` o il comando `src/posters/drenaCodaPoster.js`) è l'unico che sa
+ * `src/posters/drenaCodaPoster.js` o il comando `src/posters/drenaCodaPoster.js`) è l'unico che sa
  * da quale parte sono la coda e `getCacheDir()`.
  *
  * IL FORMATO È NEGOZIATO, E SI VERIFICA: l'istanza è patchata e sceglie WebP o JPEG in base ad

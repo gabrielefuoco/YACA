@@ -1,12 +1,15 @@
 /**
  * tests/drenaCodaPoster.test.js
  *
- * Lo script da timer: `scripts/drena-coda-poster.js`.
+ * Lo script da timer: `src/posters/drenaCodaPoster.js`.
  *
- * Il giro vero è già testato (`tests/drenaPoster.test.js`): qui si prova il **guscio**, cioè
- * le cose che solo lo script fa e che nessun modulo condiviso può fare: leggere gli
+ * Il giro vero è già testato (`tests/drenaPoster.test.js`): qui si prova il **comando**, cioè
+ * le cose che solo il comando fa e che nessun modulo condiviso può fare: leggere gli
  * argomenti, tirare fuori la base mancante con un codice 1, non scrivere niente in
  * `--dry-run`, chiudere gli eventi, non lanciare mai, chiudere Redis e uscire davvero.
+ *
+ * Il 19/10/2026 è stato rimosso lo shim `scripts/drena-coda-poster.js`: questo test lo caricava
+ * per arrivare al modulo. Ora carica il modulo direttamente — la stessa cosa che esegue il timer.
  *
  * Tutto è iniettato (`main(argv, env, dip)`): coda in memoria, `fetch` che restituisce byte
  * preparati a mano, store degli anime finto, cartella in un tmp dir di sistema, client Redis
@@ -30,7 +33,7 @@ const {
     adattatoreKitsu,
     aspettaRedis,
     main
-} = require('../scripts/drena-coda-poster');
+} = require('../src/posters/drenaCodaPoster');
 
 const BASE = 'http://127.0.0.1:3100/Tk-prova';
 

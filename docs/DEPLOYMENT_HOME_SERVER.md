@@ -54,7 +54,7 @@ Oltre ai container permanenti orchestrati da Compose, l'infrastruttura sul serve
    - **Cadenza**: Due volte al giorno (04:00 e 16:00). Durata **misurata** il 19/10/2026: **7 secondi** (`systemctl show yaca-doppiaggi.service -p ExecMainStartTimestamp -p ExecMainExitTimestamp` → 04:01:09 → 04:01:16, stato 0).
    - **Esecuzione**: `ops/yaca-doppiaggi.sh` risolve Node sull'host (inclusi percorsi mise `/home/gabri/.local/share/mise/installs/node/...` o binari di sistema) ed esegue `cli.js` con la propria cache locale (`services/doppiaggi-source/.cache`).
    - **Output e Consumatori**: Accede direttamente al volume catalogo (`yaca_tmdb`) producendo `ita_annotations.jsonl`, `ita_annotations.meta.json` e `ita_annotations.diff.json`. L'app Node legge `ita_annotations.jsonl` via snapshot in RAM (`src/catalog/itaAnnotations.js:31`), mentre il diff viene inoltrato a Redis per notificare i titoli che hanno cambiato doppiaggio. Dettagli completi: [`docs/TIMER_DOPPIAGGI.md`](TIMER_DOPPIAGGI.md).
-2. **`yaca-poster-eventi.timer` (`scripts/drena-coda-poster.js`)**:
+2. **`yaca-poster-eventi.timer` (`src/posters/drenaCodaPoster.js`)**:
    - **Natura**: Drenatore della coda eventi poster su Redis.
    - **Cadenza**: Ogni 10 minuti. Durata **misurata** il 19/10/2026 a coda vuota: **1 secondo** (`systemctl show yaca-poster-eventi.service` → 15:30:27 → 15:30:28, stato 0). I timestamp di systemd hanno risoluzione di un secondo, quindi non si scende sotto: dire "0,7 secondi" sarebbe precisione inventata.
    - **Esecuzione**: Eseguito tramite `docker exec` dentro il container `yaca-app` (per accedere alla rete Redis e al volume `yaca_erdb_cache`). Dettagli completi: [`docs/TIMER_POSTER.md`](TIMER_POSTER.md).
