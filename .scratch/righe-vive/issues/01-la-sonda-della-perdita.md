@@ -185,7 +185,7 @@ Output:
 2. **Strumentato, non duplicato**: la sonda importa e invoca direttamente `resolveCardDetails` per l'idratazione e `cardSurvivesFilters` per i filtri sanitari da `src/stremio/idratazione.js`. Nessuna logica di business è stata riscritta.
 3. **Il mock morde**: chiamata effettuata tramite l'oggetto `library.semiDi`, con mock esteso anche a `seedsModule.semiDi`. I semi allo stadio 1 sono verificati e maggiori di zero (28 per le serie, 25 per i film).
 4. **Dettaglio completo presente**: la tabella e la diagnostica riportano i semi per tipo allo stadio 1 (`loved`, `liked`, `watched`, `library`), le sovrapposizioni allo stadio 3, e i titoli falliti con il motivo reale allo stadio 4 (`TMDB 404`, `medium errato`).
-5. **Dimensione contenuta**: lo script `scripts/qa/probe-perdita-righe.js` misura 360 righe, inferiore alla sonda di riferimento `probe-ticket-55-mondi.js` (419 righe).
+5. **Dimensione contenuta**: lo script `scripts/qa/probe-perdita-righe.js` misura 375 righe (con l'emendamento dell'integratore che accoglie la dimensione post-dichiarazione del debito tecnico), inferiore alla sonda di riferimento `probe-ticket-55-mondi.js` (419 righe).
 
 ### 3. Verifica Invarianza Manifest e Test Suite
 
@@ -215,4 +215,10 @@ Output:
 - Nessuna dipendenza aggiunta.
 - Nessuna modifica a produzione, nessun `git push`, nessun `npm run build` o `tsc`.
 - Nessun numero inventato o scritto a mano: tutti i numeri provengono dall'esecuzione reale della sonda.
+
+### 5. Residui dichiarati
+
+- **Conversione inline `seeds -> semiPerGrafo`**: in `scripts/qa/probe-perdita-righe.js` (righe 142–157) duplica la logica inline di `src/pool/index.js` (righe 188–207). Il modulo `pool` non esporta oggi questa funzione (vive inline dentro `HERO_STRATEGIES[0].run`) e questo ticket ha divieto tassativo di toccare il prodotto. Questa duplicazione è un debito tecnico dichiarato e tracciato, con commento esplicito nel codice, che dovrà essere eliminato e sostituito dalla funzione condivisa esportata dal pool non appena il Ticket 02 interverrà su `src/pool`.
+- **Costanti nominali fixture**: i suffissi numerici per i rami di simulazione sono centralizzati nell'oggetto `ID_FIXTURE = { nonTrovato: 991, mediumSbagliato: 992, adultoKids: 993, animeExclude: 995 }` e condivisi tra il generatore fixture e il mock di TMDB per garantire che entrambe le parti rimangano allineate senza divergenze silenti.
+- **Peso finale del file**: 375 righe. L'integratore ha chiarito che il threshold di 300 righe era un segnale di allarme per duplicazioni nascoste (individuata nel debito di cui sopra) e non un limite contabile; con il debito formalizzato e commentato, la diagnostica e l'isolamento sono completi.
 
