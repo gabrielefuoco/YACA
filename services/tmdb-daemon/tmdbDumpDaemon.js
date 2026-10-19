@@ -100,12 +100,14 @@ async function convertAndReloadDuckDb(store) {
             proc.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Code ${code}`)));
         });
 
-        console.log('[TmdbDump] Ricostruzione DuckDB da Parquet...');
+        console.log('[TmdbDump] Ricostruzione DuckDB da Parquet (staging + swap atomico)...');
         const indice = require('../../src/indice');
         await indice.close();
-        await indice.init({ forceRebuild: true });
-        console.log('[TmdbDump] DuckDB pronto su database persistente.');
-        await indice.close(); // Chiusura immediata: il job batch/daemon standalone non trattiene il DB in RAM
+        await indice.init({ forceRebuild: true, staging: true });
+        console.log('[TmdbDump] DuckDB pronto su file di staging.');
+        await indice.close(); // Chiusura immediata: rilascia il lock prima dello scambio
+        await indice.swapDatabase();
+        console.log('[TmdbDump] DuckDB scambiato atomicamente su database persistente.');
 
         // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)
         await buildTier2Index();

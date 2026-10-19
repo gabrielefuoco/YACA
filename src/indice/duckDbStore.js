@@ -17,7 +17,21 @@ class DuckDbStore {
             
         this.moviesParquetPath = path.join(this.basePath, 'movies.parquet');
         this.tvParquetPath = path.join(this.basePath, 'tv.parquet');
-        this.dbPath = process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
+        const configuredPath = process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
+        if (configuredPath === ':memory:') {
+            this.targetDbPath = ':memory:';
+            this.stagingDbPath = ':memory:';
+            this.dbPath = ':memory:';
+        } else if (configuredPath.endsWith('.new')) {
+            this.targetDbPath = configuredPath.slice(0, -4);
+            this.stagingDbPath = configuredPath;
+            this.dbPath = configuredPath;
+        } else {
+            this.targetDbPath = configuredPath;
+            this.stagingDbPath = process.env.DUCKDB_STAGING_PATH || `${configuredPath}.new`;
+            this.dbPath = configuredPath;
+        }
+
         this.masterMoviesJsonlPath = path.join(this.basePath, 'master_movies.jsonl');
         this.masterTvJsonlPath = path.join(this.basePath, 'master_tv.jsonl');
 
@@ -25,6 +39,102 @@ class DuckDbStore {
         // così un titolo promosso a Tier 1 dopo è visibile subito).
         this.tmdbImdbIdCache = new Map();
         this.dfMap = null;
+    }
+
+    getStagingDbPath() {
+        return this.stagingDbPath;
+    }
+
+    getTargetDbPath() {
+        return this.targetDbPath;
+    }
+
+    _isLockConflictError(err) {
+        if (!err || typeof err.message !== 'string') return false;
+        const msg = err.message.toLowerCase();
+        return msg.includes('conflicting lock')
+            || msg.includes('could not set lock')
+            || msg.includes('database is locked')
+            || msg.includes('file is already open')
+            || msg.includes('utilizzato da un altro processo')
+            || msg.includes('used by another process')
+            || (msg.includes('lock') && msg.includes('pid'));
+    }
+
+    async swapDatabase(fromPath = this.stagingDbPath, toPath = this.targetDbPath) {
+        if (!fromPath || fromPath === ':memory:' || toPath === ':memory:') {
+            return { swapped: false, reason: 'memory_or_empty' };
+        }
+        if (!fs.existsSync(fromPath)) {
+            throw new Error(`File di staging non trovato per lo swap: ${fromPath}`);
+        }
+
+        if (this.db) {
+            await this.close();
+        }
+
+        const targetDir = path.dirname(toPath);
+        if (!fs.existsSync(targetDir)) {
+            try { fs.mkdirSync(targetDir, { recursive: true }); } catch (_) {}
+        }
+
+        // Rimuovi eventuale vecchio WAL del target prima dello swap per evitare corruzione
+        const oldTargetWal = `${toPath}.wal`;
+        if (fs.existsSync(oldTargetWal)) {
+            try { fs.unlinkSync(oldTargetWal); } catch (_) {}
+        }
+
+        // Swap atomico con retry limitato per Windows
+        let renamed = false;
+        let lastError = null;
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+                fs.renameSync(fromPath, toPath);
+                renamed = true;
+                break;
+            } catch (err) {
+                lastError = err;
+                if (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY') {
+                    try { fs.unlinkSync(toPath); } catch (_) {}
+                    try {
+                        fs.renameSync(fromPath, toPath);
+                        renamed = true;
+                        break;
+                    } catch (e2) {
+                        lastError = e2;
+                    }
+                }
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+
+        if (!renamed) {
+            throw lastError || new Error(`Impossibile rinominare ${fromPath} in ${toPath}`);
+        }
+
+        // Se c'è un WAL sullo staging, spostalo sul target
+        const fromWal = `${fromPath}.wal`;
+        if (fs.existsSync(fromWal)) {
+            try {
+                fs.renameSync(fromWal, `${toPath}.wal`);
+            } catch (walErr) {
+                if (walErr.code === 'EEXIST' || walErr.code === 'EPERM' || walErr.code === 'EBUSY') {
+                    try { fs.unlinkSync(`${toPath}.wal`); } catch (_) {}
+                    try { fs.renameSync(fromWal, `${toPath}.wal`); } catch (_) {}
+                }
+            }
+        }
+
+        this.dbPath = toPath;
+        console.log(`[DuckDB Store] Swap atomico completato con successo: ${fromPath} -> ${toPath}`);
+        return { swapped: true, from: fromPath, to: toPath };
+    }
+
+    async rebuildAndSwap(options = {}) {
+        await this.close();
+        await this.init({ ...options, forceRebuild: true, staging: true });
+        await this.close();
+        return this.swapDatabase(this.stagingDbPath, this.targetDbPath);
     }
 
     _cleanupDbFiles(filePath) {
@@ -150,6 +260,7 @@ class DuckDbStore {
 
     async init(options = {}) {
         const forceRebuild = Boolean(options && options.forceRebuild);
+        const staging = Boolean(options && options.staging);
         if (this.isInitialized && !forceRebuild) return this.initPromise;
         if (this.initPromise && !forceRebuild) return this.initPromise;
 
@@ -168,33 +279,64 @@ class DuckDbStore {
             let reopened = false;
 
             // 1. Prova a riaprire il database persistente esistente se fresco e non forzato
-            if (!isMemory && !forceRebuild && this._isDatabaseFresh()) {
-                let testDb = null;
-                let testCon = null;
-                try {
-                    testDb = await this._openDb(this.dbPath);
-                    testCon = testDb.connect();
-                    await this._exec(testCon, "INSTALL fts;");
-                    await this._exec(testCon, "LOAD fts;");
-                    await this._exec(testCon, "SET scalar_subquery_error_on_multiple_rows=false;");
-                    await this._verifyDatabase(testCon);
+            if (!isMemory && !forceRebuild && !staging && this._isDatabaseFresh()) {
+                const maxRetries = Number(options.maxRetries || process.env.DUCKDB_LOCK_MAX_RETRIES || 3);
+                const retryDelayMs = Number(options.retryDelayMs || process.env.DUCKDB_LOCK_RETRY_DELAY_MS || 2000);
+                let lastErr = null;
 
-                    this.db = testDb;
-                    this.con = testCon;
-                    reopened = true;
-                    console.log(`[DuckDB Store] Database persistente valido riaperto con successo da ${this.dbPath}.`);
-                } catch (err) {
-                    console.warn(`[DuckDB Store] Database persistente esistente non valido o corrotto (${err.message}). Ricostruzione da zero...`);
-                    await this._closeCon(testCon);
-                    await this._closeDb(testDb);
-                    this._cleanupDbFiles(this.dbPath);
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    let testDb = null;
+                    let testCon = null;
+                    try {
+                        testDb = await this._openDb(this.dbPath);
+                        testCon = testDb.connect();
+                        await this._exec(testCon, "INSTALL fts;");
+                        await this._exec(testCon, "LOAD fts;");
+                        await this._exec(testCon, "SET scalar_subquery_error_on_multiple_rows=false;");
+                        await this._verifyDatabase(testCon);
+
+                        this.db = testDb;
+                        this.con = testCon;
+                        reopened = true;
+                        console.log(`[DuckDB Store] Database persistente valido riaperto con successo da ${this.dbPath}.`);
+                        break;
+                    } catch (err) {
+                        lastErr = err;
+                        await this._closeCon(testCon);
+                        await this._closeDb(testDb);
+                        testCon = null;
+                        testDb = null;
+
+                        if (this._isLockConflictError(err) && attempt < maxRetries) {
+                            const delay = retryDelayMs * attempt;
+                            console.warn(`[DuckDB Store] Lock conteso su ${this.dbPath} (tentativo ${attempt}/${maxRetries}: ${err.message}). Attesa di ${delay}ms...`);
+                            await new Promise(r => setTimeout(r, delay));
+                            continue;
+                        }
+                        break;
+                    }
+                }
+
+                if (!reopened) {
+                    console.warn(`[DuckDB Store] Database persistente esistente non valido o corrotto (${lastErr ? lastErr.message : 'sconosciuto'}). Ricostruzione da zero...`);
+                    if (!this._isLockConflictError(lastErr)) {
+                        this._cleanupDbFiles(this.dbPath);
+                    }
                     reopened = false;
                 }
             }
 
             // 2. Se non è stato possibile riaprirlo, procedi con la costruzione completa
             if (!reopened) {
-                const targetDbPath = isMemory ? ':memory:' : `${this.dbPath}.tmp`;
+                let targetDbPath;
+                if (isMemory) {
+                    targetDbPath = ':memory:';
+                } else if (staging) {
+                    targetDbPath = this.stagingDbPath;
+                } else {
+                    targetDbPath = `${this.dbPath}.tmp`;
+                }
+
                 if (!isMemory) {
                     this._cleanupDbFiles(targetDbPath);
                 }
@@ -235,23 +377,17 @@ class DuckDbStore {
 
                     console.log(`[DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.`);
 
-                    if (!isMemory) {
+                    if (staging) {
+                        this.db = buildDb;
+                        this.con = buildCon;
+                        this.dbPath = this.stagingDbPath;
+                    } else if (!isMemory) {
                         await this._closeCon(buildCon);
                         buildCon = null;
                         await this._closeDb(buildDb);
                         buildDb = null;
 
-                        this._cleanupDbFiles(this.dbPath);
-                        if (fs.existsSync(this.dbPath)) {
-                            try { fs.unlinkSync(this.dbPath); } catch (_) {}
-                        }
-                        fs.renameSync(targetDbPath, this.dbPath);
-                        if (fs.existsSync(`${targetDbPath}.wal`)) {
-                            if (fs.existsSync(`${this.dbPath}.wal`)) {
-                                try { fs.unlinkSync(`${this.dbPath}.wal`); } catch (_) {}
-                            }
-                            fs.renameSync(`${targetDbPath}.wal`, `${this.dbPath}.wal`);
-                        }
+                        await this.swapDatabase(targetDbPath, this.dbPath);
 
                         this.db = await this._openDb(this.dbPath);
                         this.con = this.db.connect();
@@ -631,6 +767,9 @@ class DuckDbStore {
         this.initPromise = null;
         this.isInitialized = false;
         this.dfMap = null;
+        if (this.stagingDbPath && this.dbPath === this.stagingDbPath && this.targetDbPath) {
+            this.dbPath = this.targetDbPath;
+        }
 
         await this._closeCon(oldCon);
         await this._closeDb(oldDb);
