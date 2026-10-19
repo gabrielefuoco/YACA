@@ -868,3 +868,25 @@ perdita.
 
 **Conseguenza generale**, da riusare: **un artefatto scambiato in modo atomico è sicuro solo se chi lo legge lo
 riapre.** Vale per il DuckDB (ticket 59) e vale per ogni altro file condiviso fra processi.
+
+### 34. Una barriera copre il lavoro intero, non il primo passo
+
+**19/10/2026, conseguenza del ticket 59 e del difetto trovato dalla review sul 60.** La riapertura dopo uno
+scambio era protetta da una promise (`reopenPromise`) che veniva **azzerata appena il file era riaperto** — ma il
+file riaperto **non è un database pronto**: subito dopo vanno ripopolate `anime_mappings` (la tabella che rende
+filtrabile l'animazione in SQL) e la cache DF. Chi aspettava quella promise si svegliava e interrogava un database
+**a metà**, e la tabella a metà **non dà un errore: dà un insieme diverso** — cioè, per la finestra della
+riapertura, la politica anime sbagliava in silenzio.
+
+**La regola**: **una barriera di sincronizzazione copre il lavoro che rende la risorsa utilizzabile, non il primo
+passo che la rende tecnicamente aperta.** Chi aspetta deve trovare la risorsa **pronta**, non appena aperta. Se
+esiste uno stato intermedio («riaperto ma non ripopolato»), o è **dichiarato** e chi legge lo rispetta, oppure
+**non deve esistere** come stato osservabile.
+
+**Corollario, pagato due volte lo stesso giorno**: la prova che una barriera serve **non vive nel prodotto**. Il
+primo giro del ticket 60 aveva aggiunto a `src/indice/duckDbStore.js` un ramo `if (options.simulateEarlyRelease)`
+il cui unico scopo era far fallire una sonda: **un interruttore che aggira la barriera dentro il codice che la
+costruisce**. La prova è stata riportata nella sonda (che chiama `_reopenDueToSwap()` da sola e interroga senza
+attendere il ripopolamento) e il ramo è stato rimosso. Vale come regola generale: **niente `simulate*` nel
+percorso caldo**; l'unica eccezione ammessa è un parametro interno che impedisce la **ricorsione** (`skipFreshCheck`),
+perché quello non simula un difetto: evita un ciclo vero.

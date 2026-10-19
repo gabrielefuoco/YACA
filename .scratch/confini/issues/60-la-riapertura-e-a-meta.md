@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: bug
 
 # 60 — La riapertura può esporre tabelle a metà
