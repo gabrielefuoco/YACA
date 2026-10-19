@@ -26,7 +26,7 @@ function messaggio(error) {
 /**
  * Apre la connessione mongoose ritentando gli errori transitori.
  *
- * @param {string} uri
+ * @param {string} [uri] l'URI di Mongo; se assente si usa `MONGODB_URI`
  * @param {object} [options]
  * @param {object} [options.mongoose] modulo mongoose iniettabile (test)
  * @param {object} [options.connectOptions] opzioni passate a `mongoose.connect`
@@ -37,6 +37,14 @@ function messaggio(error) {
  * @returns {Promise<*>} la connessione di mongoose
  */
 async function connectMongo(uri, options = {}) {
+    // L'URI si risolve QUI, una volta sola. Prima la pretendeva come argomento e ogni
+    // chiamante doveva ricordarsene: il 19/10/2026 quattro migrazioni la omettevano e
+    // morivano su `uri must be a string`, un errore che non diceva nulla di utile.
+    const uriRisolta = uri || process.env.MONGODB_URI;
+    if (typeof uriRisolta !== 'string' || uriRisolta.length === 0) {
+        throw new Error('connectMongo: manca l\'URI. Passala come primo argomento oppure in MONGODB_URI.');
+    }
+
     const {
         mongoose = require('mongoose'),
         connectOptions = {},
@@ -46,7 +54,7 @@ async function connectMongo(uri, options = {}) {
         retry = {}
     } = options;
 
-    return withRetry(() => mongoose.connect(uri, connectOptions), {
+    return withRetry(() => mongoose.connect(uriRisolta, connectOptions), {
         maxAttempts,
         delayMs,
         ...retry,

@@ -100,11 +100,9 @@ async function migrateLibraryOrder(options = {}) {
 async function main() {
     let exitCode = 0;
     try {
-        // La porta chiede l'URI come primo argomento (dal refactor di src/infra): senza,
-        // mongoose solleva "uri must be a string" e la migrazione non parte (trovato il 19/10/2026).
-        const mongoUri = process.env.MONGODB_URI;
-        if (!mongoUri) throw new Error('MONGODB_URI mancante nelle variabili di ambiente.');
-        await connectMongo(mongoUri);
+        // L'URI la risolve connectMongo() da MONGODB_URI: una volta sola, non in ogni script.
+        // Prima la pretendeva come argomento e quattro migrazioni morivano su "uri must be a string".
+        await connectMongo();
         await migrateLibraryOrder();
     } catch (err) {
         // Una migrazione su dato dell'utente che fallisce NON deve uscire 0 (ticket 27):

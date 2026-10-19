@@ -141,6 +141,19 @@ class DuckDbStore {
         return { swapped: true, from: fromPath, to: toPath };
     }
 
+    /**
+     * Gli id anime certificati, per tipo. Chi ha bisogno di sapere *quali titoli sono anime*
+     * lo chiede al proprietario del modello (decisione 31) invece di frugare nei suoi Set.
+     * Tollerante verso gli store finti dei test, che non hanno l'accessore.
+     */
+    _animeIdsByType() {
+        const { animeMappingStore } = require('../anime');
+        if (animeMappingStore && typeof animeMappingStore.idsByType === 'function') {
+            return animeMappingStore.idsByType();
+        }
+        return { movie: [], tv: [] };
+    }
+
     async rebuildAndSwap(options = {}) {
         await this.close();
         await this.init({ ...options, forceRebuild: true, staging: true });
@@ -390,14 +403,10 @@ class DuckDbStore {
         const repopulatePostReopen = async () => {
             // Post-reapertura: aggiornamento anime mappings e cache DF sul nuovo handle
             try {
-                const { animeMappingStore } = require('../anime');
-                if (animeMappingStore && (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow)) {
-                    const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
-                    const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
-                    if (movieIds.length > 0 || tvIds.length > 0) {
-                        await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }, { skipFreshCheck: true })
-                            .catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-reopen:', e));
-                    }
+                const idsByType = this._animeIdsByType();
+                if (idsByType.movie.length > 0 || idsByType.tv.length > 0) {
+                    await this.updateAnimeMapping(idsByType, { skipFreshCheck: true })
+                        .catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-reopen:', e));
                 }
             } catch (_) {}
 
@@ -564,13 +573,9 @@ class DuckDbStore {
             this.isInitialized = true;
 
             // Seeding anime mappings post-init se presenti
-            const { animeMappingStore } = require('../anime');
-            if (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow) {
-                const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
-                const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
-                if (movieIds.length > 0 || tvIds.length > 0) {
-                    await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
-                }
+            const idsByType = this._animeIdsByType();
+            if (idsByType.movie.length > 0 || idsByType.tv.length > 0) {
+                await this.updateAnimeMapping(idsByType).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
             }
 
             await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));

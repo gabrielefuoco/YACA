@@ -135,25 +135,22 @@ verifica('esiste la regola scritta: Watchtower non applica il compose', () => {
 
 verifica('nessuno script connette Mongo senza l\'URI (le migrazioni devono partire)', () => {
     // La porta `src/infra/mongoConnect` chiede l'URI come PRIMO argomento: una chiamata a vuoto
-    // solleva `uri must be a string` e la migrazione non parte. Trovato il 19/10/2026: quattro
-    // migrazioni erano rotte dal refactor, e una di quelle (library_order) il deploy la esegue.
-    const rotti = [];
-    const cartelle = ['scripts', 'src', 'services'];
-    const visita = (dir) => {
-        for (const voce of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
-            const rel = path.join(dir, voce.name);
-            if (voce.isDirectory()) {
-                if (voce.name === 'node_modules' || voce.name === '.git') continue;
-                visita(rel);
-            } else if (voce.name.endsWith('.js') && rel !== path.join('src', 'infra', 'mongoConnect.js') && rel !== path.join('scripts', 'qa', 'preflight-deploy.js')) {
-                const testo = fs.readFileSync(path.join(ROOT, rel), 'utf8');
-                if (/connectMongo\(\s*\)/.test(testo)) rotti.push(rel);
-            }
-        }
-    };
-    for (const c of cartelle) visita(c);
-    if (rotti.length) throw new Error(`connectMongo() senza URI in: ${rotti.join(', ')}`);
-    return 'tutti passano l\'URI';
+    // Il 19/10/2026 quattro migrazioni erano rotte perché chiamavano `connectMongo()` senza URI
+    // e la funzione lo pretendeva come argomento: il deploy ne esegue una (library_order).
+    //
+    // Il guardiano non sta più nei chiamanti — starebbe in quattro copie — ma DENTRO
+    // `connectMongo`, che ora risolve l'URI da `MONGODB_URI` e alza un errore chiaro se manca
+    // (decisione 31: una cosa, un posto). Questo check verifica quel posto: se qualcuno
+    // togliesse la risoluzione, `connectMongo()` tornerebbe a morire su `uri must be a string`
+    // e nessun altro controllo se ne accorgerebbe.
+    const mongoConnect = fs.readFileSync(path.join(ROOT, 'src', 'infra', 'mongoConnect.js'), 'utf8');
+    if (!/process\.env\.MONGODB_URI/.test(mongoConnect)) {
+        throw new Error('connectMongo() non risolve più l\'URI da MONGODB_URI: ogni chiamante dovrebbe ripassarla');
+    }
+    if (!/throw new Error\(\s*['"]connectMongo: manca/.test(mongoConnect)) {
+        throw new Error('connectMongo() non si lamenta se manca l\'URI: fallirebbe con "uri must be a string"');
+    }
+    return 'connectMongo() risolve l\'URI da MONGODB_URI, e lo dice se manca';
 });
 
 // ---------------------------------------------------------------- report

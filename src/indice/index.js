@@ -289,13 +289,13 @@ class IndiceModule {
      * È l'unica cosa che il daemon deve sapere: la sequenza e i percorsi restano qui.
      */
     async rebuildAndSwap(options = {}) {
-        if (typeof this.duckDb.rebuildAndSwap === 'function') {
-            return this.duckDb.rebuildAndSwap(options);
+        if (typeof this.duckDb.rebuildAndSwap !== 'function') {
+            // Non è una capacità opzionale: il daemon ci conta per pubblicare il catalogo.
+            // Se manca è un errore di cablaggio e deve dirlo, non essere ricostruito qui
+            // in parallelo allo store (due copie della stessa sequenza, decisione 31).
+            throw new Error('rebuildAndSwap: lo store DuckDB non implementa rebuildAndSwap');
         }
-        await this.close();
-        await this.init({ ...options, forceRebuild: true, staging: true });
-        await this.close();
-        return this.swapDatabase();
+        return this.duckDb.rebuildAndSwap(options);
     }
 
     /**

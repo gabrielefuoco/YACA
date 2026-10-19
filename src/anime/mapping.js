@@ -224,13 +224,21 @@ class AnimeMappingStore {
         this.isReady = true;
     }
 
+    /**
+     * Gli id anime certificati, per tipo. Chi ha bisogno di sapere *quali titoli sono anime*
+     * lo chiede al proprietario del modello (decisione 31) invece di frugare nei suoi Set.
+     */
+    idsByType() {
+        return {
+            movie: Array.from(this.animeTmdbIdsMovie || []),
+            tv: Array.from(this.animeTmdbIdsShow || [])
+        };
+    }
+
     async syncDuckDb() {
         try {
             const indice = require('../indice');
-            const idsByType = {
-                movie: Array.from(this.animeTmdbIdsMovie || []),
-                tv: Array.from(this.animeTmdbIdsShow || [])
-            };
+            const idsByType = this.idsByType();
             if (idsByType.movie.length > 0 || idsByType.tv.length > 0) {
                 await indice.updateAnimeMapping(idsByType).catch(e => {
                     console.error('[AnimeMappingStore] Impossibile aggiornare DuckDB:', e.message);
