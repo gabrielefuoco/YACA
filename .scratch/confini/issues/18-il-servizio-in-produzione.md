@@ -1,4 +1,4 @@
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 07
 
@@ -159,3 +159,44 @@ più.
 `ghcr.io/gabrielefuoco/yaca-graph` con i tag `latest` e `${{ github.sha }}`, e gira **solo** quando cambia
 `services/graph/**` o a mano. L'artefatto dati (~138 MB) **resta fuori dall'immagine**: bind mount read-only dal
 disco del mate, come decise il ticket 07.
+
+---
+
+## Esito (19/10/2026) — l'immagine si pubblica, il server non compila più
+
+**Il workflow**: `.github/workflows/deploy-graph.yml`, sul modello di `deploy-anime-source.yml`. Primo giro
+**passato** (`🚀 Build & Deploy Graph to GHCR`, run `39282077881`). Il package
+`ghcr.io/gabrielefuoco/yaca-graph:latest` esiste ed è **tirabile in anonimo** (`docker manifest inspect` dal mate):
+la visibilità ha ereditato il repo pubblico, quindi il timore del "package privato di default" non si è
+materializzato.
+
+**Nota sull'incidente GitHub**: il primo giro è rimasto in coda **26 minuti** invece dei soliti ~40 secondi.
+Non era il workflow: `githubstatus.com` registrava *«Degraded availability for GitHub Actions»* dalle **15:49
+UTC**, dieci minuti prima del push. La prima ipotesi (workflow sbagliato) sarebbe stata una diagnosi falsa.
+
+**Sul mate, `pull` invece di `build`**:
+```
+docker compose pull graph                  → Pulled
+docker compose up -d --no-build graph      → name conflict (vedi sotto)
+```
+
+**Il difetto trovato durante la verifica, che vale più del ticket.** Il container `yaca-graph` era un **orfano per
+compose**: gli mancavano le label `com.docker.compose.project` e `com.docker.compose.service` (l'app le ha). Per
+questo compose non lo riconosceva come suo e cercava di crearne un altro con lo stesso nome — **ogni
+`docker compose up -d` futuro sarebbe fallito così**, compreso quello di un deploy. Corretto ricreando il
+container: ora ha `project: yaca`, `service: graph`.
+
+**Misurato dopo la ricreazione**:
+- `GET /health` dal container dell'app → **200**, `{"ok": true, "contratto": 1, "versioni": {"artefatto":
+  "cf1d80dcba3eddce", "ricetta": "2330b143bc8845a7"}}` — artefatto **non vuoto**, letto dal bind mount.
+- la riga hero che usa il grafo → **200**, 20 titoli.
+- `docker stats` → **108,9 MiB / 512m** (margine ~4,7x), accanto a `yaca-app` 185,4 MiB.
+
+**Un fatto che vale la pena sapere**: l'immagine costruita **sulla CI** e quella costruita **sul mate** hanno lo
+stesso ID (`sha256:74723bd6e758…`). Il `Dockerfile` del grafo è deterministico (stessa base, stessi `pip install`,
+stesso `COPY`), quindi il passaggio da "compilato a mano" a "tirato dal registro" non ha cambiato **un byte** di
+quello che gira — ha cambiato solo chi lo costruisce.
+
+**Residuo dichiarato, non risolto qui**: il compose ha ancora il blocco `build:` accanto a `image:`. Funziona
+(`--no-build` lo scavalca), ma un `docker compose up -d` **senza** quel flag ricompilerebbe. Toglierlo è una riga,
+e renderebbe la dottrina «il server non compila mai» vera anche per sbaglio.
