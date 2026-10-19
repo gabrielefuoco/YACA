@@ -1,25 +1,62 @@
-# YACA Offline Graph Builder
+# YACA Offline Graph Builder (`services/keyword-graph`)
 
-Questo modulo è separato dal core di YACA e serve a pre-calcolare il Grafo Semantico delle keyword TMDB in formato JSON. 
-La pipeline esegue filtraggio del rumore, generazione della matrice PPMI, elaborazione di embedding densi (`BAAI/bge-small-en-v1.5`), clustering con algoritmo Leiden e sparsificazione.
+Questo modulo è separato dal runtime core di YACA ed è il **costruttore offline** di `src/data/hierarchical_graph.json` (il Grafo Gerarchico delle keyword TMDB in formato JSON).
+La pipeline esegue filtraggio del rumore, generazione della matrice PPMI, elaborazione di embedding densi (`BAAI/bge-small-en-v1.5`), clustering gerarchico con algoritmo Leiden e sparsificazione.
+
+> **Natura del modulo**: è un **costruttore offline (manuale)**, non un servizio server.
+> **Correttamente NON è incluso in `docker-compose.yml` e non ha workflow CI/CD**: è un tool pesante di calcolo una-tantum (come `scripts/erdb-builder` per i poster) che va eseguito a mano quando occorre rigenerare il grafo gerarchico.
+
+---
+
+## Artefatto Prodotto e Contratto Condiviso
+
+Lo script `build_graph.py` (riga 520) esporta il risultato finale in:
+```
+src/data/hierarchical_graph.json
+```
+
+### Due Consumatori, Nessun Contratto Formalizzato
+Questo file (~1.0 MB) vive nell'albero dei sorgenti dell'applicazione ed è un **file di dati condiviso** con due consumatori distinti:
+1. **L'applicazione core Node.js** (`src/indice/HierarchicalGraph.js`): lo carica in RAM all'avvio per la navigazione gerarchica delle keyword nel catalogo. Il file è incluso direttamente nell'immagine container dell'app.
+2. **Il servizio Grafo delle Raccomandazioni** (`services/graph/upstream/spazi-trakt.py:128`): lo legge all'avvio o in fase di ingestione spazi Trakt (`ROOT / "src" / "data" / "hierarchical_graph.json"`).
+
+### Struttura del JSON Generato
+Verificata leggendo il file (`node -e 'console.log(Object.keys(require("./src/data/hierarchical_graph.json")))'`):
+- `metadata`: versione (**`"2.3"`**), `total_keywords` (**6125**), e i conteggi per livello (`L1_count` 1382, `L2_count` 469, `L3_count` 131, `L4_count` 70, `L5_count` 5).
+- `kw_to_L1`: mappatura da ciascuna keyword TMDB normalizzata al relativo ID di micro-cluster L1.
+- `L1`: dizionario dei cluster di primo livello con label e membri.
+- `L2`, `L3`, `L4`, `L5`: livelli superiori di astrazione gerarchica dei cluster.
+
+> **Le chiavi sono queste sette, e sono tutte.** Non esiste una `L1_adjacency`: l'adiacenza fra cluster non è nel
+> file. Se un consumatore la cercasse, non la troverebbe — e non lo direbbe. (Verificato il 19/10/2026; una prima
+> stesura di questa sezione la nominava per errore, insieme a una versione `"2.0"` che il file non ha.)
+
+> [!WARNING]
+> **Output storico `graph_data.json` rimosso**: In versioni precedenti il README indicava come output `../src/data/graph_data.json` con chiavi `keyword_to_cluster`, `cluster_adjacency` e `cluster_members`. Quel file è stato rimosso dal repository il 23/07/2026 (commit `482fa3d`, *"clean unused files"*) e **nessun componente lo legge più**. La costante a riga 18 di `build_graph.py` è un retaggio del primo stadio; l'unico output finale vivo è `hierarchical_graph.json` (riga 520).
+
+---
 
 ## Requisiti di Sistema
 - **Linguaggio**: Python 3.10 o superiore.
-- **VRAM**: Almeno 1 GB di VRAM (il modello di embedding impiega < 500 MB).
-- Il dataset di partenza `TMDB_movie_dataset_v11.csv` deve essere presente nella directory root del progetto YACA (un livello sopra questa cartella).
+- **VRAM / Memoria**: Almeno 1 GB di VRAM (il modello di embedding impiega < 500 MB) o esecuzione su CPU con sufficiente RAM.
+- **Dataset**: `build_graph.py` è configurato per leggere il catalogo movies (di default `../movies.parquet` o dataset TMDB equivalente con colonna `keywords`).
 
-## Setup
-È fortemente raccomandato l'uso di un virtual environment.
+---
+
+## Setup ed Esecuzione
+
+È fortemente raccomandato l'uso di un virtual environment dedicato:
 
 ```bash
 # Entra nella cartella del builder
-cd offline_graph_builder
+cd services/keyword-graph
 
-# Crea e attiva il virtual environment (su Windows PowerShell)
+# Crea e attiva il virtual environment
+# Su Windows PowerShell:
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 
-# (Su Linux/Mac)
+# Su Linux/Mac:
 # python -m venv venv
 # source venv/bin/activate
 
@@ -27,21 +64,10 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-## Esecuzione
-Lancia la pipeline con:
+Lancia la pipeline:
 ```bash
 python build_graph.py
 ```
 
-### Note sul Dataset
-Lo script cerca il file `../TMDB_movie_dataset_v11.csv`.
-Assicurati che il file contenga almeno la colonna `keywords` formattata come lista di stringhe separate da virgola (es. `action, zombie, space`). Per alleggerire la memoria puoi rimuovere preventivamente le altre colonne dal CSV, ma lo script caricherà comunque solo la colonna necessaria.
+Al termine, il file `src/data/hierarchical_graph.json` risulterà aggiornato. Se l'app o il servizio grafo sono in esecuzione, vanno riavviati per ricaricare la struttura dati in memoria.
 
-### Output
-Il risultato finale sarà generato in `../src/data/graph_data.json`.
-Questo JSON contiene tre chiavi principali:
-- `keyword_to_cluster`: Mappatura tra le stringhe delle keyword originali e il rispettivo ID del micro-cluster.
-- `cluster_adjacency`: Lista di adiacenza sparsa. Per ogni ID cluster, la top K dei cluster vicini con il relativo peso (derivato dalla matrice PPMI fusa).
-- `cluster_members`: Per ogni ID cluster, l'elenco delle keyword originali in esso contenute.
-
-Se YACA è già in esecuzione, potresti aver bisogno di riavviarlo (o ricaricare la cache in RAM) per fargli leggere il JSON aggiornato.

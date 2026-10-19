@@ -106,3 +106,86 @@ dentro l'immagine dell'app. Il secondo consumatore è il **grafo**: `services/gr
 la legge da `ROOT/src/data/`. Quindi non sono due copie divergenti: è **un file di dati condiviso che vive
 nell'albero dell'app** ed è usato anche da un altro servizio. Da decidere dove sta il posto giusto (accanto
 all'artefatto del grafo, o dove sta ora con un contratto che lo dichiara).
+
+## Esito (19/10/2026)
+
+Il ticket 58 è stato completato come intervento di **documentazione e verità architetturale** senza toccare il codice applicativo né eliminare componenti. Entrambi i moduli in `services/` sono stati mantenuti al loro posto e la loro reale natura è stata formalizzata:
+
+### 1. Cosa è stato corretto
+
+1. **`services/keyword-graph/README.md`**:
+   - Chiarito che il modulo è un **costruttore offline manuale** (Python 3.10, ~1 GB VRAM, embeddings `BAAI/bge-small-en-v1.5`, clustering Leiden) e che **correttamente non fa parte di `docker-compose.yml` né possiede workflow CI/CD** (come `scripts/erdb-builder` per i poster).
+   - Corretto l'output reale: produce `src/data/hierarchical_graph.json` (`build_graph.py:520`).
+   - Dichiarato che il vecchio file `../src/data/graph_data.json` documentato storicamente è stato eliminato il 23/07/2026 da `482fa3d` e nessun componente lo legge.
+   - Formalizzato il contratto dell'artefatto condiviso: `src/data/hierarchical_graph.json` vive nell'albero dei sorgenti dell'app (~1.0 MB) e ha due consumatori disaccoppiati (`src/indice/HierarchicalGraph.js` caricato in RAM all'avvio e `services/graph/upstream/spazi-trakt.py:128`).
+2. **`services/doppiaggi-source/README.md`**:
+   - Dichiarata l'architettura reale: è un **produttore pilotato dall'host** (Systemd Timer, non container Docker).
+   - Documentato che il timer di sistema host `yaca-doppiaggi.timer` invoca `ops/yaca-doppiaggi.sh` due volte al giorno (04:00 e 16:00), il quale imposta `SERVICE_DIR="${BASE_DIR}/services/doppiaggi-source"`, rileva l'interprete Node dell'host (mise o sistema), gestisce `.cache/` ed esegue `cli.js`.
+   - Spiegata la motivazione del mancato container: esecuzione batch di ~6 secondi a giro, accesso diretto al volume `yaca_tmdb`, risparmio di ~200 MB di RAM.
+   - Documentato che `ita_annotations.jsonl` è consumato direttamente dall'app (`src/catalog/itaAnnotations.js:31`) e che il diff alimenta la coda Redis per il drenatore dei poster.
+3. **`docs/DEPLOYMENT_HOME_SERVER.md`**:
+   - Aggiunta la sezione `1.1 Job Batch e Produttori Schedulati da Systemd Timer` documentando la strategia di esecuzione a zero RAM permanente per `yaca-doppiaggi.timer`, `yaca-poster-eventi.timer` e `yaca-backup.timer`.
+   - Aggiunta la sezione `1.2 Costruttori Offline e Contratti Dati Condivisi` documentando `services/keyword-graph` e il contratto condiviso di `src/data/hierarchical_graph.json`.
+   - Aggiunta la sezione `7.3 Installazione dei Timer Systemd Periodici (Doppiaggi ITA e Drenatore Poster)` con i comandi di installazione e verifica delle unit di sistema.
+4. **`docs/INDEX.md`**:
+   - Registrato `src/data/hierarchical_graph.json` tra gli artefatti di produzione (`## 📦 Artefatti di Produzione e Stato`), evidenziando i due consumatori (app core e servizio grafo).
+
+### 2. Comandi eseguiti come prova di ciascuna affermazione
+
+- **(a) `build_graph.py` scrive `hierarchical_graph.json`**:
+  ```bash
+  $ git grep -n "hierarchical_graph.json" services/keyword-graph/
+  services/keyword-graph/build_graph.py:520:    OUTPUT_JSON = '../src/data/hierarchical_graph.json'
+  ```
+
+- **(b) `HierarchicalGraph.js` e `spazi-trakt.py` leggono `hierarchical_graph.json`**:
+  ```bash
+  $ git grep -n "hierarchical_graph.json" src/ services/
+  services/graph/upstream/spazi-trakt.py:128:G = json.loads((ROOT / "src" / "data" / "hierarchical_graph.json").read_text(encoding="utf-8"))
+  services/keyword-graph/build_graph.py:520:    OUTPUT_JSON = '../src/data/hierarchical_graph.json'
+  src/indice/HierarchicalGraph.js:18:            const dataPath = path.join(__dirname, '../data/hierarchical_graph.json');
+  src/indice/HierarchicalGraph.js:24:                console.warn('[HierarchicalGraph] File hierarchical_graph.json non trovato. Grafo non disponibile.');
+  src/indice/keywordIds.js:28:// PERCHÉ ESISTE. Il grafo gerarchico (`hierarchical_graph.json`) è indicizzato
+  ```
+
+- **(c) `graph_data.json` non esiste ed è stato eliminato dal commit `482fa3d`**:
+  ```bash
+  $ git log --oneline --all -- src/data/graph_data.json
+  482fa3d refactor(architecture): clean unused files, optimize DuckDB catalog routing, and add LRU memoization to keyword vectorizer
+  dd6687a feat(graph): offline graph builder with VSM visualizer, keyword graph pipeline
+
+  $ Test-Path src/data/graph_data.json
+  False
+  ```
+
+- **(d) `ops/yaca-doppiaggi.sh` punta a `services/doppiaggi-source`**:
+  ```bash
+  $ git grep -n "services/doppiaggi-source" ops/
+  ops/yaca-doppiaggi.sh:4:# Servizio: services/doppiaggi-source
+  ops/yaca-doppiaggi.sh:31:SERVICE_DIR="${BASE_DIR}/services/doppiaggi-source"
+  ```
+
+- **(e) `src/catalog/itaAnnotations.js` legge `ita_annotations.jsonl`**:
+  ```bash
+  $ git grep -n "ita_annotations.jsonl" src/
+  src/catalog/itaAnnotations.js:31:const FILE_NAME = 'ita_annotations.jsonl';
+  ```
+
+- **(f) Invarianza dei manifest hash**:
+  ```bash
+  $ node -e "const { buildManifest, buildRootManifest } = require('./src/stremio/manifest'); const crypto = require('crypto'); console.log('buildManifest({}):', crypto.createHash('sha256').update(JSON.stringify(buildManifest({}))).digest('hex')); console.log('buildRootManifest():', crypto.createHash('sha256').update(JSON.stringify(buildRootManifest())).digest('hex')); process.exit(0);"
+  buildManifest({}): dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178
+  buildRootManifest(): 91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2
+  ```
+
+- **(g) Test Jest baseline**:
+  - `npx jest --forceExit`
+  - Risultato: `Test Suites: 5 failed, 184 passed, 189 total` (1887 test passati, solo le 5 suite autorizzate fallite: `animeOverridesCertify`, `candidateProvider`, `donghuaCatalog`, `duckDbAndMatchmaker`, `presetBurtonOrdering`).
+
+### 3. Cosa NON è stato fatto
+- Nessun file o servizio è stato eliminato: `services/keyword-graph` e `services/doppiaggi-source` sono entrambi mantenuti al loro posto.
+- Nessuna modifica a codice applicativo (`src/**`, `ops/**`, `services/**/*.js`, `services/**/*.py`).
+- Nessuna modifica a `docker-compose.yml`, `Dockerfile` o `.github/workflows/**`.
+- Nessun `git push`. Nessun `npm run build`/`tsc`.
+- Stato del ticket: lasciato `Status: ready-for-agent` (chiusura riservata all'orchestratore/integratore).
+
