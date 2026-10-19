@@ -45,6 +45,32 @@ Storage locale host:    yaca_tmdb (/data/tmdb, ~200 MB)  |  yaca_badges (/data/b
 | `watchtower` | ~20 MB | 50 MB | Polling orario su GHCR con cleanup |
 | **Totale Applicativo** | **~1.1 GB** | **~2.2 GB** | Pienamente nei limiti degli 8 GB dell'host |
 
+### 1.1 Job Batch e Produttori Schedulati da Systemd Timer (Zero RAM a Regime)
+
+Oltre ai container permanenti orchestrati da Compose, l'infrastruttura sul server casalingo sfrutta **Systemd Timers + Oneshot Services** sull'host per i carichi di lavoro periodici o batch. Tenere container dedicati sempre allocati per compiti che girano pochi secondi o minuti al giorno sprecherebbe centinaia di megabyte di RAM preziosa:
+
+1. **`yaca-doppiaggi.timer` (`services/doppiaggi-source`)**:
+   - **Natura**: Produttore batch **pilotato dall'host** (non un container Docker).
+   - **Cadenza**: Due volte al giorno (04:00 e 16:00). Durata tipica: ~6 secondi.
+   - **Esecuzione**: `ops/yaca-doppiaggi.sh` risolve Node sull'host (inclusi percorsi mise `/home/gabri/.local/share/mise/installs/node/...` o binari di sistema) ed esegue `cli.js` con la propria cache locale (`services/doppiaggi-source/.cache`).
+   - **Output e Consumatori**: Accede direttamente al volume catalogo (`yaca_tmdb`) producendo `ita_annotations.jsonl`, `ita_annotations.meta.json` e `ita_annotations.diff.json`. L'app Node legge `ita_annotations.jsonl` via snapshot in RAM (`src/catalog/itaAnnotations.js:31`), mentre il diff viene inoltrato a Redis per notificare i titoli che hanno cambiato doppiaggio. Dettagli completi: [`docs/TIMER_DOPPIAGGI.md`](TIMER_DOPPIAGGI.md).
+2. **`yaca-poster-eventi.timer` (`scripts/drena-coda-poster.js`)**:
+   - **Natura**: Drenatore della coda eventi poster su Redis.
+   - **Cadenza**: Ogni 10 minuti. Durata: ~0.7 secondi a coda vuota.
+   - **Esecuzione**: Eseguito tramite `docker exec` dentro il container `yaca-app` (per accedere alla rete Redis e al volume `yaca_erdb_cache`). Dettagli completi: [`docs/TIMER_POSTER.md`](TIMER_POSTER.md).
+3. **`yaca-backup.timer` (`ops/yaca-backup.sh`)**:
+   - **Natura**: Backup compresso notturno su Cloudflare R2 (vedi §7.1).
+   - **Cadenza**: Ogni notte alle 03:30.
+
+### 1.2 Costruttori Offline e Contratti Dati Condivisi
+
+Alcune componenti del repository non sono né container permanenti né timer host, ma **costruttori offline una-tantum**:
+- **`services/keyword-graph`**: Costruttore offline del Grafo Gerarchico delle keyword TMDB (`build_graph.py`, Python 3.10, clustering Leiden su embeddings semantici `BAAI/bge-small-en-v1.5`, ~1 GB VRAM). **Correttamente non è nel compose e non ha workflow CI/CD**: è un tool pesante eseguito a mano quando occorre ricalcolare il grafo. Produce **`src/data/hierarchical_graph.json`** (~1.0 MB), che è un **file di dati condiviso residente nell'albero dei sorgenti dell'app** con due consumatori distinti:
+  1. Il core Node.js dell'app (`src/indice/HierarchicalGraph.js`), che lo carica in RAM e lo include nell'immagine container;
+  2. Il servizio Grafo Python (`services/graph/upstream/spazi-trakt.py:128`), che lo legge direttamente da disco per l'allineamento degli spazi Trakt.
+  *(Nota: il vecchio output `graph_data.json` documentato storicamente è stato eliminato dal repository nel commit `482fa3d` e non è più utilizzato).*
+- **`scripts/erdb-builder`**: Costruttore offline per la generazione del dataset iniziale di poster pre-composti.
+
 ---
 
 ## 2. Fase B — Preparazione Server e Checklist Primo Boot
@@ -456,14 +482,52 @@ docker run --rm -v /tmp:/backup mongo:7 \
 rm /tmp/yaca-mongo-backup-XXXXXXXX_XXXXXX.archive.gz
 ```
 
-### 7.3 Monitoring Esterno a Zero RAM
+### 7.3 Installazione dei Timer Systemd Periodici (Doppiaggi ITA e Drenatore Poster)
+
+I timer batch periodici completano la pipeline di aggiornamento metadati e refresh poster composti direttamente sull'host `mate`:
+
+#### 1. Timer Doppiaggi ITA (`yaca-doppiaggi.timer`)
+Scarica gli indici di Antonio Genna, unisce le informazioni AnimeUnity da MongoDB Atlas e rigenera le annotazioni `ita_annotations.jsonl` nel volume `yaca_tmdb` due volte al giorno (04:00 e 16:00), spingendo il diff dei titoli cambiati nella coda Redis:
+
+```bash
+# 1. Rendere eseguibile lo script wrapper
+chmod +x /srv/yaca/ops/yaca-doppiaggi.sh
+
+# 2. Copiare le unità systemd
+sudo cp /srv/yaca/ops/yaca-doppiaggi.service /etc/systemd/system/
+sudo cp /srv/yaca/ops/yaca-doppiaggi.timer /etc/systemd/system/
+
+# 3. Ricaricare systemd e attivare il timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now yaca-doppiaggi.timer
+
+# Verifica stato
+systemctl list-timers yaca-doppiaggi.timer
+```
+Dettagli completi su opzioni CLI, isolamento e troubleshooting: vedi [`docs/TIMER_DOPPIAGGI.md`](TIMER_DOPPIAGGI.md).
+
+#### 2. Timer Drenatore Poster (`yaca-poster-eventi.timer`)
+Drena periodicamente la coda Redis dei poster che necessitano rigenerazione grafica (ogni 10 minuti) eseguendosi nel container `yaca-app`:
+
+```bash
+sudo cp /srv/yaca/ops/yaca-poster-eventi.service /etc/systemd/system/
+sudo cp /srv/yaca/ops/yaca-poster-eventi.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now yaca-poster-eventi.timer
+
+# Verifica stato
+systemctl list-timers yaca-poster-eventi.timer
+```
+Dettagli completi su configurazione e troubleshooting: vedi [`docs/TIMER_POSTER.md`](TIMER_POSTER.md).
+
+### 7.4 Monitoring Esterno a Zero RAM
 Non installare agenti pesanti sul server. Configurare un servizio esterno gratuito (ad esempio **Healthchecks.io** o **UptimeRobot**):
 - Tipo controllo: `HTTP GET`
 - URL da monitorare: `https://<nome-nodo>.<tailnet>.ts.net/health`
 - Frequenza: ogni 5 minuti
 - Notifiche: via Email, Telegram o Discord in caso di mancata risposta (blackout, crash o disconnessione internet).
 
-### 7.4 Manutenzione Ordinaria
+### 7.5 Manutenzione Ordinaria
 
 > ⚠️ **Watchtower aggiorna le IMMAGINI, non il `docker-compose.yml`.** Quando un push cambia il compose
 > (un volume nuovo, una variabile, un servizio in più), Watchtower scarica la nuova immagine ma **ricrea il

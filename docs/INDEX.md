@@ -167,6 +167,7 @@ Di seguito sono elencate le variabili d'ambiente effettivamente supportate ed es
 ## 📦 Artefatti di Produzione e Stato
 
 - **Artefatto del Grafo (Numpy)**: Il grafo attivo non è memorizzato nel repository git. Risiede come bind mount read-only sul server mate in `/srv/yaca/services/graph/data` (~138 MB di matrici compresse `.npz` e `.npy`), montato su `/app/services/graph/data:ro` nel container `yaca-graph`.
+- **`src/data/hierarchical_graph.json`**: File di dati condiviso (~1.0 MB) versionato nell'albero dei sorgenti (`src/data/`), generato offline dal costruttore manuale `services/keyword-graph/build_graph.py`. Possiede due consumatori disaccoppiati: l'applicazione core Node.js (`src/indice/HierarchicalGraph.js`, caricato in RAM all'avvio e incluso nell'immagine container) e il servizio Grafo Python (`services/graph/upstream/spazi-trakt.py:128`, letto da percorso relativo su filesystem).
 - **`src/data/bolle.json` (Legacy)**: File di ~3.2 MB residuo del vecchio ponte JS. Con la cancellazione di `Bolle.js` e `raccomanda.js` (Ticket 08), non è più importato né letto da alcun modulo sotto `src/`. Il tracking git verrà eliminato nel Ticket 09.
 - **`.scratch/`**: La cartella delle mappe di lavoro e dei ticket è **tracciata e versionata in git** dal 06/10/2026 (766 file al 17/10/2026), garantendo che la memoria storica e le misure rimangano disponibili in ogni clone del repository.
 
