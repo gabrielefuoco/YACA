@@ -262,3 +262,19 @@ il compose prevede: la ricetta servita è ora `2330b143bc8845a7` (era `8b2d7932`
 l'immagine vecchia» **non è più vero**. Resta vera la causa di fondo: il package `yaca-graph` su ghcr non esiste
 perché manca lo scope `workflow` sul token (ticket 18), quindi la CI non può costruirlo e ogni ricostruzione
 torna a essere un gesto a mano sul server.
+
+### Secondo giro, 19/10/2026 — la review a due assi e il deploy del t60
+
+Dopo la review finale (`94c738e...HEAD`, due assi in parallelo) il secondo deploy ha portato in produzione i
+ticket **59** (l'app riapre dopo lo scambio) e **60** (la barriera copre il ripopolamento) più le correzioni
+della review stessa.
+
+**Come è andato.** `git pull` + `docker compose pull app tmdb-daemon anime-source` + `docker compose up -d
+--no-build app tmdb-daemon`. Il grafo **non** si tira da ghcr (il package non esiste: il residuo del ticket 18
+è ancora vero) e resta l'immagine costruita sul mate.
+
+**Misurato dentro il container, dopo il deploy**: `yaca-app` healthy a **141,2 MiB**; presenti il fix del 59, la
+barriera del 60, e le tre correzioni della review (il grafo che non si memorizza quando tace, gli id anime
+chiesti al proprietario, l'URI di Mongo risolta in un posto solo); il seam `disableAutoReopen` **assente**.
+Righe hero dal vivo, con le pagine: `mondi` **20+20+11 = 51**, `passo_fuori` **20+20+2 = 42**, `nicchia`
+**20+20+1 = 41**.
