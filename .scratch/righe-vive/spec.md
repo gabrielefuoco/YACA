@@ -164,5 +164,9 @@ senza essere visti. Non spariscono: scendono, e salgono i candidati dalla posizi
   si memorizza** (già così dal ticket 55: se le versioni del grafo non si risolvono, la riga non passa dalla cache).
 - **La prova non vive nel prodotto** (decisione 34 della mappa `confini`): niente flag `simulate*` nel percorso caldo.
 - **Verificare eseguendo, non leggendo**: i numeri di questo documento vengono da un'analisi del codice, non da una
-  misura. **Ogni ticket comincia confermandoli** — se il codice dice altro, il ticket si ferma e dichiara la
+  misura. **Ogni ticket comincia confermandoli**
+- **Le soglie sono segnali d'allarme, non tetti.** Dove un ticket dice «oltre ~N righe hai sbagliato», N non è un
+  budget da rispettare: è il punto in cui fermarsi a **rileggere** e capire *cosa* è stato duplicato. Le righe di
+  diagnostica non si tagliano per far tornare un conto. (Emendamento del 19/10/2026, dopo che un revisore ha
+  trattato la soglia come una violazione hard mentre il difetto vero era una duplicazione di dodici righe.) — se il codice dice altro, il ticket si ferma e dichiara la
   divergenza invece di adattare il codice a una premessa sbagliata.
