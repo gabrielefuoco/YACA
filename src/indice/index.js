@@ -24,6 +24,10 @@ class IndiceModule {
         this.init = this.init.bind(this);
         this.resolveImdbIds = this.resolveImdbIds.bind(this);
         this.resolveTmdbToImdb = this.resolveTmdbToImdb.bind(this);
+        this.swapDatabase = this.swapDatabase.bind(this);
+        this.getStagingDbPath = this.getStagingDbPath.bind(this);
+        this.getTargetDbPath = this.getTargetDbPath.bind(this);
+        this.rebuildAndSwap = this.rebuildAndSwap.bind(this);
         this.close = this.close.bind(this);
     }
 
@@ -273,6 +277,43 @@ class IndiceModule {
     }
 
     /**
+     * Esegue lo swap atomico del database da staging a target (Ticket 54).
+     */
+    async swapDatabase(fromPath, toPath) {
+        if (typeof this.duckDb.swapDatabase === 'function') {
+            return this.duckDb.swapDatabase(fromPath, toPath);
+        }
+        return { swapped: false, reason: 'unsupported' };
+    }
+
+    getStagingDbPath() {
+        if (typeof this.duckDb.getStagingDbPath === 'function') {
+            return this.duckDb.getStagingDbPath();
+        }
+        return null;
+    }
+
+    getTargetDbPath() {
+        if (typeof this.duckDb.getTargetDbPath === 'function') {
+            return this.duckDb.getTargetDbPath();
+        }
+        return null;
+    }
+
+    /**
+     * Ricostruzione completa su file temporaneo e swap atomico su target (Ticket 54).
+     */
+    async rebuildAndSwap(options = {}) {
+        if (typeof this.duckDb.rebuildAndSwap === 'function') {
+            return this.duckDb.rebuildAndSwap(options);
+        }
+        await this.close();
+        await this.init({ ...options, forceRebuild: true, staging: true });
+        await this.close();
+        return this.swapDatabase();
+    }
+
+    /**
      * Chiusura pulita delle risorse.
      */
     async close(callback) {
@@ -301,5 +342,11 @@ module.exports.getDuckDbCatalogFromPreset = (...args) => indice.getCatalogFromPr
 module.exports.getDfCache = indice.getDfCache.bind(indice);
 // Stato degli artefatti parquet (esistenza + mtime), non i percorsi: lo chiede il daemon del dump.
 module.exports.parquetStats = indice.parquetStats.bind(indice);
+// Swap atomico DuckDB (Ticket 54): porta di scambio senza conoscere percorsi interni (decisione 31/53)
+module.exports.swapDatabase = indice.swapDatabase.bind(indice);
+module.exports.getStagingDbPath = indice.getStagingDbPath.bind(indice);
+module.exports.getTargetDbPath = indice.getTargetDbPath.bind(indice);
+module.exports.rebuildAndSwap = indice.rebuildAndSwap.bind(indice);
 // La promozione Tier 2 -> Tier 1 è dell'indice: si chiede dalla porta, non dal file interno.
 module.exports.schedulePromotion = (...args) => require('./tier1LazyPromotion').schedulePromotion(...args);
+
