@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 30 — Il deploy del giro: in produzione, e le unità del timer sul mate

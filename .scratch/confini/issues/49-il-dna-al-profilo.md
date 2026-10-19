@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 49 — Il DNA va al profilo: `src/dna` non è un modulo

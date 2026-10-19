@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 48 — Il dump TMDB fuori dal prodotto: `src/utils` si smonta e il daemon si prende il suo codice

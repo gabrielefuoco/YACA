@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 51 — `src/db` torna infrastruttura: i nomi appresi vanno alla ricerca

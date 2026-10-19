@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 50 — Il servire dei metadati nel feed, e i middleware nell'API

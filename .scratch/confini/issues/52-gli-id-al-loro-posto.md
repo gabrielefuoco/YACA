@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 52 — Gli id al loro posto: `src/id_mapping` sparisce

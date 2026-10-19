@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 # 54 — Il lock del DuckDB: il daemon costruisce e **scambia**, l'app non apre mai un file in scrittura

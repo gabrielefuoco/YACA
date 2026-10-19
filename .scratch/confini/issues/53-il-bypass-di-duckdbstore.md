@@ -1,4 +1,5 @@
-Status: ready-for-agent
+Status: resolved
+ready-for-agent
 Type: task
 
 # 53 — Chiudere il bypass di `duckDbStore` e completare la porta dei client
