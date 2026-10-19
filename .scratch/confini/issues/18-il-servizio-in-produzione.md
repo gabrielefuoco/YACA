@@ -200,3 +200,12 @@ quello che gira — ha cambiato solo chi lo costruisce.
 **Residuo dichiarato, non risolto qui**: il compose ha ancora il blocco `build:` accanto a `image:`. Funziona
 (`--no-build` lo scavalca), ma un `docker compose up -d` **senza** quel flag ricompilerebbe. Toglierlo è una riga,
 e renderebbe la dottrina «il server non compila mai» vera anche per sbaglio.
+
+**Residuo chiuso lo stesso giorno.** Il blocco `build:` del servizio `graph` è stato **rimosso** da
+`docker-compose.yml`: resta solo `image:`, e l'immagine arriva solo da ghcr. Finché c'era, un
+`docker compose up -d` **senza** `--no-build` ricompilava sul server — cioè la regola «il server non compila mai»
+si poteva violare per distrazione. Ora non più: se serve ricompilarla, si dice come (nel commento del compose:
+`docker build -t ghcr.io/gabrielefuoco/yaca-graph:latest services/graph`).
+
+Verificato: `docker compose config` valido, `services.graph.build` **assente**, e sul mate `docker compose up -d`
+non tenta più di costruire nulla.

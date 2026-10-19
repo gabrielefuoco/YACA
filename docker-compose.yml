@@ -63,12 +63,11 @@ services:
         max-file: "3"
 
   graph:
-    build:
-      # Il contesto è la cartella del servizio, non la radice: così il .dockerignore di root
-      # (che esclude services/) non entra in gioco, e l'immagine si costruisce anche sul mate
-      # con un semplice `docker compose build graph`.
-      context: services/graph
-      dockerfile: Dockerfile
+    # SOLO immagine, nessun `build:` (ticket 18, 19/10/2026). Prima qui c'era anche un blocco
+    # `build: context: services/graph`, e finché c'era il server poteva **compilare da sé** — cioè
+    # poteva violare la regola «il server non compila mai» con un `docker compose up -d` senza
+    # `--no-build`. Ora l'immagine arriva solo da ghcr, pubblicata da deploy-graph.yml.
+    # Per ricompilarla in locale: docker build -t ghcr.io/gabrielefuoco/yaca-graph:latest services/graph
     image: ghcr.io/gabrielefuoco/yaca-graph:${GRAPH_TAG:-latest}
     container_name: yaca-graph
     restart: unless-stopped
