@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 # 55 — La riga «il tuo mondo»: il grafo sa fare 51 titoli, l'app ne serve 11
