@@ -58,6 +58,13 @@ const FIXTURE_SEEDS = {
     }
 };
 
+const ID_FIXTURE = {
+    nonTrovato: 991,      // TMDB 404 (non trovato nei metadati)
+    mediumSbagliato: 992, // Medium discorde rispetto al catalogo servito
+    adultoKids: 993,      // Contenuto per soli adulti bloccato da kidsMode
+    animeExclude: 995     // Contenuto anime bloccato da animePolicy: exclude
+};
+
 function generateFixtureGraph(medium) {
     const base = medium === 'series' ? 80000 : 50000;
     const shared1 = base + 900, shared2 = base + 901;
@@ -72,12 +79,12 @@ function generateFixtureGraph(medium) {
                 if ((ruolo === 'il_tuo_mondo' || ruolo === 'un_passo_fuori') && i === 0) tmdbId = shared1;
                 if ((ruolo === 'il_tuo_mondo' || ruolo === 'un_passo_fuori') && i === 1) tmdbId = shared2;
                 if (ruolo === 'il_tuo_mondo') {
-                    if (i === 2) tmdbId = base + 991; // 404
-                    if (i === 3) { tmdbId = base + 992; medItem = medium === 'series' ? 'movie' : 'series'; } // medium errato
-                    if (i === 4 || i === 5) tmdbId = base + 993; // adulto (kids)
-                    if (i === 6 || i === 7) tmdbId = base + 995; // anime
+                    if (i === 2) tmdbId = base + ID_FIXTURE.nonTrovato;
+                    if (i === 3) { tmdbId = base + ID_FIXTURE.mediumSbagliato; medItem = medium === 'series' ? 'movie' : 'series'; }
+                    if (i === 4 || i === 5) tmdbId = base + ID_FIXTURE.adultoKids;
+                    if (i === 6 || i === 7) tmdbId = base + ID_FIXTURE.animeExclude;
                 }
-                if (ruolo === 'nicchia_di_qualita' && i === 2) tmdbId = base + 991;
+                if (ruolo === 'nicchia_di_qualita' && i === 2) tmdbId = base + ID_FIXTURE.nonTrovato;
                 return { tmdbId, medium: medItem, punteggio: Number((0.95 - i * 0.01).toFixed(3)) };
             })
         }))
@@ -95,13 +102,13 @@ function setupFixtureMocks() {
     graphClient.raccomanda = async ({ medium }) => generateFixtureGraph(medium === 'movie' ? 'movie' : 'series');
     tmdb.getTmdbMovieDetails = async (k, id, type) => {
         const s = String(id), num = Number(id);
-        if (s.endsWith('991')) return null;
-        if (s.endsWith('992')) {
+        if (s.endsWith(String(ID_FIXTURE.nonTrovato))) return null;
+        if (s.endsWith(String(ID_FIXTURE.mediumSbagliato))) {
             const opp = s.startsWith('8') ? 'movie' : 'tv';
             return { id: num, name: `Mismatch ${num}`, media_type: opp, type: opp === 'tv' ? 'series' : 'movie', genre_ids: [18] };
         }
-        if (s.endsWith('993')) return { id: num, name: `Adult ${num}`, media_type: type, genre_ids: [27, 53], keywords: [{ id: 10292, name: 'gore' }] };
-        if (s.endsWith('995') || num === 85937) return { id: num, name: `Anime ${num}`, media_type: type, genre_ids: [16, 28], original_language: 'ja', keywords: [{ id: 210024, name: 'anime' }] };
+        if (s.endsWith(String(ID_FIXTURE.adultoKids))) return { id: num, name: `Adult ${num}`, media_type: type, genre_ids: [27, 53], keywords: [{ id: 10292, name: 'gore' }] };
+        if (s.endsWith(String(ID_FIXTURE.animeExclude)) || num === 85937) return { id: num, name: `Anime ${num}`, media_type: type, genre_ids: [16, 28], original_language: 'ja', keywords: [{ id: 210024, name: 'anime' }] };
         return { id: num, name: `Title ${num}`, media_type: type, genre_ids: [18, 35], keywords: [] };
     };
 }
@@ -127,6 +134,14 @@ async function measureMediumPipeline(medium, userConfig) {
         throw new Error(`[ERRORE FATALE] Stadio 1: Semi per medium ${med} sono 0. Il fixture non è entrato.`);
     }
 
+    // -------------------------------------------------------------------------
+    // DEBITO TECNICO DICHIARATO (Vincolo 2 vs Divieto di toccare il prodotto):
+    // La conversione Map seeds -> semiPerGrafo qui sotto duplica la logica inline
+    // di `src/pool/index.js` (righe 188–207).
+    // Oggi non può essere importata perché vive inline dentro `HERO_STRATEGIES[0].run`
+    // e questo ticket (01) ha divieto esplicito di modificare src/pool/ o il prodotto.
+    // DA ELIMINARE e sostituire con la funzione condivisa appena il Ticket 02 toccherà il pool.
+    // -------------------------------------------------------------------------
     const filteredSeeds = [...seeds.entries()].filter(([id]) => {
         if (animePolicy === 'exclude') return !isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
         if (animePolicy === 'only') return isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
