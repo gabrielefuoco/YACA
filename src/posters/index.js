@@ -69,5 +69,19 @@ module.exports = {
     // 7. Refresh e Risoluzione Poster (Ticket 42)
     refreshLibraryPoster: require('./libraryPosterRefresh').refreshLibraryPoster,
     resolvePoster: require('./posterResolver').resolvePoster,
-    TMDB_IMAGE_BASE: require('./posterResolver').TMDB_IMAGE_BASE
+    TMDB_IMAGE_BASE: require('./posterResolver').TMDB_IMAGE_BASE,
+
+    // 8. Contratto volume e verifica poster (Ticket 57)
+    calcolaVersioniVolume: require('./volumeContract').calcolaVersioniVolume,
+    scriviVersioniVolume: require('./volumeContract').scriviVersioniVolume,
+    scriviVersioniVolumeSync: require('./volumeContract').scriviVersioniVolumeSync,
+    leggiVersioniVolume: require('./volumeContract').leggiVersioniVolume,
+    getStatoVolume: require('./volumeContract').getStatoVolume,
+    registraRichiestaPoster: require('./volumeContract').registraRichiestaPoster,
+    verificaPresenzaPoster: require('./volumeContract').verificaPresenzaPoster,
+    getStatistichePoster: require('./volumeContract').getStatistichePoster,
+    azzeraStatistichePoster: require('./volumeContract').azzeraStatistichePoster,
+    volumeObserver: require('./volumeContract').volumeObserver,
+    VERSIONI_FILE_NAME: require('./volumeContract').VERSIONI_FILE_NAME,
+    CONTRATTO_VERSION: require('./volumeContract').CONTRATTO_VERSION
 };
