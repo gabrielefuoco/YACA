@@ -55,3 +55,10 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 ## Il primo passo
 
 `01` — la sonda end-to-end. Senza sapere **dove** si perde l'oro, ogni intervento è una scommessa.
+
+## L'ultimo passo (deciso il 19/10/2026)
+
+`16` — **la seconda passata dei documenti**. Il ticket `15` corregge ciò che oggi è falso e lascia le righe nuove
+dichiarate ma non descritte, perché non esistono ancora. A fine cantiere si rilancia: le righe vere, i loro slug
+presi dal registro, e la tabella dei sei stadi con i numeri misurati prima/dopo. Descrivere righe non ancora
+costruite è il modo esatto in cui un documento diventa una bugia.
