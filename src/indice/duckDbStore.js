@@ -49,6 +49,7 @@ class DuckDbStore {
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
         this.disableAutoReopen = false;
+        this._simulateEarlyRelease = false;
     }
 
     getStagingDbPath() {
@@ -387,26 +388,49 @@ class DuckDbStore {
             return;
         }
 
-        this.reopenPromise = this._reopenDueToSwap(options);
+        const repopulatePostReopen = async () => {
+            // Post-reapertura: aggiornamento anime mappings e cache DF sul nuovo handle
+            try {
+                const { animeMappingStore } = require('../anime');
+                if (animeMappingStore && (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow)) {
+                    const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
+                    const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
+                    if (movieIds.length > 0 || tvIds.length > 0) {
+                        await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }, { skipFreshCheck: true })
+                            .catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-reopen:', e));
+                    }
+                }
+            } catch (_) {}
+
+            await this.buildDfCache({ skipFreshCheck: true })
+                .catch(e => console.warn('[DuckDB Store] Warning buildDfCache post-reopen:', e.message));
+        };
+
+        if (this._simulateEarlyRelease || options.simulateEarlyRelease) {
+            // Modalità dimostrazione difetto (Ticket 60): azzera la promise prima del ripopolamento
+            this.reopenPromise = this._reopenDueToSwap(options);
+            try {
+                await this.reopenPromise;
+            } finally {
+                this.reopenPromise = null;
+            }
+            // Cede il tick all'event loop per permettere a query concorrenti di interrogare il DB prima del ripopolamento
+            await new Promise(r => setImmediate(r));
+            await repopulatePostReopen();
+            return;
+        }
+
+        // Ticket 60: La barriera copre l'INTERA operazione (riapertura file E ripopolamento tabelle/cache)
+        this.reopenPromise = (async () => {
+            await this._reopenDueToSwap(options);
+            await repopulatePostReopen();
+        })();
+
         try {
             await this.reopenPromise;
         } finally {
             this.reopenPromise = null;
         }
-
-        // Post-reapertura: aggiornamento anime mappings e cache DF sul nuovo handle
-        try {
-            const { animeMappingStore } = require('../anime');
-            if (animeMappingStore && (animeMappingStore.animeTmdbIdsMovie || animeMappingStore.animeTmdbIdsShow)) {
-                const movieIds = animeMappingStore.animeTmdbIdsMovie ? Array.from(animeMappingStore.animeTmdbIdsMovie) : [];
-                const tvIds = animeMappingStore.animeTmdbIdsShow ? Array.from(animeMappingStore.animeTmdbIdsShow) : [];
-                if (movieIds.length > 0 || tvIds.length > 0) {
-                    await this.updateAnimeMapping({ movie: movieIds, tv: tvIds }).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-reopen:', e));
-                }
-            }
-        } catch (_) {}
-
-        await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache post-reopen:', e.message));
     }
 
     async _reopenDueToSwap(options = {}) {
@@ -570,8 +594,10 @@ class DuckDbStore {
         return this.initPromise;
     }
 
-    async updateAnimeMapping(idsByType) {
-        await this.ensureFreshHandle();
+    async updateAnimeMapping(idsByType, options = {}) {
+        if (!options?.skipFreshCheck) {
+            await this.ensureFreshHandle();
+        }
 
         if (!this.isInitialized) {
             await this.init();
@@ -664,8 +690,16 @@ class DuckDbStore {
         }
     }
 
-    async query(sql, params = []) {
-        await this.ensureFreshHandle();
+    async query(sql, params = [], options = {}) {
+        let opt = options;
+        if (params && !Array.isArray(params) && typeof params === 'object') {
+            opt = params;
+            params = [];
+        }
+
+        if (!opt?.skipFreshCheck) {
+            await this.ensureFreshHandle();
+        }
 
         if (!this.isInitialized) {
             await this.init();
@@ -854,7 +888,7 @@ class DuckDbStore {
      * richieste nel processo. Costo: zero query in più — le keyword si leggono già
      * tutte qui per la rarità.
      */
-    async buildDfCache() {
+    async buildDfCache(options = {}) {
         if (!this.isInitialized) return;
         try {
             const genresRes = await this.query(`
@@ -864,7 +898,7 @@ class DuckDbStore {
                     UNION ALL
                     SELECT unnest(from_json(genres, '["JSON"]')) as g FROM tv WHERE genres IS NOT NULL
                 ) GROUP BY k
-            `);
+            `, [], options);
             const kwRes = await this.query(`
                 SELECT 'k:' || (k->>'id') as k, max(k->>'name') as name, count(*) as df
                 FROM (
@@ -872,7 +906,7 @@ class DuckDbStore {
                     UNION ALL
                     SELECT unnest(from_json(keywords, '["JSON"]')) as k FROM tv WHERE keywords IS NOT NULL
                 ) GROUP BY k
-            `);
+            `, [], options);
             const dfMap = new Map();
             for (const r of (genresRes || [])) if (r.k) dfMap.set(r.k, Number(r.df));
 
@@ -948,6 +982,7 @@ class DuckDbStore {
         this.activeQueries = 0;
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
+        this._simulateEarlyRelease = false;
         if (this.stagingDbPath && this.dbPath === this.stagingDbPath && this.targetDbPath) {
             this.dbPath = this.targetDbPath;
         }
