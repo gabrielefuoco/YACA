@@ -63,7 +63,7 @@ anime sbaglia in silenzio.
 
 ## Esito
 
-### 1. Dove risiede ora la barriera
+### 1. Dove risiede ora la barriera e pulizia del codice di produzione
 In `src/indice/duckDbStore.js`, all'interno di `ensureFreshHandle`, `this.reopenPromise` è stata unificata per coprire l'**intero lavoro atomico** di riapertura:
 1. `await this._reopenDueToSwap(options)` (svuotamento query attive, chiusura vecchi handle, riapertura file DuckDB con retry backoff esponenziale).
 2. `await repopulatePostReopen()`:
@@ -71,12 +71,17 @@ In `src/indice/duckDbStore.js`, all'interno di `ensureFreshHandle`, `this.reopen
    - Ricalcolo e memorizzazione delle frequenze documenti e mappe keyword via `this.buildDfCache({ skipFreshCheck: true })`.
 3. Reset di `this.reopenPromise = null` nel blocco `finally` dell'intera promise composta.
 
-Per prevenire ricorsioni o deadlock circolari durante il popolamento interno, `updateAnimeMapping`, `query` e `buildDfCache` supportano l'opzione interna `skipFreshCheck: true`. Chiunque esegua una query concorrente durante la riapertura trova la barriera attiva (`this.reopenPromise`), attende il suo completamento e accede al database **esclusivamente quando è pronto e interamente popolato**.
+**Rimozione del seam di produzione**:
+È stato rimosso qualsiasi flag e ramo di simulazione (`this._simulateEarlyRelease`, `options.simulateEarlyRelease`) dal codice di produzione in `src/indice/**`. Nessun percorso speculativo o di test rimane nel percorso a caldo di produzione. La prova del difetto risiede ora **esclusivamente nella sonda QA**.
+
+Per prevenire ricorsioni o deadlock circolari durante il ripopolamento interno, `updateAnimeMapping`, `query` e `buildDfCache` mantengono il legittimo flag interno `skipFreshCheck: true`. Chiunque esegua una query concorrente durante la riapertura trova la barriera attiva (`this.reopenPromise`), attende il suo completamento e accede al database **esclusivamente quando è pronto e interamente popolato**.
 
 ### 2. Sonda QA (`scripts/qa/probe-duckdb-reopen-barrier.js`)
-È stata implementata e committata la sonda `scripts/qa/probe-duckdb-reopen-barrier.js`. La sonda simula un daemon che scambia un catalogo su disco e verifica che una query concorrente lanciata durante la riapertura non veda mai `anime_mappings` parziale o a zero.
+La sonda QA dimostra sia la tenuta della barriera in produzione, sia il danno del vecchio ordinamento dal lato della sonda stessa senza toccare il codice di produzione:
+- **Modalità normale**: una query concorrente scattata durante lo swap attende il completamento della barriera e vede tutti i record (5/5 campione, 2000/2000 totale, riga 990001 presente).
+- **Modalità difetto (`--disable-fix`)**: la sonda riproduce il vecchio comportamento scorrelato invocando direttamente `_reopenDueToSwap()` (la sola riapertura del file) ed eseguendo query concorrenti senza attendere `updateAnimeMapping`/`buildDfCache`, rilevando la tabella vuota/incompleta (0/5, 0/2000) e uscendo con codice 1.
 
-#### Output in modalità normale (Barriera Completa Attiva):
+#### Output in modalità normale (Barriera Completa Attiva - SUCCESSO, exit 0):
 ```text
 =======================================================
 [SONDA QA] Barriera Completa Riapertura DuckDB (Ticket 60)
@@ -87,12 +92,12 @@ Modalità: VERIFICA NORMALE (Barriera Completa Attiva)
 [DuckDB Store] Inizializzazione in corso...
 [DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
 [DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
-[DuckDB Store] Swap atomico completato con successo
+[DuckDB Store] Swap atomico completato con successo: ...\catalog.duckdb.new -> ...\catalog.duckdb
 [Probe] Database iniziale creato su target.
 
 --- (b) L'App si avvia e verifica anime_mappings iniziale ---
 [DuckDB Store] Inizializzazione in corso...
-[DuckDB Store] Database persistente valido riaperto con successo
+[DuckDB Store] Database persistente valido riaperto con successo da ...\catalog.duckdb.
 [DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
 [Probe] App inizializzata: 2000/2000 anime certificati presenti in anime_mappings.
 
@@ -100,7 +105,7 @@ Modalità: VERIFICA NORMALE (Barriera Completa Attiva)
 [DuckDB Store] Inizializzazione in corso...
 [DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
 [DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
-[DuckDB Store] Swap atomico completato con successo
+[DuckDB Store] Swap atomico completato con successo: ...\catalog.duckdb.new -> ...\catalog.duckdb
 [Probe] Swap atomico completato: il nuovo file su targetDbPath attende la riapertura dell'app.
 
 --- (d) Esecuzione concorrente: Query 1 riapre, Query 2 e 3 leggono DURANTE la riapertura ---
@@ -118,24 +123,23 @@ Esito Sonda: SUCCESSO — la barriera copre riapertura E ripopolamento: nessuna 
 ```
 Exit code: 0.
 
-#### Output con correzione disabilitata (`--disable-fix` / azzeramento prematuro barriera):
+#### Output con difetto dimostrativo (`--disable-fix` - FALLIMENTO DIMOSTRATIVO, exit 1):
 ```text
 =======================================================
 [SONDA QA] Barriera Completa Riapertura DuckDB (Ticket 60)
-Modalità: DIMOSTRAZIONE FALLIMENTO (Barriera Prematura / Difetto Attivo)
+Modalità: DIMOSTRAZIONE FALLIMENTO (Riapertura senza barriera su ripopolamento)
 =======================================================
 
 --- (a) Creazione DB iniziale da parte del daemon ---
 [DuckDB Store] Inizializzazione in corso...
 [DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
 [DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
-[DuckDB Store] Swap atomico completato con successo
+[DuckDB Store] Swap atomico completato con successo: ...\catalog.duckdb.new -> ...\catalog.duckdb
 [Probe] Database iniziale creato su target.
 
 --- (b) L'App si avvia e verifica anime_mappings iniziale ---
-[Probe] Simulazione rilascio prematuro barriera ATTIVATA (--disable-fix).
 [DuckDB Store] Inizializzazione in corso...
-[DuckDB Store] Database persistente valido riaperto con successo
+[DuckDB Store] Database persistente valido riaperto con successo da ...\catalog.duckdb.
 [DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
 [Probe] App inizializzata: 2000/2000 anime certificati presenti in anime_mappings.
 
@@ -143,16 +147,14 @@ Modalità: DIMOSTRAZIONE FALLIMENTO (Barriera Prematura / Difetto Attivo)
 [DuckDB Store] Inizializzazione in corso...
 [DuckDB Store] Tabelle caricate in RAM e indici FTS creati con successo.
 [DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
-[DuckDB Store] Swap atomico completato con successo
+[DuckDB Store] Swap atomico completato con successo: ...\catalog.duckdb.new -> ...\catalog.duckdb
 [Probe] Swap atomico completato: il nuovo file su targetDbPath attende la riapertura dell'app.
 
---- (d) Esecuzione concorrente: Query 1 riapre, Query 2 e 3 leggono DURANTE la riapertura ---
+--- (d) Dimostrazione difetto: riapertura isolata SENZA attendere il ripopolamento ---
 [DuckDB Store] Database scambiato: riaperto
-[DuckDB Store] Tabella anime_mappings creata in RAM con 2000 anime certificati (1500 movie, 500 tv).
-[Probe] Esito esecuzione concorrente:
-  - Log riapertura intercettato: SÌ
+[Probe] Esito esecuzione senza attendere il ripopolamento:
   - Campione visto da query simultanea (Q2): 0/5
-  - Totale visto da query a metà finestra (Q3): 0/2000
+  - Totale visto da query (Q3): 0/2000
   - Riga certificata 990001 trovata con tipo corretto: NO
 
 =======================================================
@@ -174,7 +176,7 @@ FAIL tests/duckDbAndMatchmaker.test.js
 Test Suites: 5 failed, 184 passed, 189 total
 Tests:       8 failed, 1 skipped, 1885 passed, 1894 total
 Snapshots:   0 total
-Time:        43.605 s
+Time:        43.516 s
 ```
 Le 5 suite fallite e gli 8 test falliti corrispondono esattamente alla baseline attesa (nessuna regressione introdotta).
 
@@ -186,13 +188,13 @@ Comando:
 
 ### 5. Sonde DuckDB Esistenti e Hero Counts
 - `node scripts/qa/probe-duckdb-lock.js`:
-  `Esito Sonda: SUCCESSO — nessun Conflicting lock, il DB si apre.`
+  `Esito Sonda: SUCCESSO — nessun Conflicting lock, il DB si apre.` (exit code 0)
 - `node scripts/qa/probe-duckdb-reopen.js`:
-  `Esito Sonda: SUCCESSO — l'app riapre dopo lo scambio e serve dati freschi.`
+  `Esito Sonda: SUCCESSO — l'app riapre dopo lo scambio e serve dati freschi.` (exit code 0)
 - `node scripts/qa/probe-duckdb-reopen.js --disable-reopen`:
   `Esito Sonda: FALLIMENTO DIMOSTRATIVO ACCERTATO — senza riapertura l'app resta stantia.` (exit code 1)
 - `node scripts/qa/probe-hero-counts.js --fixture`:
-  `Film: 9 titoli (Disgiunti: true) · Serie: 9 titoli (Disgiunti: true)`
+  `Film: 9 titoli (Disgiunti: true) · Serie: 9 titoli (Disgiunti: true)` (exit code 0)
 
 ### 6. Cosa NON è stato fatto
 - Nessun tocco ai file o directory riservati al worker parallelo del Ticket 61 (`services/keyword-graph/**`, `services/doppiaggi-source/**`, `src/pool/index.js`, ecc.).
@@ -200,4 +202,5 @@ Comando:
 - Nessun `git push`.
 - Nessun `npm run build` o compilazione `tsc`.
 - Nessun tocco a `frontend/**`.
+
 
