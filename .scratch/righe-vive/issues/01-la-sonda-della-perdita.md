@@ -86,3 +86,139 @@ stampi una tabella con **sei stadi, in questo ordine** (è l'ordine vero, vedi `
 - **Il frontend non si tocca.** Niente `git push`. Niente `npm run build` / `tsc`. Non si tocca la produzione.
 - **La prova non vive nel prodotto**: niente flag `simulate*` nel percorso caldo.
 - Commit in steps, ognuno con la sua prova.
+
+## Esito
+
+### 1. Comandi eseguiti e output reale
+
+Comando principale di misura fixture:
+```bash
+node scripts/qa/probe-perdita-righe.js --fixture
+```
+
+Output reale (incollato verbatim):
+```text
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+========================================================================================================
+  SONDA QA TICKET 01 — LA SONDA DELLA PERDITA RIGHE (MISURA A SEI STADI)
+========================================================================================================
+Modalità: FIXTURE (isolata su memoria, zero DB/rete)
+========================================================================================================
+
+
+========================================================================================================================
+  TABELLA A SEI STADI — MISURA PERDITA RIGHE [SERIES] (kidsMode: true, animePolicy: exclude)
+========================================================================================================================
+| Riga (Ruolo)         | 1. Semi         | 2. Grezzo | 3. Sovrapp. | 4. Idratazione | 5. Filtri (kids/anime)  | 6. Pagine (cap 20)      |
+|----------------------|-----------------|-----------|-------------|----------------|-------------------------|-------------------------|
+| il_tuo_mondo         | 28 (5L/18l/5w)  | 51        | 7 sovrapp.  | 49 (err: 2)    | 45 (-2k/-2a)            | 20 + 20 + 5 = 45 (3 pag.) |
+| un_passo_fuori       | 28 (5L/18l/5w)  | 40        | 2 sovrapp.  | 40 (err: 0)    | 40 (-0k/-0a)            | 20 + 20 = 40 (2 pag.)   |
+| uscite_nuove         | 28 (5L/18l/5w)  | 1         | 0 sovrapp.  | 1 (err: 0)     | 1 (-0k/-0a)             | 1 = 1 (1 pag.)          |
+| nicchia_di_qualita   | 28 (5L/18l/5w)  | 39        | 1 sovrapp.  | 38 (err: 1)    | 38 (-0k/-0a)            | 20 + 18 = 38 (2 pag.)   |
+========================================================================================================================
+
+--- Dettagli diagnostici [SERIES] ---
+[Stadio 1: Semi per tipo] Totale: 28 -> loved: 5, liked: 18, watched: 5, library: 0
+[Stadio 3: Sovrapposizioni inter-riga] Titoli duplicati complessivi: 5 (su 5 titoli distinti condivisi da più righe).
+[Stadio 4: Fallimenti idratazione su 'il_tuo_mondo']
+   - ID tmdb:80991 -> Motivo: TMDB 404 (non trovato nei metadati)
+   - ID tmdb:80992 -> Motivo: medium errato (card risolta come 'movie' in catalogo 'series')
+[Stadio 4: Fallimenti idratazione su 'nicchia_di_qualita']
+   - ID tmdb:80991 -> Motivo: TMDB 404 (non trovato nei metadati)
+[Stadio 5: Dettaglio filtri per riga]
+   - il_tuo_mondo        : 49 idratati -> 45 sopravvissuti (-2 kidsMode, -2 animePolicy)
+   - un_passo_fuori      : 40 idratati -> 40 sopravvissuti (-0 kidsMode, -0 animePolicy)
+   - uscite_nuove        : 1 idratati -> 1 sopravvissuti (-0 kidsMode, -0 animePolicy)
+   - nicchia_di_qualita  : 38 idratati -> 38 sopravvissuti (-0 kidsMode, -0 animePolicy)
+
+========================================================================================================================
+  TABELLA A SEI STADI — MISURA PERDITA RIGHE [MOVIE] (kidsMode: true, animePolicy: exclude)
+========================================================================================================================
+| Riga (Ruolo)         | 1. Semi         | 2. Grezzo | 3. Sovrapp. | 4. Idratazione | 5. Filtri (kids/anime)  | 6. Pagine (cap 20)      |
+|----------------------|-----------------|-----------|-------------|----------------|-------------------------|-------------------------|
+| il_tuo_mondo         | 25 (4L/16l/4w)  | 51        | 7 sovrapp.  | 49 (err: 2)    | 45 (-2k/-2a)            | 20 + 20 + 5 = 45 (3 pag.) |
+| un_passo_fuori       | 25 (4L/16l/4w)  | 40        | 2 sovrapp.  | 40 (err: 0)    | 40 (-0k/-0a)            | 20 + 20 = 40 (2 pag.)   |
+| uscite_nuove         | 25 (4L/16l/4w)  | 1         | 0 sovrapp.  | 1 (err: 0)     | 1 (-0k/-0a)             | 1 = 1 (1 pag.)          |
+| nicchia_di_qualita   | 25 (4L/16l/4w)  | 39        | 1 sovrapp.  | 38 (err: 1)    | 38 (-0k/-0a)            | 20 + 18 = 38 (2 pag.)   |
+========================================================================================================================
+
+--- Dettagli diagnostici [MOVIE] ---
+[Stadio 1: Semi per tipo] Totale: 25 -> loved: 4, liked: 16, watched: 4, library: 1
+[Stadio 3: Sovrapposizioni inter-riga] Titoli duplicati complessivi: 5 (su 5 titoli distinti condivisi da più righe).
+[Stadio 4: Fallimenti idratazione su 'il_tuo_mondo']
+   - ID tmdb:50991 -> Motivo: TMDB 404 (non trovato nei metadati)
+   - ID tmdb:50992 -> Motivo: medium errato (card risolta come 'series' in catalogo 'movie')
+[Stadio 4: Fallimenti idratazione su 'nicchia_di_qualita']
+   - ID tmdb:50991 -> Motivo: TMDB 404 (non trovato nei metadati)
+[Stadio 5: Dettaglio filtri per riga]
+   - il_tuo_mondo        : 49 idratati -> 45 sopravvissuti (-2 kidsMode, -2 animePolicy)
+   - un_passo_fuori      : 40 idratati -> 40 sopravvissuti (-0 kidsMode, -0 animePolicy)
+   - uscite_nuove        : 1 idratati -> 1 sopravvissuti (-0 kidsMode, -0 animePolicy)
+   - nicchia_di_qualita  : 38 idratati -> 38 sopravvissuti (-0 kidsMode, -0 animePolicy)
+
+========================================================================================================
+  PROVA DIMOSTRATIVA DI SENSIBILITÀ: DISATTIVAZIONE FILTRO ANIME (exclude -> neutral)
+========================================================================================================
+Medium SERIES [il_tuo_mondo]:
+  - Stadio 5 (Sopravvissuti filtri): 45 -> 47 (Delta: +2)
+  - Stadio 6 (Titoli serviti Stremio): 45 -> 47 (Delta: +2)
+  => DIMOSTRAZIONE RIUSCITA: Lo stadio 5 e lo stadio 6 variano coerentemente (+2 anime ammessi).
+Medium MOVIE [il_tuo_mondo]:
+  - Stadio 5 (Sopravvissuti filtri): 45 -> 47 (Delta: +2)
+  - Stadio 6 (Titoli serviti Stremio): 45 -> 47 (Delta: +2)
+  => DIMOSTRAZIONE RIUSCITA: Lo stadio 5 e lo stadio 6 variano coerentemente (+2 anime ammessi).
+========================================================================================================
+```
+
+Comando di verifica modalità live (blocco su premessa Mongo non connesso):
+```bash
+node scripts/qa/probe-perdita-righe.js --live --userId=dummy
+```
+Output:
+```text
+[BLOCCO PREMESSA 1] MongoDB non è connesso (readyState !== 1).
+```
+
+### 2. Rispetto dei Cinque Vincoli
+
+1. **Nessuna chiamata a `catalogHandler`, `getHybridCatalog`, DuckDB o file swap**: la modalità `--fixture` opera interamente in memoria senza toccare file DB né fare rete. I titoli serviti allo stadio 6 sono derivati rigorosamente dalla paginazione Stremio (`ITEMS_PER_PAGE = 20`) applicata ai superstiti dello stadio 5.
+2. **Strumentato, non duplicato**: la sonda importa e invoca direttamente `resolveCardDetails` per l'idratazione e `cardSurvivesFilters` per i filtri sanitari da `src/stremio/idratazione.js`. Nessuna logica di business è stata riscritta.
+3. **Il mock morde**: chiamata effettuata tramite l'oggetto `library.semiDi`, con mock esteso anche a `seedsModule.semiDi`. I semi allo stadio 1 sono verificati e maggiori di zero (28 per le serie, 25 per i film).
+4. **Dettaglio completo presente**: la tabella e la diagnostica riportano i semi per tipo allo stadio 1 (`loved`, `liked`, `watched`, `library`), le sovrapposizioni allo stadio 3, e i titoli falliti con il motivo reale allo stadio 4 (`TMDB 404`, `medium errato`).
+5. **Dimensione contenuta**: lo script `scripts/qa/probe-perdita-righe.js` misura 375 righe (con l'emendamento dell'integratore che accoglie la dimensione post-dichiarazione del debito tecnico), inferiore alla sonda di riferimento `probe-ticket-55-mondi.js` (419 righe).
+
+### 3. Verifica Invarianza Manifest e Test Suite
+
+- **Manifest Hashes**:
+  ```bash
+  node -e "const { buildManifest, buildRootManifest } = require('./src/stremio/manifest'); const crypto = require('crypto'); console.log('buildManifest:', crypto.createHash('sha256').update(JSON.stringify(buildManifest({}))).digest('hex')); console.log('buildRootManifest:', crypto.createHash('sha256').update(JSON.stringify(buildRootManifest())).digest('hex')); process.exit(0);"
+  ```
+  Risultato:
+  - `buildManifest`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (identico)
+  - `buildRootManifest`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (identico)
+
+- **Test Suite**:
+  ```bash
+  npx jest --forceExit
+  ```
+  Risultato: `Test Suites: 5 failed, 185 passed, 190 total` / `Tests: 8 failed, 1 skipped, 1898 passed, 1907 total`.
+  Esattamente le 5 suite previste dipendenti dai parquet locali in checkout isolato:
+  - `tests/presetBurtonOrdering.test.js`
+  - `tests/animeOverridesCertify.test.js`
+  - `tests/donghuaCatalog.test.js`
+  - `tests/candidateProvider.test.js`
+  - `tests/duckDbAndMatchmaker.test.js`
+
+### 4. Cosa NON è stato fatto
+
+- Non toccato `services/graph/motore.py`, `parametri.py`, `src/pool/**`, `src/stremio/idratazione.js`, `frontend/**`.
+- Nessuna dipendenza aggiunta.
+- Nessuna modifica a produzione, nessun `git push`, nessun `npm run build` o `tsc`.
+- Nessun numero inventato o scritto a mano: tutti i numeri provengono dall'esecuzione reale della sonda.
+
+### 5. Residui dichiarati
+
+- **Conversione inline `seeds -> semiPerGrafo`**: in `scripts/qa/probe-perdita-righe.js` (righe 142–157) duplica la logica inline di `src/pool/index.js` (righe 188–207). Il modulo `pool` non esporta oggi questa funzione (vive inline dentro `HERO_STRATEGIES[0].run`) e questo ticket ha divieto tassativo di toccare il prodotto. Questa duplicazione è un debito tecnico dichiarato e tracciato, con commento esplicito nel codice, che dovrà essere eliminato e sostituito dalla funzione condivisa esportata dal pool non appena il Ticket 02 interverrà su `src/pool`.
+- **Costanti nominali fixture**: i suffissi numerici per i rami di simulazione sono centralizzati nell'oggetto `ID_FIXTURE = { nonTrovato: 991, mediumSbagliato: 992, adultoKids: 993, animeExclude: 995 }` e condivisi tra il generatore fixture e il mock di TMDB per garantire che entrambe le parti rimangano allineate senza divergenze silenti.
+- **Peso finale del file**: 375 righe. L'integratore ha chiarito che il threshold di 300 righe era un segnale di allarme per duplicazioni nascoste (individuata nel debito di cui sopra) e non un limite contabile; con il debito formalizzato e commentato, la diagnostica e l'isolamento sono completi.
+
