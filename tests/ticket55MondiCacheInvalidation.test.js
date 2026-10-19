@@ -205,4 +205,48 @@ describe('Ticket 55: Invalidazione cache per righe Hero e serving completo di «
         expect(resNew.metas).toHaveLength(20);
         expect(resNew.metas[0].name).toBe('New Accumulated Title 1');
     });
+
+    test('5. Se il grafo non risponde, la riga hero NON passa dalla cache (un guasto transitorio non si memorizza)', async () => {
+        // Il baco che questo test difende: senza le versioni del grafo la chiave è priva di
+        // artefatto/ricetta, e memorizzarci sopra una risposta riapre il ticket 55 per 14 giorni.
+        const leggi = jest.spyOn(cache, 'leggi');
+        graphClient.getGraphHealthVersions.mockRejectedValue(new Error('grafo giu'));
+        routeCatalogRequest.mockImplementation(async (args) => {
+            const skip = args.extra?.skip || 0;
+            return [{ id: `tmdb:${9000 + skip}`, name: `Fresco ${skip}`, type: 'series', media_type: 'tv' }];
+        });
+
+        const res = await catalogHandler(
+            { id: 'yaca_mondi_series', type: 'series', extra: { skip: 0 } },
+            userConfig,
+            'http://localhost:7000'
+        );
+
+        // Serve comunque — ricalcolata, non letta
+        expect(res.metas).toHaveLength(1);
+        expect(res.metas[0].name).toBe('Fresco 0');
+        // …e non ha toccato la cache: né letta né scritta
+        expect(leggi).not.toHaveBeenCalled();
+
+        leggi.mockRestore();
+    });
+
+    test('6. Controprova: col grafo in piedi la riga hero PASSA dalla cache (il test 5 non è vacuo)', async () => {
+        const leggi = jest.spyOn(cache, 'leggi');
+        graphClient.getGraphHealthVersions.mockResolvedValue({
+            artefatto: 'cf1d80dcba3eddce',
+            ricetta: 'ricetta_viva'
+        });
+        routeCatalogRequest.mockResolvedValue([{ id: 'tmdb:777', name: 'Dalla cache', type: 'series', media_type: 'tv' }]);
+
+        await catalogHandler(
+            { id: 'yaca_mondi_series', type: 'series', extra: { skip: 0 } },
+            userConfig,
+            'http://localhost:7000'
+        );
+
+        expect(leggi).toHaveBeenCalled();
+
+        leggi.mockRestore();
+    });
 });

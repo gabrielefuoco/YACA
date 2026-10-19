@@ -252,8 +252,16 @@ async function catalogHandler(args, userConfig, hostUrl) {
     });
 
     const requestStartedAt = Date.now();
+    // Se il grafo non ha risposto, la chiave di una riga hero sarebbe SENZA le sue versioni:
+    // usarla — in lettura o in scrittura — riapre il baco del ticket 55, cioè una riga vecchia
+    // servita per 14 giorni sotto una chiave che non sa distinguere le ricette. Un guasto
+    // transitorio non si memorizza (decisione 14): si ricalcola, e si torna in cache da soli
+    // appena il grafo risponde.
+    const versioniGrafoIgnote = isHero && !(graphVersions && graphVersions.artefatto && graphVersions.ricetta);
     let responseData;
     if (extra?.search || baseId === 'yaca_search_history') {
+        responseData = await fetchCatalog();
+    } else if (versioniGrafoIgnote) {
         responseData = await fetchCatalog();
     } else if (extra?.warmupMode) {
         responseData = await cache.leggi(catalogDesc, fetchCatalog);
@@ -261,7 +269,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         responseData = await cache.leggi(catalogDesc, fetchCatalog);
     }
 
-    if (builds === 0) {
+    if (builds === 0 && !versioniGrafoIgnote) {
         logCatalogTiming({
             id,
             catalog: baseId,
