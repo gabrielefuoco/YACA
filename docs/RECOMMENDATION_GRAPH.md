@@ -1,6 +1,6 @@
 # Motore delle Raccomandazioni: Servizio, Contratto HTTP e Modulo Pool
 
-Questo documento definisce l'architettura tecnica del motore di raccomandazione a grafo di YACA, il suo contratto di comunicazione HTTP tra il servizio Python e l'applicazione Node.js, l'incapsulamento della composizione dei cataloghi nel modulo Pool, e l'elenco delle trappole architetturali già pagate durante la transizione (Ticket 01, 07, 08, 12, 18).
+Questo documento definisce l'architettura tecnica del motore di raccomandazione a grafo di YACA, il suo contratto di comunicazione HTTP tra il servizio Python e l'applicazione Node.js, l'incapsulamento della composizione dei cataloghi nel modulo Pool, e l'elenco delle trappole architetturali già pagate durante la transizione (Ticket 01, 07, 08, 12, 18, 46).
 
 ---
 
@@ -15,16 +15,15 @@ A partire dalla ristrutturazione architetturale di ottobre 2026, il calcolo dell
 |  [Stremio Request]                                                            |
 |          |                                                                    |
 |          v                                                                    |
-|  [src/engines/hybridRecommendations.js] (Feed / Paginazione / Idratazione)     |
+|  [src/stremio/catalogHandler.js] -> [src/stremio/hybridServing.js]            |
 |          |                                                                    |
 |          v (cache-miss, non a ogni richiesta)                                 |
-|  [src/pool/index.js] (getHeroPool: porta unica del modulo Pool)               |
+|  [src/pool/composer.js] -> [src/pool/index.js] (getHeroPool: porta unica)    |
 |     |                                                                         |
-|     +--> [HERO_STRATEGIES]: true_blend, seed_network, hidden_gems, trakt      |
-|     +--> [HERO_STRATEGIES]: graph_rows (riga additiva del grafo)              |
+|     +--> [HERO_STRATEGIES]: graph_rows (unica strategia hero, additiva)       |
 |               |                                                               |
 |               v                                                               |
-|          [src/pool/graphClient.js] (Client HTTP axios, timeout 10s)           |
+|          [src/clients/graphClient.js] (Client HTTP axios, timeout 10s)         |
 +---------------+---------------------------------------------------------------+
                 |
                 | HTTP POST /raccomanda (JSON, porta 7862)
@@ -45,19 +44,19 @@ A partire dalla ristrutturazione architetturale di ottobre 2026, il calcolo dell
 ```
 
 ### Principi Guida del Confine
-1. **Separazione dei ruoli**: Il motore Python decide *dove guardare e in che ordine* (liste di titoli ordinate per punteggio di attivazione); il prodotto Node decide *cosa e come mostrare* (arricchimento TMDB, poster, badge, lingue, dedup e paginazione).
-2. **Invocazione al cache-build**: Il servizio grafo viene interrogato esclusivamente in occasione della costruzione dei pool memorizzati (`buildSharedHeroCatalogs` in [src/pool/index.js](../src/pool/index.js#L342)), mai sul percorso caldo di una singola richiesta catalogo di Stremio.
-3. **Internalizzazione dell'artefatto**: L'artefatto del grafo non è più un file monolitico tracciato in git letto dal backend Node (come era l'antico `src/data/bolle.json`), ma un dettaglio binario interno al modulo Python (`services/graph/data/`).
+1. **Separazione dei ruoli**: Il motore Python decide *dove guardare e in che ordine* (liste di titoli ordinate per punteggio di attivazione); il prodotto Node decide *cosa e come mostrare* (arricchimento TMDB, poster, badge, lingue, dedup e paginazione tramite [src/stremio/idratazione.js](../src/stremio/idratazione.js)).
+2. **Invocazione al cache-build**: Il servizio grafo viene interrogato esclusivamente in occasione della costruzione dei pool memorizzati (`buildSharedHeroCatalogs` in [src/pool/index.js](../src/pool/index.js#L328)), mai sul percorso caldo di una singola richiesta catalogo di Stremio.
+3. **Internalizzazione dell'artefatto**: L'artefatto del grafo non è più un file monolitico tracciato in git letto dal backend Node (come era l'antico `src/data/bolle.json`), ma un dettaglio binario interno al modulo Python (`services/graph/data/` montato da `/srv/yaca/services/graph/data` sull'host).
 
 ---
 
 ## 📡 2. Il Contratto HTTP del Servizio (`services/graph/servizio.py`)
 
-Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente `PORT`, default in [services/graph/servizio.py:297](../services/graph/servizio.py#L297)). Non richiede librerie esterne complesse, sfruttando il server `http.server.HTTPServer` standard di Python con single-worker sincrono.
+Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente `PORT`, default in [services/graph/servizio.py:302](../services/graph/servizio.py#L302)). Non richiede librerie esterne complesse, sfruttando il server `http.server.HTTPServer` standard di Python con single-worker sincrono.
 
 ### 2.1 Endpoint `GET /health` (Emendamento E3)
-- **Implementazione**: [services/graph/servizio.py:221-228](../services/graph/servizio.py#L221-L228).
-- **Latenza di risposta**: **0.25 ms** (misurato a caldo; stringa JSON pre-serializzata in RAM all'avvio in [services/graph/servizio.py:275-282](../services/graph/servizio.py#L275-L282)).
+- **Implementazione**: [services/graph/servizio.py:225-240](../services/graph/servizio.py#L225-L240).
+- **Latenza di risposta**: **0.25 ms** (misurato a caldo; stringa JSON pre-serializzata in RAM all'avvio in [services/graph/servizio.py:280-288](../services/graph/servizio.py#L280-L288)).
 - **Scopo doppio**:
   1. Funge da healthcheck per Docker/compose (`start_period: 10s`), impedendo al server Node di inviare traffico prima del caricamento in memoria.
   2. Espone l'impronta di versione dell'artefatto e della ricetta:
@@ -71,10 +70,10 @@ Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente
        }
      }
      ```
-  3. Il client Node [src/pool/graphClient.js:37](../src/pool/graphClient.js#L37) interroga `/health` memorizzando la risposta in RAM per **60 secondi** (`HEALTH_CACHE_TTL_MS = 60000`). La versione viene incorporata direttamente nella chiave di cache delle raccomandazioni: quando l'artefatto viene aggiornato sul motore e il servizio riavviato, la cache del prodotto decade automaticamente senza riavviare l'app.
+  3. Il client Node [src/clients/graphClient.js:37](../src/clients/graphClient.js#L37) interroga `/health` memorizzando la risposta in RAM per **60 secondi** (`HEALTH_CACHE_TTL_MS = 60000`). La versione viene incorporata direttamente nella chiave di cache delle raccomandazioni: quando l'artefatto viene aggiornato sul motore e il servizio riavviato, la cache del prodotto decade automaticamente senza riavviare l'app.
 
 ### 2.2 Endpoint `POST /raccomanda` (e alias `POST /`)
-- **Implementazione**: [services/graph/servizio.py:243-267](../services/graph/servizio.py#L243-L267) tramite `esegui_richiesta` ([services/graph/servizio.py:26](../services/graph/servizio.py#L26)).
+- **Implementazione**: [services/graph/servizio.py:247-267](../services/graph/servizio.py#L247-L267) tramite `esegui_richiesta` ([services/graph/servizio.py:26](../services/graph/servizio.py#L26)).
 - **Richiesta conforme al contratto**:
   ```json
   {
@@ -157,7 +156,7 @@ I numeri seguenti sono stati misurati con benchmark su un campione reale (storia
 2. **Nessun ripiego popolare**: Se la storia non trova corrispondenza, il motore **non** restituisce titoli popolari o casuali. Restituire un catalogo generico spacciato per personalizzato distrugge la fiducia dell'utente nel raccomandatore.
 3. **Artefatto non caricato**: HTTP `503` con `{"ok": false, "errore": "motore non pronto o artefatto non caricato"}`.
 4. **Richiesta non valida / JSON malformato**: HTTP `400` con spiegazione del campo non conforme.
-5. **Timeout del client**: [src/pool/graphClient.js:16](../src/pool/graphClient.js#L16) fissa un timeout di **10 secondi** (`GRAPH_TIMEOUT_MS = 10000`). Poiché il motore risponde in ~92 ms, il margine è di oltre 100x.
+5. **Timeout del client**: [src/clients/graphClient.js:16](../src/clients/graphClient.js#L16) fissa un timeout di **10 secondi** (`GRAPH_TIMEOUT_MS = 10000`). Poiché il motore risponde in ~92 ms, il margine è di oltre 100x.
 
 ---
 
@@ -166,27 +165,27 @@ I numeri seguenti sono stati misurati con benchmark su un campione reale (storia
 Il modulo [src/pool/index.js](../src/pool/index.js) unifica in un'unica barriera architetturale la costruzione di tutti i cataloghi hero del feed:
 
 ### 5.1 La Porta Unica: `getHeroPool`
-- Firma: [src/pool/index.js:511](../src/pool/index.js#L511):
+- Firma: [src/pool/index.js:466](../src/pool/index.js#L466):
   ```javascript
-  getHeroPool({ userId, context, mediaType, kidsMode, typeSelectors, traktToken, tmdbApiKey, userConfig }) -> Promise<Object>
+  getHeroPool({ userId, context, mediaType, kidsMode, typeSelectors, traktToken, tmdbApiKey, userConfig, slider, sliders }) -> Promise<Object>
   ```
-- Il modulo feed [src/engines/hybridRecommendations.js](../src/engines/hybridRecommendations.js) non importa più alcuna strategia singola, ma chiama unicamente `getHeroPool`.
+- Il routing del feed in [src/stremio/hybridServing.js](../src/stremio/hybridServing.js) delega a [src/pool/composer.js](../src/pool/composer.js) (`composeCandidateIds`), che a sua volta invoca `getHeroPool`. Nessun componente consumatore importa o invoca strategie singole.
 
 ### 5.2 Strategie come Voci di una Lista (`HERO_STRATEGIES`)
-In [src/pool/index.js:166](../src/pool/index.js#L166), le strategie sono elementi ordinati di un array:
-- Le **4 strategie storiche** (`true_blend`, `seed_network`, `hidden_gems`, `trakt_filtered`) producono candidati concorrenti che vengono assegnati in modo mutuamente esclusivo tramite `assignHeroPools` e il set `claimedIds`.
-- La voce **`graph_rows`** ([src/pool/index.js:223](../src/pool/index.js#L223)) è additiva (`additive: true`): viene eseguita *dopo* l'assegnazione esclusiva, estrae i semi dalla libreria (`semiDi` da `src/library/`), chiama `graphClient.raccomanda`, e assegna direttamente i titoli calcolati a `yaca_mondi_*` e `yaca_passo_fuori_*` senza sottrarre candidati al pool degli altri hero.
+In [src/pool/index.js:156](../src/pool/index.js#L156):
+- Le 4 strategie storiche (`true_blend`, `seed_network`, `hidden_gems`, `trakt_filtered`) sono state **completamente ritirate** (Ticket 46).
+- `HERO_STRATEGIES` contiene oggi un'unica strategia attiva: **`graph_rows`** ([src/pool/index.js:156-324](../src/pool/index.js#L156-L324)), con `additive: true`. Essa estrae i semi dalla libreria (`semiDi` da `src/library/`), interroga il servizio Python via `graphClient.raccomanda` ([src/clients/graphClient.js](../src/clients/graphClient.js)), e assegna direttamente i titoli calcolati ai 4 cataloghi hero: `yaca_mondi_*`, `yaca_passo_fuori_*`, `yaca_uscite_nuove_*` e `yaca_nicchia_di_qualita_*`.
 
 ### 5.3 Il Decimo Posto Ridotto a Uno (`getHeroPoolSpec`)
 In precedenza, gli hero erano definiti in nove posti derivati da `registry.js`, mentre `HERO_PRIORITY` viveva scollegato nel feed come decimo posto.
-Oggi [src/catalog/registry.js:300](../src/catalog/registry.js#L300) esporta `getHeroPoolSpec()`:
-- `heroPriority`: `['true_blend', 'seed_network', 'hidden_gems', 'trakt_filtered', 'mondi', 'passo_fuori']`
-- `slugAdditivi`: `Set(['mondi', 'passo_fuori'])`
+Oggi [src/catalog/registry.js:303](../src/catalog/registry.js#L303) esporta `getHeroPoolSpec()`:
+- `heroPriority`: `['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']`
+- `slugAdditivi`: `Set(['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita'])`
 - `catalogs`: metadati di tutte le righe.
-Il modulo pool importa `getHeroPoolSpec()` in [src/pool/index.js:38](../src/pool/index.js#L38). Modificare, aggiungere o ritirare una riga hero richiede ora di toccare un solo file.
+Il modulo pool importa `getHeroPoolSpec()` in [src/pool/index.js:18](../src/pool/index.js#L18). Modificare, aggiungere o ritirare una riga hero richiede ora di toccare un solo file (`registry.js`).
 
 ### 5.4 Invariante del Pool: Oggetti Strutturati, Mai Stringhe Scalari (Emendamento E6)
-La funzione `ensurePoolItem` ([src/pool/index.js:78](../src/pool/index.js#L78)) garantisce che ogni elemento inserito in un pool sia un oggetto completo:
+La funzione `ensurePoolItem` ([src/pool/index.js:77](../src/pool/index.js#L77)) garantisce che ogni elemento inserito in un pool sia un oggetto completo:
 ```javascript
 {
   id: "tmdb:655",
@@ -207,32 +206,50 @@ Cinque trappole insidiose sono state scoperte e pagate durante lo sviluppo. Sono
 ### Trappola 1: La Chiave di Cache e il Veleno dei 7 Giorni (Emendamento E5)
 - **Il problema**: La cache delle raccomandazioni in Redis/RAM ha un TTL di **7 giorni** ([src/config.js:39](../src/config.js#L39), `RECOMMENDATIONS_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000`). Se il servizio grafo fosse temporaneamente giù (es. durante un riavvio di Watchtower), salvare il fallimento avrebbe lasciato le righe del grafo vuote per un'intera settimana per quell'utente.
 - **La soluzione**:
-  1. `HERO_CACHE_KEY_VERSION` è stata alzata a **`v13`** ([src/pool/index.js:48](../src/pool/index.js#L48)).
+  1. `HERO_CACHE_KEY_VERSION` è stata alzata a **`v15`** ([src/pool/index.js:32](../src/pool/index.js#L32)).
   2. La chiave di cache incorpora l'hash restituito da `GET /health` (`_art_<sha>_ric_<sha>`).
-  3. Se `graphClient.raccomanda` fallisce (timeout, 503 o connessione rifiutata), il pool assegna righe vuote ma imposta `graphCallFailed = true`. In tal caso, [src/pool/index.js:490](../src/pool/index.js#L490) salva la cache con un **TTL transitorio di soli 60 secondi**, prevenendo l'avvelenamento a lungo termine.
+  3. Se `graphClient.raccomanda` fallisce (timeout, 503 o connessione rifiutata), il pool assegna righe vuote ma imposta `graphCallFailed = true`. In tal caso, [src/pool/index.js:433-437](../src/pool/index.js#L433-L437) salva la cache con un **TTL transitorio di soli 60 secondi**, prevenendo l'avvelenamento a lungo termine.
 
 ### Trappola 2: Il Cap Prima o Dopo i Filtri (`anime: exclude`)
 - **Il problema (Ticket 38)**: Il feed eseguiva `.slice(0, 20)` sui candidati *prima* dell'idratazione e dell'applicazione dei filtri di tipo. Per un profilo con selettore `anime: 'exclude'`, se 18 dei primi 20 titoli del pool erano anime, il filtro post-fetch scartava i 18 anime lasciando solo **2 serie** nella riga di Stremio.
-- **La soluzione**: In [src/engines/hybridRecommendations.js:286-317](../src/engines/hybridRecommendations.js#L286-L317), i candidati vengono scorsi ed elaborati filtrandoli con `cardSurvivesFilters` ([src/engines/hybridRecommendations.js:170](../src/engines/hybridRecommendations.js#L170)); il taglio `.slice(skip, skip + ITEMS_PER_PAGE)` avviene **esclusivamente a valle dei filtri**. Con la correzione, la stessa richiesta restituisce **20 serie su 20**.
+- **La soluzione**: In [src/stremio/idratazione.js:155-168](../src/stremio/idratazione.js#L155-L168), i candidati vengono scorsi ed elaborati filtrandoli con `cardSurvivesFilters` ([src/stremio/idratazione.js:125](../src/stremio/idratazione.js#L125)); l'accumulo procede fino al raggiungimento di `targetCount` **a valle dei filtri**. Con la correzione, la stessa richiesta restituisce il numero pieno di card richieste (es. **20 serie su 20**).
 
 ### Trappola 3: Il `node -e` che non esce mai
 - **Il problema**: L'importazione di moduli applicativi che dipendono da [src/cache/cacheInstances.js](../src/cache/cacheInstances.js) inizializza client `ioredis` e connessioni a database, mantenendo l'event loop di Node.js permanentemente attivo.
-- **La conseguenza**: Comandi CLI di test o diagnosi come `node -e "require('./src/api/stremio')"` stampano l'output e **non terminano mai**, bloccando la shell e i job di automazione indefinitamente (accaduto il 17/10/2026: 8 ore di blocco).
+- **La conseguenza**: Comandi CLI di test o diagnosi come `node -e "require('./src/api/stremio.js')"` stampano l'output e **non terminano mai**, bloccando la shell e i job di automazione indefinitamente (accaduto il 17/10/2026: 8 ore di blocco).
 - **La regola**: Qualsiasi comando `node -e` o script batch deve invocare esplicitamente `process.exit(0)` al termine dell'operazione, e qualsiasi esecuzione automatica deve essere protetta da un `timeout` a livello di shell.
 
 ### Trappola 4: I Dieci Posti degli Hero
 - **Il problema**: Le righe hero avevano la propria configurazione frammentata in nove funzioni in `registry.js`, ma la priorità `HERO_PRIORITY` era cablata separatamente nel motore di raccomandazione. Modificare una riga senza allineare `HERO_PRIORITY` portava alla sparizione silenziosa del catalogo.
-- **La soluzione**: [src/catalog/registry.js:300](../src/catalog/registry.js#L300) centralizza prioritizzazione e additività in `getHeroPoolSpec()`.
+- **La soluzione**: [src/catalog/registry.js:303](../src/catalog/registry.js#L303) centralizza prioritizzazione e additività in `getHeroPoolSpec()`.
 
 ### Trappola 5: `tv` vs `series` e gli Identificativi
-- **Il problema**: In TMDB le serie hanno tipo `tv`, nei manifest e cataloghi Stremio si chiamano `series`, e nel parquet DuckDB gli ID sono nella forma breve senza tipo (`tmdb:<id>`, vedi [src/indice/duckDbProvider.js:292](../src/indice/duckDbProvider.js#L292)).
-- **La soluzione**: Nel contratto HTTP del grafo il medium è rigorosamente normalizzato come `"series"` o `"movie"`. Ai confini, [src/handlers/catalogHandler.js:387](../src/handlers/catalogHandler.js#L387) (`annotationKeyFor`) mappa `series` su `tv` per il lookup delle annotazioni doppiaggio.
+- **Il problema**: In TMDB le serie hanno tipo `tv`, nei manifest e cataloghi Stremio si chiamano `series`, e nel parquet DuckDB gli ID sono nella forma breve senza tipo (`tmdb:<id>`, vedi [src/indice/duckDbProvider.js:286](../src/indice/duckDbProvider.js#L286)).
+- **La soluzione**: Nel contratto HTTP del grafo il medium è rigorosamente normalizzato come `"series"` o `"movie"`. Ai confini, [src/stremio/badges.js:27](../src/stremio/badges.js#L27) (`annotationKeyFor`) mappa `series` su `tv` per il lookup delle annotazioni doppiaggio.
 
 ---
 
 ## 🚧 7. Superficie Client / Frontend (*In Movimento*)
 
 > [!NOTE]
-> La superficie API esposta al frontend web è attualmente **in movimento** (Ticket 10 e Ticket 11 in corso di implementazione parallela).
-> - Il client dismetterà le chiamate infrastrutturali dirette (`/api/tmdb/*`, `/api/sync/*`, `/api/clear-cache`).
-> - La comunicazione migra verso risorse pure di dominio: `GET /api/dashboard`, `POST /api/dashboard/save`, `POST /api/mondi`, protette da autenticazione cookie-session (`src/api/middleware/sessione.js`) con blocco delle vulnerabilità IDOR riscontrate sui vecchi parametri `userId`.
+> La superficie API esposta al frontend web è attualmente **in movimento** (Ticket 10 e Ticket 11 della mappa confini).
+> - Il client dismette le chiamate infrastrutturali dirette (`/api/tmdb/*`, `/api/sync/*`, `/api/clear-cache`).
+> - La comunicazione migra verso risorse pure di dominio: `GET /api/dashboard`, `POST /api/dashboard/save`, `POST /api/mondi`, protette da autenticazione cookie-session ([src/api/middleware/sessione.js](../src/api/middleware/sessione.js)) con blocco delle vulnerabilità IDOR riscontrate sui vecchi parametri `userId`.
+
+---
+
+## 🔮 8. In arrivo (cantiere righe-vive, 19/10/2026)
+
+> [!IMPORTANT]
+> Le righe e i meccanismi descritti in questa sezione rappresentano la **destinazione progettuale del cantiere `righe-vive`** e **NON ESISTONO ANCORA** nel runtime attivo. La documentazione sopra descrive l'architettura corrente (le 4 righe additive del grafo). Non trattare le nuove righe come live finché i relativi ticket non saranno completati.
+
+Il cantiere `.scratch/righe-vive/` (documentato in dettaglio in [.scratch/righe-vive/map.md](../.scratch/righe-vive/map.md) e [.scratch/righe-vive/spec.md](../.scratch/righe-vive/spec.md)) sta ridisegnando la produzione delle liste e il portafoglio di righe hero del grafo senza ricostruire la matrice sottostante:
+
+1. **Bacino appiattito ("Il tuo mondo")**: Unione delle prime *K* bolle accese (≥80% della massa) e dei loro vicini in un set unico, con pavimento di qualità adattivo (`VAVE >= 6.4`, voti parametrati sul canone del profilo) e ranking combinato attivazione/voto bayesiano.
+2. **Gemme nascoste relative al profilo**: Soglie di popolarità e voti non più fisse per tutti, ma relative al baricentro del bacino dell'utente, normalizzate sulla media voto della bolla.
+3. **Classici imperdibili del tuo mondo**: High-consensus ad alta attivazione nel bacino dell'utente (70% attivazione, 30% voto bayesiano).
+4. **Recenza come selezione ("Sul filo delle ultime visioni")**: Seconda diffusione con PageRank dedicato sui soli semi recenti per catturare i cambi rapidi di interesse.
+5. **Micro-cluster dei filoni**: Partizionamento dei semi in cluster indipendenti con diffusioni separate, per non schiacciare i gusti minoritari sotto il filone dominante.
+6. **Punti d'incontro (Crossover)**: Media geometrica dell'attivazione tra filoni distinti per far emergere titoli ponte.
+7. **Riparazione Nuove Uscite**: Collocazione offline delle uscite recenti (`collocator.py`) in cache `uscite-collocate.npz` per eliminare il vuoto sistematico e la soppressione silenziosa.
+8. **Meccanismi trasversali**: *Waterfall dedup* sequenziale per evitare sovrapposizioni tra righe, filtri a monte nel motore Python (invece che a valle nel taglio card), regole anti-monopolio per saga/regista e rotazione morbida sulle impressioni non cliccate.
