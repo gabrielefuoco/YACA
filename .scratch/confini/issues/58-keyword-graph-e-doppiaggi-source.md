@@ -42,3 +42,31 @@ quale, e se questa cartella è un residuo o un lavoro interrotto.
 - Nasce da un brainstorming: **va triato** prima di essere eseguibile.
 - Il criterio è la decisione 32: si completa **solo** se ha un profilo di risorse diverso da chi lo userebbe —
   se è «un pezzo di logica in più», si ritira.
+
+## Triage (19/10/2026) — la tabella del ticket ha una riga sbagliata
+
+**`doppiaggi-source` NON è morto: gira, e produce un artefatto che l'app legge.**
+
+- Il timer sul mate è **attivo**: `yaca-doppiaggi.timer`, cadenza 04:00 e 16:00 (verificato: ultimo giro 11h fa,
+  prossimo alle 16:00).
+- Il timer esegue `ops/yaca-doppiaggi.sh`, che punta a `SERVICE_DIR="${BASE_DIR}/services/doppiaggi-source"` e
+  lancia la sua `cli.js` — una CLI vera, con `--dry-run`, `--health-check`, `--mongo-uri`.
+- L'output è `ita_annotations.jsonl`, e **l'app lo legge**: `src/catalog/itaAnnotations.js:31`.
+
+Quindi non è «una cartella che sembra un servizio e non lo è»: è un **produttore pilotato dall'host**, come il
+drenatore dei poster. Il difetto vero è che questa forma non è **scritta da nessuna parte** — chi legge
+`services/` non sa che quel servizio si esegue da un timer di sistema, e chi guarda il compose non lo vede.
+Da decidere: si **dichiara** (una riga nel README del servizio + la regola nel `docs/` del server, come per il
+drenatore), o si **containerizza** (Dockerfile + servizio + workflow) — con l'avvertenza che un container che gira
+due volte al giorno è un `docker run` da timer, non un servizio always-on.
+
+**`keyword-graph` è orfano: zero riferimenti.** `grep -rn "keyword-graph"` su tutto il repo (fuori da `.scratch`
+e da `.git`) **non trova niente**: né nel compose, né nei workflow, né in `ops/`, né in `src/`, né in un altro
+servizio. Non è «un servizio non ancora collegato»: è codice che nessuno raggiunge. Il criterio della decisione 32
+dice ritirarlo.
+
+**Sul `hierarchical_graph.json` (la «copia da uccidere»)**: nel repo ce n'è **una sola**, `src/data/`, 1,0 MB,
+dentro l'immagine dell'app. Il secondo consumatore è il **grafo**: `services/graph/upstream/spazi-trakt.py:128`
+la legge da `ROOT/src/data/`. Quindi non sono due copie divergenti: è **un file di dati condiviso che vive
+nell'albero dell'app** ed è usato anche da un altro servizio. Da decidere dove sta il posto giusto (accanto
+all'artefatto del grafo, o dove sta ora con un contratto che lo dichiara).

@@ -39,3 +39,25 @@ formato*.
 
 - Nasce da un brainstorming: **va triato** prima di essere eseguibile.
 - Il ticket 28 (gli shim) e il 30 (il deploy) hanno già toccato questo terreno: leggere i loro Esiti prima.
+
+## Triage (19/10/2026) — le prove, e due premesse da correggere
+
+**ERDB è davvero un'altra cosa** ✓ — ma non sta nel compose principale: ha un suo deployment in
+`ops/erdb-legion/` (README, `compose.yml`, le due patch, `costruisci.js`). Il ticket dice il vero sul profilo.
+
+**La premessa «senza versione» è vecchia.** `posterFileName` (`src/posters/erdb/build.js`) **deriva la versione
+da sé** con `calcolaVersionePoster({erdbId, badge})`, e `docs/EPISODE_BADGES.md:123` lo dice: *«da qui deriva la
+versione da sé: chi costruisce un nome ottiene quello giusto, e i due lati non possono divergere per
+costruzione»*. Il difetto non è l'assenza di versione: è che **nessuno verifica** che il volume contenga ciò che
+il nome promette.
+
+**La premessa che rompe il ticket: `src/posters/` non è un modulo ai margini, è dentro la logica dell'app.**
+Lo usano `library/ingestion/LibraryConverterService`, `library/ingestion/LibrarySyncService`,
+`api/profilo.js`, e `stremio/formatters/StremioFormatter` (che prende `posterFileName` da `erdb/build.js`).
+`posterResolver` è una funzione **pura** chiamata dall'ingestione della libreria: spostarla dietro un servizio
+vuol dire mettere una chiamata di rete dentro il percorso di ingestione, cioè **rompere** un confine per
+crearne un altro.
+
+**Conclusione del triage.** La parte che vale di questo ticket non è la separazione del processo: è il
+**contratto sul volume** — la stessa forma della rottura silenziosa dell'artefatto anime. Il drenatore è già
+fuori dal processo (timer di sistema), e va bene così.

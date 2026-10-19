@@ -45,3 +45,33 @@ il grafo, l'app ancora di più). Un guasto o una lentezza del frontend si pagano
 - **Il frontend non si riscrive**: si sposta **dove** viene servito, non come è fatto. (Decisione dell'utente,
   19/10/2026: il frontend non si tocca.)
 - Il ticket nasce da un brainstorming: **va triato** (le quattro domande sopra) prima di essere eseguibile.
+
+## Triage (19/10/2026) — le prove
+
+**La premessa regge.** `frontend/next.config.ts` ha `output: 'export'`, `trailingSlash`, `images.unoptimized`:
+è davvero un export statico, non un server Next. `frontend/package.json` ha ancora `"start": "next start"`, ma in
+produzione non si usa (serve `.next`, mentre il `Dockerfile` copia `frontend/out`).
+
+**Come sta su, oggi.** Il `Dockerfile` costruisce il frontend in uno stadio (`frontend-builder`) e copia
+`frontend/out` nel runner; poi è **l'addon a servirlo**, con `express.static` in `index.js:107` e un catch-all su
+`frontend/out/index.html` (`index.js:227`). Nessun workflow per il frontend, nessun container: `docker-compose.yml`
+ha sei servizi e il frontend non è fra questi.
+
+**Il beneficio non è quello che dice il ticket.** Servire file statici da Express non costa RAM né boot misurabili:
+il profilo di risorse del frontend e dell'addon sono **lo stesso** profilo (due processi Node magri). Quello che
+cambia davvero è altro, e sono due cose vere:
+
+1. **Il dominio di guasto**: un export rotto o un asset che manca oggi vive nel processo che serve Stremio.
+2. **La cadenza di rilascio**: per pubblicare una pagina si ricostruisce e si **riavvia l'addon** — che è il pezzo
+   che non deve cadere.
+
+Quindi il 56 non passa il criterio della decisione 32 così com'è scritto («profilo di risorse diverso»), ma ha un
+motivo **suo** e legittimo. Va deciso se il criterio si allarga (dominio di guasto / cadenza), o se il 56 si
+riformula su ciò che davvero serve.
+
+**L'opzione pigra, che il ticket non nomina.** Il dolore è la **costruzione accoppiata**, non il servire. Si può
+togliere senza processo nuovo, senza ingresso nuovo e senza toccare una rotta: il frontend si costruisce in un
+**workflow suo** (come `deploy-anime-source.yml`), pubblica `frontend/out` come **artefatto/immagine di soli
+file**, e l'app lo riceve come **volume** al posto della copia nell'immagine. L'app continua a servirlo con la
+stessa riga di `express.static`. Immagine dell'app più piccola, rilascio del frontend indipendente, zero
+ingressi nuovi, zero rotte cambiate.
