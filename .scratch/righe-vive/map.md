@@ -124,3 +124,8 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   dal secondo in poi entrano titoli forti da una parte e quasi assenti dall'altra (equilibrio mediano ~2e-5,
   17/20 sotto 1e-3). Se il prodotto vuole un ponte *davvero* bilanciato serve una soglia sull'equilibrio
   (`min(r_a,r_b)/max(...)`): decisione di prodotto, non di questo cantiere.
+- **`10` chiuso**: la porta d'ingresso delle uscite è usata offline (`uscite.py` → `uscite-collocate.npz`), la
+  riga `uscite_nuove` dichiara `fonte`/`candidati`/`nel_bacino`/`gia_visti`/`senza_attivazione`/`scartati_pavimento`,
+  e l'imbuto include i vicini di **tutti** i mondi accesi. **La cache però non è generata**: sul mate serve
+  `python3 -m graph.uscite` (procedura in `docs/DEPLOYMENT_HOME_SERVER.md` §1.2) — fino ad allora la riga resta
+  `fonte: canone`, vuota ma dichiarata. La riga è **già servita da Stremio**.
