@@ -21,6 +21,7 @@ const { fetchProfileContext } = require('../profile');
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const { graphClient } = require('../clients');
 const { resolveAnimePolicy, isAnimeContent } = require('../anime');
+const { SEED_RECENTI_QUANTI } = require('../library/seeds');
 
 const HERO_CATALOG_IDS = new Map([
     ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
@@ -162,7 +163,7 @@ function normalizePoolResult(result) {
  * @param {string} [options.animePolicy='neutral'] - 'exclude' | 'only' | 'neutral'
  * @returns {Array<{tmdbId: number, medium: string, tipo: string}>}
  */
-function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral' } = {}) {
+function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral', ultimaVisione = null, quantiRecenti = SEED_RECENTI_QUANTI } = {}) {
     const med = medium === 'series' || medium === 'tv' ? 'series' : 'movie';
     const tipoSeed = med === 'movie' ? 'movie' : 'tv';
     const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
@@ -177,7 +178,7 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
         return true;
     });
 
-    return filteredSeeds.map(([id, w]) => {
+    const output = filteredSeeds.map(([id, w]) => {
         const tmdbId = Number(id);
         let tipo = 'watched';
         if (w >= 4) tipo = 'loved';
@@ -189,6 +190,16 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
             tipo
         };
     });
+
+    const candidatiRecenti = output
+        .map((item) => ({ item, ts: Number(ultimaVisione && typeof ultimaVisione.get === 'function' ? ultimaVisione.get(String(item.tmdbId)) : NaN) }))
+        .filter(({ ts }) => Number.isFinite(ts) && ts > 0)
+        .sort((a, b) => (b.ts - a.ts) || String(a.item.tmdbId).localeCompare(String(b.item.tmdbId)));
+    const recentiIds = new Set(candidatiRecenti.slice(0, quantiRecenti || 0).map(({ item }) => String(item.tmdbId)));
+    for (const item of output) {
+        if (recentiIds.has(String(item.tmdbId))) item.recente = true;
+    }
+    return output;
 }
 
 /**
@@ -214,7 +225,7 @@ const HERO_STRATEGIES = [
 
             try {
                 const { semiDi } = require('../library');
-                const { seeds } = await semiDi({
+                const { seeds, ultimaVisione } = await semiDi({
                     userId: ctx.userId,
                     context: ctx.context,
                     mediaType: ctx.mediaType,
@@ -227,7 +238,7 @@ const HERO_STRATEGIES = [
                     || ctx.userConfig?.typeSelectors?.anime;
 
                 const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy });
+                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione });
                 const visti = new Set(semi.map((s) => s.tmdbId));
                 let traktCount = 0;
                 if (rawTraktResult?.traktAvailable) {
