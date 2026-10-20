@@ -33,6 +33,7 @@ from collections import defaultdict
 import pathlib
 import sys
 import time
+import re
 
 import numpy as np
 import pandas as pd
@@ -45,6 +46,26 @@ from graph import camminata as C
 from graph import canon as K
 from graph import parametri as P
 from graph import uscite as U
+
+# LA SPECIFICITA' DELLE RIGHE (Ticket 11): piu' basso = piu' specifico, quindi pesca per PRIMO nel
+# waterfall. E' un dato, non l'ordine accidentale del codice: qui e dentro ogni riga come campo.
+SPECIFICITA = {
+    "uscite_nuove": 10,
+    "nicchia_di_qualita": 20,
+    "classici_imperdibili": 30,
+    "punti_incontro": 40,
+    "ultime_visioni": 50,
+    "micro_cluster": 60,
+    "un_passo_fuori": 70,
+    "il_tuo_mondo": 80,
+    "mondo": 90,
+}
+
+
+def famiglia_riga(tipo):
+    """`micro_cluster_2` -> `micro_cluster`, `mondo_3379` -> `mondo`: la chiave della specificita'."""
+    return re.sub(r"_\d+$", "", str(tipo))
+
 
 T0 = time.time()
 
@@ -583,6 +604,78 @@ class Motore:
         ordine = sorted(range(len(nodi_u)), key=lambda j: (-float(pesi_u[j]), int(nodi_u[j])))
         return [str(self.TIT[int(nodi_u[j])]) for j in ordine[:quanti]]
 
+    def waterfall_righe(self, liste, cap_main):
+        """IL WATERFALL (Ticket 11): ogni titolo in UNA riga sola, in ordine di specificita'.
+
+        PERCHE' ESISTE. Le righe erano additive: lo stesso film poteva stare in tre righe hero, e una
+        riga specialistica perdeva il suo titolo migliore perche' «il tuo mondo» (bacino grande) era
+        arrivato prima. Qui le righe pescano in ordine di `SPECIFICITA`: prima le righe a bacino stretto,
+        poi ultime visioni e micro-cluster, infine «il tuo mondo».
+
+        L'UNICA SOVRAPPOSIZIONE AMMESSA (`WATERFALL_SOVRAPPOSIZIONE_MICRO`): «il tuo mondo» puo' tenere
+        un titolo che un micro-cluster ha gia' preso. Il motivo e' di prodotto: se il filone porta un
+        titolo che e' anche il migliore del mondo intero, toglierlo lo nasconderebbe proprio a chi apre
+        la home — e due righe che si contendono lo stesso titolo sono peggio di una sovrapposizione
+        dichiarata. Uno solo, non due.
+
+        Ogni riga porta la sua `specificita` e i `doppioni_tolti`; se il taglio la fa scendere sotto il
+        target lo DICHIARA (motivo), e la riga resta.
+        """
+        ordine = sorted(
+            range(len(liste)),
+            key=lambda i: (SPECIFICITA.get(famiglia_riga(liste[i]["tipo"]), 999), i),
+        )
+        assegnati = {}
+        consentite = int(P.WATERFALL_SOVRAPPOSIZIONE_MICRO)
+        for i in ordine:
+            li = liste[i]
+            tipo = li["tipo"]
+            famiglia = famiglia_riga(tipo)
+            li["specificita"] = int(SPECIFICITA.get(famiglia, 999))
+            li["doppioni_tolti"] = 0
+            pool = li.pop("_pool", None)
+            if pool is None:
+                continue
+            cap = int(li.get("target_dimensione") or cap_main)
+            sovrapposizioni, tolti = 0, 0
+            scelti, occupati = [], set()
+            for ch, sc in pool:
+                if ch in occupati:
+                    continue
+                if ch in assegnati:
+                    ammessa = (
+                        famiglia == "il_tuo_mondo"
+                        and famiglia_riga(assegnati[ch]) == "micro_cluster"
+                        and sovrapposizioni < consentite
+                    )
+                    if not ammessa:
+                        tolti += 1
+                        continue
+                    sovrapposizioni += 1
+                scelti.append((ch, sc))
+                occupati.add(ch)
+                if len(scelti) >= cap:
+                    break
+            li["titoli"] = scelti
+            li["doppioni_tolti"] = int(tolti)
+            li["target_dimensione"] = cap
+            li["totale_sopravvissuti"] = len(pool)
+            for ch, _sc in scelti:
+                assegnati[ch] = tipo
+            if len(scelti) < cap:
+                li["corta"] = True
+                if not li.get("motivo"):
+                    if tolti:
+                        li["motivo"] = (f"{tipo}: {tolti} titoli gia' in righe piu' specifiche, "
+                                        f"restano {len(scelti)}/{cap}")
+                    else:
+                        li["motivo"] = f"{tipo}: riga corta {len(scelti)}/{cap} titoli"
+            else:
+                li["corta"] = False
+            if tolti:
+                print(f"  [waterfall] {tipo}: -{tolti} doppioni, {len(scelti)}/{cap}", file=sys.stderr)
+        return liste
+
     def dichiara_corta(self, quanti, cap, nome, prefisso=None):
         """LA DICHIARAZIONE DI UNA RIGA CORTA, in un posto solo (Ticket 08).
 
@@ -803,12 +896,16 @@ class Motore:
         vicini = [int(x) for x in self.VICINI[primo] if x >= 0][:3] if primo is not None else []
 
         def righe_titoli(bs, quanti=cap_main, nome_riga="un_passo_fuori"):
+            """La lista piena (post anti-monopolio), NON tagliata: il taglio e' del chiamante.
+
+            Il waterfall del Ticket 11 deve poter ripescare quando toglie i doppioni: se qui si tagliasse
+            a `quanti`, una riga perderdebbe titoli senza avere con cosa rimpiazzarli.
+            """
             quanti_fetch = max(quanti * 2, quanti + 20)
             fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti_fetch, medium_filtro=medium)]
             if len(bs) > 1:
                 fuori = sorted(fuori, key=lambda t: -t[1])
-            div = self.applica_antimonopolio(fuori, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga=nome_riga)
-            return div[:quanti]
+            return self.applica_antimonopolio(fuori, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga=nome_riga)
 
         # =========================================================================
         # «IL TUO MONDO» (Ticket 03): Bacino appiattito + Pavimento di qualita' + Ranking combinato
@@ -871,8 +968,11 @@ class Motore:
         titoli_tuo = self.applica_antimonopolio(cand_tuo_tutti, visti=visti,
                                                 cap_posizioni=P.DIVERSITA_SLOT_MAX,
                                                 nome_riga="il_tuo_mondo")
-        liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo[:quanti_tuo]})
-        liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini, quanti=cap_main, nome_riga="un_passo_fuori")})
+        liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo[:quanti_tuo],
+                      "target_dimensione": quanti_tuo, "_pool": titoli_tuo})
+        pool_passo = righe_titoli(vicini, quanti=cap_main, nome_riga="un_passo_fuori")
+        liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": pool_passo[:cap_main],
+                      "target_dimensione": cap_main, "_pool": pool_passo})
 
         # =========================================================================
         # «NUOVE USCITE PER TE» (Ticket 10): la porta d'ingresso, e l'imbuto riparato
@@ -898,6 +998,7 @@ class Motore:
             "titoli": div_nuove[:cap_main],
             "target_dimensione": cap_main,
             "totale_sopravvissuti": len(div_nuove),
+            "_pool": div_nuove,
             "fonte": stato_uscite.get("fonte"),
             "candidati": int(stato_uscite.get("candidati", 0)),
             "nel_bacino": int(stato_uscite.get("nel_bacino", 0)),
@@ -998,6 +1099,7 @@ class Motore:
             "corta": riga_corta,
             "target_dimensione": target_nic,
             "totale_sopravvissuti": len(div_nic),
+            "_pool": div_nic,
             "soglia_relativa": not is_fallback_v_mondo,
             "fallback_v_mondo": is_fallback_v_mondo
         })
@@ -1062,6 +1164,7 @@ class Motore:
             "corta": riga_corta_cls,
             "target_dimensione": target_cls,
             "totale_sopravvissuti": len(div_cls),
+            "_pool": div_cls,
             "soglia_relativa": not is_fallback_v_mondo_cls,
             "fallback_v_mondo": is_fallback_v_mondo_cls
         })
@@ -1105,6 +1208,7 @@ class Motore:
             div_uv = self.applica_antimonopolio(cand_uv, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="ultime_visioni")
             riga_uv["titoli"] = div_uv[:cap_main]
             riga_uv["totale_sopravvissuti"] = len(div_uv)
+            riga_uv["_pool"] = div_uv
             riga_uv["corta"], motivo_uv = self.dichiara_corta(
                 len(riga_uv["titoli"]), cap_main, "ultime_visioni", prefisso="ultime_visioni"
             )
@@ -1163,6 +1267,7 @@ class Motore:
                 "titoli": titoli_cluster,
                 "target_dimensione": cap_main,
                 "totale_sopravvissuti": len(div_cl),
+                "_pool": div_cl,
             }
             riga_cl["corta"], motivo_cl = self.dichiara_corta(
                 len(titoli_cluster), cap_main, "micro_cluster", prefisso=f"micro_cluster_{i}"
@@ -1208,6 +1313,7 @@ class Motore:
                     "titoli": div_pon[:cap_main],
                     "target_dimensione": cap_main,
                     "totale_sopravvissuti": tot_pon,
+                    "_pool": div_pon,
                     "attivazione": round((filoni[i]["attivazione"] + filoni[j]["attivazione"]) / 2.0, 4),
                 }
                 riga_pon["corta"], motivo_pon = self.dichiara_corta(
@@ -1269,6 +1375,7 @@ class Motore:
                     "semi_chiavi": sponde[0]["semi"] + sponde[1]["semi"],
                     "titoli": div_fb[:cap_main],
                     "totale_sopravvissuti": tot_fb,
+                    "_pool": div_fb,
                     "attivazione": round((float(np.max(sponde[0]["att"])) + float(np.max(sponde[1]["att"]))) / 2.0, 4),
                 })
                 riga_fb["corta"], motivo_fb = self.dichiara_corta(
@@ -1285,7 +1392,12 @@ class Motore:
             liste.append(riga_fb)
 
         for b in bolle[1:]:
-            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")} )
+            pool_mondo = righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")
+            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": pool_mondo[:cap_main],
+                          "target_dimensione": cap_main, "_pool": pool_mondo})
+
+        # TICKET 11: IL WATERFALL. Ogni titolo in una riga sola, in ordine di specificita'.
+        liste = self.waterfall_righe(liste, cap_main)
 
         # IL CONTRATTO DI ORDINE DELLE LISTE.
         # Tutte le liste esportate devono rispettare rigorosamente l'ordine monotono decrescente:

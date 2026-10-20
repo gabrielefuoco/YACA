@@ -166,6 +166,11 @@ SCHEDA = [
      "Due, perche' un terzo nome trasforma la spiegazione in un elenco; se il filone ha un solo seme, ne "
      "porta uno.",
      "services/graph/motore.py"),
+    ("WATERFALL_SOVRAPPOSIZIONE_MICRO", 1, "DICHIARATO",
+     "Quante sovrapposizioni al massimo sono ammesse fra «il tuo mondo» e i micro-cluster nel waterfall "
+     "(Ticket 11). Una soltanto, e solo in quella direzione: il titolo migliore del mondo intero non deve "
+     "sparire dalla home perche' un filone l'ha preso prima — ma due sarebbero un doppione.",
+     "services/graph/motore.py"),
     ("PUNTI_INCONTRO_VAVE_MIN", 6.8, "DICHIARATO",
      "Pavimento di voto medio per i «punti d'incontro» fra due filoni (Ticket 09), piu' alto di quello "
      "generale (6,4): un ponte e' un titolo che deve reggere in DUE mondi, non in uno. Al di sotto non "

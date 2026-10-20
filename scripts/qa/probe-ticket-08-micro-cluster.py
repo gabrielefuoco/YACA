@@ -118,16 +118,28 @@ def main():
     del m.diffondi  # la spia ha finito: le sezioni successive non devono contare le sue camminate
 
     print("\n3. IL «PRIMA»: LA DIFFUSIONE UNICA SEGUE IL FILONE DOMINANTE")
-    tuo = next((li for li in res["liste"] if li["tipo"] == "il_tuo_mondo"), None)
-    assert tuo is not None, "FALLITO: manca il_tuo_mondo"
-    tuo_mem = membri_di(m, [ch for ch, _p in tuo["titoli"][:5]])
-    tuo_b = sum(1 for b in tuo_mem if b in DISPARI)
-    print(f"  il_tuo_mondo, primi 5: {tuo_b}/5 vengono dal filone B (quello con 20 semi su 26)")
+    # Dal Ticket 11 la riga e' dedotta dal waterfall (i micro-cluster arrivano prima): per giudicare la
+    # DIFFUSIONE si rifa' qui la camminata unica, sugli stessi semi e con gli stessi pesi.
+    from graph import camminata as C  # noqa: PLC0415
+    from graph import canon as K  # noqa: PLC0415
+    righe_semi = np.array([B.ROW_OF[ch] for ch in filone_a + filone_b], np.int64)
+    w_uni = m.pesi_semi(righe_semi, np.ones(len(righe_semi)), tipi=["watched"] * len(righe_semi))
+    r_uni = C.ppr(m.Tr, righe_semi, w_uni, normalizza=True)
+    cand_uni = np.array([x for x in range(m.N) if x not in set(righe_semi.tolist())], np.int64)
+    cand_uni = cand_uni[(m.VAVE[cand_uni] >= P.PAVIMENTO_VAVE_MIN) & (m.VOT[cand_uni] >= P.PAVIMENTO_VOT_MIN)]
+    bayes_uni = K.voto_bayesiano(m.VOT[cand_uni], m.VAVE[cand_uni])
+    score_uni = r_uni[cand_uni] * (bayes_uni / float(P.RANKING_BAYES_BASE)) ** float(P.RANKING_BAYES_EXP)
+    top_uni = cand_uni[np.argsort(-score_uni)[:5]]
+    b_uni = [int(m.MEM[x]) for x in top_uni]
+    tuo_b = sum(1 for b in b_uni if b in DISPARI)
+    print(f"  camminata unica, primi 5: {[B.KEYS[int(x)] for x in top_uni]} -> {tuo_b}/5 dal filone B")
     assert tuo_b >= 3, (
         "FALLITO: il fixture non mostra più lo schiacciamento (la diffusione unica non è dominata dal "
-        f"filone B): primi 5 in bolle {tuo_mem}. La prova del «prima» non varrebbe più."
+        f"filone B): primi 5 in bolle {b_uni}. La prova del «prima» non varrebbe più."
     )
-    print("  -> OK: la riga unica segue il filone dominante, le righe di cluster no")
+    tuo = next((li for li in res["liste"] if li["tipo"] == "il_tuo_mondo"), None)
+    assert tuo is not None, "FALLITO: manca il_tuo_mondo"
+    print("  -> OK: la diffusione unica segue il filone dominante, le righe di cluster no")
 
     print("\n4. PROFILO MONOLITICO: UNA RIGA, NON TRE")
     m2 = build_dual_world_graph()

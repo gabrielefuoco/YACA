@@ -160,7 +160,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
                 lista_out["semi_recenti"] = int(li["semi_recenti"])
             # Anche una riga di filone svuotata dal pavimento porta la sua identita' (Ticket 08).
             for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
-                      "fonte", "candidati", "nel_bacino", "scartati_pavimento"):
+                      "fonte", "candidati", "nel_bacino", "scartati_pavimento",
+                      "specificita", "doppioni_tolti"):
                 if campo in li:
                     lista_out[campo] = li[campo]
             contratto_liste.append(lista_out)
@@ -329,7 +330,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         # L'identita' delle righe derivate viaggia col contratto: lo SLOT (`micro_cluster_1..3`,
         # `punti_incontro_1..3`) e' posizionale e cambia quando i pesi si incrociano, il filone no (08, 09).
         for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
-                      "fonte", "candidati", "nel_bacino", "scartati_pavimento"):
+                      "fonte", "candidati", "nel_bacino", "scartati_pavimento",
+                      "specificita", "doppioni_tolti"):
             if campo in li:
                 lista_out[campo] = li[campo]
         if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):

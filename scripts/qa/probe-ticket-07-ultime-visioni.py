@@ -107,11 +107,41 @@ def main():
     tuo_c = [t[0] for t in riga(res_c, "il_tuo_mondo")["titoli"]]
     print(f"  il_tuo_mondo con i flag  : {tuo_a[:5]} ({len(tuo_a)} titoli)")
     print(f"  il_tuo_mondo senza flag  : {tuo_c[:5]} ({len(tuo_c)} titoli)")
-    assert tuo_a == tuo_c, (
-        "FALLITO: i flag di recenza hanno cambiato la diffusione PRINCIPALE. "
-        "La recenza e' una selezione: una seconda camminata, non un peso sul resto."
+
+    # Dal Ticket 11 il waterfall toglie da «il tuo mondo» i titoli presi da righe piu' specifiche, che
+    # dipendono dai flag: quindi le due righe possono differire. La prova che la DIFFUSIONE non cambia e'
+    # che ogni differenza e' spiegata da una riga piu' specifica.
+    def titoli_piu_specifici(res):
+        limite = next((li["specificita"] for li in res["liste"] if li["tipo"] == "il_tuo_mondo"), 999)
+        return {ch for li in res["liste"] if li.get("specificita", 999) < limite for ch, _p in li["titoli"]}
+
+    spariti = set(tuo_a) - set(tuo_c)
+    comparsi = set(tuo_c) - set(tuo_a)
+    print(f"  differenze: {len(spariti)} solo con i flag, {len(comparsi)} solo senza")
+    # Le due righe hanno la stessa dimensione e lo stesso bacino: se i flag non toccano la diffusione,
+    # ogni titolo che il giro A non ha e' un titolo che il waterfall di A ha assegnato a una riga piu'
+    # specifica (le ultime visioni), e i rimpiazzi vengono dallo stesso bacino piu' in basso.
+    assert comparsi <= titoli_piu_specifici(res_a), (
+        "FALLITO: i flag hanno cambiato la diffusione PRINCIPALE: i titoli comparsi senza flag non sono "
+        f"spiegati dal waterfall ({sorted(comparsi - titoli_piu_specifici(res_a))[:5]})"
     )
-    print("  -> OK: identica, bit per bit")
+    assert len(spariti) == len(comparsi), (
+        f"FALLITO: la riga cambia dimensione ({len(tuo_a)} con i flag, {len(tuo_c)} senza)"
+    )
+    sovrapposti = set(tuo_a) & titoli_piu_specifici(res_a)
+    nei_micro = {ch for li in res_a["liste"] if str(li["tipo"]).startswith("micro_cluster")
+                 for ch, _p in li["titoli"]}
+    print(f"  sovrapposizioni col piu' specifico: {len(sovrapposti)} "
+          f"(consentite: {P.WATERFALL_SOVRAPPOSIZIONE_MICRO}, tutte da micro-cluster? {sovrapposti <= nei_micro})")
+    assert len(sovrapposti) <= int(P.WATERFALL_SOVRAPPOSIZIONE_MICRO), (
+        f"FALLITO: {len(sovrapposti)} sovrapposizioni col piu' specifico, il ticket ne ammette "
+        f"{P.WATERFALL_SOVRAPPOSIZIONE_MICRO}"
+    )
+    assert sovrapposti <= nei_micro, (
+        f"FALLITO: la sovrapposizione ammessa e' solo coi micro-cluster, invece: {sorted(sovrapposti - nei_micro)}"
+    )
+    print("  -> OK: stessa diffusione; le differenze sono i titoli che il waterfall ha dato alle righe "
+          "piu' specifiche")
 
     print("\n4. CON MENO DI 3 SEMI RECENTI LA RIGA LO DICHIARA")
     storta = [semi(ch, i == 0) for i, ch in enumerate(semi_w2 + semi_w6)]
