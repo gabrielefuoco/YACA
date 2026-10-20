@@ -61,6 +61,9 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 - **`17`** — *il tipo dedotto dal peso*: `convertiSemiPerGrafo` indovina `loved`/`liked`/`watched` da soglie
   numeriche (`w >= 4`, `w >= 3`, `w === 1`). È la **causa strutturale** di ciò che il `02` ha curato per sintomo
   (il peso esplicito che scavalca `PESO_TIPO`), più lo score gonfiato del titolo ripescato.
+- **`18`** — *port collection_id e regista nel canone a runtime*: `metadati-canone.npz` esporta solo
+  `VOT, VAVE, POP, ANNO, NEP, COZY, IMP, TIT`. Senza `COLL` e `DIR` nel canone, l'anti-monopolio del ticket 04
+  è inerte in produzione (ticket 04 marcato `Blocked by: 18`).
 
 ## L'ultimo passo (deciso il 19/10/2026)
 

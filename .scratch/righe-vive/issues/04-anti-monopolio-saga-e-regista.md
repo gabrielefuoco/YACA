@@ -1,6 +1,6 @@
-Status: ready-for-agent
+Status: blocked
 Type: task
-Blocked by: 03
+Blocked by: 18
 
 # 04 — Anti-monopolio di saga e regista
 
@@ -56,16 +56,21 @@ Nelle righe del grafo (tutte, non solo `il_tuo_mondo`):
 
 ## Esito
 
-### 1. Conferma delle premesse
+### 1. Dichiarazione di stato: TICKET 04 BLOCCATO DA TICKET 18
+> [!IMPORTANT]
+> **In produzione la regola è inerte finché il canone non esporta `COLL` e `DIR`. Il Ticket 18 ("port `collection_id` and the director into the canon at runtime") è il prerequisito obbligatorio (`Blocked by: 18`).**
+> Il ticket 04 **non è chiuso**, è **bloccato**. Il codice dell'anti-monopolio è implementato e resta pronto ad attivarsi non appena il canone fornirà i metadati necessari. Nel frattempo, in produzione la funzione opera come un **no-op rigoroso** che restituisce la lista di input immutata, senza toccare né i punteggi né l'ordine dei titoli.
+
+### 2. Conferma delle premesse
 Prima di modificare il codice sono state verificate le tre premesse:
-1. In `services/graph/bubbles.py` i componenti `COLL` (peso 3) e `DIR` (peso 1) legano fortissimo i film della stessa collezione o dello stesso regista, concentrando le saghe nelle prime posizioni per attivazione.
+1. In `services/graph/bubbles.py` i componenti `COLL` (peso 3) e `DIR` (peso 1) legano fortissimo i film della stessa collezione o dello stesso regista, concentrando le saghe nelle prime posizioni per attivazione. Tuttavia `COLL` e `DIR` esistono in `bubbles.py` solo come archi della matrice dei pesi, non come attributi per-titolo esportati nel canone.
 2. Sulle righe del grafo (`src/pool/index.js` `graph_rows`) non veniva applicata alcuna regola di cap: `src/pool/composer.js` applica il filtro collezioni e registi solo su `fetchPopularFallbackIds` (fallback popolare); `ProfileScorer.applyDiversityCaps` opera solo sui candidati generati per via tabellare in DuckDB (`true_blend`); le righe del grafo ricevevano i titoli da `/raccomanda` senza alcun cap di diversità.
 3. Nel canone a runtime:
    - `ANNO` è presente ed esportato negli array del canone caricati da `canon.metadati()` (`self.ANNO`).
    - `collection_id` e `regista` (`DIR`) **non sono presenti** negli array precalcolati a runtime esportati da `metadati-canone.npz` (che include solo `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP` e `TIT`).
    - **Trappola da specifica rispettata**: `Motore` è stato strutturato per leggere e supportare `self.COLL` e `self.DIR` / `self.REGISTA`; la regola anti-monopolio opera solo sui metadati noti, senza inventare proxy o euristiche arbitrarie (come match su sottostringhe del titolo).
 
-### 2. Modifiche apportate
+### 3. Modifiche apportate
 1. **`services/graph/parametri.py`**:
    - Inseriti i 3 parametri calibrati e dichiarati per il Ticket 04:
      - `DIVERSITA_SLOT_MAX = 20`: numero di slot di testa di una riga a cui si applicano i cap anti-monopolio.
@@ -75,6 +80,7 @@ Prima di modificare il codice sono state verificate le tre premesse:
    - Inizializzati in `Motore.__init__` gli attributi `self.COLL = m.get("COLL", None)`, `self.DIR = m.get("DIR", None)`, `self.REGISTA = self.DIR`.
    - Introdotti i metodi helper `get_collection_id(x)`, `get_directors(x)`, `get_anno(x)`.
    - Implementato il metodo centrale `applica_antimonopolio(titoli, visti=None, cap_posizioni=None, nome_riga="")`:
+     - **Strict no-op iniziale**: se `self.COLL is None and self.DIR is None`, restituisce immediatamente `titoli` inalterato (stessa istanza referenziale, nessun rebuild, nessun remap dei punteggi, nessun riordino).
      - Identifica preliminarmente per ogni collezione TMDB presente tra i candidati non visti il titolo con `ANNO` minore (regola Dune).
      - Pass 1 (primi 20 slot): seleziona fino a 20 candidati ammettendo al massimo 1 titolo per `collection_id` e al massimo 2 per regista. Per ogni collezione, solo il titolo con anno minore tra i non visti può entrare nei primi 20 slot; ogni eventuale sequel viene estromesso dai primi slot.
      - Pass 2 (coda dopo la posizione 20): i titoli esclusi dai primi 20 slot **non spariscono**; vengono posizionati dopo il 20-esimo slot, preservando l'ordine cronologico della saga (i sequel non precedono mai i titoli precedenti) e con ordinamento per punteggio relativo.
@@ -82,9 +88,9 @@ Prima di modificare il codice sono state verificate le tre premesse:
      - Dichiarazione riga accorciata: se una riga non raggiunge la capienza dei 20 slot a causa dei vincoli di diversità, lo dichiara esplicitamente.
    - Applicazione dell'anti-monopolio a tutte le righe del grafo (`il_tuo_mondo`, `un_passo_fuori`, `uscite_nuove`, `nicchia_di_qualita`, `mondo_{b}`).
 3. **`scripts/qa/probe-ticket-04-saga.py`**:
-   - Creata sonda QA esaustiva con verifica parametri, premesse, caso costruito 6 saga + 5 regista, caso Dune (non visto vs visto), tutte le righe del grafo, servizio HTTP (/health 200, /raccomanda 200) e consumo memoria (< 512 MB).
+   - Creata sonda QA esaustiva con verifica parametri, premesse e dichiarazione strutturale, **dimostrazione rigorosa del no-op con COLL/DIR a None** (asserita in codice su istanza, lunghezza, id, punteggi e ordine), caso costruito 6 saga + 5 regista su metadati iniettati, caso Dune (non visto vs visto), tutte le righe del grafo, servizio HTTP (/health 200, /raccomanda 200) e consumo memoria (< 512 MB).
 
-### 3. Sonda dedicata Ticket 04 (`probe-ticket-04-saga.py`)
+### 4. Sonda dedicata Ticket 04 (`probe-ticket-04-saga.py`)
 
 Comando eseguito:
 ```bash
@@ -102,16 +108,17 @@ Output verbatim incollato:
   -> OK: Tutti i 3 parametri presenti e calibrati.
 
 ================================================================================
-2. VERIFICA DELLE PREMESSE A RUNTIME
+2. VERIFICA DELLE PREMESSE A RUNTIME E STATO DI PRODUZIONE
 ================================================================================
   a) Metadati nel canone:
      - ANNO:          DISPONIBILE a runtime nel canone (array self.ANNO)
      - collection_id: NON PRESENTE negli array del canone precalcolato a runtime
      - regista (DIR): NON PRESENTE negli array del canone precalcolato a runtime
-     -> DICHIARAZIONE OBBLIGATORIA (Trappola da brief):
-        collection_id e regista non risiedono nel canone precalcolato a runtime;
-        la regola anti-monopolio viene applicata solo quando tali metadati sono noti
-        (es. attributi self.COLL e self.DIR forniti o iniettati), senza inventare proxy.
+     -> DICHIARAZIONE STRUTTURALE:
+        In produzione la regola e' inerte finche' il canone non esporta COLL/DIR;
+        il ticket 18 e' il prerequisito obbligatorio (Blocked by: 18);
+        la sonda prova il meccanismo sia in no-op puro (senza metadati)
+        sia sui dati iniettati (meccanismo pronto per quando i dati esisteranno).
 
   b) Verifica assenza di cap preesistenti sulle righe del grafo:
      - src/pool/composer.js: i cap (seenCollections, seenDirectors) operano SOLO su fetchPopularFallbackIds
@@ -120,7 +127,20 @@ Output verbatim incollato:
      -> OK: Nessun cap preesistente interferisce con le righe del grafo.
 
 ================================================================================
-3. CASO COSTRUITO DELLA PROVA (6 FILM SAGA + 5 FILM STESSO REGISTA)
+3. PROVA NO-OP RIGOROSO SENZA METADATI (COLL is None and DIR is None)
+================================================================================
+  Verifica identità rigorosa (senza metadati l'input non deve essere toccato):
+    - Identità istanza (out is input_titoli): OK (nessun rebuild)
+    - Lunghezza invariata (6 elementi): OK
+    - Stessi ID e stesso ordine: OK
+    - Stessi identici score (zero remapping dei numeri): OK
+    - Uguaglianza elemento per elemento: OK
+    - Prova su lista lunga (50 titoli, > cap_posizioni): OK (identica all'input)
+  -> OK: PROVA NO-OP SUPERATA: Con COLL=None e DIR=None, applica_antimonopolio
+     restituisce l'input identico (stessi ID, stessi score, stesso ordine, nessun rebuild, nessun remap).
+
+================================================================================
+4. CASO COSTRUITO DELLA PROVA CON METADATI (6 SAGA + 5 STESSO REGISTA)
 ================================================================================
   Totale titoli in uscita 'il_tuo_mondo': 60
   Primi 20 slot:
@@ -132,7 +152,7 @@ Output verbatim incollato:
   -> OK: Caso costruito superato: 1 saga e 2 regista nei primi 20, esclusi presenti dopo il 20.
 
 ================================================================================
-4. IL CASO DUNE (PARTE UNO NON VISTO vs GIA VISTO)
+5. IL CASO DUNE (PARTE UNO NON VISTO vs GIA VISTO)
 ================================================================================
   Subcase A: Parte Uno NON VISTO:
     - Indice Dune Parte Uno: #0
@@ -145,13 +165,13 @@ Output verbatim incollato:
     -> OK: Con Parte Uno visto, Parte Due diventa legittimamente il titolo proposto nei primi 20.
 
 ================================================================================
-5. VERIFICA DIVERSIFICAZIONE SU TUTTE LE RIGHE DEL GRAFO
+6. VERIFICA DIVERSIFICAZIONE SU TUTTE LE RIGHE DEL GRAFO
 ================================================================================
   Righe restituite dal grafo: ['il_tuo_mondo', 'un_passo_fuori', 'uscite_nuove', 'nicchia_di_qualita', 'mondo_1', 'mondo_2', 'mondo_3']
   -> OK: Tutte le righe del grafo rispettano i cap e il contratto di monotonicita'.
 
 ================================================================================
-6. SERVIZIO GRAFO HTTP (HEALTH 200, RACCOMANDA 200) E CONSUMO RAM
+7. SERVIZIO GRAFO HTTP (HEALTH 200, RACCOMANDA 200) E CONSUMO RAM
 ================================================================================
   GET /health  -> status 200, ok: True, ricetta: 922f1402a6327dee
   POST /raccomanda -> status 200, ruolo: il_tuo_mondo, titoli: 30
@@ -166,16 +186,16 @@ TUTTE LE VERIFICHE TICKET 04 SUPERATE CON SUCCESSO (TASK_OK)
 ================================================================================
 ```
 
-### 4. Sonda a sei stadi della perdita (`probe-perdita-righe.js --fixture`)
+### 5. Sonda a sei stadi (`probe-perdita-righe.js`)
 
 Comando eseguito:
 ```bash
-node scripts/qa/probe-perdita-righe.js --fixture
+node scripts/qa/probe-perdita-righe.js
 ```
 
 Output verbatim incollato:
 ```text
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
 [HierarchicalGraph] Grafo gerarchico caricato in RAM con successo.
 ========================================================================================================
   SONDA QA TICKET 01 — LA SONDA DELLA PERDITA RIGHE (MISURA A SEI STADI)
@@ -248,7 +268,7 @@ Medium MOVIE [il_tuo_mondo]:
 ========================================================================================================
 ```
 
-### 5. Manifest Hashes
+### 6. Manifest Hashes
 
 Comando eseguito:
 ```bash
@@ -264,7 +284,7 @@ buildRootManifest: 91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969
 - `buildManifest`: `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178` (invariato)
 - `buildRootManifest`: `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2` (invariato)
 
-### 6. Baseline Jest Test Suite
+### 7. Baseline Jest Test Suite
 
 Comando eseguito:
 ```bash
@@ -274,26 +294,27 @@ npx jest --forceExit
 Output verbatim incollato:
 ```text
 Summary of all failing tests
-FAIL tests/animeOverridesCertify.test.js
 FAIL tests/presetBurtonOrdering.test.js
 FAIL tests/donghuaCatalog.test.js
+FAIL tests/animeOverridesCertify.test.js
 FAIL tests/duckDbAndMatchmaker.test.js
 FAIL tests/candidateProvider.test.js
 
 Test Suites: 5 failed, 185 passed, 190 total
 Tests:       8 failed, 1 skipped, 1898 passed, 1907 total
 Snapshots:   0 total
-Time:        43.424 s
+Time:        43.476 s
 Ran all test suites.
 ```
 Esattamente le sole 5 suite rosse / 8 test falliti / 1898 passati ammessi dalla specifica di cantiere. Zero regressioni.
 
-### 7. Vincoli rispettati e cosa NON è stato fatto
+### 8. Vincoli rispettati e cosa NON è stato fatto
 - `ALPHA = 0.60` intoccato.
 - Nessuna modifica a `frontend/**`.
 - Nessun `git push`.
 - Nessun `npm run build` o `tsc`.
+- In produzione, in assenza di `COLL` e `DIR`, la funzione effettua un no-op rigoroso: nessun rebuild, nessun remap, nessun riordino.
 - Nessun proxy o euristica inventata (es. match per prefisso o sottostringa del nome) per `collection_id` o `regista`: la regola opera solo su dati noti.
-- Nessun svuotamento della coda: i titoli eccedenti i cap nei primi 20 slot scendono ordinatamente dopo la posizione 20 senza sparire.
+- Nessun svuotamento della coda: quando abilitata, i titoli eccedenti i cap nei primi 20 slot scendono ordinatamente dopo la posizione 20 senza sparire.
 - Il contratto di monotonicità dei punteggi di `assert_monotonia_lista` è pienamente rispettato.
 - Consumo di memoria misurato a ~100.3 MB, ben al di sotto del tetto di 512 MB.
