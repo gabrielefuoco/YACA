@@ -178,3 +178,7 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   dichiarati di `kidsModeFilters.js`, con la parità provata dalla sonda). Artefatto vecchio → flag `None` e
   **dichiarato** (`senza flag anime/adulto, i filtri a monte restano inerti`). Ricetta: `fee303c7e91ebcc3`.
   **Residuo**: rigenerare `metadati-canone.npz` sul mate.
+- **`12` chiuso**: la maschera (`ANIME`/`ADULTO` del ticket 19) si applica ai **candidati**, non alla pagina
+  tagliata: `filtri_a_monte` + `filtra_idonei` in ogni punto dove i candidati nascono. Sonda: senza, la riga
+  serviva **0/20** idonei (i primi venti erano anime) con 165 idonei più sotto; con la maschera **20/20**.
+  Il pool manda `opzioni.filtri = {anime, kids}` e non manda `opzioni` quando non c'è niente da filtrare.

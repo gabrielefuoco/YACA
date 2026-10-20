@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: task
 Blocked by: 19
 
@@ -46,3 +46,65 @@ Oggi il grafo calcola su tutto e restituisce `cap = 60`; poi `src/stremio/idrata
 La premessa «il flag anime del canone» è **falsa**: `metadati-canone.npz` non esporta nessun flag per
 titolo (né anime né adulto), e l'anime è deciso lato Node. Il prerequisito è il ticket **19**; questo
 ticket resta fermo finché il canone non porta i due array. Vedi `19-i-flag-del-canone.md`.
+
+---
+
+## Esito (20/10/2026) — la maschera si applica ai candidati, non alla pagina
+
+### 1. La premessa
+
+Il ticket chiedeva: «il flag anime del canone», che **non esisteva** → il prerequisito è stato il ticket
+**19** (`ANIME`, `ADULTO` per titolo, con la lettura tollerante). Ora esiste, e questo ticket lo usa.
+
+### 2. Cosa è uscito
+
+- **`Motore.filtri_a_monte(anime, kids)`**: costruisce **una** maschera booleana sul canone
+  (`ANIME` per `only`/`exclude`, `ADULTO` per il kids-mode) e la espone come `self.IDONEI`. Se l'artefatto
+  non ha i flag, la maschera resta `None` e la dichiarazione lo dice
+  (`artefatto senza i flag ANIME, ADULTO: i filtri a monte restano inerti`).
+- **`Motore.filtra_idonei(cand)`**: toglie i non idonei da una lista di `(chiave, punteggio)` e si applica
+  **dove i candidati nascono** — `righe_titoli` (un passo fuori e `mondo_*`), il tuo mondo, uscite nuove,
+  nicchia, classici, ultime visioni, micro-cluster, ponti (normale e di fallback). Quindi il taglio `[:cap]`
+  prende solo idonei: è esattamente «a monte», non un filtro sulla pagina già tagliata.
+- **Il contratto del motore**: `opzioni.filtri = {anime, kids}` (validati: 400 se `anime` non è
+  `only`/`exclude`), e la risposta dichiara sempre com'è andata (`filtri: {applicato, motivo, scartati}`).
+- **Il pool** manda `filtri` dalle fonti che il prodotto usa già: `animePolicy` (con l'ordine di fallback
+  che c'era) e `kidsMode`. Se non c'è nulla da filtrare **non manda `opzioni`**, così i default del motore
+  valgono ancora (il ticket 41 lo fissa).
+
+### 3. La prova (`scripts/qa/probe-ticket-12-filtri.py`)
+
+Canone sintetico di 200 titoli, i 30 migliori anime e 5 adulti; politica `exclude` + kids.
+
+```
+$ py scripts/qa/probe-ticket-12-filtri.py
+maschera: anime=exclude kids=True -> applicato=True scartati=35 (atteso 35)
+A. taglio a valle:  0/20 idonei in pagina (il resto e' buco)
+B. filtro a monte:  20/20 idonei in pagina
+   primo idoneo servito: movie:1030 (prima era movie:1000, non idoneo)
+artefatto senza flag -> applicato=False · motivo: artefatto senza i flag ANIME, ADULTO: i filtri a monte restano inerti (si rigenera metadati-canone.npz)
+confronto: kids=True scarta 5 · anime=only tiene 30
+OK
+```
+
+È il difetto misurato: con i filtri a valle la riga serviva **zero** titoli idonei (tutti i primi venti erano
+anime), mentre 165 idonei stavano più sotto. Con la maschera a monte: **20/20**.
+
+`tests/filtriAMonte.test.js` (3 test) prova il filo lato Node: `anime only` + kids arrivano come `filtri`,
+`exclude` senza kids pure, e un profilo neutro non manda niente.
+
+### 4. Suite
+
+```
+Test Suites: 5 failed, 193 passed, 198 total
+Tests:       8 failed, 1 skipped, 1963 passed, 1972 total
+```
+
+### 5. Residui
+
+1. **L'artefatto va rigenerato sul mate**: finché non ha `ANIME`/`ADULTO`, la maschera è inerte e lo
+   dichiara (i tagli a valle restano la rete). È lo stesso passo del ticket 19.
+2. **La maschera è sul canone intero**, non per riga: un titolo idoneo non compare comunque in una riga
+   dove non lo porterebbe il grafo. È il comportamento voluto (si toglie, non si aggiunge).
+3. **Il kids-mode non ha una lista «violenza» separata**: usa i generi/keyword adulti del prodotto
+   (`ADULTO_GENERI`/`ADULTO_KEYWORDS`). Se il prodotto vuole un kids più severo, la leva è quella lista.

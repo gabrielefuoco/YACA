@@ -290,8 +290,10 @@ const HERO_STRATEGIES = [
                     user: ctx.userConfig
                 });
                 const tipoSeed = med === 'movie' ? 'movie' : 'tv';
+                // Un solo posto per la politica anime del profilo (la usano i semi e i filtri a monte).
                 const animePolicy = ctx.animePolicy
                     || ctx.effectiveSelectors?.anime
+                    || ctx.typeSelectors?.anime
                     || ctx.userConfig?.activeProfileSettings?.typeSelectors?.anime
                     || ctx.userConfig?.typeSelectors?.anime;
 
@@ -344,7 +346,19 @@ const HERO_STRATEGIES = [
                 const servite = ctx.righeServite !== undefined
                     ? ctx.righeServite
                     : righeServiteDelProfilo({ userConfig: ctx.userConfig, context: ctx.context, mediaType: med });
-                const opzioniMotore = servite ? { ...(opzioni || {}), righe_servite: servite } : opzioni;
+                // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
+                // (a valle si butta via la pagina: se i primi 20 sono 15 non idonei, la riga ne serve 5).
+                const filtri = {
+                    anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
+                    kids: Boolean(ctx.kidsMode)
+                };
+                // `opzioni` resta `undefined` quando non c'e' niente da aggiungere: se lo si manda vuoto,
+                // i default del motore non valgono piu' (Ticket 41 lo fissa, ed e' giusto).
+                const extra = {
+                    ...(servite ? { righe_servite: servite } : {}),
+                    ...(filtri.anime || filtri.kids ? { filtri } : {})
+                };
+                const opzioniMotore = Object.keys(extra).length > 0 ? { ...(opzioni || {}), ...extra } : opzioni;
                 const resGraph = await graphClient.raccomanda({
                     semi,
                     medium: med,

@@ -605,6 +605,63 @@ class Motore:
         ordine = sorted(range(len(nodi_u)), key=lambda j: (-float(pesi_u[j]), int(nodi_u[j])))
         return [str(self.TIT[int(nodi_u[j])]) for j in ordine[:quanti]]
 
+    def filtri_a_monte(self, anime=None, kids=None):
+        """I FILTRI A MONTE (Ticket 12): chi non e' idoneo esce PRIMA del taglio `[:cap]`.
+
+        Perche' esiste: filtrare a valle (nel taglio delle card) butta via la pagina — se i primi 20 di
+        una riga sono 15 anime e la politica e' `exclude`, la riga serve 5 titoli invece dei 20 idonei che
+        aveva piu' sotto. Qui la maschera si applica ai candidati, e il taglio prende solo idonei.
+
+        Le fonti sono i flag del Ticket 19 (`ANIME`, `ADULTO`). Se l'artefatto non li ha, non si inventa
+        niente: `self.IDONEI = None` e la dichiarazione dice che i filtri restano inerti.
+
+        @returns dict con `applicato`, `motivo`, `scartati` (titoli non idonei nel canone)
+        """
+        self.IDONEI = None
+        chiesto_anime = anime if anime in ("only", "exclude") else None
+        chiesto_kids = bool(kids)
+        if not chiesto_anime and not chiesto_kids:
+            return {"applicato": False, "motivo": "nessun filtro richiesto", "scartati": 0}
+
+        mancanti = []
+        if chiesto_anime and getattr(self, "ANIME", None) is None:
+            mancanti.append("ANIME")
+        if chiesto_kids and getattr(self, "ADULTO", None) is None:
+            mancanti.append("ADULTO")
+        if mancanti:
+            motivo = (f"artefatto senza i flag {', '.join(mancanti)}: i filtri a monte restano inerti "
+                      "(si rigenera metadati-canone.npz)")
+            print(f"  [filtri] {motivo}", file=sys.stderr)
+            return {"applicato": False, "motivo": motivo, "scartati": 0}
+
+        idonei = np.ones(self.N, bool)
+        if chiesto_anime == "only":
+            idonei &= np.asarray(self.ANIME, bool)
+        elif chiesto_anime == "exclude":
+            idonei &= ~np.asarray(self.ANIME, bool)
+        if chiesto_kids:
+            idonei &= ~np.asarray(self.ADULTO, bool)
+        self.IDONEI = idonei
+        scartati = int((~idonei).sum())
+        print(f"  [filtri] a monte: anime={chiesto_anime or '-'} kids={chiesto_kids} "
+              f"-> {scartati:,} titoli del canone non idonei", file=sys.stderr)
+        return {"applicato": True, "motivo": None, "scartati": scartati}
+
+    def filtra_idonei(self, cand):
+        """Toglie i non idonei da una lista di `(chiave, punteggio)` PRIMA del taglio (Ticket 12)."""
+        idonei = getattr(self, "IDONEI", None)
+        if idonei is None or not cand:
+            return cand
+        tenuti = []
+        for voce in cand:
+            try:
+                riga = B.ROW_OF[voce[0]]
+            except (KeyError, TypeError):
+                continue
+            if idonei[riga]:
+                tenuti.append(voce)
+        return tenuti
+
     def waterfall_righe(self, liste, cap_main, partecipanti=None):
         """IL WATERFALL (Ticket 11): ogni titolo in UNA riga sola, in ordine di specificita'.
 
@@ -951,6 +1008,7 @@ class Motore:
             """
             quanti_fetch = max(quanti * 4, quanti + 60)
             fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti_fetch, medium_filtro=medium)]
+            fuori = self.filtra_idonei(fuori)   # Ticket 12: prima del taglio del chiamante
             if len(bs) > 1:
                 fuori = sorted(fuori, key=lambda t: -t[1])
             return self.applica_antimonopolio(fuori, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga=nome_riga)
@@ -1013,6 +1071,7 @@ class Motore:
         else:
             cand_tuo_tutti = titoli_uns
 
+        cand_tuo_tutti = self.filtra_idonei(cand_tuo_tutti)
         titoli_tuo = self.applica_antimonopolio(cand_tuo_tutti, visti=visti,
                                                 cap_posizioni=P.DIVERSITA_SLOT_MAX,
                                                 nome_riga="il_tuo_mondo")
@@ -1038,6 +1097,7 @@ class Motore:
         else:
             cand_nuove, stato_uscite = U.da_canone(self.ANNO, self.MEM, B.IS_TV, self.VOT, r,
                                                    bacino_uscite, medium, visti)
+        cand_nuove = self.filtra_idonei(cand_nuove)   # Ticket 10 + 12: prima del taglio
         div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti,
                                               cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
         riga_un = {
@@ -1135,6 +1195,7 @@ class Motore:
             cand_nic = []
             is_fallback_v_mondo = True
 
+        cand_nic = self.filtra_idonei(cand_nic)
         div_nic = self.applica_antimonopolio(cand_nic, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="nicchia_di_qualita")
         titoli_nic = div_nic[:cap_main]
         target_nic = cap_main if cap_main is not None else 20
@@ -1200,6 +1261,7 @@ class Motore:
             cand_cls = []
             is_fallback_v_mondo_cls = True
 
+        cand_cls = self.filtra_idonei(cand_cls)
         div_cls = self.applica_antimonopolio(cand_cls, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="classici_imperdibili")
         titoli_cls = div_cls[:cap_main]
         target_cls = cap_main if cap_main is not None else 20
@@ -1253,6 +1315,7 @@ class Motore:
             surv_rec = self.pavimento(cand_rec, soglia_voti, soglia_vave)
             cand_uv = self.ordina_per_ranking(surv_rec, r_rec, base_bayes, exp_bayes)
 
+            cand_uv = self.filtra_idonei(cand_uv)
             div_uv = self.applica_antimonopolio(cand_uv, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="ultime_visioni")
             riga_uv["titoli"] = div_uv[:cap_main]
             riga_uv["totale_sopravvissuti"] = len(div_uv)
@@ -1296,6 +1359,7 @@ class Motore:
             )
             surv_cl = self.pavimento(cand_cl, soglia_voti, soglia_vave)
             cand_titoli = self.ordina_per_ranking(surv_cl, r_cl, base_bayes, exp_bayes)
+            cand_titoli = self.filtra_idonei(cand_titoli)
             div_cl = self.applica_antimonopolio(cand_titoli, visti=visti,
                                                 cap_posizioni=P.DIVERSITA_SLOT_MAX,
                                                 nome_riga=f"micro_cluster_{i}")
@@ -1348,6 +1412,7 @@ class Motore:
                 div_pon, tot_pon = self.ponte_fra(filoni[i]["r"], filoni[j]["r"],
                                                   filoni[i]["cand"], filoni[j]["cand"],
                                                   visti, soglia_voti, nome_pon)
+                div_pon = self.filtra_idonei(div_pon)   # Ticket 12: prima del taglio
                 semi_a = a.get("titoli_seme") or []
                 semi_b = b.get("titoli_seme") or []
                 riga_pon = {
@@ -1417,6 +1482,7 @@ class Motore:
                 div_fb, tot_fb = self.ponte_fra(sponde[0]["r"], sponde[1]["r"],
                                                 sponde[0]["cand"], sponde[1]["cand"],
                                                 visti, soglia_voti, "punti_incontro_1")
+                div_fb = self.filtra_idonei(div_fb)   # Ticket 12: prima del taglio
                 riga_fb.update({
                     "coppia_id": f"b{sponde[0]['mondo']}_b{sponde[1]['mondo']}",
                     "titoli_seme": [t for t in (sponde[0]["titolo"], sponde[1]["titolo"]) if t],

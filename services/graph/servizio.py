@@ -114,6 +114,18 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             return 400, {"ok": False, "errore": "il campo 'righe_servite' deve essere una lista di stringhe"}
         servite = list(dict.fromkeys(grezzo))
 
+    # TICKET 12: i filtri a monte (anime/kids) si applicano ai candidati, prima del taglio delle card.
+    filtri = {}
+    if isinstance(opzioni, dict) and opzioni.get("filtri") is not None:
+        grezzo = opzioni.get("filtri")
+        if not isinstance(grezzo, dict):
+            return 400, {"ok": False, "errore": "il campo 'filtri' deve essere un oggetto"}
+        anime = grezzo.get("anime")
+        if anime is not None and anime not in ("only", "exclude"):
+            return 400, {"ok": False, "errore": "filtri.anime deve essere 'only' o 'exclude'"}
+        filtri = {"anime": anime, "kids": bool(grezzo.get("kids"))}
+    dichiarazione_filtri = motore.filtri_a_monte(anime=filtri.get("anime"), kids=filtri.get("kids", False))
+
     esito = motore.lista(storia, slider=opzioni, cap=cap, medium=req_medium, servite=servite)
     if esito.get("errore"):
         return 200, {
@@ -365,6 +377,9 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         "liste": contratto_liste,
         "motivi": motivi
     }
+    if dichiarazione_filtri.get("applicato") or dichiarazione_filtri.get("motivo"):
+        # Ticket 12: si dichiara sempre com'e' andata — applicato, oppure inerte e perche'.
+        risposta["filtri"] = dichiarazione_filtri
     fuori = getattr(motore, "waterfall_fuori", None)
     if servite is not None:
         # TICKET 22: si dichiara chi non ha partecipato al dedup (nessun catalogo servito).
