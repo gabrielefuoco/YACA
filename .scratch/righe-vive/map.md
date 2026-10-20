@@ -238,3 +238,28 @@ POST /raccomanda (filtri exclude+kids, righe_servite = [il_tuo_mondo, classici])
 
 **Residuo unico**: `uscite-collocate.npz` non esiste ancora (`python -m graph.uscite` sul mate, ~10 min):
 `uscite_nuove` esce vuota ma **dichiarata** (`fonte: canone`).
+
+### La cache delle uscite, generata (20/10/2026, sera)
+
+`python -m graph.uscite` dentro un container una-tantum (Parquet + artefatti del collocatore + data dir in
+scrittura) → **1.709 titoli** collocati (1.083 film, 626 serie), scarti dichiarati dal builder
+(`vecchi 113.199`, `pochi_voti 2.135`, `voto_basso 502`). Il file è in `/srv/yaca/services/graph/data/`
+(25 kB) e il grafo lo legge al riavvio: `uscite_nuove` passa da **0** a **20 titoli** con
+`fonte: collocate`.
+
+**Un secondo bug trovato lì**: la maschera dei filtri (ticket 12) mappava `chiave → B.ROW_OF`, e le uscite
+nuove **non sono nel canone** (vengono dalla cache TMDB): finivano tutte in `KeyError` e venivano scartate,
+riga vuota. Ora chi non è nel canone **non viene giudicato** (la maschera non lo conosce) e lo dichiara:
+`filtri: {applicato: true, scartati: 23.902, non_giudicabili: 48}`.
+
+**Stato finale in produzione** (verificato con `/raccomanda` vero):
+
+```
+filtri:    {applicato: True, scartati: 23.902, non_giudicabili: 48}     ← 12 acceso
+waterfall: {servite: 2, fuori: 13}                                     ← 22 vivo
+liste:     il_tuo_mondo 20 · un_passo_fuori 9 · uscite_nuove 20 · nicchia 20 · classici 15
+```
+
+**Aperto dal deploy**: **ticket 23** — il waterfall, ripescando sotto la posizione 20, riapre le saghe che
+l'anti-monopolio (04) aveva chiuso (`il_tuo_mondo`: 3 collezioni duplicate nei primi 20). La diversità deve
+valere sulla riga **servita**, non solo su quella prima del ripescaggio.
