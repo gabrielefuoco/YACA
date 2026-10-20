@@ -118,10 +118,12 @@ sempre. `buildRootManifest` **non cambia**: il manifesto radice non elenca catal
 `tests/heroMovieDateRegression.test.js`: l'helper `cachedHeroGroup` costruiva una voce di cache con **4**
 famiglie; il validator del pool ora ne pretende 10 (voce vecchia = cache da rigenerare) → l'helper le
 costruisce dal registro.
-`tests/ticket47HeroProtection.test.js`: «8 hero» → 20; **la guardia sul frontend** è stata aggiornata nel
-verso che conta (nessun id morto, ogni id del frontend è vivo) e le sei famiglie nuove sono **dichiarate**
-come «servite ma non ancora nella dashboard», più due test nuovi: le righe nuove sono nel manifesto anche
-se non sono nella dashboard, e chi aveva tutte le righe di ieri riceve anche quelle di oggi.
+`tests/ticket47HeroProtection.test.js`: «8 hero» → 20; **la guardia sul frontend** cambia forma perché è
+cambiato il fatto: gli id delle righe hero non sono più letterali nei file del frontend, la dashboard li
+**deriva** da `getHeroUiGroups()` (`${idBase}_movies` / `_series`). Quindi la guardia che conta diventa «il
+registro serve alla dashboard **tutte** le famiglie», mentre il controllo per-file resta quello giusto
+(nessun id morto, ogni id letterale è vivo). Più due test nuovi: le sei famiglie nuove sono nel manifesto, e
+chi aveva tutte le righe di ieri riceve anche quelle di oggi.
 
 ### 5. Suite
 
@@ -141,9 +143,11 @@ suite. Le cinque rosse sono esattamente quelle ammesse.
 
 ### 6. Residui dichiarati
 
-1. **Il frontend non conosce le sei famiglie nuove**: la dashboard non ha i toggle, e il cantiere vieta di
-   toccarlo. Le righe sono servite (manifest + catalogo) ma **non configurabili**; chi non le vuole oggi non
-   può spegnerle. È scritto nel test (`RIGHE_NON_ANCORA_IN_DASHBOARD`) e serve un ticket di frontend.
+1. **La dashboard le mostra già, senza toccare il frontend**: legge `heroCatalogs` da
+   `getHeroUiGroups()` e costruisce `${idBase}_movies|_series`, quindi le sei famiglie nuove compaiono con i
+   loro toggle. È il motivo per cui la guardia del `47` è stata riscritta (gli id non sono più letterali nei
+   file) e **non** un residuo: se un giorno la dashboard tornasse a elenchi scritti a mano, quel test
+   fallirebbe di nuovo.
 2. **I `mondo_<b>` restano senza catalogo** e ora lo dichiarano in un log: un catalogo per bolla non è
    statico, e il manifest di Stremio è fisso. Se il prodotto li vuole, serve una decisione (es. aggregarli
    in un solo catalogo «altri tuoi mondi»).

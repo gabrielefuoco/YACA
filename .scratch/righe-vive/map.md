@@ -143,5 +143,6 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   (`buildRootManifest` invariato); cache righe v15 → v16. Prova: `tests/heroRowsCoverage.test.js`.
 - **Il `12` è bloccato da una premessa falsa**: «il flag anime del canone» non esiste. Prerequisito aperto:
   **`19`** (i flag per-titolo nel canone: `ANIME`, `ADULTO`), stessa forma del `18`. Il `12` riparte dopo.
-- **Residuo del `13`**: le sei famiglie nuove sono servite ma **non configurabili** dalla dashboard (frontend
-  vietato dal cantiere): chi non le vuole non può spegnerle finché non c'è un ticket di frontend.
+- **Nota del `13`**: la dashboard è data-driven (`heroCatalogs` da `getHeroUiGroups`, id derivati da
+  `idBase`), quindi le sei famiglie nuove compaiono **con i loro toggle senza toccare il frontend**. La
+  guardia del `47` è stata riscritta perché gli id non sono più letterali nei file.

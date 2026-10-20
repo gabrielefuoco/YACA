@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { buildManifest } = require('../src/stremio/manifest');
+const { getHeroUiGroups } = require('../src/catalog/registry');
 const { HERO_IDS, isHeroCatalogId } = require('../src/catalog/registry');
 const { FIXED_CATALOGS_REGISTRY } = require('../src/catalog/catalogKind');
 
@@ -185,35 +186,24 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             }
         });
 
-        // LE SEI FAMIGLIE NUOVE (Ticket 13) sono servite da Stremio ma **non sono ancora nella
-        // dashboard**: il cantiere vieta di toccare il frontend, quindi la guardia si aggiorna nel
-        // verso che conta (nessun id morto, ogni id del frontend e' vivo) e le righe mancanti sono
-        // DICHIARATE qui. Quando arrivera' il ticket del frontend, questo elenco sparisce.
-        const RIGHE_NON_ANCORA_IN_DASHBOARD = [
-            'classici', 'ultime_visioni', 'punti_incontro',
-            'micro_cluster_1', 'micro_cluster_2', 'micro_cluster_3'
-        ];
-        const heroInDashboard = HERO_IDS.filter(
-            id => !RIGHE_NON_ANCORA_IN_DASHBOARD.some(slug => id.includes(`_${slug}_`))
-        );
-
-        test('tutti gli ID hero vivi conosciuti dal frontend compaiono nei 4 file', () => {
-            expect(heroInDashboard.length).toBe(8);  // le quattro famiglie storiche x 2 medium
-            for (const filePath of FOUR_FRONTEND_FILES) {
-                const fullPath = path.resolve(__dirname, '..', filePath);
-                const content = fs.readFileSync(fullPath, 'utf8');
-                const foundIds = extractYacaIds(content);
-
-                for (const liveId of heroInDashboard) {
-                    expect(foundIds).toContain(liveId);
-                }
+        // TICKET 13: gli id delle righe hero NON sono piu' letterali nei file del frontend. La dashboard
+        // li DERIVA da `getHeroUiGroups()` (`${`${catalog.idBase}_movies`}` / `_series`): la guardia che
+        // conta e' quindi che il registro serva **tutte** le famiglie alla dashboard, e che ogni id
+        // letterale che resta nei file sia vivo (il test per-file qui sopra).
+        test('la dashboard riceve tutte le famiglie del registro (gli id si derivano da idBase)', () => {
+            const groups = getHeroUiGroups();
+            const idBaseServiti = new Set(groups.map(g => `${g.idBase}_movies`).concat(groups.map(g => `${g.idBase}_series`)));
+            for (const liveId of HERO_IDS) {
+                expect(idBaseServiti.has(liveId)).toBe(true);
             }
+            expect(groups).toHaveLength(10);  // 4 famiglie storiche + 6 nuove (Ticket 13)
         });
 
-        test('le sei famiglie nuove sono nel manifesto anche se non sono nella dashboard', () => {
+        test('le sei famiglie nuove sono nel manifesto', () => {
             const manifest = buildManifest({});
             const ids = manifest.catalogs.map(c => c.id);
-            for (const slug of RIGHE_NON_ANCORA_IN_DASHBOARD) {
+            for (const slug of ['classici', 'ultime_visioni', 'punti_incontro',
+                                'micro_cluster_1', 'micro_cluster_2', 'micro_cluster_3']) {
                 expect(ids).toContain(`yaca_${slug}_movies`);
                 expect(ids).toContain(`yaca_${slug}_series`);
             }
