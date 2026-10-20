@@ -169,10 +169,21 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             parziale = True
 
         elif ruolo == "nicchia_di_qualita":
-            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4)
-            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1)
-            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2)
-            desc = "titoli di alta qualità e bassa popolarità"
+            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
+            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
+            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+            fb = riga.get("fallback_v_mondo", False)
+            corta = riga.get("corta", len(titoli) < 20)
+            target = riga.get("target_dimensione", 20)
+            dettagli = []
+            if fb:
+                dettagli.append("soglia assoluta di fallback")
+            if corta:
+                dettagli.append(f"riga corta: {len(titoli)}/{target} titoli")
+            if dettagli:
+                desc = f"titoli di alta qualità e bassa popolarità ({' · '.join(dettagli)})"
+            else:
+                desc = "titoli di alta qualità e bassa popolarità"
             semi_ids = []
             parziale = True
 
@@ -201,6 +212,13 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         }
         if parziale:
             lista_out["parziale"] = True
+        if riga.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):
+            lista_out["corta"] = True
+            lista_out["target_dimensione"] = riga.get("target_dimensione", 20)
+            lista_out["totale_sopravvissuti"] = riga.get("totale_sopravvissuti", len(titoli))
+        if riga.get("fallback_v_mondo", False):
+            lista_out["fallback_v_mondo"] = True
+            lista_out["soglia_relativa"] = False
 
         contratto_liste.append(lista_out)
 
