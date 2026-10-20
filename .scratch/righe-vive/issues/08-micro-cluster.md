@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 07
 
@@ -10,6 +10,36 @@ Blocked by: 07
   filone dominante schiaccia gli altri.
 - `motore.py` genera già in coda delle liste `mondo_{b}` per le bolle secondarie, ma `src/pool/index.js` **le
   scarta del tutto**: verifica dove e perché (se è vero).
+
+### Esito della verifica (20/10/2026, integratore)
+
+1. **Un solo PageRank: vero.** `Motore.lista` chiama `self.diffondi` **una volta** su tutti i semi
+   (`services/graph/motore.py:604`); l'unica altra camminata è quella del Ticket 07 (`:898`, sui soli semi
+   recenti). Con 200-300 semi il filone con più peso decide il vettore `r` per tutti.
+2. **`mondo_{b}` esiste ed è scartata: vero, in due punti.** `lista` accoda una riga per ogni bolla secondaria
+   (`for b in bolle[1:]`), e `src/pool/index.js:287-290` cerca **solo** i quattro ruoli storici: le righe
+   `mondo_*` non hanno consumatore e spariscono senza un log. Non si tocca qui: il consumatore è il Ticket 13.
+3. **Baseline aggiornata**: dopo il `07` la suite è `5 suite rosse / 8 test falliti / 1910 passati` (192 suite,
+   +2 file e +12 test). Restano ammesse le stesse cinque.
+
+**Decisioni scritte qui, prima del codice**:
+
+- **Quanti e quali**: massimo **3** righe (`MICRO_CLUSTER_MAX`, DICHIARATO); un cluster si tiene se ha almeno
+  **3 semi** (`MICRO_CLUSTER_MIN_SEMI`) **o** almeno il **10% del peso** dei semi (`MICRO_CLUSTER_MIN_PESO`). Il
+  numero era un «non ancora specificato» della mappa: il ticket lo fissa a 3, non a 2, perché con 2 filoni un
+  terzo filone minoritario sparirebbe di nuovo — che è il difetto che questo ticket cura.
+- **Componenti connesse**, non Leiden: il mini-grafo ha <=300 nodi e il ticket ammette le componenti; un
+  partizionatore aggiungerebbe dipendenze e latenza per niente. Costo O(n²) con n<=300, dichiarato.
+- **Identità stabile della riga**: `tipo = micro_cluster_<i>` (i = 1..3, ordine di peso) e un campo
+  `cluster_id = b<bolla_dominante>` (la bolla che porta più peso). Due cluster distinti non possono avere la
+  stessa bolla dominante — semi nella stessa bolla sono connessi per definizione — quindi l'id è stabile finché
+  il filone resta ancorato alla sua bolla. Lo slug definitivo per Stremio lo decide il registro (Ticket 13).
+- **Titolo parlante**: `titoli_seme` con i **2 semi più pesanti** del cluster e `descrizione`
+  «Perché hai amato X e Y» (campo della lista, non un titolo inventato).
+- **Profilo monolitico**: un solo cluster → **una** riga, nessuna riga inventata per arrivare a 2 o 3.
+- **Nessun lavoro Node**: le righe nuove non hanno consumatore fino al Ticket 13, come per `06` e `07`.
+- **Bacino**: lo stesso `bacino_appiattito` del Ticket 03, con un tetto di **4** bolle-seme
+  (`MICRO_CLUSTER_BOLLE_MAX`) — una riga di filone deve restare stretta.
 
 ## Cosa deve uscire
 
