@@ -30,10 +30,15 @@ per ogni coppia `(a, b)` di cluster dell'utente e per ogni titolo non visto:
   `coppia_id` è `b<mondo1>_b<mondo2>` e `fallback: true`.
 - **Pavimento**: `VAVE >= 6.8` come dice il ticket (`PUNTI_INCONTRO_VAVE_MIN`), **più** il pavimento voti già
   usato da tutte le righe (`VOT >= soglia_voti`): non si abbassa niente, si aggiunge.
-- **Fallback con semi veri**: si scelgono i due mondi più lontani **fra quelli che hanno almeno un seme**
-  (`scegli_mondi` con `largo = 2`, `lontano = 1.0`), e ogni mondo cammina dai **propri** semi. Se i semi stanno
-  tutti in un mondo solo, la riga **lo dichiara** (vuota + motivo): un ponte senza due sponde non esiste, e
-  inventare i semi dell'altra sponda sarebbe peggio del silenzio.
+- **Fallback con semi veri**: due mondi che hanno almeno un seme, scelti per **distanza**
+  (`Motore.distanza_fra_mondi`: differenza di fascia di notorietà + medium), e ogni mondo cammina dai
+  **propri** semi. **Divergenza misurata dalla premessa del ticket**: `scegli_mondi(att, {largo: 2,
+  lontano: 1.0})` **non** sceglie i due mondi più lontani — con `lontano = 1.0` tutti gli slot sono slot di
+  diversità e il filtro viene **saltato** (`len(scelti) >= quante - diverse` è sempre vero), quindi torna i
+  primi due per **attivazione**. La distanza è quindi estratta in `distanza_fra_mondi`, che `scegli_mondi`
+  usa a sua volta per la propria diversità, e il fallback prende la coppia col valore massimo. Se i semi
+  stanno tutti in un mondo solo, la riga lo **dichiara** (vuota + motivo): un ponte senza due sponde non
+  esiste, e inventare i semi dell'altra sponda sarebbe peggio del silenzio.
 - **Titolo parlante**: il seme più pesante di ciascuno dei due filoni → «Tra «X» e «Y»»; `semi_chiavi` = l'unione
   dei semi dei due filoni; `fallback` viaggia nel contratto.
 

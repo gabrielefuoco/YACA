@@ -171,11 +171,6 @@ SCHEDA = [
      "generale (6,4): un ponte e' un titolo che deve reggere in DUE mondi, non in uno. Al di sotto non "
      "si scende per riempire la riga.",
      "services/graph/motore.py"),
-    ("PUNTI_INCONTRO_MONDI_FALLBACK", 2, "DICHIARATO",
-     "Quanti mondi lontani mette insieme il fallback dei punti d'incontro quando il profilo ha un filone "
-     "solo (Ticket 09): due, perche' un ponte ha bisogno di due sponde e due sono le estremita' di un "
-     "confronto.",
-     "services/graph/motore.py"),
     ("MICRO_CLUSTER_BOLLE_MAX", 4, "DICHIARATO",
      "Tetto di bolle-seme nel bacino di un micro-cluster (Ticket 08): una riga di filone deve restare "
      "stretta, come quella delle ultime visioni, e non allargarsi fino alla massa target.",

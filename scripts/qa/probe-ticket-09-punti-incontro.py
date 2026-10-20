@@ -131,8 +131,7 @@ def main():
 
     print("\n1. PARAMETRI DICHIARATI")
     assert float(P.PUNTI_INCONTRO_VAVE_MIN) == 6.8, f"atteso 6.8, trovato {P.PUNTI_INCONTRO_VAVE_MIN}"
-    assert int(P.PUNTI_INCONTRO_MONDI_FALLBACK) == 2
-    print(f"  VAVE_MIN={P.PUNTI_INCONTRO_VAVE_MIN} · MONDI_FALLBACK={P.PUNTI_INCONTRO_MONDI_FALLBACK}")
+    print(f"  VAVE_MIN={P.PUNTI_INCONTRO_VAVE_MIN}")
     print("  -> OK")
 
     print("\n2. DUE FILONI NETTI: IL PONTE VIVE SOLO DOVE ARRIVANO ENTRAMBE LE CAMMINATE")
@@ -240,6 +239,18 @@ def main():
     assert ponti_fb[0]["titoli"], "FALLITO: il fallback esce vuoto dove due mondi con semi esistono"
     assert ponti_fb[0]["titoli_seme"], "FALLITO: il fallback non porta i semi dei due mondi"
     print("  -> OK: fallback dichiarato, e la riga si riempie")
+
+    print("\n5b. IL FALLBACK SCEGLIE LA COPPIA PIU' LONTANA, NON LE DUE PIU' ATTIVE")
+    m4 = build_ponte_graph()
+    # Semi in tutti e tre i mondi: 6 nel ponte (il piu' attivo), 3 in A, 2 in B. La coppia piu' ATTIVA
+    # sarebbe ponte+A (b2_b0); la piu' LONTANA e' A+B (5000 voti contro 400), ed e' quella che deve uscire.
+    res4 = m4.lista(storia(semi(m4, 2, 6) + semi(m4, 0, 3) + semi(m4, 1, 2)), cap=20, medium="movie")
+    ponte4 = righe(res4, "punti_incontro")[0]
+    print(f"  coppia scelta: {ponte4['coppia_id']} (attive: b2 con 6 semi; lontane: b0 vs b1)")
+    assert ponte4["coppia_id"] == "b0_b1", (
+        f"FALLITO: il fallback ha scelto {ponte4['coppia_id']}: sono le due piu' attive, non le due piu' lontane"
+    )
+    print("  -> OK: distanza, non attivazione")
 
     print("\n6. FALLBACK IMPOSSIBILE: TUTTI I SEMI IN UN MONDO, LA RIGA LO DICE")
     m3 = build_ponte_graph()

@@ -453,6 +453,21 @@ class Motore:
         return out
 
     # ------------------------------------------------------------------ la selezione
+    def distanza_fra_mondi(self, a, b):
+        """QUANTO DUE MONDI SONO LONTANI (Ticket 09): differenza di fascia di notorieta' (log) piu' il
+        medium. E' la stessa misura che `scegli_mondi` usa per la diversita'
+        (`MONDI_DIVERSI_SOGLIA_FASCIA`), estratta perche' il fallback dei punti d'incontro deve SCEGLIERE
+        la coppia piu' lontana, non solo chiedere se due mondi sono diversi.
+
+        Divergenza misurata dal ticket 09: `scegli_mondi(att, {largo: 2, lontano: 1.0})` NON sceglie i
+        due mondi piu' lontani — con `lontano = 1.0` tutti gli slot sono «diversi» e il filtro viene
+        saltato (`len(scelti) >= quante - diverse` e' sempre vero), quindi torna i primi due per
+        attivazione. Il fallback usa questa funzione, non quella scorciatoia.
+        """
+        fascia = abs(np.log(max(float(self.VOTMED[int(a)]), 1.0) / max(float(self.VOTMED[int(b)]), 1.0)))
+        medio = 1.0 if (self.QUOTA_TV[int(a)] > 0.5) != (self.QUOTA_TV[int(b)] > 0.5) else 0.0
+        return float(fascia) + medio
+
     def scegli_mondi(self, att, slider):
         quante = int(slider.get("largo", 4))
         lontano = float(slider.get("lontano", 0.0))
@@ -461,10 +476,7 @@ class Motore:
         scelti = []
 
         def diverso_da(cb, scelti):
-            meio = self.QUOTA_TV[cb] > 0.5
-            return all(abs(np.log(max(self.VOTMED[cb], 1) / max(self.VOTMED[bb], 1)))
-                       > P.MONDI_DIVERSI_SOGLIA_FASCIA
-                       or meio != (self.QUOTA_TV[bb] > 0.5) for bb in scelti)
+            return all(self.distanza_fra_mondi(cb, bb) > P.MONDI_DIVERSI_SOGLIA_FASCIA for bb in scelti)
 
         # i primi `quante - diverse` per attivazione, gli altri per diversita'
         for cb in ordine:
@@ -1166,12 +1178,11 @@ class Motore:
             }
             coppia = []
             if len(mondi_con_semi) >= 2:
-                att_solo_semi = np.full(self.NB, -1.0)
-                att_solo_semi[mondi_con_semi] = att_s[mondi_con_semi]
-                coppia = self.scegli_mondi(
-                    att_solo_semi,
-                    {**slider, "largo": int(P.PUNTI_INCONTRO_MONDI_FALLBACK), "lontano": 1.0},
-                )
+                # La coppia piu' LONTANA fra i mondi che hanno semi (due sono le sponde di un ponte).
+                coppia = list(max(
+                    ((a, b) for i, a in enumerate(sorted(mondi_con_semi)) for b in sorted(mondi_con_semi)[i + 1:]),
+                    key=lambda ab: (self.distanza_fra_mondi(*ab), -ab[0], -ab[1]),
+                ))
             if len(coppia) >= 2:
                 sponde = []
                 for bb in (int(coppia[0]), int(coppia[1])):
