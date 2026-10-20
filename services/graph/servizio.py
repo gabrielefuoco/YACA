@@ -233,6 +233,17 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             ))
             parziale = True
 
+        elif ruolo.startswith("micro_cluster"):
+            att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
+            semi_parlanti = [str(t) for t in (li.get("titoli_seme") or [])]
+            desc = ("Perché hai amato " + " e ".join(semi_parlanti)) if semi_parlanti else "un tuo filone"
+            if corta:
+                desc += f" (riga corta: {len(titoli)}/{target} titoli)"
+            semi_ids = list(dict.fromkeys(
+                int(ch.split(":")[1]) for ch in li.get("semi_chiavi", []) if ch in B.ROW_OF
+            ))
+            parziale = True
+
         elif ruolo == "nicchia_di_qualita":
             att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
             fb = li.get("fallback_v_mondo", False)

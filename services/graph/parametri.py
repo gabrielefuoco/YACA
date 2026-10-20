@@ -148,6 +148,23 @@ SCHEDA = [
      "accese da quella diffusione»: il bacino appiattito del Ticket 03 si ferma qui invece di allargarsi "
      "fino alla massa target, perche' una riga che segue le ultime visioni deve restare stretta.",
      "services/graph/motore.py"),
+    ("MICRO_CLUSTER_MAX", 3, "DICHIARATO",
+     "Quante righe di micro-cluster al massimo, in ordine di peso del filone (Ticket 08). Il ticket "
+     "ammetteva 2 o 3: si sceglie 3, perche' con due sole righe il terzo filone di un profilo a tre "
+     "interessi verrebbe schiacciato di nuovo, che e' il difetto che questa riga cura.",
+     "services/graph/motore.py"),
+    ("MICRO_CLUSTER_MIN_SEMI", 3, "DICHIARATO",
+     "Soglia minima di semi per tenere un filone come micro-cluster (Ticket 08): sotto i 3 semi un "
+     "filone non e' una tendenza, e la sua diffusione non ha massa.",
+     "services/graph/motore.py"),
+    ("MICRO_CLUSTER_MIN_PESO", 0.10, "DICHIARATO",
+     "Alternativa alla soglia di semi: un filone si tiene se pesa almeno il 10% del peso totale dei "
+     "semi (Ticket 08). Serve a non perdere un filone di pochi titoli ma molto forti (loved).",
+     "services/graph/motore.py"),
+    ("MICRO_CLUSTER_BOLLE_MAX", 4, "DICHIARATO",
+     "Tetto di bolle-seme nel bacino di un micro-cluster (Ticket 08): una riga di filone deve restare "
+     "stretta, come quella delle ultime visioni, e non allargarsi fino alla massa target.",
+     "services/graph/motore.py"),
     ("BAYESIAN_M", 300.0, "DICHIARATO",
      "Parametro m di confidenza (voti minimi) per la formula bayesiana dei voti (Ticket 03, da src/config.js).",
      "services/graph/motore.py"),
