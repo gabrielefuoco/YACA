@@ -115,8 +115,28 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         mondo = li["mondo"]
         titoli_raw = li.get("titoli", [])
 
+        # Invariante del cantiere: nessuna riga esce vuota in silenzio.
+        # Una lista vuota viene comunque restituita al chiamante, con la ragione
+        # esplicita, invece di essere soppressa (origine del bug uscite_nuove).
         if not titoli_raw:
             motivi.append(f"{ruolo}: nessun titolo trovato")
+            lista_out = {
+                "ruolo": ruolo,
+                "mondo": li.get("mondo"),
+                "descrizione": f"{ruolo}: nessun titolo trovato",
+                "attivazione": 0.0,
+                "mediana_voti": 0.0,
+                "quota_serie": 0.0,
+                "semi": [],
+                "titoli": [],
+                "vuota": True,
+                "motivo": f"{ruolo}: nessun titolo trovato",
+                "totale_sopravvissuti": 0,
+                "target_dimensione": li.get("target_dimensione", 20),
+            }
+            if li.get("corta", False):
+                lista_out["corta"] = True
+            contratto_liste.append(lista_out)
             continue
 
         titoli = []

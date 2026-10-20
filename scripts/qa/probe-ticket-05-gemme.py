@@ -219,12 +219,12 @@ def test_due_profili_opposti():
     att_main, _ = m.diffondi(np.array([0]), np.array([1.0]))
     att_s_main = m.modula(att_main, MO.SLIDER_DEFAULT, m.deduci(np.array([0])))
     v_mondo_main, fb_main = m.calcola_v_mondo({0, 2, 4, 6}, att_s_main, con_stato=True)
-    tetto_vot_main = min(P.NICCHIA_FATTORE_V_MONDO * v_mondo_main, P.NICCHIA_TETTO_VOT_MAX)
+    tetto_vot_main = max(P.NICCHIA_PAVIMENTO_VOT_MIN, min(P.NICCHIA_FATTORE_V_MONDO * v_mondo_main, P.NICCHIA_TETTO_VOT_MAX))
 
     att_essai, _ = m.diffondi(np.array([m.MEMBRI[1][0]]), np.array([1.0]))
     att_s_essai = m.modula(att_essai, MO.SLIDER_DEFAULT, m.deduci(np.array([m.MEMBRI[1][0]])))
     v_mondo_essai, fb_essai = m.calcola_v_mondo({1, 3, 5, 7}, att_s_essai, con_stato=True)
-    tetto_vot_essai = min(P.NICCHIA_FATTORE_V_MONDO * v_mondo_essai, P.NICCHIA_TETTO_VOT_MAX)
+    tetto_vot_essai = max(P.NICCHIA_PAVIMENTO_VOT_MIN, min(P.NICCHIA_FATTORE_V_MONDO * v_mondo_essai, P.NICCHIA_TETTO_VOT_MAX))
 
     print(f"CONFRONTO SOGLIE DI NOTORIETÀ:")
     print(f"  {'Parametro':<32} {'Profilo Mainstream':<22} {'Profilo D\'Essai':<22}")
@@ -270,7 +270,7 @@ def test_conteggio_sopravvissuti_per_taglio():
         att, _ = m_obj.diffondi(np.array([semi_idx]), np.array([1.0]))
         att_s = m_obj.modula(att, MO.SLIDER_DEFAULT, m_obj.deduci(np.array([semi_idx])))
         v_mondo = m_obj.calcola_v_mondo(set(bolle_cluster), att_s)
-        tetto_voti = min(P.NICCHIA_FATTORE_V_MONDO * v_mondo, P.NICCHIA_TETTO_VOT_MAX)
+        tetto_voti = max(P.NICCHIA_PAVIMENTO_VOT_MIN, min(P.NICCHIA_FATTORE_V_MONDO * v_mondo, P.NICCHIA_TETTO_VOT_MAX))
         pavimento_voti = float(P.NICCHIA_PAVIMENTO_VOT_MIN)
         vave_min = float(P.NICCHIA_VAVE_MIN_FILM)
         delta_min = float(P.NICCHIA_DELTA_VAVE_MU)
@@ -630,6 +630,43 @@ def test_servizio_http_e_memoria():
     print()
 
 
+
+
+def test_intervallo_vuoto_v_mondo_100():
+    print("=" * 80)
+    print("X. CASO V_MONDO = 100: INTERVALLO [40, ceiling] NON VUOTO")
+    print("=" * 80)
+    m = build_dual_world_graph()
+    # Forza V_mondo = 100 sul bacino acceso (bolla 0)
+    m.VOTMED[0] = 100.0
+    att_mock = np.zeros(m.NB)
+    att_mock[0] = 1.0
+    v_mondo, is_fb = m.calcola_v_mondo({0}, att_mock, con_stato=True)
+    print(f"  V_mondo forzato = {v_mondo:.1f} (fallback={is_fb})")
+    tetto = max(P.NICCHIA_PAVIMENTO_VOT_MIN, min(P.NICCHIA_FATTORE_V_MONDO * v_mondo, P.NICCHIA_TETTO_VOT_MAX))
+    pav = float(P.NICCHIA_PAVIMENTO_VOT_MIN)
+    print(f"  Pavimento assoluto = {pav:.0f}; Tetto = max({pav:.0f}, min(0.35*{v_mondo:.0f}, 2500)) = {tetto:.1f}")
+    assert tetto >= pav, "Il tetto deve essere >= pavimento (intervallo non vuoto)"
+    print(f"  Intervallo [40, {tetto:.1f}] non vuoto: {tetto >= pav}")
+
+    # Prepara un titolo con VOT=40 (sulla soglia) in bolla 0 con qualita' sufficiente
+    gemma_idx = m.MEMBRI[0][5]
+    m.VOT[gemma_idx] = 40.0
+    m.VAVE[gemma_idx] = 8.0
+    m.VOTMED = np.array([K.mediana_voti(m.VOT[m.MEMBRI[b]]) for b in range(m.NB)], dtype=np.float32)
+    m.VOTMED[0] = 100.0
+    m.VAVEMEAN = np.array([float(np.mean(m.VAVE[m.MEMBRI[b]])) for b in range(m.NB)], dtype=np.float32)
+
+    semi_idx = m.MEMBRI[0][0]
+    storia = [(f"movie:{1000+semi_idx}", 1, "watched", None)]
+    res = m.lista(storia, cap=20, medium="movie")
+    nic = next(l for l in res["liste"] if l["tipo"] == "nicchia_di_qualita")
+    titoli = [t[0] for t in nic["titoli"]]
+    print(f"  Titoli sopravvissuti in nicchia: {len(titoli)}")
+    assert len(titoli) >= 1, "Almeno un titolo deve sopravvivere con V_mondo=100"
+
+
+
 if __name__ == "__main__":
     test_parametri()
     test_due_profili_opposti()
@@ -639,6 +676,7 @@ if __name__ == "__main__":
     test_filtri_qualita_e_notorieta()
     test_ranking_e_bonus_liste()
     test_contratto_monotonia()
+    test_intervallo_vuoto_v_mondo_100()
     test_servizio_http_e_memoria()
     print("=" * 80)
     print("TUTTE LE VERIFICHE TICKET 05 SUPERATE CON SUCCESSO (TASK_OK)")

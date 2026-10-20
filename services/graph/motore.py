@@ -702,10 +702,9 @@ class Motore:
             v_mondo, is_fallback_v_mondo = self.calcola_v_mondo(bacino_bolle_set, att_s, con_stato=True)
             fattore_v_mondo = float(getattr(P, "NICCHIA_FATTORE_V_MONDO", 0.35))
             tetto_vot_max = float(getattr(P, "NICCHIA_TETTO_VOT_MAX", 2500.0))
-            tetto_voti = min(fattore_v_mondo * v_mondo, tetto_vot_max)
-
             # 3. Pavimento assoluto: VOT[x] >= 40
             pavimento_voti = float(getattr(P, "NICCHIA_PAVIMENTO_VOT_MIN", 40.0))
+            tetto_voti = max(pavimento_voti, min(fattore_v_mondo * v_mondo, tetto_vot_max))
 
             # 4. Voto normalizzato sulla bolla e neutralizzazione serie:
             # offset_serie sottratto coerentemente su pavimento, delta bolla e ranking.
