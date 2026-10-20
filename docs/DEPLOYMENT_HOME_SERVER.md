@@ -21,6 +21,38 @@ Ordine di esecuzione: **§2** installazione + checklist → **§3** file e primo
 
 ---
 
+## 0-bis. Il frontend ha un passo suo (e dal 20/10 si aggiorna da solo)
+
+YACA si deploya in **tre pezzi**, e non si aggiornano tutti allo stesso modo:
+
+| pezzo | cos'è | chi lo aggiorna |
+|---|---|---|
+| app (Node) | immagine `ghcr.io/gabrielefuoco/yaca:latest` | Watchtower, da solo |
+| grafo (Python) | immagine `ghcr.io/gabrielefuoco/yaca-graph:latest` | Watchtower, da solo |
+| **frontend** | **cartella statica** montata in `/app/frontend/out` (bind mount **read-only**, ticket 56) | **timer systemd** `yaca-frontend-update` ogni 5 minuti |
+
+Il frontend non è un'immagine: Watchtower non lo vede. Il CI lo costruisce e lo pubblica come release
+asset (`frontend-latest`); il timer lo scarica, confronta il `version.json` che c'è dentro con quello già
+servito e — solo se è cambiato — lo installa con `ops/frontend-aggiorna.sh` (**svuota senza cancellare**:
+un bind mount Docker punta all'inode, e `rm -rf && mkdir` lo lascerebbe orfano).
+
+**Come si verifica che l'interfaccia sia davvero aggiornata** (il container non basta: la dashboard si
+disegna dai dati dell'API e sembra a posto anche con il JS di ieri):
+
+```bash
+curl -s http://127.0.0.1:7860/health            # -> "frontend": {"sha": "...", "built": "..."}
+systemctl list-timers yaca-frontend-update.timer
+journalctl -u yaca-frontend-update -n 20        # ogni passata dice "gia' aggiornato" o "installato"
+```
+
+Forzare un aggiornamento a mano: `bash /srv/yaca/ops/frontend-timer.sh` (idempotente) oppure
+`bash /srv/yaca/ops/frontend-aggiorna.sh` (scarica e installa senza confrontare).
+
+**Perché lo dico qui**: il 20/10/2026 i container erano aggiornati e la dashboard serviva il JS del giorno
+prima — le sei famiglie nuove comparivano lo stesso (i cataloghi arrivano dall'API), ma i profili non
+ricevevano le 12 id di default. Nessun test, nessun health check, nessun allarme: si è scoperto solo
+guardando la data della cartella.
+
 ## 1. Architettura e Budget di Sistema
 
 L'infrastruttura sul server casalingo opera con un tetto massimo di memoria di circa 1.9 GB, lasciando oltre 4 GB di RAM disponibili per l'OS, sessioni SSH e agenti di sviluppo.
