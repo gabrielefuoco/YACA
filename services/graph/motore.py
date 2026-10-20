@@ -496,13 +496,62 @@ class Motore:
                         fuori.append(x)
         return fuori
 
+    def bacino_appiattito(self, att, ordine_mondi, non_visti_mondo, max_bolle=None):
+        """IL BACINO APPIATTITO (Ticket 03), riusato da ogni riga che ne ha bisogno (Ticket 07).
+
+        `att` e' l'attivazione PER MONDO della diffusione che alimenta la riga: le bolle accese si
+        accumulano in ordine di attivazione finche' non coprono MASSA_TARGET (e almeno
+        MIN_CANDIDATI titoli grezzi), poi si aggiungono i primi VICINI_PER_BOLLA vicini.
+
+        `max_bolle` limita quante bolle-seme si accumulano (la riga delle ultime visioni ne vuole
+        al massimo 3-4): None = nessun tetto, il comportamento di «il tuo mondo». Esisteva una sola
+        copia di questo calcolo, e una seconda copia e' il difetto ricorrente di questo cantiere.
+        """
+        massa_target = float(getattr(P, "IL_TUO_MONDO_MASSA_TARGET", 0.80))
+        min_candidati_bacino = int(getattr(P, "IL_TUO_MONDO_MIN_CANDIDATI", 250))
+        vicini_k = int(getattr(P, "IL_TUO_MONDO_VICINI_PER_BOLLA", 3))
+
+        tot_massa_att = float(att.sum())
+        soglia_massa = massa_target * tot_massa_att if tot_massa_att > 0 else 0.0
+
+        bolle_k = []
+        massa_acc = 0.0
+        titoli_grezzi_acc = 0
+        for b in ordine_mondi:
+            cb = int(b)
+            if float(att[cb]) <= 0.0 and (massa_acc >= soglia_massa or len(bolle_k) > 0):
+                break
+            bolle_k.append(cb)
+            massa_acc += float(att[cb])
+            titoli_grezzi_acc += len(non_visti_mondo(cb))
+            if max_bolle is not None and len(bolle_k) >= int(max_bolle):
+                break
+            if massa_acc >= soglia_massa and titoli_grezzi_acc >= min_candidati_bacino:
+                break
+
+        bacino_bolle_set = set(bolle_k)
+        for b in bolle_k:
+            if b < len(self.VICINI):
+                for v in self.VICINI[b][:vicini_k]:
+                    if v >= 0:
+                        bacino_bolle_set.add(int(v))
+
+        # Set unico di candidati non visti nel bacino (senza iterare bolla per bolla)
+        cand_bacino_set = set()
+        for b in bacino_bolle_set:
+            cand_bacino_set.update(non_visti_mondo(b))
+        cand_bacino = np.array(list(cand_bacino_set), dtype=np.int64)
+        return bolle_k, bacino_bolle_set, cand_bacino
+
     # ------------------------------------------------------------------ IL METODO
     def lista(self, storia, slider=None, cap=None, medium=None):
         """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`
-        OPPURE di `(chiave, plays, tipo, peso)`.
+        OPPURE di `(chiave, plays, tipo, peso)` OPPURE di `(chiave, plays, tipo, peso, recente)`.
 
         Il `tipo` e' il segnale del prodotto: "loved", "liked", "watched", "library", "catalogo".
         Senza tipo si assume "watched": il comportamento di prima, bit per bit.
+        `recente` (Ticket 07) e' un booleano: il seme e' fra gli ultimi visti. Non e' un peso — e'
+        una SELEZIONE: la riga «ultime visioni» nasce da una seconda camminata sui soli semi recenti.
         `cap`: tetto di titoli per lista (default 10 se None per compatibilita').
         `medium`: filtro opzionale 'movie' o 'series' (E4).
         """
@@ -514,16 +563,20 @@ class Motore:
             pl = voce[1] if len(voce) > 1 else 1
             tp = voce[2] if len(voce) > 2 else "watched"
             ps = voce[3] if len(voce) > 3 else None
+            rc = bool(voce[4]) if len(voce) > 4 else False
             if ch in B.ROW_OF:
-                voci.append((ch, pl, tp, ps))
+                voci.append((ch, pl, tp, ps, rc))
         if not voci:
             return {"errore": "nessun titolo della storia e' nel canone", "liste": []}
-        righe = np.array([B.ROW_OF[ch] for ch, _, _, _ in voci], np.int64)
-        plays = np.array([pl for _, pl, _, _ in voci], float)
-        tipi = [tp for _, _, tp, _ in voci]
-        pesi = [ps for _, _, _, ps in voci]
+        righe = np.array([B.ROW_OF[v[0]] for v in voci], np.int64)
+        plays = np.array([v[1] for v in voci], float)
+        tipi = [v[2] for v in voci]
+        pesi = [v[3] for v in voci]
         if not any(p is not None for p in pesi):
             pesi = None
+        # TICKET 07: gli indici dei semi recenti. Il flag non pesa: seleziona (vedi «ultime visioni»).
+        idx_rec = [i for i, v in enumerate(voci) if v[4]]
+        n_rec = len(idx_rec)
         dedotto = self.deduci(righe)
         att, r = self.diffondi(righe, plays, tipi=tipi, pesi=pesi)
         att_s = self.modula(att, slider, dedotto)
@@ -578,38 +631,8 @@ class Motore:
         # «IL TUO MONDO» (Ticket 03): Bacino appiattito + Pavimento di qualita' + Ranking combinato
         # =========================================================================
         # 1. Bacino appiattito: top K bolle accese (>=80% massa, min 250 candidati grezzi) + primi 2-3 vicini
-        massa_target = float(getattr(P, "IL_TUO_MONDO_MASSA_TARGET", 0.80))
-        min_candidati_bacino = int(getattr(P, "IL_TUO_MONDO_MIN_CANDIDATI", 250))
-        vicini_k = int(getattr(P, "IL_TUO_MONDO_VICINI_PER_BOLLA", 3))
-
-        tot_massa_att = float(att.sum())
-        soglia_massa = massa_target * tot_massa_att if tot_massa_att > 0 else 0.0
-
-        bolle_k = []
-        massa_acc = 0.0
-        titoli_grezzi_acc = 0
-        for b in ordine_mondi:
-            cb = int(b)
-            if float(att[cb]) <= 0.0 and (massa_acc >= soglia_massa or len(bolle_k) > 0):
-                break
-            bolle_k.append(cb)
-            massa_acc += float(att[cb])
-            titoli_grezzi_acc += len(non_visti_mondo(cb))
-            if massa_acc >= soglia_massa and titoli_grezzi_acc >= min_candidati_bacino:
-                break
-
-        bacino_bolle_set = set(bolle_k)
-        for b in bolle_k:
-            if b < len(self.VICINI):
-                for v in self.VICINI[b][:vicini_k]:
-                    if v >= 0:
-                        bacino_bolle_set.add(int(v))
-
-        # Set unico di candidati non visti nel bacino (senza iterare bolla per bolla)
-        cand_bacino_set = set()
-        for b in bacino_bolle_set:
-            cand_bacino_set.update(non_visti_mondo(b))
-        cand_bacino = np.array(list(cand_bacino_set), dtype=np.int64)
+        # Il calcolo sta in `bacino_appiattito` perche' dal Ticket 07 lo usa anche la riga delle ultime visioni.
+        bolle_k, bacino_bolle_set, cand_bacino = self.bacino_appiattito(att, ordine_mondi, non_visti_mondo)
 
         # 2. Pavimento di qualita' (maschera vettoriale prima del ranking)
         canone = float(dedotto.get("canone", 0.0))
@@ -770,7 +793,7 @@ class Motore:
         })
 
         # =========================================================================
-        # �CLASSICI IMPERDIBILI DEL TUO MONDO� (Ticket 06): high-consensus, top-300 per r
+        # �CLASSICI IMPERDIBILI DEL TUO MONDO� (Ticket 06): high-consensus, top-300 per r
         # =========================================================================
         is_fallback_v_mondo_cls = False
         if len(cand_bacino) > 0:
@@ -835,6 +858,61 @@ class Motore:
             "fallback_v_mondo": is_fallback_v_mondo_cls
         })
 
+        # =========================================================================
+        # «SUL FILO DELLE TUE ULTIME VISIONI» (Ticket 07): la recenza come SELEZIONE
+        # =========================================================================
+        # La misura (parametri.NIENTE_RECENZA / NIENTE_BOOST) dice che la recenza non e' un peso:
+        # i soli ultimi 15 titoli fanno lift 47,5x contro 18,2x, e il boost sui punteggi e' vuoto.
+        # Qui la recenza SELEZIONA: una SECONDA camminata sui soli semi recenti, bacino appiattito
+        # sulle bolle accese da QUELLA camminata, stesso pavimento e stesso ranking di «il tuo mondo».
+        # Con meno di ULTIME_VISIONI_MIN_SEMI semi recenti la riga lo DICHIARA invece di sparire.
+        riga_uv = {
+            "tipo": "ultime_visioni",
+            "mondo": None,
+            "titoli": [],
+            "corta": True,
+            "target_dimensione": cap_main,
+            "totale_sopravvissuti": 0,
+            "semi_recenti": n_rec,
+        }
+        min_semi_rec = int(getattr(P, "ULTIME_VISIONI_MIN_SEMI", 3))
+        if n_rec < min_semi_rec:
+            riga_uv["motivo"] = f"ultime_visioni: meno di {min_semi_rec} semi recenti ({n_rec})"
+            print(f"  [ultime_visioni] dichiarata vuota: {n_rec} semi recenti (minimo {min_semi_rec})", file=sys.stderr)
+        else:
+            pesi_rec = None if pesi is None else [pesi[i] for i in idx_rec]
+            att_rec, r_rec = self.diffondi(
+                righe[idx_rec], plays[idx_rec],
+                tipi=[tipi[i] for i in idx_rec], pesi=pesi_rec,
+            )
+            _, _, cand_rec = self.bacino_appiattito(
+                att_rec, list(np.argsort(-att_rec)), non_visti_mondo,
+                max_bolle=int(getattr(P, "ULTIME_VISIONI_BOLLE_MAX", 4)),
+            )
+            if len(cand_rec) > 0:
+                maschera_rec = (self.VAVE[cand_rec] >= soglia_vave) & (self.VOT[cand_rec] >= soglia_voti)
+                surv_rec = cand_rec[maschera_rec]
+            else:
+                surv_rec = np.array([], dtype=np.int64)
+
+            if len(surv_rec) > 0:
+                bayes_rec = self.voto_bayesiano(surv_rec)
+                score_rec = r_rec[surv_rec] * ((bayes_rec / base_bayes) ** exp_bayes)
+                ordine_rec = np.argsort(-score_rec)
+                cand_uv = [(B.KEYS[x], float(sc)) for x, sc in zip(surv_rec[ordine_rec], score_rec[ordine_rec])]
+            else:
+                cand_uv = []
+
+            div_uv = self.applica_antimonopolio(cand_uv, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="ultime_visioni")
+            riga_uv["titoli"] = div_uv[:cap_main]
+            riga_uv["totale_sopravvissuti"] = len(div_uv)
+            riga_uv["corta"] = len(riga_uv["titoli"]) < cap_main
+            if riga_uv["corta"]:
+                riga_uv["motivo"] = f"ultime_visioni: riga corta {len(riga_uv['titoli'])}/{cap_main} titoli"
+                print(f"  [ultime_visioni] riga corta: {len(riga_uv['titoli'])}/{cap_main} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+
+        liste.append(riga_uv)
+
         for b in bolle[1:]:
             liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")} )
 
@@ -853,7 +931,7 @@ class Motore:
         return {"versioni": {"artefatto": self.artefatto, "ricetta": P.impronta()},
                 "slider": slider,
                 "profilo": dedotto,
-                "semi": {"n": int(len(righe)), "da_catalogo": da_cat},
+                "semi": {"n": int(len(righe)), "da_catalogo": da_cat, "recenti": int(n_rec)},
                 "mondi": [{"bolla": int(b), "attivazione": float(att[b]), "titoli": int(self.SZ[b]),
                            "voti_mediani": float(self.VOTMED[b]),
                            "quota_serie": float(self.QUOTA_TV[b]),

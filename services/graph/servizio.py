@@ -81,10 +81,10 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             ps = float(ps)
         else:
             ps = None
-        storia.append((ch, 1, tp, ps))
+        storia.append((ch, 1, tp, ps, bool(s.get("recente", False))))
 
     # Caso normale: storia vuota o tutti i semi fuori dal canone -> 200 con liste vuote e motivo
-    validi = [ch for ch, _, _, _ in storia if ch in B.ROW_OF]
+    validi = [voce[0] for voce in storia if voce[0] in B.ROW_OF]
     if not validi:
         return 200, {
             "contratto": 1,
@@ -119,18 +119,21 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         # Una lista vuota viene comunque restituita al chiamante, con la ragione
         # esplicita, invece di essere soppressa (origine del bug uscite_nuove).
         if not titoli_raw:
-            motivi.append(f"{ruolo}: nessun titolo trovato")
+            # Il motivo puo' venire dal motore (es. «meno di 3 semi recenti», Ticket 07): si riporta,
+            # invece di sostituirlo con quello generico.
+            motivo = li.get("motivo") or f"{ruolo}: nessun titolo trovato"
+            motivi.append(motivo)
             lista_out = {
                 "ruolo": ruolo,
                 "mondo": li.get("mondo"),
-                "descrizione": f"{ruolo}: nessun titolo trovato",
+                "descrizione": motivo,
                 "attivazione": 0.0,
                 "mediana_voti": 0.0,
                 "quota_serie": 0.0,
                 "semi": [],
                 "titoli": [],
                 "vuota": True,
-                "motivo": f"{ruolo}: nessun titolo trovato",
+                "motivo": motivo,
                 "totale_sopravvissuti": 0,
                 "target_dimensione": li.get("target_dimensione", 20),
             }
@@ -162,7 +165,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
                 desc = f"mondo {b} — {motore.SZ[b]} titoli, voti mediani {med_v}" + (f" · es. {', '.join(es)}" if es else "") if b is not None else "il tuo mondo"
             semi_mondi_set = set(mondi_coinvolti)
             semi_ids = list(dict.fromkeys(
-                int(ch.split(":")[1]) for ch, _, _, _ in storia
+                int(ch.split(":")[1]) for ch, *_ in storia
                 if ch in B.ROW_OF and int(motore.MEM[B.ROW_OF[ch]]) in semi_mondi_set
             ))
             parziale = False
@@ -175,7 +178,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             desc = f"mondi vicini ({', '.join(str(v) for v in vicini)})" if vicini else "mondi vicini"
             vicini_set = set(vicini)
             semi_ids = list(dict.fromkeys(
-                int(ch.split(":")[1]) for ch, _, _, _ in storia
+                int(ch.split(":")[1]) for ch, *_ in storia
                 if ch in B.ROW_OF and int(motore.MEM[B.ROW_OF[ch]]) in vicini_set
             ))
             parziale = False
@@ -207,6 +210,23 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             semi_ids = []
             parziale = True
 
+        elif ruolo == "ultime_visioni":
+            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
+            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
+            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+            corta = li.get("corta", len(titoli) < 20)
+            target = li.get("target_dimensione", 20)
+            n_rec = int(li.get("semi_recenti", 0))
+            dettagli = [f"{n_rec} semi recenti"]
+            if corta:
+                dettagli.append(f"riga corta: {len(titoli)}/{target} titoli")
+            desc = f"sul filo delle tue ultime visioni ({' · '.join(dettagli)})"
+            semi_ids = list(dict.fromkeys(
+                int(voce[0].split(":")[1]) for voce in storia
+                if len(voce) > 4 and voce[4] and voce[0] in B.ROW_OF
+            ))
+            parziale = True
+
         elif ruolo == "nicchia_di_qualita":
             att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
             med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
@@ -234,7 +254,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             es = [str(motore.TIT[int(r_)]) for r_ in motore.MEMBRI[b][np.argsort(-motore.VOT[motore.MEMBRI[b]])][:3]] if b is not None else []
             desc = f"mondo {b} — {motore.SZ[b]} titoli, voti mediani {med_v}" + (f" · es. {', '.join(es)}" if es else "") if b is not None else f"mondo {b}"
             semi_ids = list(dict.fromkeys(
-                int(ch.split(":")[1]) for ch, _, _, _ in storia
+                int(ch.split(":")[1]) for ch, *_ in storia
                 if ch in B.ROW_OF and int(motore.MEM[B.ROW_OF[ch]]) == b
             ))
             parziale = False
@@ -258,6 +278,9 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         if li.get("fallback_v_mondo", False):
             lista_out["fallback_v_mondo"] = True
             lista_out["soglia_relativa"] = False
+        if li.get("motivo"):
+            # Una riga corta lo dice, con lo stesso testo che il motore stampa nei log (Ticket 07).
+            lista_out["motivo"] = li["motivo"]
 
         contratto_liste.append(lista_out)
 

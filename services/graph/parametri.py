@@ -128,6 +128,17 @@ SCHEDA = [
     ("IL_TUO_MONDO_VICINI_PER_BOLLA", 3, "DICHIARATO",
      "Primi vicini inclusi per ciascuna delle K bolle accese nel bacino appiattito (Ticket 03).",
      "services/graph/motore.py"),
+    ("ULTIME_VISIONI_MIN_SEMI", 3, "DICHIARATO",
+     "Quanti semi recenti servono perche' esista la riga «sul filo delle tue ultime visioni» (Ticket 07). "
+     "Sotto questa soglia la riga NON sparisce in silenzio: si dichiara vuota, col motivo e il numero di "
+     "semi recenti. La recenza vale come SELEZIONE, non come peso: vedi NIENTE_RECENZA e NIENTE_BOOST, "
+     "entrambi misurati.",
+     "services/graph/motore.py"),
+    ("ULTIME_VISIONI_BOLLE_MAX", 4, "DICHIARATO",
+     "Tetto di bolle-seme nel bacino della seconda camminata (Ticket 07). Il ticket dice «top 3-4 bolle "
+     "accese da quella diffusione»: il bacino appiattito del Ticket 03 si ferma qui invece di allargarsi "
+     "fino alla massa target, perche' una riga che segue le ultime visioni deve restare stretta.",
+     "services/graph/motore.py"),
     ("PAVIMENTO_VAVE_MIN", 6.4, "DICHIARATO",
      "Voto medio minimo TMDB richiesto dal pavimento di qualita' (Ticket 03).",
      "services/graph/motore.py"),
