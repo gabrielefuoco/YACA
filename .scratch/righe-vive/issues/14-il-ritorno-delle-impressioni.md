@@ -79,11 +79,16 @@ la finestra si può misurare in **giorni distinti** senza cambiare schema.
 
 ### 3. La prova
 
-`tests/impressioniDecadimento.test.js` (10 test): finestra in giorni distinti e giorni fuori finestra
-ignorati; `0.85^giorni` esatto; sotto soglia non si tocca; **già visto non scende**; nessun titolo sparisce;
-la cache non viene mutata; le statistiche; nessuna lettura senza `userId`.
-`tests/impressioniNelPool.test.js` (2 test): la riga servita da `getHeroPool` scende davvero e resta intera;
-**una sola lettura per richiesta**, con `userId`/`profileId`/`catalogIds` giusti.
+`tests/impressioniDecadimento.test.js` (17 test): finestra in giorni distinti (una data ripetuta conta una
+volta) e giorni fuori finestra ignorati; `0.85^giorni` esatto; sotto soglia non si tocca; **già visto non
+scende**; nessun titolo sparisce; la cache non viene mutata; gli spostamenti dichiarati; nessuna lettura senza
+`userId`. E la **lettura vera**: la query (finestra, `catalogId: $in`, `profileId || 'global'`), il caso senza
+connessione (non interroga), l'elenco di cataloghi vuoto (non diventa «tutti»), il guasto che dichiara e
+prosegue. Più le difese sul payload: un `visti` corrotto non fa cadere la porta, una riga con un titolo
+**senza punteggio** non viene riordinata.
+`tests/impressioniNelPool.test.js` (3 test): la riga servita da `getHeroPool` scende davvero e resta intera;
+**una sola lettura per richiesta**, con `userId`/`profileId`/`catalogIds` giusti; e una **voce di cache**
+completa con `seedIds` (il caso per cui la cache è passata a v17).
 
 ### 4. La taratura, misurata (sonda `scripts/qa/probe-ticket-14-impressioni.js`)
 
@@ -131,10 +136,10 @@ FAIL tests/donghuaCatalog.test.js
 FAIL tests/duckDbAndMatchmaker.test.js
 FAIL tests/presetBurtonOrdering.test.js
 Test Suites: 5 failed, 190 passed, 195 total
-Tests:       8 failed, 1 skipped, 1935 passed, 1944 total
+Tests:       8 failed, 1 skipped, 1943 passed, 1952 total
 ```
 
-Baseline `1910`/`192` + 12 test nuovi = `1935`, `195` suite. Le cinque rosse sono quelle ammesse.
+Baseline `1910`/`192` + 20 test nuovi = `1943`, `195` suite. Le cinque rosse sono quelle ammesse.
 
 ### 6. Residui
 
