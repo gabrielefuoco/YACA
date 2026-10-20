@@ -598,7 +598,7 @@ class Motore:
         ordine = sorted(range(len(nodi_u)), key=lambda j: (-float(pesi_u[j]), int(nodi_u[j])))
         return [str(self.TIT[int(nodi_u[j])]) for j in ordine[:quanti]]
 
-    def waterfall_righe(self, liste, cap_main):
+    def waterfall_righe(self, liste, cap_main, partecipanti=None):
         """IL WATERFALL (Ticket 11): ogni titolo in UNA riga sola, in ordine di specificita'.
 
         PERCHE' ESISTE. Le righe erano additive: lo stesso film poteva stare in piu' righe hero, e una
@@ -612,6 +612,12 @@ class Motore:
         preso — e solo se nessuna riga piu' specifica l'ha gia' portato via. Il motivo e' di prodotto: se
         il filone porta un titolo che e' anche fra i migliori del mondo, toglierlo lo nasconderebbe a chi
         apre la home. Uno solo, non due, e non e' sfruttabile donando un titolo da ogni filone.
+
+        TICKET 22 — LA GUARDIA. Una riga che **nessun catalogo mostra** non partecipa: non pesca e non
+        ruba titoli alle righe servite. Prima, `il_tuo_mondo` perdeva la top-10 verso un micro-cluster che
+        Stremio non mostrava. `partecipanti` e' l'insieme dei ruoli serviti per quel profilo/media (dal
+        registro + la selezione): `None` = tutti, cioe' il §9.1 puro. Le righe fuori restano nella risposta,
+        con i loro titoli e `waterfall_partecipa: false`, e si dichiarano nel log.
 
         Ogni riga porta `specificita` e `doppioni_tolti`: quest'ultimo conta le **copie evitate** (quante
         volte il pool ha incontrato un titolo gia' assegnato), non i titoli persi — il numero giusto per
@@ -630,11 +636,20 @@ class Motore:
         ordine = sorted(range(len(liste)), key=lambda i: (_specificita(liste[i]["tipo"]), i))
         assegnati = {}
         consentite = int(P.WATERFALL_SOVRAPPOSIZIONE_MICRO)
+        fuori = []
         for i in ordine:
             li = liste[i]
             tipo = li["tipo"]
             famiglia = famiglia_riga(tipo)
             li["specificita"] = _specificita(tipo)
+            if partecipanti is not None and tipo not in partecipanti:
+                # Fuori dal waterfall (Ticket 22): la riga resta com'e', non pesca e non ruba.
+                li["doppioni_tolti"] = 0
+                li["waterfall_partecipa"] = False
+                li.pop("_pool", None)
+                fuori.append(tipo)
+                continue
+            li["waterfall_partecipa"] = True
             if "doppioni_tolti" in li:
                 continue  # gia' passato da un waterfall: non si azzera il conteggio
             li["doppioni_tolti"] = 0
@@ -693,6 +708,11 @@ class Motore:
             if tolti:
                 print(f"  [waterfall] {tipo}: {tolti} copie evitate, riga {len(scelti)}/{cap} "
                       f"dopo il dedup", file=sys.stderr)
+        if fuori:
+            # Una riga che non partecipa si DICHIARA: non e' un errore, e' un fatto del manifest.
+            print(f"  [waterfall] fuori dal dedup (nessun catalogo servito): {sorted(set(fuori))}",
+                  file=sys.stderr)
+        self.waterfall_fuori = sorted(set(fuori))
         return liste
 
     def dichiara_corta(self, quanti, cap, nome, prefisso=None):
@@ -839,7 +859,7 @@ class Motore:
         return div, len(div)
 
     # ------------------------------------------------------------------ IL METODO
-    def lista(self, storia, slider=None, cap=None, medium=None):
+    def lista(self, storia, slider=None, cap=None, medium=None, servite=None):
         """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`
         OPPURE di `(chiave, plays, tipo, peso)` OPPURE di `(chiave, plays, tipo, peso, recente)`.
 
@@ -849,6 +869,8 @@ class Motore:
         una SELEZIONE: la riga «ultime visioni» nasce da una seconda camminata sui soli semi recenti.
         `cap`: tetto di titoli per lista (default 10 se None per compatibilita').
         `medium`: filtro opzionale 'movie' o 'series' (E4).
+        `servite` (Ticket 22): i ruoli che hanno un catalogo servito per questo profilo/media. Il waterfall
+        deduce solo fra quelli; `None` = tutti (il §9.1 puro).
         """
         slider = {**SLIDER_DEFAULT, **(slider or {})}
         cap_main = int(cap) if cap is not None else 10
@@ -1416,7 +1438,7 @@ class Motore:
                           "target_dimensione": cap_main, "_pool": pool_mondo})
 
         # TICKET 11: IL WATERFALL. Ogni titolo in una riga sola, in ordine di specificita'.
-        liste = self.waterfall_righe(liste, cap_main)
+        liste = self.waterfall_righe(liste, cap_main, partecipanti=servite)
 
         # IL CONTRATTO DI ORDINE DELLE LISTE.
         # Tutte le liste esportate devono rispettare rigorosamente l'ordine monotono decrescente:

@@ -56,12 +56,54 @@ function casualeDelGiorno(giorno, id) {
         hash ^= testo.charCodeAt(i);
         hash = Math.imul(hash, 0x01000193) >>> 0;
     }
-    return hash / 0x100000000;
+    // AVALANCHE FINALE (review standards): senza, id vicini (603/604, 701/702) producevano alpha quasi
+    // uguali — la correlazione misurata era 0,95 — e l'alpha diventava uno spostamento a blocchi invece
+    // di un rimescolamento per titolo.
+    hash ^= hash >>> 16;
+    hash = Math.imul(hash, 0x85ebca6b) >>> 0;
+    hash ^= hash >>> 13;
+    hash = Math.imul(hash, 0xc2b2ae35) >>> 0;
+    hash ^= hash >>> 16;
+    return (hash >>> 0) / 0x100000000;
 }
+
+// L'alpha e' costante per tutta la giornata UTC: si ricorda per (giorno, id) e si butta al cambio giorno.
+let memoAlphaGiorno = null;
+const memoAlpha = new Map();
 
 /** Il fattore del giorno per un titolo: `1 ± banda`. */
 function alphaDelGiorno(id, giorno = giornoUTC(), banda = DECADIMENTO_ALPHA_BANDA) {
-    return 1 + banda * (2 * casualeDelGiorno(giorno, id) - 1);
+    if (memoAlphaGiorno !== giorno) {
+        memoAlpha.clear();
+        memoAlphaGiorno = giorno;
+    }
+    const chiave = `${banda}|${id}`;
+    const ricordato = memoAlpha.get(chiave);
+    if (ricordato !== undefined) return ricordato;
+    const alpha = 1 + banda * (2 * casualeDelGiorno(giorno, id) - 1);
+    memoAlpha.set(chiave, alpha);
+    return alpha;
+}
+
+/**
+ * La «serie in corso»: quanti giorni consecutivi (con buchi piu' corti della soglia di reset) portano
+ * all'ultima volta in home. E' il numero che il decadimento usa come esponente: dopo un'assenza lunga la
+ * serie riparte da 1, quindi il titolo non torna a decadere con l'esponente vecchio (Ticket 21).
+ */
+function serieInCorso(date, resetGiorniFuori = DECADIMENTO_RESET_GIORNI_FUORI, oggi = giornoUTC()) {
+    if (!Array.isArray(date) || date.length === 0) return 0;
+    const ultimo = date[date.length - 1];
+    // La serie deve ARRIVARE A OGGI: se il titolo non e' in home da `resetGiorniFuori` giorni, la serie
+    // e' interrotta (0). E' il cuore del reset: quando torna, riparte da 1 e non dall'esponente vecchio.
+    const bucoOggi = giorniFra(ultimo, oggi);
+    if (bucoOggi === null || bucoOggi >= resetGiorniFuori) return 0;
+    let n = 1;
+    for (let i = date.length - 1; i > 0; i -= 1) {
+        const buco = giorniFra(date[i - 1], date[i]);
+        if (buco === null || buco >= resetGiorniFuori) break;
+        n += 1;
+    }
+    return n;
 }
 
 /** Giorni interi fra due date `YYYY-MM-DD` (positivo se `dopo` viene dopo `prima`). */
@@ -104,6 +146,12 @@ async function applicaDecadimento({
 } = {}) {
     const statistiche = { titoli: 0, cataloghi: 0, giorniMedi: 0, spostamenti: 0, righeNonOrdinate: 0, riposati: 0 };
     if (!assigned || typeof assigned !== 'object' || !userId) return { assigned, statistiche };
+    // Una banda fuori da [0, 1) produrrebbe punteggi negativi o NaN: si ricade sul default dichiarato.
+    const banda = Number(alphaBanda);
+    const bandaSicura = Number.isFinite(banda) && banda >= 0 && banda < 1 ? banda : DECADIMENTO_ALPHA_BANDA;
+    // `oggi` deve essere un giorno `YYYY-MM-DD`: un ISO completo renderebbe NaN ogni confronto e il
+    // decadimento si spegnerebbe in silenzio per tutta la richiesta.
+    const oggiSicuro = /^\d{4}-\d{2}-\d{2}$/.test(String(oggi)) ? oggi : giornoUTC();
 
     const cataloghi = Object.keys(assigned);
     const impressioni = await leggi({ userId, profileId, catalogIds: cataloghi, memo: true });
@@ -120,23 +168,37 @@ async function applicaDecadimento({
         const riga = Array.isArray(assigned[catalogo]) ? assigned[catalogo] : [];
         const perTitolo = (impressioni && impressioni.get(catalogo)) || null;
 
+        // Se anche un solo titolo non ha un punteggio, la riga non si tocca: applicare l'alpha solo ad
+        // alcuni lascerebbe i punteggi in disaccordo con l'ordine servito.
+        const rigaOrdinabile = riga.every((i) => Number.isFinite(Number(i?.punteggio)));
+
         let toccati = 0;
-        const nuova = riga.map((item) => {
+        const nuova = rigaOrdinabile ? riga.map((item) => {
             const id = tmdbDi(item);
             const punteggio = Number(item?.punteggio);
             if (!Number.isFinite(punteggio)) return item;
 
             const voce = perTitolo ? perTitolo.get(id) : null;
-            const giorni = Number(voce?.giorni) || 0;
-            const giorniFuori = giorniFra(voce?.ultimo, oggi);
+            // L'esponente e' la SERIE IN CORSO, non il totale nella finestra: dopo un'assenza lunga la
+            // serie riparte, altrimenti il «reset» durerebbe un giorno e il titolo tornerebbe a decadere
+            // con l'esponente di prima (difetti trovati dalle due review).
+            const giorni = serieInCorso(voce?.date, resetGiorniFuori, oggiSicuro);
+            const totaleGiorni = Number(voce?.giorni) || 0;
+            const giorniFuori = giorniFra(voce?.ultimo, oggiSicuro);
             // Il decadimento vale solo se il titolo E' ANCORA in home (Ticket 21, il reset).
-            const ancoraInHome = giorniFuori !== null && giorniFuori < resetGiorniFuori;
+            // Un `ultimo` nel futuro (orologio storto) non vale come «in home».
+            const ancoraInHome = giorniFuori !== null && giorniFuori >= 0 && giorniFuori < resetGiorniFuori;
             const decade = giorni >= giorniMinimi && !vistiSet.has(id) && ancoraInHome;
 
-            if (giorni >= giorniMinimi && !vistiSet.has(id) && !ancoraInHome) statistiche.riposati += 1;
+            // «Riposati» = il decadimento e' stato ANNULLATO dal reset: il titolo aveva accumulato giorni
+            // ma non e' piu' in home. Si conta sul totale storico, non sulla serie (che ora e' 0).
+            if (totaleGiorni >= giorniMinimi && !vistiSet.has(id) && giorniFuori !== null
+                && (giorniFuori < 0 || giorniFuori >= resetGiorniFuori)) {
+                statistiche.riposati += 1;
+            }
 
             const dopoDecadimento = decade ? punteggio * Math.pow(fattore, giorni) : punteggio;
-            const alpha = alphaDelGiorno(id, oggi, alphaBanda);
+            const alpha = alphaDelGiorno(id, oggiSicuro, bandaSicura);
             const effettivo = dopoDecadimento * alpha;
 
             if (!decade && Math.abs(alpha - 1) < 1e-12) return item;
@@ -148,23 +210,24 @@ async function applicaDecadimento({
             return {
                 ...item,
                 punteggio: effettivo,
-                punteggio_grafo: punteggio,
+                // Se l'item porta gia' il punteggio del grafo, si conserva quello: due passate non devono
+                // squadrare il decadimento ne' spacciare il punteggio decadiuto per quello del grafo.
+                punteggio_grafo: Number.isFinite(Number(item?.punteggio_grafo)) ? Number(item.punteggio_grafo) : punteggio,
                 ...(decade ? { giorni_in_home: giorni } : {}),
                 alpha_giorno: alpha
             };
-        });
+        }) : riga;
 
         if (toccati > 0) {
             statistiche.titoli += toccati;
             statistiche.cataloghi += 1;
         }
 
-        // Si riordina SOLO se ogni titolo della riga ha un punteggio: un titolo senza punteggio non e'
-        // ne' primo ne' ultimo, e trattarlo come zero lo sposterebbe senza motivo.
-        const tuttiConPunteggio = nuova.every((i) => Number.isFinite(Number(i?.punteggio)));
-        if (!tuttiConPunteggio) {
-            if (toccati > 0) statistiche.righeNonOrdinate += 1;
-            risultato[catalogo] = nuova;
+        if (!rigaOrdinabile) {
+            // Un titolo senza punteggio non e' ne' primo ne' ultimo, e trattarlo come zero lo sposterebbe
+            // senza motivo: la riga resta com'e' e lo si dichiara.
+            statistiche.righeNonOrdinate += 1;
+            risultato[catalogo] = riga;
             continue;
         }
         const primaPosizione = new Map(nuova.map((i, idx) => [tmdbDi(i), idx]));
@@ -185,6 +248,7 @@ module.exports = {
     alphaDelGiorno,
     casualeDelGiorno,
     giorniFra,
+    serieInCorso,
     DECADIMENTO_GIORNI_MINIMI,
     DECADIMENTO_FATTORE,
     DECADIMENTO_RESET_GIORNI_FUORI,

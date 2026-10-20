@@ -105,7 +105,16 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             "motivi": ["storia fuori dal canone"]
         }
 
-    esito = motore.lista(storia, slider=opzioni, cap=cap, medium=req_medium)
+    # TICKET 22: le righe che hanno un catalogo servito per questo profilo/media. Il waterfall deduce solo
+    # fra quelle (`None` = tutte, il §9.1 puro). Una lista vuota e' "nessuna riga servita": non e' "tutte".
+    servite = None
+    if isinstance(opzioni, dict) and "righe_servite" in opzioni:
+        grezzo = opzioni.get("righe_servite")
+        if not isinstance(grezzo, list) or not all(isinstance(x, str) for x in grezzo):
+            return 400, {"ok": False, "errore": "il campo 'righe_servite' deve essere una lista di stringhe"}
+        servite = list(dict.fromkeys(grezzo))
+
+    esito = motore.lista(storia, slider=opzioni, cap=cap, medium=req_medium, servite=servite)
     if esito.get("errore"):
         return 200, {
             "contratto": 1,
@@ -161,7 +170,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             # Anche una riga di filone svuotata dal pavimento porta la sua identita' (Ticket 08).
             for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
                       "fonte", "candidati", "nel_bacino", "scartati_pavimento",
-                      "specificita", "doppioni_tolti"):
+                      "specificita", "doppioni_tolti", "waterfall_partecipa"):
                 if campo in li:
                     lista_out[campo] = li[campo]
             contratto_liste.append(lista_out)
@@ -331,7 +340,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         # `punti_incontro_1..3`) e' posizionale e cambia quando i pesi si incrociano, il filone no (08, 09).
         for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
                       "fonte", "candidati", "nel_bacino", "scartati_pavimento",
-                      "specificita", "doppioni_tolti"):
+                      "specificita", "doppioni_tolti", "waterfall_partecipa"):
             if campo in li:
                 lista_out[campo] = li[campo]
         if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):
@@ -349,13 +358,18 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
 
         contratto_liste.append(lista_out)
 
-    return 200, {
+    risposta = {
         "contratto": 1,
         "versioni": esito["versioni"],
         "semi": esito["semi"],
         "liste": contratto_liste,
         "motivi": motivi
     }
+    fuori = getattr(motore, "waterfall_fuori", None)
+    if servite is not None:
+        # TICKET 22: si dichiara chi non ha partecipato al dedup (nessun catalogo servito).
+        risposta["waterfall"] = {"servite": len(servite), "fuori": fuori or []}
+    return 200, risposta
 
 
 class ServizioHandler(BaseHTTPRequestHandler):

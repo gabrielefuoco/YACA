@@ -88,11 +88,13 @@ function aggregaImpressioni(righe, soglia) {
         )].sort();
         if (giorni.length === 0) continue;
         if (!perCatalogo.has(r.catalogId)) perCatalogo.set(r.catalogId, new Map());
-        // `giorni` = quanti giorni distinti; `ultimo` = l'ultima volta in home. Il secondo serve al reset
-        // del ticket 21: un titolo che non compare piu' torna al punteggio pieno.
+        // `giorni` = quanti giorni distinti nella finestra; `ultimo` = l'ultima volta in home; `date` =
+        // le date ordinate. Le date servono al reset del ticket 21 (la «serie in corso» si calcola li',
+        // dove vive la politica: qui si conservano i fatti, non le soglie).
         perCatalogo.get(r.catalogId).set(String(r.tmdbId), {
             giorni: giorni.length,
-            ultimo: giorni[giorni.length - 1]
+            ultimo: giorni[giorni.length - 1],
+            date: giorni
         });
     }
     return perCatalogo;

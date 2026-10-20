@@ -17,8 +17,15 @@ jest.mock('../src/profile/impressions', () => {
             impressioniLette.push(args);
             return new Map([
                 ['yaca_mondi_movies', new Map([
-                ['11', { giorni: 6, ultimo: new Date().toISOString().split('T')[0] }],
-                ['12', { giorni: 1, ultimo: new Date().toISOString().split('T')[0] }]
+                ['11', (() => {
+                    const date = [];
+                    for (let i = 5; i >= 0; i -= 1) date.push(new Date(Date.now() - i * 86400000).toISOString().split('T')[0]);
+                    return { giorni: 6, ultimo: date[5], date };
+                })()],
+                ['12', (() => {
+                    const oggi = new Date().toISOString().split('T')[0];
+                    return { giorni: 1, ultimo: oggi, date: [oggi] };
+                })()]
             ])]
             ]);
         })
@@ -40,6 +47,16 @@ const { getHeroPool } = require('../src/pool');
 
 function today() {
     return new Date().toISOString().split('T')[0];
+}
+
+/** Una voce di impressione con `giorni` date consecutive che finiscono oggi. */
+function voceMock(giorni) {
+    const base = Date.parse(`${today()}T00:00:00.000Z`);
+    const date = [];
+    for (let i = giorni - 1; i >= 0; i -= 1) {
+        date.push(new Date(base - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    }
+    return { giorni: date.length, ultimo: date[date.length - 1], date };
 }
 
 function titolo(tmdbId, punteggio) {
@@ -82,6 +99,9 @@ describe('Ticket 14: le impressioni nel pool', () => {
         const atteso = Math.pow(0.85, 6);
         expect(undici.punteggio).toBeGreaterThan(atteso * 0.95);
         expect(undici.punteggio).toBeLessThan(atteso * 1.05);
+        // e la banda di DEFAULT e' davvero applicata (con `alphaBanda: 0` questo test resterebbe verde):
+        expect(riga.every((i) => i.alpha_giorno >= 0.95 && i.alpha_giorno <= 1.05)).toBe(true);
+        expect(riga.every((i) => i.punteggio !== i.punteggio_grafo)).toBe(true);
         // niente cancellato
         expect(new Set(riga.map((i) => i.tmdbId))).toEqual(new Set([11, 12, 13]));
         // una lettura per richiesta, con lo user e il profilo giusti e i cataloghi come filtro

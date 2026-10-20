@@ -135,3 +135,75 @@ Tests:       8 failed, 1 skipped, 1951 passed, 1960 total
    serve — ma un titolo mostrato 20 giorni fa non è più conteggiato, ed è giusto così.
 3. **La taratura è una scelta di prodotto registrata** (4 giorni, ±5%): se il prodotto vuole più/meno
    varietà, sono due costanti dichiarate in `src/pool/impressioni.js`, non numeri sparsi.
+
+---
+
+## Fix delle due review (20/10/2026) — la review aveva ragione su due cose gravi
+
+### 1. Il reset durava **un giorno**: era un cameo, non un ritorno (must fix, spec+std)
+
+`giorni` era il **totale** dei giorni nella finestra e restava invariato: il giorno dopo il reset lo stesso
+titolo tornava a decadere con l'esponente **vecchio e più grande** (`0.85^(n+1)`). «Torna al punteggio pieno»
+era vero per ventiquattr'ore.
+
+**Fix**: l'esponente non è più il totale, è la **serie in corso** (`serieInCorso`): i giorni consecutivi che
+arrivano a oggi, interrotti da un buco ≥ `RESET_GIORNI_FUORI`. Un titolo che è fuori da 4 giorni ha serie
+**0** (niente decadimento); quando torna riparte da **1** e torna a decadere solo dopo 3 giorni consecutivi
+in home. Test: «il giorno DOPO il reset non si torna a decadere con l'esponente vecchio».
+
+### 2. L'alpha era uno spostamento a blocchi, non un rimescolamento (must fix, std)
+
+FNV-1a senza avalanche finale, con l'id in fondo alla stringa: **correlazione misurata 0,953** fra id
+vicini (`603`/`604`, `701`/`702`). Franchise e seguiti si muovevano insieme, e in certi giorni l'alpha era
+un offset quasi costante per tutta la riga (nessun riordino).
+
+**Fix**: aggiunta la coda di avalanche (murmur3 finalizer). Correlazione misurata dopo il fix: **0,009**.
+Test: «id vicini non hanno lo stesso alpha (niente spostamenti a blocchi)», con soglia 0,3.
+
+### 3. Gli altri, presi
+
+- **Log onesto** (`src/pool/index.js`): prima si stampava solo con `titoli > 0` e si attribuivano all'alpha
+  i movimenti del decadimento. Ora si logga quando **qualcosa** si è mosso, e la riga dice
+  `N titoli scesi`, `R tornati al punteggio pieno`, `M cambi di posizione (decadimento + alpha)`.
+- **`righeNonOrdinate`** ora conta anche il caso nuovo (una riga con un titolo senza punteggio viene saltata
+  del tutto, alpha compreso: applicarlo a metà lascerebbe punteggi in disaccordo con l'ordine).
+- **Banda di default provata attraverso la porta** (`getHeroPool`): `alpha_giorno` dentro ±5% e
+  `punteggio !== punteggio_grafo` per ogni titolo — con `alphaBanda: 0` quel test sarebbe verde.
+- **Test non più deperibili**: il «stesso giorno → stesso ordine» pinna `ultimo` al giorno della prova;
+  l'asserzione sulla banda confronta ogni titolo col **proprio** `punteggio_grafo` (prima la riga era
+  riordinata e si confrontavano titoli diversi).
+- **Difese**: `oggi` validato (`YYYY-MM-DD`, altrimenti si ricade su oggi); un `ultimo` nel futuro non vale
+  come «in home»; `riposati` conta solo chi aveva davvero accumulato giorni; `punteggio_grafo` non si
+  sovrascrive su una seconda passata; l'alpha si ricorda per `(giorno, id)` (un hash per titolo al giorno,
+  non per richiesta).
+
+### 4. La misura, rifatta dopo il fix
+
+```
+$ node scripts/qa/probe-ticket-21-taratura.js
+A. solo decadimento (14)     diversi in pagina 1: 50/60 · rientrati dopo un'uscita: 29 (rientri 50) · restano da ieri: 11.1/20 · permanenza media: 2 giorni (54% <= 2 giorni)
+B. + alpha del giorno        diversi in pagina 1: 50/60 · rientrati dopo un'uscita: 29 (rientri 49) · restano da ieri: 11.2/20 · permanenza media: 2.02 giorni (57% <= 2 giorni)
+C. + reset (in vigore)       diversi in pagina 1: 43/60 · rientrati dopo un'uscita: 34 (rientri 40) · restano da ieri: 13/20 · permanenza media: 2.41 giorni (37% <= 2 giorni)
+
+== la soglia del reset (giorni fuori prima di azzerare) ==
+soglia  diversi in pagina 1  rientri  restano da ieri
+   2          35/60              54     12.3/20
+   3          38/60              40     13.6/20
+   4          43/60              40     13/20
+   5          50/60              45     11.7/20
+   6          50/60              49     11.2/20
+```
+
+Con la serie in corso il pendolo **non c'è più** (non dipende più dalla soglia): la soglia ora governa solo
+quanto ruota la pagina. 3 dà la continuità massima (13,6/20), 5 la rotazione massima (50/60). **Resta 4**:
+continuità 13/20 e 43 titoli diversi, il punto in mezzo. Le differenze fra 3 e 5 sono ±1,5 titoli su 20.
+
+**La soglia scelta è una scelta, non una verità**: con il fix della serie, «2 giorni» non fa più il pendolo —
+il numero 4 resta perché è il valore misurato e dichiarato, e spostarlo è un cambio di prodotto, non un bug.
+
+### 5. Suite dopo il fix
+
+```
+Test Suites: 5 failed, 191 passed, 196 total
+Tests:       8 failed, 1 skipped, 1953 passed, 1962 total
+```

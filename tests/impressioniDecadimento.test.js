@@ -19,6 +19,16 @@ function giorniFa(n) {
     return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
+/** Una voce di impressione: `giorni` date CONSECUTIVE che finiscono a `ultimo` (default: oggi). */
+function voce(giorni, ultimo = giornoUTC()) {
+    const date = [];
+    const base = Date.parse(`${ultimo}T00:00:00.000Z`);
+    for (let i = giorni - 1; i >= 0; i -= 1) {
+        date.push(new Date(base - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    }
+    return { giorni: date.length, ultimo: date[date.length - 1], date };
+}
+
 describe('Ticket 14: le impressioni tornano indietro', () => {
     describe('la finestra (aggregazione pura)', () => {
         test('conta i giorni distinti dentro la finestra e ignora quelli fuori', () => {
@@ -29,11 +39,11 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 { catalogId: 'yaca_passo_fuori_movies', tmdbId: 603, seenDates: [giorniFa(2)] }
             ], soglia);
 
-            expect(perCatalogo.get('yaca_mondi_movies').get('603')).toEqual({ giorni: 3, ultimo: giorniFa(1) });
+            expect(perCatalogo.get('yaca_mondi_movies').get('603')).toMatchObject({ giorni: 3, ultimo: giorniFa(1) });
             // tutto fuori finestra: non compare
             expect(perCatalogo.get('yaca_mondi_movies').has('604')).toBe(false);
             // lo stesso titolo in due cataloghi: due conteggi separati
-            expect(perCatalogo.get('yaca_passo_fuori_movies').get('603')).toEqual({ giorni: 1, ultimo: giorniFa(2) });
+            expect(perCatalogo.get('yaca_passo_fuori_movies').get('603')).toMatchObject({ giorni: 1, ultimo: giorniFa(2) });
         });
 
         test('nessuna riga: nessuna impressione (e nessun crash)', () => {
@@ -52,7 +62,7 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
 
         // `impressioni`: [[id, giorni]] oppure [[id, giorni, ultimo]] (default: oggi, cioe' ancora in home).
         function voci(impressioni) {
-            return new Map(impressioni.map(([id, giorni, ultimo = giornoUTC()]) => [id, { giorni, ultimo }]));
+            return new Map(impressioni.map(([id, giorni, ultimo = giornoUTC()]) => [id, voce(giorni, ultimo)]));
         }
 
         async function decadi(impressioni, visti = [], extra = {}) {
@@ -103,7 +113,7 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 userId: 'u1',
                 profileId: 'p1',
                 assigned: cache,
-                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', { giorni: 5, ultimo: giornoUTC() }]])]])
+                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', voce(5)]])]])
             });
             expect(cache.yaca_mondi_movies[0].punteggio).toBe(1.0);
             expect(cache.yaca_mondi_movies[0].giorni_in_home).toBeUndefined();
@@ -168,8 +178,8 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 giorni: 7
             });
 
-            expect(risultato.get('yaca_mondi_movies').get('603')).toEqual({ giorni: 2, ultimo: giornoUTC() });
-            expect(risultato.get('yaca_mondi_movies').get('604')).toEqual({ giorni: 1, ultimo: giorniFa(1) });
+            expect(risultato.get('yaca_mondi_movies').get('603')).toMatchObject({ giorni: 2, ultimo: giornoUTC() });
+            expect(risultato.get('yaca_mondi_movies').get('604')).toMatchObject({ giorni: 1, ultimo: giorniFa(1) });
             const filtro = find.mock.calls[0][0];
             expect(filtro.owner).toBe('u1');
             expect(filtro.profileId).toBe('p1');
@@ -221,7 +231,7 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 assigned: { yaca_mondi_movies: riga },
                 visti: 'spazzatura',
                 alphaBanda: 0,
-                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', { giorni: 5, ultimo: giornoUTC() }]])]])
+                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', voce(5)]])]])
             });
             expect(assigned.yaca_mondi_movies.map((i) => i.tmdbId)).toEqual([2, 1]);
         });
@@ -237,7 +247,7 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 profileId: 'p1',
                 assigned: { yaca_mondi_movies: riga },
                 alphaBanda: 0,
-                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', { giorni: 5, ultimo: giornoUTC() }]])]])
+                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', voce(5)]])]])
             });
             // il titolo senza punteggio resta primo: non e' ne' primo ne' ultimo in classifica
             expect(assigned.yaca_mondi_movies.map((i) => i.tmdbId)).toEqual([9, 1, 2]);
@@ -253,7 +263,7 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 tmdbId: 1000 + i,
                 punteggio: Number((1 - i * 0.012).toFixed(4))
             }));
-            const inHome = new Map(riga.slice(0, 20).map((i) => [String(i.tmdbId), { giorni: 6, ultimo: giornoUTC() }]));
+            const inHome = new Map(riga.slice(0, 20).map((i) => [String(i.tmdbId), voce(6)]));
             const posizionePrima = new Map(riga.map((i, idx) => [i.tmdbId, idx + 1]));
 
             return applicaDecadimento({

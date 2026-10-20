@@ -618,13 +618,16 @@ async function getHeroPool(params) {
         assigned: assignedCache,
         visti: sharedGroup?.seedIds || []
     });
-    if (statImpressioni.titoli > 0) {
+    // Si logga quando il decadimento, il reset o l'alpha hanno mosso qualcosa: `spostamenti` conta anche
+    // i movimenti dovuti all'alpha del giorno, quindi la riga non dice «decaduti», dice cosa e' cambiato.
+    if (statImpressioni.titoli > 0 || statImpressioni.riposati > 0 || statImpressioni.spostamenti > 0) {
         const nonOrdinate = statImpressioni.righeNonOrdinate > 0
             ? ` · ${statImpressioni.righeNonOrdinate} righe NON riordinate (titoli senza punteggio)`
             : '';
         console.log(`[Impressioni] ${mediaType}: ${statImpressioni.titoli} titoli scesi in ` +
-            `${statImpressioni.cataloghi} righe (media ${statImpressioni.giorniMedi} giorni in home, ` +
-            `${statImpressioni.spostamenti} cambi di posizione${nonOrdinate})`);
+            `${statImpressioni.cataloghi} righe, ${statImpressioni.riposati} tornati al punteggio pieno ` +
+            `(media ${statImpressioni.giorniMedi} giorni in home), ` +
+            `${statImpressioni.spostamenti} cambi di posizione (decadimento + alpha)${nonOrdinate}`);
     }
     const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;
     const catPasso = `yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`;

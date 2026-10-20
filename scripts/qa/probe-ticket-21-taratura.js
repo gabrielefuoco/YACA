@@ -50,8 +50,13 @@ async function simula({ alphaBanda, resetGiorniFuori, etichetta, stampa = true }
         for (const item of riga) {
             const giorni = visto.get(String(item.tmdbId));
             if (!giorni || giorni.size === 0) continue;
-            const ultimo = Math.max(...giorni);
-            voci.set(String(item.tmdbId), { giorni: giorni.size, ultimo: giornoDi(base, ultimo) });
+            const date = [...giorni].sort((a, b) => a - b).map((g) => giornoDi(base, g));
+            voci.set(String(item.tmdbId), {
+                giorni: date.length,
+                ultimo: date[date.length - 1],
+                // le date servono alla «serie in corso» (Ticket 21): senza, il decadimento non parte
+                date
+            });
         }
         const { assigned } = await applicaDecadimento({
             userId: 'sonda',
@@ -91,13 +96,29 @@ async function simula({ alphaBanda, resetGiorniFuori, etichetta, stampa = true }
         const ieri = new Set(pagina1[g - 1]);
         sovrapposizioni.push(pagina1[g].filter((id) => ieri.has(id)).length);
     }
+    // Quanto dura una permanenza in pagina 1: un «ritorno» che dura un giorno solo non e' un ritorno.
+    const permanenze = [];
+    for (const id of distinti) {
+        let run = 0;
+        for (let g = 0; g < pagina1.length; g += 1) {
+            if (pagina1[g].includes(id)) run += 1;
+            else if (run > 0) { permanenze.push(run); run = 0; }
+        }
+        if (run > 0) permanenze.push(run);
+    }
+    const permanenzaMedia = permanenze.length
+        ? Number((permanenze.reduce((a, b) => a + b, 0) / permanenze.length).toFixed(2))
+        : 0;
+    const permanenzeCorte = permanenze.filter((n) => n <= 2).length;
     const media = Number((sovrapposizioni.reduce((a, b) => a + b, 0) / sovrapposizioni.length).toFixed(1));
     if (stampa) {
         console.log(`${etichetta.padEnd(28)} diversi in pagina 1: ${String(distinti.size).padStart(2)}/${CAP}` +
             ` · rientrati dopo un'uscita: ${String(rientrati).padStart(2)} (rientri ${rientriTotali})` +
-            ` · restano da ieri: ${media}/${PAGINA}`);
+            ` · restano da ieri: ${media}/${PAGINA} · permanenza media: ${permanenzaMedia} giorni` +
+            ` (${permanenze.length ? Math.round((permanenzeCorte / permanenze.length) * 100) : 0}% <= 2 giorni)`);
     }
-    return { distinti: distinti.size, rientrati, rientriTotali, sovrapposizioneMedia: media, pagina1 };
+    return { distinti: distinti.size, rientrati, rientriTotali, sovrapposizioneMedia: media,
+        permanenzaMedia, permanenzeCorte, permanenze: permanenze.length, pagina1 };
 }
 
 async function main() {
