@@ -17,7 +17,7 @@ const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec, getHeroRuoli } = require('../catalog/registry');
 const { applicaDecadimento } = require('./impressioni');
-const { fetchProfileContext } = require('../profile');
+const { fetchProfileContext, selectedPresetsDi } = require('../profile');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const { graphClient } = require('../clients');
@@ -52,6 +52,36 @@ const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
 const activeHeroGroupBuilds = new Map();
 
+/**
+ * I RUOLI CHE IL PROFILO HA DAVVERO ACCESI (Ticket 22).
+ * Una riga senza catalogo servito non deve partecipare al waterfall: non pesca e non ruba titoli alle
+ * righe che Stremio mostra. `null` = «nessuna selezione» = tutte le righe (il §9.1 puro).
+ *
+ * @param {{userConfig?: object, context?: string, mediaType?: string}} params
+ * @returns {string[]|null}
+ */
+function righeServiteDelProfilo({ userConfig, context, mediaType = 'movie' } = {}) {
+    const profili = Array.isArray(userConfig?.profiles) ? userConfig.profiles : [];
+    const idProfilo = (context && typeof context === 'string') ? context : userConfig?.activeProfileId;
+    const profilo = profili.find((p) => p.id === idProfilo);
+    const presets = selectedPresetsDi(profilo);
+    if (!Array.isArray(presets) || presets.length === 0) return null;
+
+    const ruoli = new Set();
+    for (const { ruolo, slug } of RUOLI_HERO) {
+        if (presets.includes(getHeroCatalogId(slug, mediaType))) ruoli.add(ruolo);
+    }
+    for (const slug of RUOLI_MICRO) {
+        if (presets.includes(getHeroCatalogId(slug, mediaType))) ruoli.add(slug);
+    }
+    if (presets.includes(getHeroCatalogId('punti_incontro', mediaType))) {
+        for (const ruolo of RUOLI_PONTE) ruoli.add(ruolo);
+    }
+    // Nessuna riga di QUESTO medium accesa: non c'e' niente da proteggere, si torna al §9.1 (`null`),
+    // non a un insieme vuoto (che direbbe «nessuna riga partecipa» e sarebbe un'altra cosa).
+    return ruoli.size > 0 ? [...ruoli] : null;
+}
+
 function getHeroCatalogInfo(catalogId) {
     return HERO_CATALOG_IDS.get(catalogId) || null;
 }
@@ -60,7 +90,7 @@ function getHeroCatalogId(slug, mediaType) {
     return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders }) {
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders, righeServite }) {
     const versions = graphVersions !== undefined ? graphVersions : graphClient.getGraphHealthVersionsCached();
     const sl = sliders || slider;
     const { chiave } = cache.deriva({
@@ -73,7 +103,12 @@ function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSel
                 media: mediaType,
                 kids: kidsMode,
                 selettori: typeSelectors,
-                ...(sl ? { slider: sl } : {})
+                ...(sl ? { slider: sl } : {}),
+                // Ticket 22: il motore deduce solo fra le righe servite, quindi la risposta dipende da
+                // questo insieme. Senza, il profilo A erediterebbe le righe del profilo B.
+                ...(Array.isArray(righeServite) && righeServite.length > 0
+                    ? { righeServite: [...righeServite].sort() }
+                    : {})
             },
             invalida: {
                 artefatto: versions?.artefatto,
@@ -305,10 +340,15 @@ const HERO_STRATEGIES = [
                     || undefined;
                 const cap = ctx.cap || 60;
 
+                // Ticket 22: il waterfall del motore deduce solo fra le righe che qualcuno mostra.
+                const servite = ctx.righeServite !== undefined
+                    ? ctx.righeServite
+                    : righeServiteDelProfilo({ userConfig: ctx.userConfig, context: ctx.context, mediaType: med });
+                const opzioniMotore = servite ? { ...(opzioni || {}), righe_servite: servite } : opzioni;
                 const resGraph = await graphClient.raccomanda({
                     semi,
                     medium: med,
-                    opzioni,
+                    opzioni: opzioniMotore,
                     cap
                 });
 
@@ -414,7 +454,7 @@ async function runPoolBuilder(strat, ctx, args) {
 /**
  * Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta.
  */
-async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders }) {
+async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders, righeServite = null }) {
     const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
     const effectiveSelectors = (context && typeof context === 'object' && context.selettoriEffettivi)
         ? context.selettoriEffettivi
@@ -451,7 +491,8 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         sliders: resolvedSliders,
         slider: resolvedSliders,
         tasteProfile: profile || null,
-        profile: profile || null
+        profile: profile || null,
+        righeServite
     };
 
     const pools = {};
@@ -500,7 +541,10 @@ function toHeroDesc(args, keyOrDesc) {
                 media: args?.mediaType,
                 kids: args?.kidsMode,
                 selettori: args?.typeSelectors,
-                ...(sl ? { slider: sl } : {})
+                ...(sl ? { slider: sl } : {}),
+                ...(Array.isArray(args?.righeServite) && args.righeServite.length > 0
+                    ? { righeServite: [...args.righeServite].sort() }
+                    : {})
             },
             invalida: {
                 artefatto: args?.graphVersions?.artefatto,
@@ -586,6 +630,9 @@ async function getHeroPool(params) {
         || undefined;
 
     const graphVersions = await graphClient.getGraphHealthVersions();
+    // Ticket 22: le righe accese per questo profilo entrano nella chiave (il motore deduce solo fra
+    // quelle) e viaggiano fino alla chiamata del motore.
+    const righeServite = righeServiteDelProfilo({ userConfig, context, mediaType });
     const heroDesc = toHeroDesc({
         userId,
         context,
@@ -594,7 +641,8 @@ async function getHeroPool(params) {
         typeSelectors,
         graphVersions,
         sliders: resolvedSliders,
-        slider: resolvedSliders
+        slider: resolvedSliders,
+        righeServite
     });
     const sharedGroup = await getSharedHeroCatalogs({
         userId,
@@ -607,7 +655,8 @@ async function getHeroPool(params) {
         typeSelectors,
         graphVersions,
         sliders: resolvedSliders,
-        slider: resolvedSliders
+        slider: resolvedSliders,
+        righeServite
     }, heroDesc);
 
     const assignedCache = sharedGroup?.catalogs || {};
@@ -657,6 +706,7 @@ module.exports = {
     ensurePoolItem,
     getRecommendationId,
     getHeroCatalogInfo,
+    righeServiteDelProfilo,
     getHeroCatalogId,
     isSharedHeroCacheEntry,
     HERO_CACHE_KEY_VERSION,

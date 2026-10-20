@@ -116,7 +116,14 @@ function deriva(descrizione) {
                 }
             }
 
-            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}`;
+            // Ticket 22: il motore deduce solo fra le righe servite, quindi la risposta dipende da
+            // quell'insieme. Un hash corto lo porta nella chiave senza allungarla a dismisura.
+            const righe = Array.isArray(varia.righeServite) ? [...varia.righeServite].sort() : null;
+            const righeSuffix = righe && righe.length > 0
+                ? `_rs_${crypto.createHash('md5').update(righe.join(',')).digest('hex').slice(0, 8)}`
+                : '';
+
+            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}${righeSuffix}`;
             break;
         }
 

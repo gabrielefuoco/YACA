@@ -109,7 +109,12 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
 
             // Modello libreria per il ripiego transizionale
             'src/library/models/UserLibraryOrder.js',
-            'src/library/reader.js'
+            'src/library/reader.js',
+
+            // Ticket 22: la guardia del waterfall legge `selectedPresets` del profilo attivo (quali righe
+            // hero sono accese) per dire al motore fra quali deduplicare. E' la stessa lettura che fa
+            // `src/stremio/manifest.js`, non una scrittura di configurazione.
+            'src/pool/index.js'
         ]);
 
         test('i file che accedono ad AddonConfig.profiles[] appartengono all allowlist motivata', () => {

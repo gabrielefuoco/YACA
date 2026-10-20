@@ -170,3 +170,7 @@ costruite è il modo esatto in cui un documento diventa una bugia.
 - **`21` chiuso**: l'alpha del giorno (`1 ± 5%`, deterministico da giorno+id) e il **reset** (decadimento
   azzerato dopo **4 giorni** fuori da pagina 1, soglia misurata: con 2 la pagina faceva il pendolo). Sonda:
   10 giornate, 51/60 titoli diversi in pagina 1, 33 che rientrano dopo un'uscita, 10,7/20 di continuità.
+- **`22` chiuso**: il waterfall deduce solo fra le righe **accese** per il profilo (`righe_servite`, con la
+  traduzione id→ruolo e un pezzo di chiave di cache `_rs_<hash>`). Misurato sul fixture del 11: senza guardia
+  la riga visibile perde **9/10** dei suoi titoli migliori verso una riga che nessuno mostra; con la guardia
+  10/10; con tutte le righe accese il comportamento è **identico** al §9.1.
