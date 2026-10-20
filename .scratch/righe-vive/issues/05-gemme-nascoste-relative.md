@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 04
 
@@ -263,3 +263,18 @@ Tests: 8 failed, 1 skipped, 1898 passed, 1907 total
 - Nessun abbassamento del pavimento di qualità.
 - Nessuna modifica a frontend.
 - Nessun push / build / tsc.
+
+---
+
+**Chiusura (19/10/2026, integratore).** Verificato e integrato in `86e5fb5`.
+
+Due difetti trovati in review, entrambi chiusi: il **tetto poteva essere più basso del pavimento** (`V_mondo < 114`
+⇒ `[40, 35]` ⇒ zero titoli, matematicamente: proprio sui profili d'essai per cui la riga esiste), e **`servizio.py`
+sopprimeva la lista vuota in silenzio** con il `continue` che questo cantiere nomina da tre ticket.
+
+Misurato dopo il fix: la riga dichiara `riga corta: 15/20 titoli sopravvissuti (il pavimento non si abbassa per
+riempire)`, e il caso `V_mondo = 100` produce un intervallo **non vuoto**.
+
+**Residuo dichiarato, non applicato**: sui profili stretti la riga sta a **15/20**. La proposta — allentare il delta
+`0.4 → 0.3` — è scritta e **non applicata**: allentare una soglia per riempire è la cosa che questo cantiere ha
+deciso di non fare senza una misura che lo giustifichi. Va deciso con i numeri davanti, non per comodità.
