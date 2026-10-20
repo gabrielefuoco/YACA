@@ -124,6 +124,12 @@ class Motore:
         self._generi_imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
         self.VOTMED = np.array([K.mediana_voti(self.VOT[self.MEMBRI[b]])
                                 for b in range(self.NB)])
+        # TICKET 05: Media voto VAVE per bolla (esclusi VAVE <= 0) per normalizzazione nicchia
+        self.VAVEMEAN = np.zeros(self.NB, dtype=np.float32)
+        for b in range(self.NB):
+            vb = self.VAVE[self.MEMBRI[b]]
+            vb_pos = vb[vb > 0]
+            self.VAVEMEAN[b] = float(np.mean(vb_pos)) if len(vb_pos) > 0 else float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
         # la componente LISTE di Trakt: corroborazione per la nicchia di qualita'
         z = np.load(K.A("nuovo-LIST.npz"))
         n = len(z["indptr"]) - 1
@@ -160,6 +166,45 @@ class Motore:
             return C.attiva_per_mondo(r, self.MEM, self.NB), r
         r = C.diffondi(self.Tr, righe, plays, self.NEP, tipi=tipi)
         return C.attiva_per_mondo(r, self.MEM, self.NB), r
+
+    def media_voto_bolla(self, b):
+        """Restituisce la media dei voti VAVE della bolla b precalcolata all'avvio (Ticket 05)."""
+        if hasattr(self, "VAVEMEAN") and self.VAVEMEAN is not None and 0 <= b < len(self.VAVEMEAN):
+            return float(self.VAVEMEAN[b])
+        return float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
+
+    def calcola_v_mondo(self, bolle_set, att_s, con_stato=False):
+        """Calcola la mediana dei voti del bacino acceso pesata per att_s[b] (Ticket 05).
+        
+        Se il bacino e' vuoto o privo di pesi validi, dichiara il ricorso al fallback assoluto
+        su sys.stderr e restituisce il flag is_fallback (se con_stato=True).
+        """
+        fallback_val = float(getattr(P, "NICCHIA_V_MONDO_FALLBACK", 1000.0))
+        if not bolle_set:
+            print(f"  [nicchia] bacino vuoto: fallback V_mondo assoluto = {fallback_val:.1f} (soglia non relativa)", file=sys.stderr)
+            self._ultimo_v_mondo_fallback = True
+            return (fallback_val, True) if con_stato else fallback_val
+        bolle_list = list(bolle_set)
+        vals = np.array([float(self.VOTMED[b]) for b in bolle_list], dtype=np.float64)
+        weights = np.array([max(float(att_s[b]), 0.0) for b in bolle_list], dtype=np.float64)
+        tot_w = float(weights.sum())
+        if tot_w <= 0:
+            if len(vals) > 0:
+                self._ultimo_v_mondo_fallback = False
+                res = float(np.median(vals))
+                return (res, False) if con_stato else res
+            print(f"  [nicchia] bacino senza titoli/pesi validi: fallback V_mondo assoluto = {fallback_val:.1f} (soglia non relativa)", file=sys.stderr)
+            self._ultimo_v_mondo_fallback = True
+            return (fallback_val, True) if con_stato else fallback_val
+        ord_idx = np.argsort(vals)
+        sorted_vals = vals[ord_idx]
+        sorted_weights = weights[ord_idx]
+        cum_weights = np.cumsum(sorted_weights)
+        idx_med = np.searchsorted(cum_weights, 0.5 * tot_w)
+        idx_med = min(idx_med, len(sorted_vals) - 1)
+        self._ultimo_v_mondo_fallback = False
+        res = float(sorted_vals[idx_med])
+        return (res, False) if con_stato else res
 
     def voto_bayesiano(self, x=None):
         """Voto bayesiano TMDB (formula IMDb): (VOT*VAVE + m*C) / (VOT + m)."""
@@ -646,33 +691,95 @@ class Motore:
         div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
         liste.append({"tipo": "uscite_nuove", "mondo": None, "titoli": div_nuove[:cap_main]})
 
-        # la nicchia di qualita': non iper-popolare, ben votata, meglio se in liste di altri
-        cand_quanti = max(cap_main * 2, cap_main + 20) if cap is not None else 40
-        cand = [x for x in self.titoli_di(bolle + vicini, r, visti, cand_quanti, medium_filtro=medium)]
-        nic = [x for x in cand if self.POP[x] <= P.NICCHIA_POPOLARITA_MAX
-               and self.VAVE[x] >= P.NICCHIA_VOTO_MIN]
-        nic.sort(key=lambda x: -(self.VAVE[x] + (P.NICCHIA_BONUS_LISTE if self.LISTDEG[x] > 0 else 0)))
-        cand_nic = [(B.KEYS[x], float(r[x])) for x in nic]
+        # =========================================================================
+        # «GEMME NASCOSTE NEL TUO MONDO» (Ticket 05): Nicchia RELATIVA al profilo
+        # =========================================================================
+        # 1. Bacino appiattito: lo stesso cand_bacino di «il tuo mondo» (Ticket 03)
+        is_fallback_v_mondo = False
+        if len(cand_bacino) > 0:
+            # 2. Tetto relativo di notorieta':
+            # V_mondo = mediana dei voti del bacino acceso pesata per att_s[b]
+            v_mondo, is_fallback_v_mondo = self.calcola_v_mondo(bacino_bolle_set, att_s, con_stato=True)
+            fattore_v_mondo = float(getattr(P, "NICCHIA_FATTORE_V_MONDO", 0.35))
+            tetto_vot_max = float(getattr(P, "NICCHIA_TETTO_VOT_MAX", 2500.0))
+            # 3. Pavimento assoluto: VOT[x] >= 40
+            pavimento_voti = float(getattr(P, "NICCHIA_PAVIMENTO_VOT_MIN", 40.0))
+            tetto_voti = max(pavimento_voti, min(fattore_v_mondo * v_mondo, tetto_vot_max))
+
+            # 4. Voto normalizzato sulla bolla e neutralizzazione serie:
+            # offset_serie sottratto coerentemente su pavimento, delta bolla e ranking.
+            # mu_b = media voto della bolla da self.VAVEMEAN (nessuna ricalcolazione duplicata).
+            offset_serie = float(getattr(P, "NICCHIA_SERIE_OFFSET_VOTO", 0.3))
+            delta_vave_min = float(getattr(P, "NICCHIA_DELTA_VAVE_MU", 0.4))
+            vave_min_film = float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
+
+            cand_bolle = self.MEM[cand_bacino]
+            mu_b_cand = self.VAVEMEAN[cand_bolle]
+            vave_cand = self.VAVE[cand_bacino]
+            vot_cand = self.VOT[cand_bacino]
+            is_tv_cand = B.IS_TV[cand_bacino]
+
+            # Voto effettivo con offset serie sottratto ovunque
+            vave_eff = np.where(is_tv_cand, vave_cand - offset_serie, vave_cand)
+
+            maschera_nicchia = (
+                (vot_cand >= pavimento_voti)
+                & (vot_cand <= tetto_voti)
+                & ((vave_eff - mu_b_cand) >= delta_vave_min)
+                & (vave_eff >= vave_min_film)
+            )
+            nic_sopravvissuti = cand_bacino[maschera_nicchia]
+
+            if len(nic_sopravvissuti) > 0:
+                # 5. Ordine: r[x] * (vave_eff[x] - mu_b + 1.0) * (1 + 0.15 * (LISTDEG[x] > 0))
+                # Riuso dello slice mu_b_cand[maschera_nicchia] (nessuna ricalcolazione)
+                r_nic = r[nic_sopravvissuti]
+                mu_nic = mu_b_cand[maschera_nicchia]
+                vave_diff = vave_eff[maschera_nicchia] - mu_nic
+                bonus_liste = float(getattr(P, "NICCHIA_BONUS_LISTE", 0.15))
+                fattore_liste = np.where(self.LISTDEG[nic_sopravvissuti] > 0, 1.0 + bonus_liste, 1.0)
+
+                score_nic = r_nic * (vave_diff + 1.0) * fattore_liste
+                ordine_score = np.argsort(-score_nic)
+                nic_ordinati = nic_sopravvissuti[ordine_score]
+                score_ordinati = score_nic[ordine_score]
+
+                cand_nic = [(B.KEYS[x], float(sc)) for x, sc in zip(nic_ordinati, score_ordinati)]
+            else:
+                cand_nic = []
+        else:
+            cand_nic = []
+            is_fallback_v_mondo = True
+
         div_nic = self.applica_antimonopolio(cand_nic, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="nicchia_di_qualita")
-        liste.append({"tipo": "nicchia_di_qualita", "mondo": None, "titoli": div_nic[:cap_main]})
+        titoli_nic = div_nic[:cap_main]
+        target_nic = cap_main if cap_main is not None else 20
+        riga_corta = len(titoli_nic) < target_nic
+        if riga_corta:
+            print(f"  [nicchia] riga corta: {len(titoli_nic)}/{target_nic} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+
+        liste.append({
+            "tipo": "nicchia_di_qualita",
+            "mondo": None,
+            "titoli": titoli_nic,
+            "corta": riga_corta,
+            "target_dimensione": target_nic,
+            "totale_sopravvissuti": len(div_nic),
+            "soglia_relativa": not is_fallback_v_mondo,
+            "fallback_v_mondo": is_fallback_v_mondo
+        })
 
         for b in bolle[1:]:
             liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")} )
 
-        # IL CONTRATTO DI ORDINE DELLE LISTE, dove vale. Le liste «ordinate per attivazione» devono
-        # esserlo davvero: senza questo controllo `uscite_nuove` usciva per indice di catalogo (col
-        # punteggio accanto, a dare l'illusione di un ordine) e `un_passo_fuori` erano tre bolle
-        # concatenate — ed e' da quella concatenazione che e' venuta la conclusione di prodotto
-        # sbagliata del 16/10/2026.
-        #
-        # `nicchia_di_qualita` E' ESENTE, e il motivo vale: e' ordinata per QUALITA' (voto medio piu'
-        # il bonus per chi sta nelle liste di altri), non per attivazione. Senza questa eccezione
-        # scritta, il contratto protesterebbe contro una scelta voluta — e un contratto che protesta a
-        # sproposito si impara a ignorarlo. Se un giorno la nicchia diventasse ordine di attivazione,
-        # si toglierebbe da qui.
+        # IL CONTRATTO DI ORDINE DELLE LISTE.
+        # Tutte le liste esportate devono rispettare rigorosamente l'ordine monotono decrescente:
+        # - liste dei mondi e un_passo_fuori: ordinate per attivazione r[x];
+        # - uscite_nuove: ordinate per attivazione r[x] e freschezza;
+        # - nicchia_di_qualita: ordinata per punteggio combinato r[x] * (vave_diff + 1.0) * liste.
+        # Nessuna lista e' esente dalla monotonicita' dei propri punteggi esportati.
         for li in liste:
-            if li["tipo"] != "nicchia_di_qualita":
-                K.assert_monotonia_lista(li["titoli"], f"lista {li['tipo']}")
+            K.assert_monotonia_lista(li["titoli"], f"lista {li['tipo']}")
 
         # E2: "catalogo" accende da_catalogo: true, e non compare fra i suggerimenti (e' in visti)
         da_cat = any(t == "catalogo" for t in tipi)

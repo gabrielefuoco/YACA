@@ -174,11 +174,33 @@ SCHEDA = [
      "Voto medio minimo per la nicchia di qualita'. Il 90° percentile del catalogo e' 7,3, quindi 7,0 e' "
      "gia' selettivo (6.734 titoli su 49.709 film). Scelto guardando la distribuzione: si puo' tarare.",
      "measure/liste.py"),
-    ("NICCHIA_BONUS_LISTE", 0.3, "INVENTATO",
-     "Quanto sale un titolo se compare nelle liste di altri utenti. E' un nudge messo a mano, e va "
-     "giustificato o tolto: le Trakt-liste coprono solo il 15% del catalogo (grado mediano 0), quindi "
-     "l'assenza del marcatore non significa niente e il bonus avvantaggia chi sta in quel 15%.",
-     "measure/liste.py"),
+    ("NICCHIA_FATTORE_V_MONDO", 0.35, "DICHIARATO",
+     "Fattore moltiplicativo per il tetto relativo dei voti della nicchia: min(0.35 * V_mondo, 2500) (Ticket 05).",
+     "services/graph/motore.py"),
+    ("NICCHIA_TETTO_VOT_MAX", 2500, "DICHIARATO",
+     "Tetto massimo assoluto per i voti nella nicchia di qualita' (Ticket 05). Evita che per profili mainstream "
+     "la nicchia si apra a film troppo popolari.",
+     "services/graph/motore.py"),
+    ("NICCHIA_PAVIMENTO_VOT_MIN", 40, "DICHIARATO",
+     "Pavimento assoluto di voti minimi TMDB per la nicchia: evita film con 3 voti e media 9.0 (Ticket 05).",
+     "services/graph/motore.py"),
+    ("NICCHIA_DELTA_VAVE_MU", 0.4, "DICHIARATO",
+     "Distacco minimo del voto medio del titolo rispetto alla media della sua bolla: VAVE[x] - mu_b >= +0.4 (Ticket 05).",
+     "services/graph/motore.py"),
+    ("NICCHIA_VAVE_MIN_FILM", 6.8, "DICHIARATO",
+     "Pavimento assoluto di voto medio TMDB per film nella nicchia di qualita' (Ticket 05).",
+     "services/graph/motore.py"),
+    ("NICCHIA_SERIE_OFFSET_VOTO", 0.3, "MISURATO",
+     "Offset sistematico dei voti TMDB delle serie rispetto ai film: ~0.3 (Ticket 05 / spec.md §4). "
+     "Sottratto da VAVE per le serie in modo coerente su tutti i confronti (pavimento VAVE-0.3 >= 6.8, "
+     "delta bolla VAVE-0.3-mu_b >= 0.4 e ranking diff = VAVE-0.3-mu_b), neutralizzando l'inflazione strutturale.",
+     "services/graph/motore.py"),
+    ("NICCHIA_BONUS_LISTE", 0.15, "DICHIARATO",
+     "Bonus moltiplicativo se il titolo compare nelle liste Trakt di altri utenti: (1 + 0.15 * (LISTDEG > 0)) (Ticket 05).",
+     "services/graph/motore.py"),
+    ("NICCHIA_V_MONDO_FALLBACK", 1000.0, "DICHIARATO",
+     "Valore di fallback di V_mondo in caso di bacino debole o assenza di pesi (Ticket 05).",
+     "services/graph/motore.py"),
     ("MONDI_DIVERSI_QUANTI", 3, "DICHIARATO",
      "Quanti cataloghi extra, uno per ogni mondo diverso.", "measure/liste.py"),
     ("MONDI_DIVERSI_SOGLIA_FASCIA", 0.5, "INVENTATO",

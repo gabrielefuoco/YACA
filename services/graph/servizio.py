@@ -115,8 +115,28 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         mondo = li["mondo"]
         titoli_raw = li.get("titoli", [])
 
+        # Invariante del cantiere: nessuna riga esce vuota in silenzio.
+        # Una lista vuota viene comunque restituita al chiamante, con la ragione
+        # esplicita, invece di essere soppressa (origine del bug uscite_nuove).
         if not titoli_raw:
             motivi.append(f"{ruolo}: nessun titolo trovato")
+            lista_out = {
+                "ruolo": ruolo,
+                "mondo": li.get("mondo"),
+                "descrizione": f"{ruolo}: nessun titolo trovato",
+                "attivazione": 0.0,
+                "mediana_voti": 0.0,
+                "quota_serie": 0.0,
+                "semi": [],
+                "titoli": [],
+                "vuota": True,
+                "motivo": f"{ruolo}: nessun titolo trovato",
+                "totale_sopravvissuti": 0,
+                "target_dimensione": li.get("target_dimensione", 20),
+            }
+            if li.get("corta", False):
+                lista_out["corta"] = True
+            contratto_liste.append(lista_out)
             continue
 
         titoli = []
@@ -169,10 +189,21 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             parziale = True
 
         elif ruolo == "nicchia_di_qualita":
-            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4)
-            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1)
-            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2)
-            desc = "titoli di alta qualità e bassa popolarità"
+            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
+            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
+            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+            fb = li.get("fallback_v_mondo", False)
+            corta = li.get("corta", len(titoli) < 20)
+            target = li.get("target_dimensione", 20)
+            dettagli = []
+            if fb:
+                dettagli.append("soglia assoluta di fallback")
+            if corta:
+                dettagli.append(f"riga corta: {len(titoli)}/{target} titoli")
+            if dettagli:
+                desc = f"titoli di alta qualità e bassa popolarità ({' · '.join(dettagli)})"
+            else:
+                desc = "titoli di alta qualità e bassa popolarità"
             semi_ids = []
             parziale = True
 
@@ -201,6 +232,13 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         }
         if parziale:
             lista_out["parziale"] = True
+        if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):
+            lista_out["corta"] = True
+            lista_out["target_dimensione"] = li.get("target_dimensione", 20)
+            lista_out["totale_sopravvissuti"] = li.get("totale_sopravvissuti", len(titoli))
+        if li.get("fallback_v_mondo", False):
+            lista_out["fallback_v_mondo"] = True
+            lista_out["soglia_relativa"] = False
 
         contratto_liste.append(lista_out)
 
