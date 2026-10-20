@@ -713,6 +713,14 @@ class Motore:
         assegnati = {}
         consentite = int(P.WATERFALL_SOVRAPPOSIZIONE_MICRO)
         fuori = []
+        # TICKET 23 — LA DIVERSITA' VALE SULLA RIGA SERVITA, NON SU QUELLA PRIMA DEL RIPESCAGGIO.
+        # L'anti-monopolio (ticket 04) mette i titoli della stessa saga oltre la posizione 20, ma il
+        # waterfall, quando una riga piu' specifica gli prende dei titoli, ripesca proprio da li' e
+        # riapre le saghe. Qui i cap si applicano mentre si riempie, e chi li viola va dopo lo slot.
+        cap_slot = int(getattr(P, "DIVERSITA_SLOT_MAX", 20))
+        max_saga = int(getattr(P, "DIVERSITA_SAGA_MAX", 1))
+        max_dir = int(getattr(P, "DIVERSITA_REGISTA_MAX", 2))
+        usa_diversita = (getattr(self, "COLL", None) is not None or getattr(self, "DIR", None) is not None)
         for i in ordine:
             li = liste[i]
             tipo = li["tipo"]
@@ -741,6 +749,7 @@ class Motore:
                 )
             sovrapposizioni, tolti = 0, 0
             scelti, occupati = [], set()
+            saga_viste, dir_viste, rimandati = {}, {}, []
             for ch, sc in pool:
                 if ch in occupati:
                     continue
@@ -754,11 +763,42 @@ class Motore:
                         tolti += 1
                         continue
                     sovrapposizioni += 1
+                # Ticket 23: nei primi `cap_slot` posti valgono i cap di saga e regista.
+                cid, dirs = None, []
+                if usa_diversita and len(scelti) < cap_slot:
+                    cid = self.get_collection_id(ch)
+                    dirs = self.get_directors(ch) or []
+                    viola = (
+                        (cid is not None and saga_viste.get(cid, 0) >= max_saga)
+                        or any(dir_viste.get(d, 0) >= max_dir for d in dirs)
+                    )
+                    if viola:
+                        rimandati.append((ch, sc))
+                        continue
                 scelti.append((ch, sc))
                 occupati.add(ch)
+                if usa_diversita and len(scelti) <= cap_slot:
+                    if cid is not None:
+                        saga_viste[cid] = saga_viste.get(cid, 0) + 1
+                    for d in dirs:
+                        dir_viste[d] = dir_viste.get(d, 0) + 1
                 if len(scelti) >= cap:
                     break
+            # I rimandati per diversita' non spariscono: entrano DOPO lo slot, con lo score riabbassato
+            # per non rompere la monotonicita' del contratto (`assert_monotonia_lista`).
+            if rimandati and len(scelti) < cap:
+                prev = scelti[-1][1] if scelti else float("inf")
+                for ch, sc in rimandati:
+                    if len(scelti) >= cap:
+                        break
+                    if ch in occupati:
+                        continue
+                    sc2 = min(prev * 0.999, sc) if prev < float("inf") else sc
+                    scelti.append((ch, sc2))
+                    prev = sc2
+                    occupati.add(ch)
             li["titoli"] = scelti
+            li["diversita_rimandati"] = len(rimandati)
             li["doppioni_tolti"] = int(tolti)
             li["target_dimensione"] = cap
             # Il campo resta «quanti candidati erano nel bacino prima del taglio» (era `len(div)`);
@@ -784,6 +824,18 @@ class Motore:
             if tolti:
                 print(f"  [waterfall] {tipo}: {tolti} copie evitate, riga {len(scelti)}/{cap} "
                       f"dopo il dedup", file=sys.stderr)
+        # TICKET 23: i duplicati di saga rimasti nei primi `cap_slot` posti di una riga servita sono una
+        # regressione: si contano e si dichiarano nel payload (per costruzione devono essere 0).
+        for li in liste:
+            if not li.get("waterfall_partecipa"):
+                li["duplicati_saga"] = 0
+                continue
+            colls = [self.get_collection_id(ch) for ch, _ in (li.get("titoli") or [])[:cap_slot]]
+            colls = [c for c in colls if c is not None]
+            li["duplicati_saga"] = int(len(colls) - len(set(colls)))
+            if li["duplicati_saga"] > 0:
+                print(f"  [waterfall] {li['tipo']}: {li['duplicati_saga']} duplicati di saga nei primi "
+                      f"{cap_slot} posti NONostante i cap", file=sys.stderr)
         if fuori:
             # Una riga che non partecipa si DICHIARA: non e' un errore, e' un fatto del manifest.
             print(f"  [waterfall] fuori dal dedup (nessun catalogo servito): {sorted(set(fuori))}",

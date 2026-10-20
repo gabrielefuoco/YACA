@@ -182,7 +182,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             # Anche una riga di filone svuotata dal pavimento porta la sua identita' (Ticket 08).
             for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
                       "fonte", "candidati", "nel_bacino", "scartati_pavimento",
-                      "specificita", "doppioni_tolti", "waterfall_partecipa"):
+                      "specificita", "doppioni_tolti", "waterfall_partecipa",
+                      "diversita_rimandati", "duplicati_saga"):
                 if campo in li:
                     lista_out[campo] = li[campo]
             contratto_liste.append(lista_out)
@@ -352,7 +353,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         # `punti_incontro_1..3`) e' posizionale e cambia quando i pesi si incrociano, il filone no (08, 09).
         for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
                       "fonte", "candidati", "nel_bacino", "scartati_pavimento",
-                      "specificita", "doppioni_tolti", "waterfall_partecipa"):
+                      "specificita", "doppioni_tolti", "waterfall_partecipa",
+                      "diversita_rimandati", "duplicati_saga"):
             if campo in li:
                 lista_out[campo] = li[campo]
         if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):

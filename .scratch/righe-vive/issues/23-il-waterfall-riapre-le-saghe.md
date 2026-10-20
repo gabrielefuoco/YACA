@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 22
 
@@ -40,3 +40,44 @@ nicchia_di_qualita: 20 titoli · con saga 6 · collezioni duplicate 0
 - Non è un difetto del 04 né dell'11: è la loro **interazione**, e si vede solo adesso che entrambi hanno i
   dati per funzionare.
 - Il conteggio dei duplicati per riga si può mettere nella sonda del 04, così la regressione si vede subito.
+
+---
+
+## Esito (20/10/2026)
+
+### 1. Cosa è uscito
+
+In `waterfall_righe`, mentre si riempie una riga, si contano **saga e registi dei primi
+`DIVERSITA_SLOT_MAX` (20) posti**: chi viola il cap (1 per saga, 2 per regista) non entra lì ma viene
+**rimandato** e rientra **dopo** lo slot, con lo score riabbassato (`min(prev·0.999, sc)`) per non rompere
+`assert_monotonia_lista` — lo stesso patto che usa `applica_antimonopolio`.
+
+Il payload dichiara due contatori nuovi, sia per le righe piene sia per quelle vuote:
+`diversita_rimandati` (quanti titoli sono scesi per il cap) e **`duplicati_saga`** (quanti duplicati di
+collezione restano nei primi 20: per costruzione **0**; se torna a salire, la regressione si vede senza
+doverla andare a cercare).
+
+### 2. La prova (`scripts/qa/probe-ticket-23-diversita.py`)
+
+Fixture con il `_pool` nella forma che gli dà l'anti-monopolio (testa senza duplicati, coda con la saga) e
+una riga più specifica che si prende 12 titoli della testa:
+
+```
+== Ticket 23: la diversità sulla riga servita ==
+A. senza guardia (prima del ticket 23)         riga 20/20 · duplicati di saga nei primi 20: 5 · rimandati 0
+B. con la guardia (dopo il ticket 23)          riga 20/20 · duplicati di saga nei primi 20: 0 · rimandati 5
+
+la riga resta piena: 20 titoli
+monotonicità dei punteggi: rispettata
+OK
+```
+
+I 5 titoli rimandati **non spariscono**: la riga resta piena (20/20) e l'ordine dei punteggi resta non
+crescente.
+
+### 3. Suite
+
+```
+Test Suites: 5 failed, 194 passed, 199 total
+Tests:       8 failed, 1 skipped, 1969 passed, 1978 total
+```
