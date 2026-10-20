@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 14
 
@@ -191,3 +191,33 @@ Durante il controllo dell'intero albero `docs/` sono emerse le seguenti discrepa
   4. `tests/candidateProvider.test.js` (3 falliti)
   5. `tests/duckDbAndMatchmaker.test.js` (1 fallito)
   Totale esatto: 5 suite fallite, 8 test falliti, 1898 test passati su 190 suite totali.
+
+---
+
+## Esito (20/10/2026)
+
+### 1. Le premesse, verificate una per una
+
+| premessa del ticket | esito |
+|---|---|
+| `src/engines/hybridRecommendations.js` non esiste | **già corretto** in una passata precedente (oggi `src/stremio/hybridServing.js`) |
+| `src/pool/graphClient.js` non esiste | **già corretto** (è `src/clients/graphClient.js`) |
+| il diagramma elenca `true_blend, seed_network, hidden_gems, trakt` fra le `HERO_STRATEGIES` | **corretto nell'Esito del 46**: il §5.2 dice che sono ritirate. Ma il §5.2 diceva anche «assegna ai **4** cataloghi hero» — falso dal ticket 13 |
+| `src/api/bolle.js` parla di `da_comporre: true` | **vero solo come storia**: il commento dice «pattern storico dismesso», ed è accurato |
+
+### 2. Cosa è cambiato
+
+- Il **percorso inesistente** `src/data/bolle.js` (citato come «antico artefatto JS») non c'è più: il
+  documento parla di **artefatto JS `bolle.json`** senza fingere un percorso nel repo.
+- **§5.2** racconta il vero: `graph_rows` assegna le **dieci** famiglie (venti cataloghi), non quattro; la
+  tabella ruoli→catalogo vive nel registro (`getHeroRuoli()`), e una riga non accesa non partecipa al
+  waterfall (ticket 22).
+- **§5.3**: l'esempio di `heroPriority`/`slugAdditivi` elencava quattro slug; ora elenca i dieci veri.
+- **§8** non è più «In arrivo»: è «Le righe che esistono», con gli slug presi dal registro e il comando che
+  li stampa, e con i **due meccanismi dichiaratamente spenti** (filtri a monte, anti-monopolio) e il perché.
+
+### 3. La regola
+
+Ogni numero in un documento porta accanto il comando che l'ha prodotto: gli slug hanno
+`node -e "…getHeroPoolSpec().heroPriority"`, i numeri dei meccanismi hanno la sonda che li ha misurati
+(`probe-ticket-12-filtri.py`, `probe-ticket-22-guardia.py`, `probe-ticket-21-taratura.py`).

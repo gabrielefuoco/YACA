@@ -46,7 +46,7 @@ A partire dalla ristrutturazione architetturale di ottobre 2026, il calcolo dell
 ### Principi Guida del Confine
 1. **Separazione dei ruoli**: Il motore Python decide *dove guardare e in che ordine* (liste di titoli ordinate per punteggio di attivazione); il prodotto Node decide *cosa e come mostrare* (arricchimento TMDB, poster, badge, lingue, dedup e paginazione tramite [src/stremio/idratazione.js](../src/stremio/idratazione.js)).
 2. **Invocazione al cache-build**: Il servizio grafo viene interrogato esclusivamente in occasione della costruzione dei pool memorizzati (`buildSharedHeroCatalogs` in [src/pool/index.js](../src/pool/index.js#L328)), mai sul percorso caldo di una singola richiesta catalogo di Stremio.
-3. **Internalizzazione dell'artefatto**: L'artefatto del grafo non è più un file monolitico tracciato in git letto dal backend Node (come era l'antico `src/data/bolle.json`), ma un dettaglio binario interno al modulo Python (`services/graph/data/` montato da `/srv/yaca/services/graph/data` sull'host).
+3. **Internalizzazione dell'artefatto**: L'artefatto del grafo non è più un file monolitico tracciato in git letto dal backend Node (come era l'antico artefatto JS `bolle.json`), ma un dettaglio binario interno al modulo Python (`services/graph/data/` montato da `/srv/yaca/services/graph/data` sull'host).
 
 ---
 
@@ -179,13 +179,25 @@ Il modulo [src/pool/index.js](../src/pool/index.js) unifica in un'unica barriera
 ### 5.2 Strategie come Voci di una Lista (`HERO_STRATEGIES`)
 In [src/pool/index.js:156](../src/pool/index.js#L156):
 - Le 4 strategie storiche (`true_blend`, `seed_network`, `hidden_gems`, `trakt_filtered`) sono state **completamente ritirate** (Ticket 46).
-- `HERO_STRATEGIES` contiene oggi un'unica strategia attiva: **`graph_rows`** ([src/pool/index.js:156-324](../src/pool/index.js#L156-L324)), con `additive: true`. Essa estrae i semi dalla libreria (`semiDi` da `src/library/`), interroga il servizio Python via `graphClient.raccomanda` ([src/clients/graphClient.js](../src/clients/graphClient.js)), e assegna direttamente i titoli calcolati ai 4 cataloghi hero: `yaca_mondi_*`, `yaca_passo_fuori_*`, `yaca_uscite_nuove_*` e `yaca_nicchia_di_qualita_*`.
+- `HERO_STRATEGIES` contiene oggi un'unica strategia attiva: **`graph_rows`**, con `additive: true`. Essa
+  estrae i semi dalla libreria (`semiDi` da `src/library/`, che dal ticket 17 consegna anche il **tipo** di
+  ogni seme), interroga il servizio Python via `graphClient.raccomanda`
+  ([src/clients/graphClient.js](../src/clients/graphClient.js)), e assegna i titoli calcolati alle **dieci**
+  famiglie hero (venti cataloghi, uno per medium): `yaca_mondi`, `yaca_passo_fuori`, `yaca_uscite_nuove`,
+  `yaca_nicchia_di_qualita`, `yaca_classici`, `yaca_ultime_visioni`, `yaca_punti_incontro`,
+  `yaca_micro_cluster_1..3` (§8).
+- La tabella «ruolo del motore → catalogo» vive nel **registro** (`getHeroRuoli()`), non nel pool: le quattro
+  righe storiche hanno un ruolo che non coincide sempre con lo slug (`mondi` → `il_tuo_mondo`,
+  `passo_fuori` → `un_passo_fuori`), e i tre `punti_incontro_*` sono **una** famiglia con tre ruoli. Una riga
+  che il profilo non ha acceso **non partecipa al waterfall** (ticket 22) e si dichiara nel payload.
 
 ### 5.3 Il Decimo Posto Ridotto a Uno (`getHeroPoolSpec`)
 In precedenza, gli hero erano definiti in nove posti derivati da `registry.js`, mentre `HERO_PRIORITY` viveva scollegato nel feed come decimo posto.
 Oggi [src/catalog/registry.js:303](../src/catalog/registry.js#L303) esporta `getHeroPoolSpec()`:
-- `heroPriority`: `['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']`
-- `slugAdditivi`: `Set(['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita'])`
+- `heroPriority`: le dieci famiglie, in ordine di priorità — `['mondi', 'passo_fuori', 'uscite_nuove',
+  'nicchia_di_qualita', 'classici', 'ultime_visioni', 'punti_incontro', 'micro_cluster_1',
+  'micro_cluster_2', 'micro_cluster_3']`
+- `slugAdditivi`: le stesse dieci (tutte le righe hero sono additive)
 - `catalogs`: metadati di tutte le righe.
 Il modulo pool importa `getHeroPoolSpec()` in [src/pool/index.js:18](../src/pool/index.js#L18). Modificare, aggiungere o ritirare una riga hero richiede ora di toccare un solo file (`registry.js`).
 
@@ -243,16 +255,25 @@ Cinque trappole insidiose sono state scoperte e pagate durante lo sviluppo. Sono
 
 ---
 
-## 🔮 8. In arrivo (cantiere righe-vive, 19/10/2026)
+## 🧱 8. Le righe che esistono (cantiere righe-vive, chiuso il 20/10/2026)
 
-> [!IMPORTANT]
-> Questa sezione raccoglie la **destinazione progettuale del cantiere `righe-vive`**. Dal ticket **13** le
-> sei righe nuove **esistono anche come cataloghi Stremio** (`yaca_classici_*`, `yaca_ultime_visioni_*`,
-> `yaca_punti_incontro_*`, `yaca_micro_cluster_{1,2,3}_*`: 20 cataloghi, 10 famiglie) — ma arrivano **spente**
-> ai profili esistenti, perché `selectedPresets` è una lista bianca e i profili hanno solo le otto id
-> storiche. Il resto della sezione dice, punto per punto, che cosa è live e che cosa no.
-
-Il cantiere `.scratch/righe-vive/` (documentato in dettaglio in [.scratch/righe-vive/map.md](../.scratch/righe-vive/map.md) e [.scratch/righe-vive/spec.md](../.scratch/righe-vive/spec.md)) sta ridisegnando la produzione delle liste e il portafoglio di righe hero del grafo senza ricostruire la matrice sottostante:
+> [!NOTE]
+> Questa sezione **non è più una destinazione**: le righe qui sotto esistono, sono servite da Stremio e sono
+> in produzione dal 20/10/2026. Il cantiere `.scratch/righe-vive/` (dettaglio in
+> [map.md](../.scratch/righe-vive/map.md) e [spec.md](../.scratch/righe-vive/spec.md)) ha ridisegnato la
+> produzione delle liste senza ricostruire la matrice sottostante.
+>
+> **I cataloghi, dal registro** (`src/catalog/registry.js`, 10 famiglie × 2 medium = 20):
+> `yaca_mondi_*` · `yaca_passo_fuori_*` · `yaca_uscite_nuove_*` · `yaca_nicchia_di_qualita_*` ·
+> `yaca_classici_*` · `yaca_ultime_visioni_*` · `yaca_punti_incontro_*` · `yaca_micro_cluster_1_*` ·
+> `yaca_micro_cluster_2_*` · `yaca_micro_cluster_3_*`.
+> Il comando che lo prova: `node -e "console.log(require('./src/catalog/registry').getHeroPoolSpec().heroPriority)"`.
+>
+> **Due cose sono dichiaratamente spente in produzione** (e lo dicono nel payload):
+> i **filtri a monte** (ticket 12) e l'**anti-monopolio saga/regista** (ticket 04) aspettano un artefatto
+> `metadati-canone.npz` con `ANIME`/`ADULTO`/`COLL`/`DIR`; quello in uso non li ha, quindi
+> `filtri: {applicato: false, motivo: …}` e i tagli restano a valle come prima. La cache
+> `uscite-collocate.npz` non c'è ancora: `uscite_nuove` esce vuota ma **dichiarata** (`fonte: canone`).
 
 1. **Bacino appiattito ("Il tuo mondo")**: Unione delle prime *K* bolle accese (≥80% della massa) e dei loro vicini in un set unico, con pavimento di qualità adattivo (`VAVE >= 6.4`, voti parametrati sul canone del profilo) e ranking combinato attivazione/voto bayesiano.
 2. **Gemme nascoste relative al profilo**: Soglie di popolarità e voti non più fisse per tutti, ma relative al baricentro del bacino dell'utente, normalizzate sulla media voto della bolla.
@@ -263,7 +284,24 @@ Il cantiere `.scratch/righe-vive/` (documentato in dettaglio in [.scratch/righe-
 7. **Riparazione Nuove Uscite**: Collocazione offline delle uscite recenti (`collocator.py`) in cache `uscite-collocate.npz` per eliminare il vuoto sistematico e la soppressione silenziosa. **Esiste nel motore** dal ticket 10. La cache si genera con `python -m graph.uscite` (Parquet TMDB + collocatore; `vote_count >= 30`, `vote_average >= 6.2`, anno `>= USCITE_NUOVE_DAL`) **dove ci sono i Parquet e gli artefatti dei centroidi** — cioè sul mate, con `/srv/yaca/.cache/tmdb` presente — e il file prodotto va depositato in `/srv/yaca/services/graph/data/`: quel mount è **read-only** nel container, quindi il servizio non può generarlo da solo, e finché non c'è la riga degrada dichiarandolo (`fonte: canone`). A runtime `score = attivazione del mondo × confidenza × qualità bayesiana`; l'imbuto include i **vicini** dei mondi accesi. La riga è già servita da Stremio (`yaca_uscite_nuove_movies`/`_series`): con la cache si riempie di uscite vere, senza cache arriva vuota ma dichiarata.
    - `fonte` (`collocate`/`canone`), `candidati` (cache: le uscite del medium; canone: quelle recenti nel bacino), `nel_bacino`, `gia_visti`, `senza_attivazione`, `scartati_pavimento` (scarti del builder, dal suo `meta`) e `motivo` (anche a riga piena, se la fonte è il canone).
    - Il `punteggio` di questa riga è `att × confidenza × qualità` (~0,4-1,0), **non** `r[x]` come nelle altre righe: non va confrontato fra righe (non vengono mai mescolate in una lista), e l'`attivazione` della riga la manda il motore, come per i punti d'incontro.
-8. **Meccanismi trasversali**: *Waterfall dedup* sequenziale per evitare sovrapposizioni tra righe, filtri a monte nel motore Python (invece che a valle nel taglio card), regole anti-monopolio per saga/regista e rotazione morbida sulle impressioni non cliccate.
+8. **Meccanismi trasversali** (tutti in produzione):
+   - **Waterfall dedup** (ticket 11): ogni titolo in una riga sola, in ordine di `specificità` (uscite 10,
+     gemme 20, classici 30, punti d'incontro 40, ultime visioni 50, micro-cluster 60, un passo fuori 70, il
+     tuo mondo 80, mondi 90). Dal ticket 22 **partecipano solo le righe accese nel profilo**: una riga che
+     nessun catalogo mostra non ruba più titoli alle righe visibili (misurato: la riga visibile teneva
+     **1/10** della sua top-10, ora **10/10**; con tutte le righe accese il comportamento è identico a prima).
+   - **Filtri a monte** (ticket 12): `opzioni.filtri = {anime, kids}` e la maschera si applica ai candidati
+     **prima** del taglio `[:cap]`. Misurato: senza, una riga serviva **0/20** titoli idonei (i primi venti
+     erano anime) mentre 165 idonei stavano più sotto; con la maschera **20/20**. Oggi è **inerte** perché
+     l'artefatto non ha `ANIME`/`ADULTO` (vedi la nota qui sopra), e lo dichiara.
+   - **Anti-monopolio saga/regista** (ticket 04): cap 1 per collezione e 2 per regista nei primi 20 slot, con
+     la regola «Dune» (dentro una saga si tiene il titolo con anno minore fra i non visti); inerte finché
+     l'artefatto non ha `COLL`/`DIR`.
+   - **Impressioni** (ticket 14 + 21): i titoli mostrati in pagina 1 per ≥3 giorni e mai visti scendono con
+     `0.85^giorni`; ogni titolo porta un **alpha del giorno** (`1 ± 5%`, deterministico da giorno+id) che muove
+     l'ordine di giorno in giorno, e il decadimento è **azzerato** se il titolo non è in home da 4 giorni
+     (`RESET_GIORNI_FUORI`, soglia misurata). Mai una cancellazione: la riga si riordina.
+
    - **Il waterfall esiste** dal ticket 11: ogni riga porta `specificita` (uscite 10, gemme 20, classici 30, punti d'incontro 40, ultime visioni 50, micro-cluster 60, un passo fuori 70, il tuo mondo 80, mondi 90) e `doppioni_tolti` (le **copie evitate**, non i titoli persi), e le righe pescano in quell'ordine. Ogni titolo va alla riga **più specifica** che lo contiene; l'unica eccezione è «il tuo mondo» × micro-cluster (una, `WATERFALL_SOVRAPPOSIZIONE_MICRO`): se il filone porta un titolo che è anche fra i migliori del mondo e nessuna riga più specifica l'ha già preso, resta anche in «il tuo mondo». Le due colonne 70/90 non sono nel §9.1 della specifica: `un_passo_fuori` pesca dai vicini (più stretto del bacino di «il tuo mondo») e i `mondo_*` sono altri mondi, quindi vengono dopo. Una riga che perde titoli porta `doppioni_tolti`; se scende sotto il target dichiara anche `corta` e il motivo aggiornato (`N copie gia' in righe piu' specifiche, restano x/y`).
    - **Le impressioni si rileggono dal ticket 14.** `src/profile/impressions.js` scriveva da sempre i titoli
      serviti in pagina 1 e nessuno li rileggeva: dieci giorni di Stremio mostravano la stessa prima pagina.

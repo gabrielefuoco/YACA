@@ -969,6 +969,31 @@ def metadati(path_npz=None, path_txt=None):
     # Se il file non c'e', il flag resta False e lo si dichiara: nessun proxy inventato.
     anime_ids = set()
     _anime_path = ROOT / ".cache" / "tmdb" / "anime_mapping.json"
+    _lista_anime = ROOT / ".cache" / "tmdb" / "anime-list-mini.json"
+    if not _anime_path.exists() and _lista_anime.exists():
+        # Sul mate il file del prodotto e' `anime-list-mini.json` (anime-offline-database): la stessa
+        # informazione in un'altra forma. Se c'e' quella, si usa quella; se non c'e' nessuna delle due,
+        # ANIME resta vuoto e lo si dichiara (nessun proxy inventato).
+        try:
+            _voci = json.loads(_lista_anime.read_text(encoding="utf-8"))
+            for _voce in (_voci if isinstance(_voci, list) else []):
+                _tmdb = _voce.get("themoviedb_id") if isinstance(_voce, dict) else None
+                if isinstance(_tmdb, dict):
+                    for _v in _tmdb.values():
+                        try:
+                            anime_ids.add(int(_v))
+                        except Exception:
+                            continue
+                elif _tmdb is not None:
+                    try:
+                        anime_ids.add(int(_tmdb))
+                    except Exception:
+                        pass
+            print(f"  metadati-canone: ANIME da anime-list-mini.json ({len(anime_ids):,} id TMDB)",
+                  flush=True)
+        except Exception as _e:
+            print(f"  metadati-canone: anime-list-mini.json illeggibile ({_e}); ANIME resta vuoto",
+                  flush=True)
     if _anime_path.exists():
         try:
             _dati = json.loads(_anime_path.read_text(encoding="utf-8"))

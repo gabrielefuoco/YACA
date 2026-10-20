@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 14
 
@@ -57,3 +57,33 @@ documento diventa una bugia.
 - **Il frontend non si tocca.** Niente `git push`. Niente `npm run build` / `tsc`. Non si tocca la produzione.
 - **La prova non vive nel prodotto**: niente flag `simulate*` nel percorso caldo.
 - Commit in steps, ognuno con la sua prova.
+
+---
+
+## Esito (20/10/2026)
+
+### 1. Cosa è stato fatto
+
+- **`docs/RECOMMENDATION_GRAPH.md` §8** non è più una promessa: si chiama «Le righe che esistono», elenca i
+  **venti cataloghi veri** (dieci famiglie × due medium, presi dal registro) col comando che li stampa, e
+  descrive i quattro **meccanismi trasversali** dove vivono: waterfall (con la guardia del 22 e i numeri
+  misurati), filtri a monte (12, con i suoi numeri e il fatto che oggi è inerte), anti-monopolio (04, inerte
+  per lo stesso motivo), impressioni (14+21, con alpha e reset).
+- **La sezione «In arrivo» è sparita**: non c'è più niente in arrivo.
+- **§5.2 / §5.3** allineati: dieci famiglie, tabella ruoli nel registro, `heroPriority` con i dieci slug veri.
+- **`docs/INDEX.md`**: non elenca le righe hero per slug, quindi non aveva niente da correggere (verificato con
+  `grep`).
+
+### 2. Il punto che NON è stato fatto, e perché
+
+La **tabella dei sei stadi** (sonda 01) **non** è stata rigenerata: l'ultima misura è del 19/10, pre-cantiere,
+e rifarla richiede la sonda `scripts/qa/probe-perdita-righe.js` eseguita contro i dati veri. I numeri del
+cantiere che la sostituiscono sono quelli delle tre sonde nuove (12, 21, 22), già citate nel §8 con il comando
+accanto. Resta un punto aperto dichiarato, non un numero inventato.
+
+### 3. La prova
+
+- Per ogni slug citato: `node -e "console.log(require('./src/catalog/registry').getHeroPoolSpec().heroPriority)"`.
+- Per ogni numero: la sonda che l'ha prodotto, citata accanto.
+- `git grep` degli slug rimossi (`true_blend`, `seed_network`, `hidden_gems`, `trakt_filtered`): restano solo
+  nella frase che dice che sono stati ritirati.
