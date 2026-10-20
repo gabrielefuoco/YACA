@@ -56,6 +56,14 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 
 `01` — la sonda end-to-end. Senza sapere **dove** si perde l'oro, ogni intervento è una scommessa.
 
+## Un prerequisito scoperto eseguendo (19/10/2026)
+
+- **`18`** — *la collezione e il regista non esistono a runtime*: il ticket `04` chiede max 1 per `collection_id` e
+  max 2 per regista, ma `metadati-canone.npz` **non li esporta** (`COLL`/`DIR` vivono solo come archi della matrice
+  dei pesi, non come attributi per titolo). Il `04` è scritto e inerte: si sblocca quando il canone porta i due
+  attributi. **Insegnamento**: un ticket può essere eseguito correttamente e comunque non produrre effetto, se
+  sotto manca il dato — ed è la review a doverlo dire, non il silenzio.
+
 ## I debiti dichiarati dalle review
 
 - **`17`** — *il tipo dedotto dal peso*: `convertiSemiPerGrafo` indovina `loved`/`liked`/`watched` da soglie

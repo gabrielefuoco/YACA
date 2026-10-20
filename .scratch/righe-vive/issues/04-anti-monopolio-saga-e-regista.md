@@ -1,6 +1,6 @@
 Status: ready-for-agent
 Type: task
-Blocked by: 03
+Blocked by: 18
 
 # 04 — Anti-monopolio di saga e regista
 
