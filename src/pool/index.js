@@ -33,7 +33,9 @@ const HERO_CATALOG_IDS = new Map([
 
 // Ticket 13: il payload delle righe hero ora porta anche classici, ultime visioni, punti d'incontro e
 // i tre slot dei micro-cluster: la cache delle righe deve invalidarsi una volta.
-const HERO_CACHE_KEY_VERSION = 'v16';
+// Ticket 14: il payload porta anche i `seedIds` (i titoli che l'utente conosce, per non farli scendere):
+// una voce scritta prima non li ha, e senza di loro il decadimento toccherebbe anche i titoli visti.
+const HERO_CACHE_KEY_VERSION = 'v17';
 
 // I RUOLI DEL GRAFO E IL LORO CATALOGO (Ticket 13): la tabella vive nel registro (`getHeroRuoli`),
 // qui si legge e basta. Una riga calcolata e poi buttata via era il difetto (i `mondo_*` sparivano

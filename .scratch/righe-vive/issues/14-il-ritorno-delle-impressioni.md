@@ -142,3 +142,6 @@ Baseline `1910`/`192` + 12 test nuovi = `1935`, `195` suite. Le cinque rosse son
 2. **`visti` = i semi del grafo**: un titolo visto ma fuori dalla library del profilo (seed escluso per
    politica anime, per esempio) può decadere. È il compromesso per non aggiungere una query per richiesta.
 3. **La taratura** (punto 4): da decidere col prodotto.
+4. **La cache delle righe passa a `v17`** (era `v16` dal ticket 13): il payload ora porta anche `seedIds`, e
+   una voce scritta prima non li ha — senza, il decadimento toccherebbe anche i titoli già visti. Il bump è
+   il lever giusto (la chiave contiene la versione), non lo `schemaVersion`.

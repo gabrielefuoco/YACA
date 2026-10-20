@@ -44,7 +44,7 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             // anche classici, ultime visioni, punti d'incontro e i tre slot dei micro-cluster.
             const key = buildSharedHeroCacheKey(baseParams);
             expect(key).toBe(`utente_test_profilo_test_heroes_${HERO_CACHE_KEY_VERSION}_movie`);
-            expect(key).toContain('_v16_');
+            expect(key).toContain('_v17_');
         });
 
         test('con versioni da health, concatena artefatto e ricetta nella chiave', () => {
