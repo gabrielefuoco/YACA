@@ -181,9 +181,6 @@ SCHEDA = [
      "Tetto massimo assoluto per i voti nella nicchia di qualita' (Ticket 05). Evita che per profili mainstream "
      "la nicchia si apra a film troppo popolari.",
      "services/graph/motore.py"),
-    ("NICCHIA_POP_PERCENTILE", 50.0, "DICHIARATO",
-     "Percentile massimo di popolarita' nel bacino per essere considerati nicchia: 50° percentile (Ticket 05).",
-     "services/graph/motore.py"),
     ("NICCHIA_PAVIMENTO_VOT_MIN", 40, "DICHIARATO",
      "Pavimento assoluto di voti minimi TMDB per la nicchia: evita film con 3 voti e media 9.0 (Ticket 05).",
      "services/graph/motore.py"),
@@ -195,10 +192,8 @@ SCHEDA = [
      "services/graph/motore.py"),
     ("NICCHIA_SERIE_OFFSET_VOTO", 0.3, "MISURATO",
      "Offset sistematico dei voti TMDB delle serie rispetto ai film: ~0.3 (Ticket 05 / spec.md §4). "
-     "Applicato alla soglia minima delle serie (6.8 + 0.3 = 7.1) per evitare che vincano sempre a parita' di qualita'.",
-     "services/graph/motore.py"),
-    ("NICCHIA_VAVE_MIN_SERIE", 7.1, "DICHIARATO",
-     "Pavimento assoluto di voto medio TMDB per serie tv nella nicchia di qualita': 6.8 + 0.3 = 7.1 (Ticket 05).",
+     "Sottratto da VAVE per le serie in modo coerente su tutti i confronti (pavimento VAVE-0.3 >= 6.8, "
+     "delta bolla VAVE-0.3-mu_b >= 0.4 e ranking diff = VAVE-0.3-mu_b), neutralizzando l'inflazione strutturale.",
      "services/graph/motore.py"),
     ("NICCHIA_BONUS_LISTE", 0.15, "DICHIARATO",
      "Bonus moltiplicativo se il titolo compare nelle liste Trakt di altri utenti: (1 + 0.15 * (LISTDEG > 0)) (Ticket 05).",
