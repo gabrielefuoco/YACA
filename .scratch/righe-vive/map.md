@@ -182,3 +182,28 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   tagliata: `filtri_a_monte` + `filtra_idonei` in ogni punto dove i candidati nascono. Sonda: senza, la riga
   serviva **0/20** idonei (i primi venti erano anime) con 165 idonei più sotto; con la maschera **20/20**.
   Il pool manda `opzioni.filtri = {anime, kids}` e non manda `opzioni` quando non c'è niente da filtrare.
+
+## Deploy in produzione (20/10/2026)
+
+Push di `main` (`ad7de0a..dc7a74a`, 47 commit) → tre GitHub Actions **verdi** (app, graph, frontend) →
+immagini su GHCR → `docker compose pull && up -d app graph` sul mate. Verificato **in produzione**:
+
+```
+GET /health  -> {'ok': True, 'contratto': 1, 'versioni': {'artefatto': 'cf1d80dcba3eddce',
+                                                           'ricetta': 'fee303c7e91ebcc3'}}
+manifest (dentro il container) -> 20 cataloghi hero, hash 4169fd73f14389f24097e6508bd06c289b1898ad727250342ccf1fe47b093dc5
+POST /raccomanda (4 semi, filtri exclude+kids, righe_servite = [il_tuo_mondo, classici_imperdibili])
+  -> liste: il_tuo_mondo 10, classici_imperdibili 10, un_passo_fuori 10, nicchia 10,
+     micro_cluster_1..3 10, punti_incontro_1..3 10, mondo_586/2491/1920, uscite_nuove 0, ultime_visioni 0
+  -> waterfall: {servite: 2, fuori: [13 ruoli]}     (ticket 22 vivo)
+  -> filtri: {applicato: false, motivo: "artefatto senza i flag ANIME, ADULTO..."}   (ticket 12 + 19)
+```
+
+**Cosa è vivo**: 13 (20 cataloghi), 20 (accesi di default), 22 (guardia del waterfall), 19 (ricetta nuova),
+12 (filtri a monte, **dichiarati inerti**), 14/21 (impressioni + alpha/reset), 07–11.
+
+**I due residui operativi, misurati in produzione**:
+1. **`metadati-canone.npz` non ha `ANIME`/`ADULTO`** (né `COLL`/`DIR`): i Parquet TMDB **non sono più sul
+   mate** (`/data/tmdb` ha solo gli indici), quindi l'artefatto **non è rigenerabile lì** senza riscaricarli.
+   Finché manca, i filtri a monte (12) e l'anti-monopolio (04) restano inerti — e lo dicono.
+2. **`uscite-collocate.npz` non esiste**: `uscite_nuove` esce vuota ma **dichiarata** (`fonte: canone`).
