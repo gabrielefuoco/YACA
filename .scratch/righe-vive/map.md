@@ -167,3 +167,6 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   affidarsi ai tagli a valle.
 - **Waterfall in produzione**: **guardia**, la deduplica considera solo i ruoli che hanno un catalogo
   Stremio. → ticket **`22`** (riapertura del `11`).
+- **`21` chiuso**: l'alpha del giorno (`1 ± 5%`, deterministico da giorno+id) e il **reset** (decadimento
+  azzerato dopo **4 giorni** fuori da pagina 1, soglia misurata: con 2 la pagina faceva il pendolo). Sonda:
+  10 giornate, 51/60 titoli diversi in pagina 1, 33 che rientrano dopo un'uscita, 10,7/20 di continuità.

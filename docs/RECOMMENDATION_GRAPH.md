@@ -277,3 +277,11 @@ Il cantiere `.scratch/righe-vive/` (documentato in dettaglio in [.scratch/righe-
      dieci titoli di ieri sotto la banda 11-20. In pratica: nei primi due giorni non cambia nulla (sotto
      soglia), dal terzo la prima pagina si rinnova **tutta**. Se il prodotto vuole continuità, la leva è il
      tetto all'esponente o il fattore, non la soglia dei giorni.
+   - **La taratura (ticket 21)**: il decadimento resta `0.85^giorni`, ma con due aggiunte. (1) Ogni titolo
+     porta un **alpha del giorno** — `1 ± 5%`, hash deterministico di `giorno UTC + id` — che muove l'ordine
+     delle prime pagine di giorno in giorno: due richieste nello stesso giorno danno lo stesso ordine, il
+     giorno dopo no, e nessun titolo cambia riga. (2) **Reset**: il decadimento vale solo se il titolo è
+     ancora in home; se non compare in pagina 1 da **4 giorni** torna al punteggio pieno. La soglia è
+     misurata, non scelta a occhio: con 2 giorni la pagina faceva il pendolo (92 rientri su 10 giornate,
+     restavano 7,6/20 titoli da ieri), con 4 si calma (53 rientri, 10,7/20) e i titoli utili tornano.
+     Sonda: `scripts/qa/probe-ticket-21-taratura.js`.

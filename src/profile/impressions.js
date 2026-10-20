@@ -76,19 +76,24 @@ function recordRecommendationImpressions(userId, context, catalogId, items) {
  *
  * @param {Array<{catalogId: string, tmdbId: string, seenDates: string[]}>} righe
  * @param {string} soglia data YYYY-MM-DD piu' vecchia ammessa (inclusa)
- * @returns {Map<string, Map<string, number>>}
+ * @returns {Map<string, Map<string, {giorni: number, ultimo: string}>>}
  */
 function aggregaImpressioni(righe, soglia) {
     const perCatalogo = new Map();
     for (const r of (righe || [])) {
-        const giorni = new Set(
+        const giorni = [...new Set(
             (r.seenDates || [])
                 .map((d) => String(d).slice(0, 10))
                 .filter((d) => d >= soglia)
-        );
-        if (giorni.size === 0) continue;
+        )].sort();
+        if (giorni.length === 0) continue;
         if (!perCatalogo.has(r.catalogId)) perCatalogo.set(r.catalogId, new Map());
-        perCatalogo.get(r.catalogId).set(String(r.tmdbId), giorni.size);
+        // `giorni` = quanti giorni distinti; `ultimo` = l'ultima volta in home. Il secondo serve al reset
+        // del ticket 21: un titolo che non compare piu' torna al punteggio pieno.
+        perCatalogo.get(r.catalogId).set(String(r.tmdbId), {
+            giorni: giorni.length,
+            ultimo: giorni[giorni.length - 1]
+        });
     }
     return perCatalogo;
 }
@@ -103,7 +108,7 @@ function aggregaImpressioni(righe, soglia) {
  * @param {number} [params.giorni] ampiezza della finestra (default 14)
  * @param {boolean} [params.memo] usa la memoria breve di 60 s (la porta del pool la usa: composer la
  *   chiama una volta per catalogo e senza memoria farebbe dieci query identiche per schermata)
- * @returns {Promise<Map<string, Map<string, number>>>} catalogId -> (tmdbId -> giorni distinti)
+ * @returns {Promise<Map<string, Map<string, {giorni: number, ultimo: string}>>>} catalogId -> (tmdbId -> giorni)
  */
 async function leggiImpressioniRecenti({
     userId,

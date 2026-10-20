@@ -29,11 +29,11 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 { catalogId: 'yaca_passo_fuori_movies', tmdbId: 603, seenDates: [giorniFa(2)] }
             ], soglia);
 
-            expect(perCatalogo.get('yaca_mondi_movies').get('603')).toBe(3);
+            expect(perCatalogo.get('yaca_mondi_movies').get('603')).toEqual({ giorni: 3, ultimo: giorniFa(1) });
             // tutto fuori finestra: non compare
             expect(perCatalogo.get('yaca_mondi_movies').has('604')).toBe(false);
             // lo stesso titolo in due cataloghi: due conteggi separati
-            expect(perCatalogo.get('yaca_passo_fuori_movies').get('603')).toBe(1);
+            expect(perCatalogo.get('yaca_passo_fuori_movies').get('603')).toEqual({ giorni: 1, ultimo: giorniFa(2) });
         });
 
         test('nessuna riga: nessuna impressione (e nessun crash)', () => {
@@ -50,13 +50,21 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
             { id: 'tmdb:4', tmdbId: 4, punteggio: 0.4 }
         ]);
 
-        async function decadi(impressioni, visti = []) {
+        // `impressioni`: [[id, giorni]] oppure [[id, giorni, ultimo]] (default: oggi, cioe' ancora in home).
+        function voci(impressioni) {
+            return new Map(impressioni.map(([id, giorni, ultimo = giornoUTC()]) => [id, { giorni, ultimo }]));
+        }
+
+        async function decadi(impressioni, visti = [], extra = {}) {
             return applicaDecadimento({
                 userId: 'u1',
                 profileId: 'p1',
                 assigned: { yaca_mondi_movies: riga() },
                 visti,
-                leggi: async () => new Map([['yaca_mondi_movies', new Map(impressioni)]])
+                // qui si prova il DECADIMENTO: l'alpha del giorno (ticket 21) ha i suoi test
+                alphaBanda: 0,
+                leggi: async () => new Map([['yaca_mondi_movies', voci(impressioni)]]),
+                ...extra
             });
         }
 
@@ -95,7 +103,7 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 userId: 'u1',
                 profileId: 'p1',
                 assigned: cache,
-                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', 5]])]])
+                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', { giorni: 5, ultimo: giornoUTC() }]])]])
             });
             expect(cache.yaca_mondi_movies[0].punteggio).toBe(1.0);
             expect(cache.yaca_mondi_movies[0].giorni_in_home).toBeUndefined();
@@ -109,16 +117,17 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
             expect(statistiche.spostamenti).toBeGreaterThan(0);
         });
 
-        test('senza impressioni la riga resta identica (stesso riferimento, nessun lavoro)', async () => {
+        test("senza impressioni non si decade niente (l'alpha del giorno ha i suoi test)", async () => {
             const cache = { yaca_mondi_movies: riga() };
             const { assigned, statistiche } = await applicaDecadimento({
                 userId: 'u1',
                 profileId: 'p1',
                 assigned: cache,
+                alphaBanda: 0,
                 leggi: async () => new Map()
             });
-            expect(assigned.yaca_mondi_movies).toBe(cache.yaca_mondi_movies);
             expect(statistiche.titoli).toBe(0);
+            expect(assigned.yaca_mondi_movies.map((i) => i.tmdbId)).toEqual([1, 2, 3, 4]);
         });
 
         test('senza userId non si legge niente (nessuna query inutile)', async () => {
@@ -159,8 +168,8 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 giorni: 7
             });
 
-            expect(risultato.get('yaca_mondi_movies').get('603')).toBe(2);
-            expect(risultato.get('yaca_mondi_movies').get('604')).toBe(1);
+            expect(risultato.get('yaca_mondi_movies').get('603')).toEqual({ giorni: 2, ultimo: giornoUTC() });
+            expect(risultato.get('yaca_mondi_movies').get('604')).toEqual({ giorni: 1, ultimo: giorniFa(1) });
             const filtro = find.mock.calls[0][0];
             expect(filtro.owner).toBe('u1');
             expect(filtro.profileId).toBe('p1');
@@ -211,7 +220,8 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 profileId: 'p1',
                 assigned: { yaca_mondi_movies: riga },
                 visti: 'spazzatura',
-                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', 5]])]])
+                alphaBanda: 0,
+                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', { giorni: 5, ultimo: giornoUTC() }]])]])
             });
             expect(assigned.yaca_mondi_movies.map((i) => i.tmdbId)).toEqual([2, 1]);
         });
@@ -226,7 +236,8 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 userId: 'u1',
                 profileId: 'p1',
                 assigned: { yaca_mondi_movies: riga },
-                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', 5]])]])
+                alphaBanda: 0,
+                leggi: async () => new Map([['yaca_mondi_movies', new Map([['1', { giorni: 5, ultimo: giornoUTC() }]])]])
             });
             // il titolo senza punteggio resta primo: non e' ne' primo ne' ultimo in classifica
             expect(assigned.yaca_mondi_movies.map((i) => i.tmdbId)).toEqual([9, 1, 2]);
@@ -242,13 +253,14 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
                 tmdbId: 1000 + i,
                 punteggio: Number((1 - i * 0.012).toFixed(4))
             }));
-            const inHome = new Map(riga.slice(0, 20).map((i) => [String(i.tmdbId), 6]));
+            const inHome = new Map(riga.slice(0, 20).map((i) => [String(i.tmdbId), { giorni: 6, ultimo: giornoUTC() }]));
             const posizionePrima = new Map(riga.map((i, idx) => [i.tmdbId, idx + 1]));
 
             return applicaDecadimento({
                 userId: 'u1',
                 profileId: 'p1',
                 assigned: { yaca_mondi_movies: riga },
+                alphaBanda: 0,
                 leggi: async () => new Map([['yaca_mondi_movies', inHome]])
             }).then(({ assigned }) => {
                 const dopo = assigned.yaca_mondi_movies;

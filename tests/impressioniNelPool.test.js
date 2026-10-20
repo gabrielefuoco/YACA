@@ -16,7 +16,10 @@ jest.mock('../src/profile/impressions', () => {
         leggiImpressioniRecenti: jest.fn(async (args) => {
             impressioniLette.push(args);
             return new Map([
-                ['yaca_mondi_movies', new Map([['11', 6], ['12', 1]])]
+                ['yaca_mondi_movies', new Map([
+                ['11', { giorni: 6, ultimo: new Date().toISOString().split('T')[0] }],
+                ['12', { giorni: 1, ultimo: new Date().toISOString().split('T')[0] }]
+            ])]
             ]);
         })
     };
@@ -34,6 +37,10 @@ const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const cache = require('../src/cache');
 const { getHeroPool } = require('../src/pool');
+
+function today() {
+    return new Date().toISOString().split('T')[0];
+}
 
 function titolo(tmdbId, punteggio) {
     return { tmdbId, medium: 'movie', punteggio };
@@ -67,8 +74,14 @@ describe('Ticket 14: le impressioni nel pool', () => {
         const riga = pool['yaca_mondi_movies'];
 
         // 11 scende (0.85^6 = 0.377) sotto il 13 (0.5) e il 12 (0.9); 12 e' a 1 giorno: non si tocca.
+        // Ticket 21: ogni punteggio porta anche l'alpha del giorno (±5%), quindi la banda del confronto.
         expect(riga.map((i) => i.tmdbId)).toEqual([12, 13, 11]);
-        expect(riga.find((i) => i.tmdbId === 11).punteggio).toBeCloseTo(Math.pow(0.85, 6), 6);
+        const undici = riga.find((i) => i.tmdbId === 11);
+        expect(undici.punteggio_grafo).toBe(1.0);
+        expect(undici.giorni_in_home).toBe(6);
+        const atteso = Math.pow(0.85, 6);
+        expect(undici.punteggio).toBeGreaterThan(atteso * 0.95);
+        expect(undici.punteggio).toBeLessThan(atteso * 1.05);
         // niente cancellato
         expect(new Set(riga.map((i) => i.tmdbId))).toEqual(new Set([11, 12, 13]));
         // una lettura per richiesta, con lo user e il profilo giusti e i cataloghi come filtro
@@ -95,7 +108,9 @@ describe('Ticket 14: le impressioni nel pool', () => {
         });
         const pool = await getHeroPool({ userId: 'u1', context: 'p1', mediaType: 'movie', userConfig: {} });
         expect(pool['yaca_mondi_movies'].map((i) => i.tmdbId)).toEqual([11, 13]);
-        expect(pool['yaca_mondi_movies'][0].punteggio).toBe(1.0);
+        // il seme non decade: porta il punteggio del grafo (piu' l'alpha del giorno), e nessun `giorni_in_home`
+        expect(pool['yaca_mondi_movies'][0].punteggio_grafo).toBe(1.0);
+        expect(pool['yaca_mondi_movies'][0].giorni_in_home).toBeUndefined();
     });
 
     test('una voce di cache con seedIds: il seme non scende anche leggendo dal disco', async () => {
@@ -121,6 +136,8 @@ describe('Ticket 14: le impressioni nel pool', () => {
         });
         const pool = await getHeroPool({ userId: 'u1', context: 'p1', mediaType: 'movie', userConfig: {} });
         expect(pool['yaca_mondi_movies'].map((i) => i.tmdbId)).toEqual([11, 13]);
-        expect(pool['yaca_mondi_movies'][0].punteggio).toBe(1.0);
+        // il seme non decade: porta il punteggio del grafo (piu' l'alpha del giorno), e nessun `giorni_in_home`
+        expect(pool['yaca_mondi_movies'][0].punteggio_grafo).toBe(1.0);
+        expect(pool['yaca_mondi_movies'][0].giorni_in_home).toBeUndefined();
     });
 });
