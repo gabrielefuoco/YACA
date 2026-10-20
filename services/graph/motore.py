@@ -113,7 +113,12 @@ class Motore:
             ordine = np.argsort(-riga.data)
             self.VICINI.append(np.array([int(riga.indices[o]) for o in ordine
                                          if int(riga.indices[o]) != b], np.int32))
-        self.artefatto = K.sha_file("bolle-eterogeneo-subvoti.npy")
+        # L'IDENTITA' DEL MOTORE include anche i metadati: cambiare `metadati-canone.npz`
+        # (COLL/DIR/ANIME/ADULTO) cambia le righe servite, quindi il client deve invalidare la cache.
+        # Senza questo pezzo l'artefatto nuovo girava e le righe in cache restavano quelle di prima.
+        _sha_bolle = K.sha_file("bolle-eterogeneo-subvoti.npy")
+        _sha_meta = K.sha_file("metadati-canone.npz")
+        self.artefatto = f"{_sha_bolle}+{_sha_meta}" if _sha_meta else _sha_bolle
         # TUTTI I METADATI IN UN COLPO: `canon.metadati()` li costruisce una volta, vettorizzato, e li
         # salva in `graph/data/`. Qui prima c'erano DUE passate complete sui Parquet TMDB iterate riga per
         # riga (`d.iloc[k]` su ~117.000 righe): erano il costo vero dell'avvio — **51 secondi** misurati,
