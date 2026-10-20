@@ -56,7 +56,10 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
   direzioni diverse. Fino a che non è scritto, ogni misura è arbitraria. Il ticket 45 usò "oro ammissibile".
 - **A che livello agisce il ritorno**: riordino del pool (dopo il grafo) o filtro prima dell'idratazione? Il piano
   propone il **soft-decay sul punteggio** in `pool/index.js`, senza invalidare la cache del grafo.
-- **Quanti micro-cluster esporre** (2 o 3) e con quale soglia minima (3 semi / 10% del peso).
+- ~~Quanti micro-cluster esporre~~ — **deciso dal ticket 08**: massimo **3** (`MICRO_CLUSTER_MAX`), soglia **3 semi**
+  o **10% del peso** (`MICRO_CLUSTER_MIN_SEMI` / `MICRO_CLUSTER_MIN_PESO`), componenti connesse sul mini-grafo.
+  Resta aperto il **mapping slot↔catalogo**: gli slot `micro_cluster_1..3` sono posizionali (seguono il peso),
+  l'identità stabile del filone è `cluster_id`; lo slug definitivo lo decide il registro del `13`.
 - **Se `uscite_nuove` si rinomina** o resta lo slug riparato.
 
 ## Out of scope

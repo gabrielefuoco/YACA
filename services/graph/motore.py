@@ -37,6 +37,7 @@ import time
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
+import scipy.sparse.csgraph as cg
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from graph import bubbles as B
@@ -554,6 +555,21 @@ class Motore:
             return np.array([], dtype=np.int64)
         return cand[(self.VAVE[cand] >= soglia_vave) & (self.VOT[cand] >= soglia_voti)]
 
+    def dichiara_corta(self, quanti, cap, nome, prefisso=None):
+        """LA DICHIARAZIONE DI UNA RIGA CORTA, in un posto solo (Ticket 08).
+
+        Quattro righe (nicchia, classici, ultime visioni, micro-cluster) avevano copiato lo stesso
+        confronto e lo stesso log — e le copie avevano gia' cominciato a divergere (`motivo` c'era in due
+        su quattro). `prefisso` decide se il motivo entra anche nel payload: la scelta e' della riga, il
+        testo e il log no.
+        """
+        if quanti >= cap:
+            return False, None
+        print(f"  [{nome}] riga corta: {quanti}/{cap} titoli sopravvissuti "
+              f"(il pavimento non si abbassa per riempire)", file=sys.stderr)
+        motivo = f"{prefisso}: riga corta {quanti}/{cap} titoli" if prefisso else None
+        return True, motivo
+
     def ranking(self, cand, r, base_bayes, exp_bayes):
         """IL RANKING COMBINATO: `score(x) = r[x] * (bayes(x)/base) ** exp`, in un posto solo."""
         return r[cand] * ((self.voto_bayesiano(cand) / base_bayes) ** exp_bayes)
@@ -575,16 +591,22 @@ class Motore:
         se hanno un arco in `Tr` — e si prendono le **componenti connesse** (il ticket le ammette al
         posto di Leiden, e su <=300 nodi una partizione in piu' sarebbe solo latenza).
 
-        Il costo e' O(n^2) con n <= 300 semi: una matrice booleana densa e un BFS. Dichiarato, non
-        nascosto. Restituisce, ordinati per peso decrescente (a pari peso: bolla dominante crescente),
-        fino a `max_cluster` (default `MICRO_CLUSTER_MAX`) dict:
+        Il costo e' O(n^2) con n <= 300 semi: una matrice booleana densa (90 kB), poi
+        `scipy.sparse.csgraph.connected_components` — che e' gia' una dipendenza del repo
+        (`steps/06_mappa.py`): le componenti non si riscrivono a mano. Restituisce, ordinati per peso
+        decrescente (a pari peso: bolla dominante crescente), fino a `max_cluster` (default
+        `MICRO_CLUSTER_MAX`) dict:
           `indici`  posizioni nei vettori della storia (righe/plays/tipi/pesi) del cluster
+          `nodi`    i nodi (titoli) del cluster, senza doppioni
+          `pesi`    il peso di ogni nodo, DOPO la somma dei doppioni: e' da qui che si scelgono i
+                    titoli parlanti, altrimenti lo stesso titolo puo' uscire due volte
           `peso`    somma dei pesi dei suoi semi, col peso gia' calcolato da `pesi_semi`
-          `bolla`   bolla che porta piu' peso nel cluster (l'ancora stabile dell'identita' della riga)
+          `bolla`   bolla che porta piu' peso nel cluster (di cosa parla la riga)
+          `ancora`  bolla piu' bassa del cluster: l'identita' STABILE della riga (`cluster_id`)
         """
         if len(righe) == 0:
             return []
-        max_cluster = int(getattr(P, "MICRO_CLUSTER_MAX", 3) if max_cluster is None else max_cluster)
+        max_cluster = int(P.MICRO_CLUSTER_MAX if max_cluster is None else max_cluster)
         righe = np.asarray(righe, np.int64)
 
         # I semi possono arrivare doppi (lo stesso titolo da due sorgenti): un nodo solo, pesi sommati.
@@ -609,41 +631,37 @@ class Motore:
         adiacenza = vicino | archi
         adiacenza |= adiacenza.T
 
-        etichetta = -np.ones(n, np.int64)
-        componenti = []
-        for partenza in range(n):
-            if etichetta[partenza] >= 0:
-                continue
-            k = len(componenti)
-            etichetta[partenza] = k
-            pila = [partenza]
-            membri = []
-            while pila:
-                u = pila.pop()
-                membri.append(u)
-                for v in np.nonzero(adiacenza[u])[0]:
-                    if etichetta[v] < 0:
-                        etichetta[v] = k
-                        pila.append(int(v))
-            componenti.append(np.array(membri, np.int64))
+        _, etichetta = cg.connected_components(sp.csr_matrix(adiacenza), directed=False)
+        componenti = [np.nonzero(etichetta == k)[0] for k in range(int(etichetta.max()) + 1)]
 
-        min_semi = int(getattr(P, "MICRO_CLUSTER_MIN_SEMI", 3))
-        min_peso = float(getattr(P, "MICRO_CLUSTER_MIN_PESO", 0.10)) * peso_totale
+        min_semi = int(P.MICRO_CLUSTER_MIN_SEMI)
+        min_peso = float(P.MICRO_CLUSTER_MIN_PESO) * peso_totale
 
         tenuti = []
         for membri in componenti:
             peso = float(pesi_nodo[membri].sum())
             if len(membri) < min_semi and peso < min_peso:
+                print(f"  [micro_cluster] filone scartato: {len(membri)} semi, "
+                      f"{100.0 * peso / peso_totale:.1f}% del peso (minimo {min_semi} semi o "
+                      f"{100.0 * float(P.MICRO_CLUSTER_MIN_PESO):.0f}%)", file=sys.stderr)
                 continue
             bolla = int(np.bincount(bolle[membri], weights=pesi_nodo[membri]).argmax())
             tenuti.append({
                 "nodi": nodi[membri],
+                "pesi": pesi_nodo[membri],
                 "indici": np.nonzero(np.isin(righe, nodi[membri]))[0],
                 "peso": peso,
                 "bolla": bolla,
+                # L'ANCORA dell'identita': la bolla piu' bassa del filone. La bolla dominante cambia
+                # quando i pesi si incrociano (una rivisione basta), e un id che cambia fa comparire e
+                # sparire cataloghi; la piu' bassa cambia solo se il filone si allarga verso il basso.
+                "ancora": int(bolle[membri].min()),
             })
 
         tenuti.sort(key=lambda c: (-c["peso"], c["bolla"]))
+        if len(tenuti) > max_cluster:
+            print(f"  [micro_cluster] {len(tenuti) - max_cluster} filoni oltre il tetto di {max_cluster}: "
+                  f"restano i primi per peso", file=sys.stderr)
         return tenuti[:max_cluster]
 
     # ------------------------------------------------------------------ IL METODO
@@ -869,9 +887,7 @@ class Motore:
         div_nic = self.applica_antimonopolio(cand_nic, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="nicchia_di_qualita")
         titoli_nic = div_nic[:cap_main]
         target_nic = cap_main if cap_main is not None else 20
-        riga_corta = len(titoli_nic) < target_nic
-        if riga_corta:
-            print(f"  [nicchia] riga corta: {len(titoli_nic)}/{target_nic} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+        riga_corta, _motivo = self.dichiara_corta(len(titoli_nic), target_nic, "nicchia")
 
         liste.append({
             "tipo": "nicchia_di_qualita",
@@ -935,9 +951,7 @@ class Motore:
         div_cls = self.applica_antimonopolio(cand_cls, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="classici_imperdibili")
         titoli_cls = div_cls[:cap_main]
         target_cls = cap_main if cap_main is not None else 20
-        riga_corta_cls = len(titoli_cls) < target_cls
-        if riga_corta_cls:
-            print(f"  [classici] riga corta: {len(titoli_cls)}/{target_cls} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+        riga_corta_cls, _motivo = self.dichiara_corta(len(titoli_cls), target_cls, "classici")
 
         liste.append({
             "tipo": "classici_imperdibili",
@@ -989,10 +1003,11 @@ class Motore:
             div_uv = self.applica_antimonopolio(cand_uv, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="ultime_visioni")
             riga_uv["titoli"] = div_uv[:cap_main]
             riga_uv["totale_sopravvissuti"] = len(div_uv)
-            riga_uv["corta"] = len(riga_uv["titoli"]) < cap_main
-            if riga_uv["corta"]:
-                riga_uv["motivo"] = f"ultime_visioni: riga corta {len(riga_uv['titoli'])}/{cap_main} titoli"
-                print(f"  [ultime_visioni] riga corta: {len(riga_uv['titoli'])}/{cap_main} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+            riga_uv["corta"], motivo_uv = self.dichiara_corta(
+                len(riga_uv["titoli"]), cap_main, "ultime_visioni", prefisso="ultime_visioni"
+            )
+            if motivo_uv:
+                riga_uv["motivo"] = motivo_uv
 
         liste.append(riga_uv)
 
@@ -1004,7 +1019,16 @@ class Motore:
         # 1.0 dentro il filone, e la riga parla con i suoi due semi piu' pesanti.
         # Il peso dei semi e' gia' calcolato in w_semi (stessa formula della diffusione principale).
         peso_semi_totale = float(np.sum(w_semi)) if len(w_semi) else 0.0
-        for i, cl in enumerate(self.cluster_di_semi(righe, w_semi), start=1):
+        cluster = self.cluster_di_semi(righe, w_semi)
+        motivi = []
+        if not cluster:
+            # Il canale dichiarato (`motivi`) esiste apposta: zero righe e' un fatto, non un silenzio.
+            motivi.append(
+                "micro_cluster: nessun filone sopra le soglie "
+                f"({P.MICRO_CLUSTER_MIN_SEMI} semi o {100.0 * float(P.MICRO_CLUSTER_MIN_PESO):.0f}% del peso)"
+            )
+            print(f"  [micro_cluster] {motivi[-1]}: nessuna riga", file=sys.stderr)
+        for i, cl in enumerate(cluster, start=1):
             idx = cl["indici"]
             pesi_cl = None if pesi is None else [pesi[j] for j in idx]
             att_cl, r_cl = self.diffondi(
@@ -1013,7 +1037,7 @@ class Motore:
             )
             _, _, cand_cl = self.bacino_appiattito(
                 att_cl, list(np.argsort(-att_cl)), non_visti_mondo,
-                max_bolle=int(getattr(P, "MICRO_CLUSTER_BOLLE_MAX", 4)),
+                max_bolle=int(P.MICRO_CLUSTER_BOLLE_MAX),
             )
             surv_cl = self.pavimento(cand_cl, soglia_voti, soglia_vave)
             cand_titoli = self.ordina_per_ranking(surv_cl, r_cl, base_bayes, exp_bayes)
@@ -1022,29 +1046,32 @@ class Motore:
                                                 nome_riga=f"micro_cluster_{i}")
             titoli_cluster = div_cl[:cap_main]
 
-            # Il titolo parlante: i DUE semi piu' pesanti del filone (a pari peso, nodo piu' basso).
-            pesi_cluster = w_semi[idx]
+            # Il titolo parlante: i semi piu' pesanti del filone — dai NODI deduplicati, altrimenti lo
+            # stesso titolo (watchlist + loved) puo' uscire due volte: «Perché hai amato X e X».
+            quanti_parlanti = int(P.MICRO_CLUSTER_SEMI_PARLANTI)
             ordine_semi = sorted(
-                range(len(idx)),
-                key=lambda j: (-float(pesi_cluster[j]), int(righe[idx[j]])),
+                range(len(cl["nodi"])),
+                key=lambda j: (-float(cl["pesi"][j]), int(cl["nodi"][j])),
             )
-            titoli_seme = [str(self.TIT[int(righe[idx[j]])]) for j in ordine_semi[:2]]
+            titoli_seme = [str(self.TIT[int(cl["nodi"][j])]) for j in ordine_semi[:quanti_parlanti]]
 
             riga_cl = {
                 "tipo": f"micro_cluster_{i}",
                 "mondo": int(cl["bolla"]),
-                "cluster_id": f"b{int(cl['bolla'])}",
+                "cluster_id": f"b{int(cl['ancora'])}",
                 "titoli_seme": titoli_seme,
                 "semi_chiavi": [B.KEYS[int(x)] for x in cl["nodi"]],
+                # Quota sul peso TOTALE dei semi: somma a 1 solo se nessun filone resta fuori dal tetto.
                 "quota_peso": round(float(cl["peso"]) / peso_semi_totale, 4) if peso_semi_totale > 0 else 0.0,
                 "titoli": titoli_cluster,
-                "corta": len(titoli_cluster) < cap_main,
                 "target_dimensione": cap_main,
                 "totale_sopravvissuti": len(div_cl),
             }
-            if riga_cl["corta"]:
-                riga_cl["motivo"] = f"micro_cluster_{i}: riga corta {len(titoli_cluster)}/{cap_main} titoli"
-                print(f"  [micro_cluster] riga corta: {len(titoli_cluster)}/{cap_main} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+            riga_cl["corta"], motivo_cl = self.dichiara_corta(
+                len(titoli_cluster), cap_main, "micro_cluster", prefisso=f"micro_cluster_{i}"
+            )
+            if motivo_cl:
+                riga_cl["motivo"] = motivo_cl
             liste.append(riga_cl)
 
         for b in bolle[1:]:
@@ -1064,6 +1091,7 @@ class Motore:
 
         return {"versioni": {"artefatto": self.artefatto, "ricetta": P.impronta()},
                 "slider": slider,
+                "motivi": motivi,
                 "profilo": dedotto,
                 "semi": {"n": int(len(righe)), "da_catalogo": da_cat, "recenti": int(n_rec)},
                 "mondi": [{"bolla": int(b), "attivazione": float(att[b]), "titoli": int(self.SZ[b]),

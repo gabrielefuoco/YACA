@@ -119,7 +119,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
     primo_mondo = esito["mondi"][0]["bolla"] if esito.get("mondi") else None
 
     contratto_liste = []
-    motivi = []
+    # I motivi del motore (es. «nessun filone sopra le soglie») si aggiungono a quelli delle righe vuote.
+    motivi = list(esito.get("motivi") or [])
 
     for li in esito.get("liste", []):
         ruolo = li["tipo"]
@@ -153,6 +154,10 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             if "semi_recenti" in li:
                 # Campo strutturale, non solo il testo del motivo (Ticket 07).
                 lista_out["semi_recenti"] = int(li["semi_recenti"])
+            # Anche una riga di filone svuotata dal pavimento porta la sua identita' (Ticket 08).
+            for campo in ("cluster_id", "quota_peso", "titoli_seme"):
+                if campo in li:
+                    lista_out[campo] = li[campo]
             contratto_liste.append(lista_out)
             continue
 
@@ -284,6 +289,12 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         }
         if parziale:
             lista_out["parziale"] = True
+        if li.get("cluster_id"):
+            # L'identita' del filone viaggia col contratto: lo SLOT (`micro_cluster_1..3`) e' posizionale
+            # e cambia quando i pesi si incrociano, il filone no (Ticket 08).
+            lista_out["cluster_id"] = str(li["cluster_id"])
+            lista_out["quota_peso"] = float(li.get("quota_peso", 0.0))
+            lista_out["titoli_seme"] = [str(t) for t in (li.get("titoli_seme") or [])]
         if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):
             lista_out["corta"] = True
             lista_out["target_dimensione"] = li.get("target_dimensione", 20)

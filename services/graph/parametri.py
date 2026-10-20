@@ -161,6 +161,11 @@ SCHEDA = [
      "Alternativa alla soglia di semi: un filone si tiene se pesa almeno il 10% del peso totale dei "
      "semi (Ticket 08). Serve a non perdere un filone di pochi titoli ma molto forti (loved).",
      "services/graph/motore.py"),
+    ("MICRO_CLUSTER_SEMI_PARLANTI", 2, "DICHIARATO",
+     "Quanti titoli-seme porta il titolo parlante di un micro-cluster (Ticket 08): «Perché hai amato X e Y». "
+     "Due, perche' un terzo nome trasforma la spiegazione in un elenco; se il filone ha un solo seme, ne "
+     "porta uno.",
+     "services/graph/motore.py"),
     ("MICRO_CLUSTER_BOLLE_MAX", 4, "DICHIARATO",
      "Tetto di bolle-seme nel bacino di un micro-cluster (Ticket 08): una riga di filone deve restare "
      "stretta, come quella delle ultime visioni, e non allargarsi fino alla massa target.",
