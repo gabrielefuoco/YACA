@@ -113,3 +113,6 @@ costruite è il modo esatto in cui un documento diventa una bugia.
 - **Lezione pagata dal `07`**: la review `spec` ha trovato che `semiDi` contava le **aggiunte in watchlist** come
   visioni (`ProfileBuilder` scrive segnali `library` dentro WatchHistory). Un ticket può essere verde e sbagliato
   nel **significato** — la prova deve mordere sulla fonte vera, non su un mock.
+- **`08` chiuso**: ogni filone dei semi ha la sua camminata e la sua riga (`micro_cluster_1..3`), con `cluster_id`
+  stabile (bolla-ancora), `titoli_seme` e `quota_peso` nel contratto. Le righe non arrivano ai cataloghi Stremio
+  fino al `13`. Prova: `scripts/qa/probe-ticket-08-micro-cluster.py`. Nuova baseline suite: `1910 passati / 192`.
