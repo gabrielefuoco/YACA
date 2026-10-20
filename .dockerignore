@@ -1,6 +1,10 @@
 node_modules
 npm-debug.log
-frontend/
+# Il frontend ENTRA nell'immagine (ticket 24): si escludono solo le sue dipendenze e l'export locale,
+# che vengono ricostruiti dentro il Dockerfile.
+frontend/node_modules
+frontend/out
+frontend/.next
 frontend-out/
 .cache
 .scratch
@@ -16,6 +20,5 @@ ops
 tests
 docs
 eslint.config.js
-frontend/package-lock.json
 services/graph/
 services/keyword-graph/

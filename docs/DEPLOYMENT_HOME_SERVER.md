@@ -21,37 +21,34 @@ Ordine di esecuzione: **§2** installazione + checklist → **§3** file e primo
 
 ---
 
-## 0-bis. Il frontend ha un passo suo (e dal 20/10 si aggiorna da solo)
+## 0-bis. Il frontend viaggia con l'app (dal 20/10/2026, ticket 24)
 
-YACA si deploya in **tre pezzi**, e non si aggiornano tutti allo stesso modo:
+YACA si deploya in **tre pezzi**, ma solo **due** sono immagini e si aggiornano allo stesso modo:
 
 | pezzo | cos'è | chi lo aggiorna |
 |---|---|---|
-| app (Node) | immagine `ghcr.io/gabrielefuoco/yaca:latest` | Watchtower, da solo |
+| app (Node) + **frontend static** | immagine `ghcr.io/gabrielefuoco/yaca:latest` | Watchtower, da solo |
 | grafo (Python) | immagine `ghcr.io/gabrielefuoco/yaca-graph:latest` | Watchtower, da solo |
-| **frontend** | **cartella statica** montata in `/app/frontend/out` (bind mount **read-only**, ticket 56) | **timer systemd** `yaca-frontend-update` ogni 5 minuti |
 
-Il frontend non è un'immagine: Watchtower non lo vede. Il CI lo costruisce e lo pubblica come release
-asset (`frontend-latest`); il timer lo scarica, confronta il `version.json` che c'è dentro con quello già
-servito e — solo se è cambiato — lo installa con `ops/frontend-aggiorna.sh` (**svuota senza cancellare**:
-un bind mount Docker punta all'inode, e `rm -rf && mkdir` lo lascerebbe orfano).
+Il frontend **non è più una cartella montata**: si costruisce dentro l'immagine dell'app (stadio
+`frontend-build` del `Dockerfile`) e si serve da `/app/frontend/out`. Una build, una versione, un deploy.
+Prima era un bind mount aggiornato da uno script, e il 20/10/2026 è successo quello che succede quando ci
+sono due artefatti: i container erano aggiornati, la dashboard serviva il JS del giorno prima, e nessuno se
+ne accorgeva perché la dashboard si disegna dai dati dell'API.
 
-**Come si verifica che l'interfaccia sia davvero aggiornata** (il container non basta: la dashboard si
-disegna dai dati dell'API e sembra a posto anche con il JS di ieri):
+**Come si verifica quale frontend stai servendo**:
 
 ```bash
-curl -s http://127.0.0.1:7860/health            # -> "frontend": {"sha": "...", "built": "..."}
-systemctl list-timers yaca-frontend-update.timer
-journalctl -u yaca-frontend-update -n 20        # ogni passata dice "gia' aggiornato" o "installato"
+curl -s http://127.0.0.1:7860/health
+# -> "frontend": {"sha": "<sha del commit>", "source": "immagine", "built": "..."}
 ```
 
-Forzare un aggiornamento a mano: `bash /srv/yaca/ops/frontend-timer.sh` (idempotente) oppure
-`bash /srv/yaca/ops/frontend-aggiorna.sh` (scarica e installa senza confrontare).
+La sha deve essere quella dell'ultima immagine tirata su. Se manca `version.json`, l'immagine non è stata
+costruita dal `Dockerfile` (manca lo stadio del frontend).
 
-**Perché lo dico qui**: il 20/10/2026 i container erano aggiornati e la dashboard serviva il JS del giorno
-prima — le sei famiglie nuove comparivano lo stesso (i cataloghi arrivano dall'API), ma i profili non
-ricevevano le 12 id di default. Nessun test, nessun health check, nessun allarme: si è scoperto solo
-guardando la data della cartella.
+**Costo dichiarato**: una modifica al solo frontend ora costa il riavvio dell'app (5-10 s, quello che
+Watchtower fa comunque a ogni nuova immagine) invece di zero. Era il prezzo che il ticket 56 non voleva
+pagare; il 24 l'ha pagato per togliere la divergenza.
 
 ## 1. Architettura e Budget di Sistema
 
