@@ -22,8 +22,10 @@ RUN npm ci
 COPY frontend/ ./
 # La sha dell'immagine viaggia nell'export: serve a `/health` per dire QUALE frontend sta servendo.
 ARG GIT_SHA=dev
-RUN NEXT_TELEMETRY_DISABLED=1 npm run build     && printf '{"sha":"%s","source":"immagine","built":"%s"}
-' "$GIT_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"        > out/version.json     && test -f out/index.html
+RUN NEXT_TELEMETRY_DISABLED=1 npm run build
+# Il marcatore di versione, scritto da node: niente quoting di shell, niente continuazioni.
+RUN node -e "require('fs').writeFileSync('out/version.json', JSON.stringify({sha: process.env.GIT_SHA || 'dev', source: 'immagine', built: new Date().toISOString()}))"
+RUN test -f out/index.html
 
 # --- Stage 2: Backend & Runtime ---
 FROM node:20-slim AS runner
