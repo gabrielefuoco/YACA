@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 03
 
@@ -62,3 +62,59 @@ ripescati, si ordina per `r_indotta`.
 - **Il frontend non si tocca.** Niente `git push`. Niente `npm run build` / `tsc`. Non si tocca la produzione.
 - **La prova non vive nel prodotto**: niente flag `simulate*` nel percorso caldo.
 - Commit in steps, ognuno con la sua prova.
+
+---
+
+## Esito (20/10/2026)
+
+### 1. Il tipo viaggia (parte 1)
+
+- **`semiDi`** (`src/library/seeds.js`) restituisce anche **`tipi: Map<id, tipo>`**. Il tipo si registra
+  mentre i bucket vengono percorsi, e fra più segnali **vince il più forte** (`loved > liked > library >
+  watched`): un titolo messo in libreria *e* guardato resta `watched` solo se non ha segnali più forti.
+- **`convertiSemiPerGrafo`** usa `tipi` e **le soglie cablate sono sparite**. Se un id non ha un tipo
+  dichiarato (o ne ha uno non ammesso) lo **dichiara** con un `console.warn` col conteggio e usa `watched`:
+  niente deduzione dal numero, e niente silenzio.
+- `src/pool/index.js` passa `tipi` alla conversione (unico chiamante di produzione).
+
+### 2. Lo score del ripescato (parte 2)
+
+`motore.py` calcola `r_indotta[x] = r[x] - ALPHA * e_init[x]` su una **copia** di `r` (le altre righe non si
+toccano) e classifica i ripescati con **quello** score. Prima esponeva `r[x]`, gonfiato dal restart.
+
+**La divergenza, dichiarata**: il ticket chiede anche «il piazzamento in testa **per costruzione**»
+(inserendoli in testa). Le due cose insieme non stanno in piedi: il contratto del motore esige che i
+punteggi esposti siano non crescenti (`K.assert_monotonia_lista`), quindi un titolo in testa **deve** avere
+lo score più alto. Con lo score vero, il ripescato non scavalca più chi merita di più — ed è giusto così:
+resta comunque nel **top 15% del bacino** con `VAVE ≥ 7.0`, che è la ragione per cui è stato ripescato.
+Ho scelto **lo score onesto** e lascio la posizione a quello che merita; per avere la testa "a tutti i
+costi" serve un campo di posizionamento separato dal punteggio, che è una decisione di prodotto, non una
+correzione.
+
+### 3. La prova
+
+`tests/tipoDelSemeDichiarato.test.js` (6 test): un `library` che pesa 4 resta `library` (le vecchie soglie
+lo chiamavano `loved`) — è **il caso che il ticket chiedeva**; un `watched` con peso 3 resta `watched`; i
+quattro tipi dichiarati passano intatti; un seme senza tipo lo dichiara e resta `watched`; un tipo non
+ammesso idem; `semiDi` consegna sempre una `Map` di tipi.
+
+Sonda `scripts/qa/probe-ticket-17-ripescato.py`:
+
+```
+$ py scripts/qa/probe-ticket-17-ripescato.py
+== Ticket 17: lo score del ripescato ==
+ALPHA = 0.6
+r[0]        (gonfiato) = 0.9000
+r_indotta[0] (vero)    = 0.3000
+score esposto PRIMA (r)      = 1.0996
+score esposto DOPO (indotta) = 0.3665
+migliore degli altri        = 0.6100
+il ripescato sta davanti per score? prima=True dopo=False
+```
+
+### 4. Suite
+
+```
+Test Suites: 5 failed, 194 passed, 199 total
+Tests:       8 failed, 1 skipped, 1969 passed, 1978 total
+```

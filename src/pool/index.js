@@ -214,13 +214,14 @@ function normalizePoolResult(result) {
  *
  * @param {Map<number|string, number>|Array<[number|string, number]>} seeds
  * @param {Object} [options]
+ * @param {Map<string, string>} [options.tipi] - id -> tipo del seme (Ticket 17: il tipo e' un dato)
  * @param {string} [options.medium='movie'] - 'movie' o 'series'/'tv'
  * @param {string} [options.animePolicy='neutral'] - 'exclude' | 'only' | 'neutral'
  * @param {Map<string, number>} [options.ultimaVisione] - id -> timestamp ms dell'ultima visione (Ticket 07)
  * @param {number} [options.quantiRecenti=SEED_RECENTI_QUANTI] - quanti marcati `recente`, fra i semi INVITATI
  * @returns {Array<{tmdbId: number, medium: string, tipo: string, recente?: boolean}>}
  */
-function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral', ultimaVisione = null, quantiRecenti = SEED_RECENTI_QUANTI } = {}) {
+function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral', ultimaVisione = null, quantiRecenti = SEED_RECENTI_QUANTI, tipi = null } = {}) {
     const med = medium === 'series' || medium === 'tv' ? 'series' : 'movie';
     const tipoSeed = med === 'movie' ? 'movie' : 'tv';
     const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
@@ -235,12 +236,22 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
         return true;
     });
 
-    const output = filteredSeeds.map(([id, w]) => {
+    // TICKET 17: il tipo NON si deduce piu' dal peso. Le vecchie soglie (`w >= 4 -> loved`) erano la
+    // causa per cui il ticket 02 doveva smettere di mandare il peso: era il numero a decidere il tipo,
+    // e PESO_TIPO nel motore non contava niente. Ora il tipo arriva da `semiDi`; se per un id manca si
+    // DICHIARA (un warn con il conteggio) e si usa il default piu' debole, mai una soglia.
+    const tipiNoti = tipi instanceof Map ? tipi : new Map(Object.entries(tipi || {}));
+    const TIPI_AMMESSI = new Set(['loved', 'liked', 'watched', 'library']);
+    let senzaTipo = 0;
+    const output = filteredSeeds.map(([id]) => {
         const tmdbId = Number(id);
         let tipo = 'watched';
-        if (w >= 4) tipo = 'loved';
-        else if (w >= 3) tipo = 'liked';
-        else if (w === 1) tipo = 'library';
+        const dichiarato = tipiNoti.get(String(id)) ?? tipiNoti.get(id);
+        if (TIPI_AMMESSI.has(dichiarato)) {
+            tipo = dichiarato;
+        } else {
+            senzaTipo += 1;
+        }
         return {
             tmdbId,
             medium: med,
@@ -255,6 +266,10 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
     const recentiIds = new Set(candidatiRecenti.slice(0, quantiRecenti || 0).map(({ item }) => String(item.tmdbId)));
     for (const item of output) {
         if (recentiIds.has(String(item.tmdbId))) item.recente = true;
+    }
+    if (senzaTipo > 0) {
+        console.warn(`[Semi] ${senzaTipo}/${filteredSeeds.length} semi senza tipo dichiarato: ` +
+            'restano "watched" (nessuna deduzione dal peso, Ticket 17)');
     }
     return output;
 }
@@ -283,7 +298,7 @@ const HERO_STRATEGIES = [
 
             try {
                 const { semiDi } = require('../library');
-                const { seeds, ultimaVisione } = await semiDi({
+                const { seeds, tipi, ultimaVisione } = await semiDi({
                     userId: ctx.userId,
                     context: ctx.context,
                     mediaType: ctx.mediaType,
@@ -298,7 +313,7 @@ const HERO_STRATEGIES = [
                     || ctx.userConfig?.typeSelectors?.anime;
 
                 const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione });
+                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione, tipi });
                 const visti = new Set(semi.map((s) => s.tmdbId));
                 let traktCount = 0;
                 if (rawTraktResult?.traktAvailable) {

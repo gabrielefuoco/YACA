@@ -1065,8 +1065,17 @@ class Motore:
         liste = []
         quanti_tuo = max(P.IL_TUO_MONDO_MIN_TITOLI, cap_main) if cap is None or cap >= P.IL_TUO_MONDO_MIN_TITOLI else cap_main
         if ripescati_mondo:
-            score_rip = self.ranking(ripescati_mondo, r, base_bayes, exp_bayes)
+            # TICKET 17: il punteggio esposto e' quello VERO, `r_indotta = r - ALPHA * e`. Prima si
+            # esponeva `r[x]`, gonfiato proprio dalla massa di restart che il ripescaggio serviva a
+            # neutralizzare: chi ordinava a valle credeva quel titolo piu' affine di quanto fosse.
+            # Il vettore si copia per non toccare `r` (che serve alle altre righe).
+            r_rip = r.copy()
+            for _x in ripescati_mondo:
+                r_rip[_x] = float(r[_x] - P.ALPHA * e_init[_x])
+            score_rip = self.ranking(ripescati_mondo, r_rip, base_bayes, exp_bayes)
             titoli_rip = [(B.KEYS[x], float(sc)) for x, sc in zip(ripescati_mondo, score_rip)]
+            # L'ordine viene dallo score vero (niente boost): chi merita sta in alto, non chi e' stato
+            # gonfiato. La monotonicita' del contratto resta garantita dal sort.
             cand_tuo_tutti = sorted(titoli_rip + titoli_uns, key=lambda t: -t[1])
         else:
             cand_tuo_tutti = titoli_uns

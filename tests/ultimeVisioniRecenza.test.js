@@ -3,6 +3,13 @@ const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const { SEED_RECENTI_QUANTI } = library;
 
+/** `tipi` come lo consegna `semiDi` (Ticket 17): nei fixture il tipo e' quello che il test ha scritto. */
+function tipiDa(seeds) {
+    const m = new Map();
+    for (const id of seeds.keys()) m.set(String(id), 'watched');
+    return m;
+}
+
 describe('Ticket 07: recenza dei semi da data vera', () => {
     test('l ordine di inserimento della Map non decide la recenza', () => {
         const ids = ['1', '2', '3', '4', '5'];
@@ -15,8 +22,8 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         const newestFirst = new Map();
         for (const id of [...ids].reverse()) newestFirst.set(id, tsById[id]);
 
-        const r1 = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: oldestFirst, quantiRecenti: 2 });
-        const r2 = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: newestFirst, quantiRecenti: 2 });
+        const r1 = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: oldestFirst, quantiRecenti: 2, tipi: tipiDa(seeds) });
+        const r2 = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: newestFirst, quantiRecenti: 2, tipi: tipiDa(seeds) });
 
         const recent1 = new Set(r1.filter((x) => x.recente === true).map((x) => x.tmdbId));
         const recent2 = new Set(r2.filter((x) => x.recente === true).map((x) => x.tmdbId));
@@ -31,8 +38,8 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         const uvA = new Map([['1', 500], ['2', 400], ['3', 100]]);
         const uvB = new Map([['1', 100], ['2', 500], ['3', 400]]);
 
-        const rA = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uvA, quantiRecenti: 1 });
-        const rB = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uvB, quantiRecenti: 1 });
+        const rA = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uvA, quantiRecenti: 1, tipi: tipiDa(seeds) });
+        const rB = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uvB, quantiRecenti: 1, tipi: tipiDa(seeds) });
 
         const recentA = new Set(rA.filter((x) => x.recente === true).map((x) => x.tmdbId));
         const recentB = new Set(rB.filter((x) => x.recente === true).map((x) => x.tmdbId));
@@ -44,7 +51,7 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         const seeds = new Map(ids.map((id) => [id, 2]));
         const uv = new Map([['1', 200], ['2', 100], ['3', 0]]); // 4,5 assenti
 
-        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv });
+        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv, tipi: tipiDa(seeds) });
         const recent = r.filter((x) => x.recente === true);
         expect(recent).toHaveLength(2);
         for (const item of r) {
@@ -61,7 +68,7 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         const uv = new Map();
         for (let i = 20; i >= 1; i--) uv.set(String(i), i * 10);
 
-        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv });
+        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv, tipi: tipiDa(seeds) });
         const recent = new Set(r.filter((x) => x.recente === true).map((x) => x.tmdbId));
         expect(recent.size).toBe(SEED_RECENTI_QUANTI);
         // i 15 piu recenti sono 6..20
@@ -104,7 +111,7 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         const seeds = new Map(Array.from({ length: 10 }, (_, i) => [String(i + 1), 2]));
         const uv = new Map(allIds.map((id, i) => [id, (i + 1) * 10]));
 
-        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv });
+        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv, tipi: tipiDa(seeds) });
         const recent = r.filter((x) => x.recente === true);
         expect(recent).toHaveLength(10);
         for (let i = 1; i <= 10; i++) {

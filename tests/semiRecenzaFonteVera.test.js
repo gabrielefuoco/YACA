@@ -41,6 +41,13 @@ async function conStoria(docs, opzioni = {}) {
     return library.semiDi({ userId: 'u1', context: 'global', medium: 'movie', user: { uuid: 'addon-1' }, ...opzioni });
 }
 
+/** `tipi` come lo consegna `semiDi` (Ticket 17): nei fixture il tipo e' quello che il test ha scritto. */
+function tipiDa(seeds) {
+    const m = new Map();
+    for (const id of seeds.keys()) m.set(String(id), 'watched');
+    return m;
+}
+
 describe('Ticket 07: la recenza viene dalle date vere di WatchHistory', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -83,7 +90,7 @@ describe('Ticket 07: la recenza viene dalle date vere di WatchHistory', () => {
             doc(403, [{ type: 'watched', at: MEZZO }])
         ]);
 
-        const semi = convertiSemiPerGrafo(seeds, { medium: 'movie', ultimaVisione, quantiRecenti: 2 });
+        const semi = convertiSemiPerGrafo(seeds, { medium: 'movie', ultimaVisione, quantiRecenti: 2, tipi: tipiDa(seeds) });
         const recenti = semi.filter((s) => s.recente === true).map((s) => s.tmdbId).sort();
         expect(recenti).toEqual([401, 403]);
     });
@@ -103,7 +110,7 @@ describe('Ticket 07: la recenza viene dalle date vere di WatchHistory', () => {
         ]);
 
         expect(ultimaVisione.has('501')).toBe(false);
-        const semi = convertiSemiPerGrafo(seeds, { medium: 'movie', ultimaVisione });
+        const semi = convertiSemiPerGrafo(seeds, { medium: 'movie', ultimaVisione, tipi: tipiDa(seeds) });
         const recenti = semi.filter((s) => s.recente === true).map((s) => s.tmdbId);
         expect(recenti).toEqual([502]);
     });

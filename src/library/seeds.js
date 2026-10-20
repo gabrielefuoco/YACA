@@ -91,7 +91,11 @@ async function risolviAddonUuid({ userId, user }) {
  * @param {string} [params.medium] - 'movie' o 'tv'/'series'
  * @param {string} [params.mediaType] - Alias di medium per compatibilità
  * @param {Object} [params.user] - Dati utente opzionali per addonUuid
- * @returns {Promise<{ seeds: Map<string, number>, counts: { loved: number, liked: number, watched: number, library: number }, ultimaVisione: Map<string, number> }>}
+ * @returns {Promise<{ seeds: Map<string, number>, tipi: Map<string, string>, counts: { loved: number, liked: number, watched: number, library: number }, ultimaVisione: Map<string, number> }>}
+ * `tipi` (Ticket 17): id -> 'loved' | 'liked' | 'library' | 'watched'. Il tipo e' un DATO, non un
+ * numero da indovinare: prima `convertiSemiPerGrafo` lo deduceva dal peso con soglie cablate
+ * (`w >= 4 -> loved`), che e' la ragione per cui il ticket 02 ha dovuto smettere di mandare il peso.
+ * Se un id riceve piu' segnali vince il piu' forte (loved > liked > library > watched).
  * ultimaVisione: Map<id string, timestamp ms> dell'ULTIMA VISIONE, fonte WatchHistory
  * (lastWatchedAt / signals[].at / createdAt / daysAgo). Solo i segnali di visione
  * (watched/liked/loved): un'aggiunta in libreria non e' una visione. Data mancante => assente.
@@ -113,7 +117,7 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
     try {
         const HistoryModel = getHistoryModel();
         if (HistoryModel?.db && HistoryModel.db.readyState !== 1) {
-            return { seeds: new Map(), counts: { loved: 0, liked: 0, watched: 0, library: 0 }, ultimaVisione: new Map() };
+            return { seeds: new Map(), tipi: new Map(), counts: { loved: 0, liked: 0, watched: 0, library: 0 }, ultimaVisione: new Map() };
         }
         historyDocs = await HistoryModel.find({ owner: userId, context: ctx }).lean();
         if (!Array.isArray(historyDocs)) historyDocs = [];
@@ -165,7 +169,15 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
     }
 
     const seeds = new Map();
+    const tipi = new Map();
     const counts = { loved: 0, liked: 0, watched: 0, library: 0 };
+    // Il tipo viaggia col seme (Ticket 17). Fra piu' segnali vince il piu' forte: loved > liked >
+    // library > watched. `watched` e' il piu' debole ma resta il default quando non c'e' altro.
+    const FORZA_TIPO = { watched: 0, library: 1, liked: 2, loved: 3 };
+    const registraTipo = (id, tipo) => {
+        const attuale = tipi.get(id);
+        if (!attuale || (FORZA_TIPO[tipo] ?? 0) > (FORZA_TIPO[attuale] ?? 0)) tipi.set(id, tipo);
+    };
     const now = Date.now();
     for (const [type, bucket] of Object.entries(buckets)) {
         if (type === 'watched') {
@@ -175,6 +187,7 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
                 const days = timestamp > 0 ? Math.max(0, (now - timestamp) / 86400000) : Infinity;
                 const weight = Math.max(0.20, Math.pow(0.5, days / 60));
                 seeds.set(id, (seeds.get(id) || 0) + weight);
+                registraTipo(id, 'watched');
             }
         } else {
             const limit = SEED_SIGNAL_LIMITS[type] ?? 0;
@@ -182,11 +195,12 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
             counts[type] = selected.length;
             for (const [id] of selected) {
                 seeds.set(id, (seeds.get(id) || 0) + SEED_SIGNAL_WEIGHTS[type]);
+                registraTipo(id, type);
             }
         }
     }
 
-    return { seeds, counts, ultimaVisione };
+    return { seeds, tipi, counts, ultimaVisione };
 }
 
 const collectRealSeeds = semiDi;
