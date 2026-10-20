@@ -129,3 +129,11 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   e l'imbuto include i vicini di **tutti** i mondi accesi. **La cache però non è generata**: sul mate serve
   `python3 -m graph.uscite` (procedura in `docs/DEPLOYMENT_HOME_SERVER.md` §1.2) — fino ad allora la riga resta
   `fonte: canone`, vuota ma dichiarata. La riga è **già servita da Stremio**.
+- **`11` chiuso**: waterfall con la specificità in tabella (`SPECIFICITA`, `SPECIFICITA_DEFAULT`), pool per riga e
+  ripescaggio; ogni titolo va alla riga più specifica, con **una** sovrapposizione ammessa (`il_tuo_mondo` ×
+  micro-cluster). Sul fixture: **61 copie in eccesso → 1**, proprietario sbagliato 0/39. Prova:
+  `scripts/qa/probe-ticket-11-waterfall.py`.
+- **DECISIONE DI DEPLOY aperta dall'`11`**: il waterfall è fedele al §9.1 ma oggi le righe nuove non hanno
+  catalogo Stremio, quindi `il_tuo_mondo` perde i suoi migliori (59/60 sul fixture, tutta la top-10) verso righe
+  che nessuno serve. Quest'immagine va deployata **insieme al `13`**, o con una guardia che limiti il waterfall
+  alle righe servite. Proposta non applicata.
