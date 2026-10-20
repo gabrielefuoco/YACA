@@ -99,4 +99,17 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
             if (s.tmdbId !== 603) expect(s).not.toHaveProperty('recente');
         }
     });
+
+    test('il taglio avviene fra i semi inviati, non fra tutte le visioni', () => {
+        const allIds = Array.from({ length: 20 }, (_, i) => String(i + 1));
+        const seeds = new Map(Array.from({ length: 10 }, (_, i) => [String(i + 1), 2]));
+        const uv = new Map(allIds.map((id, i) => [id, (i + 1) * 10]));
+
+        const r = convertiSemiPerGrafo(seeds, { medium: 'movie', animePolicy: 'neutral', ultimaVisione: uv });
+        const recent = r.filter((x) => x.recente === true);
+        expect(recent).toHaveLength(10);
+        for (let i = 1; i <= 10; i++) {
+            expect(recent.map((x) => x.tmdbId)).toContain(i);
+        }
+    });
 });

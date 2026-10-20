@@ -191,15 +191,11 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
         };
     });
 
-    const recentiIds = new Set();
-    if (ultimaVisione && typeof ultimaVisione.entries === 'function') {
-        const ordinati = [...ultimaVisione.entries()]
-            .filter(([, ts]) => typeof ts === 'number' ? ts > 0 : Number(ts) > 0)
-            .sort((a, b) => (Number(b[1]) - Number(a[1])) || String(a[0]).localeCompare(String(b[0])));
-        for (const [id] of ordinati.slice(0, quantiRecenti || 0)) {
-            recentiIds.add(String(id));
-        }
-    }
+    const candidatiRecenti = output
+        .map((item) => ({ item, ts: Number(ultimaVisione && typeof ultimaVisione.get === 'function' ? ultimaVisione.get(String(item.tmdbId)) : NaN) }))
+        .filter(({ ts }) => Number.isFinite(ts) && ts > 0)
+        .sort((a, b) => (b.ts - a.ts) || String(a.item.tmdbId).localeCompare(String(b.item.tmdbId)));
+    const recentiIds = new Set(candidatiRecenti.slice(0, quantiRecenti || 0).map(({ item }) => String(item.tmdbId)));
     for (const item of output) {
         if (recentiIds.has(String(item.tmdbId))) item.recente = true;
     }
