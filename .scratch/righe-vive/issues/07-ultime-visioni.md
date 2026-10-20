@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: claimed
 Type: task
 Blocked by: 06
 
@@ -11,6 +11,48 @@ Blocked by: 06
 - **Trappola verificata nel piano**: `semiDi()` in `src/pool/index.js` restituisce una **Map** che **non preserva i
   timestamp né l'ordine cronologico**: prendere "i primi 15" dal dizionario dà i primi **per inserimento**, non gli
   ultimi visti.
+
+### Esito della verifica (20/10/2026, integratore) — le premesse sono vere, la data esiste già
+
+1. **`semiDi` non espone la recenza: vero.** `src/library/seeds.js:90` restituisce `{ seeds, counts }`; `seeds` è
+   `Map<id, peso>` aggregata dai bucket `loved/liked/watched/library` (righe 153–171). Nessun timestamp esce.
+2. **Ma la data c'è, e dentro la funzione.** `getSeedTimestamp()` (riga 28) legge `lastWatchedAt`, `createdAt`,
+   `signals[].at`, `daysAgo`; `keepMostRecentSeed()` (riga 37) tiene già, per ogni id, **il segnale più recente**
+   nei bucket. La recenza viene **buttata via solo nell'aggregazione finale**, quando `seeds.set(id, ...)` perde la
+   data. Quindi **non manca il dato**: manca l'esposizione. Nessun ordine inventato dal dizionario — è la
+   trappola che il ticket vieta, e non serve.
+3. **Il contratto HTTP oggi non trasporta la recenza.** `convertiSemiPerGrafo` (`src/pool/index.js:162`) manda
+   `{ tmdbId, medium, tipo }`; `servizio.py:74-84` costruisce la tupla `(ch, 1, tipo, peso)`; `motore.py:511`
+   legge fino a 4 elementi. La recenza deve attraversare tutti e tre i punti, altrimenti la seconda diffusione
+   non ha semi.
+4. **Il consumatore non esiste ancora**: `src/pool/index.js` legge solo i quattro ruoli storici. La riga
+   `ultime_visioni` non si vedrà in produzione fino al ticket 13 — atteso, non è un difetto (vedi map §2).
+
+**Divergenza rispetto all'handoff §4**: non serve aprire un prerequisito. L'handoff prevedeva che `semiDi`
+*dovesse* esporre la data come ticket separato; il ticket 07 lo chiede già come suo punto 1, e il dato è di
+WatchHistory, non di un dizionario. Il prerequisito si apre solo se il dato non esistesse: esiste.
+
+**Produzione (verificata su `mate`, 20/10/2026)**: `yaca-graph` è stato ritirato da Watchtower 3 minuti prima del
+controllo; `/health` risponde `{"ok": true, "contratto": 1, "versioni": {"artefatto": "cf1d80dcba3eddce",
+"ricetta": "fa5771594b2ad0c4"}}`. Quella ricetta è una di quelle previste dall'handoff §1: **le regole di 02, 03,
+05 (e 06, costruita dalla CI) sono già vive in produzione** con l'artefatto **vecchio**, quindi il 04 resta
+inerte. Da qui in avanti ogni modifica a `parametri.py` cambia la ricetta di nuovo, e va dichiarata nell'Esito.
+
+**Scomposizione del lavoro** (il ticket tocca due lingue; un commit per passo, review a fine ticket):
+
+- **passo A / Node** — `semiDi` espone `ultimaVisione: Map<id, timestampMs>` (solo segnali di visione, non le
+  aggiunte in libreria); `convertiSemiPerGrafo` marca `recente: true` sui **15** più recenti con data vera;
+  `graphClient` documenta il campo; test jest che prova che **l'ordine di inserimento della Map non conta** e che
+  una data mancante **non** è "recente".
+- **passo B / motore** — `servizio.py` accetta `recente` e lo porta nella tupla; `motore.py` fa la **seconda**
+  diffusione sui soli semi recenti (>= 3 presenti nel canone), bacino appiattito dalle bolle accese **da quella**
+  diffusione, stesso pavimento e stesso ranking; riga `ultime_visioni` che **dichiara** il caso `< 3 semi
+  recenti`; sonda `scripts/qa/probe-ticket-07-ultime-visioni.py`.
+
+**Decisioni scritte qui, non nel codice**: una data mancante o `0` significa **non recente** (mai "adesso"); i
+semi Trakt entrano nei semi ma **non** fra i recenti (non hanno data nel payload di oggi); il numero 15 vive in
+`SEED_RECENTI_QUANTI` (Node), la soglia 3 in `ULTIME_VISIONI_MIN_SEMI` (parametri del motore), e nessuna delle due
+si allenta per riempire la riga.
 
 ## Cosa deve uscire
 
