@@ -59,7 +59,7 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 - ~~Quanti micro-cluster esporre~~ — **deciso dal ticket 08**: massimo **3** (`MICRO_CLUSTER_MAX`), soglia **3 semi**
   o **10% del peso** (`MICRO_CLUSTER_MIN_SEMI` / `MICRO_CLUSTER_MIN_PESO`), componenti connesse sul mini-grafo.
   **Mapping slot↔catalogo: deciso dal ticket 13** — gli slot sono `micro_cluster_1..3`, posizionali (seguono
-  il peso), stabili **come cataloghi**: un filone che hoy manca lascia lo slot vuoto, non lo fa sparire.
+  il peso), stabili **come cataloghi**: un filone che oggi manca lascia lo slot vuoto, non lo fa sparire.
   L'identità stabile del filone resta `cluster_id` (ticket 08): un filone può cambiare slot, mai catalogo.
 - **Se `uscite_nuove` si rinomina** o resta lo slug riparato.
 
