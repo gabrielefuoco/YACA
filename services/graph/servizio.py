@@ -159,7 +159,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
                 # Campo strutturale, non solo il testo del motivo (Ticket 07).
                 lista_out["semi_recenti"] = int(li["semi_recenti"])
             # Anche una riga di filone svuotata dal pavimento porta la sua identita' (Ticket 08).
-            for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback"):
+            for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
+                      "fonte", "candidati", "nel_bacino"):
                 if campo in li:
                     lista_out[campo] = li[campo]
             contratto_liste.append(lista_out)
@@ -208,7 +209,15 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
 
         elif ruolo == "uscite_nuove":
             att = round(float(np.mean([t["punteggio"] for t in titoli])), 4)
-            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1)
+            # TICKET 10: le uscite collocate NON sono nodi del canone, quindi non hanno un VOT nel
+            # grafo. La mediana si calcola su quelle che ce l'hanno (i titoli del canone storico);
+            # se non ce n'e' nessuna resta 0.0 — non si inventa un voto.
+            voti_nel_canone = [
+                float(motore.VOT[B.ROW_OF[chiave]])
+                for chiave in (f"{'tv' if t['medium'] == 'series' else 'movie'}:{t['tmdbId']}" for t in titoli)
+                if chiave in B.ROW_OF
+            ]
+            med_v = round(float(np.median(voti_nel_canone)), 1) if voti_nel_canone else 0.0
             q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2)
             desc = f"uscite recenti ({P.USCITE_NUOVE_DAL}+) nei mondi accesi"
             semi_ids = []
@@ -315,7 +324,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             lista_out["parziale"] = True
         # L'identita' delle righe derivate viaggia col contratto: lo SLOT (`micro_cluster_1..3`,
         # `punti_incontro_1..3`) e' posizionale e cambia quando i pesi si incrociano, il filone no (08, 09).
-        for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback"):
+        for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback",
+                      "fonte", "candidati", "nel_bacino"):
             if campo in li:
                 lista_out[campo] = li[campo]
         if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):

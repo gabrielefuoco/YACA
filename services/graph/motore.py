@@ -44,6 +44,7 @@ from graph import bubbles as B
 from graph import camminata as C
 from graph import canon as K
 from graph import parametri as P
+from graph import uscite as U
 
 T0 = time.time()
 
@@ -136,6 +137,8 @@ class Motore:
         n = len(z["indptr"]) - 1
         self.LISTDEG = np.asarray((sp.csr_matrix((z["data"], z["indices"], z["indptr"]),
                                                   shape=(n, n)) > 0).sum(1)).ravel().astype(float)
+        # TICKET 10: la cache delle uscite collocate. Se manca non si parte meno: la riga lo dira'.
+        self.USCITE = U.carica()
         if not silenzioso:
             stato_coll = "con COLL/DIR" if (self.COLL is not None and self.DIR is not None) else "senza collezione (questo artefatto non ha la collezione)"
             print(f"  motore pronto: {self.NB:,} mondi · {self.N:,} titoli · "
@@ -873,17 +876,54 @@ class Motore:
         liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo[:quanti_tuo]})
         liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini, quanti=cap_main, nome_riga="un_passo_fuori")})
 
-        # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
-        nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
-                 if int(self.MEM[x]) in set(bolle) and x not in visti]
-        if medium == "series":
-            nuove = [x for x in nuove if B.IS_TV[x]]
-        elif medium == "movie":
-            nuove = [x for x in nuove if not B.IS_TV[x]]
-        nuove.sort(key=lambda x: (-float(r[x]), -float(self.VOT[x])))
-        cand_nuove = [(B.KEYS[x], float(r[x])) for x in nuove]
-        div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
-        liste.append({"tipo": "uscite_nuove", "mondo": None, "titoli": div_nuove[:cap_main]})
+        # =========================================================================
+        # «NUOVE USCITE PER TE» (Ticket 10): la porta d'ingresso, e l'imbuto riparato
+        # =========================================================================
+        # Due fonti, mai mescolate (i punteggi non sarebbero confrontabili):
+        #   · cache delle uscite collocate offline -> score = att_s[bolla] * confidenza * qualita';
+        #   · senza cache (CI, o cache non ancora generata) -> canone storico, ma con i VICINI e con la
+        #     riga che dichiara il proprio stato.
+        bacino_uscite = set(bolle) | set(vicini)
+        cache_uscite = getattr(self, "USCITE", None)   # i Motore sintetici delle sonde non hanno la cache
+        if cache_uscite is not None:
+            cand_nuove, stato_uscite = U.candidati(cache_uscite, att_s, bacino_uscite, medium, visti)
+        else:
+            nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
+                     if int(self.MEM[x]) in bacino_uscite and x not in visti]
+            if medium == "series":
+                nuove = [x for x in nuove if B.IS_TV[x]]
+            elif medium == "movie":
+                nuove = [x for x in nuove if not B.IS_TV[x]]
+            nuove.sort(key=lambda x: (-float(r[x]), -float(self.VOT[x])))
+            cand_nuove = [(B.KEYS[x], float(r[x])) for x in nuove]
+            stato_uscite = {"fonte": "canone", "candidati": int(len(nuove)), "nel_bacino": int(len(nuove)),
+                            "motivo": "uscite_nuove: cache uscite-collocate.npz assente, "
+                                      "solo il canone storico (che non ha quasi uscite 2025+)"}
+        div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti,
+                                              cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
+        riga_un = {
+            "tipo": "uscite_nuove",
+            "mondo": None,
+            "titoli": div_nuove[:cap_main],
+            "target_dimensione": cap_main,
+            "totale_sopravvissuti": len(div_nuove),
+            "fonte": stato_uscite.get("fonte"),
+            "candidati": int(stato_uscite.get("candidati", 0)),
+            "nel_bacino": int(stato_uscite.get("nel_bacino", 0)),
+        }
+        riga_un["corta"], motivo_un = self.dichiara_corta(
+            len(riga_un["titoli"]), cap_main, "uscite_nuove", prefisso="uscite_nuove"
+        )
+        if not riga_un["titoli"]:
+            riga_un["motivo"] = (stato_uscite.get("motivo")
+                                 or f"uscite_nuove: {riga_un['nel_bacino']} collocati nei mondi accesi, nessuno con attivazione")
+            print(f"  [uscite] dichiarata vuota: fonte={riga_un['fonte']} "
+                  f"candidati={riga_un['candidati']} nel_bacino={riga_un['nel_bacino']}", file=sys.stderr)
+        elif motivo_un:
+            riga_un["motivo"] = motivo_un
+        print(f"  [uscite] fonte={riga_un['fonte']} candidati={riga_un['candidati']} "
+              f"nel_bacino={riga_un['nel_bacino']} riga={len(riga_un['titoli'])}", file=sys.stderr)
+        liste.append(riga_un)
 
         # =========================================================================
         # «GEMME NASCOSTE NEL TUO MONDO» (Ticket 05): Nicchia RELATIVA al profilo

@@ -252,6 +252,18 @@ SCHEDA = [
      "Da che anno un titolo e' «uscita nuova»: l'anno in corso e quello prima. La lista e' l'unico "
      "lavoro della porta d'ingresso nel meccanismo, quindi questo numero e' visibile.",
      "measure/liste.py"),
+    ("USCITE_COLLOCATE_VOTI_MIN", 30, "DICHIARATO",
+     "Pavimento di vote_count TMDB per collocare un'uscita recente (Ticket 10). Piu' permissivo del "
+     "pavimento del grafo (150) perche' un titolo del 2025-2026 ha per forza pochi voti: alzarlo "
+     "svuoterebbe la riga, abbassarlo farebbe entrare roba senza pubblico.",
+     "services/graph/uscite.py"),
+    ("USCITE_COLLOCATE_VOTO_MIN", 6.2, "DICHIARATO",
+     "Pavimento di vote_average TMDB per collocare un'uscita recente (Ticket 10): lo stesso mestiere del "
+     "pavimento VAVE (6,4) ma per i recenti, che non hanno ancora una storia.",
+     "services/graph/uscite.py"),
+    ("USCITE_COLLOCATE_SCHEMA", 1, "TECNICO",
+     "Versione del formato di uscite-collocate.npz: una cache con schema diverso si ignora (Ticket 10).",
+     "services/graph/uscite.py"),
     ("FILTRO_VS_MODULAZIONE", "modulare", "MISURATO",
      "LA REGOLA DEGLI ASSI: un asse NON deve sostituire l'attivazione (filtrando i titoli dentro i mondi "
      "o riordinando i mondi), deve MODULARLA. Misurato su 60 utenti, 40 titoli per portafoglio: "
