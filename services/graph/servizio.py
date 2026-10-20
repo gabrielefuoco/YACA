@@ -377,6 +377,9 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         "liste": contratto_liste,
         "motivi": motivi
     }
+    if dichiarazione_filtri.get("applicato"):
+        # Quanti titoli la maschera non ha potuto giudicare (fuori dal canone: le uscite nuove).
+        dichiarazione_filtri["non_giudicabili"] = int(getattr(motore, "filtri_non_giudicabili", 0))
     if dichiarazione_filtri.get("applicato") or dichiarazione_filtri.get("motivo"):
         # Ticket 12: si dichiara sempre com'e' andata — applicato, oppure inerte e perche'.
         risposta["filtri"] = dichiarazione_filtri

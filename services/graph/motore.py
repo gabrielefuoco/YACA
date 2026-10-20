@@ -660,8 +660,15 @@ class Motore:
         tenuti = []
         for voce in cand:
             try:
-                riga = B.ROW_OF[voce[0]]
-            except (KeyError, TypeError):
+                riga = B.ROW_OF.get(voce[0])
+            except (AttributeError, TypeError):
+                riga = None
+            if riga is None:
+                # Titolo fuori dal canone (le «uscite nuove» vengono dalla cache TMDB, non dal grafo):
+                # la maschera NON lo conosce, quindi non lo giudica e non lo scarta. Scartarlo sarebbe
+                # fingere di sapere; il taglio a valle (anime/kids) resta la sua rete.
+                self.filtri_non_giudicabili = getattr(self, "filtri_non_giudicabili", 0) + 1
+                tenuti.append(voce)
                 continue
             if idonei[riga]:
                 tenuti.append(voce)
