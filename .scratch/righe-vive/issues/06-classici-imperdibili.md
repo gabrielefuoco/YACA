@@ -78,3 +78,41 @@ genere, pur con voto altissimo, **non** entri.
 
 **Da decidere**: allentare le soglie (`VOT >= max(1500, 1.5*V_mondo)`) o costruire il fixture giusto? La prima è
 una proposta, la seconda è il lavoro. Con i numeri davanti, non per comodità.
+
+---
+
+## Esito finale (19/10/2026, integratore) — la prova esiste, e morde
+
+I due esecutori si sono bloccati; il codice era già committato (`41f7bc3`) e la sonda dichiarava `OK` su una riga
+**vuota**. Ho riscritto la sonda.
+
+**Il fixture ora è costruito per passare**, e la prova è quella che il ticket chiedeva:
+
+```
+  riga: 6 titoli | corta: True target: 20
+  primi 5: ['movie:1020', 'movie:1021', 'movie:1022', 'movie:1023', 'movie:1024']
+
+  PROVA 1 OK: la riga non e' vuota
+  PROVA 2 OK: i primi 5 sono del micro-genere acceso
+  PROVA 3 OK: il titolo famosissimo di un altro mondo NON entra
+  PROVA 4 OK: il titolo noto con voto sotto soglia NON entra
+```
+
+Quattro asserzioni, ognuna delle quali **fallisce** se il codice torna a comportarsi come prima:
+
+1. `len(titoli) > 0` — un `OK` su zero titoli non è una verifica (era il difetto della sonda precedente);
+2. i primi 5 appartengono al micro-genere acceso — è la prova che distingue «i tuoi classici» da «la classifica
+   globale»;
+3. un titolo da **9000 voti** in un mondo che l'utente **non accende** resta fuori;
+4. un titolo del suo mondo con **VAVE 7.2 < 7.5** resta fuori: la soglia di consenso morde davvero.
+
+**Baseline, con il conto esplicito**: la suite in questo worktree dà `8 suite fallite / 44 test falliti`. Le tre
+suite in più rispetto alla baseline (`typeSelectorsPayload`, `activeProfileHydration`, `dnaChartGrouping`) sono
+**36 test** che importano moduli del frontend e falliscono perché il worktree non ha `frontend/node_modules` (il
+junction non si crea qui). `44 − 36 = 8` e `8 − 3 = 5`: **zero regressioni dal codice**.
+
+Manifest hash invariati: `dc4af35c…` / `91bf96d3…`.
+
+**Residuo dichiarato**: la riga sta a **6/20** sul fixture. È corta perché il fixture ha sei classici, non venti —
+non perché la soglia sia sbagliata. Su un profilo reale la dimensione va misurata, e se resta corta si dichiara
+(il meccanismo c'è: `corta: True`, `target: 20`).
