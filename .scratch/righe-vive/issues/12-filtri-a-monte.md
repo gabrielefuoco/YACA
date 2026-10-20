@@ -1,6 +1,6 @@
 Status: ready-for-agent
 Type: task
-Blocked by: 11
+Blocked by: 19
 
 # 12 — I filtri a monte, non a valle
 
@@ -40,3 +40,9 @@ Oggi il grafo calcola su tutto e restituisce `cap = 60`; poi `src/stremio/idrata
 - **La prova non vive nel prodotto**: niente flag `simulate*` nel percorso caldo.
 - **Ogni riga che non si riesce a riempire lo dichiara**: nessuna lista sparisce senza dirlo.
 - **Il pavimento di qualità non si abbassa per riempire.**
+
+## Perché non è stato fatto al suo turno (20/10/2026)
+
+La premessa «il flag anime del canone» è **falsa**: `metadati-canone.npz` non esporta nessun flag per
+titolo (né anime né adulto), e l'anime è deciso lato Node. Il prerequisito è il ticket **19**; questo
+ticket resta fermo finché il canone non porta i due array. Vedi `19-i-flag-del-canone.md`.
