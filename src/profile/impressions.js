@@ -18,6 +18,8 @@ const IMPRESSIONI_FINESTRA_GIORNI = 14;
 /** Le righe di home gia' lette restano valide questo tempo: composer chiama il pool UNA VOLTA PER
  *  CATALOGO, e senza questa memoria una schermata da dieci righe farebbe dieci query identiche. */
 const IMPRESSIONI_MEMO_MS = 60 * 1000;
+/** Tetto della memoria: oltre, si buttano le voci piu' vecchie (non e' una cache di dati preziosi). */
+const IMPRESSIONI_MEMO_MAX = 500;
 
 const memoLetture = new Map();
 
@@ -124,7 +126,11 @@ async function leggiImpressioniRecenti({
         : null;
     if (chiave) {
         const voce = memoLetture.get(chiave);
-        if (voce && voce.scade > Date.now()) return voce.valore;
+        if (voce && voce.scade > Date.now()) {
+            // Si memoizza la PROMISE, non il valore: dieci chiamate concorrenti (una per catalogo)
+            // devono fare UNA query, non dieci.
+            return voce.resultato;
+        }
     }
 
     // `now` troncato al giorno: la finestra e' di `ampiezza` giornate esatte, non di 14 giorni + oggi.
@@ -140,18 +146,34 @@ async function leggiImpressioniRecenti({
         filtro.catalogId = { $in: catalogIds };
     }
 
-    try {
-        const righe = await RecommendationImpression
-            .find(filtro, { catalogId: 1, tmdbId: 1, seenDates: 1 })
-            .lean();
-        const valore = aggregaImpressioni(righe, soglia);
-        if (chiave) memoLetture.set(chiave, { valore, scade: Date.now() + IMPRESSIONI_MEMO_MS });
-        return valore;
-    } catch (err) {
-        // Un guasto di lettura non deve togliere il feed: si dichiara e si prosegue senza decadimento.
-        console.warn('[Impressioni] lettura fallita, nessun decadimento:', err?.message || err);
-        return vuoto;
+    const lettura = (async () => {
+        try {
+            const righe = await RecommendationImpression
+                .find(filtro, { catalogId: 1, tmdbId: 1, seenDates: 1 })
+                .lean();
+            return aggregaImpressioni(righe, soglia);
+        } catch (err) {
+            // Un guasto di lettura non deve togliere il feed: si dichiara e si prosegue senza decadimento.
+            console.warn('[Impressioni] lettura fallita, nessun decadimento:', err?.message || err);
+            return vuoto;
+        }
+    })();
+
+    if (!chiave) return lettura;
+
+    // Una voce per chiave, con scadenza: le scadute si buttano quando se ne scrive una nuova, e se la
+    // memoria supera il tetto si buttano le piu' vecchie.
+    memoLetture.set(chiave, { risultato: lettura, scade: Date.now() + IMPRESSIONI_MEMO_MS });
+    if (memoLetture.size > IMPRESSIONI_MEMO_MAX) {
+        const adesso = Date.now();
+        for (const [k, v] of memoLetture) {
+            if (v.scade <= adesso) memoLetture.delete(k);
+        }
+        while (memoLetture.size > IMPRESSIONI_MEMO_MAX) {
+            memoLetture.delete(memoLetture.keys().next().value);
+        }
     }
+    return lettura;
 }
 
 /** Svuota la memoria breve (test e cambio di profilo). */
@@ -167,5 +189,6 @@ module.exports = {
     giornoUTC,
     svuotaMemoImpressioni,
     IMPRESSIONI_FINESTRA_GIORNI,
-    IMPRESSIONI_MEMO_MS
+    IMPRESSIONI_MEMO_MS,
+    IMPRESSIONI_MEMO_MAX
 };

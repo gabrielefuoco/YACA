@@ -61,7 +61,13 @@ function cachedHeroGroup(mediaType, ids) {
     for (const { slug } of getHeroPoolSpec().slugs) {
         catalogs[`yaca_${slug}_${suffix}`] = slug === owner ? ids : [];
     }
-    return { schemaVersion: require('../src/pool').HERO_CACHE_SCHEMA_VERSION, mediaType, catalogs };
+    return {
+        schemaVersion: require('../src/pool').HERO_CACHE_SCHEMA_VERSION,
+        mediaType,
+        // Ticket 14: una voce valida porta anche i semi (servono a non far scendere i titoli visti).
+        seedIds: [],
+        catalogs
+    };
 }
 
 describe('Hero Catalogs Audit 02 Fixes', () => {

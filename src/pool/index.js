@@ -145,8 +145,9 @@ function isSharedHeroCacheEntry(entry, mediaType) {
     if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
     if (!['movie', 'series'].includes(mediaType)) return false;
     // Ticket 14: i `seedIds` sono parte del contratto (servono a non far scendere i titoli visti). Una
-    // voce che li porta del tipo sbagliato e' corrotta: si rigenera invece di leggerla.
-    if (entry.seedIds !== undefined && !Array.isArray(entry.seedIds)) return false;
+    // voce senza di loro, o col tipo sbagliato, e' corrotta: si rigenera invece di leggerla — altrimenti
+    // `visti` sarebbe vuoto e i titoli gia' visti tornerebbero a decadere.
+    if (!Array.isArray(entry.seedIds)) return false;
 
     const claimedIds = new Set();
     for (const slug of HERO_PRIORITY) {

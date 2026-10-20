@@ -73,19 +73,22 @@ la finestra si può misurare in **giorni distinti** senza cambiare schema.
   (vanno in `$in`), ma `src/pool/composer.js` chiama `getHeroPool` **una volta per catalogo**: una schermata
   da dieci righe sarebbero dieci query identiche. Per questo `leggiImpressioniRecenti` ha una **memo di 60 s**
   (`IMPRESSIONI_MEMO_MS`, chiave utente+profilo+media) → in pratica ~1 query al minuto per utente/media.
-  Se non arrivano impressioni, la riga torna **lo stesso riferimento** (zero copie).
-- **Diagnostica**: `[Impressioni] movie: N titoli scesi in M righe (media X giorni in home, K oltre la
-  soglia percepibile)`; se non scende niente, nessuna riga di log.
+  Se non arrivano **impressioni** la riga torna lo **stesso riferimento** (zero copie); se arrivano ma
+  nessun titolo supera la soglia, l'array viene copiato identico (contenuto uguale, riferimento nuovo).
+- **Diagnostica**: `[Impressioni] movie: N titoli scesi in M righe (media X giorni in home, K cambi di
+  posizione · R righe NON riordinate (titoli senza punteggio))`; la coda `NON riordinate` compare solo se
+  serve, e se non scende niente non c'è nessuna riga di log.
 
 ### 3. La prova
 
-`tests/impressioniDecadimento.test.js` (17 test): finestra in giorni distinti (una data ripetuta conta una
+`tests/impressioniDecadimento.test.js` (18 test): finestra in giorni distinti (una data ripetuta conta una
 volta) e giorni fuori finestra ignorati; `0.85^giorni` esatto; sotto soglia non si tocca; **già visto non
 scende**; nessun titolo sparisce; la cache non viene mutata; gli spostamenti dichiarati; nessuna lettura senza
 `userId`. E la **lettura vera**: la query (finestra, `catalogId: $in`, `profileId || 'global'`), il caso senza
 connessione (non interroga), l'elenco di cataloghi vuoto (non diventa «tutti»), il guasto che dichiara e
 prosegue. Più le difese sul payload: un `visti` corrotto non fa cadere la porta, una riga con un titolo
-**senza punteggio** non viene riordinata.
+**senza punteggio** non viene riordinata. E il rinnovo della pagina: **un titolo dalla posizione 25 entra
+in pagina 1** (pagina = `ITEMS_PER_PAGE` = 20), che era il terzo punto del ticket e nessuna prova copriva.
 `tests/impressioniNelPool.test.js` (3 test): la riga servita da `getHeroPool` scende davvero e resta intera;
 **una sola lettura per richiesta**, con `userId`/`profileId`/`catalogIds` giusti; e una **voce di cache**
 completa con `seedIds` (il caso per cui la cache è passata a v17).
@@ -95,36 +98,47 @@ completa con `seedIds` (il caso per cui la cache è passata a v17).
 ```
 $ node scripts/qa/probe-ticket-14-impressioni.js
 == Ticket 14: decadimento delle impressioni ==
-riga: 60 titoli · prima pagina mostrata per 10 giorni
+riga: 60 titoli · pagina 1 = 20 titoli · prima pagina mostrata per 10 giorni
 titoli spariti dalla riga: 0   (deve essere 0)
-titoli rimasti nella stessa posizione: 0/60
-top-10: 0/10 titoli di ieri restano, 10 entrano da sotto
-entrati in top-10 dalla posizione 11-60: 10
-   #1  tmdb:1010  (era #11)
-   ...
-   #10 tmdb:1019  (era #20)
-statistiche dichiarate: 10 titoli scesi in 1 righe, media 10 giorni, 10 oltre la soglia percepibile
+titoli rimasti nella stessa posizione: 0/60   (senza decadimento: 60/60)
+pagina 1: 0/20 titoli di ieri restano, 20 entrano da sotto
+entrati in pagina 1 da oltre la posizione 20: 20
+   #1  tmdb:1020  (era #21)
+   #2  tmdb:1021  (era #22)
+   #3  tmdb:1022  (era #23)
+   #4  tmdb:1023  (era #24)
+   #5  tmdb:1024  (era #25)
+   ... (15 altri)
+statistiche dichiarate: 20 titoli scesi in 1 righe, media 10 giorni, 60 cambi di posizione, 0 righe non riordinate
 punteggio del #1 di ieri: 1 -> 0.1969
+il #25 di ieri (tmdb:1024) oggi e' #5 -> IN PAGINA 1
 
 == taratura della formula (0.85^giorni) ==
-giorni  punteggio#1  quanti dei 10 di ieri restano in pagina 1
-    1      0.8500          0/10
-    2      0.7225          0/10
-    3      0.6141          0/10
-    5      0.4437          0/10
-    7      0.3206          0/10
-   10      0.1969          0/10
-letture di impressioni per richiesta: 1 (una query per tutti i cataloghi di un media)
+giorni  punteggio#1  restano in pagina 1   soglia s1/s21 perche' il #1 scenda
+    1      0.8500          20/20             > 1.18
+    2      0.7225          20/20             > 1.38
+    3      0.6141           5/20             > 1.63
+    5      0.4437           0/20             > 2.25
+    7      0.3206           0/20             > 3.12
+   10      0.1969           0/20             > 5.08
+rapporto s1/s21 di questa rampa SINTETICA: 1.32
+la banda VERA del grafo va misurata sul contratto (`docs/RECOMMENDATION_GRAPH.md`): con i punteggi
+d'esempio 0.421503 / 0.312940 il rapporto e' 1.35, quindi il sorpasso scatta da 3 giorni in su.
 ```
 
-**La divergenza, dichiarata e non «aggiustata»**: la formula del ticket è troppo forte per la banda dei
-punteggi del grafo (il #1 vale 1.00, il #20 vale 0.77). Con `0.85^1 = 0.85` un titolo che è stato in home
-**un solo giorno** scende già sotto tutta la banda 11-20; con la soglia a 3 giorni la conseguenza è netta:
-nei primi due giorni **niente**, dal terzo la prima pagina si rinnova **tutta** (0/10 restano). Non è un
-guasto — nessun titolo sparisce e i sostituti sono i vicini di classifica — ma è **turnover totale**, non
-«rotazione morbida». Il codice resta quello del ticket; le leve per una versione più morbida sono il
-**tetto all'esponente** (`min(giorni, k)`), il **fattore** (0.95 invece di 0.85) o il confronto **dentro la
-banda** del catalogo invece che sul punteggio assoluto. Da decidere col prodotto: non l'ho deciso io.
+**La provenienza dei numeri, dichiarata**: la rampa dei punteggi della sonda è **sintetica**
+(`1 - 0.012·i`), non è la banda del grafo. Il contratto documentato mostra punteggi reali tipo
+**0.421503 / 0.312940** (rapporto **1.35**). La conclusione non dipende dalla scala, dipende dal
+**rapporto**: il #1 scende sotto il #21 quando `s1/s21 > 1/0.85^giorni` (tabella sopra). Con 1.35 il
+sorpasso scatta esattamente **dal terzo giorno**, cioè dalla soglia del ticket.
+
+**La divergenza, dichiarata e non «aggiustata»**: nei primi due giorni **non cambia niente** (sotto la
+soglia dei 3 giorni: 20/20 restano); dal terzo giorno la pagina 1 si **rinnova** — con la rampa sintetica
+restano 5/20, dopo cinque giorni 0/20. Non è un guasto (nessun titolo sparisce, i sostituti sono i vicini
+di classifica, e il #25 di ieri arriva al #5), ma non è nemmeno «rotazione morbida»: è un rinnovo deciso.
+Le leve per una versione più lenta sono il **tetto all'esponente** (`min(giorni, k)`), il **fattore**
+(0.95 invece di 0.85) o il confronto **dentro la banda** del catalogo invece che sul punteggio assoluto.
+Da decidere col prodotto: non l'ho deciso io.
 
 ### 5. Suite
 
@@ -136,27 +150,36 @@ FAIL tests/donghuaCatalog.test.js
 FAIL tests/duckDbAndMatchmaker.test.js
 FAIL tests/presetBurtonOrdering.test.js
 Test Suites: 5 failed, 190 passed, 195 total
-Tests:       8 failed, 1 skipped, 1943 passed, 1952 total
+Tests:       8 failed, 1 skipped, 1944 passed, 1953 total
 ```
 
-Baseline `1910`/`192` + 20 test nuovi = `1943`, `195` suite. Le cinque rosse sono quelle ammesse.
+Il numero prima di questo ticket era **`1923` passati / `1932` totali / `193` suite** (Esito del 13):
+`1923 + 21 = 1944`, `195` suite. Le cinque rosse sono quelle ammesse.
 
 ### 6. Residui
 
 1. **Il decadimento non è coperto da `recordRecommendationImpressions` per le righe nuove**: le impressioni
    si scrivono solo dove passa `hybridServing` (`skip === 0`); se una riga viene servita da un'altra strada,
    non lascia traccia. Da verificare quando tutte le righe passeranno di lì.
-2. **`visti` = i semi del grafo**: un titolo visto ma fuori dalla library del profilo (seed escluso per
-   politica anime, per esempio) può decadere. È il compromesso per non aggiungere una query per richiesta.
+2. **`visti` = i semi del grafo**, e questo lascia fuori tre casi: un titolo visto ma **rimosso** dalla
+   library (`removed: true`), un titolo visto su **un altro profilo**, una library **non ancora
+   sincronizzata**. Per tutti e tre il titolo decade come se non fosse mai stato visto. È il compromesso
+   per non aggiungere una query per richiesta (una `history` per profilo costa una lettura in più).
+   C'è anche un buco **di forma**: le impressioni sono **per catalogo**, quindi un titolo che cambia riga
+   (waterfall, artefatto nuovo) porta i suoi giorni solo sotto il vecchio `catalogId` e nella riga nuova
+   riparte da zero: il decadimento non lo vede più finché resta lì.
 3. **La taratura** (punto 4): da decidere col prodotto.
 4. **Il decadimento è un dente di sega.** I giorni si contano in una finestra **mobile** di 14: un titolo che
    esce dalla pagina 1 smette di accumulare date e, quando il conteggio scende sotto 3 (~11 giorni dopo),
    **torna al punteggio pieno di colpo**. Non è un guasto — è la forma della formula — ma non è "rotazione
    morbida": se il prodotto la vuole, la leva è un conteggio pesato sulla recenza (le date più vecchie
    contano meno), non la soglia.
-5. **Un titolo senza `punteggio`** (contratto del grafo lo garantisce, ma `itemsDi` copia alla cieca): la riga
+5. **Le righe corte non si rinnovano**: sotto i 20 titoli non c'è banda 21-60 da promuovere, quindi il
+   decadimento produce solo un riordino interno. Non serve dichiararlo nel log (la riga è già `corta` per
+   altri motivi), ma è bene saperlo leggendo un `0/0` di titoli entrati.
+6. **Un titolo senza `punteggio`** (contratto del grafo lo garantisce, ma `itemsDi` copia alla cieca): la riga
    che ne contiene uno **non viene riordinata** e lo dichiara nel log (`righe NON riordinate`). Meglio non
    ordinare che spostare un titolo che non ha un voto.
-4. **La cache delle righe passa a `v17`** (era `v16` dal ticket 13): il payload ora porta anche `seedIds`, e
+6. **La cache delle righe passa a `v17`** (era `v16` dal ticket 13): il payload ora porta anche `seedIds`, e
    una voce scritta prima non li ha — senza, il decadimento toccherebbe anche i titoli già visti. Il bump è
    il lever giusto (la chiave contiene la versione), non lo `schemaVersion`.

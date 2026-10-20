@@ -233,4 +233,33 @@ describe('Ticket 14: le impressioni tornano indietro', () => {
             expect(statistiche.righeNonOrdinate).toBe(1);
         });
     });
+
+    describe('il rinnovo della pagina (Ticket 14, punto 3)', () => {
+        test('un titolo dalla posizione 25 entra in pagina 1 quando i primi 20 scendono', () => {
+            // pagina 1 del prodotto = ITEMS_PER_PAGE (20). Riga di 40 titoli, i primi 20 in home da 6 giorni.
+            const riga = Array.from({ length: 40 }, (_, i) => ({
+                id: `tmdb:${1000 + i}`,
+                tmdbId: 1000 + i,
+                punteggio: Number((1 - i * 0.012).toFixed(4))
+            }));
+            const inHome = new Map(riga.slice(0, 20).map((i) => [String(i.tmdbId), 6]));
+            const posizionePrima = new Map(riga.map((i, idx) => [i.tmdbId, idx + 1]));
+
+            return applicaDecadimento({
+                userId: 'u1',
+                profileId: 'p1',
+                assigned: { yaca_mondi_movies: riga },
+                leggi: async () => new Map([['yaca_mondi_movies', inHome]])
+            }).then(({ assigned }) => {
+                const dopo = assigned.yaca_mondi_movies;
+                // il #25 di ieri e' in pagina 1 oggi
+                const venticinquesimo = riga[24].tmdbId;
+                const posto = dopo.findIndex((i) => i.tmdbId === venticinquesimo) + 1;
+                expect(posizionePrima.get(venticinquesimo)).toBe(25);
+                expect(posto).toBeLessThanOrEqual(20);
+                // e la riga resta intera
+                expect(dopo).toHaveLength(40);
+            });
+        });
+    });
 });

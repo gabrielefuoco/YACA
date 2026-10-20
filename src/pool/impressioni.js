@@ -11,8 +11,8 @@
  *
  * solo per i titoli mostrati in pagina 1 per almeno `GIORNI_MINIMI` giorni distinti e **mai visti**.
  * Il titolo scende, i candidati dalla posizione 21-60 salgono: una riga che si rinnova senza perdere
- * qualità. Il decadimento si applica **dopo** la cache delle righe (una lettura per richiesta), quindi
- * non invalida il lavoro del grafo.
+ * qualità. Il decadimento si applica **dopo** la cache delle righe, quindi non invalida il lavoro del
+ * grafo; la lettura delle impressioni e' memoizzata 60 s (`src/profile/impressions.js`).
  */
 
 const { leggiImpressioniRecenti } = require('../profile/impressions');
