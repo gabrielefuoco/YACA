@@ -155,6 +155,14 @@ class Motore:
         r = C.diffondi(self.Tr, righe, plays, self.NEP, tipi=tipi)
         return C.attiva_per_mondo(r, self.MEM, self.NB), r
 
+    def voto_bayesiano(self, x=None):
+        """Voto bayesiano TMDB (formula IMDb): (VOT*VAVE + m*C) / (VOT + m)."""
+        m = float(getattr(P, "BAYESIAN_M", 300.0))
+        c = float(getattr(P, "BAYESIAN_C", 6.5))
+        if x is None:
+            return (self.VOT * self.VAVE + m * c) / np.maximum(self.VOT + m, 1e-9)
+        return (self.VOT[x] * self.VAVE[x] + m * c) / np.maximum(self.VOT[x] + m, 1e-9)
+
     def deduci(self, righe):
         """Gli assi che la storia dice da sola: canone (voti mediani) e forma (quanti mondi pieni)."""
         voti = self.VOT[righe]
@@ -330,6 +338,75 @@ class Motore:
                 fuori = sorted(fuori, key=lambda t: -t[1])[:quanti]
             return fuori
 
+        # =========================================================================
+        # «IL TUO MONDO» (Ticket 03): Bacino appiattito + Pavimento di qualita' + Ranking combinato
+        # =========================================================================
+        # 1. Bacino appiattito: top K bolle accese (>=80% massa, min 250 candidati grezzi) + primi 2-3 vicini
+        massa_target = float(getattr(P, "IL_TUO_MONDO_MASSA_TARGET", 0.80))
+        min_candidati_bacino = int(getattr(P, "IL_TUO_MONDO_MIN_CANDIDATI", 250))
+        vicini_k = int(getattr(P, "IL_TUO_MONDO_VICINI_PER_BOLLA", 3))
+
+        tot_massa_att = float(att.sum())
+        soglia_massa = massa_target * tot_massa_att if tot_massa_att > 0 else 0.0
+
+        bolle_k = []
+        massa_acc = 0.0
+        titoli_grezzi_acc = 0
+        for b in ordine_mondi:
+            cb = int(b)
+            if float(att[cb]) <= 0.0 and (massa_acc >= soglia_massa or len(bolle_k) > 0):
+                break
+            bolle_k.append(cb)
+            massa_acc += float(att[cb])
+            titoli_grezzi_acc += len(non_visti_mondo(cb))
+            if massa_acc >= soglia_massa and titoli_grezzi_acc >= min_candidati_bacino:
+                break
+
+        bacino_bolle_set = set(bolle_k)
+        for b in bolle_k:
+            if b < len(self.VICINI):
+                for v in self.VICINI[b][:vicini_k]:
+                    if v >= 0:
+                        bacino_bolle_set.add(int(v))
+
+        # Set unico di candidati non visti nel bacino (senza iterare bolla per bolla)
+        cand_bacino_set = set()
+        for b in bacino_bolle_set:
+            cand_bacino_set.update(non_visti_mondo(b))
+        cand_bacino = np.array(list(cand_bacino_set), dtype=np.int64)
+
+        # 2. Pavimento di qualita' (maschera vettoriale prima del ranking)
+        canone = float(dedotto.get("canone", 0.0))
+        soglia_voti = max(
+            float(getattr(P, "PAVIMENTO_VOT_MIN", 150)),
+            float(getattr(P, "PAVIMENTO_VOT_FATTORE_CANONE", 0.08)) * canone,
+        )
+        soglia_vave = float(getattr(P, "PAVIMENTO_VAVE_MIN", 6.4))
+
+        if len(cand_bacino) > 0:
+            maschera_pavimento = (self.VAVE[cand_bacino] >= soglia_vave) & (self.VOT[cand_bacino] >= soglia_voti)
+            cand_sopravvissuti = cand_bacino[maschera_pavimento]
+        else:
+            cand_sopravvissuti = np.array([], dtype=np.int64)
+
+        # 3. Ranking combinato: score(x) = r[x] * (bayesian_vote(x) / 7.0) ** 1.5
+        m_bayes = float(getattr(P, "BAYESIAN_M", 300.0))
+        c_bayes = float(getattr(P, "BAYESIAN_C", 6.5))
+        base_bayes = float(getattr(P, "RANKING_BAYES_BASE", 7.0))
+        exp_bayes = float(getattr(P, "RANKING_BAYES_EXP", 1.5))
+
+        if len(cand_sopravvissuti) > 0:
+            v_cand = self.VOT[cand_sopravvissuti]
+            va_cand = self.VAVE[cand_sopravvissuti]
+            bayes_cand = (v_cand * va_cand + m_bayes * c_bayes) / np.maximum(v_cand + m_bayes, 1e-9)
+            score_cand = r[cand_sopravvissuti] * ((bayes_cand / base_bayes) ** exp_bayes)
+            ordine_score = np.argsort(-score_cand)
+            cand_ordinati = cand_sopravvissuti[ordine_score]
+            scores_ordinati = score_cand[ordine_score]
+            titoli_uns = [(B.KEYS[c], float(sc)) for c, sc in zip(cand_ordinati, scores_ordinati)]
+        else:
+            titoli_uns = []
+
         # TICKET 02: Ripescaggio controllato, max 2:
         # Per i soli semi di tipo library si calcola r_indotta[x] = r[x] - ALPHA * e[x].
         # Un titolo si ripesca solo se r_indotta[x] sta nel top 15% dei candidati non visti e VAVE[x] >= 7.0.
@@ -341,32 +418,33 @@ class Motore:
             lib_seeds = [x for x in lib_seeds if not B.IS_TV[x]]
 
         ripescati_mondo = []
-        if lib_seeds and len(bolle) > 0:
-            cand_mondo = [x for b in bolle for x in non_visti_mondo(b)]
-            if len(cand_mondo) > 0:
-                soglia_top_pct = getattr(P, "RIPESCAGGIO_TOP_PCT", 0.15)
-                soglia_top15 = float(np.percentile(r[cand_mondo], 100 * (1.0 - soglia_top_pct)))
-                vave_min = getattr(P, "RIPESCAGGIO_VAVE_MIN", 7.0)
-                bolle_set = set(bolle)
-                qualificati = [
-                    x for x in lib_seeds
-                    if int(self.MEM[x]) in bolle_set
-                    and float(self.VAVE[x]) >= vave_min
-                    and float(r[x] - P.ALPHA * e_init[x]) >= soglia_top15
-                ]
-                qualificati.sort(key=lambda x: -float(r[x] - P.ALPHA * e_init[x]))
-                ripescati_mondo = qualificati[:int(getattr(P, "RIPESCAGGIO_MAX", 2))]
+        if lib_seeds and len(cand_bacino) > 0:
+            soglia_top_pct = getattr(P, "RIPESCAGGIO_TOP_PCT", 0.15)
+            soglia_top15 = float(np.percentile(r[cand_bacino], 100 * (1.0 - soglia_top_pct)))
+            vave_min = getattr(P, "RIPESCAGGIO_VAVE_MIN", 7.0)
+            qualificati = [
+                x for x in lib_seeds
+                if int(self.MEM[x]) in bacino_bolle_set
+                and float(self.VAVE[x]) >= vave_min
+                and float(r[x] - P.ALPHA * e_init[x]) >= soglia_top15
+            ]
+            qualificati.sort(key=lambda x: -float(r[x] - P.ALPHA * e_init[x]))
+            ripescati_mondo = qualificati[:int(getattr(P, "RIPESCAGGIO_MAX", 2))]
 
         liste = []
         quanti_tuo = max(P.IL_TUO_MONDO_MIN_TITOLI, cap_main) if cap is None or cap >= P.IL_TUO_MONDO_MIN_TITOLI else cap_main
         if ripescati_mondo:
-            titoli_rip = [(B.KEYS[x], float(r[x])) for x in ripescati_mondo]
+            v_rip = self.VOT[ripescati_mondo]
+            va_rip = self.VAVE[ripescati_mondo]
+            bayes_rip = (v_rip * va_rip + m_bayes * c_bayes) / np.maximum(v_rip + m_bayes, 1e-9)
+            score_rip = r[ripescati_mondo] * ((bayes_rip / base_bayes) ** exp_bayes)
+            titoli_rip = [(B.KEYS[x], float(sc)) for x, sc in zip(ripescati_mondo, score_rip)]
+
             quanti_unseen = max(0, quanti_tuo - len(ripescati_mondo))
-            titoli_uns = righe_titoli(bolle, quanti_unseen)
-            titoli_tuo = sorted(titoli_rip + titoli_uns, key=lambda t: -t[1])[:quanti_tuo]
+            titoli_tuo = sorted(titoli_rip + titoli_uns[:quanti_unseen], key=lambda t: -t[1])[:quanti_tuo]
             liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo})
         else:
-            liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": righe_titoli(bolle, quanti_tuo)})
+            liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_uns[:quanti_tuo]})
         liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini)})
         # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
         nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
