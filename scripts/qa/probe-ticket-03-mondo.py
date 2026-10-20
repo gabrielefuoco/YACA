@@ -288,23 +288,24 @@ def test_caso_costruito_8_voti():
     assert r_mock[1] > r_mock[2]
     print("    => Nel ranking puro il Titolo A scavalca ingiustamente il Titolo B.")
 
-    # 2. Ranking combinato: score = r * (bayes / 7.0) ** 1.5
+    # 2. Ranking combinato: score = r * (bayes / P.RANKING_BAYES_BASE) ** P.RANKING_BAYES_EXP
     bayes_1 = float(m.voto_bayesiano(1))
     bayes_2 = float(m.voto_bayesiano(2))
-    score_1 = r_mock[1] * ((bayes_1 / 7.0) ** 1.5)
-    score_2 = r_mock[2] * ((bayes_2 / 7.0) ** 1.5)
+    score_1 = r_mock[1] * ((bayes_1 / P.RANKING_BAYES_BASE) ** P.RANKING_BAYES_EXP)
+    score_2 = r_mock[2] * ((bayes_2 / P.RANKING_BAYES_BASE) ** P.RANKING_BAYES_EXP)
 
-    print(f"\n  Ranking combinato score = r * (bayes / 7.0) ** 1.5:")
+    print(f"\n  Ranking combinato score = r * (bayes / {P.RANKING_BAYES_BASE}) ** {P.RANKING_BAYES_EXP}:")
     print(f"    - Titolo A: bayes = {bayes_1:.3f} -> score = {score_1:.5f} (penalizzato dalla formula bayesiana)")
     print(f"    - Titolo B: bayes = {bayes_2:.3f} -> score = {score_2:.5f} (premiato per qualita' solida)")
     assert score_2 > score_1, f"Atteso score Titolo B ({score_2}) > Titolo A ({score_1})"
     print("    => OK: Nel ranking combinato il Titolo B scavalca il Titolo A!")
 
     # 3. Con il Pavimento di Qualita':
-    soglia_vot = 150
-    passa_floor_A = (m.VOT[1] >= soglia_vot) and (m.VAVE[1] >= 6.4)
-    passa_floor_B = (m.VOT[2] >= soglia_vot) and (m.VAVE[2] >= 6.4)
-    print(f"\n  Pavimento di Qualita' (VOT >= 150, VAVE >= 6.4):")
+    soglia_vot = P.PAVIMENTO_VOT_MIN
+    soglia_vave = P.PAVIMENTO_VAVE_MIN
+    passa_floor_A = (m.VOT[1] >= soglia_vot) and (m.VAVE[1] >= soglia_vave)
+    passa_floor_B = (m.VOT[2] >= soglia_vot) and (m.VAVE[2] >= soglia_vave)
+    print(f"\n  Pavimento di Qualita' (VOT >= {P.PAVIMENTO_VOT_MIN:.0f}, VAVE >= {P.PAVIMENTO_VAVE_MIN}):")
     print(f"    - Titolo A: VOT = {m.VOT[1]:.0f} -> Supera pavimento: {passa_floor_A} (ELIMINATO)")
     print(f"    - Titolo B: VOT = {m.VOT[2]:.0f} -> Supera pavimento: {passa_floor_B} (QUALIFICATO)")
     assert not passa_floor_A
