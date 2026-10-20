@@ -65,7 +65,8 @@ async function getGraphHealthVersions({ baseUrl = GRAPH_SERVICE_URL, timeout = 2
  *
  * Payload:
  * {
- *   semi: [ { tmdbId: number, medium: "movie"|"series", tipo?: string, peso?: number, recente?: boolean  // Ticket 07: seme fra gli ultimi 15 visti } ],
+ *   semi: [ { tmdbId: number, medium: "movie"|"series", tipo?: string, peso?: number, recente?: boolean } ],
+ *   // `recente` (Ticket 07): il seme e' fra gli ultimi 15 visti; e' una selezione, non un peso.
  *   medium?: "movie"|"series",
  *   opzioni?: { largo, lontano, cozy, canone },
  *   cap?: number

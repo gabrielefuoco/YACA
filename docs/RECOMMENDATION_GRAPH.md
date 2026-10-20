@@ -131,7 +131,8 @@ Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente
   ```
   - Ogni lista porta una spiegazione globale (mondo, descrizione, attivazione, mediana voti, semi attivatori).
   - Ogni titolo porta `tmdbId`, `medium` (`"movie"` o `"series"`) e `punteggio` (attivazione utile per il merge).
-  - Ruoli derivati: `uscite_nuove` e `nicchia_di_qualita` portano `parziale: true` perché il prodotto può rifinirle col catalogo locale DuckDB più aggiornato.
+  - Ruoli derivati: `uscite_nuove`, `nicchia_di_qualita` e `ultime_visioni` portano `parziale: true` perché il prodotto può rifinirle col catalogo locale DuckDB più aggiornato.
+  - `ultime_visioni` (Ticket 07) può essere `corta: true` con `target_dimensione`, `totale_sopravvissuti` e `motivo`; se i semi recenti sono meno di 3 arriva `vuota: true` con `motivo` (la lista non sparisce in silenzio). Il prodotto non la consuma ancora: arriva al client col ticket 13.
 
 ---
 

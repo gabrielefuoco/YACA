@@ -23,6 +23,17 @@ from graph import motore as MO
 from graph import parametri as P
 
 
+def _statistiche_riga(motore: MO.Motore, titoli: list, li: dict):
+    """Le statistiche comuni alle righe «parziali»: attivazione, mediana voti, quota serie,
+    riga corta, target. Servivano identiche a classici, nicchia e ultime visioni."""
+    att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
+    med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
+    q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+    corta = li.get("corta", len(titoli) < 20)
+    target = li.get("target_dimensione", 20)
+    return att, med_v, q_ser, corta, target
+
+
 def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
     """Valida la richiesta e la mappa sul motore secondo il contratto del 17/10/2026."""
     if not isinstance(dati, dict):
@@ -89,7 +100,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         return 200, {
             "contratto": 1,
             "versioni": {"artefatto": motore.artefatto, "ricetta": P.impronta()},
-            "semi": {"n": 0, "da_catalogo": False},
+            "semi": {"n": 0, "da_catalogo": False, "recenti": 0},
             "liste": [],
             "motivi": ["storia fuori dal canone"]
         }
@@ -99,7 +110,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         return 200, {
             "contratto": 1,
             "versioni": {"artefatto": motore.artefatto, "ricetta": P.impronta()},
-            "semi": {"n": 0, "da_catalogo": False},
+            "semi": {"n": 0, "da_catalogo": False, "recenti": 0},
             "liste": [],
             "motivi": [esito["errore"]]
         }
@@ -192,12 +203,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             parziale = True
 
         elif ruolo == "classici_imperdibili":
-            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
-            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
-            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+            att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
             fb = li.get("fallback_v_mondo", False)
-            corta = li.get("corta", len(titoli) < 20)
-            target = li.get("target_dimensione", 20)
             dettagli = []
             if fb:
                 dettagli.append("soglia assoluta di fallback")
@@ -211,11 +218,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             parziale = True
 
         elif ruolo == "ultime_visioni":
-            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
-            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
-            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
-            corta = li.get("corta", len(titoli) < 20)
-            target = li.get("target_dimensione", 20)
+            att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
             n_rec = int(li.get("semi_recenti", 0))
             dettagli = [f"{n_rec} semi recenti"]
             if corta:
@@ -223,17 +226,13 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             desc = f"sul filo delle tue ultime visioni ({' · '.join(dettagli)})"
             semi_ids = list(dict.fromkeys(
                 int(voce[0].split(":")[1]) for voce in storia
-                if len(voce) > 4 and voce[4] and voce[0] in B.ROW_OF
+                if voce[4] and voce[0] in B.ROW_OF
             ))
             parziale = True
 
         elif ruolo == "nicchia_di_qualita":
-            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
-            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
-            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+            att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
             fb = li.get("fallback_v_mondo", False)
-            corta = li.get("corta", len(titoli) < 20)
-            target = li.get("target_dimensione", 20)
             dettagli = []
             if fb:
                 dettagli.append("soglia assoluta di fallback")
@@ -279,7 +278,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             lista_out["fallback_v_mondo"] = True
             lista_out["soglia_relativa"] = False
         if li.get("motivo"):
-            # Una riga corta lo dice, con lo stesso testo che il motore stampa nei log (Ticket 07).
+            # La riga corta lo dice al chiamante con il motivo che il motore ha calcolato (Ticket 07).
             lista_out["motivo"] = li["motivo"]
 
         contratto_liste.append(lista_out)

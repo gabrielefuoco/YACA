@@ -13,12 +13,12 @@ COSA ESCE — il contratto di ritorno deciso nella mappa (§2b):
   {
     "versioni":  {artefatto, ricetta}          le due impronte che vanno nella chiave della cache
     "profilo":   {canone, forma, freddo}       gli assi DEDOTTI dalla storia
-    "semi":      {n, da_catalogo}              quanti e da dove
+    "semi":      {n, da_catalogo, recenti}   quanti, da dove, e quanti degli ultimi visti
     "mondi":     [{bolla, attivazione, titoli, voti_mediani, vicini}, ...]
     "liste":     [{tipo, mondo, titoli: [(chiave, attivazione), ...]}, ...]
   }
 
-LE LISTE (§3d, Ticket 40): il tuo mondo e i vicini (almeno 50 titoli) · un passo fuori · le uscite nuove · la nicchia di qualita' — piu' un
+LE LISTE (§3d, Ticket 40): il tuo mondo e i vicini (almeno 50 titoli) · un passo fuori · le uscite nuove · la nicchia di qualita' · i classici imperdibili (Ticket 06) · sul filo delle tue ultime visioni (Ticket 07) — piu' un
 catalogo per ogni mondo diverso.
 
 E LA REGOLA DEGLI ASSI (§13), che qui e' codice e non opinione: **un asse non sostituisce l'attivazione,
@@ -543,6 +543,29 @@ class Motore:
         cand_bacino = np.array(list(cand_bacino_set), dtype=np.int64)
         return bolle_k, bacino_bolle_set, cand_bacino
 
+    def pavimento(self, cand, soglia_voti, soglia_vave):
+        """IL PAVIMENTO DI QUALITA' (Ticket 03), una maschera sola per tutte le righe.
+
+        `VAVE >= soglia_vave` e `VOT >= soglia_voti`. La stessa formula serviva a «il tuo mondo»
+        e alla riga delle ultime visioni (Ticket 07): due copie divergono, e in questo cantiere
+        e' gia' successo quattro volte.
+        """
+        if len(cand) == 0:
+            return np.array([], dtype=np.int64)
+        return cand[(self.VAVE[cand] >= soglia_vave) & (self.VOT[cand] >= soglia_voti)]
+
+    def ranking(self, cand, r, base_bayes, exp_bayes):
+        """IL RANKING COMBINATO: `score(x) = r[x] * (bayes(x)/base) ** exp`, in un posto solo."""
+        return r[cand] * ((self.voto_bayesiano(cand) / base_bayes) ** exp_bayes)
+
+    def ordina_per_ranking(self, cand, r, base_bayes, exp_bayes):
+        """I candidati ordinati per ranking, come `[(chiave, punteggio)]` decrescente."""
+        if len(cand) == 0:
+            return []
+        score = self.ranking(cand, r, base_bayes, exp_bayes)
+        ordine = np.argsort(-score)
+        return [(B.KEYS[x], float(sc)) for x, sc in zip(cand[ordine], score[ordine])]
+
     # ------------------------------------------------------------------ IL METODO
     def lista(self, storia, slider=None, cap=None, medium=None):
         """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`
@@ -643,24 +666,14 @@ class Motore:
         soglia_vave = float(getattr(P, "PAVIMENTO_VAVE_MIN", 6.4))
 
         if len(cand_bacino) > 0:
-            maschera_pavimento = (self.VAVE[cand_bacino] >= soglia_vave) & (self.VOT[cand_bacino] >= soglia_voti)
-            cand_sopravvissuti = cand_bacino[maschera_pavimento]
+            cand_sopravvissuti = self.pavimento(cand_bacino, soglia_voti, soglia_vave)
         else:
             cand_sopravvissuti = np.array([], dtype=np.int64)
 
         # 3. Ranking combinato: score(x) = r[x] * (bayesian_vote(x) / 7.0) ** 1.5
         base_bayes = float(getattr(P, "RANKING_BAYES_BASE", 7.0))
         exp_bayes = float(getattr(P, "RANKING_BAYES_EXP", 1.5))
-
-        if len(cand_sopravvissuti) > 0:
-            bayes_cand = self.voto_bayesiano(cand_sopravvissuti)
-            score_cand = r[cand_sopravvissuti] * ((bayes_cand / base_bayes) ** exp_bayes)
-            ordine_score = np.argsort(-score_cand)
-            cand_ordinati = cand_sopravvissuti[ordine_score]
-            scores_ordinati = score_cand[ordine_score]
-            titoli_uns = [(B.KEYS[c], float(sc)) for c, sc in zip(cand_ordinati, scores_ordinati)]
-        else:
-            titoli_uns = []
+        titoli_uns = self.ordina_per_ranking(cand_sopravvissuti, r, base_bayes, exp_bayes)
 
         # TICKET 02: Ripescaggio controllato, max 2:
         # Per i soli semi di tipo library si calcola r_indotta[x] = r[x] - ALPHA * e[x].
@@ -689,8 +702,7 @@ class Motore:
         liste = []
         quanti_tuo = max(P.IL_TUO_MONDO_MIN_TITOLI, cap_main) if cap is None or cap >= P.IL_TUO_MONDO_MIN_TITOLI else cap_main
         if ripescati_mondo:
-            bayes_rip = self.voto_bayesiano(ripescati_mondo)
-            score_rip = r[ripescati_mondo] * ((bayes_rip / base_bayes) ** exp_bayes)
+            score_rip = self.ranking(ripescati_mondo, r, base_bayes, exp_bayes)
             titoli_rip = [(B.KEYS[x], float(sc)) for x, sc in zip(ripescati_mondo, score_rip)]
             cand_tuo_tutti = sorted(titoli_rip + titoli_uns, key=lambda t: -t[1])
         else:
@@ -862,7 +874,9 @@ class Motore:
         # «SUL FILO DELLE TUE ULTIME VISIONI» (Ticket 07): la recenza come SELEZIONE
         # =========================================================================
         # La misura (parametri.NIENTE_RECENZA / NIENTE_BOOST) dice che la recenza non e' un peso:
-        # i soli ultimi 15 titoli fanno lift 47,5x contro 18,2x, e il boost sui punteggi e' vuoto.
+        # i soli ultimi 15 titoli fanno lift 47,5x, contro i 18,2x della diffusione completa su tutti
+        # i semi (ed e' quel 18,2x che NIENTE_RANGO cita come riferimento), mentre il boost sui
+        # punteggi e' vuoto (17,85 -> 17,9-18,1).
         # Qui la recenza SELEZIONA: una SECONDA camminata sui soli semi recenti, bacino appiattito
         # sulle bolle accese da QUELLA camminata, stesso pavimento e stesso ranking di «il tuo mondo».
         # Con meno di ULTIME_VISIONI_MIN_SEMI semi recenti la riga lo DICHIARA invece di sparire.
@@ -889,19 +903,8 @@ class Motore:
                 att_rec, list(np.argsort(-att_rec)), non_visti_mondo,
                 max_bolle=int(getattr(P, "ULTIME_VISIONI_BOLLE_MAX", 4)),
             )
-            if len(cand_rec) > 0:
-                maschera_rec = (self.VAVE[cand_rec] >= soglia_vave) & (self.VOT[cand_rec] >= soglia_voti)
-                surv_rec = cand_rec[maschera_rec]
-            else:
-                surv_rec = np.array([], dtype=np.int64)
-
-            if len(surv_rec) > 0:
-                bayes_rec = self.voto_bayesiano(surv_rec)
-                score_rec = r_rec[surv_rec] * ((bayes_rec / base_bayes) ** exp_bayes)
-                ordine_rec = np.argsort(-score_rec)
-                cand_uv = [(B.KEYS[x], float(sc)) for x, sc in zip(surv_rec[ordine_rec], score_rec[ordine_rec])]
-            else:
-                cand_uv = []
+            surv_rec = self.pavimento(cand_rec, soglia_voti, soglia_vave)
+            cand_uv = self.ordina_per_ranking(surv_rec, r_rec, base_bayes, exp_bayes)
 
             div_uv = self.applica_antimonopolio(cand_uv, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="ultime_visioni")
             riga_uv["titoli"] = div_uv[:cap_main]
@@ -968,7 +971,8 @@ def stampa(esito):
     print(f"\n  LE LISTE:")
     for li in esito["liste"]:
         if not li["titoli"]:
-            print(f"    {li['tipo']:<20} —  (vuota)")
+            motivo = f" — {li['motivo']}" if li.get("motivo") else ""
+            print(f"    {li['tipo']:<20} —  (vuota){motivo}")
             continue
         print(f"    {li['tipo']:<20} ({len(li['titoli'])} titoli)")
         print(f"      " + " · ".join(f"{TITOLI.get(k, k)[:26]}" for k, _ in li["titoli"][:8]))

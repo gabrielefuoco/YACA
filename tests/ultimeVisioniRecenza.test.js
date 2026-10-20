@@ -1,8 +1,7 @@
-const { HERO_STRATEGIES } = require('../src/pool');
+const { HERO_STRATEGIES, convertiSemiPerGrafo } = require('../src/pool');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
-const { convertiSemiPerGrafo } = require('../src/pool');
-const { SEED_RECENTI_QUANTI } = require('../src/library/seeds');
+const { SEED_RECENTI_QUANTI } = library;
 
 describe('Ticket 07: recenza dei semi da data vera', () => {
     test('l ordine di inserimento della Map non decide la recenza', () => {
@@ -70,7 +69,7 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         for (let i = 1; i <= 5; i++) expect(recent.has(i)).toBe(false);
     });
 
-    test('il pool manda recente al motore', async () => {
+    test('il pool manda recente al servizio del grafo', async () => {
         jest.clearAllMocks();
         const ultimaVisione = new Map([['603', 200], ['314', 0]]);
         jest.spyOn(library, 'semiDi').mockResolvedValue({

@@ -21,7 +21,7 @@ const { fetchProfileContext } = require('../profile');
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const { graphClient } = require('../clients');
 const { resolveAnimePolicy, isAnimeContent } = require('../anime');
-const { SEED_RECENTI_QUANTI } = require('../library/seeds');
+const { SEED_RECENTI_QUANTI } = require('../library');
 
 const HERO_CATALOG_IDS = new Map([
     ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
@@ -161,7 +161,9 @@ function normalizePoolResult(result) {
  * @param {Object} [options]
  * @param {string} [options.medium='movie'] - 'movie' o 'series'/'tv'
  * @param {string} [options.animePolicy='neutral'] - 'exclude' | 'only' | 'neutral'
- * @returns {Array<{tmdbId: number, medium: string, tipo: string}>}
+ * @param {Map<string, number>} [options.ultimaVisione] - id -> timestamp ms dell'ultima visione (Ticket 07)
+ * @param {number} [options.quantiRecenti=SEED_RECENTI_QUANTI] - quanti marcati `recente`, fra i semi INVITATI
+ * @returns {Array<{tmdbId: number, medium: string, tipo: string, recente?: boolean}>}
  */
 function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral', ultimaVisione = null, quantiRecenti = SEED_RECENTI_QUANTI } = {}) {
     const med = medium === 'series' || medium === 'tv' ? 'series' : 'movie';
@@ -248,6 +250,7 @@ const HERO_STRATEGIES = [
                         if (animePolicy === 'exclude' && isAnimeSeed(id)) continue;
                         if (animePolicy === 'only' && !isAnimeSeed(id)) continue;
                         visti.add(id);
+                        // I semi Trakt non hanno una data nel payload di oggi: entrano fra i semi, mai fra i recenti.
                         semi.push({ tmdbId: id, medium: med, tipo: 'liked' });
                         traktCount++;
                     }
