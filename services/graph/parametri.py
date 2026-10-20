@@ -158,6 +158,10 @@ SCHEDA = [
     ("DIVERSITA_REGISTA_MAX", 2, "DICHIARATO",
      "Massimo numero di titoli per singolo regista nei primi slot di una riga (Ticket 04).",
      "services/graph/motore.py"),
+    ("CANONE_METADATI_VERSIONE", 2, "DICHIARATO",
+     "Versione del formato metadati-canone.npz (1: base con VOT, VAVE, POP, ANNO, NEP, COZY, IMP; "
+     "2: aggiunti array per-titolo COLL e DIR per anti-monopolio saga e regista, Ticket 18).",
+     "services/graph/canon.py"),
     ("MIN_TITOLI_MONDO", 5, "INVENTATO",
      "Quanti titoli non visti deve avere un mondo perche' valga come catalogo a se'. Nato dal motore: "
      "la selezione prendeva il mondo 3379 (4 titoli) e la sua lista ne mostrava UNO. Il primo mondo, "
