@@ -572,6 +572,20 @@ def assert_modello(target, previsione, nome="modello", coef_norma=None, controll
 
 
 # ---------------------------------------------------------------- i contratti aggiunti il 16/10/2026
+def voto_bayesiano(voti, voto):
+    """Il voto bayesiano (formula IMDb) su ARRAY: `(voti*voto + m*C) / (voti + m)`.
+
+    UNA COPIA SOLA: il `Motore` lo usa per `VOT`/`VAVE`, `uscite.py` per le uscite collocate
+    (Ticket 10). Prima era un metodo e una funzione, con la stessa formula scritta due volte.
+    """
+    from . import parametri as P
+    voti = np.asarray(voti, dtype=np.float64)
+    voto = np.asarray(voto, dtype=np.float64)
+    m = float(getattr(P, "BAYESIAN_M", 300.0))
+    c = float(getattr(P, "BAYESIAN_C", 6.5))
+    return (voti * voto + m * c) / np.maximum(voti + m, 1e-9)
+
+
 def mediana_voti(voti):
     """LA MEDIANA DEI VOTI DI UNA BOLLA, in un posto solo. Uno zero NON e' «nessuno l'ha visto»:
     e' «non lo sappiamo» (un titolo appena uscito ha `vote_count = 0`), e una mediana calcolata su un

@@ -11,6 +11,11 @@ graph/
   bubbles.py     631 righe   il costruttore delle bolle: la miscela, Leiden, la potatura
   collocator.py  267 righe   la collocazione: V1 per la bolla, V3 per i vicini, la regola dei voti
   pipeline.py                IL COMANDO UNICO
+  motore.py / servizio.py    il motore delle liste e il servizio HTTP che lo espone
+  uscite.py                  la porta d'ingresso delle uscite recenti: `python -m graph.uscite`
+                             costruisce `data/uscite-collocate.npz` (Parquet TMDB + collocatore).
+                             Va lanciato DOVE ci sono i Parquet (il mate), e il file va depositato
+                             in `data/` — il container la monta read-only e non puo' generarla.
   steps/                     gli script che COSTRUISCONO: embedding, componente, partizione,
                              divisione voti, centroidi. Si lanciano da qui, non da `.scratch/`.
   data/                      55 file, 422 MB — GLI ARTEFATTI: le partizioni, il triangolo, i centroidi,

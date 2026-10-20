@@ -211,12 +211,10 @@ class Motore:
         return (res, False) if con_stato else res
 
     def voto_bayesiano(self, x=None):
-        """Voto bayesiano TMDB (formula IMDb): (VOT*VAVE + m*C) / (VOT + m)."""
-        m = float(getattr(P, "BAYESIAN_M", 300.0))
-        c = float(getattr(P, "BAYESIAN_C", 6.5))
+        """Voto bayesiano TMDB (formula IMDb). La formula sta in `canon.voto_bayesiano`: una copia sola."""
         if x is None:
-            return (self.VOT * self.VAVE + m * c) / np.maximum(self.VOT + m, 1e-9)
-        return (self.VOT[x] * self.VAVE[x] + m * c) / np.maximum(self.VOT[x] + m, 1e-9)
+            return K.voto_bayesiano(self.VOT, self.VAVE)
+        return K.voto_bayesiano(self.VOT[x], self.VAVE[x])
 
     def get_collection_id(self, x):
         """Restituisce il collection_id TMDB (int) del titolo x, o None se assente/sconosciuto."""
@@ -883,22 +881,15 @@ class Motore:
         #   · cache delle uscite collocate offline -> score = att_s[bolla] * confidenza * qualita';
         #   · senza cache (CI, o cache non ancora generata) -> canone storico, ma con i VICINI e con la
         #     riga che dichiara il proprio stato.
-        bacino_uscite = set(bolle) | set(vicini)
+        # F4: il bacino e' quello appiattito del Ticket 03 (le bolle accese E i loro vicini), non i soli
+        # vicini del primo mondo: con 3-4 mondi accesi i vicini degli altri restavano fuori.
+        bacino_uscite = set(bacino_bolle_set) | set(bolle)
         cache_uscite = getattr(self, "USCITE", None)   # i Motore sintetici delle sonde non hanno la cache
         if cache_uscite is not None:
             cand_nuove, stato_uscite = U.candidati(cache_uscite, att_s, bacino_uscite, medium, visti)
         else:
-            nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
-                     if int(self.MEM[x]) in bacino_uscite and x not in visti]
-            if medium == "series":
-                nuove = [x for x in nuove if B.IS_TV[x]]
-            elif medium == "movie":
-                nuove = [x for x in nuove if not B.IS_TV[x]]
-            nuove.sort(key=lambda x: (-float(r[x]), -float(self.VOT[x])))
-            cand_nuove = [(B.KEYS[x], float(r[x])) for x in nuove]
-            stato_uscite = {"fonte": "canone", "candidati": int(len(nuove)), "nel_bacino": int(len(nuove)),
-                            "motivo": "uscite_nuove: cache uscite-collocate.npz assente, "
-                                      "solo il canone storico (che non ha quasi uscite 2025+)"}
+            cand_nuove, stato_uscite = U.da_canone(self.ANNO, self.MEM, B.IS_TV, self.VOT, r,
+                                                   bacino_uscite, medium, visti)
         div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti,
                                               cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
         riga_un = {
@@ -910,23 +901,29 @@ class Motore:
             "fonte": stato_uscite.get("fonte"),
             "candidati": int(stato_uscite.get("candidati", 0)),
             "nel_bacino": int(stato_uscite.get("nel_bacino", 0)),
+            "scartati_pavimento": int(stato_uscite.get("scartati_pavimento", 0)),
             # L'attivazione della riga e' quella dei mondi da cui pesca: i `punteggio` delle uscite
             # collocate (att * confidenza * qualita') e quelli del canone (r[x]) non sono confrontabili
             # fra loro, quindi l'attivazione non si ricava dalla media dei punteggi.
-            "attivazione": round(float(np.mean(att_s[list(bolle)])), 4),
+            "attivazione": round(float(np.mean(att_s[sorted(bacino_uscite)])), 4) if bacino_uscite else 0.0,
         }
         riga_un["corta"], motivo_un = self.dichiara_corta(
             len(riga_un["titoli"]), cap_main, "uscite_nuove", prefisso="uscite_nuove"
         )
         if not riga_un["titoli"]:
-            riga_un["motivo"] = (stato_uscite.get("motivo")
-                                 or f"uscite_nuove: {riga_un['nel_bacino']} collocati nei mondi accesi, nessuno con attivazione")
+            riga_un["motivo"] = stato_uscite["motivo"]
             print(f"  [uscite] dichiarata vuota: fonte={riga_un['fonte']} "
-                  f"candidati={riga_un['candidati']} nel_bacino={riga_un['nel_bacino']}", file=sys.stderr)
+                  f"candidati={riga_un['candidati']} nel_bacino={riga_un['nel_bacino']} "
+                  f"gia_visti={stato_uscite.get('gia_visti', 0)} "
+                  f"senza_attivazione={stato_uscite.get('senza_attivazione', 0)}", file=sys.stderr)
         elif motivo_un:
             riga_un["motivo"] = motivo_un
+        if riga_un["fonte"] == "canone":
+            # Il prodotto deve saperlo anche quando la riga si riempie col canone storico.
+            riga_un["motivo"] = stato_uscite["motivo"]
         print(f"  [uscite] fonte={riga_un['fonte']} candidati={riga_un['candidati']} "
-              f"nel_bacino={riga_un['nel_bacino']} riga={len(riga_un['titoli'])}", file=sys.stderr)
+              f"nel_bacino={riga_un['nel_bacino']} scartati_pavimento={riga_un['scartati_pavimento']} "
+              f"riga={len(riga_un['titoli'])}", file=sys.stderr)
         liste.append(riga_un)
 
         # =========================================================================

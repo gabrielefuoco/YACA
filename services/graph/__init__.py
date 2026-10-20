@@ -8,6 +8,8 @@ da qualcuno che non l'ha scritto.
   collocator.py   la collocazione di un titolo nuovo: V1 per la bolla, V3 per i vicini, la regola dei voti
   plots.py        gli embedding delle trame via Ollama
   pipeline.py     il comando unico: `python -m graph.pipeline <sottocomando>`
+  uscite.py       le uscite collocate: `python -m graph.uscite` costruisce la cache delle novita'
+                  (Ticket 10); a runtime il motore la legge senza ricostruire niente
 
 Gli originali in `.scratch/` sono diventati **shim di due righe** che rimandano qui: i 117 script di
 misura continuano a funzionare, e la verita' e' una sola.

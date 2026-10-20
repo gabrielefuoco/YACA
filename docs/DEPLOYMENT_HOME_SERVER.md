@@ -70,6 +70,20 @@ Alcune componenti del repository non sono né container permanenti né timer hos
   2. Il servizio Grafo Python (`services/graph/upstream/spazi-trakt.py:128`), che lo legge direttamente da disco per l'allineamento degli spazi Trakt.
   *(Nota: il vecchio output `graph_data.json` documentato storicamente è stato eliminato dal repository nel commit `482fa3d` e non è più utilizzato).*
 - **`scripts/erdb-builder`**: Costruttore offline per la generazione del dataset iniziale di poster pre-composti.
+- **Le uscite collocate del grafo** (`services/graph/uscite.py`, Ticket 10): un costruttore offline che non è
+  nel compose. Va lanciato **sul mate, dove ci sono i Parquet TMDB** (`.cache/tmdb/movies.parquet`,
+  `tv.parquet`) e gli artefatti del collocatore, e scrive `services/graph/data/uscite-collocate.npz`.
+  Il container del grafo monta `services/graph/data` **read-only**, quindi il servizio non può generarlo:
+  senza questo passo la riga «uscite nuove» degrada dichiarandolo (`fonte: canone`) invece di riempirsi.
+
+  ```bash
+  ssh mate
+  cd /srv/yaca && git pull            # il codice serve anche al costruttore
+  cd services/graph && /usr/bin/python3 -m graph.uscite
+  # verifica che sia nato e che porti l'impronta della partizione corrente
+  ls -l data/uscite-collocate.npz
+  docker compose -f /srv/yaca/docker-compose.yml restart graph   # `Motore` carica la cache all'avvio
+  ```
 
 ---
 

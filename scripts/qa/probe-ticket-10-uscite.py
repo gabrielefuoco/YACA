@@ -15,6 +15,7 @@ In più: i pavimenti permissivi del builder mordono (pochi voti, voto basso, tit
 non è ignorata, la qualità bayesiana preferisce i titoli con più voti, e una cache assente non fa esplodere
 niente.
 """
+import json
 import pathlib
 import sys
 import tempfile
@@ -148,7 +149,9 @@ def main():
     print("\n1. PARAMETRI E FUNZIONI")
     assert int(P.USCITE_COLLOCATE_VOTI_MIN) == 30, P.USCITE_COLLOCATE_VOTI_MIN
     assert float(P.USCITE_COLLOCATE_VOTO_MIN) == 6.2, P.USCITE_COLLOCATE_VOTO_MIN
-    assert int(P.USCITE_COLLOCATE_SCHEMA) == 1
+    assert U.SCHEMA == int(P.USCITE_COLLOCATE_SCHEMA), (
+        f"FALLITO: il modulo usa schema {U.SCHEMA}, la tabella dichiara {P.USCITE_COLLOCATE_SCHEMA}"
+    )
     print(f"  DAL={P.USCITE_NUOVE_DAL} · VOTI_MIN={P.USCITE_COLLOCATE_VOTI_MIN} · "
           f"VOTO_MIN={P.USCITE_COLLOCATE_VOTO_MIN} · SCHEMA={P.USCITE_COLLOCATE_SCHEMA}")
 
@@ -231,7 +234,13 @@ def main():
         riga_dopo = righe(res_dopo, "uscite_nuove")[0]
         titoli_dopo = [(ch, round(p, 8)) for ch, p in riga_dopo["titoli"]]
         print(f"  fonte={riga_dopo['fonte']} candidati={riga_dopo['candidati']} "
-              f"nel_bacino={riga_dopo['nel_bacino']} riga={len(titoli_dopo)}")
+              f"nel_bacino={riga_dopo['nel_bacino']} scartati_pavimento={riga_dopo['scartati_pavimento']} "
+              f"riga={len(titoli_dopo)}")
+        assert riga_dopo["candidati"] == 3, f"FALLITO: candidati {riga_dopo['candidati']} invece di 3"
+        assert riga_dopo["nel_bacino"] == 3, f"FALLITO: nel_bacino {riga_dopo['nel_bacino']} invece di 3"
+        assert riga_dopo["scartati_pavimento"] == 3, (
+            f"FALLITO: gli scarti del pavimento non arrivano alla riga ({riga_dopo['scartati_pavimento']})"
+        )
         print(f"  titoli: {titoli_dopo[:5]}")
         assert riga_dopo["titoli"], "FALLITO: con la cache la riga resta vuota"
         assert riga_dopo["fonte"] == "collocate"
@@ -289,9 +298,15 @@ def main():
         con_visto["voto"] = np.array([7.5, 7.5])
         con_visto["anno"] = np.array([2026, 2026])
         visti = {int(m.MEMBRI[0][0])}
-        out5, _st5 = U.candidati(con_visto, att3, {0}, "movie", visti)
-        print(f"  con un seme nel bacino: {[c for c, _ in out5]}")
+        out5, st5 = U.candidati(con_visto, att3, {0}, "movie", visti)
+        print(f"  con un seme nel bacino: {[c for c, _ in out5]} · gia_visti={st5['gia_visti']}")
         assert seed_key not in [c for c, _ in out5], "FALLITO: un titolo già visto entra nelle uscite"
+        assert st5["gia_visti"] == 1, "FALLITO: il conteggio dei già visti non è dichiarato"
+        out6, st6 = U.candidati(con_visto, np.zeros(3), {0}, "movie", set())
+        assert out6 == [] and st6["senza_attivazione"] == 2 and "senza attivazione" in st6["motivo"], (
+            f"FALLITO: 'nessuna attivazione' non è distinto dai visti: {st6}"
+        )
+        print(f"  attivazione zero: motivi distinti -> {st6['motivo']!r}")
 
         print("\n8. IL CONTRATTO PORTA FONTE E CONTEGGI")
         payload = {"semi": [{"tmdbId": int(ch.split(":")[1]), "medium": "movie", "tipo": "watched"}
@@ -318,6 +333,65 @@ def main():
                             meta=np.array('{"schema": 99}'))
         assert U.carica(storta) is None, "FALLITO: una cache con schema sbagliato non viene ignorata"
     print("  -> OK: degrada dichiarandolo")
+
+    print("\n10. I CASI CHE FANNO MALE: MEDIUM ASSENTE, PARTIZIONE VECCHIA, CACHE ROTTA, DATE")
+    doppia = {"chiavi": ["movie:7001", "tv:7002"], "bolle": np.array([0, 0], np.int32),
+              "confidenza": np.ones(2, np.float32), "voti": np.array([100.0, 100.0]),
+              "voto": np.array([7.5, 7.5]), "anno": np.array([2026, 2026]),
+              "meta": {"schema": U.SCHEMA}}
+    out7, _s7 = U.candidati(doppia, np.array([0.5]), {0}, None, set())
+    print(f"  medium=None -> {[c for c, _ in out7]}")
+    assert [c for c, _ in out7] == ["movie:7001", "tv:7002"], (
+        "FALLITO: con medium=None le serie spariscono (era il comportamento del canone: entrambi)"
+    )
+
+    fuori = dict(doppia)
+    fuori["chiavi"] = ["movie:7003"]
+    fuori["bolle"] = np.array([9], np.int32)
+    out8, _s8 = U.candidati(fuori, np.array([0.5]), set(range(20)), "movie", set())
+    print(f"  bolla 9 con att_s di 1 mondo -> {out8} (scartata, non IndexError)")
+    assert out8 == [], "FALLITO: una bolla fuori partizione non viene scartata"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        pv = pathlib.Path(tmp) / "partizione.npz"
+        np.savez_compressed(pv, chiavi=np.array(["movie:7004"], str), bolle=np.array([0], np.int32),
+                            confidenza=np.array([1.0], np.float32), voti=np.array([100], np.int32),
+                            voto=np.array([7.5], np.float32), anno=np.array([2026], np.int32),
+                            meta=np.array(json.dumps({"schema": U.SCHEMA, "impronta_partizione": "VECCHIA"})))
+        vera = U.impronta_partizione
+        U.impronta_partizione = lambda: "NUOVA"
+        try:
+            assert U.carica(pv) is None, "FALLITO: una cache di un'altra partizione non viene ignorata"
+        finally:
+            U.impronta_partizione = vera
+        print("  partizione cambiata -> cache ignorata")
+
+        rotta = pathlib.Path(tmp) / "rotta.npz"
+        np.savez_compressed(rotta, chiavi=np.array(["movie:7005"], str), bolle=np.array([0], np.int32),
+                            meta=np.array(json.dumps({"schema": U.SCHEMA})))
+        assert U.carica(rotta) is None, "FALLITO: una cache senza membri solleva invece di dichiararsi"
+        print("  cache con membri mancanti -> None, dichiarato")
+
+    dfd = dataframe(["movie:8001", "tv:8002"], ["2026-01-01", ""], [100, 100], [7.5, 7.5])
+    dfd.loc[1, "first_air_date"] = "2026-01-01"
+    with tempfile.TemporaryDirectory() as tmp:
+        pd_path = pathlib.Path(tmp) / "date.npz"
+        nd = U.costruisci(percorso=pd_path, movie=per_tipo(dfd, "movie"), tv=per_tipo(dfd, "tv"),
+                          colloca_fn=lambda dd, tipo: (0, 0.5), mem=None)
+        print(f"  date sulle colonne giuste (release_date / first_air_date): collocati={nd}")
+        assert nd == 2, "FALLITO: le date sono lette dalla colonna sbagliata"
+
+    import time as _t
+    grande = {"chiavi": [f"movie:{i}" for i in range(1000)], "bolle": np.zeros(1000, np.int32),
+              "confidenza": np.ones(1000, np.float32), "voti": np.full(1000, 100.0),
+              "voto": np.full(1000, 7.5), "anno": np.full(1000, 2026), "meta": {"schema": U.SCHEMA}}
+    t0 = _t.perf_counter()
+    for _ in range(20):
+        U.candidati(grande, np.ones(3), {0}, "movie", set())
+    ms_seg = (_t.perf_counter() - t0) / 20 * 1000
+    print(f"  1000 titoli in cache: {ms_seg:.2f} ms per chiamata")
+    assert ms_seg < 5.0, f"FALLITO: {ms_seg:.2f} ms per chiamata e' troppo"
+    print("  -> OK: casi cattivi dichiarati, e il costo resta di un ordinamento")
 
     print("\n" + "=" * 84)
     print("TUTTE LE PROVE SUPERATE — OK")
