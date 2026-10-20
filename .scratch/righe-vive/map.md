@@ -137,3 +137,11 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   catalogo Stremio, quindi `il_tuo_mondo` perde i suoi migliori (59/60 sul fixture, tutta la top-10) verso righe
   che nessuno serve. Quest'immagine va deployata **insieme al `13`**, o con una guardia che limiti il waterfall
   alle righe servite. Proposta non applicata.
+- **`13` chiuso (prima del `12`, decisione dichiarata)**: le sei righe nuove sono cataloghi di sistema
+  (8 → 20 cataloghi, 4 → 10 famiglie). Pool a tabella, ponti uniti in un catalogo, micro-cluster con tre slot
+  stabili, `mondo_*` dichiarati senza catalogo. Manifest: `dc4af35c…` → `4169fd73f14389f24097e6508bd06c289b1898ad727250342ccf1fe47b093dc5`
+  (`buildRootManifest` invariato); cache righe v15 → v16. Prova: `tests/heroRowsCoverage.test.js`.
+- **Il `12` è bloccato da una premessa falsa**: «il flag anime del canone» non esiste. Prerequisito aperto:
+  **`19`** (i flag per-titolo nel canone: `ANIME`, `ADULTO`), stessa forma del `18`. Il `12` riparte dopo.
+- **Residuo del `13`**: le sei famiglie nuove sono servite ma **non configurabili** dalla dashboard (frontend
+  vietato dal cantiere): chi non le vuole non può spegnerle finché non c'è un ticket di frontend.
