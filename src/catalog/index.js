@@ -39,6 +39,7 @@ const {
     getHeroCatalogKindMap,
     getHeroUiGroups,
     getHeroPoolSpec,
+    getHeroRuoli,
     getRegistryHash
 } = require('./registry');
 
@@ -114,6 +115,7 @@ module.exports = {
     getHeroCatalogKindMap,
     getHeroUiGroups,
     getHeroPoolSpec,
+    getHeroRuoli,
     getRegistryHash,
 
     // Validazione

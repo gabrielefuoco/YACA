@@ -15,7 +15,7 @@
 
 const { getHeroCatalogKindMap } = require('./registry');
 
-// Registry esplicito per 8 Hero e cataloghi fissi/utility
+// Registry esplicito per i 20 cataloghi Hero (Ticket 13: 10 famiglie x 2 medium) e i cataloghi fissi/utility
 const FIXED_CATALOGS_REGISTRY = {
     // Utility e libreria personale (sempre visibili nel manifest)
     'yaca_search_standard': { mediaSet: ['film', 'serie'], anime: 'mixed', alwaysVisible: true },
@@ -143,7 +143,7 @@ function getCatalogKind(catalog, options = {}) {
  * Regola spec (Ticket 15 & 16):
  * - I selettori Solo Film / Solo Serie sono rimossi: film/serie smettono di essere letti.
  * - Solo la dimensione anime (only / exclude) governa la conformità.
- * - Gli 8 cataloghi Hero sono agnostici sulla dimensione anime (anime: 'agnostic'):
+ * - I cataloghi Hero (20, Ticket 13) sono agnostici sulla dimensione anime (anime: 'agnostic'):
  *   il kind smette di decidere, demandando il filtraggio alla animePolicy a valle.
  *
  * @param {Object|string} catalogOrKind

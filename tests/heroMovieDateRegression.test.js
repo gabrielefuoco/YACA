@@ -61,7 +61,7 @@ function cachedHeroGroup(mediaType, ids) {
     for (const { slug } of getHeroPoolSpec().slugs) {
         catalogs[`yaca_${slug}_${suffix}`] = slug === owner ? ids : [];
     }
-    return { schemaVersion: 8, mediaType, catalogs };
+    return { schemaVersion: require('../src/pool').HERO_CACHE_SCHEMA_VERSION, mediaType, catalogs };
 }
 
 describe('Hero Catalogs Audit 02 Fixes', () => {

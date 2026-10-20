@@ -18,6 +18,7 @@ const {
     HERO_REGISTRY,
     HERO_SYSTEM_CATALOGS,
     HERO_IDS,
+    getHeroRuoli,
     HERO_PREFIXES,
     getManifestHeroCatalogs,
     getHeroCatalogFingerprintRows,
@@ -110,6 +111,23 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
             expect(normalizeAnimeAxis(true)).toBe('yes');
             expect(normalizeAnimeAxis(false)).toBe('no');
             expect(normalizeAnimeAxis('invalid')).toBe('no');
+        });
+    });
+
+    describe('1.b La tabella dei ruoli (Ticket 13)', () => {
+        test('ogni slug del registro ha esattamente un ruolo, e i ponti sono la famiglia punti_incontro', () => {
+            const ruoli = getHeroRuoli();
+            const spec = getHeroPoolSpec();
+            // una famiglia puo' avere piu' ruoli (i tre ponti sono UNA famiglia): si confrontano le famiglie
+            const famiglie = new Set([
+                ...ruoli.hero.map(r => r.slug),
+                ...ruoli.micro,
+                ...ruoli.ponte.map(() => 'punti_incontro')
+            ]);
+            expect([...famiglie].sort()).toEqual(spec.slugs.map(s => s.slug).sort());
+            expect(ruoli.hero).toHaveLength(6);
+            expect(ruoli.micro).toHaveLength(3);
+            expect(ruoli.ponte).toEqual(['punti_incontro_1', 'punti_incontro_2', 'punti_incontro_3']);
         });
     });
 

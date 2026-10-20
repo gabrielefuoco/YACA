@@ -209,30 +209,33 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             }
         });
 
-        test("chi aveva tutte le righe di ieri riceve anche quelle di oggi (compatibilita' Ticket 13)", () => {
+        test('le sei famiglie nuove NON arrivano accese a un profilo che non le ha mai viste (i toggle contano)', () => {
             const storiche = [];
             for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
                 storiche.push(`yaca_${slug}_movies`, `yaca_${slug}_series`);
             }
             const config = {
-                userId: 'user_full',
-                activeProfileId: 'full_prof',
-                profiles: [{ id: 'full_prof', name: 'Full', raw_ui_state: { selectedPresets: storiche } }]
+                userId: 'user_storico',
+                activeProfileId: 'storico_prof',
+                profiles: [{ id: 'storico_prof', name: 'Storico', raw_ui_state: { selectedPresets: storiche } }]
             };
             const heroIds = buildManifest(config).catalogs.filter(c => isHeroCatalogId(c.id)).map(c => c.id);
-            expect(heroIds.length).toBe(20);
+            // Accese solo le otto che il profilo porta davvero: una riga servita mentre il suo toggle
+            // e' OFF sarebbe una bugia dell'interfaccia (Ticket 13, la regola di compatibilita' e' stata
+            // tolta proprio per questo — vedi l'Esito).
+            expect(heroIds.sort()).toEqual([...storiche].sort());
         });
 
-        test('dimostrazione: la funzione di estrazione rileverebbe la presenza di id morti (test-that-would-have-failed)', () => {
-            const legacySyntheticSnippet = `
-                const HERO_PRESET_IDS = [
-                    'yaca_true_blend_movies',
-                    'yaca_seed_network_movies'
-                ];
-            `;
-            const extracted = extractYacaIds(legacySyntheticSnippet);
-            const invalidIds = extracted.filter(id => !validCatalogIds.has(id) || DEAD_HERO_IDS.includes(id));
-            expect(invalidIds).toEqual(['yaca_true_blend_movies', 'yaca_seed_network_movies']);
+        test('una famiglia nuova accesa dal profilo arriva nel manifesto', () => {
+            const config = {
+                userId: 'user_nuovo',
+                activeProfileId: 'nuovo_prof',
+                profiles: [{ id: 'nuovo_prof', name: 'Nuovo', raw_ui_state: {
+                    selectedPresets: ['yaca_classici_movies', 'yaca_micro_cluster_2_series']
+                } }]
+            };
+            const heroIds = buildManifest(config).catalogs.filter(c => isHeroCatalogId(c.id)).map(c => c.id);
+            expect(heroIds.sort()).toEqual(['yaca_classici_movies', 'yaca_micro_cluster_2_series'].sort());
         });
     });
 });

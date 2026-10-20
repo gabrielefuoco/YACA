@@ -159,7 +159,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
             }
 
             // 2.6 FILTRAGGIO POST-FETCH: Filtro Contenuti Anime (Ticket 13 / Spec 06 Sezione 6)
-            // Perimetro: cataloghi di suggerimento (preset utente, 8 hero, custom/merged).
+            // Perimetro: cataloghi di suggerimento (preset utente, 20 hero, custom/merged).
             // Le ricerche e la libreria personale (3 watchlist) non vengono filtrate.
             const animeSelector = activeProfileSettings?.typeSelectors?.anime;
             const isSubjectCatalog = !isAlwaysVisible(id) && !isAlwaysVisible(baseId) && !extra?.search;

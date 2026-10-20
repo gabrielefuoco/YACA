@@ -9,13 +9,13 @@
  * - Le 4 strategie storiche (trueBlend, seed_network, hiddenGems, trakt_filtered) sono rimosse;
  *   il motore del gusto è interamente il servizio del grafo (mondi, passo_fuori, uscite_nuove, nicchia_di_qualita).
  * - Assegnazione disgiunta / claimedIds per eventuali strategie esclusive.
- * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v15').
+ * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v16').
  */
 
 const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../catalog/contentId');
-const { getHeroPoolSpec } = require('../catalog/registry');
+const { getHeroPoolSpec, getHeroRuoli } = require('../catalog/registry');
 const { fetchProfileContext } = require('../profile');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
@@ -34,20 +34,10 @@ const HERO_CATALOG_IDS = new Map([
 // i tre slot dei micro-cluster: la cache delle righe deve invalidarsi una volta.
 const HERO_CACHE_KEY_VERSION = 'v16';
 
-// I RUOLI DEL GRAFO E IL LORO CATALOGO (Ticket 13). La tabella e' l'unico posto in cui si decide chi va
-// dove: una riga calcolata e poi buttata via era il difetto (i `mondo_*` sparivano senza un log).
-const RUOLI_HERO = Object.freeze([
-    { ruolo: 'il_tuo_mondo', slug: 'mondi' },
-    { ruolo: 'un_passo_fuori', slug: 'passo_fuori' },
-    { ruolo: 'uscite_nuove', slug: 'uscite_nuove' },
-    { ruolo: 'nicchia_di_qualita', slug: 'nicchia_di_qualita' },
-    { ruolo: 'classici_imperdibili', slug: 'classici' },
-    { ruolo: 'ultime_visioni', slug: 'ultime_visioni' }
-]);
-// Gli slot dei micro-cluster sono tre e fissi: un catalogo che compare e sparisce e' un guasto per Stremio.
-const RUOLI_MICRO = Object.freeze(['micro_cluster_1', 'micro_cluster_2', 'micro_cluster_3']);
-// «Punti d'incontro»: il motore lo decompone in coppie di filoni, il catalogo e' uno.
-const RUOLI_PONTE = Object.freeze(['punti_incontro_1', 'punti_incontro_2', 'punti_incontro_3']);
+// I RUOLI DEL GRAFO E IL LORO CATALOGO (Ticket 13): la tabella vive nel registro (`getHeroRuoli`),
+// qui si legge e basta. Una riga calcolata e poi buttata via era il difetto (i `mondo_*` sparivano
+// senza un log): ora ogni ruolo non servito finisce in `senza catalogo (dichiarate)`.
+const { hero: RUOLI_HERO, micro: RUOLI_MICRO, ponte: RUOLI_PONTE } = getHeroRuoli();
 const RUOLI_SERVITI = new Set([
     ...RUOLI_HERO.map((r) => r.ruolo),
     ...RUOLI_MICRO,
@@ -230,7 +220,8 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
 /**
  * Definizione a lista delle strategie nel modulo pool.
  * Le quattro strategie storiche sono state rimosse (Ticket 46).
- * Il grafo genera le 4 righe additive: mondi, passo_fuori, uscite_nuove, nicchia_di_qualita.
+ * Il grafo genera le 10 righe additive (Ticket 13): mondi, passo_fuori, uscite_nuove,
+ * nicchia_di_qualita, classici, ultime_visioni, punti_incontro, micro_cluster_1..3.
  */
 const HERO_STRATEGIES = [
     {
@@ -280,11 +271,17 @@ const HERO_STRATEGIES = [
                 }
 
                 if (semi.length === 0) {
-                    assigned[catMondi] = [];
-                    assigned[catPasso] = [];
-                    assigned[catUscite] = [];
-                    assigned[catNicchia] = [];
-                    console.log(`[Mondi] ${ctx.mediaType}: seed da archivio 0, da Trakt 0 · mondi 0 · passo fuori 0 · uscite 0 · nicchia 0`);
+                    // Nessun seme: tutte e dieci le righe esistono vuote (uno slot che sparisce e' un
+                    // guasto per Stremio) e il log le dichiara tutte, non solo le quattro storiche.
+                    for (const { slug } of RUOLI_HERO) assigned[catalogo(slug)] = [];
+                    for (const slug of RUOLI_MICRO) assigned[catalogo(slug)] = [];
+                    assigned[catalogo('punti_incontro')] = [];
+                    const vuote = [
+                        ...RUOLI_HERO.map((r) => `${r.slug} 0`),
+                        'ponte 0',
+                        `micro ${JSON.stringify(RUOLI_MICRO.map(() => 0))}`
+                    ].join(' · ');
+                    console.log(`[Mondi] ${ctx.mediaType}: seed da archivio 0, da Trakt 0 · ${vuote}`);
                     return;
                 }
 
@@ -308,7 +305,7 @@ const HERO_STRATEGIES = [
 
                 const liste = resGraph?.liste || [];
                 const perRuolo = new Map(liste.map((l) => [l.ruolo, l]));
-                const catalogo = (slug) => `yaca_${slug}_${suffisso}`;
+                const catalogo = (slug) => getHeroCatalogId(slug, ctx.mediaType);
                 const itemsDi = (lista) => (lista?.titoli || []).map((t) => ensurePoolItem({
                     id: `tmdb:${t.tmdbId}`,
                     tmdbId: Number(t.tmdbId),
@@ -335,13 +332,7 @@ const HERO_STRATEGIES = [
                         ponte.push(t);
                     }
                 }
-                assigned[catalogo('punti_incontro')] = ponte.map((t) => ensurePoolItem({
-                    id: `tmdb:${t.tmdbId}`,
-                    tmdbId: Number(t.tmdbId),
-                    type: t.medium === 'movie' ? 'movie' : 'series',
-                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
-                    punteggio: t.punteggio
-                }, ctx.mediaType));
+                assigned[catalogo('punti_incontro')] = itemsDi({ titoli: ponte });
 
                 const nMondi = (assigned[catalogo('mondi')] || []).length;
                 const nPasso = (assigned[catalogo('passo_fuori')] || []).length;
@@ -350,13 +341,16 @@ const HERO_STRATEGIES = [
                 const nClassici = (assigned[catalogo('classici')] || []).length;
                 const nUltime = (assigned[catalogo('ultime_visioni')] || []).length;
                 const nPonte = (assigned[catalogo('punti_incontro')] || []).length;
-                const nMicro = RUOLI_MICRO.map((slug) => (assigned[catalogo(slug)] || []).length);
+                const nMicro = Object.fromEntries(
+                    RUOLI_MICRO.map((slug) => [slug.replace(/^micro_cluster_/, ''), (assigned[catalogo(slug)] || []).length])
+                );
                 // Le righe senza catalogo (i `mondo_<b>`) si DICHIARANO: un catalogo per bolla non e'
                 // statico, e il manifest di Stremio e' fisso.
                 const nonServiti = {};
                 for (const li of liste) {
                     if (RUOLI_SERVITI.has(li.ruolo)) continue;
-                    const famiglia = String(li.ruolo).replace(/_\d+$/, '');
+                    const ruolo = String(li.ruolo ?? 'senza-ruolo');
+                    const famiglia = ruolo.replace(/_\d+$/, '');
                     nonServiti[famiglia] = (nonServiti[famiglia] || 0) + 1;
                 }
 
@@ -531,6 +525,11 @@ async function getSharedHeroCatalogs(args, keyOrDesc) {
                 .catch(error => console.error('[Hero-SWR] Error:', error?.message || error));
         }
         return value;
+    }
+    // Una voce presente ma non valida (schema vecchio, o catalogs incompleti) si rigenera: e' uno
+    // scarto, quindi si DICHIARA (il ticket vieta gli scarti silenziosi).
+    if (value) {
+        console.log(`[Hero-Cache] voce non valida per ${args.mediaType} (schema o catalogs): rigenero le righe`);
     }
     return buildAndCacheSharedHeroCatalogs(args, heroDesc);
 }

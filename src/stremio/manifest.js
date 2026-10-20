@@ -4,7 +4,7 @@ const {
     getSortByValue
 } = require('../catalog/catalogSorting');
 const { isCatalogConformant } = require('../catalog/catalogKind');
-const { getManifestHeroCatalogs, HERO_SLUG_STORICI } = require('../catalog/registry');
+const { getManifestHeroCatalogs } = require('../catalog/registry');
 
 const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
@@ -95,13 +95,11 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
     // mostriamo comunque tutte le righe hero di sistema e logghiamo l'avviso.
     // Motivo: un profilo non deve perdere il feed solo perché il sistema ha rinominato o rimosso le sue righe.
     let eligibleHeroCatalogs = heroCatalogs;
-    // TICKET 13: un profilo che aveva TUTTE le righe hero storiche (entrambi i medium delle quattro
-    // famiglie del Ticket 46) le aveva «tutte»: le righe additive nuove non devono sparire solo perche'
-    // il frontend non le conosce ancora. Chi ne aveva una sola resta filtrato (il test lo fissa).
-    const righeStoriche = HERO_SLUG_STORICI.flatMap(slug => [`yaca_${slug}_movies`, `yaca_${slug}_series`]);
-    const avevaTutteLeStoriche = Array.isArray(selectedPresets)
-        && righeStoriche.every(id => selectedPresets.includes(id));
-    if (Array.isArray(selectedPresets) && !avevaTutteLeStoriche) {
+    // TICKET 13: le righe hero si filtrano sulla selezione, e basta. Una regola «se aveva tutte le
+    // righe di ieri aggiungi quelle di oggi» renderebbe INERTI i toggle nuovi (la dashboard mostra
+    // acceso cio' che sta in `selectedPresets`): le sei famiglie nuove arrivano accese solo quando
+    // l'utente le accende, o quando il profilo le porta gia' dentro (migrazione lato profilo).
+    if (Array.isArray(selectedPresets)) {
         const matchingHeroCatalogs = heroCatalogs.filter(c => selectedPresets.includes(c.id));
         if (matchingHeroCatalogs.length > 0) {
             eligibleHeroCatalogs = matchingHeroCatalogs;
