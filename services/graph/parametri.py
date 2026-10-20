@@ -303,6 +303,16 @@ SCHEDA = [
      "e liste piene (33 e 26 titoli). Valori inferiori sotto-modulano (0,25 da' Jac ~0,49), superiori "
      "degradano copertura e riempimento.",
      "measure/ricetta.py"),
+    # TICKET 19 — I FLAG PER-TITOLO (gemelli dichiarati di `src/catalog/kidsModeFilters.js`).
+    ("ADULTO_GENERI", "27,53,80", "DICHIARATO (gemello di kidsModeFilters.js)",
+     "I generi che il prodotto chiama «adulto»: Horror, Thriller, Crime. Sono gli stessi che il kids-mode "
+     "toglie dalle richieste TMDB; il motore li usa per marcare i titoli PRIMA del taglio, invece di "
+     "lasciare che il taglio a valle butti via la pagina. La parita' fra le due liste la prova "
+     "scripts/qa/probe-ticket-19-flag.py.", "dataset"),
+    ("ADULTO_KEYWORDS", "195669,9194,198385,356759,267122,360629,281741,256466,325693,155477,10292,284439,312898,361470,14964,9826,1849,10714,161919,11192,9964,204950,220192", "DICHIARATO (gemello di kidsModeFilters.js)",
+     "Le keyword TMDB che marcano un titolo come adulto/violento (ecchi, hentai, porn, gore, ...). "
+     "Identiche a quelle del kids-mode: due liste diverse vorrebbero dire scartare cose diverse da quelle "
+     "che il prodotto chiama «adulto».", "dataset"),
     ("ASSE_COZY_GENERI", "35,10751,10749,16", "DICHIARATO (curatela del proprietario)",
      "I generi dell'asse «cozy»: commedia, famiglia, romantico, animazione. Lista PROVVISORIA scritta "
      "dall'autore per provare l'asse: la curatela vera e' del proprietario, e i generi sono la parte "

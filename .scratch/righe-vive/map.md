@@ -174,3 +174,7 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   traduzione id→ruolo e un pezzo di chiave di cache `_rs_<hash>`). Misurato sul fixture del 11: senza guardia
   la riga visibile perde **9/10** dei suoi titoli migliori verso una riga che nessuno mostra; con la guardia
   10/10; con tutte le righe accese il comportamento è **identico** al §9.1.
+- **`19` chiuso**: il canone esporta `ANIME` (dal file che usa già il Node) e `ADULTO` (generi+keyword, gemelli
+  dichiarati di `kidsModeFilters.js`, con la parità provata dalla sonda). Artefatto vecchio → flag `None` e
+  **dichiarato** (`senza flag anime/adulto, i filtri a monte restano inerti`). Ricetta: `fee303c7e91ebcc3`.
+  **Residuo**: rigenerare `metadati-canone.npz` sul mate.

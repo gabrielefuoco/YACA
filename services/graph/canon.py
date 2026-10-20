@@ -923,6 +923,18 @@ def metadati(path_npz=None, path_txt=None):
         with np.load(z) as g:
             if str(g["generi_sha"]) == sha_generi:
                 d = {k: g[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")}
+                # TICKET 19: i flag per-titolo (ANIME, ADULTO) con la stessa tolleranza di COLL/DIR.
+                # L'anime e' deciso lato Node (`anime_mapping.json`); qui il canone lo porta per titolo,
+                # cosi' il motore puo' mascherare PRIMA del taglio invece di lasciare che il taglio a
+                # valle butti via la pagina.
+                for nome, cosa in (("ANIME", "il flag anime"), ("ADULTO", "il flag adulto")):
+                    if nome in g:
+                        d[nome] = g[nome].astype(bool)
+                    else:
+                        d[nome] = None
+                        print(f"  metadati-canone: questo artefatto non ha {cosa} ({nome} assente, "
+                              "i filtri a monte restano inerti)", flush=True)
+
                 # TICKET 18: Lettura di COLL e DIR con dichiarazione e tolleranza per artefatti vecchi
                 if "COLL" in g:
                     d["COLL"] = g["COLL"]
@@ -951,10 +963,44 @@ def metadati(path_npz=None, path_txt=None):
     _, row_of, N, _ = titoli()
     cozy = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
     imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
+    adulto_generi = {int(x) for x in P.ADULTO_GENERI.split(",")}
+    adulto_keywords = {int(x) for x in P.ADULTO_KEYWORDS.split(",")}
+    # ANIME: gli id che il prodotto ha certificato come anime (stesso file di `src/anime/mapping.js`).
+    # Se il file non c'e', il flag resta False e lo si dichiara: nessun proxy inventato.
+    anime_ids = set()
+    _anime_path = ROOT / ".cache" / "tmdb" / "anime_mapping.json"
+    if _anime_path.exists():
+        try:
+            _dati = json.loads(_anime_path.read_text(encoding="utf-8"))
+            for _chiave in ("certifiedTmdbIds", "certified", "certify"):
+                for _v in (_dati.get(_chiave) or []):
+                    try:
+                        anime_ids.add(int(str(_v).strip()))
+                    except Exception:
+                        continue
+            for _chiave in ("animeTmdbIdsMovie", "animeTmdbIdsShow"):
+                for _v in (_dati.get(_chiave) or []):
+                    try:
+                        anime_ids.add(int(str(_v).strip()))
+                    except Exception:
+                        continue
+            for _gruppo in (_dati.get("ids") or {}).values() if isinstance(_dati.get("ids"), dict) else []:
+                for _v in (_gruppo or []):
+                    try:
+                        anime_ids.add(int(str(_v).strip()))
+                    except Exception:
+                        continue
+        except Exception as _e:
+            print(f"  metadati-canone: anime_mapping.json illeggibile ({_e}); ANIME resta vuoto", flush=True)
+    else:
+        print("  metadati-canone: anime_mapping.json assente; ANIME resta vuoto (nessun proxy inventato)",
+              flush=True)
     d = {k: np.zeros(N, np.float64) for k in ("VOT", "VAVE", "POP", "ANNO", "NEP")}
     d["NEP"] += 1.0                                   # 1 = un film: il denominatore del peso serie
     d["COZY"] = np.zeros(N, bool)
     d["IMP"] = np.zeros(N, bool)
+    d["ANIME"] = np.zeros(N, bool)                    # TICKET 19: flag per titolo
+    d["ADULTO"] = np.zeros(N, bool)
     d["COLL"] = np.full(N, -1, dtype=np.int64)        # TICKET 18: collection_id TMDB (-1 = nessuna)
     d["DIR"] = np.full(N, -1, dtype=np.int64)         # TICKET 18: TMDB ID primo regista (-1 = nessuno)
     titoli_str = np.array([""] * N, dtype=object)
@@ -995,6 +1041,12 @@ def metadati(path_npz=None, path_txt=None):
         if not col_dir:
             print(f"  metadati-canone: {f} non contiene colonna registi TMDB (nessun proxy inventato)", flush=True)
 
+        # TICKET 19: i flag per titolo. `ANIME` viene dal file che il prodotto usa gia'
+        # (`.cache/tmdb/anime_mapping.json`, lo stesso di `src/anime/mapping.js`); `ADULTO` dai generi
+        # (e dalle keyword, se il Parquet le porta). Nessun proxy inventato: se il file manca, resta False.
+        if "keywords" in disponibili or "keyword_ids" in disponibili:
+            cols.append("keywords" if "keywords" in disponibili else "keyword_ids")
+
         df = pd.read_parquet(p, columns=cols)
         # DA CHIAVE A RIGA, VETTORIZZATO: una sola espressione al posto di un ciclo Python per riga.
         righe = np.array([row_of.get(f"{tipo}:{int(i)}", -1) if pd.notna(i) else -1
@@ -1006,6 +1058,9 @@ def metadati(path_npz=None, path_txt=None):
         anni = df[dcol].astype("string").str.slice(0, 4)
         d["ANNO"][righe[ok]] = pd.to_numeric(anni, errors="coerce").to_numpy()[ok]
         titoli_str[righe[ok]] = df[col].astype(str).to_numpy()[ok]
+        for j in range(len(df)):
+            if ok[j] and int(df["id"].to_numpy()[j]) in anime_ids:
+                d["ANIME"][righe[j]] = True
         if ecol and ecol in df.columns:
             e = pd.to_numeric(df[ecol], errors="coerce").to_numpy()
             buoni = ok & np.isfinite(e) & (e > 0)
@@ -1020,6 +1075,17 @@ def metadati(path_npz=None, path_txt=None):
             ids = {int(x["id"]) for x in voci if isinstance(x, dict) and "id" in x}
             d["COZY"][righe[j]] = bool(ids & cozy)
             d["IMP"][righe[j]] = bool(ids & imp)
+            # TICKET 19: adulto = genere adulto (o keyword adulta, se il Parquet le porta)
+            adulto = bool(ids & adulto_generi)
+            if not adulto and "keywords" in df.columns:
+                try:
+                    kw = df["keywords"].to_numpy()[j]
+                    elenco = json.loads(kw) if isinstance(kw, str) else (kw or [])
+                    adulto = any(int(x["id"]) in adulto_keywords
+                                 for x in elenco if isinstance(x, dict) and "id" in x)
+                except Exception:
+                    adulto = False
+            d["ADULTO"][righe[j]] = adulto
 
         # Estrazione vettorizzata / controllata di COLL
         if col_coll and col_coll in df.columns:
@@ -1102,7 +1168,8 @@ def metadati(path_npz=None, path_txt=None):
     z.parent.mkdir(parents=True, exist_ok=True)
     pt.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(z, generi_sha=np.array(sha_generi),
-                        **{k: d[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP", "COLL", "DIR")})
+                        **{k: d[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP", "COLL", "DIR",
+                                             "ANIME", "ADULTO")})
     pt.write_text("\n".join(str(t).replace("\r", " ").replace("\n", " ") for t in titoli_str),
                   encoding="utf-8")
     print(f"  metadati-canone: costruiti e salvati ({z.stat().st_size/1e6:.1f} MB "

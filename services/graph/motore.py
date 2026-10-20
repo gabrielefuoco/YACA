@@ -127,6 +127,10 @@ class Motore:
         self.COLL = m.get("COLL", None)
         self.DIR = m.get("DIR", None)
         self.REGISTA = self.DIR
+        # TICKET 19: i flag per-titolo (anime, adulto). `None` = l'artefatto non li ha, e i filtri a
+        # monte restano inerti DICHIARANDOLO (stesso patto di COLL/DIR).
+        self.ANIME = m.get("ANIME", None)
+        self.ADULTO = m.get("ADULTO", None)
         # LE QUOTE PER MONDO, PRECALCOLATE UNA VOLTA. Prima `_quota_per_mondo` rifaceva 3.497 `mean()`
         # su maschere lunghe a ogni chiamata di `modula()`, e `B.IS_TV[self.MEM == cb].mean()` in
         # `scegli_mondi` e in `lista` ricostruiva ogni volta una maschera booleana su 66.259 elementi.
@@ -156,8 +160,11 @@ class Motore:
         self.USCITE = U.carica()
         if not silenzioso:
             stato_coll = "con COLL/DIR" if (self.COLL is not None and self.DIR is not None) else "senza collezione (questo artefatto non ha la collezione)"
+            stato_flag = ("con ANIME/ADULTO" if (self.ANIME is not None and self.ADULTO is not None)
+                          else "senza flag anime/adulto (i filtri a monte restano inerti)")
             print(f"  motore pronto: {self.NB:,} mondi · {self.N:,} titoli · "
-                  f"artefatto {self.artefatto} ({stato_coll}) ({time.time()-T0:.0f}s)", file=sys.stderr)
+                  f"artefatto {self.artefatto} ({stato_coll}, {stato_flag}) ({time.time()-T0:.0f}s)",
+                  file=sys.stderr)
 
     @staticmethod
     def _pota(M, k):
