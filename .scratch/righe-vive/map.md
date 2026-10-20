@@ -95,3 +95,18 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 dichiarate ma non descritte, perché non esistono ancora. A fine cantiere si rilancia: le righe vere, i loro slug
 presi dal registro, e la tabella dei sei stadi con i numeri misurati prima/dopo. Descrivere righe non ancora
 costruite è il modo esatto in cui un documento diventa una bugia.
+
+## Stato al 20/10/2026 (dopo il `07`)
+
+- **Produzione**: `yaca-graph` serve la ricetta `fa5771594b2ad0c4` con l'artefatto **vecchio**
+  `cf1d80dcba3eddce` → `02`, `03`, `05` e `06` sono già vive, il `04` resta inerte. Il `07` non è deployato:
+  con la sua immagine la ricetta diventa `10547118a14ca72c` (artefatto invariato, manifest invariati fino al `13`).
+- **`07` chiuso**: la recenza è una **selezione** (seconda camminata sui soli semi recenti), la riga
+  `ultime_visioni` esiste nel motore e **non è ancora consumata** dal prodotto (ticket `13`). La prova è
+  `scripts/qa/probe-ticket-07-ultime-visioni.py`; il passo data→flag ha i suoi test Node.
+- **Debito nuovo, dichiarato dalla review**: le sonde `03` e `04` sono **ferme** — i loro `Motore` sintetici non
+  hanno `VAVEMEAN` (introdotto dal `05`), e falliscono identiche anche prima del `07`. Non è una regressione, ma
+  il bacino appiattito non ha più una sonda che gira: va rifatta in un ticket suo.
+- **Lezione pagata dal `07`**: la review `spec` ha trovato che `semiDi` contava le **aggiunte in watchlist** come
+  visioni (`ProfileBuilder` scrive segnali `library` dentro WatchHistory). Un ticket può essere verde e sbagliato
+  nel **significato** — la prova deve mordere sulla fonte vera, non su un mock.
