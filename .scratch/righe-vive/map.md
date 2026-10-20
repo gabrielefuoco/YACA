@@ -297,3 +297,17 @@ titoli con ≥3 giorni in home e oggi ce ne sono **3**.
   escono non rientrano, il reset non funziona; se non escono mai, la soglia è troppo alta.
 - **Come si misura**: la stessa query della sera del 20/10 (distribuzione dei giorni distinti per
   `catalogId` sulle righe vive) più la sonda `probe-ticket-21-taratura.js` per il confronto.
+
+### Deploy: un artefatto solo (ticket 24, 20/10/2026 notte)
+
+Il frontend **non è più una cartella montata**: si costruisce nell'immagine dell'app (`frontend-build`),
+quindi app e interfaccia hanno la **stessa versione** per costruzione. Spariti il bind mount, la release
+asset, lo script di aggiornamento, il timer systemd e il workflow separato del frontend.
+
+**`/health` ora dice quale frontend stai servendo**: `{"frontend":{"sha":"64cdf1d","source":"immagine",…}}`.
+Se la sha non è quella attesa, o `frontend` manca, l'interfaccia non è quella dell'immagine.
+
+**Incidente durante il deploy**: una stringa mal escapata in `index.js` ha messo l'app in crash-loop in
+produzione (il build non controllava la sintassi). Ripristinata l'immagine precedente in ~2 minuti, poi
+corretto. Aggiunto un **cancello di sintassi** al build (`node --check` su `index.js` e su tutti i 163 file
+di `src/`): un'immagine che non compila non viene più pubblicata, quindi Watchtower non può tirarla su.
