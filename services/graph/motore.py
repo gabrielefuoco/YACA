@@ -304,11 +304,10 @@ class Motore:
                 m = m[~B.IS_TV[m]]
             return m
 
-        # «IL TUO MONDO»: almeno 50 titoli, accumulando i mondi vicini (Ticket 40).
-        # La riga non sceglie un mondo solo: accumula dal mondo del profilo in poi, in ordine
-        # dell'attivazione modulata, finche' non raggiunge almeno 50 titoli (o i mondi finiscono).
-        # Il mondo del profilo resta il primo della riga (esente da MIN_TITOLI_MONDO).
-        # I mondi successivi devono avere almeno MIN_TITOLI_MONDO (5) titoli non visti.
+        # Selezione dei mondi accesi che alimentano le liste successive («uscite_nuove», «cinema_invisibile»):
+        # accumula dal mondo del profilo in poi, in ordine di attivazione modulata, finche' non
+        # raggiunge almeno 50 titoli (o i mondi finiscono) e rispetta il limite 'largo'.
+        # Il mondo del profilo resta il primo (esente da MIN_TITOLI_MONDO); i successivi richiedono >= 5 titoli non visti.
         ordine_mondi = list(np.argsort(-att_s))
         primo = int(ordine_mondi[0]) if len(ordine_mondi) > 0 else None
         bolle = [primo] if primo is not None else []
@@ -390,15 +389,11 @@ class Motore:
             cand_sopravvissuti = np.array([], dtype=np.int64)
 
         # 3. Ranking combinato: score(x) = r[x] * (bayesian_vote(x) / 7.0) ** 1.5
-        m_bayes = float(getattr(P, "BAYESIAN_M", 300.0))
-        c_bayes = float(getattr(P, "BAYESIAN_C", 6.5))
         base_bayes = float(getattr(P, "RANKING_BAYES_BASE", 7.0))
         exp_bayes = float(getattr(P, "RANKING_BAYES_EXP", 1.5))
 
         if len(cand_sopravvissuti) > 0:
-            v_cand = self.VOT[cand_sopravvissuti]
-            va_cand = self.VAVE[cand_sopravvissuti]
-            bayes_cand = (v_cand * va_cand + m_bayes * c_bayes) / np.maximum(v_cand + m_bayes, 1e-9)
+            bayes_cand = self.voto_bayesiano(cand_sopravvissuti)
             score_cand = r[cand_sopravvissuti] * ((bayes_cand / base_bayes) ** exp_bayes)
             ordine_score = np.argsort(-score_cand)
             cand_ordinati = cand_sopravvissuti[ordine_score]
@@ -434,9 +429,7 @@ class Motore:
         liste = []
         quanti_tuo = max(P.IL_TUO_MONDO_MIN_TITOLI, cap_main) if cap is None or cap >= P.IL_TUO_MONDO_MIN_TITOLI else cap_main
         if ripescati_mondo:
-            v_rip = self.VOT[ripescati_mondo]
-            va_rip = self.VAVE[ripescati_mondo]
-            bayes_rip = (v_rip * va_rip + m_bayes * c_bayes) / np.maximum(v_rip + m_bayes, 1e-9)
+            bayes_rip = self.voto_bayesiano(ripescati_mondo)
             score_rip = r[ripescati_mondo] * ((bayes_rip / base_bayes) ** exp_bayes)
             titoli_rip = [(B.KEYS[x], float(sc)) for x, sc in zip(ripescati_mondo, score_rip)]
 
