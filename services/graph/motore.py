@@ -124,6 +124,12 @@ class Motore:
         self._generi_imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
         self.VOTMED = np.array([K.mediana_voti(self.VOT[self.MEMBRI[b]])
                                 for b in range(self.NB)])
+        # TICKET 05: Media voto VAVE per bolla (esclusi VAVE <= 0) per normalizzazione nicchia
+        self.VAVEMEAN = np.zeros(self.NB, dtype=np.float32)
+        for b in range(self.NB):
+            vb = self.VAVE[self.MEMBRI[b]]
+            vb_pos = vb[vb > 0]
+            self.VAVEMEAN[b] = float(np.mean(vb_pos)) if len(vb_pos) > 0 else float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
         # la componente LISTE di Trakt: corroborazione per la nicchia di qualita'
         z = np.load(K.A("nuovo-LIST.npz"))
         n = len(z["indptr"]) - 1
@@ -160,6 +166,33 @@ class Motore:
             return C.attiva_per_mondo(r, self.MEM, self.NB), r
         r = C.diffondi(self.Tr, righe, plays, self.NEP, tipi=tipi)
         return C.attiva_per_mondo(r, self.MEM, self.NB), r
+
+    def media_voto_bolla(self, b):
+        """Restituisce la media dei voti VAVE della bolla b (Ticket 05)."""
+        if hasattr(self, "VAVEMEAN") and self.VAVEMEAN is not None and len(self.VAVEMEAN) > b:
+            return float(self.VAVEMEAN[b])
+        mb = self.MEMBRI[b]
+        vb = self.VAVE[mb]
+        vb_pos = vb[vb > 0]
+        return float(np.mean(vb_pos)) if len(vb_pos) > 0 else float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
+
+    def calcola_v_mondo(self, bolle_set, att_s):
+        """Calcola la mediana dei voti del bacino acceso pesata per att_s[b] (Ticket 05)."""
+        if not bolle_set:
+            return float(getattr(P, "NICCHIA_V_MONDO_FALLBACK", 1000.0))
+        bolle_list = list(bolle_set)
+        vals = np.array([float(self.VOTMED[b]) for b in bolle_list], dtype=np.float64)
+        weights = np.array([max(float(att_s[b]), 0.0) for b in bolle_list], dtype=np.float64)
+        tot_w = float(weights.sum())
+        if tot_w <= 0:
+            return float(np.median(vals)) if len(vals) > 0 else float(getattr(P, "NICCHIA_V_MONDO_FALLBACK", 1000.0))
+        ord_idx = np.argsort(vals)
+        sorted_vals = vals[ord_idx]
+        sorted_weights = weights[ord_idx]
+        cum_weights = np.cumsum(sorted_weights)
+        idx_med = np.searchsorted(cum_weights, 0.5 * tot_w)
+        idx_med = min(idx_med, len(sorted_vals) - 1)
+        return float(sorted_vals[idx_med])
 
     def voto_bayesiano(self, x=None):
         """Voto bayesiano TMDB (formula IMDb): (VOT*VAVE + m*C) / (VOT + m)."""
@@ -646,13 +679,68 @@ class Motore:
         div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
         liste.append({"tipo": "uscite_nuove", "mondo": None, "titoli": div_nuove[:cap_main]})
 
-        # la nicchia di qualita': non iper-popolare, ben votata, meglio se in liste di altri
-        cand_quanti = max(cap_main * 2, cap_main + 20) if cap is not None else 40
-        cand = [x for x in self.titoli_di(bolle + vicini, r, visti, cand_quanti, medium_filtro=medium)]
-        nic = [x for x in cand if self.POP[x] <= P.NICCHIA_POPOLARITA_MAX
-               and self.VAVE[x] >= P.NICCHIA_VOTO_MIN]
-        nic.sort(key=lambda x: -(self.VAVE[x] + (P.NICCHIA_BONUS_LISTE if self.LISTDEG[x] > 0 else 0)))
-        cand_nic = [(B.KEYS[x], float(r[x])) for x in nic]
+        # =========================================================================
+        # «GEMME NASCOSTE NEL TUO MONDO» (Ticket 05): Nicchia RELATIVA al profilo
+        # =========================================================================
+        # 1. Bacino appiattito: lo stesso cand_bacino di «il tuo mondo» (Ticket 03)
+        if len(cand_bacino) > 0:
+            # 2. Tetto relativo di notorieta':
+            # V_mondo = mediana dei voti del bacino acceso pesata per att_s[b]
+            v_mondo = self.calcola_v_mondo(bacino_bolle_set, att_s)
+            fattore_v_mondo = float(getattr(P, "NICCHIA_FATTORE_V_MONDO", 0.35))
+            tetto_vot_max = float(getattr(P, "NICCHIA_TETTO_VOT_MAX", 2500.0))
+            tetto_voti = min(fattore_v_mondo * v_mondo, tetto_vot_max)
+
+            # POP[x] sotto il 50° percentile del bacino
+            soglia_pop = float(np.percentile(self.POP[cand_bacino], float(getattr(P, "NICCHIA_POP_PERCENTILE", 50.0))))
+
+            # 3. Pavimento assoluto: VOT[x] >= 40
+            pavimento_voti = float(getattr(P, "NICCHIA_PAVIMENTO_VOT_MIN", 40.0))
+
+            # 4. Voto normalizzato sulla bolla:
+            # mu_b = media voto della bolla.
+            # VAVE[x] - mu_b >= +0.4 E VAVE[x] >= 6.8 (7.1 per serie, con offset +0.3 per parita' con film)
+            delta_vave_min = float(getattr(P, "NICCHIA_DELTA_VAVE_MU", 0.4))
+            vave_min_film = float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
+            vave_min_serie = float(getattr(P, "NICCHIA_VAVE_MIN_SERIE", 7.1))
+
+            cand_bolle = self.MEM[cand_bacino]
+            mu_b_cand = np.array([self.media_voto_bolla(b) for b in cand_bolle], dtype=np.float32)
+            vave_cand = self.VAVE[cand_bacino]
+            vot_cand = self.VOT[cand_bacino]
+            pop_cand = self.POP[cand_bacino]
+
+            is_tv_cand = B.IS_TV[cand_bacino]
+            vave_min_effettivo = np.where(is_tv_cand, vave_min_serie, vave_min_film)
+
+            maschera_nicchia = (
+                (vot_cand >= pavimento_voti)
+                & (vot_cand <= tetto_voti)
+                & (pop_cand <= soglia_pop)
+                & ((vave_cand - mu_b_cand) >= delta_vave_min)
+                & (vave_cand >= vave_min_effettivo)
+            )
+            nic_sopravvissuti = cand_bacino[maschera_nicchia]
+
+            if len(nic_sopravvissuti) > 0:
+                # 5. Ordine: r[x] * (VAVE[x] - mu_b + 1.0) * (1 + 0.15 * (LISTDEG[x] > 0))
+                r_nic = r[nic_sopravvissuti]
+                mu_nic = np.array([self.media_voto_bolla(self.MEM[x]) for x in nic_sopravvissuti], dtype=np.float32)
+                vave_diff = self.VAVE[nic_sopravvissuti] - mu_nic
+                bonus_liste = float(getattr(P, "NICCHIA_BONUS_LISTE", 0.15))
+                fattore_liste = np.where(self.LISTDEG[nic_sopravvissuti] > 0, 1.0 + bonus_liste, 1.0)
+
+                score_nic = r_nic * (vave_diff + 1.0) * fattore_liste
+                ordine_score = np.argsort(-score_nic)
+                nic_ordinati = nic_sopravvissuti[ordine_score]
+                score_ordinati = score_nic[ordine_score]
+
+                cand_nic = [(B.KEYS[x], float(sc)) for x, sc in zip(nic_ordinati, score_ordinati)]
+            else:
+                cand_nic = []
+        else:
+            cand_nic = []
+
         div_nic = self.applica_antimonopolio(cand_nic, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="nicchia_di_qualita")
         liste.append({"tipo": "nicchia_di_qualita", "mondo": None, "titoli": div_nic[:cap_main]})
 
@@ -671,8 +759,7 @@ class Motore:
         # sproposito si impara a ignorarlo. Se un giorno la nicchia diventasse ordine di attivazione,
         # si toglierebbe da qui.
         for li in liste:
-            if li["tipo"] != "nicchia_di_qualita":
-                K.assert_monotonia_lista(li["titoli"], f"lista {li['tipo']}")
+            K.assert_monotonia_lista(li["titoli"], f"lista {li['tipo']}")
 
         # E2: "catalogo" accende da_catalogo: true, e non compare fra i suggerimenti (e' in visti)
         da_cat = any(t == "catalogo" for t in tipi)
