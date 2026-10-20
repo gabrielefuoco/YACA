@@ -79,7 +79,7 @@ Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente
   {
     "semi": [
       { "tmdbId": 655, "medium": "series", "tipo": "watched", "peso": 0.42 },
-      { "tmdbId": 1399, "medium": "series", "tipo": "loved", "peso": 4.0 }
+      { "tmdbId": 1399, "medium": "series", "tipo": "loved", "peso": 4.0, "recente": true }
     ],
     "medium": "series",
     "opzioni": { "largo": 4, "lontano": 0.0, "cozy": 0.0, "canone": 0.0 },
@@ -88,6 +88,7 @@ Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente
   ```
   - `semi` (array obbligatorio): Storia dei titoli dell'utente. Titoli non presenti nel canone del grafo vengono scartati silenziosamente.
   - `peso` (numerico, opzionale - Emendamento E1): Preserva il decadimento temporale misurato dal prodotto (`max(0.20, 0.5^(giorni/60))`). Se assente, il motore ripiega sui pesi statici per tipo.
+  - `recente` (booleano, opzionale - Ticket 07): il seme e' fra le **ultime visioni** del profilo. Il prodotto marca i **15 piu' recenti fra i semi che invia** (`SEED_RECENTI_QUANTI`), usando la data vera di `WatchHistory` (`lastWatchedAt` / `signals[].at` / `createdAt` / `daysAgo`); una data mancante non e' mai "adesso" e non e' mai recente. **Non e' un peso**: il motore lo usa solo come selezione, per la seconda camminata della riga `ultime_visioni`. Assente equivale a `false`.
   - Tipo `"catalogo"` (Emendamento E2): Ammesso per i semi da freddo (< 3 titoli in cronologia). Diffonde la probabilità nel PageRank ma non viene mai restituito nei titoli raccomandati (`semi.da_catalogo: true`).
   - `medium` (stringa `"movie"` | `"series"`, opzionale - Emendamento E4): Se specificato, filtra la risposta per il medium richiesto; se assente, restituisce entrambi i medium con una sola camminata di diffusione.
   - `opzioni` (oggetto opzionale): Slider di modulazione (`largo`, `lontano`, `cozy`, `canone`). Se assente, applica `SLIDER_DEFAULT`.
@@ -98,7 +99,7 @@ Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente
   {
     "contratto": 1,
     "versioni": { "artefatto": "f8a92...", "ricetta": "e12c4..." },
-    "semi": { "n": 2, "da_catalogo": false },
+    "semi": { "n": 2, "da_catalogo": false, "recenti": 1 },
     "liste": [
       {
         "ruolo": "il_tuo_mondo",
@@ -248,7 +249,7 @@ Il cantiere `.scratch/righe-vive/` (documentato in dettaglio in [.scratch/righe-
 1. **Bacino appiattito ("Il tuo mondo")**: Unione delle prime *K* bolle accese (≥80% della massa) e dei loro vicini in un set unico, con pavimento di qualità adattivo (`VAVE >= 6.4`, voti parametrati sul canone del profilo) e ranking combinato attivazione/voto bayesiano.
 2. **Gemme nascoste relative al profilo**: Soglie di popolarità e voti non più fisse per tutti, ma relative al baricentro del bacino dell'utente, normalizzate sulla media voto della bolla.
 3. **Classici imperdibili del tuo mondo**: High-consensus ad alta attivazione nel bacino dell'utente (70% attivazione, 30% voto bayesiano).
-4. **Recenza come selezione ("Sul filo delle ultime visioni")**: Seconda diffusione con PageRank dedicato sui soli semi recenti per catturare i cambi rapidi di interesse.
+4. **Recenza come selezione ("Sul filo delle ultime visioni")**: Seconda diffusione con PageRank dedicato sui soli semi recenti (`>= 3`, `ULTIME_VISIONI_MIN_SEMI`) e bacino appiattito dalle bolle accese da **quella** camminata (max 4), stesso pavimento e stesso ranking di «il tuo mondo». **Esiste nel motore** dal ticket 07 (contratto: campo `semi[].recente`, risposta: lista `ultime_visioni`, `semi.recenti`); il prodotto non consuma ancora la riga, che arriva al client col ticket 13. Con meno di 3 semi recenti la riga si dichiara vuota col motivo, invece di sparire.
 5. **Micro-cluster dei filoni**: Partizionamento dei semi in cluster indipendenti con diffusioni separate, per non schiacciare i gusti minoritari sotto il filone dominante.
 6. **Punti d'incontro (Crossover)**: Media geometrica dell'attivazione tra filoni distinti per far emergere titoli ponte.
 7. **Riparazione Nuove Uscite**: Collocazione offline delle uscite recenti (`collocator.py`) in cache `uscite-collocate.npz` per eliminare il vuoto sistematico e la soppressione silenziosa.
