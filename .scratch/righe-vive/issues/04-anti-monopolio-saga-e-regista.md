@@ -317,3 +317,11 @@ Esattamente le sole 5 suite rosse / 8 test falliti / 1898 passati ammessi dalla 
 - Nessun svuotamento della coda: quando abilitata, i titoli eccedenti i cap nei primi 20 slot scendono ordinatamente dopo la posizione 20 senza sparire.
 - Il contratto di monotonicità dei punteggi di `assert_monotonia_lista` è pienamente rispettato.
 - Consumo di memoria misurato a ~100.3 MB, ben al di sotto del tetto di 512 MB.
+
+---
+
+**Aggiornamento (19/10/2026).** Il prerequisito **18 è risolto**: `canon.metadati()` esporta
+`COLL`/`DIR` e il reader li legge, dichiarando un artefatto vecchio. La regola quindi **si accende da
+sola** appena l'artefatto di produzione viene rigenerato sul mate — nessuna modifica di codice richiesta. Fino a
+quel momento resta il **no-op stretto**, provato per identità: l'uscita è lo stesso oggetto dell'ingresso, stessi
+punteggi, stesso ordine.

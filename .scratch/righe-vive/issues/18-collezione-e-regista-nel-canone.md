@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 18 — La collezione e il regista non esistono a runtime: portali nel canone
@@ -393,3 +393,14 @@ Esattamente le sole 5 suite rosse / 8 test falliti / 1898 passati ammessi dalla 
 - **Artefatto di produzione non rigenerato localmente**: non essendo in git e vivendo i Parquet su `mate`, la validazione è avvenuta su fixture con dichiarazione esplicita di produzione inerte fino a rigenerazione.
 - Monotonicità dei punteggi di `assert_monotonia_lista` preservata.
 - Consumo di memoria misurato a ~100.6 MB, ampiamente sotto il tetto dei 512 MB.
+
+---
+
+**Residuo operativo, dichiarato (19/10/2026).** Il codice è dentro: `COLL`/`DIR` per titolo,
+esportati nel `.npz`, con il reader che **dichiara** un artefatto vecchio invece di esplodere, e la ricetta
+avanzata a `5613a6e36e590941` (la cache si invalida da sola).
+
+**Manca il dato**: l'artefatto di produzione (~138 MB) **non è stato rigenerato** — non è in git, i Parquet TMDB
+stanno sul mate. In produzione, finché non si rigenera, il servizio dirà a console *«questo artefatto non ha la
+collezione»* e il ticket 04 resterà inerte (no-op stretto, numeri intatti). **La rigenerazione è un passo operativo,
+non un ticket**: si fa dove i dati ci sono.
