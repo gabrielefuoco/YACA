@@ -79,9 +79,19 @@ def leggi_parquet(tipo, colonne=None):
         print(f"  uscite-collocate: {f} assente, niente collocazione per {tipo} "
               f"(la cache resta quella di prima, se c'e')", file=sys.stderr)
         return None
+    # SI LEGGE SOLO CIO' CHE C'E': i Parquet TMDB cambiano forma fra un export e l'altro (una colonna
+    # che c'e' oggi domani non c'e'). Un `columns=` con una colonna assente fa fallire TUTTO il file, e
+    # un medium intero sparirebbe in silenzio — l'errore che questo modulo esiste per non fare.
+    colonne = colonne or COLS[tipo]
     try:
-        return pd.read_parquet(f, columns=colonne or COLS[tipo])
-    except Exception as e:  # colonna mancante o parquet illeggibile: si dichiara, non si esplode
+        import pyarrow.parquet as pq
+        disponibili = set(pq.read_schema(f).names)
+        colonne = [c for c in colonne if c in disponibili]
+    except Exception:
+        pass
+    try:
+        return pd.read_parquet(f, columns=colonne)
+    except Exception as e:  # parquet illeggibile: si dichiara, non si esplode
         print(f"  uscite-collocate: {f} illeggibile ({e})", file=sys.stderr)
         return None
 
@@ -127,6 +137,11 @@ def costruisci(percorso=None, dal=None, voti_min=None, voto_min=None,
         if df is None or len(df) == 0:
             continue
         colonna_data = "release_date" if tipo == "movie" else "first_air_date"
+        mancanti = {"id", "vote_count", "vote_average", colonna_data} - set(df.columns)
+        if mancanti:
+            print(f"  uscite-collocate: {FILE[tipo]} senza le colonne {sorted(mancanti)}: "
+                  f"niente collocazione per {tipo}", file=sys.stderr)
+            continue
         anni_tipo = _anno(df[colonna_data]) if colonna_data in df.columns else pd.Series(np.nan, index=df.index)
         voti_serie = pd.to_numeric(df["vote_count"], errors="coerce")
         voto_serie = pd.to_numeric(df["vote_average"], errors="coerce")
