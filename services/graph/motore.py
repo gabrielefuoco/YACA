@@ -664,6 +664,40 @@ class Motore:
                   f"restano i primi per peso", file=sys.stderr)
         return tenuti[:max_cluster]
 
+    def ponte_fra(self, r_a, r_b, cand_a, cand_b, visti, soglia_voti, nome_riga):
+        """I PUNTI D'INCONTRO (Ticket 09): `sqrt(r_a[x] * r_b[x])` fra due camminate.
+
+        La MEDIA GEOMETRICA e' la scelta, non un dettaglio: se un titolo e' forte in un filone e assente
+        nell'altro il prodotto e' ZERO, quindi sale solo chi riceve massa da entrambi. Con la media
+        aritmetica vincerebbe chi e' forte in uno solo, e la riga sarebbe il doppione di un filone.
+
+        Candidati: l'unione dei due bacini (non visti), pavimento `VAVE >= PUNTI_INCONTRO_VAVE_MIN` del
+        ticket **piu'** il pavimento voti generale (non si abbassa niente), ordine per ponte decrescente,
+        poi i cap anti-monopolio. Restituisce `(titoli, sopravvissuti)`.
+        """
+        cand = np.union1d(np.asarray(cand_a, np.int64), np.asarray(cand_b, np.int64))
+        if len(cand) == 0:
+            return [], 0
+        tiene = (self.VAVE[cand] >= float(P.PUNTI_INCONTRO_VAVE_MIN)) & (self.VOT[cand] >= float(soglia_voti))
+        cand = cand[tiene]
+        if len(cand) == 0:
+            return [], 0
+        ponte = np.sqrt(np.maximum(r_a[cand], 0.0) * np.maximum(r_b[cand], 0.0))
+        # UN PONTE DI MASSA ZERO NON È UN PONTE: chi è assente in una delle due camminate resta fuori,
+        # invece di riempire la riga con lo zero (e' la differenza con la media aritmetica, nero su bianco).
+        tiene = ponte > 0.0
+        cand = cand[tiene]
+        ponte = ponte[tiene]
+        if len(cand) == 0:
+            return [], 0
+        ordine = np.argsort(-ponte)
+        cand = cand[ordine]
+        ponte = ponte[ordine]
+        fuori = [(B.KEYS[x], float(p)) for x, p in zip(cand, ponte)]
+        div = self.applica_antimonopolio(fuori, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX,
+                                         nome_riga=nome_riga)
+        return div, len(div)
+
     # ------------------------------------------------------------------ IL METODO
     def lista(self, storia, slider=None, cap=None, medium=None):
         """Una storia e' una lista di `(chiave, plays)` OPPURE di `(chiave, plays, tipo)`
@@ -1020,6 +1054,7 @@ class Motore:
         # Il peso dei semi e' gia' calcolato in w_semi (stessa formula della diffusione principale).
         peso_semi_totale = float(np.sum(w_semi)) if len(w_semi) else 0.0
         cluster = self.cluster_di_semi(righe, w_semi)
+        filoni = []
         motivi = []
         if not cluster:
             # Il canale dichiarato (`motivi`) esiste apposta: zero righe e' un fatto, non un silenzio.
@@ -1072,7 +1107,112 @@ class Motore:
             )
             if motivo_cl:
                 riga_cl["motivo"] = motivo_cl
+            # Le camminate dei filoni servono anche ai ponti (Ticket 09): non si ricalcolano.
+            filoni.append({
+                "r": r_cl,
+                "cand": cand_cl,
+                "ancora": int(cl["ancora"]),
+                "titolo_seme": titoli_seme[0] if titoli_seme else None,
+                "semi_chiavi": list(riga_cl["semi_chiavi"]),
+            })
             liste.append(riga_cl)
+
+        # =========================================================================
+        # «PUNTI D'INCONTRO» (Ticket 09): il ponte fra due filoni
+        # =========================================================================
+        # ponte(x) = sqrt(r_a[x] * r_b[x]): sale solo chi riceve massa da ENTRAMBI i filoni. Le camminate
+        # sono quelle appena fatte per i micro-cluster: **zero** PageRank in piu' nel caso normale.
+        nomi_ponti = 0
+        for i in range(len(filoni)):
+            for j in range(i + 1, len(filoni)):
+                nomi_ponti += 1
+                a, b = filoni[i], filoni[j]
+                nome_pon = f"punti_incontro_{nomi_ponti}"
+                div_pon, tot_pon = self.ponte_fra(a["r"], b["r"], a["cand"], b["cand"],
+                                                  visti, soglia_voti, nome_pon)
+                riga_pon = {
+                    "tipo": nome_pon,
+                    "mondo": None,
+                    "coppia_id": f"b{a['ancora']}_b{b['ancora']}",
+                    "fallback": False,
+                    "titoli_seme": [t for t in (a["titolo_seme"], b["titolo_seme"]) if t],
+                    "semi_chiavi": a["semi_chiavi"] + b["semi_chiavi"],
+                    "titoli": div_pon[:cap_main],
+                    "target_dimensione": cap_main,
+                    "totale_sopravvissuti": tot_pon,
+                }
+                riga_pon["corta"], motivo_pon = self.dichiara_corta(
+                    len(riga_pon["titoli"]), cap_main, "punti_incontro", prefisso=nome_pon
+                )
+                if motivo_pon:
+                    riga_pon["motivo"] = motivo_pon
+                liste.append(riga_pon)
+
+        if nomi_ponti == 0:
+            # FALLBACK (Ticket 09): un filone solo -> i due mondi piu' lontani CHE HANNO SEMI. Se i semi
+            # stanno tutti in un mondo, un ponte non esiste: la riga lo dichiara, non lo inventa.
+            mondi_con_semi = [int(b) for b in np.unique(self.MEM[righe])]
+            riga_fb = {
+                "tipo": "punti_incontro_1",
+                "mondo": None,
+                "coppia_id": None,
+                "fallback": True,
+                "titoli_seme": [],
+                "semi_chiavi": [],
+                "titoli": [],
+                "target_dimensione": cap_main,
+                "totale_sopravvissuti": 0,
+                "corta": True,
+            }
+            coppia = []
+            if len(mondi_con_semi) >= 2:
+                att_solo_semi = np.full(self.NB, -1.0)
+                att_solo_semi[mondi_con_semi] = att_s[mondi_con_semi]
+                coppia = self.scegli_mondi(
+                    att_solo_semi,
+                    {**slider, "largo": int(P.PUNTI_INCONTRO_MONDI_FALLBACK), "lontano": 1.0},
+                )
+            if len(coppia) >= 2:
+                sponde = []
+                for bb in (int(coppia[0]), int(coppia[1])):
+                    idx_b = np.nonzero(self.MEM[righe] == bb)[0]
+                    pesi_b = None if pesi is None else [pesi[j] for j in idx_b]
+                    _att_b, r_b = self.diffondi(
+                        righe[idx_b], plays[idx_b],
+                        tipi=[tipi[j] for j in idx_b], pesi=pesi_b,
+                    )
+                    ord_b = sorted(
+                        range(len(idx_b)),
+                        key=lambda j: (-float(w_semi[idx_b[j]]), int(righe[idx_b[j]])),
+                    )
+                    sponde.append({
+                        "mondo": bb,
+                        "r": r_b,
+                        "cand": non_visti_mondo(bb),
+                        "titolo": str(self.TIT[int(righe[idx_b[ord_b[0]]])]) if ord_b else None,
+                        "semi": [B.KEYS[int(righe[j])] for j in idx_b],
+                    })
+                div_fb, tot_fb = self.ponte_fra(sponde[0]["r"], sponde[1]["r"],
+                                                sponde[0]["cand"], sponde[1]["cand"],
+                                                visti, soglia_voti, "punti_incontro_1")
+                riga_fb.update({
+                    "coppia_id": f"b{sponde[0]['mondo']}_b{sponde[1]['mondo']}",
+                    "titoli_seme": [t for t in (sponde[0]["titolo"], sponde[1]["titolo"]) if t],
+                    "semi_chiavi": sponde[0]["semi"] + sponde[1]["semi"],
+                    "titoli": div_fb[:cap_main],
+                    "totale_sopravvissuti": tot_fb,
+                })
+                riga_fb["corta"], motivo_fb = self.dichiara_corta(
+                    len(riga_fb["titoli"]), cap_main, "punti_incontro", prefisso="punti_incontro_1"
+                )
+                if motivo_fb:
+                    riga_fb["motivo"] = motivo_fb
+            else:
+                riga_fb["motivo"] = ("punti_incontro: i semi stanno in un mondo solo, "
+                                     "nessun ponte fra due sponde")
+                motivi.append(riga_fb["motivo"])
+                print(f"  [punti_incontro] {riga_fb['motivo']}", file=sys.stderr)
+            liste.append(riga_fb)
 
         for b in bolle[1:]:
             liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")} )

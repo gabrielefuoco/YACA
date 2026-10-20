@@ -155,7 +155,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
                 # Campo strutturale, non solo il testo del motivo (Ticket 07).
                 lista_out["semi_recenti"] = int(li["semi_recenti"])
             # Anche una riga di filone svuotata dal pavimento porta la sua identita' (Ticket 08).
-            for campo in ("cluster_id", "quota_peso", "titoli_seme"):
+            for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback"):
                 if campo in li:
                     lista_out[campo] = li[campo]
             contratto_liste.append(lista_out)
@@ -249,6 +249,22 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             ))
             parziale = True
 
+        elif ruolo.startswith("punti_incontro"):
+            att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
+            semi_parlanti = [str(t) for t in (li.get("titoli_seme") or []) if t]
+            if semi_parlanti:
+                desc = "Tra " + " e ".join(f"«{t}»" for t in semi_parlanti)
+            else:
+                desc = "Tra due tuoi mondi lontani"
+            if li.get("fallback"):
+                desc += " · i tuoi due mondi più lontani"
+            if corta:
+                desc += f" (riga corta: {len(titoli)}/{target} titoli)"
+            semi_ids = list(dict.fromkeys(
+                int(ch.split(":")[1]) for ch in li.get("semi_chiavi", []) if ch in B.ROW_OF
+            ))
+            parziale = True
+
         elif ruolo == "nicchia_di_qualita":
             att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
             fb = li.get("fallback_v_mondo", False)
@@ -289,12 +305,11 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         }
         if parziale:
             lista_out["parziale"] = True
-        if li.get("cluster_id"):
-            # L'identita' del filone viaggia col contratto: lo SLOT (`micro_cluster_1..3`) e' posizionale
-            # e cambia quando i pesi si incrociano, il filone no (Ticket 08).
-            lista_out["cluster_id"] = str(li["cluster_id"])
-            lista_out["quota_peso"] = float(li.get("quota_peso", 0.0))
-            lista_out["titoli_seme"] = [str(t) for t in (li.get("titoli_seme") or [])]
+        # L'identita' delle righe derivate viaggia col contratto: lo SLOT (`micro_cluster_1..3`,
+        # `punti_incontro_1..3`) e' posizionale e cambia quando i pesi si incrociano, il filone no (08, 09).
+        for campo in ("cluster_id", "quota_peso", "titoli_seme", "coppia_id", "fallback"):
+            if campo in li:
+                lista_out[campo] = li[campo]
         if li.get("corta", False) or (ruolo == "nicchia_di_qualita" and len(titoli) < 20):
             lista_out["corta"] = True
             lista_out["target_dimensione"] = li.get("target_dimensione", 20)
