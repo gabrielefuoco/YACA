@@ -207,3 +207,34 @@ POST /raccomanda (4 semi, filtri exclude+kids, righe_servite = [il_tuo_mondo, cl
    mate** (`/data/tmdb` ha solo gli indici), quindi l'artefatto **non è rigenerabile lì** senza riscaricarli.
    Finché manca, i filtri a monte (12) e l'anti-monopolio (04) restano inerti — e lo dicono.
 2. **`uscite-collocate.npz` non esiste**: `uscite_nuove` esce vuota ma **dichiarata** (`fonte: canone`).
+
+## Secondo deploy e chiusura del cantiere (20/10/2026, sera)
+
+Fatti in questa sessione: **20** (righe accese), **21** (alpha + reset), **22** (guardia del waterfall),
+**19** (flag nel canone), **12** (filtri a monte), **17** (tipo del seme + score del ripescato), **15** e
+**16** (documenti). Restano aperti solo `04` (codice pronto, dato) e le decisioni di prodotto.
+
+**L'artefatto dei metadati è stato rigenerato sul mate** (era il residuo che teneva spenti 12 e 04): generato
+dentro un container una-tantum col Parquet del volume `yaca_tmdb`, poi depositato in
+`/srv/yaca/services/graph/data/` (il vecchio è in `backup-20261020/`):
+
+```
+ANIME 3.531 · ADULTO 21.226 · COLL 7.217 · DIR 59.738   (su 66.259 titoli del canone)
+```
+
+**Un bug trovato per strada**: nel Parquet TMDB `collection_id` è un **float** (`531241.0`), e il lettore
+accettava solo interi → `COLL` restava tutto a -1 e il ticket 04 sarebbe rimasto inerte **per sempre**, anche
+con l'artefatto rigenerato. Corretto (`isinstance(c_val, (float, np.floating))`).
+
+**Verificato in produzione dopo il secondo deploy:**
+
+```
+GET /health → artefatto cf1d80dcba3eddce+1bd29fbeed3f6da2 (l'identità ora include i metadati)
+POST /raccomanda (filtri exclude+kids, righe_servite = [il_tuo_mondo, classici])
+  filtri:    {applicato: True, scartati: 23.902}      ← il 12 è ACCESO
+  waterfall: {servite: 2, fuori: 13}                  ← il 22 è vivo
+  liste:     il_tuo_mondo 20 · un_passo_fuori 11 · nicchia 20 · classici 9
+```
+
+**Residuo unico**: `uscite-collocate.npz` non esiste ancora (`python -m graph.uscite` sul mate, ~10 min):
+`uscite_nuove` esce vuota ma **dichiarata** (`fonte: canone`).
