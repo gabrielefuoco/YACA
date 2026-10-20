@@ -202,6 +202,60 @@ const RAW_HERO_DEFINITIONS = [
     }
 ];
 
+/**
+ * LE RIGHE NUOVE DEL CANTIERE «righe-vive» (Ticket 13).
+ *
+ * Il motore del grafo produce queste liste dal ticket 06 in poi, ma il registro ne conosceva solo
+ * quattro: le altre arrivavano a `/api/mondi` e non a Stremio. Qui diventano cataloghi di sistema,
+ * con **id stabili**: gli stessi che il registro espone al pool (`yaca_<slug>_<media>`).
+ *
+ * Gli slot dei micro-cluster sono tre e fissi (`micro_cluster_1..3`): il motore ne produce al massimo
+ * tre, e un catalogo che compare e sparisce e' un guasto per Stremio, non una varieta'. Il ponte
+ * («punti d'incontro») e' **uno** per medium: il motore lo decompone in coppie di filoni, il registro
+ * no — il pool le unisce.
+ */
+const NUOVE_RIGHE_HERO = Object.freeze([
+    { slug: 'classici', emoji: '🏛️', label: 'Classici imperdibili', priority: 5,
+      desc: 'I capolavori del tuo micro-genere: molto votati, dentro il tuo bacino (Ticket 06).' },
+    { slug: 'ultime_visioni', emoji: '🕐', label: 'Sul filo delle ultime visioni', priority: 6,
+      desc: 'Il filone che guardi adesso: la recenza come selezione, non come peso (Ticket 07).' },
+    { slug: 'punti_incontro', emoji: '🌉', label: "Punti d'incontro", priority: 7,
+      desc: 'Titoli che ricevono massa da due filoni diversi: i ponti fra i tuoi gusti (Ticket 09).' },
+    { slug: 'micro_cluster_1', emoji: '🧩', label: 'Il tuo filone 1', priority: 8,
+      desc: 'Uno dei tuoi filoni, con la sua camminata e i suoi semi (Ticket 08).' },
+    { slug: 'micro_cluster_2', emoji: '🧩', label: 'Il tuo filone 2', priority: 9,
+      desc: 'Un altro dei tuoi filoni: non si fa schiacciare dal dominante (Ticket 08).' },
+    { slug: 'micro_cluster_3', emoji: '🧩', label: 'Il tuo filone 3', priority: 10,
+      desc: "Il terzo filone, quando ce n'e' uno (Ticket 08)." },
+]);
+
+for (const r of NUOVE_RIGHE_HERO) {
+    for (const [suffisso, mediaSet] of [['movies', ['film']], ['series', ['serie']]]) {
+        RAW_HERO_DEFINITIONS.push({
+            id: `yaca_${r.slug}_${suffisso}`,
+            name: `${r.emoji} ${r.label}`,
+            emoji: r.emoji,
+            mediaSet,
+            anime: 'agnostic',
+            filters: { strategy: r.slug },
+            sort: { by: 'affinity_score', sortable: false },
+            system: {
+                isSystem: true,
+                userModifiable: false,
+                priority: r.priority,
+                additive: true,
+                alwaysVisible: false,
+                strategy: null,
+                uiType: 'algo',
+                idBase: `yaca_${r.slug}`,
+                label: r.label,
+                desc: r.desc,
+                provider: 'hybrid'
+            }
+        });
+    }
+}
+
 const HERO_SYSTEM_CATALOGS = Object.freeze(RAW_HERO_DEFINITIONS.map(defineCatalog));
 const HERO_REGISTRY = HERO_SYSTEM_CATALOGS;
 
@@ -356,6 +410,11 @@ function getRegistryHash() {
     return crypto.createHash('sha256').update(JSON.stringify(canonicalPayload)).digest('hex').slice(0, 16);
 }
 
+// LE QUATTRO FAMIGLIE STORICHE (Ticket 46): servono alla regola di compatibilita' del manifest — un
+// profilo che aveva TUTTE le righe di ieri le aveva tutte, e le righe additive di oggi non devono
+// sparire solo perche' il frontend non le conosce ancora (Ticket 13).
+const HERO_SLUG_STORICI = Object.freeze(['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']);
+
 const HERO_IDS = Object.freeze(HERO_SYSTEM_CATALOGS.map(r => r.id));
 const HERO_CATALOG_IDS_SET = new Set(HERO_IDS);
 
@@ -378,6 +437,7 @@ module.exports = {
     HERO_SYSTEM_CATALOGS,
     HERO_PREFIXES,
     HERO_IDS,
+    HERO_SLUG_STORICI,
     HERO_CATALOG_IDS_SET,
     DAILY_WINDOW_CATALOG_IDS,
     isDailyWindowCatalog,

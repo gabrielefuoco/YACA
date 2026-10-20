@@ -30,7 +30,30 @@ const HERO_CATALOG_IDS = new Map([
     ]))
 ]);
 
-const HERO_CACHE_KEY_VERSION = 'v15';
+// Ticket 13: il payload delle righe hero ora porta anche classici, ultime visioni, punti d'incontro e
+// i tre slot dei micro-cluster: la cache delle righe deve invalidarsi una volta.
+const HERO_CACHE_KEY_VERSION = 'v16';
+
+// I RUOLI DEL GRAFO E IL LORO CATALOGO (Ticket 13). La tabella e' l'unico posto in cui si decide chi va
+// dove: una riga calcolata e poi buttata via era il difetto (i `mondo_*` sparivano senza un log).
+const RUOLI_HERO = Object.freeze([
+    { ruolo: 'il_tuo_mondo', slug: 'mondi' },
+    { ruolo: 'un_passo_fuori', slug: 'passo_fuori' },
+    { ruolo: 'uscite_nuove', slug: 'uscite_nuove' },
+    { ruolo: 'nicchia_di_qualita', slug: 'nicchia_di_qualita' },
+    { ruolo: 'classici_imperdibili', slug: 'classici' },
+    { ruolo: 'ultime_visioni', slug: 'ultime_visioni' }
+]);
+// Gli slot dei micro-cluster sono tre e fissi: un catalogo che compare e sparisce e' un guasto per Stremio.
+const RUOLI_MICRO = Object.freeze(['micro_cluster_1', 'micro_cluster_2', 'micro_cluster_3']);
+// «Punti d'incontro»: il motore lo decompone in coppie di filoni, il catalogo e' uno.
+const RUOLI_PONTE = Object.freeze(['punti_incontro_1', 'punti_incontro_2', 'punti_incontro_3']);
+const RUOLI_SERVITI = new Set([
+    ...RUOLI_HERO.map((r) => r.ruolo),
+    ...RUOLI_MICRO,
+    ...RUOLI_PONTE
+]);
+
 const HERO_CACHE_SCHEMA_VERSION = 8;
 const HERO_MIN_FALLBACK_ITEMS = 10;
 const HERO_MAX_ITEMS_PER_CATALOG = 100;
@@ -284,12 +307,9 @@ const HERO_STRATEGIES = [
                 });
 
                 const liste = resGraph?.liste || [];
-                const listaMondi = liste.find((l) => l.ruolo === 'il_tuo_mondo');
-                const listaPasso = liste.find((l) => l.ruolo === 'un_passo_fuori');
-                const listaUscite = liste.find((l) => l.ruolo === 'uscite_nuove');
-                const listaNicchia = liste.find((l) => l.ruolo === 'nicchia_di_qualita');
-
-                assigned[catMondi] = (listaMondi?.titoli || []).map((t) => ensurePoolItem({
+                const perRuolo = new Map(liste.map((l) => [l.ruolo, l]));
+                const catalogo = (slug) => `yaca_${slug}_${suffisso}`;
+                const itemsDi = (lista) => (lista?.titoli || []).map((t) => ensurePoolItem({
                     id: `tmdb:${t.tmdbId}`,
                     tmdbId: Number(t.tmdbId),
                     type: t.medium === 'movie' ? 'movie' : 'series',
@@ -297,7 +317,25 @@ const HERO_STRATEGIES = [
                     punteggio: t.punteggio
                 }, ctx.mediaType));
 
-                assigned[catPasso] = (listaPasso?.titoli || []).map((t) => ensurePoolItem({
+                for (const { ruolo, slug } of RUOLI_HERO) {
+                    assigned[catalogo(slug)] = itemsDi(perRuolo.get(ruolo));
+                }
+                for (const slug of RUOLI_MICRO) {
+                    // Se il motore non produce quel filone, lo slot resta vuoto (non sparisce).
+                    assigned[catalogo(slug)] = itemsDi(perRuolo.get(slug));
+                }
+                // Un solo catalogo per i ponti: si uniscono le coppie in ordine, senza doppioni.
+                const vistiPonte = new Set();
+                const ponte = [];
+                for (const ruolo of RUOLI_PONTE) {
+                    for (const t of (perRuolo.get(ruolo)?.titoli || [])) {
+                        const id = `tmdb:${t.tmdbId}`;
+                        if (vistiPonte.has(id)) continue;
+                        vistiPonte.add(id);
+                        ponte.push(t);
+                    }
+                }
+                assigned[catalogo('punti_incontro')] = ponte.map((t) => ensurePoolItem({
                     id: `tmdb:${t.tmdbId}`,
                     tmdbId: Number(t.tmdbId),
                     type: t.medium === 'movie' ? 'movie' : 'series',
@@ -305,28 +343,29 @@ const HERO_STRATEGIES = [
                     punteggio: t.punteggio
                 }, ctx.mediaType));
 
-                assigned[catUscite] = (listaUscite?.titoli || []).map((t) => ensurePoolItem({
-                    id: `tmdb:${t.tmdbId}`,
-                    tmdbId: Number(t.tmdbId),
-                    type: t.medium === 'movie' ? 'movie' : 'series',
-                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
-                    punteggio: t.punteggio
-                }, ctx.mediaType));
+                const nMondi = (assigned[catalogo('mondi')] || []).length;
+                const nPasso = (assigned[catalogo('passo_fuori')] || []).length;
+                const nUscite = (assigned[catalogo('uscite_nuove')] || []).length;
+                const nNicchia = (assigned[catalogo('nicchia_di_qualita')] || []).length;
+                const nClassici = (assigned[catalogo('classici')] || []).length;
+                const nUltime = (assigned[catalogo('ultime_visioni')] || []).length;
+                const nPonte = (assigned[catalogo('punti_incontro')] || []).length;
+                const nMicro = RUOLI_MICRO.map((slug) => (assigned[catalogo(slug)] || []).length);
+                // Le righe senza catalogo (i `mondo_<b>`) si DICHIARANO: un catalogo per bolla non e'
+                // statico, e il manifest di Stremio e' fisso.
+                const nonServiti = {};
+                for (const li of liste) {
+                    if (RUOLI_SERVITI.has(li.ruolo)) continue;
+                    const famiglia = String(li.ruolo).replace(/_\d+$/, '');
+                    nonServiti[famiglia] = (nonServiti[famiglia] || 0) + 1;
+                }
 
-                assigned[catNicchia] = (listaNicchia?.titoli || []).map((t) => ensurePoolItem({
-                    id: `tmdb:${t.tmdbId}`,
-                    tmdbId: Number(t.tmdbId),
-                    type: t.medium === 'movie' ? 'movie' : 'series',
-                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
-                    punteggio: t.punteggio
-                }, ctx.mediaType));
-
-                const nMondi = (assigned[catMondi] || []).length;
-                const nPasso = (assigned[catPasso] || []).length;
-                const nUscite = (assigned[catUscite] || []).length;
-                const nNicchia = (assigned[catNicchia] || []).length;
                 console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${semi.length - traktCount}, da Trakt ${traktCount}` +
-                    ` · mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}`);
+                    ` · mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}` +
+                    ` · classici ${nClassici} · ultime ${nUltime} · ponte ${nPonte} · micro ${JSON.stringify(nMicro)}`);
+                if (Object.keys(nonServiti).length > 0) {
+                    console.log(`[Mondi] righe del grafo senza catalogo (dichiarate): ${JSON.stringify(nonServiti)}`);
+                }
                 if (semi.length > 0 && nMondi === 0 && nPasso === 0 && nUscite === 0 && nNicchia === 0) {
                     console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in tutte le righe ` +
                         `(${ctx.mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);

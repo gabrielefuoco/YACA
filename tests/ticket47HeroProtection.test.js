@@ -28,7 +28,7 @@ const DEAD_HERO_IDS = [
 describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
 
     describe('(1) buildManifest con profilo legacy e con selezione attiva', () => {
-        test('un profilo legacy (solo ID morti rimossi dal ticket 46) restituisce tutti gli 8 cataloghi hero di sistema', () => {
+        test('un profilo legacy (solo ID morti rimossi dal ticket 46) restituisce tutti i 20 cataloghi hero di sistema', () => {
             const userConfigLegacy = {
                 userId: 'user_legacy_47',
                 activeProfileId: 'legacy_prof',
@@ -51,7 +51,8 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             expect(Array.isArray(manifest.catalogs)).toBe(true);
 
             const heroCatalogsInManifest = manifest.catalogs.filter(c => isHeroCatalogId(c.id));
-            expect(heroCatalogsInManifest.length).toBe(8);
+            // Ticket 13: erano 8 (4 famiglie), ora 20 (10 famiglie).
+            expect(heroCatalogsInManifest.length).toBe(20);
 
             const heroIdsInManifest = heroCatalogsInManifest.map(c => c.id);
             for (const liveId of HERO_IDS) {
@@ -62,7 +63,7 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             }
         });
 
-        test('un profilo con uiState (nuovo schema) e solo ID morti degrada a tutti gli 8 hero', () => {
+        test('un profilo con uiState (nuovo schema) e solo ID morti degrada a tutti i 20 hero', () => {
             const userConfigLegacyUiState = {
                 userId: 'user_legacy_uistate',
                 activeProfileId: 'legacy_prof_uistate',
@@ -78,7 +79,8 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
 
             const manifest = buildManifest(userConfigLegacyUiState);
             const heroCatalogsInManifest = manifest.catalogs.filter(c => isHeroCatalogId(c.id));
-            expect(heroCatalogsInManifest.length).toBe(8);
+            // Ticket 13: erano 8 (4 famiglie), ora 20 (10 famiglie).
+            expect(heroCatalogsInManifest.length).toBe(20);
         });
 
         test('un profilo con selezione viva non vuota viene correttamente filtrato (es. solo yaca_mondi_movies -> 1 row)', () => {
@@ -183,16 +185,52 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             }
         });
 
-        test('tutti gli 8 ID hero vivi compaiono nei 4 file del frontend', () => {
+        // LE SEI FAMIGLIE NUOVE (Ticket 13) sono servite da Stremio ma **non sono ancora nella
+        // dashboard**: il cantiere vieta di toccare il frontend, quindi la guardia si aggiorna nel
+        // verso che conta (nessun id morto, ogni id del frontend e' vivo) e le righe mancanti sono
+        // DICHIARATE qui. Quando arrivera' il ticket del frontend, questo elenco sparisce.
+        const RIGHE_NON_ANCORA_IN_DASHBOARD = [
+            'classici', 'ultime_visioni', 'punti_incontro',
+            'micro_cluster_1', 'micro_cluster_2', 'micro_cluster_3'
+        ];
+        const heroInDashboard = HERO_IDS.filter(
+            id => !RIGHE_NON_ANCORA_IN_DASHBOARD.some(slug => id.includes(`_${slug}_`))
+        );
+
+        test('tutti gli ID hero vivi conosciuti dal frontend compaiono nei 4 file', () => {
+            expect(heroInDashboard.length).toBe(8);  // le quattro famiglie storiche x 2 medium
             for (const filePath of FOUR_FRONTEND_FILES) {
                 const fullPath = path.resolve(__dirname, '..', filePath);
                 const content = fs.readFileSync(fullPath, 'utf8');
                 const foundIds = extractYacaIds(content);
 
-                for (const liveId of HERO_IDS) {
+                for (const liveId of heroInDashboard) {
                     expect(foundIds).toContain(liveId);
                 }
             }
+        });
+
+        test('le sei famiglie nuove sono nel manifesto anche se non sono nella dashboard', () => {
+            const manifest = buildManifest({});
+            const ids = manifest.catalogs.map(c => c.id);
+            for (const slug of RIGHE_NON_ANCORA_IN_DASHBOARD) {
+                expect(ids).toContain(`yaca_${slug}_movies`);
+                expect(ids).toContain(`yaca_${slug}_series`);
+            }
+        });
+
+        test("chi aveva tutte le righe di ieri riceve anche quelle di oggi (compatibilita' Ticket 13)", () => {
+            const storiche = [];
+            for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
+                storiche.push(`yaca_${slug}_movies`, `yaca_${slug}_series`);
+            }
+            const config = {
+                userId: 'user_full',
+                activeProfileId: 'full_prof',
+                profiles: [{ id: 'full_prof', name: 'Full', raw_ui_state: { selectedPresets: storiche } }]
+            };
+            const heroIds = buildManifest(config).catalogs.filter(c => isHeroCatalogId(c.id)).map(c => c.id);
+            expect(heroIds.length).toBe(20);
         });
 
         test('dimostrazione: la funzione di estrazione rileverebbe la presenza di id morti (test-that-would-have-failed)', () => {

@@ -114,9 +114,10 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
     });
 
     describe('2. Invarianza delle Derivazioni (Regression Net)', () => {
-        test('getManifestHeroCatalogs produce esattamente le 8 righe hero per Stremio', () => {
+        test('getManifestHeroCatalogs produce esattamente le 20 righe hero per Stremio', () => {
             const manifestRows = getManifestHeroCatalogs();
-            expect(manifestRows).toHaveLength(8);
+            // Ticket 13: erano 8 (4 righe x 2 medium); ora 20 (10 x 2).
+            expect(manifestRows).toHaveLength(20);
 
             expect(manifestRows[0]).toEqual({
                 id: 'yaca_mondi_movies',
@@ -144,9 +145,11 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
             });
         });
 
-        test('getHeroCatalogFingerprintRows produce le 8 righe per la firma cache', () => {
+        test('getHeroCatalogFingerprintRows produce le 20 righe per la firma cache', () => {
             const fingerprints = getHeroCatalogFingerprintRows();
-            expect(fingerprints).toHaveLength(8);
+            // Ticket 13: erano 8 (4 righe x 2 medium); ora 20 (10 x 2): il registro elenca anche
+            // classici, ultime visioni, punti d'incontro e i tre slot dei micro-cluster.
+            expect(fingerprints).toHaveLength(20);
             for (const row of fingerprints) {
                 expect(row).toHaveProperty('id');
                 expect(row).toHaveProperty('type');
@@ -155,9 +158,9 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
             }
         });
 
-        test('getHeroCatalogKindMap mappa tutti gli 8 cataloghi a mediaSet, anime: agnostic, alwaysVisible: false', () => {
+        test('getHeroCatalogKindMap mappa tutti i 20 cataloghi a mediaSet, anime: agnostic, alwaysVisible: false', () => {
             const kindMap = getHeroCatalogKindMap();
-            expect(Object.keys(kindMap)).toHaveLength(8);
+            expect(Object.keys(kindMap)).toHaveLength(20);  // Ticket 13: erano 8
 
             expect(kindMap['yaca_mondi_movies']).toEqual({
                 mediaSet: ['film'],
@@ -179,34 +182,47 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
         test('getHeroPoolSpec mantiene le priorità, gli slug e l\'additività di Ticket 46', () => {
             const poolSpec = getHeroPoolSpec();
 
-            // Ordine di priorità invariante
+            // Ordine di priorità: le quattro righe storiche restano prime (Ticket 46), poi le righe
+            // nuove del cantiere righe-vive nell'ordine in cui il motore le produce (Ticket 13).
             expect(poolSpec.heroPriority).toEqual([
                 'mondi',
                 'passo_fuori',
                 'uscite_nuove',
-                'nicchia_di_qualita'
+                'nicchia_di_qualita',
+                'classici',
+                'ultime_visioni',
+                'punti_incontro',
+                'micro_cluster_1',
+                'micro_cluster_2',
+                'micro_cluster_3'
             ]);
 
-            // Slug additivi: tutti e 4 i cataloghi grafo sono additivi
-            expect(poolSpec.slugAdditivi.has('mondi')).toBe(true);
-            expect(poolSpec.slugAdditivi.has('passo_fuori')).toBe(true);
-            expect(poolSpec.slugAdditivi.has('uscite_nuove')).toBe(true);
-            expect(poolSpec.slugAdditivi.has('nicchia_di_qualita')).toBe(true);
-            expect(poolSpec.slugAdditivi.size).toBe(4);
+            // Slug additivi: tutte le righe del grafo sono additive (erano 4, ora 10 — Ticket 13)
+            for (const slug of poolSpec.heroPriority) {
+                expect(poolSpec.slugAdditivi.has(slug)).toBe(true);
+            }
+            expect(poolSpec.slugAdditivi.size).toBe(10);
 
-            // 4 slug base e 8 cataloghi associati
-            expect(poolSpec.slugs).toHaveLength(4);
-            expect(poolSpec.catalogs).toHaveLength(8);
+            // 10 slug base e 20 cataloghi associati (erano 4 e 8)
+            expect(poolSpec.slugs).toHaveLength(10);
+            expect(poolSpec.catalogs).toHaveLength(20);
         });
 
-        test('getHeroUiGroups raggruppa le 4 card per la UI di configurazione', () => {
+        test('getHeroUiGroups raggruppa le 10 card per la UI di configurazione', () => {
             const groups = getHeroUiGroups();
-            expect(groups).toHaveLength(4);
+            // Ticket 13: erano 4 card, ora 10 (le sei righe nuove sono additive).
+            expect(groups).toHaveLength(10);
             expect(groups.map(g => g.idBase)).toEqual([
                 'yaca_mondi',
                 'yaca_passo_fuori',
                 'yaca_uscite_nuove',
-                'yaca_nicchia_di_qualita'
+                'yaca_nicchia_di_qualita',
+                'yaca_classici',
+                'yaca_ultime_visioni',
+                'yaca_punti_incontro',
+                'yaca_micro_cluster_1',
+                'yaca_micro_cluster_2',
+                'yaca_micro_cluster_3'
             ]);
             expect(groups[0]).toEqual({
                 idBase: 'yaca_mondi',
@@ -223,11 +239,13 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
             expect(modes['yaca_uscite_nuove_series']).toBeNull();
         });
 
-        test('getRegistryHash calcola l\'hash identico a quello precedente (4abf3230f7019d6d)', () => {
-            expect(getRegistryHash()).toBe('4abf3230f7019d6d');
+        test('getRegistryHash calcola l\'hash identico a quello precedente (aa9da269c5787496)', () => {
+            // Ticket 13: l'hash cambia di proposito (sei righe nuove nel registro).
+            // prima: 4abf3230f7019d6d
+            expect(getRegistryHash()).toBe('aa9da269c5787496');
         });
 
-        test('isHeroCatalogId riconosce tutti gli 8 hero e rifiuta ID sconosciuti o rimossi', () => {
+        test('isHeroCatalogId riconosce tutti i 20 hero e rifiuta ID sconosciuti o rimossi', () => {
             for (const id of HERO_IDS) {
                 expect(isHeroCatalogId(id)).toBe(true);
             }

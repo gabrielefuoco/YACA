@@ -39,10 +39,12 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             typeSelectors: {}
         };
 
-        test('senza health version, la chiave usa solo HERO_CACHE_KEY_VERSION (v15)', () => {
+        test('senza health version, la chiave usa solo HERO_CACHE_KEY_VERSION (v16)', () => {
+            // Ticket 13: la versione passa da v15 a v16 perche' il payload delle righe hero ora porta
+            // anche classici, ultime visioni, punti d'incontro e i tre slot dei micro-cluster.
             const key = buildSharedHeroCacheKey(baseParams);
             expect(key).toBe(`utente_test_profilo_test_heroes_${HERO_CACHE_KEY_VERSION}_movie`);
-            expect(key).toContain('_v15_');
+            expect(key).toContain('_v16_');
         });
 
         test('con versioni da health, concatena artefatto e ricetta nella chiave', () => {

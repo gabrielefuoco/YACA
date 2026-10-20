@@ -55,7 +55,10 @@ function cachedHeroGroup(mediaType, ids) {
     const suffix = mediaType === 'movie' ? 'movies' : 'series';
     const owner = mediaType === 'series' ? 'passo_fuori' : 'mondi';
     const catalogs = {};
-    for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
+    // Ticket 13: il registro ha 10 famiglie; una voce di cache valida le ha tutte (il validator del
+    // pool respinge una voce incompleta — ed e' giusto: e' il segnale che il payload e' vecchio).
+    const { getHeroPoolSpec } = require('../src/catalog/registry');
+    for (const { slug } of getHeroPoolSpec().slugs) {
         catalogs[`yaca_${slug}_${suffix}`] = slug === owner ? ids : [];
     }
     return { schemaVersion: 8, mediaType, catalogs };
