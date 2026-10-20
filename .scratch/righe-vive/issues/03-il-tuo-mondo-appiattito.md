@@ -77,13 +77,16 @@ Prima di modificare il codice sono state verificate le quattro premesse:
      - `RANKING_BAYES_BASE = 7.0`, `RANKING_BAYES_EXP = 1.5`: formula di ranking combinato `score = r * (bayes / 7.0) ** 1.5`.
 2. **`services/graph/motore.py`**:
    - Aggiunto metodo `voto_bayesiano(x)` a `Motore`.
+   - Invocazione diretta di `self.voto_bayesiano(...)` in entrambi i siti di ranking (`cand_sopravvissuti` e `ripescati_mondo`), eliminando la duplicazione inline della formula (Fix 1).
    - Riscritto il bacino di «il tuo mondo»: selezione delle top K bolle per massa accesa (>= 80% e >= 250 candidati grezzi) unite ai loro primi 3 vicini (`bacino_bolle_set`).
    - Raccolta dei candidati in un unico set appiattito (`cand_bacino`), eliminando l'iterazione bolla per bolla e le relative duplicazioni.
    - Pavimento di qualità applicato a monte del ranking come maschera vettoriale: scartati `VAVE < 6.4` o `VOT < max(150, 0.08 * canone)`.
    - Ranking combinato `score(x) = r[x] * (bayesian_vote(x) / 7.0) ** 1.5` per tutti i candidati sopravvissuti e per i semi ripescati dalla watchlist.
    - Integrazione col ripescaggio controllato Ticket 02: i ripescati ricevono lo score combinato e si ordinano monotonicamente in testa.
+   - Aggiornato il commento obsoleto sui mondi accesi (Fix 3): la selezione delle bolle alimenta esclusivamente le liste successive (`uscite_nuove`, `cinema_invisibile`).
 3. **`scripts/qa/probe-ticket-03-mondo.py`**:
    - Creata sonda QA esaustiva con verifica parametri, floor adattivo mainstream vs essai, confronto diretto prima/dopo, caso costruito a 8 voti, maschera prima del cap e servizio HTTP/RAM.
+   - Nella sezione 4, rimossi i valori hard-coded `7.0`, `1.5`, `150`, `6.4` e sostituiti con le costanti simboliche `P.RANKING_BAYES_BASE`, `P.RANKING_BAYES_EXP`, `P.PAVIMENTO_VOT_MIN`, `P.PAVIMENTO_VAVE_MIN` (Fix 2).
 
 ### 3. Sonda dedicata Ticket 03 (`probe-ticket-03-mondo.py`)
 
@@ -191,7 +194,7 @@ Pos  Titolo       VOT      VAVE     Bayes    Score Combinato  Stato Pavimento
   POST /raccomanda -> status 200, ruolo: il_tuo_mondo, titoli: 10
     Primi 3 titoli: [{'tmdbId': 1001, 'medium': 'movie', 'punteggio': 0.022019}, {'tmdbId': 1002, 'medium': 'movie', 'punteggio': 0.017415}, {'tmdbId': 1003, 'medium': 'movie', 'punteggio': 0.01695}]
 
-  Consumo RAM processo: 100.1 MB (Tetto massimo: 512 MB)
+  Consumo RAM processo: 100.7 MB (Tetto massimo: 512 MB)
   -> OK: Consumo RAM ampiamente sotto il tetto dei 512 MB.
   Server HTTP arrestato correttamente.
 
@@ -376,7 +379,7 @@ FAIL tests/duckDbAndMatchmaker.test.js
 Test Suites: 5 failed, 185 passed, 190 total
 Tests:       8 failed, 1 skipped, 1898 passed, 1907 total
 Snapshots:   0 total
-Time:        43.287 s
+Time:        43.402 s
 Ran all test suites.
 ```
 Esattamente le sole 5 suite rosse / 8 test falliti / 1898 passati ammessi dalla specifica di cantiere. Zero regressioni.
