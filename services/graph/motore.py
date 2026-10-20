@@ -910,6 +910,10 @@ class Motore:
             "fonte": stato_uscite.get("fonte"),
             "candidati": int(stato_uscite.get("candidati", 0)),
             "nel_bacino": int(stato_uscite.get("nel_bacino", 0)),
+            # L'attivazione della riga e' quella dei mondi da cui pesca: i `punteggio` delle uscite
+            # collocate (att * confidenza * qualita') e quelli del canone (r[x]) non sono confrontabili
+            # fra loro, quindi l'attivazione non si ricava dalla media dei punteggi.
+            "attivazione": round(float(np.mean(att_s[list(bolle)])), 4),
         }
         riga_un["corta"], motivo_un = self.dichiara_corta(
             len(riga_un["titoli"]), cap_main, "uscite_nuove", prefisso="uscite_nuove"

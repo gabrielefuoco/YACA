@@ -209,6 +209,10 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
 
         elif ruolo == "uscite_nuove":
             att = round(float(np.mean([t["punteggio"] for t in titoli])), 4)
+            if "attivazione" in li:
+                # Le uscite collocate hanno punteggi su un'altra scala (att * confidenza * qualita'):
+                # l'attivazione della riga la manda il motore.
+                att = float(li["attivazione"])
             # TICKET 10: le uscite collocate NON sono nodi del canone, quindi non hanno un VOT nel
             # grafo. La mediana si calcola su quelle che ce l'hanno (i titoli del canone storico);
             # se non ce n'e' nessuna resta 0.0 — non si inventa un voto.

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: claimed
 Type: bug
 Blocked by: 09
 
@@ -55,3 +55,37 @@ Blocked by: 09
 - **La prova non vive nel prodotto**: niente flag `simulate*` nel percorso caldo.
 - **Ogni riga che non si riesce a riempire lo dichiara**: nessuna lista sparisce senza dirlo.
 - **Il pavimento di qualità non si abbassa per riempire.**
+
+---
+
+## Verifica delle premesse (20/10/2026, integratore)
+
+1. **Canone storico — non verificabile qui, dichiarato da due fonti.** I Parquet TMDB non sono in questo checkout
+   (`ROOT/.cache/tmdb` assente) e l'artefatto del canone nemmeno: la premessa sta nel `README` del servizio e nella
+   riga che `measure/liste.py` stampa («nessuna uscita 2025+ in questi mondi»). Non la si può misurare da qui: la
+   sonda la sostituisce con un fixture che **non ha** titoli 2025+ nel canone.
+2. **L'imbuto — vero, e ora c'è una prova che morde.** `nuove = [...] if int(self.MEM[x]) in set(bolle)` cercava le
+   novità **solo fra le bolle del profilo**, senza i vicini. La sezione 2b della sonda costruisce un grafo a 12
+   mondi in cui `bolle` si ferma ai primi quattro e mette un titolo 2026 in un mondo **vicino** (ultimo dell'anello)
+   e uno in un mondo **lontano**: entra il primo, non il secondo.
+3. **Soppressione silenziosa — non esiste più, l'ha chiusa il `07`.** `servizio.py` non ha più
+   `if not titoli_raw: continue`: restituisce la riga con `vuota: true`, `motivo` e il motivo anche nei `motivi`
+   della risposta. La premessa del ticket era scritta prima del `07`. Resta vero il lato **consumatore**
+   (`src/pool/index.js` mette `assigned[...] = []` e non legge `motivi`), che è del `13` e non si tocca qui.
+
+## Decisioni prese prima del codice (20/10/2026)
+
+- **La cache è un artefatto del modulo**, non una cache scaricata: sta in `services/graph/data/` come gli altri
+  (`canon.DATA`), perché è il risultato di un lavoro nostro. Porta `schema`, data di generazione e **impronta dei
+  Parquet**: se i Parquet cambiano, la cache lo dichiara (non si rigenera da sola a runtime: la collocazione costa
+  minuti e non è un lavoro del servizio).
+- **Chi la genera**: `python -m graph.uscite`, **dove ci sono i Parquet TMDB e gli artefatti dei centroidi**
+  (il mate, `services/graph/data` montato). Non in CI. Non in questo ticket: generarla qui è impossibile (dati
+  assenti) e generarla in produzione sarebbe toccare la produzione — si dichiara e si propone.
+- **Due fonti, mai mescolate**: con la cache si usa **solo** la cache (i titoli già nel canone ci sono dentro, con
+  bolla letta e confidenza 1.0); senza cache si usa il canone storico **con i vicini**, e la riga dichiara
+  `fonte: canone`. Mescolarle darebbe punteggi su scale diverse nella stessa lista.
+- **La qualità è quella del motore**: voto bayesiano con `BAYESIAN_M/C` e `RANKING_BAYES_BASE`, nessun numero nuovo.
+- **Non si allarga `USCITE_NUOVE_DAL`**: il taglio resta l'anno dichiarato, per la cache e per il canone.
+- **`attivazione` della riga**: la media dei punteggi non è confrontabile fra le due fonti, quindi il motore manda
+  l'attivazione dei mondi da cui la riga pesca (come per i ponti del `09`).
