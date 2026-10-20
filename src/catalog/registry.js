@@ -475,6 +475,5 @@ module.exports = {
     getHeroUiGroups,
     getHeroPoolSpec,
     getHeroRuoli,
-    getHeroRuoli,
     getRegistryHash
 };

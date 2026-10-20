@@ -1,6 +1,5 @@
 Status: resolved
 Type: task
-Blocked by: 12
 
 # 13 — Il registro dei nuovi cataloghi (lato Node)
 
@@ -78,10 +77,12 @@ Stremio). Fatto il `13`, il `12` (e il `19`) restano dove sono.
 - **La tabella dei ruoli vive nel registro** (`getHeroRuoli()`): `mondi`→`il_tuo_mondo`,
   `passo_fuori`→`un_passo_fuori`, `classici`→`classici_imperdibili`, e i tre ponti sono **una famiglia con
   tre ruoli**. Il pool non ne tiene più una copia, e un test confronta le famiglie del registro con gli slug.
-- **Test nuovo** `tests/heroRowsCoverage.test.js`: ogni ruolo con titoli arriva nel catalogo giusto, il
-  ponte è un catalogo solo e senza doppioni, ogni catalogo assegnato esiste nel registro, ogni slug del
-  registro ha il suo catalogo nel pool, lo slot di un filone assente resta vuoto, e il manifesto dichiara
-  le righe nuove.
+- **Test nuovo** `tests/heroRowsCoverage.test.js` (7 prove): ogni ruolo con titoli arriva nel catalogo giusto
+  (tutte e sei le righe hero, non solo le nuove), il ponte è un catalogo solo e senza doppioni, ogni
+  catalogo assegnato esiste nel registro, ogni slug ha i suoi due cataloghi nel pool, lo slot di un filone
+  assente resta vuoto, il manifesto dichiara le righe nuove, e — la prova che il fixture da solo non dava —
+  **i ruoli del motore si leggono da `services/graph/motore.py`** e nessuno resta scoperto: un ruolo nuovo
+  che il pool non conosce fa fallire il test, invece di finire in un log con la suite verde.
 
 ### 3. I due hash del manifest (con il comando)
 
@@ -116,6 +117,8 @@ sempre. `buildRootManifest` **non cambia**: il manifesto radice non elenca catal
 | `getRegistryHash()` | `4abf3230f7019d6d` | `aa9da269c5787496` | il registro è cambiato di proposito |
 | testi dei test («8 righe», «4 card», «8 hero») | — | aggiornati | un nome che mente è un difetto |
 
+| `feedProtocolAndCatalogs` / `catalogKindAndSelectors` | «gli 8 hero» | «le quattro righe storiche» + un test per le sei famiglie nuove | i nomi mentivano; il *contenuto* resta (le storiche sono ancora agganciate) |
+
 `tests/graphClientPoolIntegration.test.js`: `_v15_` → `_v16_` (versione della cache righe).
 `tests/heroMovieDateRegression.test.js`: l'helper `cachedHeroGroup` costruiva una voce di cache con **4**
 famiglie; il validator del pool ora ne pretende 10 (voce vecchia = cache da rigenerare) → l'helper le
@@ -138,11 +141,13 @@ FAIL tests/donghuaCatalog.test.js
 FAIL tests/duckDbAndMatchmaker.test.js
 FAIL tests/presetBurtonOrdering.test.js
 Test Suites: 5 failed, 188 passed, 193 total
-Tests:       8 failed, 1 skipped, 1918 passed, 1927 total
+Tests:       8 failed, 1 skipped, 1923 passed, 1932 total
 ```
 
-Baseline `1910`/`192` + i 6 test nuovi di `heroRowsCoverage` + 2 nuovi in `ticket47` = `1918`, `193`
-suite. Le cinque rosse sono esattamente quelle ammesse.
+Baseline `1910`/`192` + 13 test netti (7 in `heroRowsCoverage`, la tabella dei ruoli e le famiglie nuove in
+`catalogTypeAndValidation`/`catalogKindAndSelectors`, 5 in `ticket47`) = `1923`, `193` suite. **Nessun test
+cancellato**: la dimostrazione sugli id morti, tolta per sbaglio in una revisione intermedia, è tornata al
+suo posto. Le cinque rosse sono esattamente quelle ammesse.
 
 ### 6. Residui dichiarati
 
@@ -154,8 +159,14 @@ suite. Le cinque rosse sono esattamente quelle ammesse.
    che l'interfaccia mostrava spente. Ritirata. Accenderle di default richiede una **migrazione one-shot con
    marcatore di versione** nel profilo (o dodici id nei due elenchi di default del frontend, vietato qui):
    **ticket `20`**.
+   **Il limite, misurato**: la regola del Ticket 47 — «un profilo non perde il feed perché gli id che aveva
+   sono spariti» — vale ancora, quindi una selezione **vuota** (`[]`) o di **soli id morti** torna a tutte e
+   venti le righe. Due test lo fissano (`ticket47`, «una selezione VUOTA o di soli id morti…») perché è una
+   degradazione voluta del 47, non una svista del 13.
    Il registro serve alla dashboard tutte e dieci le famiglie, ma non può garantire che il frontend le
-   disegni: quello lo prova il frontend.
+   disegni: quello lo prova il frontend — e `ticket47` legge davvero `HERO_PRESET_IDS` in
+   `frontend/src/app/page.tsx` per fissare che i default dei profili nuovi sono ancora le otto id storiche
+   (quella lista la cambia il ticket `20`).
 2. **I `mondo_<b>` restano senza catalogo** e ora lo dichiarano in un log: un catalogo per bolla non è
    statico, e il manifest di Stremio è fisso. Se il prodotto li vuole, serve una decisione (es. aggregarli
    in un solo catalogo «altri tuoi mondi»).

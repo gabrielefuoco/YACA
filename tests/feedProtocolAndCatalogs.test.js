@@ -2,7 +2,8 @@
  * tests/feedProtocolAndCatalogs.test.js
  *
  * Ticket 46:
- * - Manifest protocol verification: 8 hero catalogs (mondi, passo_fuori, uscite_nuove, nicchia_di_qualita)
+ * - Manifest protocol verification: le quattro righe hero storiche (8 id: mondi, passo_fuori,
+ *   uscite_nuove, nicchia_di_qualita) — il registro ne ha 20 dal Ticket 13
  *   are present and the 4 legacy hero pairs (8 catalogs) are completely absent.
  * - Hero catalogs are additive and non-sortable (extra has only skip).
  * - Delivery of feed catalogs (mondi, passo_fuori, uscite_nuove, nicchia_di_qualita, simulcast, watchlist, sql presets)
@@ -97,14 +98,14 @@ describe('Ticket 46: Feed & Protocol Verification for New Graph Catalogs', () =>
     });
 
     describe('1. Manifest protocol verification', () => {
-        test('il manifest include gli 8 hero cataloghi del grafo e ZERO di quelli rimossi', () => {
+        test('il manifest include le quattro righe hero storiche (8 id) e ZERO di quelle rimosse', () => {
             const manifest = buildManifest(userConfig, userConfig.profiles[0]);
             expect(manifest).toBeDefined();
             expect(Array.isArray(manifest.catalogs)).toBe(true);
 
             const catIds = manifest.catalogs.map(c => c.id);
 
-            // Gli 8 hero cataloghi del grafo DEVONO essere presenti
+            // Le quattro righe storiche (8 id) DEVONO essere presenti
             const expectedHeroIds = [
                 'yaca_mondi_movies',
                 'yaca_mondi_series',

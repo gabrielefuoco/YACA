@@ -36,7 +36,7 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(kind).toEqual({ mediaSet: ['film'], anime: 'yes' });
         });
 
-        it('identifica gli 8 hero catalogs dal registry esplicito (agnostici su anime)', () => {
+        it('identifica le quattro righe hero storiche dal registry esplicito (agnostici su anime)', () => {
             expect(getCatalogKind('yaca_mondi_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
             expect(getCatalogKind('yaca_mondi_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
             expect(getCatalogKind('yaca_passo_fuori_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
@@ -45,6 +45,15 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
             expect(getCatalogKind('yaca_uscite_nuove_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
             expect(getCatalogKind('yaca_nicchia_di_qualita_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
             expect(getCatalogKind('yaca_nicchia_di_qualita_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
+        });
+
+        it('identifica le sei famiglie nuove (Ticket 13), micro-cluster compresi', () => {
+            expect(getCatalogKind('yaca_classici_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_ultime_visioni_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_punti_incontro_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            // il prefisso `yaca_micro_cluster_1_` non deve essere inghiottito da un prefisso piu' corto
+            expect(getCatalogKind('yaca_micro_cluster_1_movies')).toEqual({ mediaSet: ['film'], anime: 'agnostic' });
+            expect(getCatalogKind('yaca_micro_cluster_3_series')).toEqual({ mediaSet: ['serie'], anime: 'agnostic' });
         });
 
         it('identifica cataloghi custom / Matchmaker', () => {

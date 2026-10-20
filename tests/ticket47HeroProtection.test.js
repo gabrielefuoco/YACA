@@ -190,13 +190,35 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
         // li DERIVA da `getHeroUiGroups()` (`${`${catalog.idBase}_movies`}` / `_series`): la guardia che
         // conta e' quindi che il registro serva **tutte** le famiglie alla dashboard, e che ogni id
         // letterale che resta nei file sia vivo (il test per-file qui sopra).
-        test('la dashboard riceve tutte le famiglie del registro (gli id si derivano da idBase)', () => {
-            const groups = getHeroUiGroups();
-            const idBaseServiti = new Set(groups.map(g => `${g.idBase}_movies`).concat(groups.map(g => `${g.idBase}_series`)));
-            for (const liveId of HERO_IDS) {
-                expect(idBaseServiti.has(liveId)).toBe(true);
+        test('il default dei profili nuovi nel frontend elenca ancora le sole quattro famiglie storiche', () => {
+            // La dashboard e' data-driven (`heroCatalogs` da `getHeroUiGroups`, id derivati da `idBase`),
+            // ma i profili NUOVI nascono da `HERO_PRESET_IDS` in `frontend/src/app/page.tsx`, che e' una
+            // lista scritta a mano. Questo test la legge davvero: se qualcuno aggiunge meta' delle sei
+            // famiglie la prova lo dice, e quando arrivera' il ticket 20 va aggiornata qui.
+            const page = fs.readFileSync(path.resolve(__dirname, '..', 'frontend/src/app/page.tsx'), 'utf8');
+            const blocco = page.slice(page.indexOf('HERO_PRESET_IDS'), page.indexOf('];', page.indexOf('HERO_PRESET_IDS')));
+            const idFrontend = extractYacaIds(blocco);
+            const storiche = [];
+            for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
+                storiche.push(`yaca_${slug}_movies`, `yaca_${slug}_series`);
             }
-            expect(groups).toHaveLength(10);  // 4 famiglie storiche + 6 nuove (Ticket 13)
+            expect(idFrontend.sort()).toEqual(storiche.sort());
+            // e tutte le famiglie che il registro serve alla dashboard sono comunque dieci
+            expect(getHeroUiGroups()).toHaveLength(10);
+        });
+
+        test('una selezione VUOTA o di soli id morti torna alle 20 righe (degradazione Ticket 47, non del 13)', () => {
+            // Non e' «i toggle contano»: e' la regola del Ticket 47 — un profilo non deve perdere il feed
+            // perche' gli id che aveva sono spariti. Vale anche per `selectedPresets: []` (un profilo che
+            // ha spento tutto riprende tutte e venti). Dichiarato nell'Esito §6.1.
+            const vuoto = buildManifest({ profiles: [], activeProfileId: 'x', userId: 'u' });
+            const vuotoRighe = vuoto.catalogs.filter(c => isHeroCatalogId(c.id)).length;
+            const morti = buildManifest({
+                userId: 'u', activeProfileId: 'p',
+                profiles: [{ id: 'p', raw_ui_state: { selectedPresets: ['yaca_true_blend_movies'] } }]
+            }).catalogs.filter(c => isHeroCatalogId(c.id)).length;
+            expect(vuotoRighe).toBe(20);
+            expect(morti).toBe(20);
         });
 
         test('le sei famiglie nuove sono nel manifesto', () => {
@@ -236,6 +258,18 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             };
             const heroIds = buildManifest(config).catalogs.filter(c => isHeroCatalogId(c.id)).map(c => c.id);
             expect(heroIds.sort()).toEqual(['yaca_classici_movies', 'yaca_micro_cluster_2_series'].sort());
+        });
+
+        test('dimostrazione: la funzione di estrazione rileverebbe la presenza di id morti (test-that-would-have-failed)', () => {
+            const legacySyntheticSnippet = `
+                const HERO_PRESET_IDS = [
+                    'yaca_true_blend_movies',
+                    'yaca_seed_network_movies'
+                ];
+            `;
+            const extracted = extractYacaIds(legacySyntheticSnippet);
+            const invalidIds = extracted.filter(id => !validCatalogIds.has(id) || DEAD_HERO_IDS.includes(id));
+            expect(invalidIds).toEqual(['yaca_true_blend_movies', 'yaca_seed_network_movies']);
         });
     });
 });

@@ -346,12 +346,17 @@ const HERO_STRATEGIES = [
                 );
                 // Le righe senza catalogo (i `mondo_<b>`) si DICHIARANO: un catalogo per bolla non e'
                 // statico, e il manifest di Stremio e' fisso.
+                // Si contano i TITOLI, non le liste: «mondo 2» dice quante righe-bolla il grafo ha
+                // prodotto, non quanto materiale si e' perso.
                 const nonServiti = {};
                 for (const li of liste) {
                     if (RUOLI_SERVITI.has(li.ruolo)) continue;
                     const ruolo = String(li.ruolo ?? 'senza-ruolo');
                     const famiglia = ruolo.replace(/_\d+$/, '');
-                    nonServiti[famiglia] = (nonServiti[famiglia] || 0) + 1;
+                    const voce = nonServiti[famiglia] || { righe: 0, titoli: 0 };
+                    voce.righe += 1;
+                    voce.titoli += (li.titoli || []).length;
+                    nonServiti[famiglia] = voce;
                 }
 
                 console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${semi.length - traktCount}, da Trakt ${traktCount}` +
@@ -365,10 +370,15 @@ const HERO_STRATEGIES = [
                         `(${ctx.mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
                 }
             } catch (e) {
-                assigned[catMondi] = [];
-                assigned[catPasso] = [];
-                assigned[catUscite] = [];
-                assigned[catNicchia] = [];
+                // Un guasto a meta' strada non deve lasciare righe a meta': si azzerano TUTTE le dieci.
+                const cat = (slug) => getHeroCatalogId(slug, ctx.mediaType);
+                for (const { slug } of RUOLI_HERO) assigned[cat(slug)] = [];
+                for (const slug of RUOLI_MICRO) assigned[cat(slug)] = [];
+                assigned[cat('punti_incontro')] = [];
+                assigned[catMondi] = assigned[catMondi] || [];
+                assigned[catPasso] = assigned[catPasso] || [];
+                assigned[catUscite] = assigned[catUscite] || [];
+                assigned[catNicchia] = assigned[catNicchia] || [];
                 if (sharedState) sharedState.graphCallFailed = true;
                 console.warn(`[Mondi] motore non raggiungibile: ${e?.message || e}`);
             }
