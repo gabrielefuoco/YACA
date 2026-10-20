@@ -1,21 +1,24 @@
 """probe-ticket-04-saga.py — Sonda di verifica per il Ticket 04 (Anti-monopolio saga e regista).
 
 Verifica:
-1. Parametri in parametri.py: DIVERSITA_SLOT_MAX (20), DIVERSITA_SAGA_MAX (1), DIVERSITA_REGISTA_MAX (2)
+1. Parametri in parametri.py: DIVERSITA_SLOT_MAX (20), DIVERSITA_SAGA_MAX (1), DIVERSITA_REGISTA_MAX (2).
 2. Verifica delle premesse a runtime:
    - Presenza/assenza nel canone di collection_id, regista, ANNO.
    - Conferma che le righe del grafo non subivano cap altrove (composer.js, ProfileScorer.js).
-3. Il caso costruito della PROVA:
+   - Dichiarazione: in produzione la regola è inerte fino all'export di COLL/DIR da parte del canone;
+     ticket 18 è il prerequisito; la sonda prova il meccanismo su metadati iniettati.
+3. Prova no-op rigoroso: con COLL/DIR a None, l'output di applica_antimonopolio è identico all'input
+   (stessi ID, stessi score, stesso ordine, nessun rebuild, nessun remap) — asserito in codice.
+4. Il caso costruito della PROVA (con metadati iniettati):
    - 6 film della stessa saga e 5 dello stesso regista a punteggio alto.
    - Primi 20 slot: esattamente 1 della saga e 2 del regista.
    - Titoli esclusi: presenti dopo la posizione 20.
-4. Il caso Dune:
+5. Il caso Dune:
    - Con Parte Uno non visto: Parte Due non precede Parte Uno (Parte Uno nei primi 20, Parte Due dopo il 20).
    - Con Parte Uno visto: Parte Due puo' entrare nei primi 20 come primo non visto della saga.
-5. Copertura di tutte le righe del grafo:
+6. Copertura di tutte le righe del grafo:
    - il_tuo_mondo, un_passo_fuori, uscite_nuove, nicchia_di_qualita, mondo_{b}.
-6. Contratto di monotonicita' non crescente dei punteggi (K.assert_monotonia_lista).
-7. Diagnostica righe accorciate sotto la soglia minima.
+7. Contratto di monotonicita' non crescente dei punteggi (K.assert_monotonia_lista).
 8. Servizio HTTP (/health 200, /raccomanda 200) e consumo memoria (< 512 MB).
 """
 import json
@@ -55,7 +58,7 @@ def test_parametri():
 
 def test_premesse_canone():
     print("=" * 80)
-    print("2. VERIFICA DELLE PREMESSE A RUNTIME")
+    print("2. VERIFICA DELLE PREMESSE A RUNTIME E STATO DI PRODUZIONE")
     print("=" * 80)
     print("  a) Metadati nel canone:")
     # In canon.py metadati() carica VOT, VAVE, POP, ANNO, NEP, COZY, IMP e TIT
@@ -63,10 +66,11 @@ def test_premesse_canone():
     print(f"     - ANNO:          DISPONIBILE a runtime nel canone (array self.ANNO)")
     print(f"     - collection_id: NON PRESENTE negli array del canone precalcolato a runtime")
     print(f"     - regista (DIR): NON PRESENTE negli array del canone precalcolato a runtime")
-    print("     -> DICHIARAZIONE OBBLIGATORIA (Trappola da brief):")
-    print("        collection_id e regista non risiedono nel canone precalcolato a runtime;")
-    print("        la regola anti-monopolio viene applicata solo quando tali metadati sono noti")
-    print("        (es. attributi self.COLL e self.DIR forniti o iniettati), senza inventare proxy.")
+    print("     -> DICHIARAZIONE STRUTTURALE:")
+    print("        In produzione la regola e' inerte finche' il canone non esporta COLL/DIR;")
+    print("        il ticket 18 e' il prerequisito obbligatorio (Blocked by: 18);")
+    print("        la sonda prova il meccanismo sia in no-op puro (senza metadati)")
+    print("        sia sui dati iniettati (meccanismo pronto per quando i dati esisteranno).")
 
     print("\n  b) Verifica assenza di cap preesistenti sulle righe del grafo:")
     # src/pool/composer.js applica caps solo a fetchPopularFallbackIds (fallback)
@@ -150,9 +154,66 @@ def build_synthetic_graph_with_metadata(n_nodes=350, n_bolle=4):
     return m
 
 
+def test_strict_noop_senza_metadati():
+    print("=" * 80)
+    print("3. PROVA NO-OP RIGOROSO SENZA METADATI (COLL is None and DIR is None)")
+    print("=" * 80)
+    m = build_synthetic_graph_with_metadata(n_nodes=350, n_bolle=4)
+    # Imposta esplicitamente COLL e DIR a None sull'engine (situazione di produzione fino al ticket 18)
+    m.COLL = None
+    m.DIR = None
+    m.REGISTA = None
+
+    # Test con lista eterogenea di candidati (ID, score con decimali, non monotonicità di partenza)
+    input_titoli = [
+        ("movie:1001", 0.987654321),
+        ("movie:1002", 0.123456789),
+        ("movie:1003", 0.854321098),
+        ("movie:1004", 0.444444444),
+        ("movie:1005", 0.999999999),
+        ("movie:1006", 0.333333333),
+    ]
+
+    out = m.applica_antimonopolio(input_titoli, cap_posizioni=20, nome_riga="test_noop")
+
+    print("  Verifica identità rigorosa (senza metadati l'input non deve essere toccato):")
+    # Prova 1: Identità istanza (nessun rebuild)
+    assert out is input_titoli, f"FAIL: out deve essere esattamente la stessa istanza dell'input: {id(out)} != {id(input_titoli)}"
+    print(f"    - Identità istanza (out is input_titoli): OK (nessun rebuild)")
+
+    # Prova 2: Stessa lunghezza
+    assert len(out) == len(input_titoli), f"FAIL: lunghezza alterata {len(out)} != {len(input_titoli)}"
+    print(f"    - Lunghezza invariata ({len(out)} elementi): OK")
+
+    # Prova 3: Stessi ID nello stesso identico ordine
+    assert [t[0] for t in out] == [t[0] for t in input_titoli], "FAIL: ordine o ID alterati"
+    print("    - Stessi ID e stesso ordine: OK")
+
+    # Prova 4: Stessi identici punteggi float (nessun remap)
+    assert [t[1] for t in out] == [t[1] for t in input_titoli], "FAIL: score alterati o rimappati"
+    print("    - Stessi identici score (zero remapping dei numeri): OK")
+
+    # Prova 5: Uguaglianza elemento per elemento
+    for idx, (in_item, out_item) in enumerate(zip(input_titoli, out)):
+        assert in_item == out_item, f"FAIL: elemento {idx} non identico: {in_item} != {out_item}"
+    print("    - Uguaglianza elemento per elemento: OK")
+
+    # Prova 6: Lista lunga (> 20 titoli) con candidati multipli
+    input_lungo = [(f"movie:{1000+i}", float(100 - (i % 7)) * 0.01) for i in range(50)]
+    out_lungo = m.applica_antimonopolio(input_lungo, cap_posizioni=20, nome_riga="test_noop_lungo")
+    assert out_lungo is input_lungo, "FAIL: lista lunga non restituita come stessa istanza"
+    assert out_lungo == input_lungo, "FAIL: lista lunga alterata"
+    assert [t[0] for t in out_lungo] == [t[0] for t in input_lungo], "FAIL: ordine lista lunga alterato"
+    assert [t[1] for t in out_lungo] == [t[1] for t in input_lungo], "FAIL: score lista lunga alterati"
+    print("    - Prova su lista lunga (50 titoli, > cap_posizioni): OK (identica all'input)")
+
+    print("  -> OK: PROVA NO-OP SUPERATA: Con COLL=None e DIR=None, applica_antimonopolio")
+    print("     restituisce l'input identico (stessi ID, stessi score, stesso ordine, nessun rebuild, nessun remap).\n")
+
+
 def test_caso_costruito_prova():
     print("=" * 80)
-    print("3. CASO COSTRUITO DELLA PROVA (6 FILM SAGA + 5 FILM STESSO REGISTA)")
+    print("4. CASO COSTRUITO DELLA PROVA CON METADATI (6 SAGA + 5 STESSO REGISTA)")
     print("=" * 80)
     m = build_synthetic_graph_with_metadata(n_nodes=350, n_bolle=4)
 
@@ -210,7 +271,7 @@ def test_caso_costruito_prova():
 
 def test_caso_dune():
     print("=" * 80)
-    print("4. IL CASO DUNE (PARTE UNO NON VISTO vs GIA VISTO)")
+    print("5. IL CASO DUNE (PARTE UNO NON VISTO vs GIA VISTO)")
     print("=" * 80)
     m = build_synthetic_graph_with_metadata(n_nodes=350, n_bolle=4)
 
@@ -274,7 +335,7 @@ def test_caso_dune():
 
 def test_tutte_le_righe_grafo():
     print("=" * 80)
-    print("5. VERIFICA DIVERSIFICAZIONE SU TUTTE LE RIGHE DEL GRAFO")
+    print("6. VERIFICA DIVERSIFICAZIONE SU TUTTE LE RIGHE DEL GRAFO")
     print("=" * 80)
     m = build_synthetic_graph_with_metadata(n_nodes=350, n_bolle=4)
 
@@ -316,7 +377,7 @@ def test_tutte_le_righe_grafo():
 
 def test_servizio_http_e_ram():
     print("=" * 80)
-    print("6. SERVIZIO GRAFO HTTP (HEALTH 200, RACCOMANDA 200) E CONSUMO RAM")
+    print("7. SERVIZIO GRAFO HTTP (HEALTH 200, RACCOMANDA 200) E CONSUMO RAM")
     print("=" * 80)
     m = build_synthetic_graph_with_metadata(n_nodes=350, n_bolle=4)
 
@@ -378,6 +439,7 @@ def test_servizio_http_e_ram():
 if __name__ == "__main__":
     test_parametri()
     test_premesse_canone()
+    test_strict_noop_senza_metadati()
     test_caso_costruito_prova()
     test_caso_dune()
     test_tutte_le_righe_grafo()

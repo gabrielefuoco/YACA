@@ -247,6 +247,12 @@ class Motore:
         if not titoli:
             return []
 
+        # Strict no-op se non ci sono metadati da far valere (in produzione fino al ticket 18 self.COLL e self.DIR sono None):
+        # con self.COLL is None and self.DIR is None restituisce titoli immutato:
+        # nessun rebuild, nessun remap dei punteggi, nessun riordino.
+        if getattr(self, "COLL", None) is None and getattr(self, "DIR", None) is None:
+            return titoli
+
         if cap_posizioni is None:
             cap_posizioni = int(getattr(P, "DIVERSITA_SLOT_MAX", 20))
         max_saga = int(getattr(P, "DIVERSITA_SAGA_MAX", 1))
