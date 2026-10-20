@@ -39,6 +39,14 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: 🏷️ Marcatore di versione dell'export
+        # Il frontend non viaggia con l'immagine dell'app: se resta vecchio nessuno se ne accorge,
+        # perche' la dashboard si disegna dai dati dell'API. `version.json` lo rende visibile in /health.
+        run: |
+          cat > frontend/out/version.json <<JSON
+          {"sha": "${GITHUB_SHA}", "ref": "${GITHUB_REF_NAME}", "built": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+          JSON
+
       - name: 🗜️ Package static export tarball
         run: |
           tar -czf frontend-out.tar.gz -C frontend/out .

@@ -1,0 +1,25 @@
+# YACA — aggiorna l'export statico del frontend (idempotente)
+#
+# Il frontend non viaggia con l'immagine dell'app: e' un volume montato in sola lettura. Watchtower
+# aggiorna app e grafo, ma non ha modo di sapere che esiste questa cartella. Questo servizio la tiene
+# allineata all'ultimo export pubblicato dal CI, senza riavviare niente (express.static rilegge da disco).
+#
+# Installazione (sul mate):
+#   sudo cp ops/yaca-frontend-update.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now yaca-frontend-update.timer
+# Stato:
+#   systemctl list-timers yaca-frontend-update.timer
+#   journalctl -u yaca-frontend-update -n 20
+[Unit]
+Description=YACA - aggiorna l'export statico del frontend (idempotente)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=gabri
+WorkingDirectory=/srv/yaca
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env bash /srv/yaca/ops/frontend-timer.sh
+Nice=10

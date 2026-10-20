@@ -112,12 +112,37 @@ registerStaticPostersRoute(app);
 // 3. STREMIO ADDON ROUTES
 app.use('/', stremioRoutes);
 
+// VERSIONE DELL'EXPORT STATICO (marcatore di divergenza, 20/10/2026).
+// Il frontend non viaggia con l'immagine: e' una cartella montata. Se resta vecchia, l'app risponde,
+// la dashboard sembra a posto e stai guardando il JS di ieri. Qui l'app legge il `version.json`
+// dell'export e lo dichiara in `/health`: se manca o e' vecchio si vede, invece di scoprirlo per caso.
+function leggiVersioneFrontend() {
+    const percorso = path.join(__dirname, 'frontend', 'out', 'version.json');
+    try {
+        if (!fs.existsSync(percorso)) return null;
+        const dati = JSON.parse(fs.readFileSync(percorso, 'utf8'));
+        return { sha: String(dati.sha || '').slice(0, 7), built: dati.built || null };
+    } catch (_e) {
+        return null;
+    }
+}
+
+const versioneFrontendAvvio = leggiVersioneFrontend();
+if (versioneFrontendAvvio) {
+    console.log(`[Frontend] export statico sha ${versioneFrontendAvvio.sha} (build ${versioneFrontendAvvio.built})`);
+} else {
+    console.warn('[Frontend] export statico SENZA version.json: non so quale build stia servendo '
+        + '(rilancia ops/frontend-aggiorna.sh)');
+}
+
 // Health check endpoint per monitoring e deployment platforms
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         version: '1.0.4',
-        uptime: Math.floor(process.uptime())
+        uptime: Math.floor(process.uptime()),
+        // Il marcatore viaggia anche qui: un controllo esterno puo' confrontarlo col commit atteso.
+        frontend: leggiVersioneFrontend()
     });
 });
 
