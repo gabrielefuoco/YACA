@@ -155,3 +155,15 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   titolo tolto, la riga si riordina. **Misurato**: la formula è troppo forte per la banda dei punteggi (dal
   terzo giorno la prima pagina si rinnova tutta, 0/10 restano) — leva da decidere col prodotto (tetto
   all'esponente o fattore 0.95), non cambiata in silenzio.
+
+## Decisioni del 20/10/2026 (chieste all'utente)
+
+- **Righe nuove accese di default**: il frontend si **sblocca** per il solo elenco di id
+  (`HERO_PRESET_IDS` in `frontend/src/lib/constants.ts`, un posto solo per tre copie). Fatto nel ticket `20`.
+- **Decadimento impressioni**: resta **0.85**, ma con due aggiunte decise qui — un **alpha casuale
+  giornaliero** che muove l'ordine delle prime pagine di giorno in giorno, e un **reset periodico**, perché
+  altrimenti i titoli utili scivolati giù non tornano più. → ticket **`21`**.
+- **Deploy**: dopo `19` + `12`, così le righe arrivano già filtrate a monte (anime/kids) invece di
+  affidarsi ai tagli a valle.
+- **Waterfall in produzione**: **guardia**, la deduplica considera solo i ruoli che hanno un catalogo
+  Stremio. → ticket **`22`** (riapertura del `11`).

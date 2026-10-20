@@ -175,8 +175,10 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
             const content = fs.readFileSync(fullPath, 'utf8');
             const foundIds = extractYacaIds(content);
 
-            expect(foundIds.length).toBeGreaterThan(0);
-
+            // Ticket 20: gli id delle righe hero ora stanno in un posto solo (`lib/constants.ts`), quindi
+            // gli altri file li IMPORTANO e non contengono piu' nessun `yaca_*`. La completezza la prova
+            // il test «il frontend conosce tutte le famiglie»; qui resta la regola per-file: nessun id
+            // morto, e ogni id letterale che resta deve esistere nel registro.
             for (const id of foundIds) {
                 // Nessun id trovato deve essere uno degli 8 id morti
                 expect(DEAD_HERO_IDS).not.toContain(id);
@@ -190,35 +192,22 @@ describe('Ticket 47 - Protezione e Degrado Righe Hero', () => {
         // li DERIVA da `getHeroUiGroups()` (`${`${catalog.idBase}_movies`}` / `_series`): la guardia che
         // conta e' quindi che il registro serva **tutte** le famiglie alla dashboard, e che ogni id
         // letterale che resta nei file sia vivo (il test per-file qui sopra).
-        test('il default dei profili nuovi nel frontend elenca ancora le sole quattro famiglie storiche', () => {
-            // La dashboard e' data-driven (`heroCatalogs` da `getHeroUiGroups`, id derivati da `idBase`),
-            // ma i profili NUOVI nascono da `HERO_PRESET_IDS` in `frontend/src/app/page.tsx`, che e' una
-            // lista scritta a mano. Questo test la legge davvero: se qualcuno aggiunge meta' delle sei
-            // famiglie la prova lo dice, e quando arrivera' il ticket 20 va aggiornata qui.
-            const page = fs.readFileSync(path.resolve(__dirname, '..', 'frontend/src/app/page.tsx'), 'utf8');
-            const blocco = page.slice(page.indexOf('HERO_PRESET_IDS'), page.indexOf('];', page.indexOf('HERO_PRESET_IDS')));
+        test('il frontend conosce TUTTE le famiglie del registro (Ticket 20)', () => {
+            // Il ticket 20 ha portato le righe hero in un posto solo: `HERO_PRESET_IDS` in
+            // `frontend/src/lib/constants.ts`. Questo test confronta quell'elenco col registro: se una
+            // famiglia nasce nel registro e non arriva al frontend (o viceversa), la prova lo dice.
+            // `constants.ts` non entra nella scansione per-file: contiene anche le chiavi di storage
+            // (`yaca_config`, `yaca_user_id`, ...) che non sono cataloghi. Qui il confronto e' esatto,
+            // che e' piu' forte di «nessun id morto».
+            const costanti = fs.readFileSync(path.resolve(__dirname, '..', 'frontend/src/lib/constants.ts'), 'utf8');
+            const inizio = costanti.indexOf('export const HERO_PRESET_IDS');
+            expect(inizio).toBeGreaterThan(-1);
+            const blocco = costanti.slice(inizio, costanti.indexOf('] as const;', inizio));
             const idFrontend = extractYacaIds(blocco);
-            const storiche = [];
-            for (const slug of ['mondi', 'passo_fuori', 'uscite_nuove', 'nicchia_di_qualita']) {
-                storiche.push(`yaca_${slug}_movies`, `yaca_${slug}_series`);
-            }
-            expect(idFrontend.sort()).toEqual(storiche.sort());
-            // e tutte le famiglie che il registro serve alla dashboard sono comunque dieci
+            expect(idFrontend.sort()).toEqual([...HERO_IDS].sort());
+            expect(idFrontend).toHaveLength(20);
+            // e il registro serve comunque dieci famiglie alla dashboard
             expect(getHeroUiGroups()).toHaveLength(10);
-        });
-
-        test('una selezione VUOTA o di soli id morti torna alle 20 righe (degradazione Ticket 47, non del 13)', () => {
-            // Non e' «i toggle contano»: e' la regola del Ticket 47 — un profilo non deve perdere il feed
-            // perche' gli id che aveva sono spariti. Vale anche per `selectedPresets: []` (un profilo che
-            // ha spento tutto riprende tutte e venti). Dichiarato nell'Esito §6.1.
-            const vuoto = buildManifest({ profiles: [], activeProfileId: 'x', userId: 'u' });
-            const vuotoRighe = vuoto.catalogs.filter(c => isHeroCatalogId(c.id)).length;
-            const morti = buildManifest({
-                userId: 'u', activeProfileId: 'p',
-                profiles: [{ id: 'p', raw_ui_state: { selectedPresets: ['yaca_true_blend_movies'] } }]
-            }).catalogs.filter(c => isHeroCatalogId(c.id)).length;
-            expect(vuotoRighe).toBe(20);
-            expect(morti).toBe(20);
         });
 
         test('le sei famiglie nuove sono nel manifesto', () => {

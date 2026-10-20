@@ -2,16 +2,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { api } from '@/lib/api';
-import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
+import { LOCAL_STORAGE_KEYS, HERO_PRESET_IDS } from '@/lib/constants';
 
 import { generateId, resolveHydratedActiveProfile } from '@/lib/utils';
-
-const HERO_PRESET_IDS = [
-  'yaca_mondi_movies', 'yaca_mondi_series',
-  'yaca_passo_fuori_movies', 'yaca_passo_fuori_series',
-  'yaca_uscite_nuove_movies', 'yaca_uscite_nuove_series',
-  'yaca_nicchia_di_qualita_movies', 'yaca_nicchia_di_qualita_series'
-];
 
 function createGlobalProfile(): Profile {
   return {

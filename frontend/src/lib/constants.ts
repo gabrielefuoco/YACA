@@ -1,3 +1,22 @@
+/**
+ * Le righe hero del grafo (Ticket 20): le dieci famiglie del registro, entrambi i medium.
+ * Un posto solo: le usano i profili nuovi (`page.tsx`, `useProfiles.ts`) e la migrazione una-tantum dei
+ * profili vecchi (`utils.ts`, protetta da `heroPresetsInitialized`).
+ * Se il registro cambia, cambia qui — e `tests/ticket47HeroProtection.test.js` confronta i due elenchi.
+ */
+export const HERO_PRESET_IDS = [
+  'yaca_mondi_movies', 'yaca_mondi_series',
+  'yaca_passo_fuori_movies', 'yaca_passo_fuori_series',
+  'yaca_uscite_nuove_movies', 'yaca_uscite_nuove_series',
+  'yaca_nicchia_di_qualita_movies', 'yaca_nicchia_di_qualita_series',
+  'yaca_classici_movies', 'yaca_classici_series',
+  'yaca_ultime_visioni_movies', 'yaca_ultime_visioni_series',
+  'yaca_punti_incontro_movies', 'yaca_punti_incontro_series',
+  'yaca_micro_cluster_1_movies', 'yaca_micro_cluster_1_series',
+  'yaca_micro_cluster_2_movies', 'yaca_micro_cluster_2_series',
+  'yaca_micro_cluster_3_movies', 'yaca_micro_cluster_3_series',
+] as const;
+
 export const GENRE_NAMES: Record<string, string> = {
   // Movie Genres
   '28': 'Azione',

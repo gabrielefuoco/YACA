@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { CatalogCardData, Profile, TypeSelectors, EngineSliders, DEFAULT_ENGINE_SLIDERS } from "@/types";
+import { HERO_PRESET_IDS } from "@/lib/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -161,13 +162,6 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
   const libraryOrder = Array.isArray(rawUi.libraryOrder) ? rawUi.libraryOrder : [];
   const heroPresetsInitialized = (rawUi as Record<string, unknown>).heroPresetsInitialized ?? false;
 
-  const HERO_PRESET_IDS = [
-    'yaca_mondi_movies', 'yaca_mondi_series',
-    'yaca_passo_fuori_movies', 'yaca_passo_fuori_series',
-    'yaca_uscite_nuove_movies', 'yaca_uscite_nuove_series',
-    'yaca_nicchia_di_qualita_movies', 'yaca_nicchia_di_qualita_series'
-  ];
-
   if (!heroPresetsInitialized) {
     selectedPresets = Array.from(new Set([...selectedPresets, ...HERO_PRESET_IDS]));
     HERO_PRESET_IDS.forEach(id => {
@@ -175,6 +169,25 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
         catalogOrder.push(id);
       }
     });
+  } else {
+    // TICKET 20: un profilo che ha gia' salvato lo stato ha `heroPresetsInitialized: true`, quindi la
+    // migrazione qui sopra non lo tocca mai. Se non ha NESSUNA delle sei famiglie nuove ma ha le righe
+    // hero storiche, vuol dire che non le ha mai viste: si aggiungono una volta sola. Dopo il primo
+    // salvataggio le id sono nel profilo, quindi spegnere una famiglia vince.
+    // Limite dichiarato: chi spegne TUTTE e sei le famiglie se le ritrova accese (non distinguo «mai
+    // viste» da «spente tutte») — togliere anche quel caso richiede un marcatore di versione persistito.
+    const tutte: readonly string[] = HERO_PRESET_IDS;
+    const nuoveFamiglie = tutte.filter(id => /_(classici|ultime_visioni|punti_incontro|micro_cluster_[123])_/.test(id));
+    const haGiaUnaNuova = selectedPresets.some(id => nuoveFamiglie.includes(id));
+    const haUnaStorica = selectedPresets.some(id => tutte.includes(id) && !nuoveFamiglie.includes(id));
+    if (!haGiaUnaNuova && haUnaStorica) {
+      selectedPresets = Array.from(new Set([...selectedPresets, ...nuoveFamiglie]));
+      nuoveFamiglie.forEach(id => {
+        if (!catalogOrder.includes(id)) {
+          catalogOrder.push(id);
+        }
+      });
+    }
   }
 
   const rawSliders = ((bSettings as Record<string, unknown>).sliders ?? (backendProfile as Record<string, unknown>).sliders ?? {}) as Partial<EngineSliders>;
