@@ -9,7 +9,7 @@
  * - Le 4 strategie storiche (trueBlend, seed_network, hiddenGems, trakt_filtered) sono rimosse;
  *   il motore del gusto è interamente il servizio del grafo (mondi, passo_fuori, uscite_nuove, nicchia_di_qualita).
  * - Assegnazione disgiunta / claimedIds per eventuali strategie esclusive.
- * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v16').
+ * - Cache di gruppo e dedup delle build concorrenti (HERO_CACHE_KEY_VERSION = 'v17').
  */
 
 const cache = require('../cache');
@@ -144,6 +144,9 @@ function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MA
 function isSharedHeroCacheEntry(entry, mediaType) {
     if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
     if (!['movie', 'series'].includes(mediaType)) return false;
+    // Ticket 14: i `seedIds` sono parte del contratto (servono a non far scendere i titoli visti). Una
+    // voce che li porta del tipo sbagliato e' corrotta: si rigenera invece di leggerla.
+    if (entry.seedIds !== undefined && !Array.isArray(entry.seedIds)) return false;
 
     const claimedIds = new Set();
     for (const slug of HERO_PRIORITY) {
@@ -615,9 +618,12 @@ async function getHeroPool(params) {
         visti: sharedGroup?.seedIds || []
     });
     if (statImpressioni.titoli > 0) {
+        const nonOrdinate = statImpressioni.righeNonOrdinate > 0
+            ? ` · ${statImpressioni.righeNonOrdinate} righe NON riordinate (titoli senza punteggio)`
+            : '';
         console.log(`[Impressioni] ${mediaType}: ${statImpressioni.titoli} titoli scesi in ` +
             `${statImpressioni.cataloghi} righe (media ${statImpressioni.giorniMedi} giorni in home, ` +
-            `${statImpressioni.percepibile} oltre la soglia percepibile)`);
+            `${statImpressioni.spostamenti} cambi di posizione${nonOrdinate})`);
     }
     const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;
     const catPasso = `yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`;

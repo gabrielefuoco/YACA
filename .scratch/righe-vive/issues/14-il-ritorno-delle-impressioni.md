@@ -69,9 +69,11 @@ la finestra si può misurare in **giorni distinti** senza cambiare schema.
   toccato porta `punteggio_grafo` e `giorni_in_home` per tracciabilità.
 - **Dove**: in `getHeroPool`, **dopo** la cache delle righe. Non muta gli array in cache (li copia), quindi la
   voce di cache non si avvelena e il grafo non si tocca.
-- **Costo, dichiarato**: **una query per richiesta** per media (non una per catalogo: i 20 cataloghi vanno in
-  `$in`); la funzione `leggi` è iniettabile e un test conta le chiamate (1). Se non arrivano impressioni,
-  la riga torna **lo stesso riferimento** (zero lavoro, zero copie).
+- **Costo, misurato e corretto dopo la review**: `getHeroPool` fa **una** query per i 20 cataloghi del media
+  (vanno in `$in`), ma `src/pool/composer.js` chiama `getHeroPool` **una volta per catalogo**: una schermata
+  da dieci righe sarebbero dieci query identiche. Per questo `leggiImpressioniRecenti` ha una **memo di 60 s**
+  (`IMPRESSIONI_MEMO_MS`, chiave utente+profilo+media) → in pratica ~1 query al minuto per utente/media.
+  Se non arrivano impressioni, la riga torna **lo stesso riferimento** (zero copie).
 - **Diagnostica**: `[Impressioni] movie: N titoli scesi in M righe (media X giorni in home, K oltre la
   soglia percepibile)`; se non scende niente, nessuna riga di log.
 
@@ -142,6 +144,14 @@ Baseline `1910`/`192` + 12 test nuovi = `1935`, `195` suite. Le cinque rosse son
 2. **`visti` = i semi del grafo**: un titolo visto ma fuori dalla library del profilo (seed escluso per
    politica anime, per esempio) può decadere. È il compromesso per non aggiungere una query per richiesta.
 3. **La taratura** (punto 4): da decidere col prodotto.
+4. **Il decadimento è un dente di sega.** I giorni si contano in una finestra **mobile** di 14: un titolo che
+   esce dalla pagina 1 smette di accumulare date e, quando il conteggio scende sotto 3 (~11 giorni dopo),
+   **torna al punteggio pieno di colpo**. Non è un guasto — è la forma della formula — ma non è "rotazione
+   morbida": se il prodotto la vuole, la leva è un conteggio pesato sulla recenza (le date più vecchie
+   contano meno), non la soglia.
+5. **Un titolo senza `punteggio`** (contratto del grafo lo garantisce, ma `itemsDi` copia alla cieca): la riga
+   che ne contiene uno **non viene riordinata** e lo dichiara nel log (`righe NON riordinate`). Meglio non
+   ordinare che spostare un titolo che non ha un voto.
 4. **La cache delle righe passa a `v17`** (era `v16` dal ticket 13): il payload ora porta anche `seedIds`, e
    una voce scritta prima non li ha — senza, il decadimento toccherebbe anche i titoli già visti. Il bump è
    il lever giusto (la chiave contiene la versione), non lo `schemaVersion`.

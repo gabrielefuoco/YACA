@@ -97,4 +97,30 @@ describe('Ticket 14: le impressioni nel pool', () => {
         expect(pool['yaca_mondi_movies'].map((i) => i.tmdbId)).toEqual([11, 13]);
         expect(pool['yaca_mondi_movies'][0].punteggio).toBe(1.0);
     });
+
+    test('una voce di cache con seedIds: il seme non scende anche leggendo dal disco', async () => {
+        // Il bump a v17 esiste per questo: i seedIds viaggiano DENTRO la voce di cache e devono
+        // sopravvivere al giro JSON, altrimenti i titoli visti tornano a decadere.
+        const { HERO_CACHE_SCHEMA_VERSION, HERO_PRIORITY, getHeroCatalogId } = require('../src/pool');
+        // Una voce di cache valida le ha TUTTE e dieci le righe (il validator rifiuta quelle incomplete):
+        // qui le altre restano vuote, com'e' giusto in un fixture.
+        const catalogs = {};
+        for (const slug of HERO_PRIORITY) catalogs[getHeroCatalogId(slug, 'movie')] = [];
+        catalogs['yaca_mondi_movies'] = [
+            { id: 'tmdb:11', tmdbId: 11, type: 'movie', media_type: 'movie', punteggio: 1.0 },
+            { id: 'tmdb:13', tmdbId: 13, type: 'movie', media_type: 'movie', punteggio: 0.5 }
+        ];
+        cache.leggi.mockResolvedValue({
+            value: {
+                schemaVersion: HERO_CACHE_SCHEMA_VERSION,
+                mediaType: 'movie',
+                seedIds: ['11'],
+                catalogs
+            },
+            status: 'hit'
+        });
+        const pool = await getHeroPool({ userId: 'u1', context: 'p1', mediaType: 'movie', userConfig: {} });
+        expect(pool['yaca_mondi_movies'].map((i) => i.tmdbId)).toEqual([11, 13]);
+        expect(pool['yaca_mondi_movies'][0].punteggio).toBe(1.0);
+    });
 });

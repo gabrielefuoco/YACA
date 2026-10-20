@@ -2,7 +2,8 @@
  * Sonda del Ticket 14 — «il ritorno delle impressioni».
  *
  * Cosa misura, su una riga sintetica di 60 titoli e dieci giorni di Stremio:
- *  1. quanti titoli restano nella stessa posizione (senza decadimento: tutti);
+ *  1. quanti titoli restano nella stessa posizione, CONFRONTATI con la stessa riga senza impressioni
+ *     (che deve uscire identica: 60/60);
  *  2. quanti posti cambia la top-10 con il decadimento (0.85^giorni, >=3 giorni, mai visti);
  *  3. che NESSUN titolo sparisca dalla riga (la riga si rinnova, non si svuota);
  *  4. che i candidati dalla posizione 21-60 salgano davvero.
@@ -62,6 +63,17 @@ async function main() {
         .map((id, i) => ({ id, posto: i + 1, prima: prima.get(id) }))
         .filter((x) => x.prima > 10);
 
+    // La linea di base non si enuncia, si esegue: senza impressioni la riga deve uscire IDENTICA.
+    const { assigned: senzaDecadimento } = await applicaDecadimento({
+        userId: 'utente-sonda',
+        profileId: 'profilo-sonda',
+        assigned: { yaca_mondi_movies: rigaSintetica() },
+        visti: [],
+        leggi: async () => new Map()
+    });
+    const posizioniBase = posizioni(senzaDecadimento.yaca_mondi_movies);
+    const fermiBase = [...prima.entries()].filter(([id, p]) => posizioniBase.get(id) === p).length;
+
     const fermi = [...prima.entries()].filter(([id, p]) => posizioniDopo.get(id) === p).length;
     const top10Prima = new Set(top(riga));
     const top10Dopo = new Set(top(dopo));
@@ -70,12 +82,12 @@ async function main() {
     console.log('== Ticket 14: decadimento delle impressioni ==');
     console.log(`riga: ${CAP} titoli · prima pagina mostrata per ${GIORNI} giorni`);
     console.log(`titoli spariti dalla riga: ${spariti.length}   (deve essere 0)`);
-    console.log(`titoli rimasti nella stessa posizione: ${fermi}/${CAP}`);
+    console.log(`titoli rimasti nella stessa posizione: ${fermi}/${CAP}   (senza decadimento: ${fermiBase}/${CAP})`);
     console.log(`top-10: ${rimastiInTop10.length}/10 titoli di ieri restano, ${10 - rimastiInTop10.length} entrano da sotto`);
     console.log(`entrati in top-10 dalla posizione 11-60: ${saliti.length}`);
     for (const s of saliti) console.log(`   #${s.posto}  tmdb:${s.id}  (era #${s.prima})`);
     console.log(`statistiche dichiarate: ${statistiche.titoli} titoli scesi in ${statistiche.cataloghi} righe, ` +
-        `media ${statistiche.giorniMedi} giorni, ${statistiche.percepibile} oltre la soglia percepibile`);
+        `media ${statistiche.giorniMedi} giorni, ${statistiche.spostamenti} cambi di posizione`);
     console.log(`punteggio del #1 di ieri: ${riga[0].punteggio} -> ${dopo.find((i) => i.tmdbId === riga[0].tmdbId).punteggio.toFixed(4)}`);
     // TARATURA: la formula del ticket e' 0.85^giorni. Qui si misura che cosa significa per quanti
     // giorni un titolo puo' restare in pagina 1, dato che i punteggi del grafo stanno in una banda
@@ -97,7 +109,7 @@ async function main() {
         const restano = PRIMA_PAGINA.filter((id) => topOra.has(id)).length;
         console.log(`   ${String(giorni).padStart(2)}      ${Math.pow(0.85, giorni).toFixed(4)}          ${restano}/10`);
     }
-    console.log('letture di impressioni per richiesta: 1 (una query per tutti i cataloghi di un media)');
+    console.log('letture: 1 per chiamata di getHeroPool, con la memo di 60 s composer ne fa ~1 al minuto per utente/media');
 }
 
 main().catch((e) => {

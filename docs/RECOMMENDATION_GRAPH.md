@@ -269,8 +269,9 @@ Il cantiere `.scratch/righe-vive/` (documentato in dettaglio in [.scratch/righe-
      serviti in pagina 1 e nessuno li rileggeva: dieci giorni di Stremio mostravano la stessa prima pagina.
      Ora `leggiImpressioniRecenti` (finestra **14 giorni**, giorni *distinti*) alimenta
      `src/pool/impressioni.js`, che applica `punteggio × 0.85^giorni` ai titoli con **≥3 giorni** in home
-     **mai visti** — dopo la cache delle righe, quindi una lettura per richiesta e nessuna invalidazione del
-     grafo. Non si cancella niente: si riordina, e la riga resta intera.
+     **mai visti** — dopo la cache delle righe, quindi nessuna invalidazione del grafo. Costo: una query per
+     chiamata di `getHeroPool` (i 20 cataloghi in un `$in`) e una **memo di 60 s** per utente/profilo/media,
+     perché `composer` chiama il pool una volta per catalogo. Non si cancella niente: si riordina, e la riga resta intera.
      **Taratura misurata** (sonda `scripts/qa/probe-ticket-14-impressioni.js`): con i punteggi del grafo in
      banda stretta (il #1 vale 1.00, il #20 vale 0.77), `0.85^1 = 0.85` basta già a far scendere **tutti** i
      dieci titoli di ieri sotto la banda 11-20. In pratica: nei primi due giorni non cambia nulla (sotto
