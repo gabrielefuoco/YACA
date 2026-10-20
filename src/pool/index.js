@@ -16,6 +16,7 @@ const cache = require('../cache');
 const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec, getHeroRuoli } = require('../catalog/registry');
+const { applicaDecadimento } = require('./impressioni');
 const { fetchProfileContext } = require('../profile');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
@@ -285,6 +286,8 @@ const HERO_STRATEGIES = [
                     return;
                 }
 
+                // I semi sono i titoli che l'utente conosce: il decadimento non tocca questi (Ticket 14).
+                if (sharedState) sharedState.seedIds = semi.map((x) => String(x.tmdbId));
                 const opzioni = ctx.sliders
                     || ctx.slider
                     || ctx.userConfig?.activeProfileSettings?.sliders
@@ -462,6 +465,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         schemaVersion: HERO_CACHE_SCHEMA_VERSION,
         mediaType,
         catalogs: assigned,
+        seedIds: sharedState.seedIds || [],
         graphCallFailed: !!sharedState.graphCallFailed,
         trakt: {
             available: false,
@@ -600,7 +604,19 @@ async function getHeroPool(params) {
         slider: resolvedSliders
     }, heroDesc);
 
-    const assigned = sharedGroup?.catalogs || {};
+    const assignedCache = sharedGroup?.catalogs || {};
+    // Ticket 14: le impressioni si leggono a ogni richiesta (una query), dopo la cache delle righe.
+    const { assigned, statistiche: statImpressioni } = await applicaDecadimento({
+        userId,
+        profileId: context,
+        assigned: assignedCache,
+        visti: sharedGroup?.seedIds || []
+    });
+    if (statImpressioni.titoli > 0) {
+        console.log(`[Impressioni] ${mediaType}: ${statImpressioni.titoli} titoli scesi in ` +
+            `${statImpressioni.cataloghi} righe (media ${statImpressioni.giorniMedi} giorni in home, ` +
+            `${statImpressioni.percepibile} oltre la soglia percepibile)`);
+    }
     const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;
     const catPasso = `yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`;
     const catUscite = `yaca_uscite_nuove_${mediaType === 'movie' ? 'movies' : 'series'}`;

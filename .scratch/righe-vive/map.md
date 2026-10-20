@@ -149,3 +149,8 @@ costruite è il modo esatto in cui un documento diventa una bugia.
   nuove arrivano SPENTE** finché un profilo non le accende. La regola di compatibilità («chi aveva tutte le
   righe di ieri riceve quelle di oggi») rendeva inerti i toggle ed è stata **ritirata**. Accenderle di
   default è il ticket **`20`** (migrazione one-shot con marcatore, o dodici id nei default del frontend).
+- **`14` chiuso**: le impressioni si **rileggono** (finestra 14 giorni, giorni distinti) e il pool applica
+  `0.85^giorni` ai titoli con ≥3 giorni in home **mai visti**, dopo la cache: una query per richiesta, nessun
+  titolo tolto, la riga si riordina. **Misurato**: la formula è troppo forte per la banda dei punteggi (dal
+  terzo giorno la prima pagina si rinnova tutta, 0/10 restano) — leva da decidere col prodotto (tetto
+  all'esponente o fattore 0.95), non cambiata in silenzio.
