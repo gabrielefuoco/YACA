@@ -284,3 +284,16 @@ Prese con i dati di produzione davanti, non a occhio:
 (`libraries` invece di `userlibraryitems`), e mi ha fatto dichiarare «il ripescaggio non gira per nessuno».
 La smentita è arrivata dalla domanda giusta. Da qui in poi: prima di dire «non c'è», si elencano le
 collezioni e i loro conteggi, non si interroga un nome che si presume.
+
+### Quando si ritarà il decadimento (non «fra due settimane»)
+
+Non è un appuntamento a calendario: è un **trigger misurabile**, perché il decadimento agisce solo sui
+titoli con ≥3 giorni in home e oggi ce ne sono **3**.
+
+- **Trigger**: ≥**30** titoli delle righe vive con ≥3 giorni in home, **oppure** una finestra intera di
+  `IMPRESSIONI_FINESTRA_GIORNI` (14 giorni) di esercizio — quello che arriva prima.
+- **Cosa guardare quando scatta**: quanti titoli escono dalla pagina 1 in un giorno, quanti rientrano entro
+  `DECADIMENTO_RESET_GIORNI_FUORI` (4), e quante posizioni perde un titolo con 3 giorni. Se i titoli che
+  escono non rientrano, il reset non funziona; se non escono mai, la soglia è troppo alta.
+- **Come si misura**: la stessa query della sera del 20/10 (distribuzione dei giorni distinti per
+  `catalogId` sulle righe vive) più la sonda `probe-ticket-21-taratura.js` per il confronto.

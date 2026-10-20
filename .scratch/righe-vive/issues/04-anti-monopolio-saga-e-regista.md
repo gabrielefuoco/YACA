@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # 04 — Anti-monopolio di saga e regista
@@ -325,3 +325,34 @@ Esattamente le sole 5 suite rosse / 8 test falliti / 1898 passati ammessi dalla 
 sola** appena l'artefatto di produzione viene rigenerato sul mate — nessuna modifica di codice richiesta. Fino a
 quel momento resta il **no-op stretto**, provato per identità: l'uscita è lo stesso oggetto dell'ingresso, stessi
 punteggi, stesso ordine.
+
+---
+
+## Chiusura (20/10/2026, sera) — la regola è ACCESA, e verificata in produzione
+
+Il prerequisito dei dati è arrivato: `metadati-canone.npz` rigenerato sul mate con **COLL 7.217** e
+**DIR 59.738** (su 66.259 titoli), depositato in `/srv/yaca/services/graph/data/` (il vecchio è in
+`backup-20261020/`). Da quel momento la regola non è più un no-op.
+
+**Un bug trovato rigenerando l'artefatto**: nel Parquet TMDB `collection_id` è un **float**
+(`531241.0`, con NaN per i titoli senza saga) e il lettore accettava solo interi → `COLL` restava tutto a
+`-1` e la regola sarebbe rimasta inerte **per sempre**, anche con l'artefatto nuovo. Corretto
+(`isinstance(c_val, (float, np.floating))`).
+
+**Verifiche**
+
+1. **Il meccanismo, sul banco di prova** (collezione reale da 30 titoli del canone):
+   `[antimonopolio] riga 'prova': 1 titoli nei primi 20 slot, 5 titoli esclusi omessi per rispetto dei cap`
+   → **1** titolo della stessa saga nei primi 20, come chiede la regola.
+2. **In produzione**, sulla riga servita da Stremio (`il_tuo_mondo`, 20 titoli): 14 titoli con una saga,
+   **0 collezioni duplicate** nei primi 20 dopo il ticket 23 (`duplicati_saga: 0` nel payload).
+3. **La regola Dune** resta quella provata dal ticket: dentro una collezione entra il titolo con `ANNO`
+   minore fra i non visti.
+
+**L'interazione che questo ticket non aveva previsto** — e che si è vista solo ora che ha i dati — è il
+**waterfall**: ripescando sotto la posizione 20 riapriva le saghe appena chiuse. È il ticket **23**, chiuso
+la stessa sera. La lezione: una regola che vale su una lista *prima* di un altro passaggio non è una regola
+sulla riga *servita*.
+
+**Residuo dichiarato**: se `COLL`/`DIR` sparissero dall'artefatto (rigenerazione senza Parquet), la regola
+torna al **no-op stretto** e lo dice nel log all'avvio.
