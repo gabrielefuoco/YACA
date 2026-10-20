@@ -1017,9 +1017,9 @@ def metadati(path_npz=None, path_txt=None):
                         continue
         except Exception as _e:
             print(f"  metadati-canone: anime_mapping.json illeggibile ({_e}); ANIME resta vuoto", flush=True)
-    else:
-        print("  metadati-canone: anime_mapping.json assente; ANIME resta vuoto (nessun proxy inventato)",
-              flush=True)
+    elif not anime_ids:
+        print("  metadati-canone: ne' anime_mapping.json ne' anime-list-mini.json; ANIME resta vuoto "
+              "(nessun proxy inventato)", flush=True)
     d = {k: np.zeros(N, np.float64) for k in ("VOT", "VAVE", "POP", "ANNO", "NEP")}
     d["NEP"] += 1.0                                   # 1 = un film: il denominatore del peso serie
     d["COZY"] = np.zeros(N, bool)
@@ -1119,8 +1119,14 @@ def metadati(path_npz=None, path_txt=None):
                 if not ok[j] or c_val is None or (isinstance(c_val, float) and np.isnan(c_val)):
                     continue
                 cid = -1
+                # ATTENZIONE: nel Parquet TMDB `collection_id` e' un **float** (531241.0) con NaN per i
+                # titoli senza saga. Senza il ramo `np.floating` ogni collezione veniva scartata e COLL
+                # restava tutto a -1: la regola del ticket 04 sarebbe rimasta inerte per sempre.
                 if isinstance(c_val, (int, np.integer)):
                     cid = int(c_val)
+                elif isinstance(c_val, (float, np.floating)):
+                    if not np.isnan(c_val):
+                        cid = int(c_val)
                 elif isinstance(c_val, dict):
                     cid = int(c_val.get("id") or -1)
                 elif isinstance(c_val, str):
