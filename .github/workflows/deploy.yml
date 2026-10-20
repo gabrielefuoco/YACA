@@ -3,6 +3,13 @@ name: 🚀 Build & Deploy to GHCR
 on:
   push:
     branches: [main]
+    # Un commit di soli documenti non deve ricostruire l'immagine: oggi costa 3-4 minuti di CI e,
+    # peggio, un RIAVVIO della produzione (Watchtower tira su ogni nuova `latest`). Il codice sta
+    # fuori da questi percorsi, quindi non si perde nessun deploy.
+    paths-ignore:
+      - 'docs/**'
+      - '.scratch/**'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
