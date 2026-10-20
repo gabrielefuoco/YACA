@@ -130,8 +130,9 @@ class Motore:
         self.LISTDEG = np.asarray((sp.csr_matrix((z["data"], z["indices"], z["indptr"]),
                                                   shape=(n, n)) > 0).sum(1)).ravel().astype(float)
         if not silenzioso:
+            stato_coll = "con COLL/DIR" if (self.COLL is not None and self.DIR is not None) else "senza collezione (questo artefatto non ha la collezione)"
             print(f"  motore pronto: {self.NB:,} mondi · {self.N:,} titoli · "
-                  f"artefatto {self.artefatto} ({time.time()-T0:.0f}s)", file=sys.stderr)
+                  f"artefatto {self.artefatto} ({stato_coll}) ({time.time()-T0:.0f}s)", file=sys.stderr)
 
     @staticmethod
     def _pota(M, k):
@@ -184,8 +185,9 @@ class Motore:
                 cid = coll[x]
             else:
                 cid = None
-            if cid is not None and not (isinstance(cid, float) and np.isnan(cid)) and cid != 0 and cid != "":
-                return int(cid)
+            if cid is not None and not (isinstance(cid, float) and np.isnan(cid)) and cid != 0 and cid != "" and cid != -1:
+                val = int(cid)
+                return val if val > 0 else None
         except Exception:
             return None
         return None
@@ -209,9 +211,11 @@ class Motore:
             else:
                 d_val = []
             if isinstance(d_val, (list, tuple, set)):
-                return [str(d).strip() for d in d_val if d]
-            elif d_val is not None and not (isinstance(d_val, float) and np.isnan(d_val)) and d_val != "" and d_val != 0:
-                return [str(d_val).strip()]
+                return [str(d).strip() for d in d_val if d and str(d).strip() not in ("0", "-1", "None", "nan")]
+            elif d_val is not None and not (isinstance(d_val, float) and np.isnan(d_val)) and d_val != "" and d_val != 0 and d_val != -1:
+                val_str = str(d_val).strip()
+                if val_str and val_str not in ("0", "-1", "None", "nan"):
+                    return [val_str]
         except Exception:
             return []
         return []

@@ -876,7 +876,7 @@ def recall_catalogo(R, gold_di, chiavi, filtro, NS=(10, 100, 500)):
 # la recall globale resta come numero di sanita', queste sono lo strumento di decisione.
 
 # ---------------------------------------------------------------- i metadati del canone
-def metadati():
+def metadati(path_npz=None, path_txt=None):
     """I METADATI DEL CANONE in array allineati alle righe, costruiti UNA VOLTA.
 
     Perche' esiste: `Motore.__init__` impiegava **51 secondi** a partire, e non per la matrice sparsa —
@@ -885,27 +885,55 @@ def metadati():
     stava in dodici file. Qui si fa **vettorizzato** (una `map` sull'indice) e il risultato si salva:
     il caricamento diventa la lettura di un .npz.
 
-    Ritorna un dizionario con `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP` (array di N) e `TIT`
-    (le stringhe). `COZY` e `IMP` dipendono da DUE PARAMETRI (`ASSE_COZY_GENERI`,
-    `ASSE_IMPEGNATIVO_GENERI`): l'artefatto ne porta l'impronta, e se i parametri cambiano si ricostruisce
-    da solo invece di servire in silenzio una tassonomia vecchia. E' lo stesso patto di `bolle.json`.
+    Ritorna un dizionario con `VOT`, `VAVE`, `POP`, `ANNO`, `NEP`, `COZY`, `IMP`, `COLL`, `DIR` (array di N)
+    e `TIT` (le stringhe).
+    Contratto chiavi esportate (Ticket 18):
+      - `COLL`: np.ndarray (N,) int64 con il collection_id TMDB per titolo (-1 o 0 se nessuna saga/collezione).
+      - `DIR`: np.ndarray (N,) int64 con il TMDB person ID del primo regista/autore (-1 o 0 se nessuno).
+    Tolleranza backward-compatible:
+      - Se l'artefatto caricato non contiene COLL o DIR (es. artefatto vecchio generato prima del Ticket 18),
+        il reader dichiara l'assenza ("questo artefatto non ha la collezione"), imposta i campi a None e
+        non solleva eccezioni: il servizio avvia regolarmente e la regola anti-monopolio (Ticket 04) resta
+        inerte finché l'artefatto non viene rigenerato.
+
+    `COZY` e `IMP` dipendono da DUE PARAMETRI (`ASSE_COZY_GENERI`, `ASSE_IMPEGNATIVO_GENERI`): l'artefatto ne
+    porta l'impronta, e se i parametri cambiano si ricostruisce da solo invece di servire in silenzio una
+    tassonomia vecchia. E' lo stesso patto di `bolle.json`.
     """
     from . import parametri as P
-    z, pt = DATA / "metadati-canone.npz", DATA / "titoli-canone.txt"
+    z = pathlib.Path(path_npz) if path_npz else DATA / "metadati-canone.npz"
+    pt = pathlib.Path(path_txt) if path_txt else DATA / "titoli-canone.txt"
     sha_generi = hashlib.sha256(f"{P.ASSE_COZY_GENERI}|{P.ASSE_IMPEGNATIVO_GENERI}"
                                 .encode()).hexdigest()[:16]
     if z.exists() and pt.exists():
-        g = np.load(z)
-        if str(g["generi_sha"]) == sha_generi:
-            d = {k: g[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")}
-            # I titoli come TESTO, non come array `<U`: numpy usa 4 byte per carattere e una larghezza
-            # fissa pari al titolo piu' lungo (350 caratteri -> 41 MB). Un file di righe e' 2 MB e si
-            # legge in 40 ms.
-            d["TIT"] = np.array(pt.read_text(encoding="utf-8").split("\n"), dtype=object)
-            _, _, _N, _ = titoli()                     # cachata: qui costa una chiamata, non un caricamento
-            assert_lunghezza_canone(d["TIT"], "titoli-canone.txt", atteso=_N)
-            return d
-        print("  metadati-canone: i generi degli assi sono cambiati, ricostruisco", flush=True)
+        with np.load(z) as g:
+            if str(g["generi_sha"]) == sha_generi:
+                d = {k: g[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")}
+                # TICKET 18: Lettura di COLL e DIR con dichiarazione e tolleranza per artefatti vecchi
+                if "COLL" in g:
+                    d["COLL"] = g["COLL"]
+                else:
+                    d["COLL"] = None
+                    print("  metadati-canone: questo artefatto non ha la collezione (COLL assente, ticket 04 resta inerte)", flush=True)
+
+                if "DIR" in g:
+                    d["DIR"] = g["DIR"]
+                else:
+                    d["DIR"] = None
+                    print("  metadati-canone: questo artefatto non ha il regista (DIR assente, ticket 04 resta inerte)", flush=True)
+
+                # I titoli come TESTO, non come array `<U`: numpy usa 4 byte per carattere e una larghezza
+                # fissa pari al titolo piu' lungo (350 caratteri -> 41 MB). Un file di righe e' 2 MB e si
+                # legge in 40 ms.
+                d["TIT"] = np.array(pt.read_text(encoding="utf-8").split("\n"), dtype=object)
+                _, _, _N, _ = titoli()                     # cachata: qui costa una chiamata, non un caricamento
+                assert_lunghezza_canone(d["TIT"], "titoli-canone.txt", atteso=_N)
+                if d["COLL"] is not None:
+                    assert_lunghezza_canone(d["COLL"], "COLL", atteso=_N)
+                if d["DIR"] is not None:
+                    assert_lunghezza_canone(d["DIR"], "DIR", atteso=_N)
+                return d
+            print("  metadati-canone: i generi degli assi sono cambiati, ricostruisco", flush=True)
     _, row_of, N, _ = titoli()
     cozy = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
     imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
@@ -913,14 +941,46 @@ def metadati():
     d["NEP"] += 1.0                                   # 1 = un film: il denominatore del peso serie
     d["COZY"] = np.zeros(N, bool)
     d["IMP"] = np.zeros(N, bool)
+    d["COLL"] = np.full(N, -1, dtype=np.int64)        # TICKET 18: collection_id TMDB (-1 = nessuna)
+    d["DIR"] = np.full(N, -1, dtype=np.int64)         # TICKET 18: TMDB ID primo regista (-1 = nessuno)
     titoli_str = np.array([""] * N, dtype=object)
     for tipo, f, col, dcol, ecol in (("movie", "movies.parquet", "title", "release_date", None),
                                      ("tv", "tv.parquet", "name", "first_air_date",
                                       "number_of_episodes")):
         p = ROOT / ".cache" / "tmdb" / f
+        if not p.exists():
+            print(f"  metadati-canone: file grezzo {p} assente (la rigenerazione completa vive sul server mate)", flush=True)
+            continue
+        try:
+            import pyarrow.parquet as _pq
+            disponibili = set(_pq.read_schema(p).names)
+        except Exception:
+            disponibili = set()
+
         cols = ["id", "vote_count", "vote_average", "popularity", col, dcol, "genres"]
-        if ecol:
+        if ecol and (not disponibili or ecol in disponibili):
             cols.append(ecol)
+
+        col_coll = None
+        for cand_coll in ("collection_id", "belongs_to_collection", "collection"):
+            if not disponibili or cand_coll in disponibili:
+                col_coll = cand_coll
+                if col_coll not in cols:
+                    cols.append(col_coll)
+                break
+        if not col_coll and tipo == "movie":
+            print(f"  metadati-canone: {f} non contiene colonna collezione TMDB (nessun proxy inventato)", flush=True)
+
+        col_dir = None
+        for cand_dir in ("directors", "created_by"):
+            if not disponibili or cand_dir in disponibili:
+                col_dir = cand_dir
+                if col_dir not in cols:
+                    cols.append(col_dir)
+                break
+        if not col_dir:
+            print(f"  metadati-canone: {f} non contiene colonna registi TMDB (nessun proxy inventato)", flush=True)
+
         df = pd.read_parquet(p, columns=cols)
         # DA CHIAVE A RIGA, VETTORIZZATO: una sola espressione al posto di un ciclo Python per riga.
         righe = np.array([row_of.get(f"{tipo}:{int(i)}", -1) if pd.notna(i) else -1
@@ -932,7 +992,7 @@ def metadati():
         anni = df[dcol].astype("string").str.slice(0, 4)
         d["ANNO"][righe[ok]] = pd.to_numeric(anni, errors="coerce").to_numpy()[ok]
         titoli_str[righe[ok]] = df[col].astype(str).to_numpy()[ok]
-        if ecol:
+        if ecol and ecol in df.columns:
             e = pd.to_numeric(df[ecol], errors="coerce").to_numpy()
             buoni = ok & np.isfinite(e) & (e > 0)
             d["NEP"][righe[buoni]] = e[buoni]
@@ -946,12 +1006,89 @@ def metadati():
             ids = {int(x["id"]) for x in voci if isinstance(x, dict) and "id" in x}
             d["COZY"][righe[j]] = bool(ids & cozy)
             d["IMP"][righe[j]] = bool(ids & imp)
+
+        # Estrazione vettorizzata / controllata di COLL
+        if col_coll and col_coll in df.columns:
+            raw_coll = df[col_coll].to_numpy()
+            for j, c_val in enumerate(raw_coll):
+                if not ok[j] or c_val is None or (isinstance(c_val, float) and np.isnan(c_val)):
+                    continue
+                cid = -1
+                if isinstance(c_val, (int, np.integer)):
+                    cid = int(c_val)
+                elif isinstance(c_val, dict):
+                    cid = int(c_val.get("id") or -1)
+                elif isinstance(c_val, str):
+                    s = c_val.strip()
+                    if s and s not in ("0", "-1", "null", "None", "{}"):
+                        try:
+                            parsed = json.loads(s)
+                            if isinstance(parsed, dict):
+                                cid = int(parsed.get("id") or -1)
+                            elif isinstance(parsed, int):
+                                cid = parsed
+                            else:
+                                cid = int(float(s))
+                        except Exception:
+                            try:
+                                cid = int(float(s))
+                            except Exception:
+                                cid = -1
+                if cid > 0:
+                    d["COLL"][righe[j]] = cid
+
+        # Estrazione del primo regista per DIR
+        if col_dir and col_dir in df.columns:
+            raw_dir = df[col_dir].to_numpy()
+            for j, d_val in enumerate(raw_dir):
+                if not ok[j] or d_val is None or (isinstance(d_val, float) and np.isnan(d_val)):
+                    continue
+                did = -1
+                if isinstance(d_val, (int, np.integer)):
+                    did = int(d_val)
+                else:
+                    voci = []
+                    if isinstance(d_val, (list, tuple)):
+                        voci = d_val
+                    elif isinstance(d_val, str):
+                        s = d_val.strip()
+                        if s and s not in ("0", "-1", "null", "None", "[]"):
+                            try:
+                                parsed = json.loads(s)
+                                if isinstance(parsed, (list, tuple)):
+                                    voci = parsed
+                                elif isinstance(parsed, dict):
+                                    voci = [parsed]
+                            except Exception:
+                                pass
+                    elif isinstance(d_val, dict):
+                        voci = [d_val]
+                    for x in voci:
+                        if isinstance(x, dict):
+                            x_id = x.get("id")
+                            if x_id is not None and not (isinstance(x_id, float) and np.isnan(x_id)):
+                                try:
+                                    val_int = int(x_id)
+                                    if val_int > 0:
+                                        did = val_int
+                                        break
+                                except Exception:
+                                    pass
+                        elif isinstance(x, (int, np.integer)):
+                            if int(x) > 0:
+                                did = int(x)
+                                break
+                if did > 0:
+                    d["DIR"][righe[j]] = did
+
     d["VOT"] = np.nan_to_num(d["VOT"])
     d["VAVE"] = np.nan_to_num(d["VAVE"])
     d["POP"] = np.nan_to_num(d["POP"])
     d["ANNO"] = np.nan_to_num(d["ANNO"])
+    z.parent.mkdir(parents=True, exist_ok=True)
+    pt.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(z, generi_sha=np.array(sha_generi),
-                        **{k: d[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP")})
+                        **{k: d[k] for k in ("VOT", "VAVE", "POP", "ANNO", "NEP", "COZY", "IMP", "COLL", "DIR")})
     pt.write_text("\n".join(str(t).replace("\r", " ").replace("\n", " ") for t in titoli_str),
                   encoding="utf-8")
     print(f"  metadati-canone: costruiti e salvati ({z.stat().st_size/1e6:.1f} MB "

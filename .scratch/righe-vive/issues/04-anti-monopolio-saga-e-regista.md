@@ -1,6 +1,5 @@
-Status: blocked
+Status: ready-for-agent
 Type: task
-Blocked by: 18
 
 # 04 — Anti-monopolio di saga e regista
 
@@ -56,10 +55,10 @@ Nelle righe del grafo (tutte, non solo `il_tuo_mondo`):
 
 ## Esito
 
-### 1. Dichiarazione di stato: TICKET 04 BLOCCATO DA TICKET 18
-> [!IMPORTANT]
-> **In produzione la regola è inerte finché il canone non esporta `COLL` e `DIR`. Il Ticket 18 ("port `collection_id` and the director into the canon at runtime") è il prerequisito obbligatorio (`Blocked by: 18`).**
-> Il ticket 04 **non è chiuso**, è **bloccato**. Il codice dell'anti-monopolio è implementato e resta pronto ad attivarsi non appena il canone fornirà i metadati necessari. Nel frattempo, in produzione la funzione opera come un **no-op rigoroso** che restituisce la lista di input immutata, senza toccare né i punteggi né l'ordine dei titoli.
+### 1. Dichiarazione di stato: TICKET 04 SBLOCCATO DA TICKET 18
+> [!NOTE]
+> **Il Ticket 18 ha introdotto nel canone e in `metadati-canone.npz` il supporto per `COLL` e `DIR` per-titolo con nuova ricetta `5613a6e36e590941`.**
+> Le regole di anti-monopolio (cap 1 per saga, cap 2 per regista, regola Dune per anno minore) sono pienamente abilitate e operative non appena l'artefatto viene rigenerato con le due chiavi contrattuali. L'artefatto vecchio è tollerato in produzione con fallback no-op sicuro.
 
 ### 2. Conferma delle premesse
 Prima di modificare il codice sono state verificate le tre premesse:
