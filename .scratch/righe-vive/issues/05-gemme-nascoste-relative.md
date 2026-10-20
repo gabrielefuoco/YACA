@@ -235,3 +235,31 @@ Esattamente le sole 5 suite rosse / 8 test falliti / 1898 passati ammessi dalla 
 - Nessun abbassamento del pavimento di qualità per riempire la riga.
 - Nessuna duplicazione della logica del bacino: `cand_bacino` e `bacino_bolle_set` del Ticket 03 sono stati integralmente riutilizzati per alimentare la selezione.
 - Consumo di memoria misurato a ~101 MB, ampiamente sotto il limite dei 512 MB.
+
+## Esito (completamento finale)
+
+### Fix applicati
+1. `tetto_voti = max(NICCHIA_PAVIMENTO_VOT_MIN, min(0.35 * V_mondo, NICCHIA_TETTO_VOT_MAX))` in `services/graph/motore.py` (prima `min` solo): intervallo `[40, ceiling]` mai vuoto. Caso `V_mondo = 100`: ceiling = 40, almeno un titolo sopravvive.
+2. `services/graph/servizio.py`: rimosso il silenzio `if not titoli_raw: continue`. Una lista vuota viene ora restituita con `vuota: true`, `motivo`, `totale_sopravvissuti: 0`; una lista corta dichiara `corta`, `target_dimensione`, `totale_sopravvissuti`.
+3. Offset serie `NICCHIA_SERIE_OFFSET_VOTO` confermato uso (non commento) su pavimento assoluto, delta bolla e ranking (`vave_eff`).
+
+### Ricetta
+`fa5771594b2ad0c4` (probe /health).
+
+### Manifest hashes (invariati)
+- `dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178`
+- `91bf96d38e8c753be430cdbe63ca3a5fe1b37c700779d5d378f56a1627969ce2`
+
+### Baseline Jest
+FAIL tests/presetBurtonOrdering.test.js
+FAIL tests/animeOverridesCertify.test.js
+FAIL tests/donghuaCatalog.test.js
+FAIL tests/duckDbAndMatchmaker.test.js
+FAIL tests/candidateProvider.test.js
+Test Suites: 5 failed, 185 passed, 190 total
+Tests: 8 failed, 1 skipped, 1898 passed, 1907 total
+
+### Cosa NON è stato fatto
+- Nessun abbassamento del pavimento di qualità.
+- Nessuna modifica a frontend.
+- Nessun push / build / tsc.
