@@ -116,3 +116,7 @@ costruite è il modo esatto in cui un documento diventa una bugia.
 - **`08` chiuso**: ogni filone dei semi ha la sua camminata e la sua riga (`micro_cluster_1..3`), con `cluster_id`
   stabile (bolla-ancora), `titoli_seme` e `quota_peso` nel contratto. Le righe non arrivano ai cataloghi Stremio
   fino al `13`. Prova: `scripts/qa/probe-ticket-08-micro-cluster.py`. Nuova baseline suite: `1910 passati / 192`.
+- **Nota per il `09`** (punti d'incontro): servono le `r_k` dei filoni, e oggi `lista` le calcola e le **butta**
+  dopo aver costruito la riga. Il crossover deve farle uscire da **un punto solo** (es. `cluster_di_semi` +
+  una diffusione per cluster dentro un helper), non ricalcolare tre PageRank in più: è la stessa lezione del
+  pavimento e del bacino.
