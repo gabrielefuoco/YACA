@@ -149,6 +149,10 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
                 "totale_sopravvissuti": 0,
                 "target_dimensione": li.get("target_dimensione", 20),
             }
+            # Anche una riga derivata VUOTA dichiara di essere parziale (prima non lo faceva): il
+            # documento lo dice per tutti i `punti_incontro_*` e i `micro_cluster_*`.
+            if ruolo in ("uscite_nuove", "nicchia_di_qualita", "classici_imperdibili", "ultime_visioni")                     or ruolo.startswith(("micro_cluster", "punti_incontro")):
+                lista_out["parziale"] = True
             if li.get("corta", False):
                 lista_out["corta"] = True
             if "semi_recenti" in li:
@@ -251,6 +255,10 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
 
         elif ruolo.startswith("punti_incontro"):
             att, med_v, q_ser, corta, target = _statistiche_riga(motore, titoli, li)
+            # Per un ponte la media dei punteggi geometrici (~1e-5) NON e' un'attivazione confrontabile:
+            # il motore manda l'attivazione media dei due filoni, e si usa quella.
+            if "attivazione" in li:
+                att = float(li["attivazione"])
             semi_parlanti = [str(t) for t in (li.get("titoli_seme") or []) if t]
             if semi_parlanti:
                 desc = "Tra " + " e ".join(f"«{t}»" for t in semi_parlanti)

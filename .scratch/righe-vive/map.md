@@ -116,7 +116,11 @@ costruite è il modo esatto in cui un documento diventa una bugia.
 - **`08` chiuso**: ogni filone dei semi ha la sua camminata e la sua riga (`micro_cluster_1..3`), con `cluster_id`
   stabile (bolla-ancora), `titoli_seme` e `quota_peso` nel contratto. Le righe non arrivano ai cataloghi Stremio
   fino al `13`. Prova: `scripts/qa/probe-ticket-08-micro-cluster.py`. Nuova baseline suite: `1910 passati / 192`.
-- **Nota per il `09`** (punti d'incontro): servono le `r_k` dei filoni, e oggi `lista` le calcola e le **butta**
-  dopo aver costruito la riga. Il crossover deve farle uscire da **un punto solo** (es. `cluster_di_semi` +
-  una diffusione per cluster dentro un helper), non ricalcolare tre PageRank in più: è la stessa lezione del
-  pavimento e del bacino.
+- **`09` chiuso**: i ponti fra filoni sono `punti_incontro_1..3` (`sqrt(r_a*r_b)` sulle `r_k` del `08`, **zero**
+  camminate in più), con `coppia_id` e `fallback` nel contratto. Il fallback prende i due mondi più **lontani**
+  che hanno semi — la premessa del ticket (`scegli_mondi` con `lontano=1.0`) non faceva questo: la distanza è in
+  `Motore.distanza_fra_mondi`. Prova: `scripts/qa/probe-ticket-09-punti-incontro.py`.
+- **Proposta aperta dal `09`, non applicata**: il ponte garantisce il bilanciamento solo sul **primo** titolo;
+  dal secondo in poi entrano titoli forti da una parte e quasi assenti dall'altra (equilibrio mediano ~2e-5,
+  17/20 sotto 1e-3). Se il prodotto vuole un ponte *davvero* bilanciato serve una soglia sull'equilibrio
+  (`min(r_a,r_b)/max(...)`): decisione di prodotto, non di questo cantiere.

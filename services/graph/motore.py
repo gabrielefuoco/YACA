@@ -1130,7 +1130,14 @@ class Motore:
                 riga_cl["motivo"] = motivo_cl
             # Le camminate dei filoni servono anche ai ponti (Ticket 09): si tengono accanto alla riga,
             # senza ricopiarne i campi (era una seconda fonte di verita').
-            filoni.append({"riga": riga_cl, "r": r_cl, "cand": cand_cl})
+            filoni.append({
+                "riga": riga_cl,
+                "r": r_cl,
+                "cand": cand_cl,
+                # L'attivazione del filone (picco di mondo): serve ai ponti per portare un numero
+                # confrontabile con le altre righe, invece della media dei punteggi geometrici (~1e-5).
+                "attivazione": float(np.max(att_cl)) if len(att_cl) else 0.0,
+            })
             liste.append(riga_cl)
 
         # =========================================================================
@@ -1160,6 +1167,7 @@ class Motore:
                     "titoli": div_pon[:cap_main],
                     "target_dimensione": cap_main,
                     "totale_sopravvissuti": tot_pon,
+                    "attivazione": round((filoni[i]["attivazione"] + filoni[j]["attivazione"]) / 2.0, 4),
                 }
                 riga_pon["corta"], motivo_pon = self.dichiara_corta(
                     len(riga_pon["titoli"]), cap_main, "punti_incontro", prefisso=nome_pon
@@ -1207,6 +1215,7 @@ class Motore:
                         "mondo": bb,
                         "r": r_b,
                         "cand": non_visti_mondo(bb),
+                        "att": _att_b,
                         "titolo": titoli_b[0] if titoli_b else None,
                         "semi": [B.KEYS[int(righe[j])] for j in idx_b],
                     })
@@ -1219,6 +1228,7 @@ class Motore:
                     "semi_chiavi": sponde[0]["semi"] + sponde[1]["semi"],
                     "titoli": div_fb[:cap_main],
                     "totale_sopravvissuti": tot_fb,
+                    "attivazione": round((float(np.max(sponde[0]["att"])) + float(np.max(sponde[1]["att"]))) / 2.0, 4),
                 })
                 riga_fb["corta"], motivo_fb = self.dichiara_corta(
                     len(riga_fb["titoli"]), cap_main, "punti_incontro", prefisso="punti_incontro_1"

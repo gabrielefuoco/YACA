@@ -208,6 +208,29 @@ def main():
     assert profondo_b not in [ch for ch, _p in ponte["titoli"]], "FALLITO: entra un titolo forte in un solo filone"
     print("  -> OK: solo chi riceve massa da entrambi, e il primo posto è un titolo bilanciato")
 
+    print("\n2b. PROVA DIRETTA DI ponte_fra: IL BILANCIATO BATTE IL MONOPOLISTA")
+    # Tre candidati costruiti a mano, con masse scelte una per una: questa prova non dipende dal fixture.
+    ra = np.zeros(m.N)
+    rb = np.zeros(m.N)
+    ra[0], rb[0] = 0.01, 0.01      # bilanciato
+    ra[1], rb[1] = 0.10, 1e-6      # fortissimo da una parte, quasi assente dall'altra
+    ra[2] = 0.50                   # presente in UNA sola camminata
+    prova = np.arange(0, 3)
+    titoli_prova, _sopr = m.ponte_fra(ra, rb, prova, prova, set(), float(P.PAVIMENTO_VOT_MIN), "prova")
+    ordine_prova = [ch for ch, _p in titoli_prova]
+    print(f"  ordine: {ordine_prova} · punteggi: {[(ch, round(p * 1e6, 3)) for ch, p in titoli_prova]}")
+    assert ordine_prova[0] == B.KEYS[0], (
+        f"FALLITO: il bilanciato non vince: {ordine_prova}. Con la media aritmetica vincerebbe il monopolista "
+        f"(0,05 contro 0,01) — la geometrica no (0,01 contro 0,0003)"
+    )
+    assert B.KEYS[2] not in ordine_prova, (
+        "FALLITO: un titolo presente in UNA sola camminata e' entrato nel ponte (il filtro ponte > 0 non morde)"
+    )
+    assert B.KEYS[1] in ordine_prova, (
+        "FALLITO: un titolo quasi-assente da una parte e' stato escluso: la lettera del ticket esclude solo lo zero"
+    )
+    print("  -> OK: geometrica batte aritmetica, zero escluso, quasi-zero dentro (come dice il ticket)")
+
     print("\n3. LE RIGHE DEI SINGOLI FILONI NON SONO IL PONTE")
     mondo_di = {li["cluster_id"]: sorted(set(bolle_di(m, [ch for ch, _p in li["titoli"]]))) for li in clusters}
     print(f"  b0 (filone A) tocca i mondi {mondo_di.get('b0')}")
@@ -251,6 +274,7 @@ def main():
     assert ponti_fb[0]["titoli"], "FALLITO: il fallback esce vuoto dove due mondi con semi esistono"
     assert ponti_fb[0]["titoli_seme"], "FALLITO: il fallback non porta i semi dei due mondi"
     print("  -> OK: fallback dichiarato, e la riga si riempie")
+    # (qui la coppia e' forzata: due soli mondi hanno semi. La prova che sia la PIU' LONTANA e' la 5b.)
 
     print("\n5b. IL FALLBACK SCEGLIE LA COPPIA PIU' LONTANA, NON LE DUE PIU' ATTIVE")
     m4 = build_ponte_graph()
@@ -288,6 +312,7 @@ def main():
     assert riga_u and riga_u[0].get("vuota") is True and riga_u[0].get("motivo"), (
         "FALLITO: il contratto non dichiara la riga di ponte vuota"
     )
+    assert riga_u[0].get("parziale") is True, "FALLITO: una riga di ponte vuota non si dichiara parziale"
     assert len(motivi) == 1, f"FALLITO: il motivo deve comparire una volta nei motivi, non {len(motivi)}"
     print("  -> OK: nessun ponte inventato, e il motivo arriva al chiamante una volta sola")
 
@@ -310,6 +335,10 @@ def main():
         assert li.get("coppia_id"), "FALLITO: coppia_id non arriva al chiamante"
         assert li.get("fallback") is False, "FALLITO: fallback sbagliato nel contratto"
         assert li.get("parziale") is True, "FALLITO: la riga non dichiara parziale"
+        assert float(li["attivazione"]) > 0.01, (
+            f"FALLITO: attivazione {li['attivazione']} non confrontabile con le altre righe "
+            "(media dei punteggi geometrici invece dell'attivazione dei filoni)"
+        )
         assert li["semi"], "FALLITO: la riga non porta i semi delle due sponde"
 
     print("\n8. IL PAVIMENTO MORDE DAVVERO")

@@ -1,4 +1,4 @@
-Status: claimed
+Status: resolved
 Type: task
 Blocked by: 08
 
@@ -190,18 +190,40 @@ Baseline `1910` passati / `192` suite (quella del `08`): nessun file JS toccato,
 5. **La prova del pavimento non poteva fallire** (asseriva sui titoli già filtrati) → ora c'è un titolo che
    passerebbe e viene tagliato, con il conteggio dei sopravvissuti che scende.
 
-**`spec`** ha verificato i quattro punti del ticket e la prova; il suo esito è la sezione 7.
+**`spec`** ha verificato i quattro punti (tutti `met` a HEAD, con `1.4` che era `not met` in `1dc3154` e lo è
+diventato con `842aa24`) e ha demolito la prova dove era debole:
+
+1. **Il caso «titolo forte in un cluster solo» era vuoto**: `MEMBRI[0][90]` aveva `r_a = r_b = 0` — irraggiungibile
+da entrambe le camminate, non «forte da una parte»: l'asserzione passava anche con la media aritmetica. Ora c'è
+una **prova diretta** di `ponte_fra` con tre candidati costruiti a mano: bilanciato (0.01, 0.01) contro
+monopolista (0.10, 1e-6) contro titolo a una sola sponda. Vince il bilanciato (10000 vs 316), il monopolista
+entra (la lettera del ticket esclude solo lo zero), la sponda sola **non** entra.
+2. **Il filtro `ponte > 0` non era coperto**: con `cap = 20` tutti i titoli della riga hanno comunque entrambe le
+masse positive, quindi togliere il filtro lasciava la sonda verde. Il caso a supporti disgiunti nella prova
+diretta lo copre (se il filtro sparisce, il titolo a una sola sponda entra e l'assert fallisce).
+3. **Il caso 5 del fallback non discriminava** (due soli mondi con semi): la prova canonica è la **5b**, dove le
+due più attive e le due più lontane sono coppie diverse.
+4. **Il motivo del fallback impossibile compariva due volte** nei `motivi`: ora una volta sola, verificato sul
+contratto (sezione 6).
+5. **`attivazione` di un ponte era la media dei punteggi geometrici (~1e-5)**, non confrontabile con le altre
+righe: il motore manda l'attivazione media dei due filoni e `servizio` usa quella (prova: `> 0.01`).
+6. **Una riga derivata vuota non dichiarava `parziale`**, benché il documento lo dica per tutte: ora lo dichiara
+anche nel ramo vuoto, e la sonda lo verifica.
 
 ### 7. Residui dichiarati
 
-1. **La geometria funziona al primo posto, non a tutti.** Misurato: il primo titolo del ponte è bilanciato
-   (equilibrio 1.0), ma dal secondo in poi possono entrare titoli **forti in un filone e quasi assenti
-   nell'altro** (`movie:1006`, equilibrio ~1e-5), perché la massa che arriva dall'altra parte è piccola ma non
-   zero e il prodotto la fa salire. È dentro la formula del ticket («assente = zero»), non fuori — ma se il
-   prodotto vuole un ponte *davvero* bilanciato serve una soglia sull'equilibrio (`min(r_a,r_b)/max(...)`).
-   **Proposta, non applicata**: è una decisione di prodotto, e il ticket non la chiede.
-2. **Con K = 3 escono tre coppie** (tutte, come dice il ticket: «per ogni coppia»). Sono al massimo 3 per
-   costruzione; il waterfall del `11` deciderà chi tiene i titoli.
+1. **La geometria funziona al primo posto, non a tutti.** Misurato sulla fixture e riprodotto dalla review: il
+   primo titolo del ponte è bilanciato (equilibrio 1.0), ma **17/20** titoli della riga hanno equilibrio sotto
+   `1e-3` (mediana `2,02e-05`) — es. `movie:1006` entra al #2 con `r_a = 1,8e-2` e `r_b = 1,3e-7`. La massa che
+   arriva dall'altra parte è piccola ma **non zero**, e il prodotto la fa salire sopra un titolo bilanciato ma
+   più debole. È dentro la formula del ticket («assente = zero»), non fuori — ma se il prodotto vuole un ponte
+   *davvero* bilanciato serve una soglia sull'equilibrio (`min(r_a,r_b)/max(...)`, oppure normalizzare il ponte
+   per il massimo di ciascuna camminata). **Proposta, non applicata**: è una decisione di prodotto, e il ticket
+   non la chiede. Scritta anche nella mappa, così non si perde.
+2. **Con K = 3 escono tre coppie** (tutte, come dice il ticket: «per ogni coppia»), e si sovrappongono per 9–12
+   titoli su 20 perché si appoggiano tutte sullo stesso nodo-ponte. Sono al massimo 3 per costruzione; il
+   waterfall del `11` deciderà chi tiene i titoli — nota che la §9.1 mette i punti d'incontro **prima** degli
+   altri nella specificità, quindi la deduplica interna alle tre righe è una decisione del `11`.
 3. **`measure/intero.py`** aggrega tutte le liste: i suoi numeri non sono più comparabili (stessa nota del `08`),
    da rifare col `16`.
 4. **Nessun consumatore Node**: le righe arrivano in `/api/mondi` e `/api/bolle`, non nei cataloghi Stremio
