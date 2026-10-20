@@ -131,8 +131,8 @@ const versioneFrontendAvvio = leggiVersioneFrontend();
 if (versioneFrontendAvvio) {
     console.log(`[Frontend] export statico sha ${versioneFrontendAvvio.sha} (build ${versioneFrontendAvvio.built})`);
 } else {
-    console.warn('[Frontend] export statico SENZA version.json: non so quale build stia servendo '
-        + '(l'immagine non e' stata costruita dal Dockerfile: manca lo stadio frontend-build)');
+    console.warn("[Frontend] export statico SENZA version.json: non so quale build stia servendo "
+        + "(l'immagine non e' stata costruita dal Dockerfile: manca lo stadio frontend-build)");
 }
 
 // Health check endpoint per monitoring e deployment platforms

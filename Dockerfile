@@ -52,6 +52,11 @@ COPY . .
 # Niente più bind mount: la cartella è nell'immagine, quindi app e frontend hanno la stessa versione.
 COPY --from=frontend-build /frontend/out ./frontend/out
 
+# CANCELLO DI SINTASSI (20/10/2026). Un apice sbagliato in una stringa di `index.js` è arrivato in
+# produzione e ha messo l'app in crash-loop: il build passava lo stesso. Qui il build FALLISCE se un
+# file non compila — meglio nessuna immagine nuova che un'immagine che non parte.
+RUN node --check index.js     && find src -name '*.js' -print0 | xargs -0 -n1 node --check     && echo "sintassi JS verificata" 
+
 # Rendi lo script di avvio eseguibile
 RUN chmod +x start.sh
 
