@@ -188,6 +188,25 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             semi_ids = []
             parziale = True
 
+        elif ruolo == "classici_imperdibili":
+            att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
+            med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0
+            q_ser = round(float(sum(1 for t in titoli if t["medium"] == "series") / len(titoli)), 2) if titoli else 0.0
+            fb = li.get("fallback_v_mondo", False)
+            corta = li.get("corta", len(titoli) < 20)
+            target = li.get("target_dimensione", 20)
+            dettagli = []
+            if fb:
+                dettagli.append("soglia assoluta di fallback")
+            if corta:
+                dettagli.append(f"riga corta: {len(titoli)}/{target} titoli")
+            if dettagli:
+                desc = f"classici imperdibili del tuo mondo ({' - '.join(dettagli)})"
+            else:
+                desc = "classici imperdibili del tuo mondo"
+            semi_ids = []
+            parziale = True
+
         elif ruolo == "nicchia_di_qualita":
             att = round(float(np.mean([t["punteggio"] for t in titoli])), 4) if titoli else 0.0
             med_v = round(float(np.median([motore.VOT[B.ROW_OF[f"{'tv' if t['medium']=='series' else 'movie'}:{t['tmdbId']}"]] for t in titoli])), 1) if titoli else 0.0

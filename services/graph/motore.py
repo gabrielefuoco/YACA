@@ -769,6 +769,72 @@ class Motore:
             "fallback_v_mondo": is_fallback_v_mondo
         })
 
+        # =========================================================================
+        # «CLASSICI IMPERDIBILI DEL TUO MONDO» (Ticket 06): high-consensus, top-300 per r
+        # =========================================================================
+        is_fallback_v_mondo_cls = False
+        if len(cand_bacino) > 0:
+            order_r = np.argsort(-r[cand_bacino])
+            top_n = min(300, len(cand_bacino))
+            cand_top300 = cand_bacino[order_r][:top_n]
+
+            v_mondo_cls, is_fallback_v_mondo_cls = self.calcola_v_mondo(bacino_bolle_set, att_s, con_stato=True)
+            soglia_vot_cls = max(1500.0, 1.5 * float(v_mondo_cls))
+
+            offset_serie_cls = float(getattr(P, "NICCHIA_SERIE_OFFSET_VOTO", 0.3))
+            is_tv_cls = B.IS_TV[cand_top300]
+            vave_min_cls = np.where(is_tv_cls, 7.7, 7.5)
+
+            canone_cls = float(dedotto.get("canone", 0.0))
+            soglia_voti_qp = max(float(getattr(P, "PAVIMENTO_VOT_MIN", 150)), float(getattr(P, "PAVIMENTO_VOT_FATTORE_CANONE", 0.08)) * canone_cls)
+            soglia_vave_qp = float(getattr(P, "PAVIMENTO_VAVE_MIN", 6.4))
+
+            vot_c = self.VOT[cand_top300]
+            vave_c = self.VAVE[cand_top300]
+            maschera_cls = (
+                (vot_c >= soglia_vot_cls)
+                & (vave_c >= vave_min_cls)
+                & (vave_c >= soglia_vave_qp)
+                & (vot_c >= soglia_voti_qp)
+            )
+            surv_cls = cand_top300[maschera_cls]
+
+            if len(surv_cls) > 0:
+                bayes_cls = self.voto_bayesiano(surv_cls)
+                r_cls = r[surv_cls]
+                r_min, r_max = float(r_cls.min()), float(r_cls.max())
+                b_min, b_max = float(bayes_cls.min()), float(bayes_cls.max())
+                r_norm = (r_cls - r_min) / (r_max - r_min) if r_max > r_min else np.ones_like(r_cls)
+                b_norm = (bayes_cls - b_min) / (b_max - b_min) if b_max > b_min else np.ones_like(bayes_cls)
+                score_cls = 0.7 * r_norm + 0.3 * b_norm
+                ordine_cls = np.argsort(-score_cls)
+                surv_ord = surv_cls[ordine_cls]
+                score_ord = score_cls[ordine_cls]
+                cand_cls = [(B.KEYS[x], float(sc)) for x, sc in zip(surv_ord, score_ord)]
+            else:
+                cand_cls = []
+        else:
+            cand_cls = []
+            is_fallback_v_mondo_cls = True
+
+        div_cls = self.applica_antimonopolio(cand_cls, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="classici_imperdibili")
+        titoli_cls = div_cls[:cap_main]
+        target_cls = cap_main if cap_main is not None else 20
+        riga_corta_cls = len(titoli_cls) < target_cls
+        if riga_corta_cls:
+            print(f"  [classici] riga corta: {len(titoli_cls)}/{target_cls} titoli sopravvissuti (il pavimento non si abbassa per riempire)", file=sys.stderr)
+
+        liste.append({
+            "tipo": "classici_imperdibili",
+            "mondo": None,
+            "titoli": titoli_cls,
+            "corta": riga_corta_cls,
+            "target_dimensione": target_cls,
+            "totale_sopravvissuti": len(div_cls),
+            "soglia_relativa": not is_fallback_v_mondo_cls,
+            "fallback_v_mondo": is_fallback_v_mondo_cls
+        })
+
         for b in bolle[1:]:
             liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")} )
 
