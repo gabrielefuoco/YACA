@@ -34,6 +34,22 @@ Il grafo resta il **substrato**: `66.259 nodi, la matrice `Tr`, le bolle. Cambia
 4. **Il frontend non si tocca** (regola dell'utente, 19/10/2026).
 5. **Il server non compila**: immagini da ghcr, il mate tira (dottrina di `docs/DEPLOYMENT_HOME_SERVER.md`).
 
+## Come si esegue questo cantiere (regole operative, 19/10/2026)
+
+- **Un ticket alla volta, con la review fra uno e l'altro.** Niente parallelo: quasi tutti i ticket toccano
+  ~motore.py~, e le regole si sommano — una giusta da sola puo' essere sbagliata insieme alle altre (il ~05~ ha
+  scoperto che il tetto relativo poteva stare **sotto** il pavimento: intervallo vuoto, zero titoli).
+- **Executor: solo `pi` con modello `cat-jam-free`.** ~agy~ e' fuori uso per quota (429) dal 19/10/2026.
+  Il modello si sceglie dal **tipo** di ticket: un modello libero basta per i fix meccanici con la prova gia'
+  scritta; per capire (progettare un bacino, scoprire che manca un dato) serve un modello che capisca.
+- **Resume-first**: al primo errore di sostanza il ticket torna allo **stesso** slave con la lista dei fix. Uno
+  nuovo riparte da zero, e rispiegare costa piu' del fix.
+- **Nell'Esito ogni numero sta in un blocco di output incollato, col comando sopra.** Due Esiti hanno riportato
+  numeri che il codice non produceva. Non e' un dettaglio di forma: e' l'unica difesa contro un referto che
+  sembra vero.
+- **Se una soglia va allentata per riempire una riga, si propone e non si applica**: la proposta si scrive nel
+  ticket con i numeri, la decisione e' di chi legge.
+
 ## Not yet specified
 
 - **Che cosa vuol dire "qualità alta"**: più pertinente? più vario? meno ripetitivo fra le righe? Le tre tirano in
