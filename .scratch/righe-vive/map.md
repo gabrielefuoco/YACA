@@ -144,5 +144,7 @@ costruite è il modo esatto in cui un documento diventa una bugia.
 - **Il `12` è bloccato da una premessa falsa**: «il flag anime del canone» non esiste. Prerequisito aperto:
   **`19`** (i flag per-titolo nel canone: `ANIME`, `ADULTO`), stessa forma del `18`. Il `12` riparte dopo.
 - **Nota del `13`**: la dashboard è data-driven (`heroCatalogs` da `getHeroUiGroups`, id derivati da
-  `idBase`), quindi le sei famiglie nuove compaiono **con i loro toggle senza toccare il frontend**. La
-  guardia del `47` è stata riscritta perché gli id non sono più letterali nei file.
+  `idBase`) e mostra le sei famiglie con i loro toggle, ma `selectedPresets` è una lista bianca: **le righe
+  nuove arrivano SPENTE** finché un profilo non le accende. La regola di compatibilità («chi aveva tutte le
+  righe di ieri riceve quelle di oggi») rendeva inerti i toggle ed è stata **ritirata**. Accenderle di
+  default è il ticket **`20`** (migrazione one-shot con marcatore, o dodici id nei default del frontend).

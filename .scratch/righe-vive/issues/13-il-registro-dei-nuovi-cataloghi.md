@@ -73,9 +73,11 @@ Stremio). Fatto il `13`, il `12` (e il `19`) restano dove sono.
   quattro assegnazioni copiate; i tre ponti si **uniscono** in un solo catalogo (senza doppioni); gli slot
   dei micro-cluster esistono anche quando il motore non produce quel filone (**restano vuoti, non
   spariscono**). Le righe **senza catalogo** (`mondo_<b>`) si **dichiarano** in un log.
-- **Manifest**: `HERO_CACHE_KEY_VERSION` v15 → **v16** (il payload cambia). **Compatibilità**: un profilo
-  che aveva **tutte** le righe hero storiche riceve anche quelle nuove (`HERO_SLUG_STORICI`); chi ne aveva
-  una sola resta filtrato com'era.
+- **Manifest**: `HERO_CACHE_KEY_VERSION` v15 → **v16** (il payload cambia). Il filtro resta **semplice**
+  (`selectedPresets`): la regola di compatibilità è stata provata e **ritirata** (vedi §6.1).
+- **La tabella dei ruoli vive nel registro** (`getHeroRuoli()`): `mondi`→`il_tuo_mondo`,
+  `passo_fuori`→`un_passo_fuori`, `classici`→`classici_imperdibili`, e i tre ponti sono **una famiglia con
+  tre ruoli**. Il pool non ne tiene più una copia, e un test confronta le famiglie del registro con gli slug.
 - **Test nuovo** `tests/heroRowsCoverage.test.js`: ogni ruolo con titoli arriva nel catalogo giusto, il
   ponte è un catalogo solo e senza doppioni, ogni catalogo assegnato esiste nel registro, ogni slug del
   registro ha il suo catalogo nel pool, lo slot di un filone assente resta vuoto, e il manifesto dichiara
@@ -84,7 +86,7 @@ Stremio). Fatto il `13`, il `12` (e il `19`) restano dove sono.
 ### 3. I due hash del manifest (con il comando)
 
 ```
-$ node -e "const {buildManifest, buildRootManifest}=require('./src/stremio'); const c=require('crypto'); const h=x=>c.createHash('sha256').update(JSON.stringify(x)).digest('hex'); console.log('buildManifest({})', h(buildManifest({}))); console.log('buildRootManifest()', h(buildRootManifest()))"
+$ node -e "const {buildManifest, buildRootManifest}=require('./src/stremio'); const c=require('crypto'); const h=x=>c.createHash('sha256').update(JSON.stringify(x)).digest('hex'); console.log('buildManifest({})', h(buildManifest({}))); console.log('buildRootManifest()', h(buildRootManifest())); process.exit(0)"
 
 prima (4eac34a):
 buildManifest({})    dc4af35c836503e4e28f8ba375dab24a38e9c0b392d43dbb24b9e4cc997c2178
@@ -119,11 +121,12 @@ sempre. `buildRootManifest` **non cambia**: il manifesto radice non elenca catal
 famiglie; il validator del pool ora ne pretende 10 (voce vecchia = cache da rigenerare) → l'helper le
 costruisce dal registro.
 `tests/ticket47HeroProtection.test.js`: «8 hero» → 20; **la guardia sul frontend** cambia forma perché è
-cambiato il fatto: gli id delle righe hero non sono più letterali nei file del frontend, la dashboard li
-**deriva** da `getHeroUiGroups()` (`${idBase}_movies` / `_series`). Quindi la guardia che conta diventa «il
-registro serve alla dashboard **tutte** le famiglie», mentre il controllo per-file resta quello giusto
-(nessun id morto, ogni id letterale è vivo). Più due test nuovi: le sei famiglie nuove sono nel manifesto, e
-chi aveva tutte le righe di ieri riceve anche quelle di oggi.
+cambiato il fatto: la dashboard li **deriva** da `getHeroUiGroups()` (`${idBase}_movies` / `_series`),
+mentre `frontend/src/app/page.tsx` tiene ancora gli **otto id storici** come default dei profili nuovi.
+La guardia che conta diventa quindi «il registro serve alla dashboard **tutte** le famiglie», e il controllo
+per-file resta quello giusto (nessun id morto, ogni id letterale è vivo). Più tre test nuovi: le sei
+famiglie sono nel manifesto, **una famiglia nuova accesa dal profilo arriva**, e **un profilo con le sole
+otto righe storiche ne vede otto**.
 
 ### 5. Suite
 
@@ -143,11 +146,16 @@ suite. Le cinque rosse sono esattamente quelle ammesse.
 
 ### 6. Residui dichiarati
 
-1. **La dashboard le mostra già, senza toccare il frontend**: legge `heroCatalogs` da
-   `getHeroUiGroups()` e costruisce `${idBase}_movies|_series`, quindi le sei famiglie nuove compaiono con i
-   loro toggle. È il motivo per cui la guardia del `47` è stata riscritta (gli id non sono più letterali nei
-   file) e **non** un residuo: se un giorno la dashboard tornasse a elenchi scritti a mano, quel test
-   fallirebbe di nuovo.
+1. **Le sei famiglie nuove arrivano SPENTE.** La dashboard le mostra già (legge `heroCatalogs` da
+   `getHeroUiGroups()` e deriva `${idBase}_movies|_series`), ma `selectedPresets` è una **lista bianca**: chi
+   non le porta dentro non le riceve, e il toggle risulta spento — coerente. La prima stesura aggiungeva una
+   regola «chi aveva tutte le righe di ieri riceve anche quelle di oggi»: **sbagliata**, perché tutti i
+   profili hanno le otto storiche, quindi la regola rendeva **inerti** i dodici toggle nuovi e serviva righe
+   che l'interfaccia mostrava spente. Ritirata. Accenderle di default richiede una **migrazione one-shot con
+   marcatore di versione** nel profilo (o dodici id nei due elenchi di default del frontend, vietato qui):
+   **ticket `20`**.
+   Il registro serve alla dashboard tutte e dieci le famiglie, ma non può garantire che il frontend le
+   disegni: quello lo prova il frontend.
 2. **I `mondo_<b>` restano senza catalogo** e ora lo dichiarano in un log: un catalogo per bolla non è
    statico, e il manifest di Stremio è fisso. Se il prodotto li vuole, serve una decisione (es. aggregarli
    in un solo catalogo «altri tuoi mondi»).
