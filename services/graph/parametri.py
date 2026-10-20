@@ -166,6 +166,17 @@ SCHEDA = [
      "Due, perche' un terzo nome trasforma la spiegazione in un elenco; se il filone ha un solo seme, ne "
      "porta uno.",
      "services/graph/motore.py"),
+    ("SPECIFICITA", {"uscite_nuove": 10, "nicchia_di_qualita": 20, "classici_imperdibili": 30,
+                     "punti_incontro": 40, "ultime_visioni": 50, "micro_cluster": 60,
+                     "un_passo_fuori": 70, "il_tuo_mondo": 80, "mondo": 90}, "DICHIARATO",
+     "L'ORDINE DEL WATERFALL (Ticket 11): piu' basso = piu' specifico, quindi pesca per primo. E' un "
+     "dato e non l'ordine accidentale del codice, e sta qui perche' cambiarlo cambia le liste servite: "
+     "l'impronta della ricetta deve accorgersene.",
+     "services/graph/motore.py"),
+    ("SPECIFICITA_DEFAULT", 999, "DICHIARATO",
+     "La specificita' di una famiglia di riga che non e' in tabella (Ticket 11): finisce ultima, e il "
+     "motore lo dichiara nei log invece di lasciarla scivolare in silenzio.",
+     "services/graph/motore.py"),
     ("WATERFALL_SOVRAPPOSIZIONE_MICRO", 1, "DICHIARATO",
      "Quante sovrapposizioni al massimo sono ammesse fra «il tuo mondo» e i micro-cluster nel waterfall "
      "(Ticket 11). Una soltanto, e solo in quella direzione: il titolo migliore del mondo intero non deve "

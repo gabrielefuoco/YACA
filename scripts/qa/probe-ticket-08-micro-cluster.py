@@ -117,9 +117,9 @@ def main():
     print("  -> OK: ogni riga resta nel suo filone")
     del m.diffondi  # la spia ha finito: le sezioni successive non devono contare le sue camminate
 
-    print("\n3. IL «PRIMA»: LA DIFFUSIONE UNICA SEGUE IL FILONE DOMINANTE")
-    # Dal Ticket 11 la riga e' dedotta dal waterfall (i micro-cluster arrivano prima): per giudicare la
-    # DIFFUSIONE si rifa' qui la camminata unica, sugli stessi semi e con gli stessi pesi.
+    print("\n3. IL «PRIMA»: LA DIFFUSIONE UNICA (RICALCOLATA QUI) SEGUE IL FILONE DOMINANTE")
+    # Dal Ticket 11 la riga e' dedotta dal waterfall (i micro-cluster arrivano prima): qui si giudica la
+    # DIFFUSIONE, e si rifa' sul fixture — NON e' la riga di prodotto. La riga di prodotto la prova il 11.
     from graph import camminata as C  # noqa: PLC0415
     from graph import canon as K  # noqa: PLC0415
     righe_semi = np.array([B.ROW_OF[ch] for ch in filone_a + filone_b], np.int64)

@@ -146,7 +146,7 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
                 "titoli": [],
                 "vuota": True,
                 "motivo": motivo,
-                "totale_sopravvissuti": 0,
+                "totale_sopravvissuti": int(li.get("totale_sopravvissuti", 0)),
                 "target_dimensione": li.get("target_dimensione", 20),
             }
             # Anche una riga derivata VUOTA dichiara di essere parziale (prima non lo faceva): il

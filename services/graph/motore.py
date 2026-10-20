@@ -48,18 +48,12 @@ from graph import parametri as P
 from graph import uscite as U
 
 # LA SPECIFICITA' DELLE RIGHE (Ticket 11): piu' basso = piu' specifico, quindi pesca per PRIMO nel
-# waterfall. E' un dato, non l'ordine accidentale del codice: qui e dentro ogni riga come campo.
-SPECIFICITA = {
-    "uscite_nuove": 10,
-    "nicchia_di_qualita": 20,
-    "classici_imperdibili": 30,
-    "punti_incontro": 40,
-    "ultime_visioni": 50,
-    "micro_cluster": 60,
-    "un_passo_fuori": 70,
-    "il_tuo_mondo": 80,
-    "mondo": 90,
-}
+# waterfall. La tabella sta in `parametri.py` (e' un dato di prodotto, e cambiarla deve cambiare la
+# ricetta). Qui resta un alias per chi legge il motore.
+SPECIFICITA = dict(P.SPECIFICITA)
+# L'unica sovrapposizione ammessa, come COPPIA di famiglie (Ticket 11): il tuo mondo puo' tenere un
+# titolo che un micro-cluster ha gia' preso. La quantita' e' `WATERFALL_SOVRAPPOSIZIONE_MICRO`.
+SOVRAPPOSIZIONE_FAMIGLIE = ("il_tuo_mondo", "micro_cluster")
 
 
 def famiglia_riga(tipo):
@@ -607,36 +601,53 @@ class Motore:
     def waterfall_righe(self, liste, cap_main):
         """IL WATERFALL (Ticket 11): ogni titolo in UNA riga sola, in ordine di specificita'.
 
-        PERCHE' ESISTE. Le righe erano additive: lo stesso film poteva stare in tre righe hero, e una
+        PERCHE' ESISTE. Le righe erano additive: lo stesso film poteva stare in piu' righe hero, e una
         riga specialistica perdeva il suo titolo migliore perche' «il tuo mondo» (bacino grande) era
         arrivato prima. Qui le righe pescano in ordine di `SPECIFICITA`: prima le righe a bacino stretto,
-        poi ultime visioni e micro-cluster, infine «il tuo mondo».
+        poi ultime visioni e micro-cluster, infine «il tuo mondo». La `specificita` di ogni riga e' un
+        campo (dato), e l'ordine viene da li', non dall'ordine di costruzione del codice.
 
-        L'UNICA SOVRAPPOSIZIONE AMMESSA (`WATERFALL_SOVRAPPOSIZIONE_MICRO`): «il tuo mondo» puo' tenere
-        un titolo che un micro-cluster ha gia' preso. Il motivo e' di prodotto: se il filone porta un
-        titolo che e' anche il migliore del mondo intero, toglierlo lo nasconderebbe proprio a chi apre
-        la home — e due righe che si contendono lo stesso titolo sono peggio di una sovrapposizione
-        dichiarata. Uno solo, non due.
+        L'UNICA SOVRAPPOSIZIONE AMMESSA (`WATERFALL_SOVRAPPOSIZIONE_MICRO`, fra le famiglie
+        `SOVRAPPOSIZIONE_FAMIGLIE`): «il tuo mondo» puo' tenere un titolo che un micro-cluster ha gia'
+        preso — e solo se nessuna riga piu' specifica l'ha gia' portato via. Il motivo e' di prodotto: se
+        il filone porta un titolo che e' anche fra i migliori del mondo, toglierlo lo nasconderebbe a chi
+        apre la home. Uno solo, non due, e non e' sfruttabile donando un titolo da ogni filone.
 
-        Ogni riga porta la sua `specificita` e i `doppioni_tolti`; se il taglio la fa scendere sotto il
-        target lo DICHIARA (motivo), e la riga resta.
+        Ogni riga porta `specificita` e `doppioni_tolti`: quest'ultimo conta le **copie evitate** (quante
+        volte il pool ha incontrato un titolo gia' assegnato), non i titoli persi — il numero giusto per
+        «prima/dopo» si misura confrontando le righe con e senza il waterfall. Se il taglio porta la riga
+        sotto il target, lo DICHIARA col conteggio aggiornato, e la riga resta.
         """
-        ordine = sorted(
-            range(len(liste)),
-            key=lambda i: (SPECIFICITA.get(famiglia_riga(liste[i]["tipo"]), 999), i),
-        )
+        def _specificita(tipo):
+            famiglia = famiglia_riga(tipo)
+            if famiglia not in SPECIFICITA and famiglia != "mondo":
+                # Una famiglia nuova non deve scivolare in fondo in silenzio: l'ordine e' un dato, e un
+                # dato mancante si grida.
+                print(f"  [waterfall] ATTENZIONE: famiglia di riga senza specificita': {tipo} "
+                      f"(finisce a {P.SPECIFICITA_DEFAULT})", file=sys.stderr)
+            return int(SPECIFICITA.get(famiglia, P.SPECIFICITA_DEFAULT))
+
+        ordine = sorted(range(len(liste)), key=lambda i: (_specificita(liste[i]["tipo"]), i))
         assegnati = {}
         consentite = int(P.WATERFALL_SOVRAPPOSIZIONE_MICRO)
         for i in ordine:
             li = liste[i]
             tipo = li["tipo"]
             famiglia = famiglia_riga(tipo)
-            li["specificita"] = int(SPECIFICITA.get(famiglia, 999))
+            li["specificita"] = _specificita(tipo)
+            if "doppioni_tolti" in li:
+                continue  # gia' passato da un waterfall: non si azzera il conteggio
             li["doppioni_tolti"] = 0
+            # Una riga senza `_pool` (vuota per costruzione) non deve sparire dal conteggio: i suoi
+            # titoli, se ne ha, vanno comunque marcati come assegnati.
             pool = li.pop("_pool", None)
             if pool is None:
-                continue
+                pool = list(li.get("titoli") or [])
             cap = int(li.get("target_dimensione") or cap_main)
+            if li["titoli"] != pool[:cap]:
+                raise AssertionError(
+                    f"{tipo}: titoli != pool[:cap] ({len(li['titoli'])} vs {len(pool[:cap])})"
+                )
             sovrapposizioni, tolti = 0, 0
             scelti, occupati = [], set()
             for ch, sc in pool:
@@ -644,8 +655,8 @@ class Motore:
                     continue
                 if ch in assegnati:
                     ammessa = (
-                        famiglia == "il_tuo_mondo"
-                        and famiglia_riga(assegnati[ch]) == "micro_cluster"
+                        famiglia == SOVRAPPOSIZIONE_FAMIGLIE[0]
+                        and famiglia_riga(assegnati[ch]) == SOVRAPPOSIZIONE_FAMIGLIE[1]
                         and sovrapposizioni < consentite
                     )
                     if not ammessa:
@@ -659,21 +670,29 @@ class Motore:
             li["titoli"] = scelti
             li["doppioni_tolti"] = int(tolti)
             li["target_dimensione"] = cap
-            li["totale_sopravvissuti"] = len(pool)
+            # Il campo resta «quanti candidati erano nel bacino prima del taglio» (era `len(div)`);
+            # il numero di titoli tolti dal dedup sta in `doppioni_tolti`.
+            li["totale_sopravvissuti"] = max(int(li.get("totale_sopravvissuti") or 0), len(pool))
             for ch, _sc in scelti:
                 assegnati[ch] = tipo
             if len(scelti) < cap:
                 li["corta"] = True
-                if not li.get("motivo"):
-                    if tolti:
-                        li["motivo"] = (f"{tipo}: {tolti} titoli gia' in righe piu' specifiche, "
-                                        f"restano {len(scelti)}/{cap}")
-                    else:
-                        li["motivo"] = f"{tipo}: riga corta {len(scelti)}/{cap} titoli"
+                vecchio = str(li.get("motivo") or "")
+                pezzo = (f"{tolti} copie gia' in righe piu' specifiche, restano {len(scelti)}/{cap}"
+                         if tolti else f"riga corta {len(scelti)}/{cap} titoli")
+                # Un motivo sostanziale (es. «cache assente, solo il canone storico») NON si butta: si
+                # aggiunge il conto del dedup. Un motivo che era solo un conteggio si riscrive.
+                if vecchio and "riga corta" not in vecchio and "copie gia'" not in vecchio:
+                    li["motivo"] = f"{vecchio}; {tipo}: {pezzo}"
+                else:
+                    li["motivo"] = f"{tipo}: {pezzo}"
             else:
                 li["corta"] = False
+                if li.get("motivo") and "riga corta" in str(li["motivo"]):
+                    li.pop("motivo", None)
             if tolti:
-                print(f"  [waterfall] {tipo}: -{tolti} doppioni, {len(scelti)}/{cap}", file=sys.stderr)
+                print(f"  [waterfall] {tipo}: {tolti} copie evitate, riga {len(scelti)}/{cap} "
+                      f"dopo il dedup", file=sys.stderr)
         return liste
 
     def dichiara_corta(self, quanti, cap, nome, prefisso=None):
@@ -896,12 +915,12 @@ class Motore:
         vicini = [int(x) for x in self.VICINI[primo] if x >= 0][:3] if primo is not None else []
 
         def righe_titoli(bs, quanti=cap_main, nome_riga="un_passo_fuori"):
-            """La lista piena (post anti-monopolio), NON tagliata: il taglio e' del chiamante.
+            """La lista piena (post anti-monopolio), NON tagliata a `quanti`: il taglio e' del chiamante.
 
             Il waterfall del Ticket 11 deve poter ripescare quando toglie i doppioni: se qui si tagliasse
             a `quanti`, una riga perderdebbe titoli senza avere con cosa rimpiazzarli.
             """
-            quanti_fetch = max(quanti * 2, quanti + 20)
+            quanti_fetch = max(quanti * 4, quanti + 60)
             fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti_fetch, medium_filtro=medium)]
             if len(bs) > 1:
                 fuori = sorted(fuori, key=lambda t: -t[1])

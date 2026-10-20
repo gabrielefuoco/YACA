@@ -11,8 +11,9 @@ il boost sui punteggi e' vuoto), ma fortissimo come SELEZIONE (i soli ultimi 15 
    funziona. Attenzione a cosa prova questa sonda e cosa no: qui si prova il passo flag -> riga; il passo
    data -> flag (due giri con le stesse date cambiate di posto) e' provato dai test Node
    `tests/ultimeVisioniRecenza.test.js` e `tests/semiRecenzaFonteVera.test.js`, sull'altro lato del contratto;
-4. gli stessi semi mandati SENZA flag danno una `il_tuo_mondo` IDENTICA: la recenza non e' un peso, e la
-   diffusione principale non e' stata toccata;
+4. gli stessi semi mandati SENZA flag danno una diffusione principale IDENTICA: la recenza non e' un peso.
+   Dal Ticket 11 la riga `il_tuo_mondo` puo' differire, ma SOLO per i titoli che il waterfall ha dato a
+   righe piu' specifiche (che dipendono dai flag): e' quello che la sonda verifica;
 5. con meno di 3 semi recenti la riga **lo dichiara** (motore e contratto HTTP), non sparisce;
 6. il pavimento di qualita' vale anche su questa riga.
 """
