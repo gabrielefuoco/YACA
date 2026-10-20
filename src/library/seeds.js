@@ -12,6 +12,7 @@ const getHistoryModel = () => (WatchHistory.getModel && WatchHistory.getModel())
 
 const SEED_SIGNAL_WEIGHTS = Object.freeze({ loved: 4, liked: 3, watched: 2, library: 1, trakt: 3, dna: 2 });
 const SEED_SIGNAL_LIMITS = Object.freeze({ loved: 20, liked: 15, watched: 15, library: 15 });
+const SEED_RECENTI_QUANTI = 15;
 
 function toSeedMediaType(type) {
     return (type === 'tv' || type === 'series' || type === 'anime') ? 'tv' : 'movie';
@@ -75,7 +76,7 @@ async function risolviAddonUuid({ userId, user }) {
 /**
  * semiDi — Porta di lettura dei seed reali.
  * Contratto invariato rispetto a collectRealSeeds:
- * restituisce { seeds: Map<string, number>, counts: { loved, liked, watched, library } }
+ * restituisce { seeds: Map<string, number>, counts: { loved, liked, watched, library }, ultimaVisione: Map<string, number> }
  * Pesi: loved 4, liked 3, library 1, watched con decadimento temporale:
  * max(0.20, 0.5^(giorni / 60)).
  *
@@ -86,6 +87,9 @@ async function risolviAddonUuid({ userId, user }) {
  * @param {string} [params.medium] - 'movie' o 'tv'/'series'
  * @param {string} [params.mediaType] - Alias di medium per compatibilità
  * @param {Object} [params.user] - Dati utente opzionali per addonUuid
+ * @returns {Promise<{ seeds: Map<string, number>, counts: { loved: number, liked: number, watched: number, library: number }, ultimaVisione: Map<string, number> }>}
+ * ultimaVisione: Map<id string, timestamp ms> dell'ULTIMA visione, fonte WatchHistory
+ * (lastWatchedAt / signals[].at / createdAt / daysAgo). Data mancante => assente.
  */
 async function semiDi({ userId, profileId, context, medium, mediaType, user = null }) {
     const ctx = context || profileId || 'global';
@@ -98,12 +102,13 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
         watched: new Map(),
         library: new Map()
     };
+    const ultimaVisione = new Map();
 
     let historyDocs = [];
     try {
         const HistoryModel = getHistoryModel();
         if (HistoryModel?.db && HistoryModel.db.readyState !== 1) {
-            return { seeds: new Map(), counts: buckets ? { loved: 0, liked: 0, watched: 0, library: 0 } : {} };
+            return { seeds: new Map(), counts: { loved: 0, liked: 0, watched: 0, library: 0 }, ultimaVisione: new Map() };
         }
         historyDocs = await HistoryModel.find({ owner: userId, context: ctx }).lean();
         if (!Array.isArray(historyDocs)) historyDocs = [];
@@ -126,6 +131,8 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
             const signalAt = getSeedTimestamp(signal.at)
                 || (typeof signal.daysAgo === 'number' ? Date.now() - signal.daysAgo * 86400000 : 0);
             keepMostRecentSeed(bucket, id, signalAt || fallbackAt);
+            const at = signalAt || fallbackAt;
+            if (at > 0) keepMostRecentSeed(ultimaVisione, id, at);
         }
     }
 
@@ -172,7 +179,7 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
         }
     }
 
-    return { seeds, counts };
+    return { seeds, counts, ultimaVisione };
 }
 
 const collectRealSeeds = semiDi;
@@ -184,6 +191,7 @@ module.exports = {
     risolviAddonUuid,
     SEED_SIGNAL_WEIGHTS,
     SEED_SIGNAL_LIMITS,
+    SEED_RECENTI_QUANTI,
     toSeedMediaType,
     normalizeSeedId,
     getSeedTimestamp,
