@@ -149,6 +149,15 @@ SCHEDA = [
     ("RANKING_BAYES_EXP", 1.5, "DICHIARATO",
      "Esponente di modulazione della qualita' nel ranking combinato (Ticket 03).",
      "services/graph/motore.py"),
+    ("DIVERSITA_SLOT_MAX", 20, "DICHIARATO",
+     "Numero di slot di testa di una riga del grafo a cui si applicano i cap anti-monopolio (Ticket 04).",
+     "services/graph/motore.py"),
+    ("DIVERSITA_SAGA_MAX", 1, "DICHIARATO",
+     "Massimo numero di titoli per singola collection_id TMDB nei primi slot di una riga (Ticket 04).",
+     "services/graph/motore.py"),
+    ("DIVERSITA_REGISTA_MAX", 2, "DICHIARATO",
+     "Massimo numero di titoli per singolo regista nei primi slot di una riga (Ticket 04).",
+     "services/graph/motore.py"),
     ("MIN_TITOLI_MONDO", 5, "INVENTATO",
      "Quanti titoli non visti deve avere un mondo perche' valga come catalogo a se'. Nato dal motore: "
      "la selezione prendeva il mondo 3379 (4 titoli) e la sua lista ne mostrava UNO. Il primo mondo, "

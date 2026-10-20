@@ -29,6 +29,7 @@ titoli con copertura 0,0%; modulare lo tiene pieno (32) e giusto (2,3-2,6%).
     python -m graph.motore --storia storia.json
 """
 import json
+from collections import defaultdict
 import pathlib
 import sys
 import time
@@ -105,6 +106,10 @@ class Motore:
         self.VAVE, self.POP, self.ANNO = m["VAVE"], m["POP"], m["ANNO"]
         self.NEP = m["NEP"].astype(np.float32)          # (il denominatore del peso delle serie)
         self.COZY, self.IMP = m["COZY"], m["IMP"]       # gli assi, dalle impronte dei generi
+        # TICKET 04: Metadati collezione TMDB (saga) e regista per anti-monopolio se presenti a runtime
+        self.COLL = m.get("COLL", None)
+        self.DIR = m.get("DIR", None)
+        self.REGISTA = self.DIR
         # LE QUOTE PER MONDO, PRECALCOLATE UNA VOLTA. Prima `_quota_per_mondo` rifaceva 3.497 `mean()`
         # su maschere lunghe a ogni chiamata di `modula()`, e `B.IS_TV[self.MEM == cb].mean()` in
         # `scegli_mondi` e in `lista` ricostruiva ogni volta una maschera booleana su 66.259 elementi.
@@ -162,6 +167,193 @@ class Motore:
         if x is None:
             return (self.VOT * self.VAVE + m * c) / np.maximum(self.VOT + m, 1e-9)
         return (self.VOT[x] * self.VAVE[x] + m * c) / np.maximum(self.VOT[x] + m, 1e-9)
+
+    def get_collection_id(self, x):
+        """Restituisce il collection_id TMDB (int) del titolo x, o None se assente/sconosciuto."""
+        if isinstance(x, str):
+            x = B.ROW_OF.get(x, -1)
+        if x < 0:
+            return None
+        coll = getattr(self, "COLL", None)
+        if coll is None:
+            return None
+        try:
+            if isinstance(coll, dict):
+                cid = coll.get(x, None)
+            elif 0 <= x < len(coll):
+                cid = coll[x]
+            else:
+                cid = None
+            if cid is not None and not (isinstance(cid, float) and np.isnan(cid)) and cid != 0 and cid != "":
+                return int(cid)
+        except Exception:
+            return None
+        return None
+
+    def get_directors(self, x):
+        """Restituisce la lista di registi (stringhe) del titolo x, o [] se assente/sconosciuto."""
+        if isinstance(x, str):
+            x = B.ROW_OF.get(x, -1)
+        if x < 0:
+            return []
+        dirs = getattr(self, "DIR", None)
+        if dirs is None:
+            dirs = getattr(self, "REGISTA", None)
+        if dirs is None:
+            return []
+        try:
+            if isinstance(dirs, dict):
+                d_val = dirs.get(x, [])
+            elif 0 <= x < len(dirs):
+                d_val = dirs[x]
+            else:
+                d_val = []
+            if isinstance(d_val, (list, tuple, set)):
+                return [str(d).strip() for d in d_val if d]
+            elif d_val is not None and not (isinstance(d_val, float) and np.isnan(d_val)) and d_val != "" and d_val != 0:
+                return [str(d_val).strip()]
+        except Exception:
+            return []
+        return []
+
+    def get_anno(self, x):
+        """Restituisce l'anno di uscita del titolo x come float, o 0.0 se mancante."""
+        if isinstance(x, str):
+            x = B.ROW_OF.get(x, -1)
+        if x < 0:
+            return 0.0
+        anno = getattr(self, "ANNO", None)
+        if anno is None or not (0 <= x < len(anno)):
+            return 0.0
+        try:
+            val = anno[x]
+            if val is not None and not np.isnan(val):
+                return float(val)
+        except Exception:
+            return 0.0
+        return 0.0
+
+    def applica_antimonopolio(self, titoli, visti=None, cap_posizioni=None, nome_riga=""):
+        """Applica l'anti-monopolio di saga e regista sui primi `cap_posizioni` slot (Ticket 04).
+
+        Regole:
+        1. Massimo 1 titolo per TMDB `collection_id` nei primi 20 slot.
+        2. Massimo 2 titoli per lo stesso regista nei primi 20 slot.
+        3. Dentro una collezione si tiene il titolo con ANNO minore fra i non visti (regola Dune).
+        4. I titoli esclusi dal cap non spariscono: scendono dopo la posizione 20, preservando l'ordine
+           della saga e garantendo la monotonicita' non crescente dei punteggi.
+        5. Se la diversificazione accorcia la riga o la porta sotto la soglia minima, lo dichiara.
+        """
+        if not titoli:
+            return []
+
+        # Strict no-op se non ci sono metadati da far valere (in produzione fino al ticket 18 self.COLL e self.DIR sono None):
+        # con self.COLL is None and self.DIR is None restituisce titoli immutato:
+        # nessun rebuild, nessun remap dei punteggi, nessun riordino.
+        if getattr(self, "COLL", None) is None and getattr(self, "DIR", None) is None:
+            return titoli
+
+        if cap_posizioni is None:
+            cap_posizioni = int(getattr(P, "DIVERSITA_SLOT_MAX", 20))
+        max_saga = int(getattr(P, "DIVERSITA_SAGA_MAX", 1))
+        max_dir = int(getattr(P, "DIVERSITA_REGISTA_MAX", 2))
+
+        # 1. Normalizza i candidati in una lista di dict strutturati
+        candidates = []
+        for item in titoli:
+            ch, sc = item[0], float(item[1])
+            x = B.ROW_OF.get(ch, -1) if isinstance(ch, str) else int(ch)
+            cid = self.get_collection_id(x)
+            dirs = self.get_directors(x)
+            anno = self.get_anno(x)
+            candidates.append({
+                "chiave": ch if isinstance(ch, str) else B.KEYS[x],
+                "x": x,
+                "score": sc,
+                "cid": cid,
+                "dirs": dirs,
+                "anno": anno,
+                "raw_item": item,
+            })
+
+        # 2. Identifica per ogni collezione presente il titolo con ANNO minore tra i candidati non visti
+        coll_candidates = defaultdict(list)
+        for c in candidates:
+            if c["cid"] is not None:
+                coll_candidates[c["cid"]].append(c)
+
+        earliest_in_coll = {}
+        for cid, items in coll_candidates.items():
+            earliest_in_coll[cid] = min(items, key=lambda it: (it["anno"], -it["score"]))
+
+        # 3. Pass 1: Selezione dei primi `cap_posizioni` (20) slot
+        top20 = []
+        coda = []
+        seen_colls = defaultdict(int)
+        dir_counts = defaultdict(int)
+
+        for c in candidates:
+            if len(top20) >= cap_posizioni:
+                coda.append(c)
+                continue
+
+            cid = c["cid"]
+            if cid is not None:
+                # Regola Dune: dentro la collezione solo il titolo con ANNO minore fra i non visti puo' entrare nei primi slot
+                if c["x"] != earliest_in_coll[cid]["x"]:
+                    coda.append(c)
+                    continue
+                if seen_colls[cid] >= max_saga:
+                    coda.append(c)
+                    continue
+
+            dirs = c["dirs"]
+            if dirs and any(dir_counts[d] >= max_dir for d in dirs):
+                coda.append(c)
+                continue
+
+            # Candidato accettato nei primi slot
+            top20.append(c)
+            if cid is not None:
+                seen_colls[cid] += 1
+            for d in dirs:
+                dir_counts[d] += 1
+
+        # 4. Pass 2: Ordinamento della coda (dopo la posizione 20)
+        # I titoli esclusi NON spariscono: scendono sotto i primi 20.
+        # Dentro ciascuna saga in coda, garantiamo che i titoli precedenti per ANNO non siano preceduti da sequel.
+        coda_sorted = sorted(coda, key=lambda it: -it["score"])
+        coll_order = defaultdict(list)
+        for it in coda_sorted:
+            if it["cid"] is not None:
+                coll_order[it["cid"]].append(it)
+        for cid, items in coll_order.items():
+            items_by_anno = sorted(items, key=lambda it: (it["anno"], -it["score"]))
+            it_iter = iter(items_by_anno)
+            for idx, c in enumerate(coda_sorted):
+                if c["cid"] == cid:
+                    coda_sorted[idx] = next(it_iter)
+
+        # 5. Monotonicita' garantita per assert_monotonia_lista
+        result = []
+        prev_score = float("inf")
+        for it in top20:
+            sc = min(prev_score, it["score"])
+            result.append((it["chiave"], sc))
+            prev_score = sc
+
+        if len(top20) >= cap_posizioni:
+            for it in coda_sorted:
+                sc = min(prev_score * 0.999, it["score"]) if prev_score < float("inf") else it["score"]
+                result.append((it["chiave"], sc))
+                prev_score = sc
+        else:
+            tot_esclusi = len(coda_sorted)
+            if tot_esclusi > 0:
+                print(f"  [antimonopolio] riga '{nome_riga}': {len(top20)} titoli nei primi {cap_posizioni} slot, "
+                      f"{tot_esclusi} titoli esclusi omessi per rispetto dei cap", file=sys.stderr)
+
+        return result
 
     def deduci(self, righe):
         """Gli assi che la storia dice da sola: canone (voti mediani) e forma (quanti mondi pieni)."""
@@ -325,17 +517,13 @@ class Motore:
 
         vicini = [int(x) for x in self.VICINI[primo] if x >= 0][:3] if primo is not None else []
 
-        def righe_titoli(bs, quanti=cap_main):
-            # «UN PASSO FUORI» E' UNA LISTA, NON TRE LISTE ATTACCATE. `titoli_di` prende `quanti` titoli
-            # DA OGNI bolla: con tre vicini faceva fino a 30 titoli, e senza riordinarli fra le bolle le
-            # prime dieci posizioni erano tutte del primo vicino. Due conseguenze misurate: la lista era
-            # grande il triplo delle altre (e il confronto «31% contro 20%» in `intero.py` confrontava
-            # successi TOTALI di liste di lunghezza diversa), e l'ordine era quello dei mondi, non
-            # dell'attivazione. Con una bolla sola non si tocca niente: li' `titoli_di` e' gia' ordinata.
-            fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti, medium_filtro=medium)]
+        def righe_titoli(bs, quanti=cap_main, nome_riga="un_passo_fuori"):
+            quanti_fetch = max(quanti * 2, quanti + 20)
+            fuori = [(B.KEYS[r_], float(r[r_])) for r_ in self.titoli_di(bs, r, visti, quanti_fetch, medium_filtro=medium)]
             if len(bs) > 1:
-                fuori = sorted(fuori, key=lambda t: -t[1])[:quanti]
-            return fuori
+                fuori = sorted(fuori, key=lambda t: -t[1])
+            div = self.applica_antimonopolio(fuori, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga=nome_riga)
+            return div[:quanti]
 
         # =========================================================================
         # «IL TUO MONDO» (Ticket 03): Bacino appiattito + Pavimento di qualita' + Ranking combinato
@@ -432,13 +620,16 @@ class Motore:
             bayes_rip = self.voto_bayesiano(ripescati_mondo)
             score_rip = r[ripescati_mondo] * ((bayes_rip / base_bayes) ** exp_bayes)
             titoli_rip = [(B.KEYS[x], float(sc)) for x, sc in zip(ripescati_mondo, score_rip)]
-
-            quanti_unseen = max(0, quanti_tuo - len(ripescati_mondo))
-            titoli_tuo = sorted(titoli_rip + titoli_uns[:quanti_unseen], key=lambda t: -t[1])[:quanti_tuo]
-            liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo})
+            cand_tuo_tutti = sorted(titoli_rip + titoli_uns, key=lambda t: -t[1])
         else:
-            liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_uns[:quanti_tuo]})
-        liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini)})
+            cand_tuo_tutti = titoli_uns
+
+        titoli_tuo = self.applica_antimonopolio(cand_tuo_tutti, visti=visti,
+                                                cap_posizioni=P.DIVERSITA_SLOT_MAX,
+                                                nome_riga="il_tuo_mondo")
+        liste.append({"tipo": "il_tuo_mondo", "mondo": primo, "titoli": titoli_tuo[:quanti_tuo]})
+        liste.append({"tipo": "un_passo_fuori", "mondo": None, "titoli": righe_titoli(vicini, quanti=cap_main, nome_riga="un_passo_fuori")})
+
         # le uscite nuove: 2025+ dentro i mondi accesi (la porta d'ingresso lavora di notte)
         nuove = [x for x in np.where(self.ANNO >= P.USCITE_NUOVE_DAL)[0]
                  if int(self.MEM[x]) in set(bolle) and x not in visti]
@@ -446,21 +637,23 @@ class Motore:
             nuove = [x for x in nuove if B.IS_TV[x]]
         elif medium == "movie":
             nuove = [x for x in nuove if not B.IS_TV[x]]
-        # ORDINATE PRIMA DEL TAGLIO. `np.where(...)[0]` e' in ordine CRESCENTE DI RIGA DEL CANONE, e
-        # senza questo `nuove[:10]` prendeva i primi dieci per indice di catalogo mentre il tuple
-        # portava `float(r[x])`, dando l'illusione di un ordine per attivazione che non c'era.
         nuove.sort(key=lambda x: (-float(r[x]), -float(self.VOT[x])))
-        liste.append({"tipo": "uscite_nuove", "mondo": None,
-                      "titoli": [(B.KEYS[x], float(r[x])) for x in nuove[:cap_main]]})
+        cand_nuove = [(B.KEYS[x], float(r[x])) for x in nuove]
+        div_nuove = self.applica_antimonopolio(cand_nuove, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="uscite_nuove")
+        liste.append({"tipo": "uscite_nuove", "mondo": None, "titoli": div_nuove[:cap_main]})
+
         # la nicchia di qualita': non iper-popolare, ben votata, meglio se in liste di altri
-        cand = [x for x in self.titoli_di(bolle + vicini, r, visti, 20 if cap is None else cap_main, medium_filtro=medium)]
+        cand_quanti = max(cap_main * 2, cap_main + 20) if cap is not None else 40
+        cand = [x for x in self.titoli_di(bolle + vicini, r, visti, cand_quanti, medium_filtro=medium)]
         nic = [x for x in cand if self.POP[x] <= P.NICCHIA_POPOLARITA_MAX
                and self.VAVE[x] >= P.NICCHIA_VOTO_MIN]
         nic.sort(key=lambda x: -(self.VAVE[x] + (P.NICCHIA_BONUS_LISTE if self.LISTDEG[x] > 0 else 0)))
-        liste.append({"tipo": "nicchia_di_qualita", "mondo": None,
-                      "titoli": [(B.KEYS[x], float(r[x])) for x in nic[:cap_main]]})
+        cand_nic = [(B.KEYS[x], float(r[x])) for x in nic]
+        div_nic = self.applica_antimonopolio(cand_nic, visti=visti, cap_posizioni=P.DIVERSITA_SLOT_MAX, nome_riga="nicchia_di_qualita")
+        liste.append({"tipo": "nicchia_di_qualita", "mondo": None, "titoli": div_nic[:cap_main]})
+
         for b in bolle[1:]:
-            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], cap_main)})
+            liste.append({"tipo": f"mondo_{b}", "mondo": int(b), "titoli": righe_titoli([b], quanti=cap_main, nome_riga=f"mondo_{b}")} )
 
         # IL CONTRATTO DI ORDINE DELLE LISTE, dove vale. Le liste «ordinate per attivazione» devono
         # esserlo davvero: senza questo controllo `uscite_nuove` usciva per indice di catalogo (col
