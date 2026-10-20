@@ -263,3 +263,24 @@ liste:     il_tuo_mondo 20 · un_passo_fuori 9 · uscite_nuove 20 · nicchia 20 
 **Aperto dal deploy**: **ticket 23** — il waterfall, ripescando sotto la posizione 20, riapre le saghe che
 l'anti-monopolio (04) aveva chiuso (`il_tuo_mondo`: 3 collezioni duplicate nei primi 20). La diversità deve
 valere sulla riga **servita**, non solo su quella prima del ripescaggio.
+
+## Decisioni di prodotto (grilling del 20/10/2026, sera)
+
+Prese con i dati di produzione davanti, non a occhio:
+
+- **Ripescato**: resta **onesto** (`r − ALPHA·e`, nessun boost). Misura con i 21 film veri di libreria:
+  `9323` → **1°**, `4977` → **6°**. Regola scritta: *il ripescaggio serve a far **entrare** un titolo, non a
+  fargli scavalcare chi merita di più.* Per forzare la testa servirebbe un campo di posizionamento separato.
+- **Alpha del giorno**: resta **su tutta la riga**, `1 ± 5%` deterministico da giorno+id.
+- **Decadimento**: resta `0.85^giorni`, soglia **3**, reset **4**. Oggi tocca **3 titoli** (tutti in
+  `mondi_movies`): è una **scelta dichiarata**, non una misura. Da rivedere fra due settimane, quando le
+  righe vive avranno storia (oggi: 336 documenti contro 7.966 totali, quasi tutti di righe ritirate).
+- **Kids/anime**: restano accesi e dichiarati; **nessun profilo li usa** (`kidsMode: 0`, `anime: null` su 10
+  profili), quindi non si tarano.
+- **Ticket 23**: **fatto**. La diversità vale sulla riga servita: `il_tuo_mondo` in produzione passa da
+  **3 duplicati di saga** nei primi 20 a **0**, con `duplicati_saga` e `diversita_rimandati` nel payload.
+
+**Lezione di metodo**: una query su una collezione **inesistente** risponde `0` senza protestare
+(`libraries` invece di `userlibraryitems`), e mi ha fatto dichiarare «il ripescaggio non gira per nessuno».
+La smentita è arrivata dalla domanda giusta. Da qui in poi: prima di dire «non c'è», si elencano le
+collezioni e i loro conteggi, non si interroga un nome che si presume.
