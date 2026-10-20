@@ -150,6 +150,9 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
             }
             if li.get("corta", False):
                 lista_out["corta"] = True
+            if "semi_recenti" in li:
+                # Campo strutturale, non solo il testo del motivo (Ticket 07).
+                lista_out["semi_recenti"] = int(li["semi_recenti"])
             contratto_liste.append(lista_out)
             continue
 
@@ -280,6 +283,8 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
         if li.get("motivo"):
             # La riga corta lo dice al chiamante con il motivo che il motore ha calcolato (Ticket 07).
             lista_out["motivo"] = li["motivo"]
+        if "semi_recenti" in li:
+            lista_out["semi_recenti"] = int(li["semi_recenti"])
 
         contratto_liste.append(lista_out)
 

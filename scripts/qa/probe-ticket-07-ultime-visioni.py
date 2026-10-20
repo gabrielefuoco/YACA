@@ -7,8 +7,10 @@ il boost sui punteggi e' vuoto), ma fortissimo come SELEZIONE (i soli ultimi 15 
 1. i parametri esistono e valgono quello che il ticket dichiara;
 2. la riga `ultime_visioni` esiste e non e' vuota su un fixture costruito per passare (un OK su zero
    titoli non e' una verifica);
-3. **due giri con gli STESSI semi e le STESSE date, cambiate di posto, danno prime posizioni diverse**:
-   la recenza sta selezionando;
+3. **due giri con gli STESSI semi e la RECENZA INVERTITA danno prime posizioni diverse**: la selezione
+   funziona. Attenzione a cosa prova questa sonda e cosa no: qui si prova il passo flag -> riga; il passo
+   data -> flag (due giri con le stesse date cambiate di posto) e' provato dai test Node
+   `tests/ultimeVisioniRecenza.test.js` e `tests/semiRecenzaFonteVera.test.js`, sull'altro lato del contratto;
 4. gli stessi semi mandati SENZA flag danno una `il_tuo_mondo` IDENTICA: la recenza non e' un peso, e la
    diffusione principale non e' stata toccata;
 5. con meno di 3 semi recenti la riga **lo dichiara** (motore e contratto HTTP), non sparisce;

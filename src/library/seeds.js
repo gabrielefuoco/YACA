@@ -13,6 +13,10 @@ const getHistoryModel = () => (WatchHistory.getModel && WatchHistory.getModel())
 const SEED_SIGNAL_WEIGHTS = Object.freeze({ loved: 4, liked: 3, watched: 2, library: 1, trakt: 3, dna: 2 });
 const SEED_SIGNAL_LIMITS = Object.freeze({ loved: 20, liked: 15, watched: 15, library: 15 });
 const SEED_RECENTI_QUANTI = 15;
+// Ticket 07: la recenza e' «ultime VISIONI». Un'aggiunta in watchlist non e' una visione, e non deve
+// ne' entrare fra i recenti ne' sovrascrivere la data di una visione vera (ProfileBuilder scrive
+// segnali di tipo 'library' dentro WatchHistory, con la loro data).
+const SIGNALI_VISIONE = Object.freeze(new Set(['watched', 'liked', 'loved']));
 
 function toSeedMediaType(type) {
     return (type === 'tv' || type === 'series' || type === 'anime') ? 'tv' : 'movie';
@@ -88,8 +92,9 @@ async function risolviAddonUuid({ userId, user }) {
  * @param {string} [params.mediaType] - Alias di medium per compatibilità
  * @param {Object} [params.user] - Dati utente opzionali per addonUuid
  * @returns {Promise<{ seeds: Map<string, number>, counts: { loved: number, liked: number, watched: number, library: number }, ultimaVisione: Map<string, number> }>}
- * ultimaVisione: Map<id string, timestamp ms> dell'ULTIMA visione, fonte WatchHistory
- * (lastWatchedAt / signals[].at / createdAt / daysAgo). Data mancante => assente.
+ * ultimaVisione: Map<id string, timestamp ms> dell'ULTIMA VISIONE, fonte WatchHistory
+ * (lastWatchedAt / signals[].at / createdAt / daysAgo). Solo i segnali di visione
+ * (watched/liked/loved): un'aggiunta in libreria non e' una visione. Data mancante => assente.
  */
 async function semiDi({ userId, profileId, context, medium, mediaType, user = null }) {
     const ctx = context || profileId || 'global';
@@ -131,8 +136,10 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
             const signalAt = getSeedTimestamp(signal.at)
                 || (typeof signal.daysAgo === 'number' ? Date.now() - signal.daysAgo * 86400000 : 0);
             keepMostRecentSeed(bucket, id, signalAt || fallbackAt);
-            const at = signalAt || fallbackAt;
-            if (at > 0) keepMostRecentSeed(ultimaVisione, id, at);
+            if (SIGNALI_VISIONE.has(signal?.type)) {
+                const at = signalAt || fallbackAt;
+                if (at > 0) keepMostRecentSeed(ultimaVisione, id, at);
+            }
         }
     }
 
