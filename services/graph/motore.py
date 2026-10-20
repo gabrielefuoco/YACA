@@ -567,6 +567,21 @@ class Motore:
             return np.array([], dtype=np.int64)
         return cand[(self.VAVE[cand] >= soglia_vave) & (self.VOT[cand] >= soglia_voti)]
 
+    def titoli_seme(self, nodi, pesi, quanti=None):
+        """I titoli dei semi piu' pesanti (a pari peso, nodo piu' basso) — un posto solo (Ticket 08/09).
+
+        Deduplica i nodi e somma i pesi: lo stesso titolo puo' arrivare da due sorgenti (watchlist + loved)
+        e non deve uscire due volte. `quanti` default = `MICRO_CLUSTER_SEMI_PARLANTI`.
+        """
+        nodi = np.asarray(nodi, np.int64)
+        pesi = np.asarray(pesi, np.float64)
+        nodi_u, inversa = np.unique(nodi, return_inverse=True)
+        pesi_u = np.zeros(len(nodi_u), np.float64)
+        np.add.at(pesi_u, inversa, pesi)
+        quanti = int(P.MICRO_CLUSTER_SEMI_PARLANTI) if quanti is None else int(quanti)
+        ordine = sorted(range(len(nodi_u)), key=lambda j: (-float(pesi_u[j]), int(nodi_u[j])))
+        return [str(self.TIT[int(nodi_u[j])]) for j in ordine[:quanti]]
+
     def dichiara_corta(self, quanti, cap, nome, prefisso=None):
         """LA DICHIARAZIONE DI UNA RIGA CORTA, in un posto solo (Ticket 08).
 
@@ -690,8 +705,8 @@ class Motore:
         cand = np.union1d(np.asarray(cand_a, np.int64), np.asarray(cand_b, np.int64))
         if len(cand) == 0:
             return [], 0
-        tiene = (self.VAVE[cand] >= float(P.PUNTI_INCONTRO_VAVE_MIN)) & (self.VOT[cand] >= float(soglia_voti))
-        cand = cand[tiene]
+        # Il pavimento e' quello di sempre, con la soglia VAVE del ticket: `pavimento` esiste apposta.
+        cand = self.pavimento(cand, soglia_voti, float(P.PUNTI_INCONTRO_VAVE_MIN))
         if len(cand) == 0:
             return [], 0
         ponte = np.sqrt(np.maximum(r_a[cand], 0.0) * np.maximum(r_b[cand], 0.0))
@@ -1093,14 +1108,8 @@ class Motore:
                                                 nome_riga=f"micro_cluster_{i}")
             titoli_cluster = div_cl[:cap_main]
 
-            # Il titolo parlante: i semi piu' pesanti del filone — dai NODI deduplicati, altrimenti lo
-            # stesso titolo (watchlist + loved) puo' uscire due volte: «Perché hai amato X e X».
-            quanti_parlanti = int(P.MICRO_CLUSTER_SEMI_PARLANTI)
-            ordine_semi = sorted(
-                range(len(cl["nodi"])),
-                key=lambda j: (-float(cl["pesi"][j]), int(cl["nodi"][j])),
-            )
-            titoli_seme = [str(self.TIT[int(cl["nodi"][j])]) for j in ordine_semi[:quanti_parlanti]]
+            # Il titolo parlante: i semi piu' pesanti del filone (l'helper deduplica: «X e X» non esce).
+            titoli_seme = self.titoli_seme(cl["nodi"], cl["pesi"])
 
             riga_cl = {
                 "tipo": f"micro_cluster_{i}",
@@ -1119,14 +1128,9 @@ class Motore:
             )
             if motivo_cl:
                 riga_cl["motivo"] = motivo_cl
-            # Le camminate dei filoni servono anche ai ponti (Ticket 09): non si ricalcolano.
-            filoni.append({
-                "r": r_cl,
-                "cand": cand_cl,
-                "ancora": int(cl["ancora"]),
-                "titolo_seme": titoli_seme[0] if titoli_seme else None,
-                "semi_chiavi": list(riga_cl["semi_chiavi"]),
-            })
+            # Le camminate dei filoni servono anche ai ponti (Ticket 09): si tengono accanto alla riga,
+            # senza ricopiarne i campi (era una seconda fonte di verita').
+            filoni.append({"riga": riga_cl, "r": r_cl, "cand": cand_cl})
             liste.append(riga_cl)
 
         # =========================================================================
@@ -1138,17 +1142,21 @@ class Motore:
         for i in range(len(filoni)):
             for j in range(i + 1, len(filoni)):
                 nomi_ponti += 1
-                a, b = filoni[i], filoni[j]
+                a, b = filoni[i]["riga"], filoni[j]["riga"]
                 nome_pon = f"punti_incontro_{nomi_ponti}"
-                div_pon, tot_pon = self.ponte_fra(a["r"], b["r"], a["cand"], b["cand"],
+                div_pon, tot_pon = self.ponte_fra(filoni[i]["r"], filoni[j]["r"],
+                                                  filoni[i]["cand"], filoni[j]["cand"],
                                                   visti, soglia_voti, nome_pon)
+                semi_a = a.get("titoli_seme") or []
+                semi_b = b.get("titoli_seme") or []
                 riga_pon = {
                     "tipo": nome_pon,
                     "mondo": None,
-                    "coppia_id": f"b{a['ancora']}_b{b['ancora']}",
+                    "coppia_id": f"{a['cluster_id']}_{b['cluster_id']}",
                     "fallback": False,
-                    "titoli_seme": [t for t in (a["titolo_seme"], b["titolo_seme"]) if t],
-                    "semi_chiavi": a["semi_chiavi"] + b["semi_chiavi"],
+                    "titoli_seme": [t for t in (semi_a[0] if semi_a else None,
+                                                semi_b[0] if semi_b else None) if t],
+                    "semi_chiavi": list(a["semi_chiavi"]) + list(b["semi_chiavi"]),
                     "titoli": div_pon[:cap_main],
                     "target_dimensione": cap_main,
                     "totale_sopravvissuti": tot_pon,
@@ -1184,6 +1192,8 @@ class Motore:
                     key=lambda ab: (self.distanza_fra_mondi(*ab), -ab[0], -ab[1]),
                 ))
             if len(coppia) >= 2:
+                print(f"  [punti_incontro] nessuna coppia di filoni ({len(filoni)}): fallback sui due mondi "
+                      f"piu' lontani ({coppia[0]}, {coppia[1]})", file=sys.stderr)
                 sponde = []
                 for bb in (int(coppia[0]), int(coppia[1])):
                     idx_b = np.nonzero(self.MEM[righe] == bb)[0]
@@ -1192,15 +1202,12 @@ class Motore:
                         righe[idx_b], plays[idx_b],
                         tipi=[tipi[j] for j in idx_b], pesi=pesi_b,
                     )
-                    ord_b = sorted(
-                        range(len(idx_b)),
-                        key=lambda j: (-float(w_semi[idx_b[j]]), int(righe[idx_b[j]])),
-                    )
+                    titoli_b = self.titoli_seme(righe[idx_b], w_semi[idx_b], quanti=1)
                     sponde.append({
                         "mondo": bb,
                         "r": r_b,
                         "cand": non_visti_mondo(bb),
-                        "titolo": str(self.TIT[int(righe[idx_b[ord_b[0]]])]) if ord_b else None,
+                        "titolo": titoli_b[0] if titoli_b else None,
                         "semi": [B.KEYS[int(righe[j])] for j in idx_b],
                     })
                 div_fb, tot_fb = self.ponte_fra(sponde[0]["r"], sponde[1]["r"],
@@ -1221,7 +1228,8 @@ class Motore:
             else:
                 riga_fb["motivo"] = ("punti_incontro: i semi stanno in un mondo solo, "
                                      "nessun ponte fra due sponde")
-                motivi.append(riga_fb["motivo"])
+                # Il motivo sta gia' nella riga, e `servizio` lo porta nei `motivi` della risposta: qui
+                # basta il log, altrimenti il motivo comparirebbe due volte nel payload.
                 print(f"  [punti_incontro] {riga_fb['motivo']}", file=sys.stderr)
             liste.append(riga_fb)
 

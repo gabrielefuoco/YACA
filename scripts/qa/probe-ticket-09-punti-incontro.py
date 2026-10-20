@@ -138,7 +138,17 @@ def main():
     m = build_ponte_graph()
     a_semi = semi(m, 0, 6)
     b_semi = semi(m, 1, 6)
+    camminate = []
+    originale_diffondi = m.diffondi
+
+    def spia_masse(righe_semi, plays, tipi=None, pesi=None):
+        att, r = originale_diffondi(righe_semi, plays, tipi=tipi, pesi=pesi)
+        camminate.append((len(righe_semi), att, r))
+        return att, r
+
+    m.diffondi = spia_masse
     res = m.lista(storia(a_semi + b_semi), cap=20, medium="movie")
+    del m.diffondi
 
     clusters = righe(res, "micro_cluster")
     ponti = righe(res, "punti_incontro")
@@ -153,10 +163,12 @@ def main():
     print(f"  titoli del ponte: {len(b_ponti)} · mondi: {sorted(set(b_ponti))} · primi 5: "
           f"{[ch for ch, _p in ponte['titoli'][:5]]}")
 
-    # Le due camminate, ricalcolate qui: la sonda non si fida della formula, la rifà.
-    from graph import camminata as C  # noqa: PLC0415
-    r_a = C.ppr(m.Tr, np.array([B.ROW_OF[c] for c in a_semi]), np.ones(len(a_semi)), normalizza=True)
-    r_b = C.ppr(m.Tr, np.array([B.ROW_OF[c] for c in b_semi]), np.ones(len(b_semi)), normalizza=True)
+    # Le due camminate sono quelle VERE del motore (la spia le ha catturate): stesso peso, stessi tipi.
+    assert camminate[0][0] == len(a_semi + b_semi), (
+        f"FALLITO: la prima camminata non e' quella principale: {camminate[0][0]} semi"
+    )
+    r_a = camminate[1][2]
+    r_b = camminate[2][2]
 
     def equilibrio(chiave):
         x = B.ROW_OF[chiave]
@@ -258,13 +270,26 @@ def main():
     with contextlib.redirect_stderr(log):
         res_unico = m3.lista(storia(semi(m3, 0, 8)), cap=20, medium="movie")
     ponti_unico = righe(res_unico, "punti_incontro")
-    motivi = [m_ for m_ in (res_unico.get("motivi") or []) if "punti_incontro" in m_]
     print(f"  righe di ponte: {[(li['tipo'], len(li['titoli']), li.get('motivo')) for li in ponti_unico]}")
-    print(f"  motivi: {motivi}")
     assert len(ponti_unico) == 1, "FALLITO: la riga di ponte sparisce invece di dichiararsi"
     assert ponti_unico[0]["titoli"] == [] and ponti_unico[0].get("motivo"), "FALLITO: riga vuota senza motivo"
-    assert motivi, "FALLITO: un ponte impossibile non finisce nei motivi del payload"
-    print("  -> OK: nessun ponte inventato, e il motivo arriva al chiamante")
+    assert "nessun ponte" in log.getvalue(), "FALLITO: un ponte impossibile non lascia traccia nei log"
+    # Il motivo deve arrivare al CHIAMANTE, una volta sola (il ramo della riga vuota lo mette in `motivi`).
+    payload_unico = {
+        "semi": [{"tmdbId": int(ch.split(":")[1]), "medium": "movie", "tipo": "watched"}
+                 for ch in semi(m3, 0, 8)],
+        "medium": "movie",
+        "cap": 20,
+    }
+    status_u, res_u = S.esegui_richiesta(payload_unico, m3)
+    riga_u = [li for li in res_u["liste"] if str(li["ruolo"]).startswith("punti_incontro")]
+    motivi = [m_ for m_ in (res_u.get("motivi") or []) if "punti_incontro" in m_]
+    print(f"  contratto: status={status_u} · vuota={riga_u[0].get('vuota')} · motivi={motivi}")
+    assert riga_u and riga_u[0].get("vuota") is True and riga_u[0].get("motivo"), (
+        "FALLITO: il contratto non dichiara la riga di ponte vuota"
+    )
+    assert len(motivi) == 1, f"FALLITO: il motivo deve comparire una volta nei motivi, non {len(motivi)}"
+    print("  -> OK: nessun ponte inventato, e il motivo arriva al chiamante una volta sola")
 
     print("\n7. IL CONTRATTO HTTP")
     coppia_a, coppia_b = [int(x.lstrip("b")) for x in ponte["coppia_id"].split("_")]
@@ -287,7 +312,7 @@ def main():
         assert li.get("parziale") is True, "FALLITO: la riga non dichiara parziale"
         assert li["semi"], "FALLITO: la riga non porta i semi delle due sponde"
 
-    print("\n8. PAVIMENTO E ANTI-MONOPOLIO")
+    print("\n8. IL PAVIMENTO MORDE DAVVERO")
     for ch, _p in ponte["titoli"]:
         x = B.ROW_OF[ch]
         assert float(m.VAVE[x]) >= float(P.PUNTI_INCONTRO_VAVE_MIN), f"FALLITO: {ch} sotto il pavimento VAVE 6.8"
@@ -295,7 +320,26 @@ def main():
     punteggi = [p for _ch, p in ponte["titoli"]]
     assert punteggi == sorted(punteggi, reverse=True), "FALLITO: punteggi non monotoni"
     print(f"  {len(punteggi)} titoli, tutti sopra i due pavimenti, punteggi monotoni")
-    print("  -> OK")
+
+    # Un titolo che il ponte lo farebbe (e' nel mondo d'incontro) ma ha VAVE sotto 6.8 deve sparire.
+    m5 = build_ponte_graph()
+    bersaglio = B.KEYS[int(m5.MEMBRI[2][1])]
+    riga_prima = righe(m5.lista(storia(a_semi + b_semi), cap=20, medium="movie"), "punti_incontro")[0]
+    assert bersaglio in [ch for ch, _p in riga_prima["titoli"]], (
+        f"FALLITO: il fixture non ha un titolo del ponte da sacrificare ({bersaglio} non c'e')"
+    )
+    m5.VAVE[int(m5.MEMBRI[2][1])] = 6.0
+    riga_dopo = righe(m5.lista(storia(a_semi + b_semi), cap=20, medium="movie"), "punti_incontro")[0]
+    print(f"  {bersaglio}: VAVE 7.4 -> 6.0 · presente dopo: "
+          f"{bersaglio in [ch for ch, _p in riga_dopo['titoli']]} · "
+          f"sopravvissuti {riga_prima['totale_sopravvissuti']} -> {riga_dopo['totale_sopravvissuti']}")
+    assert bersaglio not in [ch for ch, _p in riga_dopo["titoli"]], (
+        "FALLITO: un titolo con VAVE 6.0 entra nel ponte: il pavimento 6.8 non morde"
+    )
+    assert riga_dopo["totale_sopravvissuti"] < riga_prima["totale_sopravvissuti"], (
+        "FALLITO: il taglio del pavimento non si vede nel conteggio dei sopravvissuti"
+    )
+    print("  -> OK: il pavimento taglia davvero")
 
     print("\n" + "=" * 84)
     print("TUTTE LE PROVE SUPERATE — OK")
