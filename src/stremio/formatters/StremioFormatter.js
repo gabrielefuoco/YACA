@@ -284,23 +284,6 @@ function urlPosterDaRottaLegacy(hostUrl, { type, id, episode, tlBadge, source } 
 }
 
 /**
- * Rinfresca il poster di un item di libreria riportandolo alla forma corrente.
- */
-function posterRinfrescato({ poster, storedPoster, itemId, type, tmdbId, hostUrl } = {}) {
-    const composto = scomponiPosterComposto(poster) || scomponiPosterComposto(storedPoster);
-    if (!composto) return poster;
-
-    const erdbId = getErdbId({ id: itemId, type, tmdbId }) || composto.erdbId;
-    const aggiornato = urlPosterComposto(hostUrl, {
-        erdbId,
-        badge: composto.badge,
-        source: composto.source
-    });
-    return aggiornato || poster;
-}
-
-
-/**
  * Logo su `image.tmdb.org`, se l'item ce l'ha in `rawTMDB.images.logos`.
  *
  * PERCHÉ: il meta che arriva da DuckDB (`getDuckDbMetaDetails`) non riempie `meta.logo`,
@@ -597,14 +580,11 @@ function formatStremioCatalog(results, id, type, userConfig, isLandscapeEnabled,
 module.exports = {
     formatStremioCatalog,
     sanitizeCatalogMeta,
-    findLatestAiredEpisode,
     // Esportata perche' e' l'unica fonte di verita' degli id ERDB: anche gli script
     // offline (es. scripts/erdb-builder/dump-list.js) costruiscono cosi' le liste di poster.
     getErdbId,
-    urlPosterInCache,
     urlPosterComposto,
     urlPosterDaRottaLegacy,
     scomponiPosterComposto,
-    posterRinfrescato,
     BADGE_IMG_VERSION
 };

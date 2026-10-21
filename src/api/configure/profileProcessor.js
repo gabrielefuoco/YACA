@@ -17,17 +17,6 @@ const { isRetiredTmdbKeywordId } = require('../../indice/keywordIds');
 const { sanitizeCustomCatalogs } = require('./validators');
 
 /**
- * Splits a pipe- or comma-separated ID string, or returns array values as strings.
- * @param {string|Array|null} value
- * @returns {string[]}
- */
-function splitOrIds(value) {
-    if (Array.isArray(value)) return value.map(String).map(v => v.trim()).filter(Boolean);
-    if (value === null || value === undefined) return [];
-    return String(value).split(/[|,]/).map(v => v.trim()).filter(Boolean);
-}
-
-/**
  * Extracts suggested DNA entries from installed catalogs.
  * Handles genres, keywords, networks, companies, cast, and crew.
  * Resolves known genre IDs to Italian names.

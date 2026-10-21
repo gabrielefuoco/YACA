@@ -349,7 +349,6 @@ module.exports = {
     resolveDnaItem,
     isPlaceholderName,
     getReadableFallback,
-    getEndpointForType,
     getCacheKey,
     clearDnaNamesCache,
     GENRE_ID_TO_NAME

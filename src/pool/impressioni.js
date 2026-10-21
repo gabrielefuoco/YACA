@@ -247,7 +247,6 @@ module.exports = {
     applicaDecadimento,
     alphaDelGiorno,
     casualeDelGiorno,
-    giorniFra,
     serieInCorso,
     DECADIMENTO_GIORNI_MINIMI,
     DECADIMENTO_FATTORE,

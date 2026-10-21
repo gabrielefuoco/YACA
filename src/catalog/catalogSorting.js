@@ -413,7 +413,6 @@ module.exports = {
     mapSortBy,
     getSortComparator,
     getSortByValue,
-    splitSqlOrderClauses,
     extractSecondaryTieBreakers,
     applySortWithTieBreakers,
     applyCatalogSpecialOrdering

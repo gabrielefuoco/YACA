@@ -223,7 +223,6 @@ function getIncompatibilityReason(catalogOrKind, typeSelectors, options = {}) {
 
 module.exports = {
     FIXED_CATALOGS_REGISTRY,
-    ALWAYS_VISIBLE_IDS,
     isAlwaysVisible,
     getCatalogKind,
     isCatalogConformant,

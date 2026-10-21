@@ -428,9 +428,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-    DEFAULT_DELAY,
     DEFAULT_CONCURRENCY,
-    REPORT_FILE,
     HELP,
     sanitizePart,
     sanitizeErdbId,
@@ -442,7 +440,6 @@ module.exports = {
     parseJsonl,
     buildReport,
     parseArgs,
-    downloadPoster,
     run,
     main
 };

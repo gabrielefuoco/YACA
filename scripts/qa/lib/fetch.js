@@ -107,7 +107,7 @@ function buildCatalogFileName(catalog) {
  */
 function resolveDirectCatalogs(profile, manifestCatalogs, onlyList) {
     if (!onlyList) return { extra: [], skipped: [] };
-    const { getPresets } = require('../src/catalog/presets');
+    const { getPresets } = require('../../../src/catalog/presets');
     const { isCatalogConformant } = require('../../../src/catalog/catalogKind');
     const presetMap = new Map(getPresets().map(p => [p.id, p]));
     const inManifest = new Set(manifestCatalogs.map(c => c.id));

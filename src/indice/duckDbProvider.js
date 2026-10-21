@@ -468,7 +468,6 @@ module.exports = {
     mapSortBy: (...a) => sorting().mapSortBy(...a),
     applySortWithTieBreakers: (...a) => sorting().applySortWithTieBreakers(...a),
     buildPresetFromFilters,
-    applyKidsModeToPreset,
     getDuckDbCatalogFromFilters,
     getDuckDbCatalogFromPreset,
     getDuckDbMetaDetails,

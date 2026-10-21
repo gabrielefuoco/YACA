@@ -11,17 +11,9 @@ const {
     MOVIE_META_SWR_MS,
     MOVIE_DETAILS_TTL_MS,
     SERIES_FINISHED_TTL_MS,
-    SERIES_ONGOING_TTL_MS,
-    CACHE_TTL_MS,
-    FAST_CATALOG_PAGE1_L2_TTL_MS,
-    FAST_CATALOG_PAGE1_SWR_MS,
-    FAST_CATALOG_DEEP_L2_TTL_MS,
-    FAST_CATALOG_DEEP_SWR_MS,
-    SLOW_CATALOG_L2_TTL_MS,
-    SLOW_CATALOG_SWR_MS
+    SERIES_ONGOING_TTL_MS
 } = require('../config');
 const { rateLimitedMap } = require('../infra/rateLimiter');
-const { generateRequestHash } = require('../cache/requestHash');
 const { logError } = require('../infra/logger');
 const { tmdbBudget, TMDB_CATEGORIES } = require('./tmdbBudget');
 
@@ -152,16 +144,6 @@ async function resolveImdbId(tmdbId, type, apiKey) {
         }
         return null;
     }
-}
-
-/**
- * Converte ISO 3166-1 alpha-2 in emoji bandiera
- */
-function getCountryEmoji(countryCode) {
-    if (!countryCode) return '';
-    return countryCode
-        .toUpperCase()
-        .replace(/./g, char => String.fromCodePoint(char.charCodeAt(0) + 127397));
 }
 
 /**
@@ -376,54 +358,6 @@ function toStremioMetaItem(tmdbItem, type) {
 
     return meta;
 }
-
-/**
- * Recupera un listato dinamico (discover) o una query di ricerca e si preoccupa
- * di parallelizzare le pagine TMDB per riempire lo skip di Stremio.
- * Questa è la funzione interna senza cache.
- *
- * Tutte le pagine restituiscono "Light Mode" (ID, nome, poster, background, descrizione,
- * releaseInfo, imdbRating, genre_ids) per azzerare la latenza.
- * L'arricchimento completo avviene in background per le pagine principali.
- */
-
-/**
- * Generates a per-page cache key for isolated page caching.
- * Format: <baseHash>:page:<pageNum>
- */
-function getPageCacheKey(endpoint, customParams, type, pageNum) {
-    const baseHash = generateRequestHash(endpoint, customParams, 0, type);
-    return `${baseHash}:page:${pageNum}`;
-}
-
-/**
- * Determines the appropriate L2 TTL for a catalog page based on catalog speed tier.
- */
-function getPageCacheTtl(pageNum, options = {}) {
-    const tier = options.catalogTier || 'default';
-    if (tier === 'fast') {
-        return pageNum === 1 ? FAST_CATALOG_PAGE1_L2_TTL_MS : FAST_CATALOG_DEEP_L2_TTL_MS;
-    }
-    if (tier === 'slow') {
-        return SLOW_CATALOG_L2_TTL_MS;
-    }
-    // default — use provided cacheTtlMs or fallback
-    return options.cacheTtlMs || CACHE_TTL_MS;
-}
-
-/**
- * Wrapper with per-page cache keys and SWR via CacheManager.
- *
- * Each Stremio "page" (skip / ITEMS_PER_PAGE + 1) gets its own isolated cache key
- * in both RAM (L1) and MongoDB (L2). SWR is handled by CacheManager.getWithStatus().
- *
- * - Cache Hit Fresh: return instantly.
- * - Cache Hit Stale (SWR window): return stale data, revalidate in background.
- * - Cache Miss L1, Hit L2: CacheManager promotes to L1 automatically.
- * - Total Cache Miss: fetch from TMDB.
- *   - Page 1: full enrichment.
- *   - Deep pages (>1) on total miss: Fast-Pass (light mode, no enrichment).
- */
 
 /**
  * Recupera le stagioni e gli episodi per una Serie TV da TMDB.

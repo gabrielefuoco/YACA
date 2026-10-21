@@ -819,8 +819,6 @@ module.exports = {
     COLLECTION_NAME,
     SUPPORTED_SCHEMA_VERSION,
     CACHE_TTL_MS,
-    NOVELTY_WINDOW_DAYS,
-    HOME_MAX_AGE_DAYS,
     getSnapshot,
     getNoveltyEntries,
     getAiringEntries,

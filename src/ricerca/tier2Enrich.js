@@ -225,9 +225,5 @@ module.exports = {
     TIER2_FLAG,
     ENRICH_CONCURRENCY,
     ENRICH_BUDGET_MS,
-    isTier2Item,
-    tier2TmdbId,
-    applyDetails,
-    rememberLearnedName,
     enrichTier2Items
 };

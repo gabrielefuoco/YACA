@@ -216,13 +216,11 @@ async function searchLearnedTitles(search, { type = 'movie', limit = LEARNED_PAG
 
 module.exports = {
     TIER2_FLAG,
-    TIER2_PAGE_SIZE,
     LEARNED_PAGE_SIZE,
     searchTier2,
     searchLearnedTitles,
     mergeLocalWithTier2,
     mapTier2RowToMeta,
-    mapLearnedRowToMeta,
     toTier2Type,
     closeTier2Search
 };

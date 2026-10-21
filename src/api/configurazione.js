@@ -289,33 +289,17 @@ router.get('/preset', (req, res) => {
 
 /**
  * POST /api/configurazione/nome
- * Genera un nome fuso o descrittivo per due cataloghi tramite AI.
+ * Compone il nome di un catalogo fuso a partire dai due nomi.
  * Replaces POST /api/ai/generate-merged-name.
  */
-router.post('/nome', async (req, res) => {
+router.post('/nome', (req, res) => {
     const { nameA, nameB } = req.body || {};
     if (!nameA && !nameB) {
         return erroreDominio(res, 400, 'richiesta_non_valida', 'Nomi cataloghi obbligatori.');
     }
 
-    try {
-        const user = await UserConfig.resolveUserConfig(req.utenteId);
-        const { chiaveEffettiva } = require('../configurazione');
-        const mistralKey = chiaveEffettiva({ account: user, servizio: 'mistral' });
-
-        if (!mistralKey) {
-            // Fallback deterministico senza AI con motivo dichiarato
-            const defaultName = `${nameA || ''} & ${nameB || ''}`.trim().replace(/^&\s*|\s*&$/g, '');
-            return res.json({ name: defaultName, motivi: ['chiave_mistral_assente'] });
-        }
-
-        const { generateMergedCatalogName } = require('../ai/catalogFusionPrompt');
-        const generatedName = await generateMergedCatalogName(nameA, nameB, mistralKey);
-        return res.json({ name: generatedName || `${nameA} & ${nameB}` });
-    } catch (err) {
-        console.warn('[ConfigurazioneAPI] AI fallback per nome fuso:', err.message);
-        return res.json({ name: `${nameA} & ${nameB}` });
-    }
+    const name = `${nameA || ''} & ${nameB || ''}`.trim().replace(/^&\s*|\s*&$/g, '');
+    return res.json({ name });
 });
 
 module.exports = router;

@@ -124,25 +124,7 @@ function schedulePromotion(opts) {
     }
 }
 
-/** Svuota il memo (test, e un eventuale comando di diagnosi). */
-function resetPromotionMemo() {
-    memoEsiti.clear();
-}
-
-/** Contenuto del memo, per diagnostica. */
-function getPromotionMemo() {
-    const map = new Map();
-    for (const [k, entry] of memoEsiti.cache.entries()) {
-        map.set(k, entry.value);
-    }
-    return map;
-}
-
 module.exports = {
     schedulePromotion,
-    promoteOnOpen,
-    resetPromotionMemo,
-    getPromotionMemo,
-    tipoFromMeta,
-    MAX_MEMO_KEYS
+    promoteOnOpen
 };

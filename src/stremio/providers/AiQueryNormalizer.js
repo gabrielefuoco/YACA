@@ -196,9 +196,6 @@ async function normalizeAiDiscoveryQueries(queries, options = {}) {
 }
 
 module.exports = {
-    RESOLUTION_CACHE_MAX_ENTRIES,
-    RESOLUTION_CACHE_TTL_MS,
     clearAiFilterResolutionCache,
     normalizeAiDiscoveryQueries,
-    normalizeAiQuery
 };

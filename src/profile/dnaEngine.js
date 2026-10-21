@@ -223,8 +223,6 @@ function calculateFlatnessMetrics(vFinal) {
 // ============================================================================
 
 const MIN_SIGNALS_FOR_CLUSTERING = 12;
-const MAX_K = 5;
-const MIN_K = 3;
 
 /**
  * Calcola la norma euclidea (L2) di un vettore sparso.
@@ -814,16 +812,11 @@ module.exports = {
     resolveK,
     clusterTasteSignals,
     shouldRecomputeClusters,
-    MIN_SIGNALS_FOR_CLUSTERING,
-    MAX_K,
-    MIN_K,
     // Estrazione e fusione
     extractStaticDNAFromQueries,
     extractActiveDNAFromTmdbData,
     computeFinalDNA,
     computeActiveDNA,
     calculateWeightedInteractions,
-    normalizeVector,
-    stripPersonKeys,
-    isPersonDnaKey
+    normalizeVector
 };

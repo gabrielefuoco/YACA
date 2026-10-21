@@ -22,7 +22,6 @@ const {
     salvaTraktCredenziali,
     disconnettiTrakt
 } = require('../../configurazione');
-const UserCredentials = require('../../models/UserCredentials');
 const AddonConfig = require('../../models/AddonConfig');
 const { nanoid } = require('nanoid');
 const { risolviProfiloAttivo } = require('../../profile');
@@ -438,51 +437,6 @@ async function traktTokenHandler(req, res) {
     }
 }
 
-/**
- * Legge le credenziali segrete di un utente (Ticket 26, Decisione 1).
- * Verifica primariamente il documento proprietario UserCredentials (auth).
- * In assenza, applica il ripiego leggendo da UserAccount finché i dati non sono migrati.
- *
- * @param {string} userId
- * @returns {Promise<string|null>} passwordHash o null
- */
-async function leggiCredenziali(userId) {
-    if (!userId) return null;
-    try {
-        if (UserCredentials && typeof UserCredentials.findOne === 'function') {
-            const cred = await UserCredentials.findOne({ userId }).lean();
-            if (cred?.passwordHash) {
-                return cred.passwordHash;
-            }
-        }
-        // Ripiego: lettura dal vecchio posto in UserAccount
-        const account = await accountDi(userId);
-        return account?.passwordHash || null;
-    } catch (_err) {
-        return null;
-    }
-}
-
-/**
- * Salva le credenziali segrete dell'utente in UserCredentials (auth).
- *
- * @param {Object} params
- * @param {string} params.userId
- * @param {string} params.passwordHash
- * @returns {Promise<any>}
- */
-async function salvaCredenziali({ userId, passwordHash }) {
-    if (!userId || !passwordHash) throw new Error('userId e passwordHash sono obbligatori.');
-    if (UserCredentials && typeof UserCredentials.updateOne === 'function') {
-        return await UserCredentials.updateOne(
-            { userId },
-            { $set: { passwordHash } },
-            { upsert: true }
-        );
-    }
-    return null;
-}
-
 module.exports = {
     loginHandler,
     meHandler,
@@ -492,9 +446,7 @@ module.exports = {
     stremioAuthHandler,
     traktCodeHandler,
     traktTokenHandler,
-    getJwtSecret,
-    leggiCredenziali,
-    salvaCredenziali
+    getJwtSecret
 };
 
 

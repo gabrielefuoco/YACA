@@ -303,7 +303,6 @@ module.exports = {
     tier1FileFor,
     normalizeTipo,
     normalizeId,
-    TIER1_FILES,
     MOVIE_FIELDS,
     TV_FIELDS
 };

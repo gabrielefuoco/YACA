@@ -249,21 +249,6 @@ function classifyRefreshError(err) {
     };
 }
 
-async function updateTraktStatus(userId, _unused, status, errorMsg) {
-    if (status === 'ok') return segnaTraktOk(userId);
-    if (status === 'requires_reauth') return segnaTraktDaRiautorizzare(userId, errorMsg);
-    if (status === 'degraded') return segnaTraktDegradato(userId, errorMsg);
-    if (status === 'not_configured') return segnaTraktNonConfigurato(userId);
-}
-
-async function markRequiresReauth(userId, _unused, errorMsg) {
-    return segnaTraktDaRiautorizzare(userId, errorMsg);
-}
-
-async function markDegraded(userId, _unused, errorMsg) {
-    return segnaTraktDegradato(userId, errorMsg);
-}
-
 /**
  * Heartbeat diagnostico per verificare lo stato della connessione Trakt.
  * Esegue GET /sync/last_activities e aggiorna traktStatus in DB tramite il modulo configurazione.
@@ -603,7 +588,5 @@ module.exports = {
     traktClient,
     smartTraktRefresh,
     checkTraktHeartbeat,
-    classifyRefreshError,
-    markRequiresReauth,
-    markDegraded
+    classifyRefreshError
 };

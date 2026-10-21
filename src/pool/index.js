@@ -24,13 +24,6 @@ const { graphClient } = require('../clients');
 const { resolveAnimePolicy, isAnimeContent } = require('../anime');
 const { SEED_RECENTI_QUANTI } = require('../library');
 
-const HERO_CATALOG_IDS = new Map([
-    ...HERO_PRIORITY.flatMap(slug => ['movie', 'series'].map(mediaType => [
-        `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`,
-        { slug, mediaType }
-    ]))
-]);
-
 // Ticket 13: il payload delle righe hero ora porta anche classici, ultime visioni, punti d'incontro e
 // i tre slot dei micro-cluster: la cache delle righe deve invalidarsi una volta.
 // Ticket 14: il payload porta anche i `seedIds` (i titoli che l'utente conosce, per non farli scendere):
@@ -80,10 +73,6 @@ function righeServiteDelProfilo({ userConfig, context, mediaType = 'movie' } = {
     // Nessuna riga di QUESTO medium accesa: non c'e' niente da proteggere, si torna al §9.1 (`null`),
     // non a un insieme vuoto (che direbbe «nessuna riga partecipa» e sarebbe un'altra cosa).
     return ruoli.size > 0 ? [...ruoli] : null;
-}
-
-function getHeroCatalogInfo(catalogId) {
-    return HERO_CATALOG_IDS.get(catalogId) || null;
 }
 
 function getHeroCatalogId(slug, mediaType) {
@@ -197,11 +186,6 @@ function isSharedHeroCacheEntry(entry, mediaType) {
         }
     }
     return true;
-}
-
-function normalizePoolResult(result) {
-    if (Array.isArray(result)) return result;
-    return Array.isArray(result?.ids) ? result.ids : [];
 }
 
 /**
@@ -729,19 +713,13 @@ async function getHeroPool(params) {
 module.exports = {
     getHeroPool,
     buildSharedHeroCatalogs,
-    getSharedHeroCatalogs,
     buildSharedHeroCacheKey,
-    assignHeroPools,
-    ensurePoolItem,
     getRecommendationId,
-    getHeroCatalogInfo,
     righeServiteDelProfilo,
     getHeroCatalogId,
-    isSharedHeroCacheEntry,
     HERO_CACHE_KEY_VERSION,
     HERO_CACHE_SCHEMA_VERSION,
     HERO_PRIORITY,
-    SLUG_ADDITIVI,
     HERO_STRATEGIES,
     runPoolBuilder,
     convertiSemiPerGrafo,

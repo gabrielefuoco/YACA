@@ -224,8 +224,5 @@ function buildAiPrompt(taskType = 'single_query') {
 module.exports = {
     SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
     buildSearchUnderstandingPrompt,
-    BASE_RULES,
-    SCHEMAS,
-    EXAMPLES,
     buildAiPrompt
 };

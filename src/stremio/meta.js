@@ -516,12 +516,9 @@ module.exports = {
     metaHandler,
     isMetaDubbed,
     applyKitsuMappingToMeta,
-    alignVideoIdsToRequestedForm,
-    preparaListaEpisodi,
     buildResponseMeta,
     getKitsuMappingStats,
     resetKitsuMappingStats,
-    resolveImdbIdFromDump,
     resolveImdbIdPerEpisodi,
     getMetaDetails: (tmdbId, type) => indice.getMetaDetails(tmdbId, type),
     allineaIdFilm

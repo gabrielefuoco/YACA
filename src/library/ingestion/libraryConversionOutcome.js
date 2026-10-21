@@ -162,7 +162,6 @@ function summarizeUnresolvedRun(unresolved = []) {
 module.exports = {
     OUTCOME_REASONS,
     UNRESOLVED_LABELS,
-    hasTmdbId,
     decideConversionOutcome,
     applyConversionOutcome,
     buildConversionState,

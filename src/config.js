@@ -14,12 +14,8 @@ module.exports = {
     // ─── Catalog Page Cache (L1 RAM + L2 MongoDB) ───
     // Fast catalogs (New Releases, Anime Trending)
     FAST_CATALOG_PAGE1_L2_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 days
-    FAST_CATALOG_PAGE1_SWR_MS: 15 * 60 * 1000,              // 15 min SWR
-    FAST_CATALOG_DEEP_L2_TTL_MS: 7 * 24 * 60 * 60 * 1000,   // 7 days
-    FAST_CATALOG_DEEP_SWR_MS: 15 * 60 * 1000,               // 15 min SWR
     // Slow catalogs (Top Rated, Oscar, Decades)
     SLOW_CATALOG_L2_TTL_MS: 14 * 24 * 60 * 60 * 1000,       // 14 days
-    SLOW_CATALOG_SWR_MS: 12 * 60 * 60 * 1000,               // 12 hours SWR
 
     // Legacy aliases (kept for backward compat)
     CACHE_TTL_MS: 14 * 24 * 60 * 60 * 1000, // 14 giorni (default)
@@ -31,9 +27,6 @@ module.exports = {
     // Series (ongoing / anime)
     SERIES_META_CACHE_TTL_MS: 6 * 60 * 60 * 1000,           // 6 hours L2
     SERIES_META_SWR_MS: 30 * 60 * 1000,                     // 30 min SWR
-    // Series (finished)
-    SERIES_FINISHED_META_TTL_MS: 24 * 60 * 60 * 1000,       // 24 hours L2
-    SERIES_FINISHED_META_SWR_MS: 24 * 60 * 60 * 1000,       // 24 hours SWR
 
     // Cache Hybrid Recommendations
     RECOMMENDATIONS_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 giorni

@@ -21,8 +21,8 @@ async function connectDb() {
     if (mongooseRef.connection.readyState === 1) return mongooseRef.connection.db;
     if (!process.env.MONGODB_URI) fail('MONGODB_URI mancante: impossibile contattare Atlas.');
     // Ritentativo: senza, un ESERVFAIL o EREFUSED di due secondi chiude la simulazione (ticket 12).
-    const { connectMongo } = require('../src/infra/mongoConnect');
-    const { isTransientError } = require('../src/infra/retry');
+    const { connectMongo } = require('../../../src/infra/mongoConnect');
+    const { isTransientError } = require('../../../src/infra/retry');
     await connectMongo(process.env.MONGODB_URI, {
         mongoose: mongooseRef,
         retry: {
@@ -140,7 +140,7 @@ async function writeColdProfile(db, targetOwner, targetContext, mode) {
  */
 async function materializeProfiles(spec, opts = {}) {
     const db = await connectDb();
-    const { getPresets } = require('../src/catalog/presets');
+    const { getPresets } = require('../../../src/catalog/presets');
     const presetMap = new Map(getPresets().map(p => [p.id, p]));
 
     const target = spec.target;

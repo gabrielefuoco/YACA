@@ -187,7 +187,6 @@ function reset() {
 module.exports = {
     CACHE_TTL_MS,
     FILE_NAME,
-    annotationsDir,
     annotationsPath,
     getSnapshot,
     getStatus,

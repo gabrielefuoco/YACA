@@ -1,7 +1,6 @@
 const { stremioClient, stremioLikesClient } = require('./client');
 const { accountDi, traktDi } = require('../configurazione');
 const AddonConfig = require('../models/AddonConfig');
-const { createTmdbClient } = require('../clients/tmdb');
 const { sanitizeCatalogMeta } = require('../stremio/formatters/StremioFormatter');
 const { isAllowedUrl } = require('../infra/helpers');
 
@@ -288,52 +287,6 @@ async function pushToTrakt(userId, data) {
     if (ratings.length > 0) {
         await syncTraktRatings(traktToken, ratings);
     }
-}
-
-async function syncCatalogData(catalogs, tmdbApiKey, settings = {}) {
-    if (!catalogs || !Array.isArray(catalogs) || !tmdbApiKey) return [];
-
-    const { getPresets } = require('../catalog/presets');
-    const allPresets = getPresets();
-    const presetMap = new Map(allPresets.map(p => [p.id, p]));
-    const tmdbClient = createTmdbClient(tmdbApiKey);
-
-    let allItems = [];
-    for (const cat of catalogs) {
-        if (cat.items && Array.isArray(cat.items) && cat.items.length > 0) {
-            allItems = [...allItems, ...cat.items];
-            continue;
-        }
-
-        try {
-            const baseId = (cat.id || '').startsWith('yaca_preset_') ? cat.id.replace('yaca_preset_', '') : (cat.id || '');
-            const safeListId = validateAndNormalizeSafeId(cat.id || '');
-            let catalogMeta = presetMap.get(baseId);
-
-            if (!catalogMeta && cat.queries) {
-                catalogMeta = cat;
-            }
-
-            if (catalogMeta) {
-                const { executeUniversalPipeline } = require('../stremio/providers/AiDiscoveryProvider');
-                const results = await executeUniversalPipeline(
-                    catalogMeta,
-                    tmdbClient,
-                    tmdbApiKey,
-                    catalogMeta.type || 'movie',
-                    0,
-                    settings,
-                    { cacheTtlMs: 3600000 }
-                );
-                if (results && results.length > 0) {
-                    allItems = [...allItems, ...results];
-                }
-            }
-        } catch (err) {
-            console.warn(`[StremioSync] Failed to resolve catalog ${cat.id || 'unknown'}:`, err.message);
-        }
-    }
-    return allItems;
 }
 
 async function updateSyncTimestamp(userId, profileId) {

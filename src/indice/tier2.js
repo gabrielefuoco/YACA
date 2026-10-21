@@ -532,7 +532,6 @@ function getTier2Stats({ dataDir = defaultDataDir(), dbFile, parquetFile } = {})
 
 module.exports = {
     buildTier2,
-    fetchDailyExport,
     buildExportSelect,
     sanitizeFts5Query,
     Tier2SearchClient,

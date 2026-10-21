@@ -183,19 +183,11 @@ async function leggiImpressioniRecenti({
     return lettura;
 }
 
-/** Svuota la memoria breve (test e cambio di profilo). */
-function svuotaMemoImpressioni() {
-    memoLetture.clear();
-}
-
 module.exports = {
     recordRecommendationImpressions,
     registraImpressioni: recordRecommendationImpressions,
     leggiImpressioniRecenti,
     aggregaImpressioni,
     giornoUTC,
-    svuotaMemoImpressioni,
     IMPRESSIONI_FINESTRA_GIORNI,
-    IMPRESSIONI_MEMO_MS,
-    IMPRESSIONI_MEMO_MAX
 };

@@ -99,7 +99,6 @@ module.exports = {
     ALLOWED_ANIME_AXIS,
 
     // Dataset di sistema (12 righe hero)
-    SYSTEM_CATALOGS: HERO_SYSTEM_CATALOGS,
     HERO_SYSTEM_CATALOGS,
     HERO_REGISTRY,
     HERO_PREFIXES,

@@ -139,5 +139,4 @@ async function compileQuery(preset, skip = 0, limit = 100, dbClient = null) {
 
 module.exports = {
     compileQuery,
-    getSearchTerms
 };

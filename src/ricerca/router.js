@@ -236,6 +236,4 @@ async function routeLiveStremioSearch(searchQuery, mistralKey, kidsMode = false)
 module.exports = {
     generateTmdbFiltersFromPrompt,
     routeLiveStremioSearch,
-    getAiPromptDesc,
-    AI_PROMPT_CACHE_VERSION
 };

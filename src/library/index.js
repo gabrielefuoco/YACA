@@ -61,7 +61,6 @@ async function resolveLibraryContext(input = {}) {
         addonUuid: ctx.addonUuid
     };
 }
-const risolviContestoLibreria = resolveLibraryContext;
 
 // Ingestion services & state machine (Ticket 16)
 const LibrarySyncService = require('./ingestion/LibrarySyncService');
@@ -151,10 +150,6 @@ module.exports = {
     get LEGACY_APP_HOSTS() { return identity.LEGACY_APP_HOSTS; },
     identity,
 
-    // Risoluzione Contesto Libreria a 3 chiavi (Ticket 16, Emendamento 3)
-    resolveLibraryContext,
-    risolviContestoLibreria,
-
     // Scrittore Stremio fuori da qualsiasi lista (Ticket 16, Emendamento 2)
     ingestStremioData,
 
@@ -173,11 +168,9 @@ module.exports = {
     LibraryConverterService,
     syncLibraryForUser: (...args) => LibrarySyncService.syncLibraryForUser(...args),
     convertAll: (...args) => LibraryConverterService.convertAll(...args),
-    convertLibraryForUser: (...args) => LibraryConverterService.convertAll(...args),
     previewWatchedLibrary: (...args) => libraryWatchedService.previewWatchedLibrary(...args),
     removeWatchedLibrary: (...args) => libraryWatchedService.removeWatchedLibrary(...args),
     findWatchedItems: (...args) => libraryWatchedService.findWatchedItems(...args),
-    isItemWatched: (...args) => libraryWatchedService.isItemWatched(...args),
     resolveItemMediaType: (...args) => libraryMediaTypeResolution.resolveItemMediaType(...args),
     resolveTmdbIdentity: (...args) => libraryIdentityResolution.resolveTmdbIdentity(...args),
 

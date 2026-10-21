@@ -380,7 +380,5 @@ module.exports = {
     passesQualityFloor,
     isQualityFloorItemRecent,
     HIDDEN_GEMS_MAX_POPULARITY,
-    HIDDEN_GEMS_MIN_SCORE,
-    HIDDEN_GEMS_MIN_VOTES,
     HIDDEN_GEMS_MAX_VOTES
 };

@@ -170,7 +170,7 @@ function loadSpec(specPath = DEFAULT_SPEC_PATH) {
     }
     if (!Array.isArray(spec.profiles) || spec.profiles.length === 0) fail('Spec: profiles deve essere un array non vuoto.');
 
-    const { getPresets } = require('../src/catalog/presets');
+    const { getPresets } = require('../../../src/catalog/presets');
     const presetIds = new Set(getPresets().map(p => p.id));
 
     const seen = new Set();

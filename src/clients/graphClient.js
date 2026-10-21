@@ -106,20 +106,9 @@ function resetHealthCache() {
     cachedHealth = { data: null, expiresAt: 0 };
 }
 
-function setCachedHealthForTest(versioni, ttlMs = HEALTH_CACHE_TTL_MS) {
-    cachedHealth = {
-        data: versioni,
-        expiresAt: Date.now() + ttlMs
-    };
-}
-
 module.exports = {
-    GRAPH_SERVICE_URL,
-    GRAPH_TIMEOUT_MS,
-    HEALTH_CACHE_TTL_MS,
     getGraphHealthVersionsCached,
     getGraphHealthVersions,
     raccomanda,
-    resetHealthCache,
-    setCachedHealthForTest
+    resetHealthCache
 };

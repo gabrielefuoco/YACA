@@ -341,8 +341,6 @@ module.exports = {
     VERSIONI_FILE_NAME,
     CONTRATTO_VERSION,
     SCHEMA_VERSION,
-    CONVENZIONE_NOMI,
-    MAX_ULTIMI_MANCANTI,
     calcolaVersioniVolume,
     scriviVersioniVolume,
     scriviVersioniVolumeSync,
