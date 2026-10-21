@@ -110,6 +110,8 @@ export interface CatalogCardData {
 export interface Profile {
   id: string;
   name: string;
+  /** Emoji scelta dall'utente, separata dal nome: sopravvive al rename. */
+  emoji?: string;
   raw_ui_state: {
     selectedPresets: string[];
     newPrompts: string[];

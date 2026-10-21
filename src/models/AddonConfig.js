@@ -36,6 +36,8 @@ const addonConfigSchema = new mongoose.Schema({
     profiles: [{
         id: { type: String, required: true },
         name: { type: String, required: true },
+        /** Emoji scelta dall'utente, separata dal nome: sopravvive al rename. */
+        emoji: String,
         // Catalogs are objects created by profileProcessor: { id, name, type }
         catalogs: {
             type: [catalogSchema],

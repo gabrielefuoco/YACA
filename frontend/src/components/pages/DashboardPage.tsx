@@ -6,7 +6,7 @@ import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel'
 import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
-import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
+import { ProfileSettingsDialog } from '@/components/modals/ProfileSettingsDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
 import { LayoutGrid, Compass, Wand2, Dna, Library } from 'lucide-react';
@@ -28,7 +28,6 @@ interface DashboardPageProps {
   onSetActive: (id: string) => void;
   onAddProfile: (name: string) => Profile;
   onRemoveProfile: (id: string) => void;
-  onRenameProfile: (id: string, name: string) => void;
   onTogglePreset: (profileId: string, presetId: string) => void;
   onReorderCatalogs: (profileId: string, catalogs: Catalog[]) => void;
   onRemoveCatalog: (profileId: string, catalogId: string) => void;
@@ -55,7 +54,6 @@ export function DashboardPage({
   onSetActive,
   onAddProfile,
   onRemoveProfile,
-  onRenameProfile,
   onTogglePreset,
   onReorderCatalogs,
   onRemoveCatalog,
@@ -69,7 +67,7 @@ export function DashboardPage({
   userId,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const editingProfile = profiles.find((p) => p.id === editingProfileId) ?? profiles[0];
@@ -173,12 +171,7 @@ export function DashboardPage({
           onAdd={onAddProfile}
           profileTemplates={profileTemplates}
           onCreateFromTemplate={handleCreateFromTemplate}
-          onRemove={(id) => onRemoveProfile(id)}
-          onUpdateProfile={onUpdateProfile}
-          startRename={() => {
-            if (editingProfile?.id === 'global') return;
-            setIsRenameOpen(true);
-          }}
+          onOpenSettings={() => setIsProfileSettingsOpen(true)}
         />
       </div>
 
@@ -276,11 +269,17 @@ export function DashboardPage({
         </div>
       </div>
 
-      <RenameProfileDialog
-        open={isRenameOpen}
-        onOpenChange={setIsRenameOpen}
-        currentName={editingProfile?.name ?? ''}
-        onRename={(newName) => onRenameProfile(editingProfile.id, newName)}
+      <ProfileSettingsDialog
+        open={isProfileSettingsOpen}
+        onOpenChange={setIsProfileSettingsOpen}
+        profile={editingProfile ?? null}
+        canDelete={Boolean(editingProfile) && editingProfile?.id !== 'global'}
+        onSave={(updates) => {
+          if (editingProfile) onUpdateProfile(editingProfile.id, updates);
+        }}
+        onDelete={() => {
+          if (editingProfile && editingProfile.id !== 'global') onRemoveProfile(editingProfile.id);
+        }}
       />
 
       <EditCatalogModal

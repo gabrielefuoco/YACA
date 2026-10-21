@@ -23,6 +23,7 @@ export interface BackendProfile {
   id?: string;
   _id?: string | { $oid: string };
   name?: unknown;
+  emoji?: unknown;
   catalogs?: BackendCatalog[];
   settings?: {
     fastPresetRefresh?: boolean;
@@ -110,6 +111,7 @@ export function profilesToApiPayload(profiles: Profile[]) {
     return {
       id: p.id,
       name: p.name,
+      ...(p.emoji ? { emoji: p.emoji } : {}),
       selectedPresets: p.raw_ui_state.selectedPresets,
       presetOverrides: p.raw_ui_state.presetOverrides,
       catalogOrder: p.raw_ui_state.catalogOrder,
@@ -201,6 +203,7 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
   return {
     id: String(targetId),
     name: String(backendProfile.name ?? 'Profilo'),
+    ...(typeof backendProfile.emoji === 'string' && backendProfile.emoji ? { emoji: backendProfile.emoji } : {}),
     raw_ui_state: {
       selectedPresets,
       newPrompts: [],

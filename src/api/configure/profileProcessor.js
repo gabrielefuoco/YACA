@@ -111,7 +111,8 @@ function buildSuggestedDNAFromCatalogs(catalogs = []) {
 function createGlobalProfileInput() {
     return {
         id: 'global',
-        name: '🏠 Generale',
+        name: 'Generale',
+        emoji: '🏠',
         selectedPresets: [
             'preset_pop_movies', 'preset_pop_series',
             'preset_new_movies', 'preset_new_series',
@@ -146,7 +147,10 @@ async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdb
         // 1. Basic Structure
         const profile = {
             id: input.id || nanoid(8),
-            name: isGlobal ? 'Generale' : (input.name || 'Nuovo Profilo'),
+            // Il nome non è più forzato per il globale: si può rinominare come gli altri.
+            // 'Generale' resta solo il default di chi non ne manda uno.
+            name: (typeof input.name === 'string' && input.name.trim()) ? input.name.trim() : (isGlobal ? 'Generale' : 'Nuovo Profilo'),
+            ...(typeof input.emoji === 'string' && input.emoji.trim() ? { emoji: input.emoji.trim().slice(0, 8) } : {}),
             catalogs: Array.isArray(input.existingCatalogs) ? sanitizeCustomCatalogs(input.existingCatalogs) : [],
             raw_ui_state: {
                 selectedPresets: Array.isArray(input.selectedPresets) ? [...new Set(input.selectedPresets)] : [],

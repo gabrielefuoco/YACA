@@ -4,7 +4,7 @@ import { Profile, ProfileTemplate } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Baby, Smile, Pencil, Trash2, Check, SlidersHorizontal, PlusCircle, Plus } from 'lucide-react';
+import { Baby, Check, Settings2, PlusCircle, Plus } from 'lucide-react';
 
 interface ProfileManagerProps {
   profiles: Profile[];
@@ -15,9 +15,7 @@ interface ProfileManagerProps {
   onAdd: (name: string) => void;
   profileTemplates?: ProfileTemplate[];
   onCreateFromTemplate?: (template: ProfileTemplate) => void;
-  onRemove?: (id: string) => void;
-  startRename?: () => void;
-  onUpdateProfile?: (id: string, updates: Partial<Profile>) => void;
+  onOpenSettings: () => void;
 }
 
 export function ProfileManager({
@@ -29,9 +27,7 @@ export function ProfileManager({
   onAdd,
   profileTemplates = [],
   onCreateFromTemplate,
-  onRemove,
-  startRename,
-  onUpdateProfile,
+  onOpenSettings,
 }: ProfileManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -44,40 +40,6 @@ export function ProfileManager({
   };
 
   const editingProfile = profiles.find(p => p.id === editingProfileId);
-  const isGlobalSelected = editingProfile?.id === 'global';
-
-  const currentSelectors = editingProfile?.settings?.typeSelectors || { film: false, serie: false, anime: null };
-
-
-  const handleToggleAnimeOnly = () => {
-    if (!editingProfile) return;
-    const newAnime: 'only' | 'exclude' | null = currentSelectors.anime === 'only' ? null : 'only';
-    const newSelectors = {
-      ...currentSelectors,
-      anime: newAnime
-    };
-    onUpdateProfile?.(editingProfile.id, {
-      settings: {
-        ...editingProfile.settings,
-        typeSelectors: newSelectors
-      }
-    });
-  };
-
-  const handleToggleNoAnime = () => {
-    if (!editingProfile) return;
-    const newAnime: 'only' | 'exclude' | null = currentSelectors.anime === 'exclude' ? null : 'exclude';
-    const newSelectors = {
-      ...currentSelectors,
-      anime: newAnime
-    };
-    onUpdateProfile?.(editingProfile.id, {
-      settings: {
-        ...editingProfile.settings,
-        typeSelectors: newSelectors
-      }
-    });
-  };
 
   return (
     <section className="flex flex-col gap-4 sm:gap-6">
@@ -90,34 +52,15 @@ export function ProfileManager({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {editingProfile && !isGlobalSelected && (
-            <div className="flex items-center gap-1.5 mr-1 sm:mr-2 pr-2 sm:pr-4 border-r border-marrow-light/20">
-              <button 
-                onClick={() => onUpdateProfile?.(editingProfile.id, { settings: { ...editingProfile.settings, kidsMode: !editingProfile.settings?.kidsMode } })}
-                title={editingProfile.settings?.kidsMode ? "Disabilita Modalità Bambini" : "Abilita Modalità Bambini"}
-                className={`flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full transition-colors border shadow-sm touch-manipulation ${
-                  editingProfile.settings?.kidsMode 
-                    ? 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600' 
-                    : 'bg-white/50 text-marrow-deep hover:bg-white hover:text-blue-500 border-marrow-light/10'
-                }`}
-              >
-                {editingProfile.settings?.kidsMode ? <Baby className="h-[18px] w-[18px]" /> : <Smile className="h-[18px] w-[18px]" />}
-              </button>
-              <button 
-                onClick={startRename}
-                title="Rinomina profilo selezionato"
-                className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm touch-manipulation"
-              >
-                <Pencil className="h-[18px] w-[18px]" />
-              </button>
-              <button 
-                onClick={() => onRemove?.(editingProfile.id)}
-                title="Elimina profilo selezionato"
-                className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm touch-manipulation"
-              >
-                <Trash2 className="h-[18px] w-[18px]" />
-              </button>
-            </div>
+          {editingProfile && (
+            <button
+              onClick={onOpenSettings}
+              title="Impostazioni del profilo"
+              className="flex items-center justify-center gap-1.5 rounded-lg min-h-[44px] h-11 px-3 sm:px-4 bg-white/80 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/20 shadow-sm touch-manipulation"
+            >
+              <Settings2 className="h-4 w-4" />
+              <span className="text-xs sm:text-sm font-bold">Impostazioni</span>
+            </button>
           )}
 
           <button
@@ -137,7 +80,7 @@ export function ProfileManager({
           const isEditing = editingProfileId === profile.id;
 
           // Gestione sicura per le Emoji (estrazione del primo simbolo vero, inclusi surrogate pairs)
-          let icon = Array.from(profile.name)[0].toUpperCase();
+          const icon = profile.emoji ?? (Array.from(profile.name)[0]?.toUpperCase() ?? 'P');
 
           return (
             <div
@@ -167,6 +110,28 @@ export function ProfileManager({
                 <p className={`text-xs sm:text-sm font-bold truncate w-full ${isActive ? 'text-emerald-700' : isEditing ? 'text-primary' : 'text-marrow-deep'}`}>
                   {profile.name}
                 </p>
+                {(profile.settings?.kidsMode || profile.settings?.typeSelectors?.anime) && (
+                  <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
+                    {profile.settings?.kidsMode && (
+                      <span
+                        className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/15 text-blue-700 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide"
+                        title="Modalità bambini attiva"
+                      >
+                        <Baby className="h-2.5 w-2.5" /> Bambini
+                      </span>
+                    )}
+                    {profile.settings?.typeSelectors?.anime === 'only' && (
+                      <span className="rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide">
+                        Solo anime
+                      </span>
+                    )}
+                    {profile.settings?.typeSelectors?.anime === 'exclude' && (
+                      <span className="rounded-full bg-marrow-light/15 text-marrow-deep px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide">
+                        No anime
+                      </span>
+                    )}
+                  </div>
+                )}
                 {isActive ? (
                   <p className="text-xs text-emerald-600 font-black uppercase mt-1 tracking-wider">
                     Attivo
@@ -191,48 +156,6 @@ export function ProfileManager({
       </div>
 
       {/* Selettori di Tipo del Profilo */}
-      {editingProfile && (
-        <div className="p-3 sm:p-4 rounded-xl border border-marrow-light/15 bg-white/50 backdrop-blur-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6">
-          <div className="flex items-center gap-2.5">
-            <SlidersHorizontal className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-xs sm:text-sm font-bold text-marrow-deep">
-                Selettori di Tipo: <span className="text-primary font-black">{editingProfile.name}</span>
-              </p>
-              <p className="text-xs text-marrow-light/70 font-medium">
-                Filtra i cataloghi del profilo nel manifest di Stremio e nella dashboard
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-
-            {/* Gruppo 2: Anime (Solo Anime / No Anime) - Mutuamente esclusivi */}
-            <div className="flex items-center gap-2 p-1 bg-white/80 rounded-lg border border-marrow-light/10 shadow-xs">
-              <label className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] h-11 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none touch-manipulation">
-                <input
-                  type="checkbox"
-                  checked={currentSelectors.anime === 'only'}
-                  onChange={handleToggleAnimeOnly}
-                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
-                />
-                <span>Solo Anime</span>
-              </label>
-              <span className="text-marrow-light/20">|</span>
-              <label className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] h-11 text-xs font-bold text-marrow-deep cursor-pointer hover:text-primary transition-colors select-none touch-manipulation">
-                <input
-                  type="checkbox"
-                  checked={currentSelectors.anime === 'exclude'}
-                  onChange={handleToggleNoAnime}
-                  className="rounded border-marrow-light/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer accent-primary"
-                />
-                <span>No Anime</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Dialog per Creazione Nuovo Profilo */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="w-[92vw] sm:max-w-[600px] p-0 overflow-hidden max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl">

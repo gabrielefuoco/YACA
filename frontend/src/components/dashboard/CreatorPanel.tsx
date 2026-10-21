@@ -98,7 +98,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   // Global state
   const [name, setName] = useState('');
   const [type, setType] = useState<'movie' | 'series'>('movie');
-  const [showEpisodeBadge, setShowEpisodeBadge] = useState(false);
   const [isAnime, setIsAnime] = useState(false);
 
   // Block state
@@ -189,7 +188,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     if (editCatalog) {
       setName(editCatalog.name || '');
       setType(editCatalog.type || 'movie');
-      setShowEpisodeBadge(editCatalog.showEpisodeBadge || false);
       setIsAnime(Boolean(editCatalog.isAnime || (editCatalog.filters as any)?.isAnime));
 
       let initialBlocks: BlockState[] = [];
@@ -212,7 +210,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     } else {
       setName('');
       setType('movie');
-      setShowEpisodeBadge(false);
       setIsAnime(false);
       setBlocks([createEmptyBlock()]);
       setPreviewFilters(null);
@@ -421,7 +418,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       type,
       source: editCatalog ? editCatalog.source : 'manual',
       queries,
-      showEpisodeBadge: type === 'series' ? showEpisodeBadge : undefined,
       isAnime: isAnime ? true : undefined,
       // For multi-query: put queries[] in filters so the backend normalizer picks them up
       // For single-query: flatten the block as a simple filters object
@@ -1015,31 +1011,6 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
           </div>
         </div>
 
-        {/* Row 4: Badge Settings (Only for Series) */}
-        {type === 'series' && (
-          <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1 sm:gap-3 pt-1 border-t border-marrow-light/10 mt-2">
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-              <span className="text-marrow-deep font-black uppercase tracking-wide text-xs whitespace-nowrap">Badge Episodi</span>
-              <span className="relative group">
-                <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
-                <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-                  Se attivato, i poster mostreranno un badge in alto a destra con l'ultimo episodio andato in onda o in uscita. Ideale per cataloghi di "Nuovi Episodi" o "Simulcast". Rallenta leggermente il caricamento.
-                </span>
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-1 sm:mt-0 min-h-[44px]">
-              <Switch 
-                checked={showEpisodeBadge} 
-                onCheckedChange={setShowEpisodeBadge} 
-                id="badge-toggle"
-              />
-              <Label htmlFor="badge-toggle" className="text-xs text-marrow-deep cursor-pointer py-2.5">
-                Mostra Ultimo Episodio
-              </Label>
-            </div>
-          </div>
-        )}
       </section>
 
       <div className="space-y-3 sm:space-y-4">

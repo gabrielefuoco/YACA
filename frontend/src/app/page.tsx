@@ -21,7 +21,8 @@ function createDefaultProfiles(): Profile[] {
   return [
     {
       id: 'global',
-      name: '🏠 Generale',
+      name: 'Generale',
+      emoji: '🏠',
       raw_ui_state: {
         selectedPresets: [...DEFAULT_PRESET_IDS, ...HERO_PRESET_IDS],
         newPrompts: [],
@@ -571,7 +572,6 @@ export default function Home() {
                   onSetActive={handleSetActiveProfile}
                   onAddProfile={addProfile}
                   onRemoveProfile={removeProfile}
-                  onRenameProfile={(id, name) => updateProfile(id, { name })}
                   onTogglePreset={togglePreset}
                   onReorderCatalogs={reorderCatalogs}
                   onRemoveCatalog={removeCatalog}

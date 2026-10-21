@@ -9,7 +9,8 @@ import { generateId, resolveHydratedActiveProfile } from '@/lib/utils';
 function createGlobalProfile(): Profile {
   return {
     id: 'global',
-    name: '🏠 Generale',
+    name: 'Generale',
+    emoji: '🏠',
     raw_ui_state: {
       selectedPresets: [...HERO_PRESET_IDS],
       newPrompts: [],
@@ -145,10 +146,11 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
       prev.map((p: Profile) => {
         if (p.id !== id) return p;
         if (p.id === 'global') {
+          // Il nome del globale non è più congelato: si rinomina dal dialog delle impostazioni
+          // (prima sia qui sia il backend lo forzavano a 'Generale').
           return {
             ...p,
             ...updates,
-            name: p.name,
             settings: updates.settings ? { ...p.settings, ...updates.settings } : p.settings,
           };
         }
