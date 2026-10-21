@@ -1,5 +1,9 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
+
+> Riallineato al codice il 2026-10-21 (commit `12c4198`): il difetto regge, è cambiata **una riga**.
+> Il root di `CatalogItem` è a **`:68`** (la `:63` è `onDragEnd`); `className` a `:68-74`. Il grid di
+> `ExplorePanel` è ancora `:116`, senza `grid-cols` né `minmax`.
 
 # 02 — "Esplora": la card esce dal contenitore e viene tagliata
 
@@ -23,7 +27,7 @@ Su 360px `CatalogItem` paga inoltre `p-3` (24px) e le azioni a 44px per lato.
    `<div className="flex flex-col gap-4 sm:gap-6 w-full min-w-0">`.
    In alternativa `grid grid-cols-[minmax(0,1fr)] gap-4 sm:gap-8`, ma la lista flex è già il pattern
    del repo: una sola forma per lo stesso contenuto.
-2. `shared/CatalogItem.tsx:63` (root) — aggiungere `w-full min-w-0` alle classi esistenti.
+2. `shared/CatalogItem.tsx:68` (root, `className` a `:68-74`) — aggiungere `w-full min-w-0` alle classi esistenti.
    **Non** aggiungere `overflow-hidden` sul root: taglierebbe ombra (`shadow-*`) e anelli del chip
    attivo, che sono già un problema aperto (ticket 08).
 3. Controllare che lo stesso difetto non esista altrove: cercare altri `grid` senza `minmax` che
@@ -38,3 +42,9 @@ il pulsante `Aggiungi`/`Aggiunto` in alto a destra. Nessuno scorrimento orizzont
 
 Harness con `elementi che sfondano=0` sul tab «Esplora» a 360 / 390 / 768, più un'istantanea d'occhio
 (la misura da sola non distingue "non sfonda" da "corretto").
+
+## Esito (21/10)
+
+- `ExplorePanel`: grid → `flex flex-col gap-4 sm:gap-8 w-full min-w-0`; `CatalogItem` root
+  `w-full min-w-0`.
+- Harness: `elementi che sfondano non gestiti = 0` su «Esplora» a 360/390/768/1024/1440.
