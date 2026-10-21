@@ -186,35 +186,66 @@ export default function Home() {
     addCatalog,
     updateCatalog,
     syncStatus,
-    syncProfileVectors,
   } = useProfiles(initialProfiles, initialActiveProfileId);
 
   const { presets, profileTemplates, categories } = usePresets();
 
   // Remove manual sessionStorage restoration since it's handled by useProfiles constructor/effect
 
-  // 1. DB Sync (No debounce)
+  // 1. DB Sync — UN SOLO SCRITTORE (ticket 12).
+  // Il debounce esiste perché ogni modifica di stato (compreso un passo di slider) non deve
+  // produrre un POST: prima una tirata di manopola ne faceva venti.
+  const configureTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const configureRunRef = useRef<() => Promise<{ userId?: string; configVersion?: string | number; error?: string } | undefined>>(async () => undefined);
+
+  configureRunRef.current = async () => {
+    try {
+      const data = await api.configure({
+        profiles: profilesToApiPayload(profiles),
+        activeProfileId,
+        stremioAuthKey: stremioAuth?.authKey || undefined,
+        email: stremioAuth?.email,
+        traktToken: traktToken ?? undefined,
+        traktRefreshToken: traktRefreshToken ?? undefined,
+      });
+      if (data?.configVersion) setConfigVersion(String(data.configVersion));
+      return data;
+    } catch (err) {
+      console.warn('DB Auto-save failed:', err);
+      return undefined;
+    }
+  };
+
+  /** Svuota la coda e salva subito. Lo usa «Installa in Stremio»: senza flush installerebbe la
+   *  versione precedente all'ultima modifica. */
+  const flushConfigure = useCallback(async () => {
+    if (configureTimerRef.current) {
+      clearTimeout(configureTimerRef.current);
+      configureTimerRef.current = null;
+    }
+    return configureRunRef.current();
+  }, []);
+
   useEffect(() => {
     if (isInitializing || !configDecoded || !userId || !stremioAuth) return;
-    
+
     // Skip if these are just the initial default profiles and we're still waiting for real data
     if (!initialProfiles && profiles.length === 1 && profiles[0].id === 'global' && profiles[0].raw_ui_state.selectedPresets.length === 0) {
       return;
     }
 
-    // Execute immediately on state change without delay
-    api.configure({
-      profiles: profilesToApiPayload(profiles),
-      activeProfileId,
-      stremioAuthKey: stremioAuth?.authKey || undefined,
-      email: stremioAuth?.email,
-      traktToken: traktToken ?? undefined,
-      traktRefreshToken: traktRefreshToken ?? undefined,
-    }).then(data => {
-      if (data.configVersion) setConfigVersion(String(data.configVersion));
-    }).catch(err => {
-      console.warn('DB Auto-save failed:', err);
-    });
+    if (configureTimerRef.current) clearTimeout(configureTimerRef.current);
+    configureTimerRef.current = setTimeout(() => {
+      configureTimerRef.current = null;
+      void configureRunRef.current();
+    }, 500);
+
+    return () => {
+      if (configureTimerRef.current) {
+        clearTimeout(configureTimerRef.current);
+        configureTimerRef.current = null;
+      }
+    };
   }, [profiles, activeProfileId, userId, isInitializing, configDecoded, stremioAuth, traktToken, traktRefreshToken, initialProfiles]);
 
   // 2. Delayed Stremio Addon Update (20s base + 1s increment per change)
@@ -239,9 +270,9 @@ export default function Home() {
       const manifestPath = configVersion
         ? `/${userId}/${configVersion}/manifest.json`
         : `/${userId}/manifest.json`;
-      const httpsManifestUrl = `https://${window.location.host}${manifestPath}`;
+      const manifestUrl = `${window.location.protocol}//${window.location.host}${manifestPath}`;
       
-      api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl)
+      api.stremioAddonUpdate(stremioAuth.authKey, manifestUrl)
         .then(() => {
           addonUpdateTimerRef.current = null;
           changeCountRef.current = 0;
@@ -284,8 +315,8 @@ export default function Home() {
           const manifestPath = data.configVersion
             ? `/${data.userId}/${data.configVersion}/manifest.json`
             : `/${data.userId}/manifest.json`;
-          const httpsManifestUrl = `https://${host}${manifestPath}`;
-          api.stremioAddonUpdate(stremioAuth.authKey, httpsManifestUrl).catch((err) => {
+          const manifestUrl = `${window.location.protocol}//${host}${manifestPath}`;
+          api.stremioAddonUpdate(stremioAuth.authKey, manifestUrl).catch((err) => {
             console.error('Auto-install addon during auto-config failed:', err);
           });
         }
@@ -400,9 +431,9 @@ export default function Home() {
           const manifestPath = data.configVersion
             ? `/${data.userId}/${data.configVersion}/manifest.json`
             : `/${data.userId}/manifest.json`;
-          const httpsManifestUrl = `https://${host}${manifestPath}`;
+          const manifestUrl = `${window.location.protocol}//${host}${manifestPath}`;
           try {
-            await api.stremioAddonUpdate(newStremioAuth.authKey, httpsManifestUrl);
+            await api.stremioAddonUpdate(newStremioAuth.authKey, manifestUrl);
           } catch (e) {
             console.warn('Auto-install addon failed:', e);
           }
@@ -551,7 +582,6 @@ export default function Home() {
                   onUpdateProfile={updateProfile}
                   onTemplateApplied={handleTemplateApplied}
                   syncStatus={syncStatus}
-                  syncProfileVectors={syncProfileVectors}
                   userId={userId ?? undefined}
                 />
               )}
@@ -576,6 +606,7 @@ export default function Home() {
                     setTraktExpiresAt(exp || null);
                   }}
                   onConfigSaved={handleConfigSaved}
+                  onFlushConfig={flushConfigure}
                 />
               )}
             </>

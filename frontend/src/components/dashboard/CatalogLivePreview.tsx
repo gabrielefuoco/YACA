@@ -75,7 +75,7 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto p-2 snap-x pb-4 custom-scrollbar">
+    <div className="flex gap-2 sm:gap-3 overflow-x-auto p-2 snap-x pb-4 hide-scrollbar">
       {items.map((meta) => {
         // Injected by StremioFormatter modified explicitly for our WebUI
         const matchPercent = meta._yacaMatch; 
@@ -90,7 +90,7 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
             className="snap-start"
             badge={
               matchPercent !== undefined && matchPercent !== null ? (
-                <div className="bg-primary/90 text-black text-xs font-bold px-2 py-0.5 rounded shadow-lg backdrop-blur-sm">
+                <div className="bg-primary/90 text-white text-xs font-bold px-2 py-0.5 rounded shadow-lg backdrop-blur-sm">
                   {matchPercent}% Match
                 </div>
               ) : null

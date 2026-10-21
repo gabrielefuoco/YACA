@@ -5,9 +5,8 @@ import { Profile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import {
-  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Save, Rocket
+  Loader2, CheckCircle2, Copy, ExternalLink, LogOut, Save, Rocket, User
 } from 'lucide-react';
-import { profilesToApiPayload } from '@/lib/utils';
 
 interface SettingsPageProps {
   profiles: Profile[];
@@ -24,6 +23,8 @@ interface SettingsPageProps {
   onDisconnectTrakt: () => void;
   onConnectTrakt: (token: string, refreshToken: string, expiresAt?: string | null) => void;
   onConfigSaved: (userId?: string) => void;
+  /** Svuota la coda dell'auto-save e restituisce l'ultima configurazione salvata. */
+  onFlushConfig?: () => Promise<any>;
 }
 
 export function SettingsPage({
@@ -32,8 +33,6 @@ export function SettingsPage({
   stremioEmail,
   stremioAuthKey,
   traktToken,
-  traktRefreshToken,
-  traktExpiresAt,
   configVersion,
   userId,
   onUpdateProfile,
@@ -41,6 +40,7 @@ export function SettingsPage({
   onDisconnectTrakt,
   onConnectTrakt,
   onConfigSaved,
+  onFlushConfig,
 }: SettingsPageProps) {
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
   const settings = activeProfile?.settings ?? {};
@@ -52,6 +52,10 @@ export function SettingsPage({
   const [copied, setCopied] = useState(false);
   const [traktModalOpen, setTraktModalOpen] = useState(false);
 
+  /**
+   * «Installa in Stremio». NON scrive la configurazione: l'unico scrittore è l'auto-save
+   * (ticket 12). Prima svuota la coda del debounce, poi installa l'ultima versione.
+   */
   const handleSave = async () => {
     setLoading(true);
     setError('');
@@ -67,50 +71,29 @@ export function SettingsPage({
       },
     });
 
-    await new Promise((r) => setTimeout(r, 50));
-
-    const updatedProfiles = profiles.map((p) =>
-      p.id === activeProfileId
-        ? {
-          ...p,
-          settings: {
-            ...p.settings,
-          },
-        }
-        : p
-    );
-
-    const apiProfiles = profilesToApiPayload(updatedProfiles);
-
     try {
-      const data = await api.configure({
-        profiles: apiProfiles,
-        activeProfileId,
-        stremioAuthKey,
-        traktToken,
-        traktRefreshToken,
-        traktExpiresAt,
-        configVersion,
-      });
+      const data = onFlushConfig ? await onFlushConfig() : undefined;
 
-      if (data.userId) {
-        onConfigSaved(data.userId);
+      if (data?.userId || userId) {
+        onConfigSaved(data?.userId ?? userId);
         const host = window.location.host;
-        const manifestPath = data.configVersion
-          ? `/${data.userId}/${data.configVersion}/manifest.json`
-          : `/${data.userId}/manifest.json`;
+        const effectiveUserId = data?.userId ?? userId;
+        const effectiveVersion = data?.configVersion ?? configVersion;
+        const manifestPath = effectiveVersion
+          ? `/${effectiveUserId}/${effectiveVersion}/manifest.json`
+          : `/${effectiveUserId}/manifest.json`;
         const computedInstallUrl = `stremio://${host}${manifestPath}`;
         setInstallUrl(computedInstallUrl);
         setSuccess(true);
 
         if (stremioAuthKey) {
-          const httpsManifestUrl = `https://${host}${manifestPath}`;
+          const manifestUrl = `${window.location.protocol}//${host}${manifestPath}`;
           try {
-            await api.stremioAddonUpdate(stremioAuthKey, httpsManifestUrl);
+            await api.stremioAddonUpdate(stremioAuthKey, manifestUrl);
           } catch { }
         }
       } else {
-        setError(data.error ?? 'Errore nella generazione della configurazione');
+        setError(data?.error ?? 'Errore nella generazione della configurazione');
       }
     } catch {
       setError('Errore di connessione');
@@ -140,14 +123,14 @@ export function SettingsPage({
             <Rocket className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-black text-marrow-deep">Salva & Installa</h3>
-            <p className="text-xs text-marrow-light font-medium hidden sm:block">Salva la configurazione e installa l&apos;addon su Stremio</p>
+            <h3 className="text-sm sm:text-base font-black text-marrow-deep">Installa in Stremio</h3>
+            <p className="text-xs text-marrow-light font-medium hidden sm:block">Salva subito le modifiche in coda e installa l&apos;addon su Stremio</p>
           </div>
         </div>
 
         {/* Save Button */}
         <Button
-          className="w-full py-2 sm:py-3 bg-primary text-white hover:bg-accent font-bold text-xs sm:text-sm"
+          className="w-full py-2 sm:py-3 min-h-[44px] bg-primary text-white hover:bg-accent font-bold text-xs sm:text-sm"
           size="lg"
           onClick={handleSave}
           disabled={loading}
@@ -157,8 +140,8 @@ export function SettingsPage({
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          <span className="hidden sm:inline">Salva Configurazione & Aggiorna Addon</span>
-          <span className="sm:hidden">Salva & Aggiorna</span>
+          <span className="hidden sm:inline">Installa in Stremio</span>
+          <span className="sm:hidden">Installa</span>
         </Button>
 
         {/* Error */}
@@ -173,7 +156,7 @@ export function SettingsPage({
           <div className="rounded-xl border border-success/20 bg-success-faded p-4 space-y-3">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-              <p className="text-sm font-bold text-success">Configurazione salvata con successo!</p>
+              <p className="text-sm font-bold text-success">Configurazione installata.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <Button
@@ -244,7 +227,7 @@ export function SettingsPage({
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <section className="rounded-xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-sm ">
         <div className="flex items-center gap-2 text-primary">
-          <span className="material-symbols-outlined text-lg">person</span>
+          <User className="h-4.5 w-4.5" />
           <h3 className="text-sm font-black uppercase tracking-widest">Account</h3>
         </div>
 

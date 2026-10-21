@@ -5,6 +5,7 @@ import { PosterImage } from '@/components/shared/PosterImage';
 import { cn } from '@/lib/utils';
 
 export type PosterCardSize = 'sm' | 'md' | 'fluid';
+export type PosterTitlePlacement = 'none' | 'below';
 
 export interface PosterCardProps {
   poster?: string | null;
@@ -13,8 +14,14 @@ export interface PosterCardProps {
   size?: PosterCardSize;
   className?: string;
   badge?: React.ReactNode;
-  overlay?: React.ReactNode;
-  showTitleOverlay?: boolean;
+  /** Controlli espliciti della card: un'icona da 44px in alto a destra, mai un velo sull'immagine. */
+  actions?: React.ReactNode;
+  /**
+   * Dove vive il titolo. `none` quando il poster lo porta già stampato dentro (o quando la card è
+   * un'anteprima di ciò che mostrerà Stremio); `below` quando l'utente deve riconoscere le sue cose.
+   */
+  titlePlacement?: PosterTitlePlacement;
+  selected?: boolean;
   onClick?: () => void;
   draggable?: boolean;
   onDragStart?: React.DragEventHandler<HTMLDivElement>;
@@ -33,8 +40,14 @@ const SIZE_VARIANTS: Record<PosterCardSize, string> = {
 
 /**
  * Primitiva condivisa per locandine 2:3.
- * Incapsula le tre taglie standard, fallback robusto tramite PosterImage
- * con gestione onError, raggio uniforme rounded-xl e overlay leggibile su touch.
+ *
+ * Contratto (D2-D4 di `.scratch/frontend-verifica/map.md`):
+ * - il tocco non fa nulla: nessun velo, nessuna azione nascosta. `onClick` esiste solo per la
+ *   selezione esplicita (libreria in modalità selezione);
+ * - le azioni sono un controllo visibile (`actions`, in alto a destra) — mai sopra l'immagine
+ *   sotto forma di velo;
+ * - il titolo ha una posizione dichiarata (`titlePlacement`) e non viene mai duplicato sopra un
+ *   poster che lo porta già stampato.
  */
 export function PosterCard({
   poster,
@@ -43,8 +56,9 @@ export function PosterCard({
   size = 'md',
   className,
   badge,
-  overlay,
-  showTitleOverlay = true,
+  actions,
+  titlePlacement = 'none',
+  selected = false,
   onClick,
   draggable = false,
   onDragStart,
@@ -59,41 +73,40 @@ export function PosterCard({
       onDrop={onDrop}
       onClick={onClick}
       className={cn(
-        'group/poster relative rounded-xl overflow-hidden transition-all duration-300 shadow-md shadow-marrow-light/10 select-none',
+        'group/poster relative select-none',
         // Cursore a manina solo se la card fa davvero qualcosa: una locandina di sola
         // anteprima non deve promettere un click che non esiste.
         onClick && 'cursor-pointer',
-        SIZE_VARIANTS[size],
         className
       )}
     >
-      <PosterImage
-        src={poster}
-        alt={title}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover/poster:scale-105"
-      />
+      <div
+        className={cn(
+          'relative rounded-xl overflow-hidden transition-all duration-300 shadow-md shadow-marrow-light/10',
+          SIZE_VARIANTS[size],
+          selected && 'ring-4 ring-primary ring-offset-1'
+        )}
+      >
+        <PosterImage
+          src={poster}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover/poster:scale-105"
+          showFallbackTitle={titlePlacement === 'none'}
+        />
 
-      {/* Badge opzionale in alto a sinistra (es. % Match DNA) */}
-      {badge && (
-        <div className="absolute top-2 left-2 z-20 pointer-events-none">
-          {badge}
+        {/* Badge opzionale in alto a sinistra (es. % Match DNA) */}
+        {badge && <div className="absolute top-2 left-2 z-20 pointer-events-none">{badge}</div>}
+
+        {/* Azioni esplicite: un solo controllo, sempre visibile, fuori dalla zona del titolo */}
+        {actions && <div className="absolute top-1.5 right-1.5 z-20 flex items-center gap-1">{actions}</div>}
+      </div>
+
+      {titlePlacement === 'below' && (
+        <div className="pt-1.5 px-0.5">
+          <p className="text-xs font-bold text-marrow-deep leading-tight line-clamp-2">{title}</p>
+          {year && <p className="text-xs text-marrow-light font-medium mt-0.5">{year}</p>}
         </div>
       )}
-
-      {/* Overlay con titolo/anno standard per preview e caroselli (visibile su hover e touch screen) */}
-      {showTitleOverlay && (
-        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-primary-dark/90 via-primary-dark/30 to-transparent p-3 opacity-0 group-hover/poster:opacity-100 pointer-coarse:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <p className="text-xs font-black text-white line-clamp-2 leading-tight drop-shadow-md uppercase tracking-tight">
-            {title}
-          </p>
-          {year && (
-            <p className="text-xs text-accent font-bold mt-0.5">{year}</p>
-          )}
-        </div>
-      )}
-
-      {/* Overlay interattivo personalizzato (es. pulsanti azioni o selezione) */}
-      {overlay}
     </div>
   );
 }

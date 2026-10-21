@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 export function Header({ children }: { children?: React.ReactNode }) {
   return (
-    <header className="flex items-center justify-between border-b border-solid border-primary/10 bg-background/80 px-3 sm:px-6 md:px-10 py-2 sm:py-3 sticky top-0 z-50 gap-2">
+    <header className="flex items-center justify-between border-b border-solid border-primary/10 bg-background/95 backdrop-blur-md px-3 sm:px-6 md:px-10 py-2 sm:py-3 sticky top-0 z-50 gap-2">
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         <div className="h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center">
           <Image src="/fiamma_yaca.png" alt="YACA Logo" width={32} height={32} className="object-contain" />

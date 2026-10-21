@@ -1,11 +1,10 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Profile, DNAItem, AnalyticsData, SyncStatus, CompiledVector, HeroCatalogUiGroup, EngineSliders, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { api } from '@/lib/api';
-import { X, BrainCircuit, Terminal, EyeOff, Sliders, RotateCcw } from 'lucide-react';
+import { BrainCircuit, Terminal, EyeOff, Sliders, RotateCcw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { DnaBarChart } from './DnaBarChart';
 import { formatDnaLabel, groupDnaItems, DnaCategoryGroup } from '@/lib/dnaChart';
 import { CatalogLivePreview } from './CatalogLivePreview';
@@ -56,12 +55,11 @@ interface DnaAndAiPanelProps {
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   syncStatus: SyncStatus & { onboardingCompleted?: boolean, lastSync?: string, manualDNA?: DNAItem[], suggestedDNA?: DNAItem[], compiledVectors?: CompiledVector & { idNames?: Record<string, string> } };
   userId?: string;
-  syncProfileVectors?: (profileId: string, userId: string) => Promise<unknown>;
 }
 
 // Removed redundant SyncStatus
 
-export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, syncProfileVectors }: DnaAndAiPanelProps) {
+export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: DnaAndAiPanelProps) {
   const activeUserId = userId || (typeof window !== 'undefined' ? localStorage.getItem('yaca_user_id') : null);
   const suggestedDNA: DNAItem[] = profile?.settings?.suggestedDNA ?? [];
   const dnaLookup = useMemo(() => {
@@ -78,7 +76,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [compiledVectors, setCompiledVectors] = useState<(CompiledVector & { idNames?: Record<string, string> }) | null>(null);
-  const [manualScore, setManualScore] = useState<number>(200);
   const [localIsSyncing, setLocalIsSyncing] = useState<boolean>(false);
 
   const activeSliders: EngineSliders = useMemo(() => {
@@ -90,6 +87,19 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
       canone: typeof raw?.canone === 'number' ? raw.canone : DEFAULT_ENGINE_SLIDERS.canone,
     };
   }, [profile?.settings?.sliders, profile?.sliders]);
+
+  // Durante il trascinamento la verità è locale: se leggessimo il profilo, la manopola tornerebbe
+  // indietro a ogni passo (il profilo si aggiorna solo al rilascio). Scrittura su onValueCommit.
+  const [draftSliders, setDraftSliders] = useState<EngineSliders | null>(null);
+  const shownSliders: EngineSliders = draftSliders ?? activeSliders;
+
+  useEffect(() => {
+    setDraftSliders(null);
+  }, [activeSliders]);
+
+  const handleSliderDraft = (key: keyof EngineSliders, value: number) => {
+    setDraftSliders({ ...shownSliders, [key]: value });
+  };
 
   const handleSliderChange = (key: keyof EngineSliders, value: number) => {
     const updatedSliders: EngineSliders = {
@@ -223,51 +233,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
     return () => clearInterval(interval);
   }, [localIsSyncing, fetchSyncStatus]);
 
+  // Ricarica i dati quando il sync FINISCE, non al mount: al mount ha già caricato l'effetto sopra.
+  // (Prima questo effetto partiva anche subito, perché localIsSyncing parte false: due GET.)
+  const wasSyncingRef = useRef(false);
   useEffect(() => {
-    if (!localIsSyncing) {
+    if (wasSyncingRef.current && !localIsSyncing) {
       fetchAnalytics();
     }
-  }, [fetchAnalytics, localIsSyncing]);
+    wasSyncingRef.current = localIsSyncing;
+  }, [localIsSyncing, fetchAnalytics]);
 
-  // Aggiornamento DNA manuale rimosso in favore del delta update automatico backend.
-
-
-
-  const handleAddManualDna = (item: DNAItem) => {
-    const currentManual = profile.settings?.manualDNA ?? [];
-    if (currentManual.some((d) => String(d.id) === String(item.id) && d.type === item.type)) return;
-    const updatedManual = [...currentManual, item];
-    onUpdateProfile(profile.id, {
-      settings: {
-        ...(profile.settings ?? {}),
-        manualDNA: updatedManual,
-      },
-    });
-  };
-
-  const handleRemoveManualDna = (item: DNAItem) => {
-    const currentManual = profile.settings?.manualDNA ?? [];
-    const updatedManual = currentManual.filter(
-      (d) => !(String(d.id) === String(item.id) && d.type === item.type)
-    );
-    onUpdateProfile(profile.id, {
-      settings: {
-        ...(profile.settings ?? {}),
-        manualDNA: updatedManual,
-      },
-    });
-  };
-
-  const handleSync = async () => {
-    if (!syncProfileVectors || !activeUserId) return;
-    try {
-      setLocalIsSyncing(true);
-      await syncProfileVectors(profile.id, activeUserId);
-    } catch (err) {
-      console.error('Errore durante la ricalcolazione dei vettori:', err);
-      setLocalIsSyncing(false);
-    }
-  };
+  // L'aggiornamento manuale del DNA è stato rimosso: il backend fa delta update automatico.
 
 
 
@@ -345,14 +321,14 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 <div className="flex items-center gap-2">
                   <Sliders className="h-5 w-5 text-primary" />
                   <span className="text-sm font-bold text-marrow-light">Manopole del Motore</span>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
                     Modulazione Attivazione
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleResetSliders}
-                  className="inline-flex items-center gap-1.5 text-xs font-mono text-marrow-light/50 hover:text-primary transition-colors cursor-pointer py-1 px-2 rounded hover:bg-marrow-light/5"
+                  className="inline-flex items-center gap-1.5 text-xs font-mono text-marrow-light/70 hover:text-primary transition-colors cursor-pointer px-2 rounded hover:bg-marrow-light/5 min-h-[44px] touch-manipulation"
                   title="Ripristina valori predefiniti"
                 >
                   <RotateCcw className="h-3 w-3" />
@@ -370,10 +346,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Ampiezza Esplorazione</span>
-                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(largo)</span>
+                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(largo)</span>
                   </div>
                   <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-                    {activeSliders.largo} mondi
+                    {shownSliders.largo} mondi
                   </span>
                 </div>
                 <div className="py-1">
@@ -381,16 +357,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                     min={2}
                     max={8}
                     step={1}
-                    value={[activeSliders.largo]}
-                    onValueChange={([val]) => handleSliderChange('largo', val)}
+                    value={[shownSliders.largo]}
+                    onValueChange={([val]) => handleSliderDraft('largo', val)}
+                    onValueCommit={([val]) => handleSliderChange('largo', val)}
                   />
                 </div>
-                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
                   <span>Resta nel tuo mondo (2)</span>
                   <span>Default (4)</span>
                   <span>Esci dal tuo mondo (8)</span>
                 </div>
-                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                <p className="text-xs text-marrow-light/40 leading-snug">
                   Modula il numero di mondi e caroselli da accendere (da 2 a 8). Allarga o concentra il portafoglio senza frammentare la coerenza.
                 </p>
               </div>
@@ -400,10 +377,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Distanza Mondi</span>
-                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(lontano)</span>
+                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(lontano)</span>
                   </div>
                   <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-                    {activeSliders.lontano === 0 ? 'Affini (0.0)' : activeSliders.lontano === 1 ? 'Diversi (1.0)' : activeSliders.lontano.toFixed(2)}
+                    {shownSliders.lontano === 0 ? 'Affini (0.0)' : shownSliders.lontano === 1 ? 'Diversi (1.0)' : shownSliders.lontano.toFixed(2)}
                   </span>
                 </div>
                 <div className="py-1">
@@ -411,15 +388,16 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                     min={0}
                     max={1}
                     step={0.05}
-                    value={[activeSliders.lontano]}
-                    onValueChange={([val]) => handleSliderChange('lontano', val)}
+                    value={[shownSliders.lontano]}
+                    onValueChange={([val]) => handleSliderDraft('lontano', val)}
+                    onValueCommit={([val]) => handleSliderChange('lontano', val)}
                   />
                 </div>
-                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
                   <span>Mondi più accesi (0.0)</span>
                   <span>Diversi per fascia/medium (1.0)</span>
                 </div>
-                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                <p className="text-xs text-marrow-light/40 leading-snug">
                   Privilegia mondi diversi per fascia di voti e alternanza film/serie. Modula l&apos;angolo di visuale senza tagliare fuori i titoli chiave.
                 </p>
               </div>
@@ -429,13 +407,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Tonalità</span>
-                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(cozy)</span>
+                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(cozy)</span>
                   </div>
                   <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-                    {activeSliders.cozy < -0.05
-                      ? `Impegnativo (${activeSliders.cozy.toFixed(1)})`
-                      : activeSliders.cozy > 0.05
-                      ? `Cozy (+${activeSliders.cozy.toFixed(1)})`
+                    {shownSliders.cozy < -0.05
+                      ? `Impegnativo (${shownSliders.cozy.toFixed(1)})`
+                      : shownSliders.cozy > 0.05
+                      ? `Cozy (+${shownSliders.cozy.toFixed(1)})`
                       : 'Neutro (0.0)'}
                   </span>
                 </div>
@@ -444,16 +422,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                     min={-1}
                     max={1}
                     step={0.1}
-                    value={[activeSliders.cozy]}
-                    onValueChange={([val]) => handleSliderChange('cozy', val)}
+                    value={[shownSliders.cozy]}
+                    onValueChange={([val]) => handleSliderDraft('cozy', val)}
+                    onValueCommit={([val]) => handleSliderChange('cozy', val)}
                   />
                 </div>
-                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
                   <span>Impegnativo (-1.0)</span>
                   <span>Neutro (0.0)</span>
                   <span>Cozy (+1.0)</span>
                 </div>
-                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                <p className="text-xs text-marrow-light/40 leading-snug">
                   Bilancia il peso verso documentari/storia/guerra (-1) o commedia/famiglia/animazione (+1). Circa un terzo dei titoli modula il tono.
                 </p>
               </div>
@@ -463,13 +442,13 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Fascia di Canone</span>
-                    <span className="ml-1 text-[11px] font-mono text-marrow-light/40">(canone)</span>
+                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(canone)</span>
                   </div>
                   <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-                    {activeSliders.canone < -0.05
-                      ? `Nicchia (${activeSliders.canone.toFixed(1)})`
-                      : activeSliders.canone > 0.05
-                      ? `Popolare (+${activeSliders.canone.toFixed(1)})`
+                    {shownSliders.canone < -0.05
+                      ? `Nicchia (${shownSliders.canone.toFixed(1)})`
+                      : shownSliders.canone > 0.05
+                      ? `Popolare (+${shownSliders.canone.toFixed(1)})`
                       : 'Storico (0.0)'}
                   </span>
                 </div>
@@ -478,16 +457,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId, sy
                     min={-1}
                     max={1}
                     step={0.1}
-                    value={[activeSliders.canone]}
-                    onValueChange={([val]) => handleSliderChange('canone', val)}
+                    value={[shownSliders.canone]}
+                    onValueChange={([val]) => handleSliderDraft('canone', val)}
+                    onValueCommit={([val]) => handleSliderChange('canone', val)}
                   />
                 </div>
-                <div className="flex justify-between items-center text-[10px] font-mono text-marrow-light/50">
+                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
                   <span>Nicchia (-1.0)</span>
                   <span>Come da storico (0.0)</span>
                   <span>Popolare (+1.0)</span>
                 </div>
-                <p className="text-[11px] text-marrow-light/40 leading-snug">
+                <p className="text-xs text-marrow-light/40 leading-snug">
                   Sposta la finestra attorno al canone dedotto dallo storico (DELTA_FASCIA calibrato a 1.0, ~2.7x di fattore). Modula senza escludere.
                 </p>
               </div>

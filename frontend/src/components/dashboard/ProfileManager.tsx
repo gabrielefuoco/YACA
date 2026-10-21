@@ -4,6 +4,7 @@ import { Profile, ProfileTemplate } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Baby, Smile, Pencil, Trash2, Check, SlidersHorizontal, PlusCircle, Plus } from 'lucide-react';
 
 interface ProfileManagerProps {
   profiles: Profile[];
@@ -100,23 +101,21 @@ export function ProfileManager({
                     : 'bg-white/50 text-marrow-deep hover:bg-white hover:text-blue-500 border-marrow-light/10'
                 }`}
               >
-                <span className="material-symbols-outlined text-[18px]">
-                  {editingProfile.settings?.kidsMode ? 'child_care' : 'child_friendly'}
-                </span>
+                {editingProfile.settings?.kidsMode ? <Baby className="h-[18px] w-[18px]" /> : <Smile className="h-[18px] w-[18px]" />}
               </button>
               <button 
                 onClick={startRename}
                 title="Rinomina profilo selezionato"
                 className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full bg-white/50 text-marrow-deep hover:bg-white hover:text-primary transition-colors border border-marrow-light/10 shadow-sm touch-manipulation"
               >
-                <span className="material-symbols-outlined text-[18px]">edit</span>
+                <Pencil className="h-[18px] w-[18px]" />
               </button>
               <button 
                 onClick={() => onRemove?.(editingProfile.id)}
                 title="Elimina profilo selezionato"
                 className="flex items-center justify-center size-11 min-w-[44px] min-h-[44px] rounded-full bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-colors border border-destructive/10 shadow-sm touch-manipulation"
               >
-                <span className="material-symbols-outlined text-[18px]">delete</span>
+                <Trash2 className="h-[18px] w-[18px]" />
               </button>
             </div>
           )}
@@ -125,7 +124,7 @@ export function ProfileManager({
             onClick={() => setIsDialogOpen(true)}
             className="flex items-center gap-1.5 sm:gap-2 cursor-pointer justify-center rounded-lg min-h-[44px] h-11 px-3.5 sm:px-4 bg-primary text-white text-xs sm:text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-primary/20 touch-manipulation"
           >
-            <span className="material-symbols-outlined text-xs sm:text-sm">add</span>
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Nuovo Profilo</span>
             <span className="sm:hidden">Nuovo</span>
           </button>
@@ -181,7 +180,7 @@ export function ProfileManager({
                     title="Imposta come Attivo"
                     className="mt-1 flex items-center justify-center gap-1 w-full max-w-[100px] bg-emerald-500 text-white py-1 rounded-full text-xs font-bold uppercase hover:bg-emerald-600 transition-colors shadow-sm min-h-[44px] h-11 touch-manipulation"
                   >
-                    <span className="material-symbols-outlined text-xs">check</span>
+                    <Check className="h-3 w-3" />
                     Attiva
                   </button>
                 ) : null}
@@ -195,7 +194,7 @@ export function ProfileManager({
       {editingProfile && (
         <div className="p-3 sm:p-4 rounded-xl border border-marrow-light/15 bg-white/50 backdrop-blur-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6">
           <div className="flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-primary text-xl">tune</span>
+            <SlidersHorizontal className="h-5 w-5 text-primary" />
             <div>
               <p className="text-xs sm:text-sm font-bold text-marrow-deep">
                 Selettori di Tipo: <span className="text-primary font-black">{editingProfile.name}</span>
@@ -236,11 +235,11 @@ export function ProfileManager({
 
       {/* Dialog per Creazione Nuovo Profilo */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="w-[92vw] sm:max-w-[600px] bg-background-light border-marrow-light/10 shadow-2xl p-0 overflow-hidden max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl">
-          <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+        <DialogContent className="w-[92vw] sm:max-w-[600px] p-0 overflow-hidden max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl">
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 hide-scrollbar">
             <DialogHeader>
               <DialogTitle className="text-xl font-black text-marrow-deep flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">add_circle</span>
+                <PlusCircle className="h-5 w-5 text-primary" />
                 Crea Nuovo Profilo
               </DialogTitle>
               <DialogDescription className="text-marrow-light/80">

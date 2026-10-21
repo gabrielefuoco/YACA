@@ -50,7 +50,7 @@ export function DnaBarChart({
 
   return (
     <div
-      className={`w-full rounded-2xl bg-marrow-light/5 border border-marrow-light/10 p-4 sm:p-6 flex flex-col gap-6 shadow-xs ${className}`}
+      className={`w-full flex flex-col gap-4 sm:gap-6 ${className}`}
       role="region"
       aria-label="Grafico a barre del DNA del profilo"
     >
@@ -76,7 +76,7 @@ export function DnaBarChart({
           return (
             <section
               key={group.id}
-              className={`flex flex-col gap-3 rounded-xl p-3 sm:p-4 bg-white/40 border border-marrow-light/5 shadow-2xs ${colSpanClass}`}
+              className={`flex flex-col gap-2.5 rounded-xl p-2.5 sm:p-4 bg-white/40 border border-marrow-light/5 ${colSpanClass}`}
               aria-label={group.title}
             >
               {/* Category Header */}
@@ -94,11 +94,11 @@ export function DnaBarChart({
                 {group.items.map((item) => (
                   <div
                     key={item.key}
-                    className="flex items-center gap-2 sm:gap-3 group/row transition-colors"
+                    className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-3 group/row transition-colors"
                   >
                     {/* Item Name (Truncated with native title tooltip) */}
                     <span
-                      className="w-24 sm:w-32 md:w-36 shrink-0 truncate text-xs sm:text-sm font-medium text-marrow-deep select-none cursor-default"
+                      className="flex-1 min-w-0 truncate text-xs sm:flex-none sm:w-32 md:w-36 text-sm font-medium text-marrow-deep select-none cursor-default"
                       title={item.name}
                     >
                       {item.name}
@@ -106,7 +106,7 @@ export function DnaBarChart({
 
                     {/* Horizontal Bar (CSS only, accessible progressbar) */}
                     <div
-                      className="flex-1 bg-marrow-light/10 h-2.5 sm:h-3 rounded-full overflow-hidden relative shadow-inner"
+                      className="order-last basis-full sm:order-none sm:basis-auto flex-1 bg-marrow-light/10 h-2.5 sm:h-3 rounded-full overflow-hidden relative shadow-inner"
                       role="progressbar"
                       aria-valuenow={item.percentage}
                       aria-valuemin={0}

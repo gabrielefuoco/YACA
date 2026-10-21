@@ -647,52 +647,13 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                     </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {block.manualItems.map((item, i) => (
-                        <PosterCard
-                          key={item.tmdbId}
-                          poster={item.poster}
-                          title={item.title}
-                          size="fluid"
-                          showTitleOverlay={false}
-                          overlay={
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/poster:opacity-100 pointer-coarse:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    if (i === 0) return;
-                                    const newItems = [...block.manualItems!];
-                                    const temp = newItems[i];
-                                    newItems[i] = newItems[i - 1];
-                                    newItems[i - 1] = temp;
-                                    updateBlock(block.id, { manualItems: newItems });
-                                  }}
-                                  disabled={i === 0}
-                                  aria-label="Sposta a sinistra"
-                                  className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors touch-manipulation"
-                                >
-                                  <ChevronLeft className="h-4 w-4" />
-                                </button>
-                                
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    if (i === block.manualItems!.length - 1) return;
-                                    const newItems = [...block.manualItems!];
-                                    const temp = newItems[i];
-                                    newItems[i] = newItems[i + 1];
-                                    newItems[i + 1] = temp;
-                                    updateBlock(block.id, { manualItems: newItems });
-                                  }}
-                                  disabled={i === block.manualItems!.length - 1}
-                                  aria-label="Sposta a destra"
-                                  className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/20 hover:bg-white/40 disabled:opacity-30 rounded-full text-white transition-colors touch-manipulation"
-                                >
-                                  <ChevronRight className="h-4 w-4" />
-                                </button>
-                              </div>
-                              
+                        <div key={item.tmdbId} className="flex flex-col gap-1">
+                          <PosterCard
+                            poster={item.poster}
+                            title={item.title}
+                            size="fluid"
+                            titlePlacement="below"
+                            actions={
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -701,14 +662,50 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                                     manualItems: block.manualItems!.filter((_, idx) => idx !== i)
                                   });
                                 }}
-                                aria-label="Rimuovi elemento"
-                                className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center bg-red-500/80 hover:bg-red-500 rounded-full text-white transition-colors touch-manipulation"
+                                aria-label={`Rimuovi ${item.title}`}
+                                className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-destructive transition-colors touch-manipulation"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
-                            </div>
-                          }
-                        />
+                            }
+                          />
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (i === 0) return;
+                                const newItems = [...block.manualItems!];
+                                const temp = newItems[i];
+                                newItems[i] = newItems[i - 1];
+                                newItems[i - 1] = temp;
+                                updateBlock(block.id, { manualItems: newItems });
+                              }}
+                              disabled={i === 0}
+                              aria-label="Sposta a sinistra"
+                              className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-marrow-deep bg-marrow-light/10 hover:bg-marrow-light/20 disabled:opacity-30 transition-colors touch-manipulation"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (i === block.manualItems!.length - 1) return;
+                                const newItems = [...block.manualItems!];
+                                const temp = newItems[i];
+                                newItems[i] = newItems[i + 1];
+                                newItems[i + 1] = temp;
+                                updateBlock(block.id, { manualItems: newItems });
+                              }}
+                              disabled={i === block.manualItems!.length - 1}
+                              aria-label="Sposta a destra"
+                              className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-marrow-deep bg-marrow-light/10 hover:bg-marrow-light/20 disabled:opacity-30 transition-colors touch-manipulation"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -933,7 +930,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                       title={item.title}
                       size="fluid"
                       className="max-w-[120px]"
-                      showTitleOverlay={false}
+                      titlePlacement="none"
                     />
                     <span className="text-xs font-bold text-marrow-deep line-clamp-2 leading-tight">{item.title}</span>
                   </div>

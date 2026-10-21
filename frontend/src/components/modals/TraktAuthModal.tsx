@@ -110,10 +110,10 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="w-[92vw] sm:max-w-md bg-white text-marrow-deep border-slate-200 rounded-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="w-[92vw] sm:max-w-md text-marrow-deep rounded-2xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20 text-red-400">🎬</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10 text-destructive">🎬</span>
             <span className="text-xl font-semibold">Connetti Trakt</span>
           </DialogTitle>
           <DialogDescription>
@@ -140,13 +140,13 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
 
         {!loading && !success && userCode && (
           <div className="space-y-5">
-            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-red-900/10 border border-slate-200 p-4 sm:p-6 text-center overflow-hidden">
+            <div className="relative rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 border border-marrow-light/20 p-4 sm:p-6 text-center overflow-hidden">
               <p className="text-xs text-marrow-light/70 mb-3 uppercase tracking-wider font-medium">Il tuo codice di attivazione</p>
               <p className="text-2xl sm:text-4xl font-mono font-bold tracking-[0.3em] text-primary break-all">{userCode}</p>
               <div className="mt-4 flex items-center justify-center gap-2">
                 <div className="h-1.5 flex-1 max-w-[200px] rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-red-600 transition-all duration-1000"
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-1000"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -156,7 +156,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
               </div>
             </div>
 
-            <div className="rounded-xl bg-background-light border border-slate-200 p-4">
+            <div className="rounded-xl bg-background-light border border-marrow-light/20 p-4">
               <ol className="space-y-3 text-sm text-marrow-light/70">
                 <li className="flex gap-3 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">1</span>
@@ -174,7 +174,7 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
             </div>
 
             <a href={verificationUrl} target="_blank" rel="noopener noreferrer">
-              <Button className="w-full bg-red-600 text-white hover:bg-red-700 border-0 min-h-[44px] touch-manipulation" variant="default">
+              <Button className="w-full bg-destructive text-white hover:bg-primary-dark border-0 min-h-[44px] touch-manipulation" variant="default">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Apri Trakt.tv
               </Button>
@@ -190,8 +190,8 @@ export function TraktAuthModal({ open, onClose, onSuccess }: TraktAuthModalProps
         )}
 
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-3 mt-4">
-            <p className="text-xs text-red-600 text-center">{error}</p>
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 mt-4">
+            <p className="text-xs text-destructive text-center">{error}</p>
           </div>
         )}
 

@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2, Search, Check, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PosterCard } from '@/components/shared/PosterCard';
 
@@ -95,7 +94,7 @@ export function AutocompleteSearch({
               </div>
               
               {results.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
                   {results.map((item) => {
                     const isAdded = existingItems.some(i => String(i.tmdbId || i.id) === String(item.id) || String(i._id) === `tmdb:${item.id}` || String(i._id) === `tmdb:${item.media_type}:${item.id}`);
                     return (
@@ -104,19 +103,17 @@ export function AutocompleteSearch({
                         poster={item.poster}
                         title={item.name}
                         size="sm"
-                        showTitleOverlay={false}
-                        overlay={
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/poster:opacity-100 pointer-coarse:opacity-100 transition-opacity flex items-center justify-center p-2">
-                            <Button
-                              size="sm"
-                              variant={isAdded ? "secondary" : "default"}
-                              className="h-11 min-h-[44px] px-3 text-xs font-bold touch-manipulation"
-                              onClick={() => !isAdded && handleSelect(item)}
-                              disabled={isAdded}
-                            >
-                              {isAdded ? 'Aggiunto' : '+ Aggiungi'}
-                            </Button>
-                          </div>
+                        titlePlacement="below"
+                        actions={
+                          <button
+                            type="button"
+                            disabled={isAdded}
+                            onClick={() => !isAdded && handleSelect(item)}
+                            aria-label={isAdded ? `${item.name} è già in lista` : `Aggiungi ${item.name}`}
+                            className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-primary transition-colors touch-manipulation disabled:bg-emerald-700 disabled:opacity-100"
+                          >
+                            {isAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          </button>
                         }
                       />
                     );

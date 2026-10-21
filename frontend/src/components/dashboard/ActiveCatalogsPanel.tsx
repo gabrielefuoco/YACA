@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Profile, Catalog, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
-import { Layers } from 'lucide-react';
+import { Layers, Info, EyeOff } from 'lucide-react';
 import { isCatalogConformant, getIncompatibilityReason } from '@/lib/catalogKind';
 
 interface ActiveCatalogsPanelProps {
@@ -99,7 +99,7 @@ export function ActiveCatalogsPanel({
         
         {catalogs.length > 1 && (
            <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/40 rounded-xl sm:rounded-2xl border border-marrow-light/10 shadow-sm shrink-0">
-             <span className="material-symbols-outlined text-primary text-xs sm:text-sm">info</span>
+             <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0" />
              <p className="text-xs text-marrow-light font-black uppercase tracking-wider">
                <span className="sm:hidden">Frecce per riordinare</span>
                <span className="hidden sm:inline">Trascina per riordinare</span>
@@ -110,7 +110,7 @@ export function ActiveCatalogsPanel({
 
       {hiddenCatalogsCount > 0 && (
         <div className="p-3 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3 text-amber-900 shadow-sm animate-in fade-in duration-200">
-          <span className="material-symbols-outlined text-amber-600 text-lg sm:text-xl shrink-0">visibility_off</span>
+          <EyeOff className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 shrink-0" />
           <div className="flex flex-col">
             <p className="text-xs sm:text-sm font-bold">
               {hiddenCatalogsCount} {hiddenCatalogsCount === 1 ? 'catalogo attivo è nascosto' : 'cataloghi attivi sono nascosti'} nel manifest di Stremio

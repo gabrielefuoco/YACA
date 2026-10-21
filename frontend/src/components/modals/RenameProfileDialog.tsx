@@ -3,6 +3,7 @@ import * as React from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Pencil } from "lucide-react"
 
 interface RenameProfileDialogProps {
   open: boolean
@@ -32,10 +33,10 @@ export function RenameProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[92vw] sm:max-w-[425px] glass-panel border-marrow-light/10 max-h-[90dvh] flex flex-col rounded-2xl p-4 sm:p-6">
+      <DialogContent className="w-[92vw] sm:max-w-[425px] max-h-[90dvh] flex flex-col rounded-2xl p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">edit</span>
+            <Pencil className="h-5 w-5 text-primary" />
             Rinomina Profilo
           </DialogTitle>
         </DialogHeader>

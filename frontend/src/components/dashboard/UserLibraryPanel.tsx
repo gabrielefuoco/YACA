@@ -5,7 +5,9 @@ import { AutocompleteSearch } from '@/components/shared/AutocompleteSearch';
 import { PosterCard } from '@/components/shared/PosterCard';
 import { Button } from '@/components/ui/button';
 import { generateId } from '@/lib/utils';
-import { Loader2, Library, CheckSquare, Square, Trash2, ArrowUpDown, RefreshCw, EyeOff } from 'lucide-react';
+import { Loader2, Library, CheckSquare, Square, ArrowUpDown, RefreshCw, EyeOff, MoreHorizontal, ChevronLeft, ChevronRight, ListOrdered, Trash2 } from 'lucide-react';
+import { ActionSheet } from '@/components/ui/action-sheet';
+import { useFinePointer } from '@/hooks/useFinePointer';
 import { MyList, Profile } from '@/types';
 
 import { SyncLibraryModal } from '@/components/modals/SyncLibraryModal';
@@ -27,6 +29,9 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isRemovingWatched, setIsRemovingWatched] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [sheetItem, setSheetItem] = useState<any | null>(null);
+  const finePointer = useFinePointer();
   const [libraryOrder, setLibraryOrder] = useState<string[]>(profile?.raw_ui_state?.libraryOrder ?? []);
 
   useEffect(() => {
@@ -140,6 +145,16 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
     }
   };
 
+  /** Sposta di una posizione in modalità «Ordina»: stessa persistenza del drag. */
+  const moveItem = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= sortedItems.length) return;
+    const reordered = [...sortedItems];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(target, 0, moved);
+    handleReorder(reordered);
+  };
+
   const handleReorder = async (reorderedItems: any[]) => {
     const previousItems = items;
     const previousOrder = libraryOrder;
@@ -216,9 +231,9 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
   const orderMap = new Map(effectiveLibraryOrder.map((id, i) => [id, i]));
 
   const sortedItems = [...uniqueItems].sort((a, b) => {
-    if (sortMode === 'name_asc') return (a.name || '').localeCompare(b.name || '');
-    if (sortMode === 'date_asc') return new Date(a._ctime).getTime() - new Date(b._ctime).getTime();
-    if (sortMode === 'date_desc') return new Date(b._ctime).getTime() - new Date(a._ctime).getTime();
+    if (!isReorderMode && sortMode === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+    if (!isReorderMode && sortMode === 'date_asc') return new Date(a._ctime).getTime() - new Date(b._ctime).getTime();
+    if (!isReorderMode && sortMode === 'date_desc') return new Date(b._ctime).getTime() - new Date(a._ctime).getTime();
 
     const aId = a._id || a.itemId;
     const bId = b._id || b.itemId;
@@ -281,7 +296,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
           <p className="text-xs text-marrow-light mt-1">Gestisci i contenuti aggiunti manualmente</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center">
           <Button
             variant="outline"
             size="sm"
@@ -328,6 +343,19 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
           >
             {isSelectionMode ? 'Annulla Selezione' : 'Seleziona Elementi'}
           </Button>
+          <Button
+            variant={isReorderMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setIsReorderMode(!isReorderMode);
+              if (isSelectionMode) setIsSelectionMode(false);
+              setSelectedIds(new Set());
+            }}
+            className={`text-xs font-bold min-h-[44px] h-11 touch-manipulation col-span-2 sm:col-span-1 ${isReorderMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
+          >
+            <ListOrdered className="h-4 w-4 mr-1" />
+            {isReorderMode ? 'Fine ordine' : 'Ordina'}
+          </Button>
         </div>
       </div>
 
@@ -353,7 +381,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
       </div>
 
       {isSelectionMode && selectedIds.size > 0 && (
-        <div className="sticky top-4 z-20 flex items-center justify-between glass-panel bg-primary/10 border-primary/20 p-4 rounded-xl shadow-lg">
+        <div className="sticky top-16 sm:top-20 z-30 flex flex-wrap items-center justify-between gap-2 glass-panel bg-primary/10 border-primary/20 p-4 rounded-xl shadow-lg">
           <span className="font-bold text-primary">{selectedIds.size} elementi selezionati</span>
           <Button size="sm" onClick={handleCreateCatalog} className="font-bold text-xs">
             Crea Catalogo da Selezione
@@ -370,65 +398,72 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
           {sortedItems.map((item, index) => {
             const isSelected = selectedIds.has(item._id);
             return (
-              <PosterCard
-                key={item._id}
-                poster={resolvePosterSrc(item.poster)}
-                title={item.name}
-                size="fluid"
-                draggable={!isSelectionMode}
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => {
-                  if (!isSelectionMode) e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  handleDrop(index);
-                }}
-                onClick={() => isSelectionMode && toggleSelection(item._id)}
-                className={`
-                  ${!isSelectionMode ? 'cursor-grab active:cursor-grabbing hover:-translate-y-1 hover:shadow-xl' : ''}
-                  ${isSelected ? 'ring-4 ring-primary shadow-lg shadow-primary/20 scale-[0.98]' : 'shadow-md'}
-                `}
-                overlay={
-                  isSelectionMode ? (
-                    <div className="absolute inset-0 bg-black/20 flex p-2 items-start justify-end pointer-events-none">
-                      {isSelected ? (
-                        <CheckSquare className="h-6 w-6 text-primary drop-shadow-md bg-white rounded-md" />
-                      ) : (
-                        <Square className="h-6 w-6 text-white drop-shadow-md" />
-                      )}
-                    </div>
-                  ) : (
-                    <>
+              <div key={item._id} className="flex flex-col gap-1 min-w-0">
+                <PosterCard
+                  poster={resolvePosterSrc(item.poster)}
+                  title={item.name}
+                  size="fluid"
+                  titlePlacement="below"
+                  selected={isSelected}
+                  draggable={!isSelectionMode && !isReorderMode && finePointer}
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => {
+                    if (!isSelectionMode && !isReorderMode && finePointer) e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDrop(index);
+                  }}
+                  onClick={() => isSelectionMode && toggleSelection(item._id)}
+                  actions={
+                    !isSelectionMode && !isReorderMode ? (
                       <button
                         type="button"
-                        onClick={(e) => handleRemove(item._id, e)}
-                        aria-label={`Rimuovi ${item.name}`}
-                        className="sm:hidden absolute top-0 right-0 z-10 size-11 flex items-center justify-center touch-manipulation"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSheetItem(item);
+                        }}
+                        aria-label={`Azioni per ${item.name}`}
+                        className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-primary transition-colors touch-manipulation"
                       >
-                        <span className="size-7 rounded-full bg-black/70 text-white/90 active:bg-destructive active:text-white flex items-center justify-center shadow-md">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </span>
+                        <MoreHorizontal className="h-4 w-4" />
                       </button>
-                      {/* Il velo scuro resta un'affordance da mouse: forzarlo visibile sui touch
-                          (pointer-coarse) coprirebbe ogni locandina di nero su tablet. Sui telefoni
-                          il cestino in alto a destra è già sempre raggiungibile. */}
-                      <div className="hidden sm:flex absolute inset-0 bg-black/60 opacity-0 group-hover/poster:opacity-100 transition-opacity items-center justify-center p-2">
-                        <div className="text-center w-full">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="h-11 min-h-[44px] px-3 text-xs font-bold touch-manipulation"
-                            onClick={(e) => handleRemove(item._id, e)}
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" /> Rimuovi
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  )
-                }
-              />
+                    ) : isSelectionMode ? (
+                      <span className="pointer-events-none size-8 rounded-md bg-white/90 flex items-center justify-center shadow-md">
+                        {isSelected ? (
+                          <CheckSquare className="h-5 w-5 text-primary" />
+                        ) : (
+                          <Square className="h-5 w-5 text-marrow-deep/60" />
+                        )}
+                      </span>
+                    ) : null
+                  }
+                />
+
+                {/* Riordino esplicito: le frecce compaiono solo in modalità «Ordina». */}
+                {isReorderMode && (
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, -1)}
+                      disabled={index === 0}
+                      aria-label={`Sposta indietro ${item.name}`}
+                      className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-marrow-deep bg-marrow-light/10 hover:bg-marrow-light/20 disabled:opacity-30 transition-colors touch-manipulation"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveItem(index, 1)}
+                      disabled={index === sortedItems.length - 1}
+                      aria-label={`Sposta avanti ${item.name}`}
+                      className="size-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-marrow-deep bg-marrow-light/10 hover:bg-marrow-light/20 disabled:opacity-30 transition-colors touch-manipulation"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             );
           })}
           
@@ -440,6 +475,32 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
           )}
         </div>
       )}
+
+      {isReorderMode && (
+        <p className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
+          Modalità ordine: usa le frecce sotto ogni locandina. L&apos;ordine automatico è sospeso.
+        </p>
+      )}
+
+      <ActionSheet
+        open={Boolean(sheetItem)}
+        onOpenChange={(open) => {
+          if (!open) setSheetItem(null);
+        }}
+        title={sheetItem?.name ?? ''}
+        description="Azioni sull'elemento"
+        items={[
+          {
+            label: 'Rimuovi dalla libreria',
+            icon: <Trash2 className="h-4 w-4" />,
+            destructive: true,
+            onSelect: () => {
+              if (sheetItem) handleRemove(sheetItem._id);
+              setSheetItem(null);
+            },
+          },
+        ]}
+      />
 
       <SyncLibraryModal
         open={isSyncModalOpen}

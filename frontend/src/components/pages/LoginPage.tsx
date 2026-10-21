@@ -231,8 +231,8 @@ export function LoginPage({ onComplete }: LoginPageProps) {
 
           {traktToken && (
             <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <p className="text-sm text-emerald-400 font-medium">Trakt connesso!</p>
+              <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
+              <p className="text-sm text-emerald-700 font-medium">Trakt connesso!</p>
               <Button variant="ghost" size="sm" className="ml-auto min-h-[44px] h-11 touch-manipulation" onClick={() => handleComplete(traktToken, traktRefreshToken, traktExpiresAt)}>
                 Continua <ChevronRight className="h-3 w-3 ml-1" />
               </Button>

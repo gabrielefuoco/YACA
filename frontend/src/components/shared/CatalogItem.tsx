@@ -4,7 +4,8 @@ import { CatalogCardData } from '@/types';
 import { countCatalogFilters } from '@/lib/utils';
 import { getFrontendCatalogKind } from '@/lib/catalogKind';
 import { PosterRow } from '@/components/shared/PosterRow';
-import { GripVertical, Trash2, Copy, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
+import { GripVertical, Trash2, Copy, Pencil, ChevronUp, ChevronDown, Sparkles, List, Wand2, EyeOff, Film, Tv } from 'lucide-react';
+import { useFinePointer } from '@/hooks/useFinePointer';
 
 interface CatalogItemProps {
   catalog: CatalogCardData;
@@ -50,26 +51,27 @@ export function CatalogItem({
   onDragEnd,
 }: CatalogItemProps) {
 
+  const finePointer = useFinePointer();
   const filterCount = countCatalogFilters(catalog);
   const mediaSet = getFrontendCatalogKind(catalog).mediaSet;
 
   const isPreset = catalog.source === 'preset' || !catalog.source;
   const sourceLabel = catalog.source === 'preset' ? 'Preset' : (catalog.source === 'mylist' ? 'Mia Lista' : 'Creato');
-  const sourceIcon = catalog.source === 'preset' ? 'auto_awesome' : (catalog.source === 'mylist' ? 'list' : 'auto_fix');
+  const SourceIcon = catalog.source === 'preset' ? Sparkles : (catalog.source === 'mylist' ? List : Wand2);
 
   return (
     <div
-      draggable={Boolean(onDragStart)}
+      draggable={Boolean(onDragStart) && finePointer}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      className={`group relative flex flex-col glass-card transition-all p-3 sm:p-5 ${
+      className={`group relative flex flex-col w-full min-w-0 glass-card transition-all p-3 sm:p-5 ${
         isDragging
           ? 'opacity-30 scale-95'
           : isHiddenBySelectors
-          ? 'border-2 border-dashed border-amber-500/40 bg-slate-100/70 opacity-60 hover:opacity-90 transition-opacity'
+          ? 'border-2 border-dashed border-amber-500/40 bg-marrow-light/10 opacity-60 hover:opacity-90 transition-opacity'
           : ''
       } ${onDragStart ? 'sm:cursor-grab sm:active:cursor-grabbing' : ''}`}
     >
@@ -120,20 +122,20 @@ export function CatalogItem({
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
               {catalog.source && (
                 <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
-                  <span className="material-symbols-outlined text-xs shrink-0">{sourceIcon}</span> 
+                  <SourceIcon className="h-3 w-3 shrink-0" />
                   <span className="truncate">{sourceLabel}</span>
                 </span>
               )}
               {badges}
               {(catalog.isAnime || (catalog.filters as any)?.isAnime) && (
-                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-wider border border-amber-500/20">
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 text-xs font-black uppercase tracking-wider border border-amber-500/20">
                   <span>🏮</span>
                   <span>Solo anime</span>
                 </span>
               )}
               {isHiddenBySelectors && (
                 <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-800 text-xs font-black uppercase tracking-wider border border-amber-500/30">
-                  <span className="material-symbols-outlined text-xs shrink-0">visibility_off</span>
+                  <EyeOff className="h-3 w-3 shrink-0" />
                   <span>{hiddenReason || 'Nascosto dai selettori'}</span>
                 </span>
               )}
@@ -189,7 +191,7 @@ export function CatalogItem({
             {mediaSet.map((media, i) => (
               <span key={media} className="flex items-center gap-1 sm:gap-1.5">
                 {i > 0 && <span className="text-marrow-light/30">/</span>}
-                <span className="material-symbols-outlined text-xs sm:text-sm">{media === 'film' ? 'movie' : 'tv'}</span>
+                {media === 'film' ? <Film className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <Tv className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                 <span className="uppercase tracking-tight">{media === 'film' ? 'Film' : 'Serie'}</span>
               </span>
             ))}

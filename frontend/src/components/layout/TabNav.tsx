@@ -21,7 +21,7 @@ export function TabNav({ activeTab, onTabChange }: TabNavProps) {
           className={cn(
             'text-xs sm:text-sm transition-all duration-300 flex items-center justify-center px-3.5 sm:px-4 font-black uppercase tracking-wider whitespace-nowrap min-h-[44px] h-11 touch-manipulation',
             activeTab === id
-              ? 'bg-primary text-white rounded-full shadow-lg shadow-primary/30 scale-105'
+              ? 'bg-primary text-white rounded-full shadow-lg shadow-primary/30'
               : 'text-marrow-light hover:text-primary hover:bg-primary/5 rounded-full'
           )}
         >

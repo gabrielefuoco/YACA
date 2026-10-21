@@ -37,7 +37,7 @@ export function SyncLibraryModal({
   
   return (
     <Dialog open={open} onOpenChange={isProcessing ? undefined : onOpenChange}>
-      <DialogContent className="w-[92vw] sm:max-w-[425px] glass-panel border-marrow-light/10 max-h-[90dvh] flex flex-col p-4 sm:p-6 rounded-2xl">
+      <DialogContent className="w-[92vw] sm:max-w-[425px] max-h-[90dvh] flex flex-col p-4 sm:p-6 rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />

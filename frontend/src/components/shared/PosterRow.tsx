@@ -60,7 +60,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
         </div>
       )}
       {!loading && items.length > 0 && (
-        <div className="flex max-w-full gap-2 overflow-x-auto pb-4 hide-scrollbar">
+        <div className="flex max-w-full gap-2 sm:gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
           {items.map((item) => (
             <PosterCard
               key={item.id}
@@ -68,6 +68,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
               title={item.title}
               year={item.year}
               size="md"
+              className="snap-start"
             />
           ))}
         </div>

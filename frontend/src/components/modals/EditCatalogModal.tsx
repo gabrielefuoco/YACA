@@ -30,7 +30,7 @@ export function EditCatalogModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8 scrollbar-hide bg-white/10 relative">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 md:p-8 hide-scrollbar bg-white/10 relative">
           <CreatorPanel
             editCatalog={catalog}
             onAddCatalog={(updatedCatalog) => {

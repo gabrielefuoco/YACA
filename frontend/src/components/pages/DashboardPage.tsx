@@ -9,6 +9,7 @@ import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { RenameProfileDialog } from '@/components/modals/RenameProfileDialog';
 import { EditCatalogModal } from '@/components/modals/EditCatalogModal';
 import { generateId } from '@/lib/utils';
+import { LayoutGrid, Compass, Wand2, Dna, Library } from 'lucide-react';
 
 import { UserLibraryPanel } from '@/components/dashboard/UserLibraryPanel';
 
@@ -38,7 +39,6 @@ interface DashboardPageProps {
   onUpdateProfile: (id: string, updates: Partial<Profile>) => void;
   onTemplateApplied?: (profileId: string, selectedPresets: string[], template?: ProfileTemplate) => Promise<void> | void;
   syncStatus: any;
-  syncProfileVectors: (profileId: string, userId: string) => Promise<any>;
   userId?: string;
 }
 
@@ -66,7 +66,6 @@ export function DashboardPage({
   onUpdateProfile,
   onTemplateApplied,
   syncStatus,
-  syncProfileVectors,
   userId,
 }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('active');
@@ -149,11 +148,11 @@ export function DashboardPage({
   }));
 
   const tabsItems = [
-    { id: 'active' as const, label: 'Cataloghi Attivi', icon: 'grid_view' },
-    { id: 'explore' as const, label: 'Esplora', icon: 'explore' },
-    { id: 'creator' as const, label: 'Creatore', icon: 'auto_fix' },
-    { id: 'dna' as const, label: 'DNA & AI Lab', icon: 'biotech' },
-    { id: 'library' as const, label: 'Libreria Utente', icon: 'library_books' },
+    { id: 'active' as const, label: 'Cataloghi Attivi', icon: LayoutGrid },
+    { id: 'explore' as const, label: 'Esplora', icon: Compass },
+    { id: 'creator' as const, label: 'Creatore', icon: Wand2 },
+    { id: 'dna' as const, label: 'DNA & AI Lab', icon: Dna },
+    { id: 'library' as const, label: 'Libreria Utente', icon: Library },
   ];
 
   return (
@@ -196,14 +195,14 @@ export function DashboardPage({
                 setActiveTab(tab.id);
               }}
               className={`
-                flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 sm:whitespace-nowrap min-h-[44px] sm:min-h-0 touch-manipulation last:col-span-2 min-[420px]:last:col-span-1
+                flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 sm:whitespace-nowrap min-h-[44px] lg:min-h-0 touch-manipulation last:col-span-2 min-[420px]:last:col-span-1
                 ${activeTab === tab.id
-                  ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-105'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/40'
                   : 'text-marrow-light hover:text-primary hover:bg-primary/5'
                 }
               `}
             >
-              <span className="material-symbols-outlined text-base sm:text-lg">{tab.icon}</span>
+              <tab.icon className="h-4 w-4 sm:h-[18px] sm:w-[18px] shrink-0" />
               <span className="uppercase tracking-wider leading-tight text-center">{tab.label}</span>
             </button>
           ))}
@@ -258,7 +257,6 @@ export function DashboardPage({
                 onUpdateProfile={onUpdateProfile}
                 syncStatus={syncStatus}
                 userId={userId}
-                syncProfileVectors={syncProfileVectors}
               />
             )}
 

@@ -75,13 +75,13 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
         <Button variant="ghost" size="icon" className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex touch-manipulation" onClick={() => scroll('left')}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div ref={scrollRef} className="flex-1 flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 hide-scrollbar scroll-smooth">
+        <div ref={scrollRef} className="flex-1 flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 hide-scrollbar scroll-smooth mask-[linear-gradient(to_right,black_88%,transparent_100%)]">
           {allCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`shrink-0 rounded-full inline-flex items-center justify-center min-h-[44px] px-4 sm:px-5 py-3.5 sm:py-3 text-xs sm:text-sm font-bold transition-all shadow-sm touch-manipulation ${selectedCategory === cat
-                ? 'bg-primary text-white shadow-xl shadow-primary/40 scale-105 ring-2 ring-primary/20 ring-offset-1'
+                ? 'bg-primary text-white shadow-xl shadow-primary/40 ring-2 ring-primary/20 ring-offset-1'
                 : 'bg-white/80 text-marrow-deep hover:text-primary hover:bg-white transition-colors border border-marrow-light/10'
                 }`}
             >
@@ -113,7 +113,7 @@ export function ExplorePanel({ presets, categories, profile, customCatalogs = []
       )}
 
       {/* Preset grid — always shows posters */}
-      <div className="grid gap-4 sm:gap-8">
+      <div className="flex flex-col gap-4 sm:gap-8 w-full min-w-0">
         {filtered.length === 0 && (
           <div className="py-8 text-center text-sm text-marrow-faded italic">
             Nessun catalogo trovato
