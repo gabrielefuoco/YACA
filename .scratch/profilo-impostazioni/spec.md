@@ -28,10 +28,9 @@ gli altri, e nel Creatore non esiste più la scelta del badge episodi.
 
 ## Not yet specified
 
-- Se i `typeSelectors.film` / `.serie` (che esistono nel modello, `isCatalogConformant` li legge, ma
-  nessuna UI li espone) debbano diventare parte del dialog o sparire.
-- Se il «Solo anime» del Creatore (flag del singolo catalogo) e il filtro anime del profilo debbano
-  chiamarsi diversamente: oggi hanno lo stesso nome e due effetti diversi.
+- Niente di aperto su questo fronte: le due domande che erano qui (il doppio «Solo anime» e i
+  `typeSelectors.film/serie`) sono state chiuse dal ticket 03 — il primo con due nomi distinti, il
+  secondo togliendo i campi dal modello, perché `isCatalogConformant` legge solo `anime`.
 
 ## Out of scope
 

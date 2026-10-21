@@ -127,7 +127,7 @@ export function DashboardPage({
       },
       settings: {
         ...newProfile.settings,
-        typeSelectors: template.typeSelectors || { film: false, serie: false, anime: null },
+        typeSelectors: template.typeSelectors || { anime: null },
       },
     });
 

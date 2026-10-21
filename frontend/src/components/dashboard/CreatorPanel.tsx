@@ -986,18 +986,18 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
         <div className="flex flex-col sm:flex-row sm:items-center items-start justify-between gap-1 sm:gap-3 pt-2 border-t border-marrow-light/10 mt-2">
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span className="text-base select-none">🏮</span>
-            <span className="text-marrow-deep font-black uppercase tracking-wide text-xs whitespace-nowrap">Filtro Anime</span>
+            <span className="text-marrow-deep font-black uppercase tracking-wide text-xs whitespace-nowrap">Catalogo Anime</span>
             <span className="relative group">
               <Info className="h-3.5 w-3.5 text-marrow-light/60 cursor-help" />
               <span className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-64 rounded-lg bg-primary-dark text-white text-xs p-3 shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-                Se attivato, il catalogo estrarrà esclusivamente produzioni anime (animazione giapponese) dal database TMDB, filtrando tutti gli altri contenuti.
+                Marca questo catalogo come anime: la ricerca si restringe alle produzioni anime e il catalogo entra nella politica anime del profilo. Non è il filtro del profilo (quello sta in Impostazioni profilo).
               </span>
             </span>
           </div>
           <div className="flex items-center gap-2 mt-1 sm:mt-0 min-h-[44px]">
             {isAnime && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 text-xs font-black border border-amber-500/20">
-                🏮 Solo anime
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-700 px-2.5 py-0.5 text-xs font-black border border-amber-500/20">
+                🏮 Anime
               </span>
             )}
             <Switch 
@@ -1006,7 +1006,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
               id="anime-toggle"
             />
             <Label htmlFor="anime-toggle" className="text-xs text-marrow-deep cursor-pointer font-bold py-2.5">
-              Solo anime
+              Contiene anime
             </Label>
           </div>
         </div>

@@ -55,20 +55,16 @@ interface BackendCatalog {
 }
 
 export function sanitizeTypeSelectors(raw?: unknown): {
-  film: boolean;
-  serie: boolean;
   anime: 'only' | 'exclude' | null;
 } {
-  const defaultSelectors = { film: false, serie: false, anime: null as 'only' | 'exclude' | null };
+  const defaultSelectors = { anime: null as 'only' | 'exclude' | null };
   if (!raw || typeof raw !== 'object') {
     return defaultSelectors;
   }
   const obj = raw as Record<string, unknown>;
-  const film = obj.film === true;
-  const serie = obj.serie === true;
   const anime = (obj.anime === 'only' || obj.anime === 'exclude') ? obj.anime : null;
 
-  return { film, serie, anime };
+  return { anime };
 }
 
 /**
@@ -132,6 +128,14 @@ export function profilesToApiPayload(profiles: Profile[]) {
       },
     };
   });
+}
+
+/** Toglie dal nome l'emoji che è già scelta come campo, così non compare due volte. */
+function stripLeadingEmoji(name: string, emoji: string | null): string {
+  if (!emoji) return name;
+  const trimmed = name.trim();
+  if (!trimmed.startsWith(emoji)) return trimmed;
+  return trimmed.slice(emoji.length).trim() || trimmed;
 }
 
 export function mapBackendProfile(backendProfile: BackendProfile): Profile {
@@ -202,7 +206,9 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
 
   return {
     id: String(targetId),
-    name: String(backendProfile.name ?? 'Profilo'),
+    // Pulizia una-tantum: chi ha «🏠 Generale» nel nome e ora sceglie 🏠 come emoji la vedrebbe
+    // due volte (avatar dal campo, nome col prefisso). Si toglie solo se è la stessa emoji.
+    name: stripLeadingEmoji(String(backendProfile.name ?? 'Profilo'), typeof backendProfile.emoji === 'string' ? backendProfile.emoji : null),
     ...(typeof backendProfile.emoji === 'string' && backendProfile.emoji ? { emoji: backendProfile.emoji } : {}),
     raw_ui_state: {
       selectedPresets,

@@ -136,7 +136,7 @@ export function ProfileManager({
                   <p className="text-xs text-emerald-600 font-black uppercase mt-1 tracking-wider">
                     Attivo
                   </p>
-                ) : isEditing ? (
+                ) : (
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); 
@@ -148,7 +148,7 @@ export function ProfileManager({
                     <Check className="h-3 w-3" />
                     Attiva
                   </button>
-                ) : null}
+                )}
               </div>
             </div>
           );

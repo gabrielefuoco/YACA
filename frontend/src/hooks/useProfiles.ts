@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { api } from '@/lib/api';
-import { LOCAL_STORAGE_KEYS, HERO_PRESET_IDS } from '@/lib/constants';
+import { LOCAL_STORAGE_KEYS, HERO_PRESET_IDS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 
 import { generateId, resolveHydratedActiveProfile } from '@/lib/utils';
 
@@ -12,7 +12,9 @@ function createGlobalProfile(): Profile {
     name: 'Generale',
     emoji: '🏠',
     raw_ui_state: {
-      selectedPresets: [...HERO_PRESET_IDS],
+      // Stessa selezione di `createDefaultProfiles` in app/page.tsx: un utente nuovo non deve
+      // vedere due default diversi a seconda di quale ramo ha creato il profilo.
+      selectedPresets: [...DEFAULT_PRESET_IDS, ...HERO_PRESET_IDS],
       newPrompts: [],
       presetOverrides: {},
       catalogOrder: [...HERO_PRESET_IDS],
@@ -25,7 +27,7 @@ function createGlobalProfile(): Profile {
       fastRefresh: false,
       manualDNA: [],
       suggestedDNA: [],
-      typeSelectors: { film: false, serie: false, anime: null },
+      typeSelectors: { anime: null },
       sliders: { ...DEFAULT_ENGINE_SLIDERS },
     },
   };
@@ -47,7 +49,7 @@ function createDefaultProfile(name: string = 'Profilo Principale'): Profile {
     sliders: { ...DEFAULT_ENGINE_SLIDERS },
     settings: {
       fastRefresh: false,
-      typeSelectors: { film: false, serie: false, anime: null },
+      typeSelectors: { anime: null },
       sliders: { ...DEFAULT_ENGINE_SLIDERS },
     },
   };
@@ -97,7 +99,11 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
   const appliedInitialActiveRef = useRef<string | undefined>(undefined);
   // Valore corrente del profilo attivo, leggibile dentro l'effetto senza ri-eseguirlo.
   const activeProfileIdRef = useRef<string>(activeProfileId);
-  activeProfileIdRef.current = activeProfileId;
+  // Aggiornato in un effetto, non durante il render: React 19 vieta di scrivere ref nel render.
+  // Questo effetto è dichiarato PRIMA di quello che lo legge, quindi nello stesso commit vince.
+  useEffect(() => {
+    activeProfileIdRef.current = activeProfileId;
+  }, [activeProfileId]);
 
   // Sync when initialProfiles changes (e.g. after async config decode or save)
   useEffect(() => {

@@ -5,9 +5,13 @@ export interface DNAItem {
   score?: number;
 }
 
+/**
+ * Selettori di tipo del profilo.
+ *
+ * Solo `anime` esiste: «Solo Film»/«Solo Serie» sono stati rimossi dal motore
+ * (`isCatalogConformant` legge solo la dimensione anime, vedi src/catalog/catalogKind.js).
+ */
 export interface TypeSelectors {
-  film?: boolean;
-  serie?: boolean;
   anime?: 'only' | 'exclude' | null;
 }
 

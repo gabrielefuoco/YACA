@@ -34,7 +34,7 @@ function createDefaultProfiles(): Profile[] {
       sliders: { ...DEFAULT_ENGINE_SLIDERS },
       settings: {
         fastRefresh: false,
-        typeSelectors: { film: false, serie: false, anime: null },
+        typeSelectors: { anime: null },
         sliders: { ...DEFAULT_ENGINE_SLIDERS },
       },
     },
@@ -463,7 +463,7 @@ export default function Home() {
           },
           settings: {
             ...p.settings,
-            typeSelectors: template?.typeSelectors || { film: false, serie: false, anime: null },
+            typeSelectors: template?.typeSelectors || { anime: null },
           },
         }
         : p
