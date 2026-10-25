@@ -25,7 +25,7 @@ MAX_ANNO = 2100
 def audit(B, date):
     titoli = np.array([str(t).strip() for t in B["titoli"]], dtype=object)
     vuoti = np.array([len(t) == 0 for t in titoli])
-    anno = np.where(date > 0, (date // 365.25 + 1970).astype(np.int32), 0).astype(np.int32)
+    anno = np.where(date > 0, (date / 365.25).astype(np.int32), 0).astype(np.int32)
     fuori = (anno != 0) & ((anno < MIN_ANNO) | (anno > MAX_ANNO))
     keep = ~vuoti & ~fuori
     return {"titoli": titoli, "vuoti": vuoti, "anno": anno, "fuori": fuori, "keep": keep}

@@ -17,7 +17,7 @@ def main():
     B = D.basic(); N = B["N"]; is_tv = B["is_tv"]
     date = np.load(C.DATA / "uscite-ordinali.npy").astype(np.float32)
     Yc = np.load(C.DATA / "yc-full.npz")["Yc_full"].astype(np.float32)
-    S = D.triangle().tocsr()
+    S = D.masked_yc_and_graph()
     keep = np.load(C.DATA / "canon-clean.npz")["keep"]
     idx = np.full((N, TOPK), -1, np.int32)
     w = np.zeros((N, TOPK), np.float16)

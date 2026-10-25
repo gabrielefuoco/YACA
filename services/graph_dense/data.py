@@ -287,3 +287,18 @@ def parquet_rows(keys):
                 dd["directors"] = dd.get("created_by")
             out[key] = dd
     return out
+
+
+def masked_yc_and_graph():
+    """S del grafo con gli archi del Set B azzerati (5 vicini GT per film), se esiste yc-split.npz."""
+    S = triangle().tolil(copy=True)
+    p = C.DATA / "yc-split.npz"
+    if p.exists():
+        z = np.load(p)
+        gt, mask = z["gt"], z["mask"]
+        for i in z["B_"]:
+            i = int(i)
+            for j in gt[i][mask[i] >= 0]:
+                S[i, int(j)] = 0.0
+                S[int(j), i] = 0.0
+    return S.tocsr()

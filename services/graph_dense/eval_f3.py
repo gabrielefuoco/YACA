@@ -47,10 +47,12 @@ def trap(model="f3"):
             if k not in ro:
                 continue
             i = int(ro[k]); top = _top(Z, i, 10)
-            bad = {int(ro[x]) for x in it.get("bad", []) if x in ro}
-            good = {int(ro[x]) for x in it.get("good", []) if x in ro}
-            c5 += len(set(top[:5]) & bad) / max(len(bad), 1)
-            c10 += len(set(top) & bad) / max(len(bad), 1)
+            bad = {int(ro[x]) for x in it.get("bad", []) if x in ro and x != k}
+            good = {int(ro[x]) for x in it.get("good", []) if x in ro and x != k}
+            if not bad and not good:
+                continue
+            c5 += len(set(top[:5]) & bad)
+            c10 += len(set(top) & bad)
             h10 += len(set(top) & good) / max(len(good), 1)
             n += 1
         if n:
@@ -86,7 +88,8 @@ def build_splits():
     deg = np.asarray(abs(S).sum(1)).ravel()
     raw = np.load(C.DATA / "ml-yc.npz")["Yc"]
     raw = np.linalg.norm(raw, axis=1) > 1e-6
-    idx = np.where(raw)[0]
+    keep = np.load(C.DATA / "canon-clean.npz")["keep"] if (C.DATA / "canon-clean.npz").exists() else np.ones(N, bool)
+    idx = np.where(raw & keep)[0]
     q1, q2 = np.quantile(deg[idx], [1 / 3, 2 / 3])
     strata = np.digitize(deg[idx], [q1, q2])
     rng = np.random.default_rng(20261025)
@@ -98,10 +101,10 @@ def build_splits():
     A = np.array(A, np.int64); Bs = np.array(Bs, np.int64)
     gt, _ = _gt_yc(10)
     rng2 = np.random.default_rng(7)
-    mask = np.zeros((N, 10), np.int32)   # per Set B: 5 vicini mascherati
+    mask = np.full((N, 10), -1, np.int32)   # per Set B: 5 vicini mascherati (indici 0..9)
     for i in Bs:
-        mask[i] = rng2.choice(10, 5, replace=False)
-        mask[i][5:] = -1
+        mask[i] = -1
+        mask[i][:5] = rng2.choice(10, 5, replace=False)
     np.savez_compressed(C.DATA / "yc-split.npz", A=A, B_=Bs, mask=mask, gt=gt, deg=deg)
     print(f"Set A {len(A)} · Set B {len(Bs)} · fasce: {q1:.1f}/{q2:.1f}")
 

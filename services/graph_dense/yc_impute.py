@@ -23,7 +23,7 @@ def build():
     raw = norm > 1e-6
     Yc[raw] /= norm[raw, None]
     miss = ~raw
-    S = D.triangle().tocsr()
+    S = D.masked_yc_and_graph()
     Yfull = Yc.copy()
     if miss.any():
         A = S[miss][:, raw].astype(np.float32)          # (n_miss, n_raw)

@@ -89,3 +89,17 @@ def field_ids(B, keep=None):
         p = t[:2]
         ids[off + j] = FIELDS.index(p) if p in FIELDS else FIELDS.index("misc")
     return (ids[keep] if keep is not None else ids), FIELDS
+
+
+def meta_field_ids(B, keep=None):
+    """Come field_ids ma con kw: e cluster hc mappati a -1 (esclusi): Z_field/Z_beh
+    vedono solo i veri campi di metadati."""
+    ids, nomi = field_ids(B, None)
+    V = D.vocab()
+    inv = {c: t for t, c in V.items()}
+    hc = FIELDS.index("hc")
+    for c in range(len(ids)):
+        t = inv.get(c)
+        if (t is not None and t.startswith("kw:")) or ids[c] == hc:
+            ids[c] = -1
+    return (ids[keep] if keep is not None else ids), nomi

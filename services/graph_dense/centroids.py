@@ -24,7 +24,7 @@ M = 3.0
 def _loo(Yc, raw, group, mu0, m=M):
     """Yc: (N,64) con zeri sui non-raw. group: (N,) interi (>=0). Ritorna (N,64)."""
     N = len(raw)
-    valid = raw & (group >= 0)
+    valid = raw & (group > 0)
     g = np.where(valid, group, -1)
     ng = int(g.max()) + 1 if g.max() >= 0 else 0
     if ng == 0:
@@ -47,6 +47,9 @@ def build():
     Yc = np.load(C.DATA / "ml-yc.npz")["Yc"].astype(np.float32)
     n = np.linalg.norm(Yc, axis=1)
     raw = n > 1e-6
+    ycs = C.DATA / "yc-split.npz"
+    if ycs.exists():
+        raw[np.load(ycs)["A"]] = False   # Set A induttivo: fuori dai centroidi
     Yc[raw] /= n[raw, None]
     mu0 = Yc[raw].mean(0)
     mu_dir = _loo(Yc, raw, B["DIR"].astype(np.int64), mu0)

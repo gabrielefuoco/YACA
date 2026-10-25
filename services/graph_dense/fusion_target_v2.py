@@ -51,7 +51,8 @@ def load_meta(B):
                     gen[i] = {g["name"].lower() for g in json.loads(r.genres) if isinstance(g, dict)}
                 except Exception:
                     gen[i] = set()
-            rating[i] = (r.content_rating or "").strip().upper()
+            cr = r.content_rating
+            rating[i] = cr.strip().upper() if isinstance(cr, str) else ""
     return gen, rating, coll
 
 
@@ -73,11 +74,12 @@ def main():
     B = D.basic(); N = B["N"]; is_tv = B["is_tv"]
     date = np.load(C.DATA / "uscite-ordinali.npy").astype(np.float32)
     Yc = np.load(C.DATA / "yc-full.npz")["Yc_full"].astype(np.float32)
-    S = D.triangle()
+    S = D.masked_yc_and_graph()
     Zb = np.load(C.DATA / "b10.npz")["Z"].astype(np.float32)
     Zm = np.load(C.DATA / "m1.npz")["Z"].astype(np.float32)
     keep = np.load(C.DATA / "canon-clean.npz")["keep"]
     gen, rating, coll = load_meta(B)
+    tit_norm = [(str(t).strip().lower().split() or [""])[0] for t in B["titoli"]]
     anim = np.array(["animation" in g for g in gen])
     kids = np.array([r in ("G", "PG", "TV-Y", "TV-G", "TV-Y7") or r == "" for r in rating])
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -106,18 +108,23 @@ def main():
         vm = vm.float().cpu().numpy(); im = im.cpu().numpy()
         bh = beh_block(rows, Yc, S, date, is_tv, keep)
         for q, i in enumerate(rows):
+            if not keep[i]:
+                continue
             b = bh[q]
             top_beh = np.argsort(-b)[:25]
             U = np.unique(np.concatenate([ib[q], im[q], top_beh]))
             U = U[U != i]
+            if len(U) < 2:
+                continue
             s_b = (Zb[U] @ Zb[i]) + LAM * b[U]
             s_m = (Zm[U] @ Zm[i]) + LAM * b[U]
             # filtro medium
             if not anim[i]:
-                thr = max(float(np.quantile(b[U], 0.85)), 0.05) if len(U) else 0.05
+                thr = max(float(np.quantile(b[U], 0.85)), 0.05)
                 for t_, j in enumerate(U):
                     if anim[j]:
-                        same = coll[i] >= 0 and coll[i] == coll[j]
+                        same = ((coll[i] > 0 and coll[i] == coll[j]) or
+                                (len(tit_norm[i]) >= 4 and tit_norm[i] in tit_norm[j]))
                         if kids[j] and same:
                             s_b[t_] *= 0.15; s_m[t_] *= 0.15
                         elif (not same) and b[j] < thr:
