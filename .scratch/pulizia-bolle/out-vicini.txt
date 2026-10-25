@@ -1,0 +1,119 @@
+Spider-Man (2002) = movie:557 · riga 50 · grado 390 · peso totale 697.4
+bolla 2474 · ['kw:superhero', 'kw:based on comic', 'ge:science fiction', 'kw:secret identity', 'di:sam raimi']
+
+N | bolle distinte | con >=2 membri | quota peso | ultimo peso | % del max
+  4 |              1 |              1 |      77.5% |     24.8739 |    9.571%
+  5 |              2 |              1 |      79.9% |     16.7759 |    6.455%
+  8 |              4 |              2 |      84.3% |      5.0792 |    1.954%
+ 10 |              5 |              2 |      85.6% |      4.4998 |    1.731%
+ 16 |              7 |              5 |      88.8% |      2.8542 |    1.098%
+ 20 |              8 |              5 |      90.3% |      2.5254 |    0.972%
+ 25 |              9 |              5 |      92.0% |      2.3315 |    0.897%
+ 32 |             11 |              6 |      94.1% |      1.6521 |    0.636%
+ 40 |             18 |              6 |      95.6% |      0.9821 |    0.378%
+ 50 |             20 |             10 |      96.7% |      0.6646 |    0.256%
+ 64 |             31 |             10 |      97.7% |      0.4547 |    0.175%
+ 80 |             39 |             14 |      98.5% |      0.2652 |    0.102%
+100 |             53 |             18 |      99.1% |      0.1573 |    0.061%
+
+Top 100:
+  1 |  259.8941 | b2474 (n=  5) | movie:558    | Spider-Man 2 (2004) | vc=17051 va= 7.3
+  2 |  221.5708 | b2474 (n=  5) | movie:559    | Spider-Man 3 (2007) | vc=15894 va= 6.5
+  3 |   34.1144 | b2474 (n=  5) | movie:102382 | The Amazing Spider-Man 2 - Il potere di Electro (2014) | vc=14852 va= 6.6
+  4 |   24.8739 | b2474 (n=  5) | movie:1930   | The Amazing Spider-Man (2012) | vc=19244 va= 6.8
+  5 |   16.7759 | b1825 (n= 11) | movie:36658  | X-Men 2 (2003) | vc=11264 va= 7.0
+  6 |   16.0454 | b1825 (n= 11) | movie:36657  | X-Men (2000) | vc=12636 va= 7.0
+  7 |    9.3423 | b1634 (n= 15) | movie:9480   | Daredevil (2003) | vc= 5638 va= 5.3
+  8 |    5.0792 | b2187 (n=  7) | movie:1927   | Hulk (2003) | vc= 6518 va= 5.6
+  9 |    4.6896 | b2506 (n=  4) | movie:272    | Batman Begins (2005) | vc=23347 va= 7.7
+ 10 |    4.4998 | b1825 (n= 11) | movie:36668  | X-Men - Conflitto finale (2006) | vc=10739 va= 6.4
+ 11 |    4.4777 | b2527 (n=  4) | movie:634649 | Spider-Man: No Way Home (2021) | vc=23349 va= 7.9
+ 12 |    4.3322 | b1825 (n= 11) | movie:2080   | X-Men: Le origini - Wolverine (2009) | vc=11617 va= 6.3
+ 13 |    4.2680 | b2187 (n=  7) | movie:9738   | I Fantastici 4 (2005) | vc=10273 va= 5.8
+ 14 |    3.3420 | b2388 (n=  5) | movie:13183  | Watchmen (2009) | vc=10337 va= 7.4
+ 15 |    2.8928 | b1634 (n= 15) | movie:8285   | The Spirit (2008) | vc= 1097 va= 4.8
+ 16 |    2.8542 | b2527 (n=  4) | movie:324857 | Spider-Man: Un nuovo universo (2018) | vc=18019 va= 8.4
+ 17 |    2.7416 | b2187 (n=  7) | movie:1979   | I Fantastici 4 e Silver Surfer (2007) | vc= 8624 va= 5.6
+ 18 |    2.7031 | b1634 (n= 15) | movie:13056  | Punisher - Zona di guerra (2008) | vc= 1386 va= 5.9
+ 19 |    2.6464 | b1634 (n= 15) | movie:1250   | Ghost Rider (2007) | vc= 6708 va= 5.6
+ 20 |    2.5254 | b1910 (n= 10) | movie:11918  | Superhero - Il più dotato fra i supereroi (2008) | vc= 2109 va= 5.3
+ 21 |    2.5152 | b1634 (n= 15) | movie:9947   | Elektra (2005) | vc= 2773 va= 5.0
+ 22 |    2.5011 | b2527 (n=  4) | movie:429617 | Spider-Man: Far from Home (2019) | vc=17735 va= 7.4
+ 23 |    2.4857 | b1634 (n= 15) | movie:10336  | Spawn (1997) | vc= 1542 va= 5.5
+ 24 |    2.4390 | b2273 (n=  9) | movie:453395 | Doctor Strange nel Multiverso della Follia (2022) | vc=10981 va= 7.2
+ 25 |    2.3315 | b2527 (n=  4) | movie:569094 | Spider-Man: Across the Spider-Verse (2023) | vc= 9418 va= 8.3
+ 26 |    2.3263 | b1634 (n= 15) | movie:71676  | Ghost Rider - Spirito di vendetta (2011) | vc= 4206 va= 5.0
+ 27 |    2.3127 | b2649 (n=  3) | movie:36647  | Blade (1998) | vc= 7031 va= 6.9
+ 28 |    2.2374 | b1825 (n= 11) | movie:76170  | Wolverine - L'immortale (2013) | vc=10622 va= 6.4
+ 29 |    2.2012 | b 732 (n= 33) | movie:9556   | Darkman (1990) | vc= 1598 va= 6.4
+ 30 |    1.9317 | b2649 (n=  3) | movie:36586  | Blade II (2002) | vc= 5445 va= 6.6
+ 31 |    1.9007 | b1634 (n= 15) | movie:7220   | The Punisher (2004) | vc= 3313 va= 6.4
+ 32 |    1.6521 | b2649 (n=  3) | movie:36648  | Blade: Trinity (2004) | vc= 4495 va= 5.9
+ 33 |    1.5935 | b2245 (n=  6) | movie:1858   | Transformers (2007) | vc=12623 va= 6.8
+ 34 |    1.4490 | b2722 (n=  3) | movie:608    | Men in Black II (2002) | vc=10976 va= 6.4
+ 35 |    1.3444 | b2696 (n=  3) | movie:102899 | Ant-Man (2015) | vc=21350 va= 7.1
+ 36 |    1.2788 | b1244 (n= 20) | tv:1482      | L'Uomo Ragno (1967) | vc=  243 va= 7.9
+ 37 |    1.1986 | b1634 (n= 15) | movie:49524  | R.I.P.D. - Poliziotti dall'aldilà (2013) | vc= 4421 va= 5.9
+ 38 |    1.1658 | b3161 (n=  6) | tv:72705     | Spider-Man (2017) | vc=  399 va= 7.5
+ 39 |    1.0252 | b1822 (n= 11) | movie:180    | Minority Report (2002) | vc=10017 va= 7.4
+ 40 |    0.9821 | b2567 (n=  4) | movie:1724   | L'incredibile Hulk (2008) | vc=13223 va= 6.3
+ 41 |    0.8557 | b3161 (n=  6) | tv:3854      | The Spectacular Spider-Man (2008) | vc=  947 va= 8.6
+ 42 |    0.8555 | b3161 (n=  6) | tv:34391     | Ultimate Spider-Man (2012) | vc= 1062 va= 7.7
+ 43 |    0.7903 | b1177 (n= 24) | tv:4303      | Superman (1996) | vc=  392 va= 7.7
+ 44 |    0.7876 | b2187 (n=  7) | movie:166424 | Fantastic 4 - I fantastici quattro (2015) | vc= 6581 va= 4.4
+ 45 |    0.7733 | b2567 (n=  4) | movie:10138  | Iron Man 2 (2010) | vc=23028 va= 6.9
+ 46 |    0.7505 | b2505 (n=  4) | movie:9806   | Gli Incredibili - Una "normale" famiglia di supereroi (2004) | vc=19416 va= 7.7
+ 47 |    0.6999 | b1244 (n= 20) | tv:2640      | Spider-Man (Supaidāman) (1978) | vc=  127 va= 7.4
+ 48 |    0.6836 | b3161 (n=  6) | tv:138503    | Il vostro amichevole Spider-Man di quartiere (2025) | vc=  306 va= 7.8
+ 49 |    0.6750 | b2696 (n=  3) | movie:363088 | Ant-Man and the Wasp (2018) | vc=14598 va= 6.9
+ 50 |    0.6646 | b3161 (n=  6) | tv:1664      | Spider-Man: The New Animated Series (2003) | vc=  394 va= 7.2
+ 51 |    0.6169 | b1291 (n= 22) | movie:32985  | Solomon Kane (2009) | vc= 1593 va= 6.0
+ 52 |    0.6152 | b2443 (n=  7) | movie:22     | La maledizione della prima luna (2003) | vc=22943 va= 7.8
+ 53 |    0.5782 | b1174 (n= 21) | movie:225914 | L'uomo ragno (1977) | vc=  218 va= 6.3
+ 54 |    0.5719 | b1825 (n= 11) | movie:49538  | X-Men - L'inizio (2011) | vc=13946 va= 7.3
+ 55 |    0.5656 | b2309 (n=  6) | movie:808    | Shrek (2001) | vc=19463 va= 7.8
+ 56 |    0.5648 | b2754 (n=  2) | movie:14869  | G.I. Joe - La nascita dei Cobra (2009) | vc= 5044 va= 5.8
+ 57 |    0.5628 | b2528 (n=  5) | movie:293660 | Deadpool (2016) | vc=33456 va= 7.6
+ 58 |    0.5619 | b1891 (n=  8) | movie:22538  | Scott Pilgrim vs. the World (2010) | vc= 8951 va= 7.5
+ 59 |    0.5531 | b2717 (n=  3) | movie:11253  | Hellboy: The Golden Army (2008) | vc= 5787 va= 6.8
+ 60 |    0.5161 | b2943 (n= 10) | movie:1068141 | Power Rangers: Una volta e per sempre (2023) | vc=  304 va= 6.5
+ 61 |    0.4924 | b1474 (n= 18) | movie:879    | Hook - Capitan Uncino (1991) | vc= 5901 va= 6.8
+ 62 |    0.4826 | b1825 (n= 11) | movie:246655 | X-Men - Apocalisse (2016) | vc=14197 va= 6.5
+ 63 |    0.4686 | b1888 (n= 13) | movie:585    | Monsters & Co. (2001) | vc=20409 va= 7.9
+ 64 |    0.4547 | b3161 (n=  6) | tv:10079     | Spider-Man Unlimited (1999) | vc=  261 va= 7.6
+ 65 |    0.4469 | b1825 (n= 11) | movie:263115 | Logan - The Wolverine (2017) | vc=20973 va= 7.8
+ 66 |    0.4103 | b1825 (n= 11) | movie:127585 | X-Men - Giorni di un futuro passato (2014) | vc=16797 va= 7.5
+ 67 |    0.3915 | b1696 (n= 12) | movie:622230 | LEGO Marvel Spider-Man: Vexed by Venom (2019) | vc=   44 va= 6.1
+ 68 |    0.3640 | b1474 (n= 18) | movie:266647 | Pan - Viaggio sull'isola che non c'è (2015) | vc= 2886 va= 6.0
+ 69 |    0.3535 | b2345 (n=  7) | tv:83043     | Marvel Rising - Initation (2018) | vc=   35 va= 6.7
+ 70 |    0.3478 | b2388 (n=  5) | movie:752    | V per Vendetta (2006) | vc=16074 va= 7.9
+ 71 |    0.3173 | b 186 (n= 61) | tv:12431     | M.A.N.T.I.S. (1994) | vc=   13 va= 5.0
+ 72 |    0.3145 | b1634 (n= 15) | movie:8867   | Il vendicatore (1989) | vc=  720 va= 5.8
+ 73 |    0.2995 | b3388 (n=  4) | movie:854    | The Mask: Da zero a mito (1994) | vc=11648 va= 7.0
+ 74 |    0.2970 | b1888 (n= 13) | movie:12     | Alla ricerca di Nemo (2003) | vc=21080 va= 7.8
+ 75 |    0.2943 | b2506 (n=  4) | movie:155    | Il cavaliere oscuro (2008) | vc=37009 va= 8.5
+ 76 |    0.2905 | b1405 (n= 17) | movie:12106  | Pronti a morire (1995) | vc= 2069 va= 6.6
+ 77 |    0.2850 | b1474 (n= 18) | movie:10601  | Peter Pan (2003) | vc= 2812 va= 7.1
+ 78 |    0.2743 | b2936 (n= 22) | tv:94251     | 50 States of Fright (2020) | vc=  104 va= 7.2
+ 79 |    0.2729 | b1414 (n=  7) | tv:95557     | INVINCIBLE (2021) | vc= 6119 va= 8.6
+ 80 |    0.2652 | b1486 (n=  8) | tv:43720     | Neverland - La vera storia di Peter Pan (2011) | vc=  215 va= 6.2
+ 81 |    0.2603 | b1244 (n= 20) | tv:3973      | L'Uomo Ragno (1981) | vc=   86 va= 7.3
+ 82 |    0.2523 | b1174 (n= 21) | movie:225925 | L'uomo ragno colpisce ancora (1978) | vc=   86 va= 5.8
+ 83 |    0.2462 | b3491 (n=  2) | movie:187    | Sin City (2005) | vc= 9070 va= 7.5
+ 84 |    0.2411 | b1474 (n= 18) | movie:420808 | Peter Pan & Wendy (2023) | vc=  788 va= 5.4
+ 85 |    0.2374 | b1982 (n=  8) | movie:16871  | Drag Me to Hell (2009) | vc= 4260 va= 6.5
+ 86 |    0.2358 | b2671 (n=  3) | movie:9070   | Power Rangers - Il film (1995) | vc=  799 va= 5.9
+ 87 |    0.2203 | b1791 (n= 14) | movie:1894   | Star Wars: Episodio II - L'attacco dei cloni (2002) | vc=14805 va= 6.6
+ 88 |    0.2201 | b2608 (n=  4) | movie:817    | Austin Powers - La spia che ci provava (1999) | vc= 3835 va= 6.3
+ 89 |    0.2159 | b 593 (n= 17) | tv:67178     | Marvel's The Punisher (2017) | vc= 3402 va= 8.2
+ 90 |    0.1984 | b1453 (n= 16) | movie:10693  | Le avventure di Peter Pan (1953) | vc= 5861 va= 7.2
+ 91 |    0.1975 | b 990 (n= 25) | movie:709631 | Cobweb (2023) | vc= 1146 va= 6.4
+ 92 |    0.1908 | b2443 (n=  7) | movie:58     | Pirati dei Caraibi - La maledizione del forziere fantasma (2006) | vc=17708 va= 7.4
+ 93 |    0.1901 | b1822 (n= 11) | movie:2048   | Io, robot (2004) | vc=13095 va= 7.0
+ 94 |    0.1880 | b2251 (n=  6) | movie:21605  | Pantaloncini a tutto gas (2002) | vc=   94 va= 3.5
+ 95 |    0.1799 | b2551 (n=  4) | movie:604    | Matrix Reloaded (2003) | vc=12435 va= 7.1
+ 96 |    0.1787 | b1153 (n= 23) | movie:27243  | Dragon's World: A Fantasy Made Real (2004) | vc=   28 va= 7.9
+ 97 |    0.1773 | b 641 (n= 32) | movie:62892  | Peter va sulla luna (1990) | vc=   16 va= 7.2
+ 98 |    0.1673 | b 701 (n= 20) | movie:198436 | Antboy (2013) | vc=  153 va= 5.6
+ 99 |    0.1617 | b2421 (n=  6) | movie:47542  | Peter senza coda (1981) | vc=   31 va= 6.4
+100 |    0.1573 | b2309 (n=  6) | movie:809    | Shrek 2 (2004) | vc=13865 va= 7.3

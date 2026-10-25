@@ -1,0 +1,34 @@
+canone: 66259 titoli (49709 film, 16550 serie)
+
+A. LA PROPOSTA LITERALE (bayesiano m=300, media - k*sigma, bolle n>=5)
+   k=1.0                                       7600 (11.47%) | film  6576 serie 1024 | bolle 2566 | VAVEmed 5.40 | VOTmed 86 | >=6 1561 | svuotate  0 | sotto5 181
+   k=1.5                                       3309 ( 4.99%) | film  3098 serie  211 | bolle 1684 | VAVEmed 5.19 | VOTmed 121 | >=6  287 | svuotate  0 | sotto5 48
+   k=2.0                                       1478 ( 2.23%) | film  1418 serie   60 | bolle  965 | VAVEmed 4.98 | VOTmed 142 | >=6   55 | svuotate  0 | sotto5  0
+   k=2.5                                        715 ( 1.08%) | film   694 serie   21 | bolle  543 | VAVEmed 4.76 | VOTmed 149 | >=6    9 | svuotate  0 | sotto5  0
+   k=3.0                                        346 ( 0.52%) | film   336 serie   10 | bolle  297 | VAVEmed 4.56 | VOTmed 166 | >=6    4 | svuotate  0 | sotto5  0
+
+B. PEZZI DELLA REGOLA CONSIGLIATA
+   assoluto: VOT>=50 & VAVE<5.0                1671 ( 2.52%) | film  1643 serie   28 | bolle  693 | VAVEmed 4.60 | VOTmed 90 | >=6    0 | svuotate  6 | sotto5 28
+   relativo: VAVE mediana/MAD k=2.5 n>=8 gap 1.0   1721 ( 2.60%) | film  1278 serie  443 | bolle 1012 | VAVEmed 4.62 | VOTmed 24 | >=6  118 | svuotate  0 | sotto5  0
+   unione assoluto + relativo k=2.0            4189 ( 6.32%) | film  3481 serie  708 | bolle 1648 | VAVEmed 4.70 | VOTmed 48 | >=6  233 | svuotate  6 | sotto5 28
+   unione assoluto + relativo k=2.5            3141 ( 4.74%) | film  2681 serie  460 | bolle 1396 | VAVEmed 4.61 | VOTmed 59 | >=6  118 | svuotate  6 | sotto5 28
+   unione assoluto + relativo k=3.0            2554 ( 3.85%) | film  2252 serie  302 | bolle 1193 | VAVEmed 4.60 | VOTmed 67 | >=6   76 | svuotate  6 | sotto5 28
+
+C. CONTROPROVA: bolle interamente brutte (mediana VAVE)
+   mediana VAVE < 4.5:  18 bolle,   356 titoli
+   mediana VAVE < 5.0:  69 bolle,  1430 titoli
+   mediana VAVE < 5.5: 238 bolle,  5423 titoli
+
+scritti 3141 candidati in candidati-pulizia.csv
+
+D. PERCHE' LO z NON PUO' SCATTARE NELLE BOLLE PICCOLE
+   n= 3: z massimo possibile (n-1)/sqrt(n) = 1.15
+   n= 4: z massimo possibile (n-1)/sqrt(n) = 1.50
+   n= 5: z massimo possibile (n-1)/sqrt(n) = 1.79
+   n= 6: z massimo possibile (n-1)/sqrt(n) = 2.04
+   n= 7: z massimo possibile (n-1)/sqrt(n) = 2.27
+   n= 8: z massimo possibile (n-1)/sqrt(n) = 2.47
+   n= 9: z massimo possibile (n-1)/sqrt(n) = 2.67
+   n=10: z massimo possibile (n-1)/sqrt(n) = 2.85
+   n=11: z massimo possibile (n-1)/sqrt(n) = 3.02
+   n=12: z massimo possibile (n-1)/sqrt(n) = 3.18

@@ -1,0 +1,678 @@
+
+==============================================================================================================
+Spider-Man (2002) — movie:557 · riga 50 · bolla 2474 (n=5)
+  mondo: kw:superhero, kw:based on comic, ge:science fiction, kw:secret identity, di:sam raimi · es. Spider-Man, The Amazing Spider-Man, Spider-Man 2
+  grado 390 · peso totale 697.4 · top500 peso 100.0%
+    top  10:   5 bolle distinte
+    top  20:   8 bolle distinte
+    top  50:  20 bolle distinte
+    top 100:  53 bolle distinte
+    #      peso   %max bolla   n titolo                                               anno     vc   va  bay
+    1  259.8941 100.0%  2474   5 Spider-Man 2                                         2004  17051  7.3 7.32
+    2  221.5708  85.3%  2474   5 Spider-Man 3                                         2007  15894  6.5 6.49
+    3   34.1144  13.1%  2474   5 The Amazing Spider-Man 2 - Il potere di Electro      2014  14852  6.6 6.56
+    4   24.8739   9.6%  2474   5 The Amazing Spider-Man                               2012  19244  6.8 6.76
+    5   16.7759   6.5%  1825  11 X-Men 2                                              2003  11264  7.0 7.03
+    6   16.0454   6.2%  1825  11 X-Men                                                2000  12636  7.0 7.01
+    7    9.3423   3.6%  1634  15 Daredevil                                            2003   5638  5.3 5.37
+    8    5.0792   2.0%  2187   7 Hulk                                                 2003   6518  5.6 5.64
+    9    4.6896   1.8%  2506   4 Batman Begins                                        2005  23347  7.7 7.72
+   10    4.4998   1.7%  1825  11 X-Men - Conflitto finale                             2006  10739  6.4 6.43
+   11    4.4777   1.7%  2527   4 Spider-Man: No Way Home                              2021  23349  7.9 7.93
+   12    4.3322   1.7%  1825  11 X-Men: Le origini - Wolverine                        2009  11617  6.3 6.30
+   13    4.2680   1.6%  2187   7 I Fantastici 4                                       2005  10273  5.8 5.83
+   14    3.3420   1.3%  2388   5 Watchmen                                             2009  10337  7.4 7.33
+   15    2.8928   1.1%  1634  15 The Spirit                                           2008   1097  4.8 5.13
+   16    2.8542   1.1%  2527   4 Spider-Man: Un nuovo universo                        2018  18019  8.4 8.37
+   17    2.7416   1.1%  2187   7 I Fantastici 4 e Silver Surfer                       2007   8624  5.6 5.63
+   18    2.7031   1.0%  1634  15 Punisher - Zona di guerra                            2008   1386  5.9 6.01
+   19    2.6464   1.0%  1634  15 Ghost Rider                                          2007   6708  5.6 5.64
+   20    2.5254   1.0%  1910  10 Superhero - Il più dotato fra i supereroi            2008   2109  5.3 5.48
+   21    2.5152   1.0%  1634  15 Elektra                                              2005   2773  5.0 5.19
+   22    2.5011   1.0%  2527   4 Spider-Man: Far from Home                            2019  17735  7.4 7.37
+   23    2.4857   1.0%  1634  15 Spawn                                                1997   1542  5.5 5.64
+   24    2.4390   0.9%  2273   9 Doctor Strange nel Multiverso della Follia           2022  10981  7.2 7.20
+   25    2.3315   0.9%  2527   4 Spider-Man: Across the Spider-Verse                  2023   9418  8.3 8.29
+   26    2.3263   0.9%  1634  15 Ghost Rider - Spirito di vendetta                    2011   4206  5.0 5.10
+   27    2.3127   0.9%  2649   3 Blade                                                1998   7031  6.9 6.84
+   28    2.2374   0.9%  1825  11 Wolverine - L'immortale                              2013  10622  6.4 6.44
+   29    2.2012   0.8%   732  33 Darkman                                              1990   1598  6.4 6.42
+   30    1.9317   0.7%  2649   3 Blade II                                             2002   5445  6.6 6.57
+   31    1.9007   0.7%  1634  15 The Punisher                                         2004   3313  6.4 6.40
+   32    1.6521   0.6%  2649   3 Blade: Trinity                                       2004   4495  5.9 5.90
+   33    1.5935   0.6%  2245   6 Transformers                                         2007  12623  6.8 6.84
+   34    1.4490   0.6%  2722   3 Men in Black II                                      2002  10976  6.4 6.40
+   35    1.3444   0.5%  2696   3 Ant-Man                                              2015  21350  7.1 7.06
+   36    1.2788   0.5%  1244  20 L'Uomo Ragno                                         1967    243  7.9 7.11
+   37    1.1986   0.5%  1634  15 R.I.P.D. - Poliziotti dall'aldilà                    2013   4421  5.9 5.90
+   38    1.1658   0.4%  3161   6 Spider-Man                                           2017    399  7.5 7.07
+   39    1.0252   0.4%  1822  11 Minority Report                                      2002  10017  7.4 7.33
+   40    0.9821   0.4%  2567   4 L'incredibile Hulk                                   2008  13223  6.3 6.30
+   41    0.8557   0.3%  3161   6 The Spectacular Spider-Man                           2008    947  8.6 8.09
+   42    0.8555   0.3%  3161   6 Ultimate Spider-Man                                  2012   1062  7.7 7.44
+   43    0.7903   0.3%  1177  24 Superman                                             1996    392  7.7 7.17
+   44    0.7876   0.3%  2187   7 Fantastic 4 - I fantastici quattro                   2015   6581  4.4 4.49
+   45    0.7733   0.3%  2567   4 Iron Man 2                                           2010  23028  6.9 6.85
+   46    0.7505   0.3%  2505   4 Gli Incredibili - Una "normale" famiglia di superero 2004  19416  7.7 7.71
+   47    0.6999   0.3%  1244  20 Spider-Man (Supaidāman)                              1978    127  7.4 6.77
+   48    0.6836   0.3%  3161   6 Il vostro amichevole Spider-Man di quartiere         2025    306  7.8 7.16
+   49    0.6750   0.3%  2696   3 Ant-Man and the Wasp                                 2018  14598  6.9 6.89
+   50    0.6646   0.3%  3161   6 Spider-Man: The New Animated Series                  2003    394  7.2 6.91
+   51    0.6169   0.2%  1291  22 Solomon Kane                                         2009   1593  6.0 6.12
+   52    0.6152   0.2%  2443   7 La maledizione della prima luna                      2003  22943  7.8 7.82
+   53    0.5782   0.2%  1174  21 L'uomo ragno                                         1977    218  6.3 6.42
+   54    0.5719   0.2%  1825  11 X-Men - L'inizio                                     2011  13946  7.3 7.29
+   55    0.5656   0.2%  2309   6 Shrek                                                2001  19463  7.8 7.76
+   56    0.5648   0.2%  2754   2 G.I. Joe - La nascita dei Cobra                      2009   5044  5.8 5.82
+   57    0.5628   0.2%  2528   5 Deadpool                                             2016  33456  7.6 7.62
+   58    0.5619   0.2%  1891   8 Scott Pilgrim vs. the World                          2010   8951  7.5 7.45
+   59    0.5531   0.2%  2717   3 Hellboy: The Golden Army                             2008   5787  6.8 6.79
+   60    0.5161   0.2%  2943  10 Power Rangers: Una volta e per sempre                2023    304  6.5 6.50
+   61    0.4924   0.2%  1474  18 Hook - Capitan Uncino                                1991   5901  6.8 6.79
+   62    0.4826   0.2%  1825  11 X-Men - Apocalisse                                   2016  14197  6.5 6.53
+   63    0.4686   0.2%  1888  13 Monsters & Co.                                       2001  20409  7.9 7.84
+   64    0.4547   0.2%  3161   6 Spider-Man Unlimited                                 1999    261  7.6 7.01
+   65    0.4469   0.2%  1825  11 Logan - The Wolverine                                2017  20973  7.8 7.80
+   66    0.4103   0.2%  1825  11 X-Men - Giorni di un futuro passato                  2014  16797  7.5 7.52
+   67    0.3915   0.2%  1696  12 LEGO Marvel Spider-Man: Vexed by Venom               2019     44  6.1 6.45
+   68    0.3640   0.1%  1474  18 Pan - Viaggio sull'isola che non c'è                 2015   2886  6.0 6.01
+   69    0.3535   0.1%  2345   7 Marvel Rising - Initation                            2018     35  6.7 6.52
+   70    0.3478   0.1%  2388   5 V per Vendetta                                       2006  16074  7.9 7.87
+   71    0.3173   0.1%   186  61 M.A.N.T.I.S.                                         1994     13  5.0 6.44
+   72    0.3145   0.1%  1634  15 Il vendicatore                                       1989    720  5.8 6.01
+   73    0.2995   0.1%  3388   4 The Mask: Da zero a mito                             1994  11648  7.0 6.98
+   74    0.2970   0.1%  1888  13 Alla ricerca di Nemo                                 2003  21080  7.8 7.78
+   75    0.2943   0.1%  2506   4 Il cavaliere oscuro                                  2008  37009  8.5 8.52
+   76    0.2905   0.1%  1405  17 Pronti a morire                                      1995   2069  6.6 6.56
+   77    0.2850   0.1%  1474  18 Peter Pan                                            2003   2812  7.1 7.07
+   78    0.2743   0.1%  2936  22 50 States of Fright                                  2020    104  7.2 6.68
+   79    0.2729   0.1%  1414   7 INVINCIBLE                                           2021   6119  8.6 8.53
+   80    0.2652   0.1%  1486   8 Neverland - La vera storia di Peter Pan              2011    215  6.2 6.36
+   81    0.2603   0.1%  1244  20 L'Uomo Ragno                                         1981     86  7.3 6.68
+   82    0.2523   0.1%  1174  21 L'uomo ragno colpisce ancora                         1978     86  5.8 6.34
+   83    0.2462   0.1%  3491   2 Sin City                                             2005   9070  7.5 7.43
+   84    0.2411   0.1%  1474  18 Peter Pan & Wendy                                    2023    788  5.4 5.70
+   85    0.2374   0.1%  1982   8 Drag Me to Hell                                      2009   4260  6.5 6.49
+   86    0.2358   0.1%  2671   3 Power Rangers - Il film                              1995    799  5.9 6.06
+   87    0.2203   0.1%  1791  14 Star Wars: Episodio II - L'attacco dei cloni         2002  14805  6.6 6.60
+   88    0.2201   0.1%  2608   4 Austin Powers - La spia che ci provava               1999   3835  6.3 6.31
+   89    0.2159   0.1%   593  17 Marvel's The Punisher                                2017   3402  8.2 8.03
+   90    0.1984   0.1%  1453  16 Le avventure di Peter Pan                            1953   5861  7.2 7.17
+   91    0.1975   0.1%   990  25 Cobweb                                               2023   1146  6.4 6.45
+   92    0.1908   0.1%  2443   7 Pirati dei Caraibi - La maledizione del forziere fan 2006  17708  7.4 7.38
+   93    0.1901   0.1%  1822  11 Io, robot                                            2004  13095  7.0 6.96
+   94    0.1880   0.1%  2251   6 Pantaloncini a tutto gas                             2002     94  3.5 5.78
+   95    0.1799   0.1%  2551   4 Matrix Reloaded                                      2003  12435  7.1 7.07
+   96    0.1787   0.1%  1153  23 Dragon's World: A Fantasy Made Real                  2004     28  7.9 6.62
+   97    0.1773   0.1%   641  32 Peter va sulla luna                                  1990     16  7.2 6.54
+   98    0.1673   0.1%   701  20 Antboy                                               2013    153  5.6 6.20
+   99    0.1617   0.1%  2421   6 Peter senza coda                                     1981     31  6.4 6.49
+  100    0.1573   0.1%  2309   6 Shrek 2                                              2004  13865  7.3 7.31
+
+==============================================================================================================
+Inkheart (2008) — movie:2309 · riga 2889 · bolla 1395 (n=22)
+  mondo: ge:fantasy, ge:family, ge:adventure, kw:based on young adult novel, kw:aftercreditsstinger · es. Un ponte per Terabithia, La bussola d'oro, Stardust
+  grado 444 · peso totale 123.7 · top500 peso 100.0%
+    top  10:   3 bolle distinte
+    top  20:   8 bolle distinte
+    top  50:  21 bolle distinte
+    top 100:  59 bolle distinte
+    #      peso   %max bolla   n titolo                                               anno     vc   va  bay
+    1   12.3201 100.0%  1395  22 Spiderwick - Le cronache                             2008   2965  6.7 6.68
+    2    9.6010  77.9%  1291  22 L'apprendista stregone                               2010   5424  6.1 6.17
+    3    8.3365  67.7%  1395  22 Un ponte per Terabithia                              2007   5494  7.4 7.31
+    4    8.3170  67.5%  1395  22 La bussola d'oro                                     2007   4964  6.1 6.11
+    5    7.4726  60.7%  1395  22 Stardust                                             2007   4620  7.3 7.25
+    6    6.6719  54.2%  1395  22 Nanny McPhee - Tata Matilda                          2005   3297  6.7 6.68
+    7    6.5741  53.4%  2734   2 Percy Jackson e gli dei dell'Olimpo - Il ladro di fu 2010   7982  6.2 6.21
+    8    5.4703  44.4%  1395  22 Eragon                                               2006   3530  5.1 5.21
+    9    5.3192  43.2%  1395  22 Water Horse - La leggenda degli abissi               2007   1187  6.6 6.54
+   10    5.0190  40.7%  1395  22 Mr. Magorium e la bottega delle meraviglie           2007   1343  6.3 6.30
+   11    3.4393  27.9%  1797  14 Viaggio al centro della Terra                        2008   5326  6.1 6.12
+   12    3.3344  27.1%  2636   3 Le cronache di Narnia - Il principe Caspian          2008   6967  6.6 6.63
+   13    3.2421  26.3%  1474  18 Pan - Viaggio sull'isola che non c'è                 2015   2886  6.0 6.01
+   14    3.1565  25.6%  2093   8 Biancaneve                                           2012   3326  5.9 5.97
+   15    3.1192  25.3%  2636   3 Le cronache di Narnia - Il viaggio del veliero       2010   6050  6.4 6.45
+   16    2.8530  23.2%  1395  22 Ember - Il mistero della città di luce               2008   1968  6.4 6.41
+   17    2.5318  20.5%  2711   4 The Librarian 3 - La maledizione del calice di Giuda 2008    544  6.3 6.37
+   18    2.2351  18.1%  1395  22 Alla ricerca dell'isola di Nim                       2008   1218  5.9 6.02
+   19    1.8617  15.1%  1797  14 Corsa a Witch Mountain                               2009   1877  5.8 5.89
+   20    1.6209  13.2%  2734   2 Percy Jackson e gli Dei dell'Olimpo - Il mare dei mo 2013   5481  6.0 6.03
+   21    1.3199  10.7%   987  22 Cappuccetto rosso sangue                             2011   3371  6.0 6.02
+   22    1.2375  10.0%  1712  14 Il risveglio delle Tenebre                           2007    456  5.4 5.85
+   23    1.0485   8.5%  1291  22 Il cacciatore di giganti                             2013   5376  5.9 5.95
+   24    0.9224   7.5%  2711   4 The Librarian - Alla ricerca della lancia perduta    2004    730  6.3 6.36
+   25    0.8918   7.2%   134  68 Molly Moon e l'incredibile libro dell'ipnotismo      2015     94  5.3 6.21
+   26    0.6941   5.6%  1699  10 Maga Martina e il libro magico del Draghetto         2009     92  5.3 6.22
+   27    0.6265   5.1%  2248   7 Dragonheart 4 - L'eredità del drago                  2017    251  6.0 6.27
+   28    0.5927   4.8%  2650   3 La mummia - La tomba dell'Imperatore Dragone         2008   4978  5.5 5.58
+   29    0.5768   4.7%  1712  14 Aiuto vampiro                                        2009   1195  5.9 6.00
+   30    0.5177   4.2%  1797  14 Viaggio nell'isola misteriosa                        2012   4629  6.2 6.18
+   31    0.4812   3.9%  2711   4 The Librarian 2 - Ritorno alle miniere di Re Salomon 2006    649  6.3 6.36
+   32    0.4428   3.6%  1388  10 Le avventure del topino Despereaux                   2008   1049  6.2 6.23
+   33    0.4142   3.4%   426  46 Pomi d'ottone e manici di scopa                      1971   1053  7.0 6.89
+   34    0.3956   3.2%  1395  22 Tata Matilda e il grande botto                       2010   2007  6.3 6.33
+   35    0.3552   2.9%  1634  15 L'ultimo dominatore dell'aria                        2010   4384  4.6 4.76
+   36    0.3472   2.8%  2339   6 Il regno di Ga'Hoole - La leggenda dei guardiani     2010   2577  6.8 6.77
+   37    0.2938   2.4%  1797  14 Piacere Dave                                         2008   1613  5.3 5.53
+   38    0.2761   2.2%  1291  22 I tre moschettieri                                   2011   2863  5.8 5.87
+   39    0.2585   2.1%  1797  14 Alieni in soffitta                                   2009   1088  5.7 5.87
+   40    0.1924   1.6%  2721   3 Planet 51                                            2009   2231  5.9 5.97
+   41    0.1897   1.5%   674  34 Bullyparade - Der Film                               2017    236  5.3 5.96
+   42    0.1864   1.5%   987  22 Dorian Gray                                          2009   2278  6.0 6.10
+   43    0.1803   1.5%   674  34 Ich bin ein Star – Holt mich hier raus!              2004     28  3.8 6.27
+   44    0.1787   1.5%   674  34 Ijon Tichy: Raumpilot                                2007     24  7.8 6.60
+   45    0.1771   1.4%   674  34 Schulz & Böhmermann                                  2016     13  7.5 6.54
+   46    0.1763   1.4%   674  34 Knallerfrauen                                        2012     18  7.0 6.53
+   47    0.1762   1.4%  1278  24 Free Guy - Eroe per gioco                            2021  10288  7.4 7.40
+   48    0.1760   1.4%   674  34 Pappa ante Portas                                    1991    150  7.6 6.88
+   49    0.1741   1.4%   674  34 Trepalium                                            2016     25  5.6 6.43
+   50    0.1721   1.4%   674  34 Pastewka                                             2005     78  7.6 6.72
+   51    0.1713   1.4%  1082  16 Sinbad: The Fifth Voyage                             2014     24  3.9 6.31
+   52    0.1664   1.4%  1126  10 Merlin                                               2008   1206  7.8 7.54
+   53    0.1576   1.3%   674  34 Ödipussi                                             1988    124  7.0 6.63
+   54    0.1537   1.2%  1437  19 Superman: Brainiac Attacks                           2006    168  6.1 6.36
+   55    0.1519   1.2%   674  34 Meteor Man                                           1993    203  5.8 6.23
+   56    0.1518   1.2%   674  34 AfterDeath                                           2015     80  4.4 6.07
+   57    0.1517   1.2%   674  34 Hubert ohne Staller                                  2011     34  6.4 6.49
+   58    0.1500   1.2%   674  34 ZDF Magazin Royale                                   2020     16  7.8 6.57
+   59    0.1439   1.2%   674  34 Darkman III - Darkman morirai                        1996    163  5.3 6.06
+   60    0.1421   1.2%   674  34 Confidence - La truffa perfetta                      2003    491  6.3 6.36
+   61    0.1394   1.1%  2248   7 Fire & Ice - Le cronache del drago                   2008     75  5.1 6.22
+   62    0.1384   1.1%  2157   8 Arthur e il popolo dei Minimei                       2006   3104  6.4 6.40
+   63    0.1377   1.1%  2213   5 Witchblade                                           2001     54  7.0 6.58
+   64    0.1371   1.1%   674  34 The Cell 2 - La soglia del terrore                   2009     93  3.5 5.79
+   65    0.1282   1.0%   674  34 Rebirth                                              2016    209  4.7 5.76
+   66    0.1264   1.0%  1458  16 Messaggi da forze sconosciute                        1978     72  5.6 6.33
+   67    0.1262   1.0%  2141   9 Lego DC Comics Super Heroes - Justice League - Legio 2015    155  6.6 6.53
+   68    0.1230   1.0%  2141   9 LEGO - DC Super Heroes: Justice League vs. Bizarro L 2015    174  6.4 6.46
+   69    0.1137   0.9%  3078   9 Thelma & Louise                                      1991   4038  7.6 7.52
+   70    0.1076   0.9%   493  40 Just Add Magic                                       2016     92  7.7 6.78
+   71    0.1075   0.9%  1640  13 The Classroom of a Black Cat and a Witch             2026     20  7.7 6.58
+   72    0.1057   0.9%  2204   8 Una strega chiamata Elvira                           1988    647  6.7 6.65
+   73    0.1050   0.9%  1126  10 Merlino e l'apprendista stregone                     2006     38  4.9 6.32
+   74    0.0974   0.8%  2167   5 I Flintstones in Viva Rock Vegas                     2000    848  4.8 5.24
+   75    0.0961   0.8%   247  44 Jeremy Scott: The People's Designer                  2015     12  7.6 6.54
+   76    0.0925   0.8%  1063  13 Il fantasma e Molly Mcgee                            2021     47  8.1 6.71
+   77    0.0816   0.7%  1657  12 Warlock - Il signore delle tenebre                   1989    468  6.3 6.38
+   78    0.0787   0.6%   988  32 Città di carta                                       2015   5235  6.2 6.17
+   79    0.0732   0.6%  1836   8 Nei panni di una principessa - Inseguendo la stella  2021    477  6.7 6.63
+   80    0.0678   0.6%   725  28 Il viaggio dell'unicorno                             2001     56  6.8 6.55
+   81    0.0634   0.5%   351  45 Re Artù e i cavalieri della tavola rotonda           1992     14  7.2 6.53
+   82    0.0590   0.5%  3326   5 Hackers                                              1995   1567  6.4 6.40
+   83    0.0547   0.4%   732  33 L'altro delitto                                      1991    448  6.4 6.44
+   84    0.0543   0.4%   294  52 Kung Fu: The Legend Continues                        1993     59  6.7 6.53
+   85    0.0541   0.4%  1208  10 Mia and Me                                           2012     52  7.2 6.60
+   86    0.0508   0.4%   753  30 The Fantastic Flying Books of Mr. Morris Lessmore    2012    133  7.4 6.79
+   87    0.0492   0.4%  3015  17 Agatha All Along                                     2024   1063  7.4 7.20
+   88    0.0461   0.4%  1686  13 Ultraviolet                                          2006   1792  5.2 5.39
+   89    0.0457   0.4%  1094  24 Yes! Pretty Cure 5                                   2007     14  8.1 6.57
+   90    0.0437   0.4%  1696  12 Dottor Strange: Il mago supremo                      2007    357  6.7 6.61
+   91    0.0411   0.3%   433  42 Occhio, malocchio, prezzemolo e finocchio            1983    123  5.9 6.33
+   92    0.0401   0.3%   960  24 The Skeleton Key                                     2005   2399  6.6 6.59
+   93    0.0374   0.3%   123  72 Le ali dell'amore                                    1997    129  6.6 6.53
+   94    0.0363   0.3%  1664  14 Unicorn Academy                                      2023     54  8.0 6.73
+   95    0.0359   0.3%  1114  18 Nico the Unicorn                                     1998     45  6.2 6.46
+   96    0.0353   0.3%  2585   4 Autobiografia di un finto assassino                  2016    866  5.8 5.96
+   97    0.0332   0.3%   516  46 The Winter Palace                                    2022     25  6.8 6.52
+   98    0.0331   0.3%  1195  21 Backbeat - Tutti hanno bisogno di amore              1994    112  6.1 6.39
+   99    0.0311   0.3%  2168   7 K-PAX - Da un altro mondo                            2001   2878  7.2 7.14
+  100    0.0309   0.3%   680  32 मेरी प्यारी बिंदु                                    2017     48  6.2 6.46
+
+==============================================================================================================
+Un ponte per Terabithia (2007) — movie:1265 · riga 88 · bolla 1395 (n=22)
+  mondo: ge:fantasy, ge:family, ge:adventure, kw:based on young adult novel, kw:aftercreditsstinger · es. Un ponte per Terabithia, La bussola d'oro, Stardust
+  grado 426 · peso totale 89.1 · top500 peso 100.0%
+    top  10:   2 bolle distinte
+    top  20:   9 bolle distinte
+    top  50:  31 bolle distinte
+    top 100:  70 bolle distinte
+    #      peso   %max bolla   n titolo                                               anno     vc   va  bay
+    1    9.0545 100.0%  1395  22 Spiderwick - Le cronache                             2008   2965  6.7 6.68
+    2    8.3365  92.1%  1395  22 Inkheart - La leggenda di cuore d'inchiostro         2008   2342  6.3 6.32
+    3    6.0068  66.3%  1395  22 Water Horse - La leggenda degli abissi               2007   1187  6.6 6.54
+    4    5.7872  63.9%  1395  22 La bussola d'oro                                     2007   4964  6.1 6.11
+    5    4.4941  49.6%  1474  18 Peter Pan                                            2003   2812  7.1 7.07
+    6    4.2365  46.8%  1395  22 Mr. Magorium e la bottega delle meraviglie           2007   1343  6.3 6.30
+    7    4.1888  46.3%  1395  22 Zathura - Un'avventura spaziale                      2005   3727  6.5 6.46
+    8    3.9702  43.8%  1395  22 Nanny McPhee - Tata Matilda                          2005   3297  6.7 6.68
+    9    3.3759  37.3%  1395  22 Eragon                                               2006   3530  5.1 5.21
+   10    2.9269  32.3%  1395  22 Mimzy - Il segreto dell'universo                     2007    503  6.3 6.40
+   11    2.8312  31.3%  2636   3 Le cronache di Narnia - Il principe Caspian          2008   6967  6.6 6.63
+   12    2.7399  30.3%   124  72 Moonacre - I segreti dell'ultima luna                2009    516  6.6 6.56
+   13    2.5042  27.7%  1395  22 Ember - Il mistero della città di luce               2008   1968  6.4 6.41
+   14    2.2416  24.8%  1395  22 Stardust                                             2007   4620  7.3 7.25
+   15    2.2203  24.5%  1304  20 La tela di Carlotta                                  2006   1503  6.2 6.28
+   16    2.2104  24.4%  1797  14 Viaggio al centro della Terra                        2008   5326  6.1 6.12
+   17    1.7114  18.9%  1395  22 Alla ricerca dell'isola di Nim                       2008   1218  5.9 6.02
+   18    1.6563  18.3%   961  26 Lemony Snicket - Una serie di sfortunati eventi      2004   5401  6.8 6.80
+   19    1.4104  15.6%  2386   5 Happy Feet                                           2006   5618  6.2 6.25
+   20    1.1009  12.2%  1535   8 Monster House                                        2006   4517  6.7 6.72
+   21    1.0104  11.2%   642  40 La musica nel cuore - August Rush                    2007   2920  7.4 7.35
+   22    0.8297   9.2%  1395  22 Nel paese delle creature selvagge                    2009   2088  6.5 6.50
+   23    0.7602   8.4%   259  53 Il mio piccolo genio                                 1991    361  6.6 6.55
+   24    0.7354   8.1%  1945  10 Come d'incanto                                       2007   5834  6.9 6.83
+   25    0.6314   7.0%  1395  22 Racconti incantati                                   2008   3071  6.2 6.20
+   26    0.4499   5.0%   509  18 Stelle sulla terra                                   2007   1432  8.0 7.73
+   27    0.4243   4.7%  2251   6 Sky High - Scuola di superpoteri                     2005   2541  6.3 6.32
+   28    0.4046   4.5%  2690   3 Free Willy 2                                         1995    666  5.9 6.09
+   29    0.3955   4.4%    92  78 Tuck Everlasting - Vivere per sempre                 2002    516  6.7 6.63
+   30    0.3637   4.0%  3380   7 La strada per El Dorado                              2000   4236  7.3 7.25
+   31    0.3271   3.6%  2606   6 Alvin Superstar                                      2007   4841  5.8 5.84
+   32    0.2860   3.2%   880  33 Polar Express                                        2004   7089  6.7 6.72
+   33    0.2844   3.1%  1912  11 Giù per il tubo                                      2006   4211  6.3 6.31
+   34    0.2620   2.9%  1912  11 I Robinson - Una famiglia spaziale                   2007   3272  7.0 6.91
+   35    0.2367   2.6%  1388  10 Ant Bully - Una vita da formica                      2006   1511  5.8 5.92
+   36    0.2315   2.6%  1912  11 Chicken Little - Amici per le penne                  2005   4277  5.9 5.94
+   37    0.2246   2.5%   500  20 La famiglia della giungla                            1998    310  7.0 6.75
+   38    0.2210   2.4%  2276   8 Surf's Up - I re delle onde                          2007   2844  6.5 6.52
+   39    0.2188   2.4%  3376   2 Cappuccetto rosso e gli insoliti sospetti            2005   1994  6.3 6.33
+   40    0.2082   2.3%    85  85 Free Willy - La grande fuga                          2010    194  6.1 6.36
+   41    0.1721   1.9%  1824  13 Spy Kids 2 - L'isola dei sogni perduti               2002   2406  5.7 5.75
+   42    0.1709   1.9%  1912  11 Bee Movie                                            2007   5447  6.1 6.12
+   43    0.1644   1.8%  2386   5 Ortone e il mondo dei Chi                            2008   3633  6.5 6.50
+   44    0.1638   1.8%   642  40 Hairspray - Grasso è bello                           2007   2683  6.7 6.68
+   45    0.1585   1.8%   379  44 Il fidanzato della mia ragazza                       2010    131  5.8 6.28
+   46    0.1569   1.7%   500  20 Aaahh!!! Real Monsters                               1994    436  7.8 7.27
+   47    0.1488   1.6%   356  44 La sfida di Jace                                     2004     53  6.7 6.53
+   48    0.1469   1.6%  1186  12 Preferisco il paradiso                               2010     70  7.3 6.65
+   49    0.1415   1.6%   518  33 Butterfly - Il sapore del peccato                    1982     40  4.9 6.31
+   50    0.1388   1.5%   988  32 Altruisti si diventa                                 2016   2369  7.3 7.20
+   51    0.1339   1.5%   807  30 Joshua and the Promised Land                         2004     36  3.6 6.19
+   52    0.1328   1.5%  2157   8 Arthur e il popolo dei Minimei                       2006   3104  6.4 6.40
+   53    0.1315   1.5%   745  32 Jojo Rabbit                                          2019  10772  8.0 7.93
+   54    0.1301   1.4%   500  20 Rocket Power - E la sfida continua...                1999    325  7.7 7.12
+   55    0.1244   1.4%   682  33 Il coniglietto magico                                2009     33  6.5 6.50
+   56    0.1128   1.2%  1420  17 Oddballs                                             2022     50  7.2 6.60
+   57    0.1089   1.2%   500  20 I Rugrats                                            1991    780  7.6 7.31
+   58    0.1079   1.2%   968  27 Figli di un Dio Minore                               1986    353  6.9 6.73
+   59    0.1074   1.2%  1186  12 Don Bosco                                            2004     27  6.9 6.53
+   60    0.1053   1.2%   774  26 Il bambino con il pigiama a righe                    2008   7887  7.8 7.77
+   61    0.1025   1.1%  1921  10 Fatti, strafatti e strafighe                         2000   2168  5.5 5.62
+   62    0.1016   1.1%  2157   8 Arthur e la guerra dei due mondi                     2010   1650  5.8 5.91
+   63    0.1001   1.1%  1713  13 Preacher                                             2016   1370  7.4 7.27
+   64    0.0966   1.1%   642  40 Across the Universe                                  2007   1488  7.1 7.01
+   65    0.0953   1.1%  2749   2 Jess il bandito                                      1939    115  6.6 6.53
+   66    0.0947   1.0%   721  10 Liberal Arts                                         2012    591  6.5 6.48
+   67    0.0940   1.0%   226  59 Hesher è stato qui                                   2010    775  6.8 6.72
+   68    0.0934   1.0%   629  37 Espiazione                                           2007   4871  7.6 7.57
+   69    0.0926   1.0%  1108  14 Il talento di Mr. Crocodile                          2022    701  7.0 6.85
+   70    0.0820   0.9%   802  14 Sto pensando di finirla qui                          2020   2314  6.5 6.53
+   71    0.0789   0.9%   794  30 BoyGirl - Questione di... sesso                      2006   1131  6.6 6.54
+   72    0.0788   0.9%   847  28 Best Men - Amici per la pelle                        1997     60  5.3 6.30
+   73    0.0783   0.9%   176  66 CJ7 - Creatura extraterrestre                        2008    843  7.3 7.12
+   74    0.0683   0.8%  2030   9 L'assassinio di Jesse James per mano del codardo Rob 2007   2901  7.1 7.02
+   75    0.0650   0.7%  1797  14 Corsa a Witch Mountain                               2009   1877  5.8 5.89
+   76    0.0639   0.7%  2464   5 Cheetah Girls 2                                      2006    421  6.3 6.38
+   77    0.0637   0.7%  2464   5 Una canzone per le Cheetah Girls                     2003    500  6.0 6.22
+   78    0.0631   0.7%   102  78 Bravetown                                            2015    309  6.7 6.59
+   79    0.0619   0.7%  1260  10 Il mio amico a quattro zampe                         2005    258  6.5 6.50
+   80    0.0615   0.7%  2900   9 Jessie                                               2011    691  8.0 7.55
+   81    0.0610   0.7%   426  46 Zanna gialla                                         1957    315  6.9 6.70
+   82    0.0609   0.7%  3380   7 Giuseppe - Il Re dei sogni                           2000   1105  6.9 6.84
+   83    0.0587   0.6%   830  35 One Day                                              2011   4625  7.4 7.36
+   84    0.0513   0.6%   512  38 C'era una volta Gesù                                 2000     52  6.2 6.45
+   85    0.0502   0.6%   151  75 Il fiore che non colsi                               1943     26  6.3 6.48
+   86    0.0480   0.5%   462  41 Tutto quello che voglio                              2002    123  6.2 6.41
+   87    0.0477   0.5%  1003  13 Emerald City                                         2017    215  6.6 6.54
+   88    0.0477   0.5%  1235  21 Dig                                                  2015     90  6.3 6.44
+   89    0.0457   0.5%  3493   6 Amityville: A New Generation                         1993    113  4.3 5.90
+   90    0.0451   0.5%  2749   2 Il vendicatore di Jess il bandito                    1940    146  6.4 6.47
+   91    0.0449   0.5%  1721  14 Jessica's Big Little World                           2023     12  8.2 6.57
+   92    0.0392   0.4%  2922  17 Paolo, apostolo di Cristo                            2018    420  7.6 7.15
+   93    0.0389   0.4%   532  37 The Enfield Haunting                                 2015    129  6.7 6.55
+   94    0.0379   0.4%   295  55 Licenza di guida                                     1988    429  6.6 6.56
+   95    0.0378   0.4%  1277  20 The Protector                                        2018    483  7.2 6.93
+   96    0.0368   0.4%  1277  20 Switched                                             2018     42  7.4 6.61
+   97    0.0337   0.4%   919  25 Sergente Rex                                         2017    869  7.3 7.06
+   98    0.0278   0.3%  1041  24 Milly - Vampiro per gioco                            1999     51  7.7 6.68
+   99    0.0252   0.3%    94  73 Immigrants (L.A. Dolce Vita)                         2008     20  5.0 6.40
+  100    0.0244   0.3%   629  37 La ragazza con l'orecchino di perla                  2003   1504  6.6 6.62
+
+==============================================================================================================
+Inception (2010) — movie:27205 · riga 20 · bolla 2088 (n=8)
+  mondo: ge:science fiction, kw:astronaut, kw:space, kw:patisserie, kw:loss · es. Interstellar, Inception, Sopravvissuto - The Martian
+  grado 509 · peso totale 194.2 · top500 peso 100.0%
+    top  10:   6 bolle distinte
+    top  20:  12 bolle distinte
+    top  50:  28 bolle distinte
+    top 100:  66 bolle distinte
+    #      peso   %max bolla   n titolo                                               anno     vc   va  bay
+    1   24.1420 100.0%  2551   4 Matrix                                               1999  28997  8.3 8.24
+    2   23.0774  95.6%  2088   8 Interstellar                                         2014  41553  8.5 8.48
+    3   19.1826  79.5%  1078  13 The Prestige                                         2006  18284  8.2 8.18
+    4   14.4275  59.8%  1078  13 Memento                                              2000  16892  8.2 8.14
+    5   11.1963  46.4%  1078  13 Fight Club                                           1999  33054  8.4 8.42
+    6    9.8904  41.0%  1187  27 Source Code                                          2011   9500  7.3 7.29
+    7    7.7284  32.0%  2506   4 Il cavaliere oscuro                                  2008  37009  8.5 8.52
+    8    5.3258  22.1%  1880  12 Avatar                                               2009  34870  7.6 7.60
+    9    4.9951  20.7%  2088   8 Ex Machina                                           2015  14648  7.6 7.55
+   10    4.8800  20.2%  2088   8 Arrival                                              2016  20055  7.6 7.62
+   11    4.4006  18.2%  2506   4 Il cavaliere oscuro - Il ritorno                     2012  25132  7.8 7.78
+   12    3.7660  15.6%  2103   8 Donnie Darko                                         2001  13863  7.8 7.73
+   13    3.7393  15.5%  3213  12 Shutter Island                                       2010  26635  8.2 8.18
+   14    3.2614  13.5%   745  32 Tenet                                                2020  11658  7.2 7.16
+   15    3.1913  13.2%  1974  11 I soliti sospetti                                    1995  11841  8.2 8.12
+   16    3.1514  13.1%  3138   7 Se mi lasci ti cancello                              2004  16875  8.1 8.06
+   17    2.8020  11.6%  3213  12 Lo sciacallo - Nightcrawler                          2014  12175  7.7 7.68
+   18    2.6320  10.9%  1078  13 Seven                                                1995  24009  8.4 8.36
+   19    2.1733   9.0%  3213  12 Il cigno nero                                        2010  15990  7.7 7.66
+   20    1.8862   7.8%   907  34 Old Boy                                              2003  10301  8.2 8.19
+   21    1.8450   7.6%  2506   4 Batman Begins                                        2005  23347  7.7 7.72
+   22    1.6415   6.8%  1187  27 Moon                                                 2009   6549  7.6 7.55
+   23    1.5579   6.5%  2131   9 The Sixth Sense - Il sesto senso                     1999  13482  8.0 7.93
+   24    1.5537   6.4%  2756   2 The Truman Show                                      1998  21051  8.2 8.14
+   25    1.3322   5.5%   912  10 Infinite                                             2021   2237  6.6 6.55
+   26    1.1796   4.9%  1822  11 Minority Report                                      2002  10017  7.4 7.33
+   27    1.0850   4.5%  1187  27 Looper - In fuga dal passato                         2012  11264  6.9 6.91
+   28    1.0477   4.3%  1236   9 Bastardi senza gloria                                2009  24976  8.2 8.20
+   29    0.8829   3.7%  1078  13 Requiem for a Dream                                  2000  11395  8.0 7.97
+   30    0.8638   3.6%  1888  13 WALL•E                                               2008  21050  8.1 8.10
+   31    0.8466   3.5%  3308   2 Django Unchained                                     2012  28796  8.2 8.18
+   32    0.8409   3.5%  2704   5 Il Signore degli Anelli - Il ritorno del re          2003  27620  8.5 8.48
+   33    0.8368   3.5%  1974  11 Pulp Fiction                                         1994  31107  8.5 8.46
+   34    0.8293   3.4%   644  12 La donna che canta                                   2010   3519  8.1 7.98
+   35    0.8168   3.4%  2030   9 The Departed - Il bene e il male                     2006  16797  8.2 8.13
+   36    0.7407   3.1%  3138   7 Il labirinto del fauno                               2006  11839  7.8 7.74
+   37    0.7389   3.1%  2103   8 The Butterfly Effect                                 2004   8621  7.6 7.54
+   38    0.7230   3.0%  2567   4 Iron Man                                             2008  29010  7.7 7.66
+   39    0.7207   3.0%  2105   8 Atto di forza                                        1990   6725  7.3 7.29
+   40    0.7156   3.0%  1822  11 L'esercito delle 12 scimmie                          1995   9480  7.6 7.58
+   41    0.6208   2.6%  2315   6 Star Trek - Il futuro ha inizio                      2009  10789  7.4 7.41
+   42    0.5845   2.4%  1187  27 Mr. Nobody                                           2009   6367  7.8 7.73
+   43    0.5759   2.4%  2088   8 Sopravvissuto - The Martian                          2015  21876  7.7 7.69
+   44    0.5668   2.3%  3432   5 Dunkirk                                              2017  18107  7.5 7.43
+   45    0.5187   2.1%  2158   6 Shining                                              1980  19547  8.2 8.17
+   46    0.3999   1.7%  2491   6 The Avengers                                         2012  40041  8.1 8.07
+   47    0.3986   1.7%  1822  11 District 9                                           2009  10712  7.5 7.47
+   48    0.3969   1.6%  2131   9 Unbreakable - Il predestinato                        2000  10189  7.1 7.08
+   49    0.3705   1.5%  3213  12 Zodiac                                               2007  12006  7.5 7.51
+   50    0.3692   1.5%  3213  12 Prisoners                                            2013  13633  8.1 8.07
+   51    0.3520   1.5%   928  12 Essere John Malkovich                                1999   4966  7.4 7.37
+   52    0.3318   1.4%  1114  18 Breach - L'infiltrato                                2007    692  6.6 6.60
+   53    0.3303   1.4%  1095  31 Inland Empire - L'impero della mente                 2006   1327  7.0 6.88
+   54    0.3257   1.3%  2030   9 Drive                                                2011  14142  7.6 7.56
+   55    0.3169   1.3%  3335   7 The Social Network                                   2010  13665  7.4 7.38
+   56    0.2951   1.2%  2575   4 Ritorno al futuro                                    1985  22582  8.3 8.31
+   57    0.2864   1.2%  3094   3 Synchronic                                           2020   1152  6.3 6.37
+   58    0.2735   1.1%   407  33 Fast and Furious                                     1939     11  5.2 6.45
+   59    0.2625   1.1%   636  11 The Infiltrator                                      2016   1865  6.7 6.66
+   60    0.2457   1.0%  3307   5 Forrest Gump                                         1994  30685  8.5 8.44
+   61    0.2371   1.0%  2407   5 Il cubo 2: Hypercube                                 2002   1689  5.5 5.65
+   62    0.2359   1.0%   547  35 Il tagliaerbe 2 - The Cyberspace                     1996    180  3.3 5.30
+   63    0.2018   0.8%  2576   5 Mad Max: Fury Road                                   2015  24791  7.6 7.63
+   64    0.2009   0.8%  2088   8 Lei                                                  2013  15738  7.8 7.81
+   65    0.1912   0.8%  2565   4 Il silenzio degli innocenti                          1991  18684  8.3 8.27
+   66    0.1891   0.8%  1888  13 Up                                                   2009  22270  8.0 7.94
+   67    0.1705   0.7%  1144  23 The Imitation Game                                   2014  18539  8.0 7.95
+   68    0.1689   0.7%  3255   5 La formula                                           1997    327  6.8 6.66
+   69    0.1639   0.7%  3213  12 American Psycho                                      2000  12883  7.4 7.38
+   70    0.1621   0.7%  2895  14 L'Année prochaine... si tout va bien                 1981     22  5.8 6.45
+   71    0.1614   0.7%    24  95 When a Man Loves                                     1927     11  6.3 6.49
+   72    0.1592   0.7%  2398   5 2001: Odissea nello spazio                           1968  13058  8.0 8.01
+   73    0.1580   0.7%  1034  21 Ballistic                                            2002    409  4.4 5.26
+   74    0.1579   0.7%  1888  13 The Lady of Scandal                                  1930     11  5.5 6.46
+   75    0.1577   0.7%  1278  24 Ghosted                                              2023   2306  6.9 6.82
+   76    0.1549   0.6%  1218  23 Ipotesi di complotto                                 1997   1730  6.6 6.59
+   77    0.1493   0.6%  1747  11 The Wolf of Wall Street                              2013  26751  8.0 8.01
+   78    0.1483   0.6%  1091  11 Lost Cat Corona                                      2017     13  5.7 6.47
+   79    0.1472   0.6%  3496   4 Spy                                                  2015   6571  6.8 6.82
+   80    0.1396   0.6%   243  61 五虎將                                                  1974     14  6.4 6.50
+   81    0.1356   0.6%  1160  21 Synecdoche, New York                                 2008   1694  7.5 7.35
+   82    0.1328   0.6%  1531  15 Effetti collaterali                                  2013   3406  6.6 6.61
+   83    0.1266   0.5%  1306   9 L'arma dell'inganno - Operazione Mincemeat           2022    843  6.5 6.51
+   84    0.1213   0.5%  2030   9 Non è un paese per vecchi                            2007  13935  8.0 7.92
+   85    0.1185   0.5%  1091  11 La belva del secolo                                  1962     18  5.8 6.46
+   86    0.1176   0.5%   510  39 Criminal                                             2016   1954  6.2 6.24
+   87    0.1154   0.5%    75  91 Incarnate - Non potrai nasconderti                   2016    610  5.4 5.79
+   88    0.1128   0.5%  1824  13 Spy Kids 2 - L'isola dei sogni perduti               2002   2406  5.7 5.75
+   89    0.1127   0.5%  2704   5 Il Signore degli Anelli - Le due torri               2002  24789  8.4 8.41
+   90    0.1077   0.4%  1078  13 Insomnia                                             2002   5585  7.0 6.93
+   91    0.1059   0.4%  2363   5 Intelligence                                         2014    237  6.5 6.50
+   92    0.1045   0.4%  3138   7 Big Fish - Le storie di una vita incredibile         2003   7992  7.7 7.70
+   93    0.1032   0.4%  2283   7 Psycho-Pass 3: Primo Ispettore                       2020    115  7.5 6.77
+   94    0.1009   0.4%  2652   3 Agente Cody Banks 2 - Destinazione Londra            2004    693  5.6 5.89
+   95    0.0992   0.4%  1228  19 Dimension W                                          2016     70  6.7 6.54
+   96    0.0968   0.4%   687  26 Spie contro                                          1991     84  5.3 6.24
+   97    0.0965   0.4%   745  32 Parasite                                             2019  21504  8.5 8.47
+   98    0.0948   0.4%  1916  14 Saw VI                                               2009   3626  6.3 6.31
+   99    0.0917   0.4%  2088   8 Gravity                                              2013  16783  7.2 7.16
+  100    0.0887   0.4%  3193   4 Following                                            1999   1990  7.1 7.02
+
+==============================================================================================================
+Perfetti sconosciuti (2016) — movie:381341 · riga 5697 · bolla 1089 (n=18)
+  mondo: pa:ES, ge:thriller, ge:mystery, co:atresmedia cine, di:oriol paulo · es. Contrattempo, Perfetti sconosciuti, Durante la tormenta
+  grado 212 · peso totale 20.4 · top500 peso 100.0%
+    top  10:   8 bolle distinte
+    top  20:  16 bolle distinte
+    top  50:  37 bolle distinte
+    top 100:  76 bolle distinte
+    #      peso   %max bolla   n titolo                                               anno     vc   va  bay
+    1    2.4949 100.0%   367  45 The Place                                            2017   1262  7.1 7.00
+    2    1.8781  75.3%   110  80 (Nie)znajomi                                         2019     40  6.4 6.48
+    3    1.6291  65.3%  1510  15 Carnage                                              2011   3229  7.2 7.14
+    4    1.5626  62.6%  1089  18 Perfectos desconocidos                               2017    694  6.7 6.64
+    5    1.1399  45.7%   486  18 Mr. Ove                                              2015   1381  7.6 7.41
+    6    0.5216  20.9%    86  80 Dio esiste e vive a Bruxelles                        2015   1791  6.7 6.63
+    7    0.4685  18.8%  1089  18 Who Am I - No System Is Safe                         2014   1781  7.6 7.40
+    8    0.3861  15.5%   644  12 Storie pazzesche                                     2014   3898  7.9 7.77
+    9    0.3788  15.2%  1089  18 Contrattempo                                         2017   5174  8.1 7.98
+   10    0.3374  13.5%  1312  18 Supereroi                                            2021    228  7.2 6.79
+   11    0.2315   9.3%  1089  18 El cuerpo                                            2012   1470  7.5 7.35
+   12    0.2313   9.3%   451  41 25 years of Innocence                                2020     46  7.8 6.67
+   13    0.2275   9.1%  3363   2 Apri gli occhi                                       1997   1262  7.5 7.28
+   14    0.2214   8.9%  1370  17 Grandi bugie tra amici                               2019    740  6.7 6.64
+   15    0.2036   8.2%  3363   2 Tesis                                                1996    995  7.5 7.26
+   16    0.1974   7.9%  1173  26 Apró mesék                                           2019     17  6.8 6.52
+   17    0.1912   7.7%  2850  24 Durak                                                2014    334  7.8 7.18
+   18    0.1807   7.2%  2477   5 Днюха!                                               2018     12  5.2 6.45
+   19    0.1774   7.1%   170  73 Tangerines - Mandarini                               2013    626  7.7 7.30
+   20    0.1601   6.4%  2940  17 Loveless                                             2017    841  7.3 7.09
+   21    0.1551   6.2%  1039  24 Match Point                                          2005   4511  7.4 7.30
+   22    0.1486   6.0%   609  26 Tutta colpa di Freud                                 2014   1057  6.7 6.63
+   23    0.1329   5.3%   691  16 Il tempo che ti do                                   2021    122  6.8 6.59
+   24    0.1315   5.3%  1274  20 La rapina del secolo                                 2020    867  7.7 7.41
+   25    0.1263   5.1%  3414   7 La belle époque                                      2019   1086  7.4 7.17
+   26    0.1215   4.9%  1643  14 Rompicapo a New York                                 2013    746  6.6 6.56
+   27    0.1188   4.8%   110  80 Без границ                                           2015     22  5.4 6.42
+   28    0.1137   4.6%  1089  18 Durante la tormenta                                  2018   2056  7.5 7.34
+   29    0.1123   4.5%   395  46 La cena dei cretini                                  1998   2110  7.8 7.61
+   30    0.1107   4.4%    60  91 De zaak Alzheimer                                    2003    164  6.7 6.57
+   31    0.1097   4.4%  1089  18 Il colpevole - The Guilty                            2018   1915  7.3 7.20
+   32    0.1083   4.3%   476  39 Lo chiamavano Jeeg Robot                             2016   2606  7.4 7.30
+   33    0.1079   4.3%   586  35 No mires para abajo                                  2008     71  5.7 6.35
+   34    0.1078   4.3%     8 156 Fun Mom Dinner                                       2017    235  5.7 6.15
+   35    0.1049   4.2%  2477   5 Громкая связь                                        2019     63  6.5 6.49
+   36    0.1045   4.2%   586  35 Shame                                                2011   3542  6.9 6.89
+   37    0.1044   4.2%  2849  25 Аритмия                                              2017    169  7.0 6.68
+   38    0.1041   4.2%   609  26 Una famiglia perfetta                                2012    228  6.5 6.50
+   39    0.1029   4.1%  2973  16 Prendimi! - La storia vera più assurda di sempre     2018   3567  6.7 6.69
+   40    0.0972   3.9%   331  46 Conta su di me                                       2017    302  7.3 6.92
+   41    0.0925   3.7%  1085  25 Plus One                                             2013    287  5.3 5.91
+   42    0.0919   3.7%   333  50 La leggenda del pianista sull'oceano                 1998   2510  8.2 8.05
+   43    0.0875   3.5%   125  62 Immaturi                                             2011    815  6.2 6.28
+   44    0.0858   3.4%   146  68 Letters to Santa                                     2011    156  6.9 6.65
+   45    0.0851   3.4%  2849  25 Parola di Dio                                        2016    172  6.5 6.48
+   46    0.0826   3.3%   813  27 Sms - 3 giorni e 6 morto                             2006     96  5.5 6.26
+   47    0.0824   3.3%  1643  14 Il mio migliore amico                                2006    251  6.1 6.33
+   48    0.0821   3.3%  1249  23 Sarà perché ti amo                                   2009    309  5.4 5.94
+   49    0.0797   3.2%   110  80 Barfuß                                               2005    207  6.8 6.62
+   50    0.0794   3.2%  2355   7 Messaggi e segreti                                   2022     84  6.0 6.39
+   51    0.0790   3.2%   651  32 Prime Time                                           2021     99  5.2 6.17
+   52    0.0786   3.2%  1089  18 La vendetta di un uomo tranquillo                    2016    475  6.6 6.56
+   53    0.0774   3.1%   501  19 Sballati per le feste!                               2015   1892  6.1 6.14
+   54    0.0756   3.0%  2843  30 Regalo di Natale                                     1986    185  7.3 6.82
+   55    0.0734   2.9%   918  18 Keep Watching                                        2017    317  5.0 5.73
+   56    0.0725   2.9%  1079  22 House Party - Festa in casa                          1990    280  6.4 6.45
+   57    0.0723   2.9%  2973  16 Game Night - Indovina chi muore stasera?             2018   6488  6.8 6.83
+   58    0.0720   2.9%   285  17 La Pianista                                          2001   1360  7.3 7.16
+   59    0.0718   2.9%   466  36 45 anni                                              2015    809  6.6 6.57
+   60    0.0709   2.8%  1531  15 Buried - Sepolto                                     2010   3143  6.6 6.62
+   61    0.0684   2.7%  1133  16 Summer                                               2018    351  7.4 6.98
+   62    0.0659   2.6%   222  59 Il nome del figlio                                   2015    344  6.3 6.41
+   63    0.0646   2.6%  2462   5 小时代2：青木时代                                            2013     49  4.6 6.23
+   64    0.0637   2.6%  2462   5 Xiao shi dai                                         2013     72  4.5 6.12
+   65    0.0634   2.5%   404  45 RRRrrrr!!!                                           2004   1279  6.3 6.33
+   66    0.0628   2.5%   153  70 The Little Death                                     2014    551  6.7 6.63
+   67    0.0626   2.5%   757  30 Knockin' on Heaven's Door                            1997    632  7.7 7.31
+   68    0.0619   2.5%  2893  11 Queen of Hearts                                      2019    395  6.9 6.73
+   69    0.0618   2.5%   518  33 Omicidi occasionali                                  1997     17  5.1 6.43
+   70    0.0601   2.4%   954  27 L'ultimo capodanno                                   2018     72  5.0 6.22
+   71    0.0592   2.4%   975  27 Sleepover                                            2004    546  6.1 6.23
+   72    0.0551   2.2%  2006   9 恋爱吧，食梦君！                                             2020     17  7.3 6.54
+   73    0.0544   2.2%   813  27 7eventy 5ive - Dead Tone                             2007     96  4.7 6.06
+   74    0.0543   2.2%  2006   9 御赐小仵作                                                2021     28  7.8 6.61
+   75    0.0536   2.1%  2006   9 Ashes of Love                                        2018     48  8.0 6.71
+   76    0.0536   2.1%    34 100 Sei mai stata sulla luna?                            2015    265  5.7 6.13
+   77    0.0530   2.1%  2006   9 我的时代，你的时代                                            2021     10  6.6 6.50
+   78    0.0523   2.1%  2830   1 Rosso sangue                                         1986    295  7.1 6.80
+   79    0.0516   2.1%  2892  15 Love Building                                        2013     10  6.8 6.51
+   80    0.0513   2.1%    13 121 Who Killed Bambi?                                    2013     63  5.5 6.33
+   81    0.0501   2.0%   125  62 I colori dell'anima                                  2004    211  7.0 6.71
+   82    0.0500   2.0%   245  59 The Professor and His Beloved Equation               2006     19  6.8 6.52
+   83    0.0495   2.0%   699  29 Barcelona Christmas Night                            2015     75  6.3 6.46
+   84    0.0494   2.0%    76  84 Diario dei miei due di picche                        2025     18  6.0 6.47
+   85    0.0491   2.0%   449  40 The Perfect Host                                     2010    486  6.4 6.44
+   86    0.0482   1.9%   607  37 Host - Chiamata mortale                              2020   1343  6.6 6.58
+   87    0.0482   1.9%   988  32 Captain Fantastic                                    2016   6986  7.9 7.84
+   88    0.0479   1.9%   614  38 Il primo giorno della mia vita                       2023    172  6.7 6.57
+   89    0.0477   1.9%  1255  18 Le Regard de Charles                                 2019     17  6.8 6.51
+   90    0.0461   1.8%  1260  10 Hachiko - Il tuo migliore amico                      2009   7358  8.0 7.94
+   91    0.0457   1.8%   487  42 La banda dei Babbi Natale                            2010   1099  6.0 6.13
+   92    0.0450   1.8%  2006   9 Good Bye My Princess                                 2019     11  7.5 6.54
+   93    0.0448   1.8%  2006   9 Immortal Samsara                                     2022     34  6.1 6.46
+   94    0.0441   1.8%  3415   7 SKAM España                                          2018    505  7.7 7.25
+   95    0.0438   1.8%   474  40 Dirty 30                                             2016     95  5.8 6.33
+   96    0.0435   1.7%  1927  12 Unfriended                                           2014   3600  5.6 5.63
+   97    0.0422   1.7%   100  74 Famiglia all'improvviso - Istruzioni non incluse     2016   3075  7.7 7.61
+   98    0.0421   1.7%  1469  16 Perfect Blue                                         1998   3403  8.3 8.15
+   99    0.0421   1.7%  1255  18 Piļsāta pī upis                                      2020     23  5.9 6.46
+  100    0.0412   1.7%   513  42 이태원 살인사건                                             2009     28  6.4 6.49
+
+==============================================================================================================
+Breaking Bad (2008) — tv:1396 · riga 49763 · bolla 3262 (n=4)
+  mondo:  · es. Breaking Bad, Better Call Saul, Ozark
+  grado 697 · peso totale 131.8 · top500 peso 99.5%
+    top  10:   8 bolle distinte
+    top  20:  17 bolle distinte
+    top  50:  42 bolle distinte
+    top 100:  81 bolle distinte
+    #      peso   %max bolla   n titolo                                               anno     vc   va  bay
+    1   83.3403 100.0%  3262   4 Better Call Saul                                     2015   6976  8.7 8.62
+    2    8.4950  10.2%  1164  13 Narcos                                               2015   3457  8.1 7.96
+    3    5.0493   6.1%  1451   9 Power                                                2014   1315  7.7 7.48
+    4    4.2801   5.1%  1164  13 El Chapo                                             2017   1682  7.5 7.35
+    5    4.0680   4.9%  1274  20 El Camino: Il film di Breaking Bad                   2019   5885  7.1 7.03
+    6    2.5614   3.1%  1451   9 A Model Family                                       2022     72  6.8 6.56
+    7    1.9192   2.3%  3263   3 Chernobyl                                            2019   8394  8.7 8.62
+    8    1.9004   2.3%  1393   9 Prison Break                                         2005   6217  8.1 8.03
+    9    1.3006   1.6%  3434   6 Squid Game                                           2021  17857  7.9 7.83
+   10    1.1551   1.4%   270  30 Le regole del delitto perfetto                       2014   1822  7.8 7.62
+   11    0.8786   1.1%  2936  22 Black Mirror                                         2011   6599  8.3 8.22
+   12    0.8341   1.0%  3236   5 Pluribus                                             2025   1157  7.9 7.62
+   13    0.7362   0.9%  1139  21 Il caos dopo di te                                   2020    297  6.9 6.71
+   14    0.7024   0.8%    62  96 은수 좋은 날                                              2025     13  6.6 6.50
+   15    0.6067   0.7%  3174   5 The Big C                                            2010    146  7.3 6.76
+   16    0.6029   0.7%    80  71 Confini e dipendenze                                 2021    404  6.2 6.35
+   17    0.4263   0.5%  3183   8 Lost                                                 2004   5408  8.0 7.89
+   18    0.4122   0.5%  1763   8 1992                                                 2015     79  7.1 6.63
+   19    0.3977   0.5%  2015   9 Stranger Things                                      2016  21999  8.5 8.52
+   20    0.3852   0.5%  1763   8 1993                                                 2017     55  7.0 6.58
+   21    0.3660   0.4%  1241   7 Deadwood                                             2004   1005  8.1 7.74
+   22    0.3517   0.4%  3329   8 בני ערובה                                            2013     29  6.1 6.47
+   23    0.3138   0.4%  1415  18 Law & Order: Organized Crime                         2021    309  7.9 7.21
+   24    0.3074   0.4%   263  60 Big Pharma: Il Crimine Del Secolo                    2021     46  7.7 6.66
+   25    0.2893   0.3%  3378   4 Seinfeld                                             1989   2482  8.2 8.06
+   26    0.2744   0.3%  1763   8 Il miracolo                                          2018     45  7.2 6.60
+   27    0.2742   0.3%   232  58 Il business degli stupefacenti                       2020    134  6.9 6.64
+   28    0.2582   0.3%  1531  15 Insider - Dietro la verità                           1999   2161  7.5 7.38
+   29    0.2481   0.3%   691  16 Scale e serpenti                                     2025     26  7.5 6.58
+   30    0.2365   0.3%  1763   8 1994                                                 2019     43  7.1 6.58
+   31    0.2337   0.3%  3108  11 How I Met Your Mother                                2005   6016  8.1 8.04
+   32    0.2262   0.3%  3329   8 Prisoners of war                                     2010     28  6.9 6.53
+   33    0.2191   0.3%  1763   8 Boris                                                2007    253  8.6 7.46
+   34    0.1996   0.2%  3329   8 قورباغه                                              2020     15  7.2 6.53
+   35    0.1993   0.2%   592  16 In Plain Sight - Protezione testimoni                2008    102  7.0 6.63
+   36    0.1938   0.2%  1278  24 Spiderhead                                           2022   1807  5.8 5.89
+   37    0.1742   0.2%  3085   4 Il Trono di Spade                                    2011  27954  8.5 8.45
+   38    0.1721   0.2%  1076  24 Brick - Dose mortale                                 2006   1449  6.8 6.75
+   39    0.1593   0.2%    20 117 El Club                                              2019    168  7.5 6.87
+   40    0.1592   0.2%   325  33 Io sono la legge                                     1971    143  6.5 6.50
+   41    0.1585   0.2%   943  21 마녀의 법정                                               2017     22  7.9 6.60
+   42    0.1568   0.2%   176  66 Shiny_Flakes: teenager narcotrafficante              2021    164  7.5 6.85
+   43    0.1482   0.2%   266  56 High School                                          2010    167  5.6 6.18
+   44    0.1363   0.2%  1499   8 Hellbound                                            2021   1029  7.3 7.12
+   45    0.1336   0.2%  1135  24 Habit                                                2021     63  4.6 6.17
+   46    0.1241   0.1%  1117  12 The Walking Dead                                     2010  18281  8.1 8.05
+   47    0.1229   0.1%  1814  11 Battle Creek                                         2015     84  7.0 6.60
+   48    0.1122   0.1%  1520  10 Gracepoint                                           2014     90  6.6 6.53
+   49    0.1054   0.1%   883  32 Gli effetti collaterali dell'amore                   2005     41  5.7 6.40
+   50    0.1031   0.1%   278  54 Oltre la legge - L'informatore                       1987     37  6.6 6.52
+   51    0.0926   0.1%   312  40 A mezzanotte corre il terrore                        1942     35  5.0 6.34
+   52    0.0913   0.1%     0 341 Dermaphoria                                          2014     13  6.3 6.49
+   53    0.0905   0.1%  2030   9 Non è un paese per vecchi                            2007  13935  8.0 7.92
+   54    0.0862   0.1%  1299   8 Saint X                                              2023     76  6.5 6.50
+   55    0.0860   0.1%  2976  17 Big Vape- ascesa e caduta di Juul                    2023     21  6.8 6.52
+   56    0.0837   0.1%  3402   6 The Lone Gunmen                                      2001    102  6.8 6.58
+   57    0.0786   0.1%  1410  10 The Office (US)                                      2005   5602  8.6 8.48
+   58    0.0744   0.1%   200  60 I piloti dell'inferno                                1957     70  6.7 6.54
+   59    0.0697   0.1%   369  49 L'ingrediente segreto                                2018     15  6.3 6.49
+   60    0.0617   0.1%   999  25 Mato Grosso                                          1992    432  6.0 6.20
+   61    0.0607   0.1%    23 110 Tra le gambe                                         1999     65  5.4 6.30
+   62    0.0601   0.1%   511  32 Bocca da fuoco                                       1979     30  5.0 6.36
+   63    0.0592   0.1%  1425  18 Programmato per uccidere                             1990    616  6.1 6.25
+   64    0.0566   0.1%  3355   5 Death Note                                           2006   5213  8.6 8.49
+   65    0.0463   0.1%   218  55 Das Verschwinden                                     2017     15  6.5 6.50
+   66    0.0379   0.0%   145  66 Control                                              2004    198  6.1 6.35
+   67    0.0376   0.0%  1027  24 The Loved Ones                                       2010    870  6.7 6.65
+   68    0.0375   0.0%   810  28 Notti di terrore                                     1940     88  5.3 6.23
+   69    0.0343   0.0%   182  63 Tutti a squola                                       1979     11  4.1 6.42
+   70    0.0339   0.0%   180  61 Tensione                                             1949     57  6.8 6.55
+   71    0.0320   0.0%   648  30 Nobel son - Un colpo da Nobel                        2007    143  6.0 6.35
+   72    0.0285   0.0%   835  29 The St. Francisville Experiment                      2000     34  4.0 6.25
+   73    0.0269   0.0%   629  37 Persuasione                                          2007    287  7.2 6.86
+   74    0.0251   0.0%   330  54 No Half Measures: Creating the Final Season of Break 2013    135  8.5 7.12
+   75    0.0231   0.0%    17 125 White Lie                                            2019     41  6.5 6.50
+   76    0.0215   0.0%   426  46 Un professore fra le nuvole                          1961    208  6.5 6.52
+   77    0.0202   0.0%    25 106 Oltre la lavagna. La scuola della speranza           2011     70  7.5 6.69
+   78    0.0201   0.0%  1164  13 Regina del Sud                                       2016    482  7.6 7.19
+   79    0.0195   0.0%  3420   3 Sons of Anarchy                                      2008   3406  8.4 8.25
+   80    0.0189   0.0%  1355   9 Task                                                 2025    408  7.0 6.80
+   81    0.0188   0.0%  1628  13 Mayor of Kingstown                                   2021    689  8.0 7.52
+   82    0.0188   0.0%   674  34 Darkman III - Darkman morirai                        1996    163  5.3 6.06
+   83    0.0183   0.0%  3385   7 Banshee - La città del male                          2013   1459  8.0 7.72
+   84    0.0163   0.0%   821  32 McMafia                                              2018    234  7.3 6.83
+   85    0.0155   0.0%  1355   9 Dope Thief                                           2025    135  6.5 6.50
+   86    0.0154   0.0%  1164  13 Narcos: Messico                                      2018   1554  7.9 7.69
+   87    0.0147   0.0%  1355   9 The Shield                                           2002    916  8.2 7.76
+   88    0.0143   0.0%  1393   9 Animal Kingdom                                       2016    576  7.8 7.35
+   89    0.0140   0.0%  3262   4 Ozark                                                2017   2922  8.2 8.04
+   90    0.0138   0.0%   821  32 I Soprano                                            1999   3735  8.7 8.51
+   91    0.0136   0.0%  3420   3 Mayans M.C.                                          2018    848  8.0 7.58
+   92    0.0134   0.0%   821  32 Asaf                                                 2024     25  5.8 6.45
+   93    0.0133   0.0%  2024   9 Fargo                                                2014   3478  8.3 8.16
+   94    0.0132   0.0%  1093  23 Low Life                                             2025     20  7.0 6.53
+   95    0.0128   0.0%  1628  13 Tulsa King                                           2022   2842  8.3 8.13
+   96    0.0128   0.0%    82  87 Perverso                                             2024     15  6.2 6.49
+   97    0.0128   0.0%  3171   9 Satu                                                 2024     26  7.5 6.58
+   98    0.0127   0.0%  1519   9 Gangs of London                                      2020    714  7.8 7.42
+   99    0.0127   0.0%   821  32 ZeroZeroZero                                         2020    537  7.8 7.33
+  100    0.0126   0.0%  3424   4 Memory of a Killer                                   2026     91  7.8 6.80
+
+
+SOVRAPPOSIZIONE fra i top-100 (Jaccard):
+  Spider-Man (2002)                vs Inkheart (2008)                 : 0.01 (comuni 1)
+  Spider-Man (2002)                vs Un ponte per Terabithia (2007)  : 0.01 (comuni 1)
+  Spider-Man (2002)                vs Inception (2010)                : 0.02 (comuni 3)
+  Spider-Man (2002)                vs Perfetti sconosciuti (2016)     : 0.00 (comuni 0)
+  Spider-Man (2002)                vs Breaking Bad (2008)             : 0.00 (comuni 0)
+  Inkheart (2008)                  vs Un ponte per Terabithia (2007)  : 0.07 (comuni 13)
+  Inkheart (2008)                  vs Inception (2010)                : 0.00 (comuni 0)
+  Inkheart (2008)                  vs Perfetti sconosciuti (2016)     : 0.00 (comuni 0)
+  Inkheart (2008)                  vs Breaking Bad (2008)             : 0.01 (comuni 1)
+  Un ponte per Terabithia (2007)   vs Inception (2010)                : 0.01 (comuni 1)
+  Un ponte per Terabithia (2007)   vs Perfetti sconosciuti (2016)     : 0.00 (comuni 0)
+  Un ponte per Terabithia (2007)   vs Breaking Bad (2008)             : 0.00 (comuni 0)
+  Inception (2010)                 vs Perfetti sconosciuti (2016)     : 0.00 (comuni 0)
+  Inception (2010)                 vs Breaking Bad (2008)             : 0.01 (comuni 1)
+  Perfetti sconosciuti (2016)      vs Breaking Bad (2008)             : 0.00 (comuni 0)
