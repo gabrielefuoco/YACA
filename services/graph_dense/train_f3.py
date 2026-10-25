@@ -21,6 +21,15 @@ from . import fields as FLD
 from .model_f3 import F3
 from .train_b1 import _batch_meta
 
+DI = FLD.FIELDS.index("di"); CO = FLD.FIELDS.index("co"); CL = FLD.FIELDS.index("cl")
+
+
+def decorr(z):
+    z = F.normalize(z, dim=1)
+    G = z.T @ z / max(z.shape[0], 1)
+    I = torch.eye(G.shape[0], device=z.device)
+    return ((G - I) ** 2).sum()
+
 
 def load_target(path, dev):
     z = np.load(path)
@@ -32,9 +41,13 @@ def load_target(path, dev):
     return idx, w, valid
 
 
-def full_ce(logits, rows_t, idx, w, valid, tau):
+def full_ce(logits, rows_t, idx, w, valid, tau, neg=None):
     logits = logits / tau
     logits.scatter_(1, rows_t.unsqueeze(1), -1e4)          # esclude self
+    if neg is not None:
+        m = neg.clone()
+        m.scatter_(1, idx, False)                          # i positivi del target restano
+        logits.masked_fill_(m, -1e4)                       # esclude falsi negativi (2-hop / cov>0.3)
     log_p = F.log_softmax(logits, dim=1)                   # softmax su TUTTO il canone
     lp = log_p.gather(1, idx)
     ce = -(w * lp).sum(1)
@@ -60,6 +73,11 @@ def main(argv=None):
     ap.add_argument("--batch", type=int, default=1024)
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--tau", type=float, default=0.07)
+    ap.add_argument("--field-dropout", type=float, default=0.0,
+                    help="dropout dei campi d'autore di:/co:/cl:")
+    ap.add_argument("--decorr", type=float, default=0.0, help="penalita' di decorrelazione")
+    ap.add_argument("--false-neg", type=int, default=0,
+                    help="1 = esclude dai negativi i 2-hop e chi ha co-visione>0.3")
     ap.add_argument("--nome", default="f3")
     ap.add_argument("--sem-target", default="mercury-target.npz")
     ap.add_argument("--field-target", default="fusion-target-v2.npz")
@@ -80,6 +98,8 @@ def main(argv=None):
     Bp = np.load(C.DATA / "trama-qwen3b.npy").astype(np.float32)
     Bp /= (np.linalg.norm(Bp, axis=1, keepdims=True) + 1e-9)
     Bk = np.load(C.DATA / "blocks.npz")["Bk"].astype(np.float32)
+    S = D.masked_yc_and_graph()
+    Yc = np.load(C.DATA / "yc-full.npz")["Yc_full"].astype(np.float32)
     cen = np.load(C.DATA / "centroids.npz")
     mu_dir = cen["mu_dir"].astype(np.float32); mu_coll = cen["mu_coll"].astype(np.float32)
     SIDX, SW, SVAL = load_target(C.DATA / a.sem_target, dev)
@@ -136,15 +156,29 @@ def main(argv=None):
         for st in range(0, len(perm), a.batch):
             rows = perm[st:st + a.batch]
             idx, off, val = _batch_meta(X, rows, rng)
+            if a.field_dropout > 0 and len(val):
+                fd = FI[idx].cpu()
+                bad = (fd == DI) | (fd == CO) | (fd == CL)
+                drop = bad & (torch.rand_like(val) < a.field_dropout)
+                val = val.masked_fill(drop, 0.0)
             rt = torch.from_numpy(rows).to(dev)
             z1, z2, z3 = model(torch.from_numpy(Bp[rows]).to(dev), torch.from_numpy(Bk[rows]).to(dev),
                                idx.to(dev), off.to(dev), val.to(dev), FI[idx.to(dev)],
                                torch.from_numpy(mu_dir[rows]).to(dev),
                                torch.from_numpy(mu_coll[rows]).to(dev))
-            ls = full_ce(z1 @ ZS.T, rt, SIDX[rt], SW[rt], SVAL[rt], a.tau)
-            lf = full_ce(z2 @ ZF.T, rt, FIDX[rt], FW[rt], FVAL[rt], a.tau)
-            lb = full_ce(z3 @ ZB.T, rt, BIDX[rt], BW[rt], BVAL[rt], a.tau)
+            neg = None
+            if a.false_neg:
+                sub = S[rows]
+                a2 = (sub + sub @ S) > 0
+                a2 = a2.toarray() if hasattr(a2, "toarray") else a2
+                cv = (Yc[rows] @ Yc.T) > 0.3
+                neg = torch.from_numpy((a2 | cv)).to(dev)
+            ls = full_ce(z1 @ ZS.T, rt, SIDX[rt], SW[rt], SVAL[rt], a.tau, neg)
+            lf = full_ce(z2 @ ZF.T, rt, FIDX[rt], FW[rt], FVAL[rt], a.tau, neg)
+            lb = full_ce(z3 @ ZB.T, rt, BIDX[rt], BW[rt], BVAL[rt], a.tau, neg)
             loss = ls + lf + lb
+            if a.decorr > 0:
+                loss = loss + a.decorr * (decorr(z1) + decorr(z2) + decorr(z3))
             opt.zero_grad(); loss.backward(); opt.step()
             with torch.no_grad():                       # banca aggiornata in-place
                 ZS[rt] = z1.detach(); ZF[rt] = z2.detach(); ZB[rt] = z3.detach()
@@ -160,8 +194,8 @@ def main(argv=None):
 
     ZS, ZF, ZB = z_all()
     ZSe = F.normalize(ZS, dim=1); ZFe = F.normalize(ZF, dim=1); ZBe = F.normalize(ZB, dim=1)
-    Zc = torch.cat([np.sqrt(0.35) * ZSe, np.sqrt(0.35) * ZFe,
-                    np.sqrt(0.30) * ZBe], 1)
+    Zc = torch.cat([np.sqrt(0.50) * ZSe, np.sqrt(0.10) * ZFe,
+                    np.sqrt(0.40) * ZBe], 1)
     print("fit:  sem %.3f · field %.3f · beh %.3f · concat %.3f" % (
         fit_score(ZSe, SIDX, SW), fit_score(ZFe, FIDX, FW),
         fit_score(ZBe, BIDX, BW), fit_score(Zc, FIDX, FW)), flush=True)

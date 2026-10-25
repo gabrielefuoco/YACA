@@ -75,3 +75,30 @@
 - **Multi-task con pesi adattivi** (l'incertezza di Kendall, GradNorm, PLE) invece delle 3 loss a peso 1.
 - **Feature dropout / adversarial removal** dei campi d'autore (l'unico fix all'eco del brand che non abbiamo provato).
 - **Un modello item-item** (non due-torri): il grafo è item-item, e il reranker lo dice.
+
+---
+
+# Appendice — le leve dei paper (f4a/f4b/f4c): tutte fallite
+
+Dopo la ricerca (18 paper, 3 report), abbiamo testato le leve una per una su b11.
+
+| variante | leva | grafo@20 | curato @10 |
+|---|---|---:|---|
+| **b11** | — (riferimento) | **0,210** | 0,084/0,087 |
+| f4a | τ=0,20 + field dropout 0,7 | 0,083 | 0,014/0,017 |
+| f4b | τ=0,20 da sola | 0,082 | 0,006/0,017 |
+| f4c | decorrelazione 0,01 | 0,128 | 0,032/0,038 |
+| f3 | multi-subspace (rif. architettura) | 0,128 | 0,023/0,034 |
+| b10 | — | 0,192 | 0,092/0,092 |
+
+**Perché falliscono.** b11 non è un modello che collassa: con 40 epoche su un target soft listwise è già vicino al massimo di capacità. Ogni perturbazione lo allontana dal target:
+- **τ alta** appiattisce la softmax e perde l'ordine dei 50 candidati (i paper la usano nel contrastive con negativi campionati, non con un target soft).
+- **field dropout** toglie l'unica ancora (regista/collection) e il field collassa su genere/rating → film per bambini.
+- **decorrelazione** forza dimensione dove non c'è segnale e abbassa il fit del concat (0,603 vs 0,646).
+
+**La lezione.** I paper descrivono regimi diversi dal nostro: il nostro target **è già** la distribuzione del grafo, la più ricca disponibile. Le leve che aiutano a *costruire* un target da zero non aiutano a *fittare* un target già denso.
+
+**Cosa resta valido dai paper** (non ancora testato, ma non prioritario):
+- filtro dei falsi negativi a 2-hop (costoso, da provare solo se si cambia target);
+- item-item esplicito (UltraGCN) — l'unica leva strutturale non provata;
+- multi-vector + RRF al posto del concat (MIND/Cormack) — l'unica che potrebbe cambiare il prodotto.
