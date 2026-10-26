@@ -1,378 +1,648 @@
 {
-  "_nota": "Trap Set anti-eco. 'bad' = noti negativi (devono stare fuori dai top-10), 'good' = validati (devono entrare). I 'good' vanno validati dall'utente: qui solo i 5 casi bandiera sono compilati.",
   "categorie": {
     "brand_trap": [
       {
         "key": "movie:346698",
         "nome": "Barbie",
         "bad": [
-          "movie:150540"
+          "movie:481583",
+          "movie:1012801",
+          "movie:57737"
         ],
         "good": [
-          "movie:545611"
-        ],
-        "_todo": "bad: i Barbie direct-to-video (Dreamtopia, Mermaid Power, ...); good: EEAAO, Red, Encanto, Luca"
+          "movie:545611",
+          "movie:508947",
+          "movie:568124",
+          "movie:508943",
+          "movie:337404"
+        ]
       },
       {
         "key": "movie:508883",
         "nome": "Il ragazzo e l'airone",
-        "bad": [],
-        "good": [],
-        "_todo": "bad: '舞台『千と千尋の神隠し』' e anime oscuri; good: Totoro, Howl, Mononoke, Citta incantata"
+        "bad": [
+          "movie:1001196"
+        ],
+        "good": [
+          "movie:8392",
+          "movie:4935",
+          "movie:128"
+        ]
       },
       {
         "key": "movie:137106",
         "nome": "The Lego Movie",
         "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "good": [
+          "movie:863",
+          "movie:569094"
+        ]
       },
       {
         "key": "movie:502356",
         "nome": "Super Mario Bros. - Il film",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:502356",
+          "movie:500259"
+        ],
+        "good": [
+          "movie:454626",
+          "movie:527774",
+          "movie:269149"
+        ]
       },
       {
         "key": "movie:454626",
         "nome": "Sonic - Il film",
         "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "good": [
+          "movie:20352",
+          "movie:116149"
+        ]
       },
       {
         "key": "movie:447404",
         "nome": "Detective Pikachu",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "tv:96420"
+        ],
+        "good": [
+          "movie:454626",
+          "movie:82690",
+          "movie:333339",
+          "movie:346648"
+        ]
       },
       {
         "key": "movie:353486",
         "nome": "Jumanji - Benvenuti nella giungla",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:8844"
+        ],
+        "good": [
+          "movie:333339",
+          "movie:335787",
+          "movie:87"
+        ]
       },
       {
         "key": "movie:425",
         "nome": "Ice Age",
         "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "good": [
+          "movie:953",
+          "movie:808",
+          "movie:46195",
+          "movie:269149"
+        ]
       },
       {
         "key": "movie:585",
         "nome": "Monsters & Co.",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:62211"
+        ],
+        "good": [
+          "movie:863",
+          "movie:9806",
+          "movie:808",
+          "movie:920"
+        ]
       },
       {
         "key": "movie:862",
         "nome": "Toy Story",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:863",
+          "movie:10193",
+          "movie:301528"
+        ],
+        "good": [
+          "movie:585",
+          "movie:920",
+          "movie:9487",
+          "movie:9806"
+        ]
       }
     ],
     "literal_title": [
       {
         "key": "movie:597",
         "nome": "Titanic",
-        "bad": [],
-        "good": [
-          "movie:424"
+        "bad": [
+          "movie:44918",
+          "movie:45929",
+          "movie:489493"
         ],
-        "_todo": "bad: i cloni/documentari omonimi (Titanic II, Titanica, ...); good: Il paziente inglese, Via col vento, Balla coi lupi, Il ponte sul fiume Kwai"
+        "good": [
+          "movie:409",
+          "movie:770",
+          "movie:581",
+          "movie:826"
+        ]
       },
       {
         "key": "movie:152601",
         "nome": "Her",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:11970"
+        ],
+        "good": [
+          "movie:153",
+          "movie:264660"
+        ]
       },
       {
         "key": "movie:64690",
         "nome": "Drive",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:47327"
+        ],
+        "good": [
+          "movie:18533"
+        ]
       },
       {
         "key": "movie:949",
         "nome": "Heat - La sfida",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:949"
+        ],
+        "good": [
+          "movie:238",
+          "movie:769",
+          "movie:111",
+          "movie:1422"
+        ]
       },
       {
         "key": "movie:14160",
         "nome": "Up",
         "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "good": [
+          "movie:585",
+          "movie:354912",
+          "movie:508442"
+        ]
       },
       {
         "key": "movie:11429",
         "nome": "Crash - Contatto fisico",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:884"
+        ],
+        "good": [
+          "movie:14",
+          "movie:334",
+          "movie:1900",
+          "movie:1164"
+        ]
       },
       {
         "key": "movie:1637",
         "nome": "Speed",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:1639"
+        ],
+        "good": [
+          "movie:1571",
+          "movie:562",
+          "movie:9802",
+          "movie:1701"
+        ]
       },
       {
         "key": "movie:686",
         "nome": "Contact",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:686"
+        ],
+        "good": [
+          "movie:329865",
+          "movie:62",
+          "movie:157336"
+        ]
       },
       {
         "key": "movie:2280",
         "nome": "Big",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:177572"
+        ],
+        "good": [
+          "movie:105",
+          "movie:17979",
+          "movie:505904"
+        ]
       },
       {
         "key": "movie:861",
         "nome": "Total Recall",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:64635"
+        ],
+        "good": [
+          "movie:861",
+          "movie:78",
+          "movie:603",
+          "movie:97020"
+        ]
       }
     ],
     "event": [
       {
         "key": "tv:87108",
         "nome": "Chernobyl",
-        "bad": [],
-        "good": [
-          "movie:753342"
+        "bad": [
+          "movie:319092",
+          "movie:944625"
         ],
-        "_todo": "bad: i documentari sullo stesso evento; good: Deepwater Horizon, Pandora, Volo 174, Challenger"
+        "good": [
+          "movie:296524",
+          "movie:429450",
+          "movie:76036",
+          "movie:177203"
+        ]
       },
       {
         "key": "movie:872585",
         "nome": "Oppenheimer",
-        "bad": [],
-        "good": [],
-        "_todo": "good: i documentari sull'atomica; bad: Top Gun, Glass Onion, Pinocchio"
+        "bad": [
+          "movie:361743",
+          "movie:555604"
+        ],
+        "good": [
+          "movie:59314",
+          "movie:27461",
+          "movie:696",
+          "movie:1149947"
+        ]
       },
       {
         "key": "movie:374720",
         "nome": "Dunkirk",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:399404",
+          "movie:857",
+          "movie:423",
+          "movie:424"
+        ]
       },
       {
         "key": "movie:399055",
         "nome": "L'ora più buia",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:374720",
+          "movie:424",
+          "movie:423",
+          "movie:72976"
+        ]
       },
       {
         "key": "movie:424",
         "nome": "Schindler's List",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:423",
+          "movie:399404",
+          "movie:2576"
+        ]
       },
       {
         "key": "movie:205596",
         "nome": "The Imitation Game",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:453",
+          "movie:37799",
+          "movie:10491",
+          "movie:591"
+        ]
       },
       {
         "key": "movie:76203",
         "nome": "12 anni schiavo",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:72976",
+          "movie:68718",
+          "movie:595",
+          "movie:50014"
+        ]
       },
       {
         "key": "movie:72976",
         "nome": "Lincoln",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:76203",
+          "movie:424",
+          "movie:11831",
+          "movie:595"
+        ]
       },
       {
         "key": "movie:568",
         "nome": "Apollo 13",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "tv:93786",
+          "movie:369972",
+          "movie:62",
+          "movie:49047"
+        ]
       },
       {
         "key": "movie:37799",
         "nome": "The Social Network",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:361743"
+        ],
+        "good": [
+          "movie:453",
+          "movie:205596",
+          "movie:321697"
+        ]
       }
     ],
     "franchise": [
       {
         "key": "movie:238",
         "nome": "Il padrino",
-        "bad": [],
-        "good": [
-          "movie:550"
+        "bad": [
+          "movie:242",
+          "tv:39651"
         ],
-        "_todo": "bad: The Last Don, Mafia!, TV-novel; good: Quei bravi ragazzi, Scarface, Gangs of NY, The Departed"
+        "good": [
+          "movie:769",
+          "movie:111",
+          "movie:1422",
+          "movie:680"
+        ]
       },
       {
         "key": "movie:348",
         "nome": "Alien",
-        "bad": [],
-        "good": [],
-        "_todo": "bad: Honey I Shrunk the Kids, Skyline; good: Aliens, Alien3, 2001, La cosa"
+        "bad": [
+          "movie:9354",
+          "movie:42684"
+        ],
+        "good": [
+          "movie:679",
+          "movie:62",
+          "movie:1091",
+          "movie:78"
+        ]
       },
       {
         "key": "movie:155",
         "nome": "Il cavaliere oscuro",
-        "bad": [],
-        "good": [],
-        "_todo": "bad: Lassie, L'oro delle montagne; good: Batman Begins, The Batman, Watchmen"
+        "bad": [
+          "movie:61855",
+          "movie:14597"
+        ],
+        "good": [
+          "movie:272",
+          "movie:414906",
+          "movie:13183",
+          "movie:27205"
+        ]
       },
       {
         "key": "movie:120",
         "nome": "Il Signore degli Anelli - La Compagnia dell'Anello",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:68735"
+        ],
+        "good": [
+          "movie:121",
+          "movie:122917",
+          "tv:1399",
+          "movie:671"
+        ]
       },
       {
         "key": "movie:11",
         "nome": "Guerre stellari",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:181812"
+        ],
+        "good": [
+          "movie:1891",
+          "movie:1892",
+          "movie:152",
+          "movie:438631"
+        ]
       },
       {
         "key": "movie:671",
         "nome": "Harry Potter e la pietra filosofale",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:12445"
+        ],
+        "good": [
+          "movie:120",
+          "tv:13793",
+          "movie:32657",
+          "tv:1399"
+        ]
       },
       {
         "key": "movie:603",
         "nome": "Matrix",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:624860"
+        ],
+        "good": [
+          "movie:604",
+          "movie:78",
+          "movie:9323",
+          "movie:27205"
+        ]
       },
       {
         "key": "movie:218",
         "nome": "Terminator",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:87101"
+        ],
+        "good": [
+          "movie:280",
+          "movie:97020",
+          "movie:679",
+          "movie:78"
+        ]
       },
       {
         "key": "movie:1366",
         "nome": "Rocky",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:1374"
+        ],
+        "good": [
+          "movie:1578",
+          "movie:312221",
+          "movie:30547",
+          "movie:59440"
+        ]
       },
       {
         "key": "movie:329",
         "nome": "Jurassic Park",
         "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "good": [
+          "movie:330",
+          "movie:254",
+          "movie:124905",
+          "movie:87"
+        ]
       }
     ],
     "cold_autoriale": [
       {
         "key": "movie:545611",
-        "nome": "Everything Everywhere All at Once",
+        "nome": "EEAAO",
         "bad": [
-          "movie:150540"
+          "movie:585511",
+          "movie:877269",
+          "movie:527774"
         ],
         "good": [
-          "movie:324857"
-        ],
-        "_todo": "bad: cartoni per bambini (Luck, Strange World, Raya); good: Spider-Verse, Dune, Matrix"
+          "movie:569094",
+          "movie:438631",
+          "movie:603",
+          "movie:346698"
+        ]
       },
       {
         "key": "movie:496243",
         "nome": "Parasite",
-        "bad": [],
-        "good": [],
-        "_todo": "bad: Now You See Me; good: Joker, Burning, Get Out"
+        "bad": [
+          "movie:75656",
+          "movie:90130"
+        ],
+        "good": [
+          "movie:475557",
+          "movie:491584",
+          "movie:419430",
+          "movie:11423"
+        ]
       },
       {
         "key": "tv:1438",
         "nome": "The Wire",
         "bad": [],
-        "good": [],
-        "_todo": "good: Homicide, NYPD, The Shield"
+        "good": [
+          "movie:22828",
+          "tv:194",
+          "tv:1414",
+          "tv:43982"
+        ]
       },
       {
         "key": "movie:792307",
         "nome": "Povere creature!",
-        "bad": [],
-        "good": [],
-        "_todo": "good: La persona peggiore del mondo, Madres paralelas, Past Lives"
+        "bad": [
+          "movie:964831"
+        ],
+        "good": [
+          "movie:660120",
+          "movie:666277",
+          "movie:965150",
+          "movie:630240"
+        ]
       },
       {
         "key": "movie:129",
         "nome": "La citta incantata",
-        "bad": [],
-        "good": [],
-        "_todo": "bad: messa in scena teatrale; good: Totoro, Howl, Mononoke"
+        "bad": [
+          "movie:1001196"
+        ],
+        "good": [
+          "movie:8392",
+          "movie:128",
+          "movie:4935",
+          "movie:12429"
+        ]
       },
       {
         "key": "movie:550",
         "nome": "Fight Club",
-        "bad": [],
-        "good": [],
-        "_todo": "good: Memento, The Game, Prestige"
+        "bad": [
+          "movie:384018"
+        ],
+        "good": [
+          "movie:77",
+          "movie:2649",
+          "movie:680",
+          "movie:1124"
+        ]
       },
       {
         "key": "movie:157336",
         "nome": "Interstellar",
-        "bad": [],
-        "good": [],
-        "_todo": "bad: Mission to Mars, Pianeta rosso; good: Arrival, The Martian, Gravity"
+        "bad": [
+          "movie:2067",
+          "movie:8870"
+        ],
+        "good": [
+          "movie:329865",
+          "movie:49047",
+          "movie:27205"
+        ]
       },
       {
         "key": "movie:27205",
         "nome": "Inception",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:384018"
+        ],
+        "good": [
+          "movie:157336",
+          "movie:603",
+          "movie:77",
+          "movie:1124"
+        ]
       },
       {
         "key": "movie:680",
         "nome": "Pulp Fiction",
         "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "good": [
+          "movie:629",
+          "movie:275",
+          "movie:500",
+          "movie:184"
+        ]
       },
       {
         "key": "movie:244786",
         "nome": "Whiplash",
-        "bad": [],
-        "good": [],
-        "_todo": "da compilare"
+        "bad": [
+          "movie:313369"
+        ],
+        "good": [
+          "movie:44214",
+          "movie:194662",
+          "movie:502033",
+          "movie:424694"
+        ]
       }
     ]
   }

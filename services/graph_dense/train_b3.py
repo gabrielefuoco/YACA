@@ -117,6 +117,7 @@ def main(argv=None):
     ap.add_argument("--lambda-margin", type=float, default=0.0, help="peso del margine listwise")
     ap.add_argument("--margin", type=float, default=0.5, help="margine (unita' logit)")
     ap.add_argument("--neg-target", default="", help="negativi hard (idx/w) per unlikelihood")
+    ap.add_argument("--train-only-yc", action="store_true", help="addestra solo sui film con co-visione reale")
     ap.add_argument("--neg-lambda", type=float, default=0.5)
     ap.add_argument("--neg-margin", type=float, default=1.0, help="margine logit sui negativi")
     ap.add_argument("--epoche", type=int, default=100)
@@ -156,6 +157,10 @@ def main(argv=None):
     tr = T.build(B, S, holdout_mask=hold, salva=False)
     N = B["N"]
     train = (~hold) & tr["has_teacher"]
+    if a.train_only_yc:
+        yc_raw = np.linalg.norm(np.load(C.DATA / "ml-yc.npz")["Yc"].astype(np.float32), axis=1) > 1e-6
+        train = train & yc_raw & (~B["is_tv"])
+        print(f"--train-only-yc: train {int(train.sum()):,}", flush=True)
     nodes = np.where(train)[0]
     zbl = np.load(C.DATA / "blocks.npz")
     Bp = torch.from_numpy(zbl["Bp"].astype(np.float32)).to(dev)

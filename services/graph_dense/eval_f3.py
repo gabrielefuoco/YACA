@@ -35,9 +35,12 @@ def _top(Z, i, k, exclude=None):
     return np.argsort(-s)[:k]
 
 
-def trap(model="f3"):
+def trap(model="f3", rerank=False):
     B = D.basic(); ro = B["row_of"]
     z = np.load(C.DATA / f"{model}.npz"); Z = z["Z"].astype(np.float32)
+    Yc = np.load(C.DATA / "ml-yc.npz")["Yc"].astype(np.float32)
+    Yc /= (np.linalg.norm(Yc, axis=1, keepdims=True) + 1e-9)
+    date = np.load(C.DATA / "uscite-ordinali.npy").astype(np.float32); is_tv = B["is_tv"]
     t = json.load(open(C.DATA / "trap-set.json", encoding="utf-8"))
     rows = []
     for cat, items in t["categorie"].items():
@@ -46,7 +49,15 @@ def trap(model="f3"):
             k = it["key"]
             if k not in ro:
                 continue
-            i = int(ro[k]); top = _top(Z, i, 10)
+            i = int(ro[k])
+            if rerank:
+                cos = Z @ Z[i]; cos[i] = -1e9
+                beh = Yc[i] @ Yc.T; beh[i] = -1e9
+                if not is_tv[i] and date[i] > 0:
+                    near = (~is_tv) & (date > 0) & (np.abs(date - date[i]) < 120); beh[near] *= 0.2
+                top = np.argsort(-(cos + 0.3 * beh))[:10]
+            else:
+                top = _top(Z, i, 10)
             bad = {int(ro[x]) for x in it.get("bad", []) if x in ro and x != k}
             good = {int(ro[x]) for x in it.get("good", []) if x in ro and x != k}
             if not bad and not good:
@@ -115,7 +126,12 @@ def yc_eval(model="f3"):
     split = np.load(C.DATA / "yc-split.npz")
     A, Bs, mask, gt = split["A"], split["B_"], split["mask"], split["gt"]
     out = {}
-    for nome, Z in (("concat", z["Z"]), ("sem", z["Z_sem"]), ("field", z["Z_field"]), ("beh", z["Z_beh"])):
+    parts = [("concat", "Z")]
+    for nome, key in (("sem", "Z_sem"), ("field", "Z_field"), ("beh", "Z_beh")):
+        if key in z.files:
+            parts.append((nome, key))
+    for nome, key in parts:
+        Z = z[key]
         Z = Z.astype(np.float32)
         rec = []
         for i in A:
@@ -139,13 +155,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--modello", default="f3")
     ap.add_argument("--trap", action="store_true")
+    ap.add_argument("--rerank", action="store_true")
     ap.add_argument("--yc", action="store_true")
     ap.add_argument("--build-splits", action="store_true")
     a = ap.parse_args(argv)
     if a.build_splits:
         build_splits()
     if a.trap:
-        trap(a.modello)
+        trap(a.modello, rerank=a.rerank)
     if a.yc:
         yc_eval(a.modello)
 
