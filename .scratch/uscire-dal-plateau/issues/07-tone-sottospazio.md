@@ -105,3 +105,55 @@ proprietà che nessun segnale basato su trama/keyword aveva.
 **Il limite**: la precisione sui veri positivi è mediocre (*Povere creature!* #267, *EEAAO* #908), e il
 campione è 2.061 film su 76.497. Servono due cose: scala (tutti i film con ≥200 voti, ~15.000, circa
 1,5 h di fetch) e forse un testo più mirato del corpo intero della recensione.
+
+---
+
+## Analisi del pilota: perché le recensioni non bastano
+
+Su richiesta dell'utente ("non mi convince, fermiamoci e analizziamola, con riserva"). Tre misure.
+
+### 1. La densità del tono nel testo è 0,13%
+
+Su 300 recensioni (146.483 parole): **193 parole di tono** — camp, satirico, surreale, kitsch, deadpan,
+melodramma, grottesco, onirico, sovversivo... **0,13%**. Una recensione media ha 488 parole, di cui
+~0,6 di tono. L'embedding di un documento così è al 99,87% trama e lodi generiche: il segnale che
+cerchiamo è tre ordini di grandezza sotto il rumore. **Questo spiega esattamente i ranghi misurati**,
+non è un caso.
+
+Il 44% dei film (913/2.061) ha almeno un marcatore di tono.
+
+### 2. Sullo stesso pool di 2.061 film, i tre segnali si dividono il lavoro
+
+| film | giudizio | recensioni | trama | grafo V19 |
+|---|---|---:|---:|---:|
+| Lady Bird | affine | **#2** | #1263 | #3 |
+| The Substance | affine | **#58** | #1871 | assente |
+| Povere creature! | affine | #267 | #601 | assente |
+| EEAAO | affine | #908 | **#60** | #36 |
+| Annabelle | falso amico | #1239 | **#348** | assente |
+| Dragon Trainer | falso amico | #992 | #1344 | assente |
+| American Sniper | falso amico | #1505 | #978 | assente |
+
+Le recensioni trovano *Lady Bird* (#2) e *The Substance* (#58) dove la trama non li vede (#1263, #1871);
+la trama trova *EEAAO* (#60) dove le recensioni lo perdono (#908). **Sono complementari — ma nessuno
+dei due mette *Povere creature!* vicino a *Barbie*.**
+
+### 3. Filtrare le frasi di tono peggiora
+
+Tenendo solo le frasi con un marcatore: 698 film su 2.061, e la riga di *Barbie* diventa
+*Willy Wonka e la fabbrica di cioccolato* (1971) · *Tucker & Dale vs. Evil* · *Fantastic Mr. Fox* ·
+*Last Action Hero* · *Shadowhunters*. Il pool si svuota e il rumore prende il posto del segnale.
+
+### Conclusione
+
+**La strada è chiusa in questa forma, e per un motivo misurabile**: la densità del tono nelle recensioni
+è 0,13%, e nessuna aggregazione di un documento al 99,87% di trama può isolarla. Scalare a 15.000 film
+allarga il pool ma non cambia la densità: *Povere creature!* resterebbe a metà classifica.
+
+Quello che servirebbe è un **asse di tono etichettato**: qualche centinaio di coppie giudicate
+("stesso tono / no") da cui imparare, oppure un LLM che legge le recensioni e restituisce etichette di
+tono su un campione (poche centinaia di film, costo basso). Non altre aggregazioni di testo non
+etichettato.
+
+Il pilota resta utile per una cosa: **la separazione dei falsi amici** (#992, #1239, #1505 contro i #23
+e #40 di KWLAT). Quella proprietà è reale e va ricordata se un giorno si costruisce l'asse etichettato.
