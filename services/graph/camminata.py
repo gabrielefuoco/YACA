@@ -52,7 +52,18 @@ def transizione_pronta(nome="bolle-eterogeneo-V10-p1.0-triangolo.npz", k=None):
     """
     k = P.POTA_PER_RIGA if k is None else k
     z = K.DATA / "transizione-potata.npz"
-    sha = K.sha_file(nome)
+    # LA CHIAVE E' LA PROVENIENZA, NON LO SHA DEL FILE (ticket 12). Lo sha del file cambia anche per
+    # un riordino degli archi a parita' di contenuto, e NON cambia quando cambia cio' che il file
+    # significa: la chiusura si applica DOPO il mixer e trasforma i pesi senza toccare la topologia,
+    # quindi un artefatto "chiuso" e uno "non chiuso" hanno lo stesso numero di archi e cache diverse
+    # solo se qualcuno se ne ricorda. Con la provenienza la cache si invalida da sola.
+    try:
+        from graph_dense import provenance as _PV
+        sha = _PV.chiave_cache(K.A(nome), pota=int(k))
+    except ImportError:
+        # il motore gira con `services/` sul path: se `graph_dense` non e' importabile si degrada
+        # sullo sha del file, che e' il comportamento precedente (meno preciso, non rotto).
+        sha = K.sha_file(nome)
     if z.exists():
         d = np.load(z)
         if str(d["triangolo_sha"]) == sha and int(d["k"]) == int(k):
