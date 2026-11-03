@@ -71,3 +71,37 @@ Il tono, se è nei dati, sta in un testo che *parla* di tono: le recensioni uten
 estetici: «campy», «surreal», «satirical», «plastic», «lynchian») o Wikipedia (intro + sezione
 Themes/Style). Costo: ~15.000 richieste TMDB per i film con ≥200 voti, ore 1, oppure il dump Wikipedia.
 Da decidere con l'utente: è una fonte nuova, non un'altra prova sui metadati esistenti.
+
+---
+
+## Seconda strada, pilota: le recensioni funzionano dove il residuo falliva
+
+`services/graph_dense/critica.py`: scarica `/movie/{id}/reviews` da TMDB (chiave da `.env`), tiene le
+prime 6 recensioni per film, embedda con Qwen3-Embedding (stesso modello delle trame) e mette tutto in
+cache (`services/graph_dense/data/recensioni.parquet`). Pilota su **2.061 film** con ≥500 voti.
+
+*Barbie*, primi 8 vicini per recensioni:
+
+```
+Piccole donne · Lady Bird · Bombshell · La babysitter · Free Guy · Bad Moms · Parasite · Babe
+```
+
+Ranghi dei casi che ci interessano:
+
+| film | giudizio | rango (recensioni) | per confronto, rango in KWLAT |
+|---|---|---:|---:|
+| Lady Bird | affine | **#2** | #19 (V19) |
+| The Substance | affine | #58 | assente |
+| Povere creature! | affine | #267 | #122 |
+| EEAAO | affine | #908 | — |
+| Dragon Trainer | falso amico | **#992** | **#23** |
+| Annabelle | falso amico | **#1239** | assente |
+| American Sniper | falso amico | **#1505** | **#40** |
+
+**Il fatto nuovo**: le recensioni **separano i falsi amici**. Dove KWLAT metteva *Dragon Trainer* al #23
+e *American Sniper* al #40 — cioè vicini a *Barbie* — le recensioni li mandano oltre il #990. È la
+proprietà che nessun segnale basato su trama/keyword aveva.
+
+**Il limite**: la precisione sui veri positivi è mediocre (*Povere creature!* #267, *EEAAO* #908), e il
+campione è 2.061 film su 76.497. Servono due cose: scala (tutti i film con ≥200 voti, ~15.000, circa
+1,5 h di fetch) e forse un testo più mirato del corpo intero della recensione.
