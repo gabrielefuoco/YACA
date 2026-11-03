@@ -1,4 +1,4 @@
-Status: claimed
+Status: resolved
 Type: task
 
 # Anime e film-saga: regola strutturale nel mixer e nel retrieval
@@ -38,3 +38,28 @@ Manca ancora: la misura sui 30 casi di `anime-30.py` (richiede un rebuild del gr
 di retrieval** in `motore.py` (se i semi sono ≥60% anime, filtra i candidati e penalizza i film-franchise
 di cui non si è vista la serie madre). La maschera vive nel motore di prodotto, dove c'è ancora la
 partizione a bolle: va decisa insieme al passaggio alla matrice sparsa.
+
+---
+
+## Esito
+
+**Mixer** — `--damp-anime-saga`: ×0,15 sugli archi in cui il nodo di partenza è `ANIME & ~IS_TV` e
+condivide collezione TMDB o un token raro del titolo. Misurato sui 30 casi misti di `anime-30.py`
+(ora con un argomento per puntare a un grafo qualsiasi):
+
+| | anime nei 20 | di cui **saga** | film | voti mediani | <100 voti |
+|---|---:|---:|---:|---:|---:|
+| V19 | 18,6/20 | **1,8** | 6,8 | 1029 | 1,8 |
+| **V19 + `--damp-anime-saga`** | **19,2/20** | **0,2** | 4,9 | **1168** | 1,5 |
+
+Le appendici di saga nei top-20 passano da **1,8 a 0,2 per lista** (9× meno), la quota di anime sale e i
+voti mediani crescono. È esattamente il criterio del ticket.
+
+**Retrieval** — `services/graph/anime.py`: `quota_anime` e `maschera`. Si accende solo se ≥60% dei semi
+sono anime; mette in fondo (non cancella) i titoli non anime, quelli con <50 voti e i film la cui serie
+madre non è stata vista; se restano meno di 5 titoli buoni, non smonta la lista. 5 test.
+
+**Cosa resta aperto**: il *punto di innesto* nel motore. `motore.titoli_di()` lavora sulle bolle e il
+canone del prodotto è ancora quello a 66.259 nodi con partizione, mentre V19 ne ha 76.497 senza. La
+maschera è pronta e testata, ma va chiamata dopo la diffusione nel percorso di prodotto: si innesta
+insieme al passaggio alla matrice sparsa, che è fuori da questo effort.
