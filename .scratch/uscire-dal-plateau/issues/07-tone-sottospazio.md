@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: needs-info
 Type: research
 Blocked by: 05, 01
 
@@ -37,3 +37,37 @@ culturale.
 Se dopo il ticket 05 e il 02 *Barbie* non si muove di un rango, l'ipotesi "il tono è nel residuo" è
 falsa su questi dati: fermarsi e chiedere il dato nuovo (recensioni utente TMDB o Wikipedia
 intro + sezione Themes/Style) invece di insistere con i metadati esistenti.
+
+---
+
+## Esito della prima metà: **l'ipotesi è falsa su questi dati**
+
+Implementato `services/graph_dense/tone.py`: direzione del soggetto per titolo = media pesata idf degli
+embedding delle sue keyword; residuo `r = z − (z·ŝ)ŝ`; tipo TONE = coseno sui residui.
+7.185.500 archi, 66 s. 3 test.
+
+La riga grezza di TONE dice tutto:
+
+| titolo | primi vicini per residuo |
+|---|---|
+| *Barbie* | **Super Mario Bros. - Il Superfilm** · Vicini del terzo tipo · Tre uomini in barca · V - Visitors · Doctor Who · La via della prostituzione |
+| *Povere creature!* | Margarita with a Straw · Il diavolo veste Prada · Cortigiana · Matilda The Musical |
+| *Drive* | Faster · L'autista · Glassland · Kiler · Taxxi 2 |
+
+Il residuo non è il tono: è il **rumore specifico** — nomi propri, dettagli minori, ambientazioni — che
+la media delle keyword non cattura e che quindi resta nel vettore. *The Substance*, *Josie*, *Lady Bird*
+non compaiono in nessuna delle tre righe.
+
+Questo è il criterio di fallimento dichiarato in testa al ticket: *«Se dopo il ticket 05 e il 02 Barbie
+non si muove di un rango, l'ipotesi "il tono è nel residuo" è falsa su questi dati»*. È falsa.
+
+**Conclusione**: la seconda metà (contrastivo con coppie positive/negative e MLP) costruirebbe un
+classificatore addestrato su coppie scelte a mano, sopra un residuo che si è dimostrato rumore — non
+aggiunge informazione, aggiunge parametri. **Non la faccio.**
+
+## Serve il dato nuovo
+
+Il tono, se è nei dati, sta in un testo che *parla* di tono: le recensioni utente TMDB (aggettivi
+estetici: «campy», «surreal», «satirical», «plastic», «lynchian») o Wikipedia (intro + sezione
+Themes/Style). Costo: ~15.000 richieste TMDB per i film con ≥200 voti, ore 1, oppure il dump Wikipedia.
+Da decidere con l'utente: è una fonte nuova, non un'altra prova sui metadati esistenti.

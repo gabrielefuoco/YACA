@@ -10,38 +10,34 @@ falsi amici in top-10; R@20 ≥ 0,25 sul banco e quota >5k in top-10 ≤ 55%.
 
 ## Decisions so far
 
-- **La chiusura è `log`, non `adamic-adar` né `conteggio`** (misurato, ticket 02): comprime la cricca
-  da ×1211 a ×7,1 e porta *Lady Bird* al #19 nella riga di *Barbie* (era #61) senza perdita misurabile
-  sul banco (R@20 −0,004, sotto l'MDE 0,009-0,011; MRR e R@5 migliorano). SNIPS +0,026, sopra l'MDE.
-  Costo: >5k in top-10 dal 68,2% al 72,3%.
+- **La base congelata è V19** (COVISION temporale, CREWPROP 0,35, chiusura `log`, gate asimmetrico):
+  accuratezza identica a V18 (R@20 0,256 contro 0,254, sotto l'MDE) e **−10 punti di blockbuster**
+  in top-10 (64,5% contro 74,5%). *Barbie*: Piccole donne #1 · Wonka · Lady Bird #3 · Oppenheimer #24.
+- **Il tono deve prevalere sull'autoriale** (decisione dell'utente): il grafo non deve diventare «altra
+  roba dello stesso autore». CREWPROP resta a 0,35 come appoggio, non come risposta.
+- **Il residuo ortogonale al soggetto NON è il tono** (ticket 07, misurato): la riga TONE di *Barbie* è
+  *Super Mario Bros. - Il Superfilm*, *V - Visitors*, *Doctor Who*. Il residuo concentra rumore
+  specifico, non tono. La seconda metà (contrastivo) non si fa: addestrerebbe su rumore.
+- **La chiusura è `log`, non `adamic-adar` né `conteggio`** (ticket 02): comprime la cricca da ×1211 a
+  ×7,1, porta *Lady Bird* al #19 (era #61) e guadagna +0,026 SNIPS (sopra l'MDE) senza costi misurati.
 - **La COVISION senza `--semplice` è la leva più forte per la coda** (ticket 03): −6,8 punti di
-  blockbuster in top-10, al prezzo di −0,008 R@20 (al limite dell'MDE) e con Oppenheimer che esce dalla
-  top-10 di *Barbie*. Consigliata come base, con il costo dichiarato.
-- **CREWPROP funziona e costa**: porta *Piccole donne* e *Lady Bird* in testa a *Barbie*, ma toglie
-  −0,005/−0,007 di R@5 (sopra l'MDE) al banco curato. Il peso (0,35 o 0,7) è una scelta di prodotto.
-- **Il gate asimmetrico è innocuo ma insufficiente**: −1,4 punti di coda, tutto sotto l'MDE; il criterio
-  "sotto il 60%" non è raggiunto.
-- **Togliere la chiusura non è un'opzione**: costa −0,012 di R@20 (sopra l'MDE) e alza i blockbuster
-  al 73,2%. Il secondo ordine serve: è la *forma* del fattore che era sbagliata.
-- **Tre difetti verificati, non ipotesi** (2026-11-03): la "chiusura triangolare" moltiplica per i
-  vicini comuni (0 archi nuovi, ×700-1211 sulla riga di Barbie); COVISION è costruita con `--semplice`
-  (nessuno sconto temporale); il titolo è dentro il payload di TRAMA.
-- **La valutazione ha un MDE di 0,009-0,011 su R@20** a 499 sorgenti: sotto quella soglia è rumore, e
-  va dichiarato tale invece di essere rincorso.
-- **La configurazione `min` + k32 + spreading non si spedisce**: contro il PageRank che il motore già
-  usa vale +0,003 R@20 e raddoppia gli archi.
+  blockbuster, −0,008 R@20 al limite dell'MDE, e la bolla del weekend 2023 rotta.
+- **Il gate asimmetrico è innocuo ma insufficiente**: −1,4 punti di coda, tutto sotto l'MDE.
+- **La maschera TRAMA è concettualmente giusta e numericamente inerte** (ticket 05): tutto dentro il
+  rumore; i cartoni Mattel erano già al rango 172 grazie al damping di famiglia.
+- **Togliere la chiusura non è un'opzione**: −0,012 R@20 (sopra l'MDE), blockbuster al 73,2%.
+- **La valutazione ha un MDE di 0,005-0,012 su R@20** a 499 sorgenti: sotto quella soglia è rumore.
+- **La configurazione `min` + k32 + spreading non si spedisce**: +0,003 R@20 e archi raddoppiati.
 - **Nessun LLM-as-reranker**: il problema è la generazione dei candidati, non il riordino.
 - **Le keyword TMDB 1-gram sono chiuse**: 15 varianti, nessuna produce il vicinato voluto.
-- **Niente etichette umane su larga scala, niente API a pagamento come dipendenza centrale.**
 
 ## Not yet specified
 
-- **Peso di CREWPROP**: 0,7 (Piccole donne/Lady Bird in testa a *Barbie*, −0,007 R@5) o 0 (precisisione
-  sui primi 5)? È una scelta di prodotto, non statistica.
-- **Base del grafo**: adottare la COVISION temporale (ticket 03) come default, con −0,008 R@20 e −6,8
-  punti di coda.
-- Quale dato nuovo, se serve, per il tono: recensioni utente TMDB o Wikipedia (intro + sezione
-  Themes/Style). Non ancora deciso se vale il fetch.
+- **La fonte del tono**: recensioni utente TMDB (~15.000 richieste per i film con ≥200 voti) o
+  Wikipedia (intro + sezione Themes/Style). Serve una decisione, perché è una fonte nuova.
+- **La soglia del 55%** di blockbuster in top-10: oggi 64,5%. Le leve già provate si sono esaurite;
+  le prossime (RP3β, ticket 09) agiscono sulla stessa co-visione.
+- **Il peso di CREWPROP** è a 0,35 per decisione; se il tono arriva da un'altra fonte, scenderà.
 - Se il prodotto debba restare a bolle o passare alla matrice sparsa (fuori da questo effort, ma
   blocca la messa in produzione di V18).
 - La soglia oltre la quale un titolo nuovo ha abbastanza segnali per entrare nel grafo.

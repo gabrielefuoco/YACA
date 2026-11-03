@@ -12,11 +12,16 @@ Un grafo che, dato un titolo, proponga vicini **di tono e non solo di pubblico**
 accuratezza sul banco curato, con una valutazione che sappia distinguere un miglioramento vero da
 ±0,005 di rumore, e con il cold-start (titoli nuovi) che funziona davvero.
 
+**Decisione dell'utente (2026-11-03)**: il bersaglio *tonale* deve prevalere su quello *autoriale*, e di
+parecchio — se coincidono bene, ma il grafo non deve diventare «ti suggerisco altra roba dello stesso
+autore». Bersaglio: *Povere creature!*, *The Substance*, *Josie and the Pussycats*, «e altri che non so
+precisare».
+
 Misura del successo, in ordine:
 1. `Barbie` porta nei primi 10 almeno 2 dei film giudicati affini (*Povere creature!*, *The Substance*,
    *Josie and the Pussycats*, *EEAAO*) **senza** portarci *Dragon Trainer*, *Annabelle*, *American Sniper*.
 2. R@20 sul banco curato **non scende** sotto 0,25 e la quota di titoli >5k voti in top-10 sui semi
-   popolari **scende sotto il 55%** (oggi 66%).
+   popolari **scende sotto il 55%** (oggi 64,5% con V19; era 74,5%).
 3. Ogni confronto fra due grafi è accompagnato da un intervallo di confidenza, e le differenze sotto
    la soglia di rilevabilità vengono dichiarate rumore invece di essere rincorse.
 4. Un titolo nuovo (senza co-visione) riceve raccomandazioni non degeneri entro 24h dall'uscita.
@@ -130,7 +135,15 @@ content-addressed, che chiude la classe di bug "build sbagliata in silenzio").
 ## Criteri di accettazione dell'effort
 
 1. `Barbie` nei primi 10 contiene ≥2 affini e 0 falsi amici evidenti (bambole horror, documentari).
-2. R@20 ≥ 0,25 e quota >5k in top-10 ≤ 55% sui 200 semi popolari.
+2. R@20 ≥ 0,25 e quota >5k in top-10 ≤ 55% sui 200 semi popolari. — **oggi 64,5%** (era 74,5%):
+   il criterio non è ancora raggiunto.
 3. Ogni ticket chiude con: numero prima/dopo, intervallo di confidenza bootstrap, e verdetto
    esplicito "sopra/sotto l'MDE".
 4. `build` completa da zero senza fallback silenziosi: se manca un input, si ferma.
+
+## Stato al 2026-11-03
+
+Base congelata **V19** (`services/graph_dense/V19.md`): stessa accuratezza di V18, **−10 punti di
+blockbuster**, segnale autoriale in testa a *Barbie*. Il tono resta fuori portata con i segnali
+attuali: l'ipotesi del residuo ortogonale (ticket 07) è **falsamente** falsificata dai dati, e serve
+una fonte nuova (recensioni TMDB o Wikipedia Themes/Style).
