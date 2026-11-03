@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -35,3 +35,31 @@ Esiste `trama-notitle.npy` come esperimento (`emb-senza-titolo.py`), ma **non è
 ## Nota
 
 20 minuti di GPU e nessun dato nuovo: è il rapporto valore/costo migliore dopo il ticket 02.
+
+---
+
+## Esito
+
+`services/graph_dense/maschera.py` (`chiavi`, `maschera`, 6 test) + cablaggio in `embed-trama2.py`:
+il payload non porta più `f'{t}. {o}'`, e nella sinossi vengono mascherati i token di titolo, titolo
+originale e collezione (≥ 4 caratteri; il soggetto di frase diventa `the protagonist`; tetto di 6
+sostituzioni per non ridurre la sinossi a un buco). 71.855 trame ri-embeddare in **1037 s** di GPU.
+
+Esempio: *Barbie* → «The protagonist and Ken are having the time of their lives in the colorful and
+seemingly perfect world of the protagonist Land.»
+
+**Risultato onesto: nessun effetto misurabile.**
+
+| grafo | R@5 | R@20 | MRR | >5k | SNIPS |
+|---|---:|---:|---:|---:|---:|
+| TRAMA con titolo | 0,146 | 0,264 | 0,1023 | 72,3% | 0,156 |
+| **TRAMA mascherata** (a parità di COVISION `--semplice`) | 0,145 | 0,262 | 0,1011 | 72,6% | 0,162 |
+
+`R@20 −0,0011 [−0,0048, +0,0025]` · `SNIPS +0,0061` → tutto sotto l'MDE.
+Il criterio di accettazione era già soddisfatto prima: i cartoni Mattel stanno al rango **172** con il
+titolo e **244** mascherata — il `--damp-coll --damp-titolo` del mixer li aveva già abbattuti.
+
+**Vale la pena tenerlo?** Sì, ma per il motivo giusto: corregge un difetto concettuale (il titolo dentro
+l'embedding fa misurare l'omonimia) che su altri titoli può mordere, e non costa niente. **Non** è la
+leva per Barbie, e va detto: la seconda misura (la variante `v18mask`, con la COVISION temporale)
+mostrava −6,6 punti di coda, ma quello era l'effetto del ticket 03 confuso dentro lo stesso build.
