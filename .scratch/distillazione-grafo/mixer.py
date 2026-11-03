@@ -58,6 +58,122 @@ def correggi_hub(A, beta):
     return sp.csr_matrix(A.multiply((1.0 / np.maximum(ind, 1.0) ** beta)[None, :])).tocsr()
 
 
+def gate_popolare_asimmetrico(M, voti, vave, runtime, k_pop=10.0, tau=2.0, slope=1.5,
+                              vave_min=6.8, runtime_min=85):
+    """Lo stesso cancello, ma con una direzione (ticket 04).
+
+    Il cancello simmetrico tratta uguali due casi che non lo sono:
+      · il candidato e' PIU' popolare del seme -> di solito e' il "solito noto" da evitare, si attenua;
+      · il candidato e' MENO popolare -> puo' essere il cult che cerchiamo, oppure il cartone
+        direct-to-video. Il discriminante non e' il numero di voti ma la **forma**: un lungometraggio
+        cinematografico con voto alto (runtime >= 85', VAVE >= 6.8) passa indenne, un'appendice da 70'
+        con voto 6,0 viene attenuata come prima.
+
+    Misurato: il simmetrico con tau 3,0 tiene *Josie and the Pussycats* (400 voti) fuori da *Barbie*
+    esattamente come tiene fuori *Barbie e lo Schiaccianoci* (150 voti).
+    """
+    C = M.tocoo()
+    L = np.log1p(np.maximum(voti, 0))
+    su = L[C.col] - L[C.row]                 # >0: il candidato e' piu' popolare del seme
+    giu = -su
+    f = np.ones(len(C.data), np.float32)
+    # verso l'alto: soglia moltiplicativa (k_pop x voti) poi attenuazione
+    m_su = su > np.log(k_pop)
+    f[m_su] = np.exp(-(su[m_su] - np.log(k_pop)) / slope).astype(np.float32)
+    # verso il basso: passa solo la "forma cinematografica"
+    buono = (np.asarray(vave)[C.col] >= vave_min) & (np.asarray(runtime)[C.col] >= runtime_min)
+    m_giu = (giu > tau) & ~buono
+    f[m_giu] = np.exp(-(giu[m_giu] - tau) / slope).astype(np.float32)
+    out = sp.csr_matrix((C.data * f, (C.row, C.col)), shape=M.shape).tocsr()
+    print(f'  gate asimmetrico (k_pop {k_pop:g} · tau {tau:g} · vave {vave_min:g} · '
+          f'runtime {runtime_min}\'): attenua {100*float((f < 0.95).mean()):.1f}% degli archi '
+          f'(verso l alto {100*float(m_su.mean()):.1f}%, verso il basso {100*float(m_giu.mean()):.1f}%)',
+          flush=True)
+    out.setdiag(0)
+    out.eliminate_zeros()
+    return out
+
+
+def _runtime():
+    """Durata in minuti per riga del canone (0 = sconosciuta). I Parquet la hanno, i metadati no."""
+    import pandas as pd
+    from services.graph_dense import data as D
+    B = D.basic(); RO = B['row_of']
+    out = np.zeros(B['N'], np.float32)
+    for f, pre in (('.cache/tmdb/movies.parquet', 'movie'), ('.cache/tmdb/tv.parquet', 'tv')):
+        d = pd.read_parquet(f, columns=['id', 'runtime'])
+        for i, rt in zip(d['id'], d['runtime']):
+            r = RO.get(f'{pre}:{int(i)}')
+            if r is not None and isinstance(rt, (int, float)) and rt == rt:
+                out[r] = float(rt)
+    return out
+
+
+def damp_anime_saga(M, anime, coll, titoli, fattore=0.15, max_df=400, min_len=4):
+    """Smorza gli archi fra un film ANIME e un titolo della stessa saga (ticket 11).
+
+    I film-appendice (riassunti, recap, compilation) monopolizzano i vicini degli anime e sono
+    inutili per chi cerca una nuova opera. Restano utili come PONTI durante la diffusione, quindi
+    non si cancellano: si abbassano di `fattore`. Il criterio e' strutturale (collezione TMDB
+    condivisa, oppure un token raro del titolo in comune), non "genere animation".
+    """
+    import re
+    from collections import defaultdict
+    anime = np.asarray(anime, bool)
+    toks = []
+    for t in titoli:
+        s = re.sub(r"[^0-9a-zàèéìòù']+", ' ', str(t).lower())
+        toks.append({w for w in s.split() if len(w) >= min_len})
+    df = defaultdict(int)
+    for s in toks:
+        for w in s:
+            df[w] += 1
+    gruppi = defaultdict(list)
+    for i in np.flatnonzero(coll > 0):
+        gruppi[int(coll[i])].append(int(i))
+    coppie = defaultdict(set)
+    for g in gruppi.values():
+        for a in g:
+            for b in g:
+                if a != b:
+                    coppie[a].add(b)
+    for w, g in defaultdict(list, {w: [i for i, s in enumerate(toks) if w in s] for w in df}.items()).items():
+        if len(g) < 2 or df[w] > max_df:
+            continue
+        for a in g:
+            for b in g:
+                if a != b:
+                    coppie[a].add(b)
+    M = M.tocsr()
+    righe, colonne = [], []
+    for a, cs in coppie.items():
+        if not anime[a]:
+            continue
+        lo, hi = M.indptr[a], M.indptr[a + 1]
+        idx = M.indices[lo:hi]
+        arr = np.asarray(sorted(cs), np.int32)
+        pos = np.searchsorted(idx, arr)
+        v = pos < len(idx)
+        if not v.any():
+            continue
+        pos, arr = pos[v], arr[v]
+        hit = idx[pos] == arr
+        pos = pos[hit]
+        righe.extend([a] * len(pos)); colonne.extend(idx[pos].tolist())
+    if not righe:
+        return M, 0
+    # IL MOLTIPLICATORE SI APPLICA UNA VOLTA PER ARCO: con `righe` duplicate l'assegnamento
+    # indicizzato lascerebbe l'ultimo valore (o applicherebbe il fattore piu' volte).
+    C = M.tocoo()
+    chiave = set(zip(righe, colonne))
+    f = np.ones(len(C.data), np.float32)
+    for k, (r, c) in enumerate(zip(C.row.tolist(), C.col.tolist())):
+        if (r, c) in chiave:
+            f[k] = fattore
+    out = sp.csr_matrix((C.data * f, (C.row, C.col)), shape=M.shape).tocsr()
+    return out, len(chiave)
+
+
 def gate_popolarita(M, voti, tau=3.0, slope=1.5, smooth=False):
     """Cancello sulla distanza di popolarita' fra i due titoli.
 
@@ -198,8 +314,15 @@ def main():
     ap.add_argument('--rrf-k', type=int, default=60)
     ap.add_argument('--pop-gap', type=float, default=0.0)
     ap.add_argument('--pop-slope', type=float, default=1.5)
+    ap.add_argument('--gate-asimmetrico', action='store_true',
+                    help='ticket 04: attenua solo verso l alto, e verso il basso solo i direct-to-video')
+    ap.add_argument('--gate-k', type=float, default=10.0)
+    ap.add_argument('--gate-vave', type=float, default=6.8)
+    ap.add_argument('--gate-runtime', type=float, default=85.0)
     ap.add_argument('--pop-smooth', action='store_true')
     ap.add_argument('--damp-titolo', action='store_true')
+    ap.add_argument('--damp-anime-saga', action='store_true',
+                    help='ticket 11: smorza gli archi saga dentro gli anime (x0.15)')
     ap.add_argument('--tipi', default='')
     a = ap.parse_args()
 
@@ -266,20 +389,32 @@ def main():
         attr = _attributi_produzione()
         M, n = damping_famiglia(M, D.basic()['titoli'], D.basic()['COLL'].astype(np.int64), attr)
         print(f'  damping famiglia: {n:,} archi di famiglia senza lavorazione comune penalizzati', flush=True)
+    if a.damp_anime_saga:
+        B = D.basic()
+        mMeta = np.load('services/graph_dense/data/graph/metadati-canone.npz', allow_pickle=True)
+        M, n_anime = damp_anime_saga(M, mMeta['ANIME'], B['COLL'].astype(np.int64), B['titoli'])
+        print(f'  damping anime-saga: {n_anime:,} archi smorzati (x0.15)', flush=True)
     if a.pop_smooth:
         M = gate_popolarita(M, D.basic()['VOT'], 0.0, a.pop_slope, smooth=True)
+    elif a.gate_asimmetrico:
+        B = D.basic()
+        M = gate_popolare_asimmetrico(M, B['VOT'], B['VAVE'], _runtime(),
+                                      k_pop=a.gate_k, tau=a.pop_gap or 2.0, slope=a.pop_slope,
+                                      vave_min=a.gate_vave, runtime_min=a.gate_runtime)
     elif a.pop_gap:
         M = gate_popolarita(M, D.basic()['VOT'], a.pop_gap, a.pop_slope)
     if a.simmetrizza:
         M = ((M + M.T) * 0.5).tocsr()
         M.setdiag(0); M.eliminate_zeros()
 
-    suffisso = ('-dc' if a.damp_coll else '') + ('-dt' if a.damp_titolo else '')
+    suffisso = ('-dc' if a.damp_coll else '') + ('-dt' if a.damp_titolo else '') + ('-ga' if a.gate_asimmetrico else '')
     out = f'{DST}/MIX-{a.modo}{suffisso}.npz'
     from services.graph_dense import provenance as PV
     _params = {'modo': a.modo, 'alpha': a.alpha, 'pota': a.pota, 'simmetrizza': a.simmetrizza,
                'damp_coll': a.damp_coll, 'damp_titolo': a.damp_titolo, 'rrf_k': a.rrf_k,
                'pop_gap': a.pop_gap, 'pop_slope': a.pop_slope, 'pop_smooth': a.pop_smooth,
+               'gate_asimmetrico': a.gate_asimmetrico, 'gate_k': a.gate_k, 'damp_anime_saga': a.damp_anime_saga,
+               'gate_vave': a.gate_vave, 'gate_runtime': a.gate_runtime,
                'hub_tipi': a.hub_tipi, 'hub_beta': a.hub_beta, 'pesi': pesi, 'tipi': tipi}
     _inputs = {t: PV.sha256_file(f'{SRC}/{t}.npz') for t in tipi}
     PV.scrivi(out, M, step='mixer', params=_params, inputs=_inputs, canon_len=N)

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 02
 
@@ -30,3 +30,31 @@ fra le quattro fonti. Risultato: *Barbie* eredita l'intera co-visione congiuntur
 
 Il secondo ordine va calcolato **dopo** aver rimosso la finestra, non prima: sulla matrice troncata a
 top-20 i profili di *Barbie* e *Oppenheimer* sono identici e la SVD li unisce ancora di più.
+
+---
+
+## Esito
+
+`covision.py build` **senza** `--semplice`: 1.112.164 archi (contro i ~2,5M della versione semplice),
+56.073 titoli con archi, sconto temporale `0,3 + 0,7·ratio` sulla finestra di 365 giorni e p99 per fonte
+riattivati. Pipeline ricostruita (`v18nosem`).
+
+| grafo | R@5 | R@10 | R@20 | MRR | >5k top-10 | SNIPS |
+|---|---:|---:|---:|---:|---:|---:|
+| con `--semplice` | 0,146 | 0,204 | 0,264 | 0,1023 | 72,3% | 0,156 |
+| **senza `--semplice`** | 0,141 | 0,196 | 0,256 | 0,0975 | **65,5%** | 0,167 |
+
+`R@20 −0,0080 [−0,0139, −0,0023] · MDE 0,0083` → al limite, "sotto l'MDE" per un soffio.
+`SNIPS +0,0109` con IC che attraversa lo zero (120 utenti: MDE 0,0345, troppo pochi per concludere).
+
+**Il guadagno vero è la coda: −6,8 punti di blockbuster in top-10**, il più grande misurato finora
+(COVISION 2,2→1,0: −8,1; gate asimmetrico: −1,4; CREWPROP: −1,3).
+
+Effetto su *Barbie*: **Oppenheimer dal #9 al #22** (la bolla del weekend 2023 si rompe), *Lady Bird*
+dal #19 al #12, **Piccole donne al #3**. Ma la top-10 diventa animazione e Marvel (*Pinocchio*,
+*La sirenetta*, *Nimona*, *Endgame*, *No Way Home*): togliendo la finestra temporale, la co-visione
+restante è per **tipo di pubblico**, e il pubblico di *Barbie* è quello dei blockbuster per famiglie.
+È la conferma della diagnosi: *The Substance* e *Josie* non possono venire da questi segnali.
+
+Da decidere (ticket aperto): adottare la COVISION temporale come base — costa 0,008 di R@20 e
+guadagna 7 punti di coda. Consigliata sì, con il costo dichiarato.

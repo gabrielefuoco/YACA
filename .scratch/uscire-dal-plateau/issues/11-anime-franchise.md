@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: claimed
 Type: task
 
 # Anime e film-saga: regola strutturale nel mixer e nel retrieval
@@ -25,3 +25,16 @@ esplora il mondo anime. Le regole sono state misurate a mano ma **non implementa
 - Nei top-20 dei 30 casi anime spariscono i film-appendice (riassunti, recap, compilation).
 - Il banco non perde più di 0,005 di R@20.
 - La regola è documentata in `parametri.py` con il numero misurato.
+
+---
+
+## Parziale (mixer fatto, misura no)
+
+`mixer.py --damp-anime-saga`: moltiplicatore 0,15 sugli archi in cui il nodo di partenza è
+`ANIME & ~IS_TV` e condivide collezione TMDB o un token raro del titolo con l'altro. 2 test coprono:
+smorza solo l'arco anime↔anime della stessa saga, lascia intatti anime→film normale e anime senza saga.
+
+Manca ancora: la misura sui 30 casi di `anime-30.py` (richiede un rebuild del grafo) e la **maschera
+di retrieval** in `motore.py` (se i semi sono ≥60% anime, filtra i candidati e penalizza i film-franchise
+di cui non si è vista la serie madre). La maschera vive nel motore di prodotto, dove c'è ancora la
+partizione a bolle: va decisa insieme al passaggio alla matrice sparsa.
