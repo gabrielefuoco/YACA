@@ -18,12 +18,10 @@ import numpy as np
 from services.graph_dense import data as D, provenance as PV
 
 GRAFI = [
-    ('V15 (base storica)', 'services/graph/data/v15/bolle-eterogeneo-V15-p1.0-triangolo.npz'),
-    ('V18 (base precedente)', 'services/graph/data/v18/bolle-eterogeneo-V18-p1.0-triangolo.npz'),
-    ('V19 (CREWPROP 1hop)', 'services/graph/data/v19/bolle-eterogeneo-V19-p1.0-triangolo.npz'),
-    ('V21 (attuale)', 'services/graph/data/v21/bolle-eterogeneo-V21-p1.0-triangolo.npz'),
-    ('V21 senza CREWPROP', 'services/graph/data/v21crew0/bolle-eterogeneo-V21c0-p1.0-triangolo.npz'),
-    ('V21 + chiusura coseno', 'services/graph/data/v21/bolle-eterogeneo-V21cos-p1.0-triangolo.npz'),
+    ('V18 (base vecchia)', 'services/graph/data/v18/bolle-eterogeneo-V18-p1.0-triangolo.npz'),
+    ('V23 (base settimana)', 'services/graph/data/v23/bolle-eterogeneo-V23-p1.0-triangolo.npz'),
+    ('V30 (attuale)', 'services/graph/data/v30/bolle-eterogeneo-V30-p1.0-triangolo.npz'),
+    ('V31 (contesti 0,4)', 'services/graph/data/v31w04/bolle-eterogeneo-v31w04-p1.0-triangolo.npz'),
 ]
 
 # 8 ancore discusse nel lavoro + 22 film e 20 serie stratificati (popolarità × decennio)

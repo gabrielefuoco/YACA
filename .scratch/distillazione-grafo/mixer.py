@@ -94,6 +94,49 @@ def gate_popolare_asimmetrico(M, voti, vave, runtime, k_pop=10.0, tau=2.0, slope
     return out
 
 
+def _animazione():
+    """True per i titoli con genere Animation nei Parquet TMDB (0 = film, 1 = serie)."""
+    import json as _json
+    import pandas as pd
+    from services.graph_dense import data as D
+    B = D.basic(); RO = B['row_of']
+    out = np.zeros(B['N'], bool)
+    for f, pre in (('.cache/tmdb/movies.parquet', 'movie'), ('.cache/tmdb/tv.parquet', 'tv')):
+        d = pd.read_parquet(f, columns=['id', 'genres'])
+        for i, g in zip(d['id'], d['genres']):
+            r = RO.get(f'{pre}:{int(i)}')
+            if r is None:
+                continue
+            try:
+                gs = {str(x.get('name', '')).lower() for x in _json.loads(g or '[]')
+                      if isinstance(x, dict)}
+            except Exception:
+                gs = set()
+            if 'animation' in gs:
+                out[r] = True
+    return out
+
+
+def damp_animazione(M, ani, fattore=0.2):
+    """Smorza gli archi che attraversano il confine animazione / live-action.
+
+    PERCHE'. Un horror come *Dark Harvest* finiva con *Curioso come George* e *Topolino*: il genere
+    «animation» e' un proxy grezzo del pubblico vero (bambini), ma e' l'unico campo affidabile che
+    abbiamo, e il precedente dello smorzamento anime-saga dice che un fattore morbido funziona.
+    Morbido e non duro: *Spider-Verse* accanto a *EEAAO* e *Fantastic Mr. Fox* accanto a *Asteroid
+    City* sono ponti legittimi, e un divieto li taglierebbe tutti.
+    """
+    C = M.tocoo()
+    traversa = ani[C.row] != ani[C.col]
+    f = np.where(traversa, fattore, 1.0).astype(np.float32)
+    out = sp.csr_matrix((C.data * f, (C.row, C.col)), shape=M.shape).tocsr()
+    print(f'  damping animazione: {int(traversa.sum()):,} archi attraversano il confine '
+          f'({100*float(traversa.mean()):.1f}%) -> x{fattore}', flush=True)
+    out.setdiag(0)
+    out.eliminate_zeros()
+    return out
+
+
 def _runtime():
     """Durata in minuti per riga del canone (0 = sconosciuta). I Parquet la hanno, i metadati no."""
     import pandas as pd
@@ -321,6 +364,9 @@ def main():
     ap.add_argument('--gate-runtime', type=float, default=85.0)
     ap.add_argument('--pop-smooth', action='store_true')
     ap.add_argument('--damp-titolo', action='store_true')
+    ap.add_argument('--damp-animazione', action='store_true',
+                    help='smorza gli archi animazione <-> live-action')
+    ap.add_argument('--damp-anim-fattore', type=float, default=0.2)
     ap.add_argument('--damp-anime-saga', action='store_true',
                     help='ticket 11: smorza gli archi saga dentro gli anime (x0.15)')
     ap.add_argument('--tipi', default='')
@@ -389,6 +435,8 @@ def main():
         attr = _attributi_produzione()
         M, n = damping_famiglia(M, D.basic()['titoli'], D.basic()['COLL'].astype(np.int64), attr)
         print(f'  damping famiglia: {n:,} archi di famiglia senza lavorazione comune penalizzati', flush=True)
+    if a.damp_animazione:
+        M = damp_animazione(M, _animazione(), a.damp_anim_fattore)
     if a.damp_anime_saga:
         B = D.basic()
         mMeta = np.load('services/graph_dense/data/graph/metadati-canone.npz', allow_pickle=True)
@@ -413,7 +461,8 @@ def main():
     _params = {'modo': a.modo, 'alpha': a.alpha, 'pota': a.pota, 'simmetrizza': a.simmetrizza,
                'damp_coll': a.damp_coll, 'damp_titolo': a.damp_titolo, 'rrf_k': a.rrf_k,
                'pop_gap': a.pop_gap, 'pop_slope': a.pop_slope, 'pop_smooth': a.pop_smooth,
-               'gate_asimmetrico': a.gate_asimmetrico, 'gate_k': a.gate_k, 'damp_anime_saga': a.damp_anime_saga,
+               'gate_asimmetrico': a.gate_asimmetrico, 'gate_k': a.gate_k,
+               'damp_animazione': a.damp_animazione, 'damp_anim_fattore': a.damp_anim_fattore, 'damp_anime_saga': a.damp_anime_saga,
                'gate_vave': a.gate_vave, 'gate_runtime': a.gate_runtime,
                'hub_tipi': a.hub_tipi, 'hub_beta': a.hub_beta, 'pesi': pesi, 'tipi': tipi}
     _inputs = {t: PV.sha256_file(f'{SRC}/{t}.npz') for t in tipi}
