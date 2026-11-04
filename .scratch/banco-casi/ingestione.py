@@ -40,25 +40,71 @@ def indice(B):
     idx = defaultdict(set)
     for i, t in enumerate(B['titoli']):
         idx[norm(t)].add(i)
-    for tipo, f in (('movie', 'movies.parquet'), ('tv', 'tv.parquet')):
-        cols = ['id', 'original_title'] if tipo == 'movie' else ['id', 'original_name']
+    # TRE NOMI, NON DUE. Il canone ha il titolo italiano, `original_title` ha la lingua d'origine
+    # (l'ebraico per Waltz with Bashir, il francese per Les Quatre Cents Coups): senza `title_en`
+    # si perdono i film famosi proposti col titolo inglese — ed erano 80.
+    for tipo, f, campi in (('movie', 'movies.parquet', ['original_title', 'title_en']),
+                           ('tv', 'tv.parquet', ['original_name', 'name_en'])):
         try:
-            d = pd.read_parquet(C.TMDB / f, columns=cols)
+            d = pd.read_parquet(C.TMDB / f, columns=['id'] + campi)
         except Exception:
             continue
-        for i, ot in zip(d.id, d[cols[1]]):
-            r = B['row_of'].get(f'{tipo}:{int(i)}')
-            if r is not None and isinstance(ot, str) and ot.strip():
-                idx[norm(ot)].add(r)
+        for riga in d.itertuples(index=False):
+            r = B['row_of'].get(f'{tipo}:{int(riga.id)}')
+            if r is None:
+                continue
+            for campo in campi:
+                v = getattr(riga, campo, None)
+                if isinstance(v, str) and v.strip():
+                    idx[norm(v)].add(r)
     return {k: sorted(v) for k, v in idx.items()}
 
 
-def aggancia(titolo, anno, idx, chiavi, Y, min_sim, max_diff_anno=1):
+def varianti(titolo):
+    """Le forme plausibili di un titolo scritto a parole.
+
+    Gli agenti scrivono «Bella di giorno (Belle de jour)», «Memorie di un assassino - Memories of
+    Murder», «L'Uomo Ombra (The Shadow)»: la parte utile è dentro, non fuori. Si provano tutte le
+    varianti invece di perdere il titolo — è la differenza fra 92% e 98% di aggancio, e i titoli
+    persi sono sistematicamente quelli doppi (cioè i non anglofoni).
+    """
+    t = str(titolo).strip()
+    out = [t]
+    # dentro le parentesi (il titolo originale) e fuori
+    for dentro in re.findall(r'\(([^)]+)\)', t):
+        out.append(dentro)
+    fuori = re.sub(r'\([^)]*\)', ' ', t).strip(' -–—')
+    out.append(fuori)
+    # «X - Y» e «X: Y»: nei cataloghi italiani il sottotitolo è spesso il titolo vero
+    for sep in (' - ', ' – ', ' — ', ': '):
+        if sep in fuori:
+            for pezzo in fuori.split(sep):
+                out.append(pezzo.strip(' -–—'))
+    # unico, in ordine, senza duplicati normalizzati
+    visti, finali = set(), []
+    for v in out:
+        n = norm(v)
+        if n and n not in visti:
+            visti.add(n)
+            finali.append(v)
+    return finali
+
+
+def aggancia(titolo, anno, idx, chiavi, Y, min_sim, max_diff_anno=1, alias=None):
     """La riga del canone per un titolo suggerito, o None. Anno usato per disambiguare, non obbligatorio."""
+    if alias:
+        n0 = norm(titolo)
+        if n0 in alias:
+            titolo = alias[n0]
     n = norm(titolo)
     if not n:
         return None, 'vuoto'
-    cand = idx.get(n)
+    cand = None
+    for v in varianti(titolo):
+        cand = idx.get(norm(v))
+        if cand:
+            n = norm(v)
+            break
     if not cand:
         # seconda chance: somiglianza alta sul titolo normalizzato (refuso, articolo, titolo tradotto)
         vicini = difflib.get_close_matches(n, chiavi, n=3, cutoff=min_sim)
@@ -82,7 +128,16 @@ def aggancia(titolo, anno, idx, chiavi, Y, min_sim, max_diff_anno=1):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--min-sim', type=float, default=0.82)
+    ap.add_argument('--alias', default='.scratch/banco-casi/alias.json',
+                    help='mappa "titolo suggerito" -> "titolo canonico" per le traslitterazioni')
     a = ap.parse_args()
+    # I TITOLI IN ROMAJI SONO IL BUCO PIU' GROSSO: «Tonari no Totoro» non è «Il mio vicino Totoro»,
+    # e il canone non ha il romaji da nessuna parte (il titolo originale TMDB di un anime è in
+    # giapponese). Senza alias si perdono soprattutto i non anglofoni, cioè la diversità voluta.
+    alias = {}
+    if Path(a.alias).exists():
+        alias = {norm(k): v for k, v in json.loads(Path(a.alias).read_text(encoding='utf-8')).items()}
+        print(f'alias: {len(alias):,} titoli da rimappare')
     B = D.basic()
     Y, KEYS = B['year'], B['keys']
     idx = indice(B)
@@ -106,7 +161,8 @@ def main():
                 continue
             links = []
             for sug in s.get('suggerimenti', []):
-                r, stato = aggancia(sug.get('titolo', ''), sug.get('anno'), idx, chiavi, Y, a.min_sim)
+                r, stato = aggancia(sug.get('titolo', ''), sug.get('anno'), idx, chiavi, Y, a.min_sim,
+                                    alias=alias)
                 stati_b[stato] += 1
                 report['stati'][stato] += 1
                 if r is None:

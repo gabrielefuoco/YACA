@@ -1,0 +1,2102 @@
+[
+ {
+  "seed": "movie:2062",
+  "suggerimenti": [
+   {
+    "titolo": "Il pranzo di Babette",
+    "anno": 1987,
+    "perche": "Elogio devoto dell'arte culinaria che scalda l'anima comunitaria."
+   },
+   {
+    "titolo": "Tampopo",
+    "anno": 1985,
+    "perche": "Passione maniacale e calorosa devozione alla perfezione gastronomica."
+   },
+   {
+    "titolo": "Chocolat",
+    "anno": 2000,
+    "perche": "Piacere sensoriale che risveglia la gioia di vivere e condivisione."
+   },
+   {
+    "titolo": "Big Night",
+    "anno": 1996,
+    "perche": "Integrità artistica e devozione gastronomica intransigente ma commovente."
+   },
+   {
+    "titolo": "Julie & Julia",
+    "anno": 2009,
+    "perche": "Amore contagioso per la cucina come redenzione personale e artistica."
+   },
+   {
+    "titolo": "La vie en rose",
+    "anno": 2007,
+    "perche": "Passione totalizzante per l'espressione artistica pura e toccante."
+   },
+   {
+    "titolo": "Midnight in Paris",
+    "anno": 2011,
+    "perche": "Fascinazione nostalgica e romantica per l'ispirazione artistica a Parigi."
+   },
+   {
+    "titolo": "Il favoloso mondo di Amélie",
+    "anno": 2001,
+    "perche": "Meraviglia poetica e gusto per i piccoli piaceri sensoriali parigini."
+   },
+   {
+    "titolo": "Fantasia",
+    "anno": 1940,
+    "perche": "Virtuosismo espressivo dove tecnica impeccabile ed emozione pura coincidono."
+   },
+   {
+    "titolo": "Chef - L'ingrediente perfetto",
+    "anno": 2014,
+    "perche": "Riscatto creativo e gioia autentica del fare bene il proprio mestiere."
+   },
+   {
+    "titolo": "Billy Elliot",
+    "anno": 2000,
+    "perche": "Vocazione artistica irresistibile che supera pregiudizi sociali e convenzioni."
+   },
+   {
+    "titolo": "Amadeus",
+    "anno": 1984,
+    "perche": "Il mistero del genio artistico puro e l'invidia dei mediocri."
+   },
+   {
+    "titolo": "Fantastic Mr. Fox",
+    "anno": 2009,
+    "perche": "Raffinata eccentricità visiva e fiera rivendicazione della propria natura."
+   },
+   {
+    "titolo": "Nuovo Cinema Paradiso",
+    "anno": 1988,
+    "perche": "Nostalgia calorosa e celebrazione romantica della passione che forgia il destino."
+   },
+   {
+    "titolo": "Hugo Cabret",
+    "anno": 2011,
+    "perche": "Artigianato magico, amore per la meccanica creativa e calore umano."
+   },
+   {
+    "titolo": "Un tocco di zenzero",
+    "anno": 2003,
+    "perche": "Cucina, memoria e sentimenti intrecciati con eleganza e dolce malinconia."
+   },
+   {
+    "titolo": "Il gusto delle cose - La passione di Dodin Bouffant",
+    "anno": 2023,
+    "perche": "Raffinatezza estetica sensoriale e devozione estatica all'arte del cibo."
+   },
+   {
+    "titolo": "Mary Poppins",
+    "anno": 1964,
+    "perche": "Eleganza classica, meraviglia rassicurante e tocco di magia quotidiana."
+   },
+   {
+    "titolo": "Cantando sotto la pioggia",
+    "anno": 1952,
+    "perche": "Euforia contagiosa della creazione artistica e brillantezza tecnica impeccabile."
+   },
+   {
+    "titolo": "Soul",
+    "anno": 2020,
+    "perche": "Ricerca della scintilla vitale e vocazione profonda per l'arte."
+   }
+  ]
+ },
+ {
+  "seed": "movie:369885",
+  "suggerimenti": [
+   {
+    "titolo": "Casablanca",
+    "anno": 1942,
+    "perche": "Amore tragico, dovere patriottico e glamour malinconico in tempo di guerra."
+   },
+   {
+    "titolo": "Notorious - L'amante perduta",
+    "anno": 1946,
+    "perche": "Tensione amorosa soffocante corrosa dal dubbio morale e dallo spionaggio."
+   },
+   {
+    "titolo": "Il ponte delle spie",
+    "anno": 2015,
+    "perche": "Tensione misurata della guerra fredda tra dovere morale e disillusione."
+   },
+   {
+    "titolo": "Lussuria - Seduzione e tradimento",
+    "anno": 2007,
+    "perche": "Erotismo torbido, lealtà divisa e inganno fatale sotto occupazione bellica."
+   },
+   {
+    "titolo": "Il paziente inglese",
+    "anno": 1996,
+    "perche": "Melodramma sontuoso, amori devastanti e identità segrete spezzate dal conflitto."
+   },
+   {
+    "titolo": "Il terzo uomo",
+    "anno": 1949,
+    "perche": "Disillusione morale, cinismo postbellico e disperata ricerca della verità."
+   },
+   {
+    "titolo": "Black Book",
+    "anno": 2006,
+    "perche": "Ambiguità morale bruciante, pericolo costante e identità camuffate nella resistenza."
+   },
+   {
+    "titolo": "Espiazione",
+    "anno": 2007,
+    "perche": "Eleganza visiva impeccabile, colpa tormentata e amore stroncato dalla guerra."
+   },
+   {
+    "titolo": "Suite Francese",
+    "anno": 2014,
+    "perche": "Passione proibita e dolorosa contraddizione etica tra nemici occupanti."
+   },
+   {
+    "titolo": "La spia - A Most Wanted Man",
+    "anno": 2014,
+    "perche": "Spionaggio disincantato, peso del sacrificio e cupa rassegnazione etica."
+   },
+   {
+    "titolo": "Senso",
+    "anno": 1954,
+    "perche": "Melodramma lirico, tradimento patriottico e passione distruttiva d'altri tempi."
+   },
+   {
+    "titolo": "Il conformista",
+    "anno": 1970,
+    "perche": "Raffinatezza formale ipnotica, fascismo, segreti e ambiguità morale repressa."
+   },
+   {
+    "titolo": "L'armata delle ombre",
+    "anno": 1969,
+    "perche": "Fredda solitudine, paranoia spietata e sacrificio silenzioso nella resistenza francese."
+   },
+   {
+    "titolo": "Frantz",
+    "anno": 2016,
+    "perche": "Lutto lacerante, menzogna riparatrice e sentimento trattenuto in chiaroscuro."
+   },
+   {
+    "titolo": "Cold War",
+    "anno": 2018,
+    "perche": "Amore tormentato e fatale condannato dalla morsa della storia."
+   },
+   {
+    "titolo": "Una strada, un amore",
+    "anno": 1979,
+    "perche": "Amore proibito e straziante durante le missioni aeree belliche."
+   },
+   {
+    "titolo": "Lettere da Iwo Jima",
+    "anno": 2006,
+    "perche": "Tragedia bellica solenne, nobiltà d'animo e destino ineluttabile."
+   },
+   {
+    "titolo": "Decision to Leave",
+    "anno": 2022,
+    "perche": "Attrazione fatale nutrita dall'indagine, dal mistero e dal sospetto reciproco."
+   },
+   {
+    "titolo": "Il ponte sul fiume Kwai",
+    "anno": 1957,
+    "perche": "Conflitto morale lacerante, rigore classico e tragedia dell'onore militare."
+   },
+   {
+    "titolo": "Intrigo a Berlino",
+    "anno": 2006,
+    "perche": "Omaggio raffinato al noir classico tra inganni e rimorsi postbellici."
+   }
+  ]
+ },
+ {
+  "seed": "movie:858024",
+  "suggerimenti": [
+   {
+    "titolo": "Tre colori - Film Blu",
+    "anno": 1993,
+    "perche": "Elaborazione dolorosa del lutto e faticosa rinascita spirituale attraverso l'arte."
+   },
+   {
+    "titolo": "The Tree of Life",
+    "anno": 2011,
+    "perche": "Poesia visiva cosmica sul dolore della perdita genitoriale e grazia."
+   },
+   {
+    "titolo": "La stanza del figlio",
+    "anno": 2001,
+    "perche": "Tragedia familiare devastante raccontata con pudore, straziante verità e tenerezza."
+   },
+   {
+    "titolo": "Un affare di famiglia",
+    "anno": 2018,
+    "perche": "Tocco intimo, delicata osservazione dei legami affettivi e sommessa malinconia."
+   },
+   {
+    "titolo": "Manchester by the Sea",
+    "anno": 2016,
+    "perche": "Lutto incommensurabile affrontato senza retorica, con spietata e dolente sincerità."
+   },
+   {
+    "titolo": "Bright Star",
+    "anno": 2009,
+    "perche": "Romanticismo lirico, poesia della natura e strazio per la giovinezza perduta."
+   },
+   {
+    "titolo": "Sacrificio",
+    "anno": 1986,
+    "perche": "Sacrificio genitoriale, dimensione mistica e gravità spirituale della fine."
+   },
+   {
+    "titolo": "A Ghost Story",
+    "anno": 2017,
+    "perche": "Riflessione sommessa ed eterea sul tempo, l'assenza e la persistenza affettiva."
+   },
+   {
+    "titolo": "Sussurri e grida",
+    "anno": 1972,
+    "perche": "Dolore viscerale, sofferenza familiare e intimità cromatica profonda e rituale."
+   },
+   {
+    "titolo": "In the Bedroom",
+    "anno": 2001,
+    "perche": "Macerazione interiore della perdita di un figlio e tensione silenziosa."
+   },
+   {
+    "titolo": "Rabbit Hole",
+    "anno": 2010,
+    "perche": "Delicatezza disarmante nel descrivere il vuoto quotidiano lasciato da un lutto."
+   },
+   {
+    "titolo": "Ordet - La parola",
+    "anno": 1955,
+    "perche": "Fede incrollabile, miracolo emotivo e rigore severo di fronte alla morte."
+   },
+   {
+    "titolo": "Drive My Car",
+    "anno": 2021,
+    "perche": "Catarsi lenta attraverso il testo drammatico e la condivisione del dolore."
+   },
+   {
+    "titolo": "Viaggio a Tokyo",
+    "anno": 1953,
+    "perche": "Maestria del pudore, tempo che scivola e rassegnazione emotiva universale."
+   },
+   {
+    "titolo": "Non lasciarmi",
+    "anno": 2010,
+    "perche": "Straziante fatalismo, bellezza quieta e profondo valore della brevità umana."
+   },
+   {
+    "titolo": "Petite Maman",
+    "anno": 2021,
+    "perche": "Favola dolce sul dolore materno, la memoria infantile e l'empatia."
+   },
+   {
+    "titolo": "Il dolce domani",
+    "anno": 1997,
+    "perche": "Comunità lacerata dal lutto infantile tra macerazione e ricerca di senso."
+   },
+   {
+    "titolo": "Viaggio in Inghilterra",
+    "anno": 1993,
+    "perche": "L'amore vissuto come preludio inevitabile al dolore della perdita."
+   },
+   {
+    "titolo": "Il cielo sopra Berlino",
+    "anno": 1987,
+    "perche": "Sguardo compassionevole sulla mortalità, la poesia della vita fragile e terrestre."
+   },
+   {
+    "titolo": "Estranei",
+    "anno": 2023,
+    "perche": "Dialogo spettrale e struggente coi genitori perduti per guarire vecchie ferite."
+   }
+  ]
+ },
+ {
+  "seed": "movie:36557",
+  "suggerimenti": [
+   {
+    "titolo": "The Bourne Supremacy",
+    "anno": 2004,
+    "perche": "Realismo cinetico febbrile, freddezza tattica e vendetta viscerale senza sconti."
+   },
+   {
+    "titolo": "Ronin",
+    "anno": 1998,
+    "perche": "Professionalismo cinico, tradimento implacabile e inseguimenti tesi di grande concretezza."
+   },
+   {
+    "titolo": "Heat - La sfida",
+    "anno": 1995,
+    "perche": "Eleganza metropolitana notturna, professionalità spietata e cupo fatalismo tragico."
+   },
+   {
+    "titolo": "Senza un attimo di tregua",
+    "anno": 1967,
+    "perche": "Freddezza stilizzata, violenza secca e determinazione vendicativa implacabile."
+   },
+   {
+    "titolo": "Il braccio violento della legge",
+    "anno": 1971,
+    "perche": "Tensione viscerale febbrile, asfalto sporco e ossessione poliziesca implacabile."
+   },
+   {
+    "titolo": "Sicario",
+    "anno": 2015,
+    "perche": "Atmosfera plumbea, cinismo geopolitico brutale e tensione chirurgica soffocante."
+   },
+   {
+    "titolo": "Drive",
+    "anno": 2011,
+    "perche": "Eleganza gelida, esplosioni di violenza cruda e romantico disincanto stoico."
+   },
+   {
+    "titolo": "John Wick",
+    "anno": 2014,
+    "perche": "Eleganza coreografica letale, codice d'onore sotterraneo e ritmo incessante."
+   },
+   {
+    "titolo": "I tre giorni del Condor",
+    "anno": 1975,
+    "perche": "Paranoia claustrofobica, spionaggio spietato e lotta disperata per sopravvivere."
+   },
+   {
+    "titolo": "The Man from Nowhere",
+    "anno": 2010,
+    "perche": "Efficacia letale chirurgica, protezione disperata e cupa redenzione violenta."
+   },
+   {
+    "titolo": "Gomorra",
+    "anno": 2008,
+    "perche": "Crudo realismo anti-glamour, violenza endemica e assenza totale di retorica."
+   },
+   {
+    "titolo": "A Bittersweet Life",
+    "anno": 2005,
+    "perche": "Raffinatezza visiva noir, scontro d'onore e discesa vendicativa inesorabile."
+   },
+   {
+    "titolo": "Léon",
+    "anno": 1994,
+    "perche": "Professionalità letale, vulnerabilità inattesa e destino tragico ineluttabile."
+   },
+   {
+    "titolo": "Bullitt",
+    "anno": 1968,
+    "perche": "Imperturbabilità stoica, rigore procedurale e azione pura senza orpelli melodrammatici."
+   },
+   {
+    "titolo": "Suburra",
+    "anno": 2015,
+    "perche": "Cinismo spietato, decadenza morale notturna e violenza urbana implacabile."
+   },
+   {
+    "titolo": "The Killer",
+    "anno": 1989,
+    "perche": "Cavalleria tragica, sparatorie coreografiche eleganti e senso dell'onore fatale."
+   },
+   {
+    "titolo": "The Raid - Redenzione",
+    "anno": 2011,
+    "perche": "Impatto fisico travolgente, claustrofobia e adrenalina pura ad alta tensione."
+   },
+   {
+    "titolo": "Scarface",
+    "anno": 1983,
+    "perche": "Ascesa viscerale, violenza teatrale sfrontata e autodistruzione senza freni."
+   },
+   {
+    "titolo": "Baby Driver - Il genio della fuga",
+    "anno": 2017,
+    "perche": "Azione stilizzata a ritmo serrato, romanticismo cinetico e inseguimenti magistrali."
+   },
+   {
+    "titolo": "The Batman",
+    "anno": 2022,
+    "perche": "Noir crepuscolare, vendetta ossessiva e violenza pesante sotto la pioggia."
+   }
+  ]
+ },
+ {
+  "seed": "tv:54344",
+  "suggerimenti": [
+   {
+    "titolo": "Melancholia",
+    "anno": 2011,
+    "perche": "Annientamento inevitabile, depressione cosmica e rassegnazione tragica di rara bellezza."
+   },
+   {
+    "titolo": "I segreti di Twin Peaks",
+    "anno": 1990,
+    "perche": "Mistero metafisico inquietante, lutto collettivo e strisciante assurdità quotidiana perturbante."
+   },
+   {
+    "titolo": "Station Eleven",
+    "anno": 2021,
+    "perche": "Lutto globale per la fine del mondo, arte e speranza resiliente."
+   },
+   {
+    "titolo": "Rectify",
+    "anno": 2013,
+    "perche": "Lentezza contemplativa, trauma indelebile e faticosa ricerca di grazia terrena."
+   },
+   {
+    "titolo": "Dark",
+    "anno": 2017,
+    "perche": "Fatalismo soffocante, puzzle temporale angosciante e dolore per la perdita."
+   },
+   {
+    "titolo": "The Road",
+    "anno": 2009,
+    "perche": "Desolazione morale assoluta, disperazione esistenziale e amore protettivo estremo."
+   },
+   {
+    "titolo": "Synecdoche, New York",
+    "anno": 2008,
+    "perche": "Angoscia della mortalità, disintegrazione dell'identità e vertigine del fallimento umano."
+   },
+   {
+    "titolo": "Les Revenants",
+    "anno": 2012,
+    "perche": "Ritorno inspiegabile dei defunti, atmosfera spettrale e lutto mai superato."
+   },
+   {
+    "titolo": "Picnic a Hanging Rock",
+    "anno": 1975,
+    "perche": "Sparizione insoluta, trauma collettivo e fascinazione per l'ignoto irraggiungibile."
+   },
+   {
+    "titolo": "Magnolia",
+    "anno": 1999,
+    "perche": "Coincidenze miracolose, dolore condiviso e liberazione catartica dal rimorso esistenziale."
+   },
+   {
+    "titolo": "Take Shelter",
+    "anno": 2011,
+    "perche": "Ansia apocalittica strisciante, instabilità mentale e disperato bisogno di protezione."
+   },
+   {
+    "titolo": "Il settimo continente",
+    "anno": 1989,
+    "perche": "Alienazione moderna totale, vuoto esistenziale insostenibile e cupa autodistruzione metodica."
+   },
+   {
+    "titolo": "Carnivàle",
+    "anno": 2003,
+    "perche": "Scontro mistico opaco tra bene e male intriso di polvere e fatalismo."
+   },
+   {
+    "titolo": "Six Feet Under",
+    "anno": 2001,
+    "perche": "Confronto intimo e costante con la morte, nevrosi familiare e accettazione."
+   },
+   {
+    "titolo": "L'avventura",
+    "anno": 1960,
+    "perche": "Scomparsa enigmatica, alienazione borghese e dissoluzione dei sentimenti nell'indifferenza."
+   },
+   {
+    "titolo": "Beau ha paura",
+    "anno": 2023,
+    "perche": "Paranoia esistenziale surreale, colpa genitoriale schiacciante e incubo grottesco."
+   },
+   {
+    "titolo": "I figli degli uomini",
+    "anno": 2006,
+    "perche": "Disperazione collettiva per un futuro sterile, fede fragile e salvezza."
+   },
+   {
+    "titolo": "Solaris",
+    "anno": 1972,
+    "perche": "Materializzazione del rimorso, memoria dolorosa e mistero inconoscibile della coscienza."
+   },
+   {
+    "titolo": "Scissione",
+    "anno": 2022,
+    "perche": "Alienazione identitaria, lutto rimosso artificialmente e angoscia corporativa distopica."
+   },
+   {
+    "titolo": "Donnie Darko",
+    "anno": 2001,
+    "perche": "Solitudine adolescenziale, visioni apocalittiche e fatalismo sacrificale malinconico."
+   }
+  ]
+ },
+ {
+  "seed": "tv:113036",
+  "suggerimenti": [
+   {
+    "titolo": "I racconti della cripta",
+    "anno": 1989,
+    "perche": "Macabro beffardo, ironia nera pulp e punizioni crudeli da fumetto."
+   },
+   {
+    "titolo": "Creepshow",
+    "anno": 1982,
+    "perche": "Omaggio sanguigno ai fumetti horror, deliziosamente grottesco e visivamente kitsch."
+   },
+   {
+    "titolo": "Cabinet of Curiosities",
+    "anno": 2022,
+    "perche": "Antologia gotica elegante, orrore morboso ed eccentriche manifestazioni mostruose."
+   },
+   {
+    "titolo": "Black Mirror",
+    "anno": 2011,
+    "perche": "Angoscia tecnologica satirica, crudeltà morale e finali a sorpresa cinici."
+   },
+   {
+    "titolo": "Suspiria",
+    "anno": 1977,
+    "perche": "Estetica barocca fiammeggiante, sangue teatrale e allucinazione sensoriale pura."
+   },
+   {
+    "titolo": "Masters of Horror",
+    "anno": 2005,
+    "perche": "Orrore viscerale senza censura, storie pulp autoconclusive e provocazione macabra."
+   },
+   {
+    "titolo": "Incubi notturni",
+    "anno": 1945,
+    "perche": "Archetipo dell'antologia da brivido, suggestione psicologica e pupazzi inquietanti."
+   },
+   {
+    "titolo": "Ai confini della realtà",
+    "anno": 1959,
+    "perche": "Parabola morale fantastica, ironia del destino e colpi di scena."
+   },
+   {
+    "titolo": "Re-Animator",
+    "anno": 1985,
+    "perche": "Splatter comico travolgente, scienziati folli e immoralità scandalosa irresistibile."
+   },
+   {
+    "titolo": "La vendetta di Halloween",
+    "anno": 2007,
+    "perche": "Folclore macabro intrecciato, ironia crudele e atmosfera festosa malefica."
+   },
+   {
+    "titolo": "Miriam si sveglia a mezzanotte",
+    "anno": 1983,
+    "perche": "Estetica glamour patinata, vampirismo chic e sensualità decadente dark."
+   },
+   {
+    "titolo": "I tre volti della paura",
+    "anno": 1963,
+    "perche": "Gotico cromatico sfarzoso, spaventi d'atmosfera e gusto teatrale dell'orrore."
+   },
+   {
+    "titolo": "Chucky",
+    "anno": 2021,
+    "perche": "Camp sfacciato, ironia queer tagliente e carneficine grottesche spassose."
+   },
+   {
+    "titolo": "Jennifer's Body",
+    "anno": 2009,
+    "perche": "Commedia horror dissacrante, sensualità crudele e battute ciniche scintillanti."
+   },
+   {
+    "titolo": "Funny Games",
+    "anno": 1997,
+    "perche": "Crudeltà provocatoria fredda, rottura sadica dei canoni e violenza esibita."
+   },
+   {
+    "titolo": "Slaxx",
+    "anno": 2020,
+    "perche": "Satira camp bizzarra, orrore corporativo e follia grottesca autoparorica."
+   },
+   {
+    "titolo": "The Mortuary Collection",
+    "anno": 2019,
+    "perche": "Antologia dark fantasy deliziosamente morbosa, ritmo frizzante e humour nero."
+   },
+   {
+    "titolo": "Inside No. 9",
+    "anno": 2014,
+    "perche": "Torsioni di trama ingegnose, cinismo britannico e comicità nerissima."
+   },
+   {
+    "titolo": "Kwaidan",
+    "anno": 1964,
+    "perche": "Antologia di fantasmi pittorica, bellezza teatrale ipnotica e brivido ancestrale."
+   },
+   {
+    "titolo": "Drag Me to Hell",
+    "anno": 2009,
+    "perche": "Giostra di disgusto esagerato, maledizioni grottesche e humour sadico."
+   }
+  ]
+ },
+ {
+  "seed": "movie:55931",
+  "suggerimenti": [
+   {
+    "titolo": "Ghost in the Shell",
+    "anno": 1995,
+    "perche": "Meditazione filosofica sull'identità artificiale, estetica cibernetica fredda e sublime."
+   },
+   {
+    "titolo": "Akira",
+    "anno": 1988,
+    "perche": "Apocalisse urbana cinetica, mutazione biologica e nichilismo cyberpunk incendiario."
+   },
+   {
+    "titolo": "Blade Runner",
+    "anno": 1982,
+    "perche": "Noir crepuscolare futuristico, malinconia esistenziale dei replicanti e pioggia perenne."
+   },
+   {
+    "titolo": "Love, Death & Robots",
+    "anno": 2019,
+    "perche": "Varietà stilistica animata, audacia speculativa visiva e nichilismo fantascientifico."
+   },
+   {
+    "titolo": "Metropolis",
+    "anno": 2001,
+    "perche": "Scontro di classe retro-futurista, grandiosità architettonica tragica e cuore artificiale."
+   },
+   {
+    "titolo": "Heavy Metal",
+    "anno": 1981,
+    "perche": "Antologia fantastica psichedelica, ribellione rock e visioni futuristiche libertarie."
+   },
+   {
+    "titolo": "Ergo Proxy",
+    "anno": 2006,
+    "perche": "Cupa indagine filosofica post-apocalittica tra automi pensanti e solitudine."
+   },
+   {
+    "titolo": "Dark City",
+    "anno": 1998,
+    "perche": "Realtà manipolata, noir barocco e disperata ricerca dell'anima umana rubata."
+   },
+   {
+    "titolo": "Renaissance",
+    "anno": 2006,
+    "perche": "Animazione grafica in bianco e nero, cospirazione corporativa e bioetica."
+   },
+   {
+    "titolo": "Tron",
+    "anno": 1982,
+    "perche": "Fascinazione pionieristica per il mondo digitale, geometria al neon e ribellione."
+   },
+   {
+    "titolo": "Paprika - Sognando un sogno",
+    "anno": 2006,
+    "perche": "Allucinazione onirica tecnologica, vertigine visiva e confine dissolto tra realtà."
+   },
+   {
+    "titolo": "Scavengers Reign",
+    "anno": 2023,
+    "perche": "Ecosistema alieno ipnotico, sopravvivenza biologica e mistero scientifico impressionante."
+   },
+   {
+    "titolo": "Aeon Flux",
+    "anno": 1991,
+    "perche": "Estetismo d'avanguardia spietato, biomeccanica contorta e sensualità letale spigolosa."
+   },
+   {
+    "titolo": "Neon Genesis Evangelion",
+    "anno": 1995,
+    "perche": "Psicoanalisi traumatica, giganti meccanici e angoscia metafisica dell'incomunicabilità."
+   },
+   {
+    "titolo": "Atto di forza",
+    "anno": 1990,
+    "perche": "Paranoia sull'identità fittizia, cinismo corporativo e azione brutale fantascientifica."
+   },
+   {
+    "titolo": "Metropolis",
+    "anno": 1927,
+    "perche": "Visione monumentale pionieristica del futuro meccanizzato e del cuore umano."
+   },
+   {
+    "titolo": "Gattaca - La porta dell'universo",
+    "anno": 1997,
+    "perche": "Freddezza eugenetica asettica, riscatto morale e trionfo della determinazione umana."
+   },
+   {
+    "titolo": "Cyberpunk: Edgerunners",
+    "anno": 2022,
+    "perche": "Iperstimolazione cinetica sfrenata, tragedia urbana cromatica e nichilismo disperato."
+   },
+   {
+    "titolo": "Il pianeta selvaggio",
+    "anno": 1973,
+    "perche": "Filosofia allegorica visionaria, animazione surreale e sottomissione specista."
+   },
+   {
+    "titolo": "Ex Machina",
+    "anno": 2014,
+    "perche": "Tensione psicologica cameristica, inganno seduttivo e fredda emancipazione dell'algoritmo."
+   }
+  ]
+ },
+ {
+  "seed": "movie:698948",
+  "suggerimenti": [
+   {
+    "titolo": "The 33",
+    "anno": 2015,
+    "perche": "Sopravvivenza sotterranea disperata, speranza familiare e titanico sforzo di salvataggio."
+   },
+   {
+    "titolo": "Sully",
+    "anno": 2016,
+    "perche": "Competenza professionale sobria, sangue freddo e rigore morale sotto pressione."
+   },
+   {
+    "titolo": "Captain Phillips - Attacco in mare aperto",
+    "anno": 2013,
+    "perche": "Tensione documentaristica implacabile, lucidità tattica e logoramento psicologico realistico."
+   },
+   {
+    "titolo": "The Deep",
+    "anno": 2012,
+    "perche": "Resistenza fisica estrema nelle acque gelide e sommessa tenacia umana."
+   },
+   {
+    "titolo": "Alive - Sopravvissuti",
+    "anno": 1993,
+    "perche": "Resilienza spirituale e fisica estrema di fronte all'isolamento montano inaccessibile."
+   },
+   {
+    "titolo": "La società della neve",
+    "anno": 2023,
+    "perche": "Fratellanza viscerale, etica della sopravvivenza e realismo immersivo straziante."
+   },
+   {
+    "titolo": "U-Boot 96",
+    "anno": 1981,
+    "perche": "Claustrofobia metallica soffocante, terrore subacqueo e spietata perizia marinaresca."
+   },
+   {
+    "titolo": "The Abyss",
+    "anno": 1989,
+    "perche": "Pressione abissale opprimente, lavoro di squadra e tensione tecnica estrema."
+   },
+   {
+    "titolo": "Uomini veri",
+    "anno": 1983,
+    "perche": "Coraggio calcolato, sangue freddo pionieristico e precisione metodica del pericolo."
+   },
+   {
+    "titolo": "Chernobyl",
+    "anno": 2019,
+    "perche": "Rigore scientifico, sacrificio silenzioso dei lavoratori e angoscia procedurale asfissiante."
+   },
+   {
+    "titolo": "K-19",
+    "anno": 2002,
+    "perche": "Sacrificio eroico per evitare il disastro, disciplina militare e radiazioni."
+   },
+   {
+    "titolo": "Dunkirk",
+    "anno": 2017,
+    "perche": "Tensione temporale incalzante, sopravvivenza collettiva e solenne pragmatismo senza retorica."
+   },
+   {
+    "titolo": "Vite vendute",
+    "anno": 1953,
+    "perche": "Tensione nervosa insostenibile, cautela millimetrica e sudore freddo costante."
+   },
+   {
+    "titolo": "Il salario della paura",
+    "anno": 1977,
+    "perche": "Fatalismo allucinato, perizia tecnica disperata e lotta brutale contro gli elementi."
+   },
+   {
+    "titolo": "Airport",
+    "anno": 1970,
+    "perche": "Gestione dell'emergenza corale, professionalità sotto stress e coordinamento logistico teso."
+   },
+   {
+    "titolo": "A Hijacking",
+    "anno": 2012,
+    "perche": "Fredda negoziazione procedurale, estenuante logoramento psicologico e sobrietà nordica autentica."
+   },
+   {
+    "titolo": "Andromeda",
+    "anno": 1971,
+    "perche": "Rigore scientifico laboratoriale, protocolli asettici e corsa contro l'ignoto biologico."
+   },
+   {
+    "titolo": "Sanctum 3D",
+    "anno": 2011,
+    "perche": "Angoscia speleologica sommersa, claustrofobia tra le rocce e sopravvivenza implacabile."
+   },
+   {
+    "titolo": "Open Water",
+    "anno": 2003,
+    "perche": "Realismo crudo disarmante, isolamento indifeso nella vastità dell'oceano e rassegnazione."
+   },
+   {
+    "titolo": "All Is Lost - Tutto è perduto",
+    "anno": 2013,
+    "perche": "Solitudine stoica, manualità pratica meticolosa e silenziosa dignità contro il mare."
+   }
+  ]
+ },
+ {
+  "seed": "tv:95057",
+  "suggerimenti": [
+   {
+    "titolo": "Friday Night Lights",
+    "anno": 2006,
+    "perche": "Cuore pulsante della provincia americana, calore comunitario e responsabilità genitoriale sincera."
+   },
+   {
+    "titolo": "This Is Us",
+    "anno": 2016,
+    "perche": "Generosità emotiva, calore familiare protettivo e gestione quotidiana delle fragilità."
+   },
+   {
+    "titolo": "Everwood",
+    "anno": 2002,
+    "perche": "Riavvicinamento difficile tra padre e figli in una quieta cittadina montana."
+   },
+   {
+    "titolo": "Sweet Tooth",
+    "anno": 2021,
+    "perche": "Favola post-apocalittica dal cuore tenero, protezione paterna e speranza candida."
+   },
+   {
+    "titolo": "Unbroken",
+    "anno": 2014,
+    "perche": "Nobiltà d'animo incrollabile, resilienza morale e fede nei valori umani."
+   },
+   {
+    "titolo": "Cocoon - L'energia dell'universo",
+    "anno": 1985,
+    "perche": "Meraviglia rassicurante, calore umano toccante e conforto fantastico per la vecchiaia."
+   },
+   {
+    "titolo": "E.T. l'extra-terrestre",
+    "anno": 1982,
+    "perche": "Empatia pura, vulnerabilità infantile protetta e meraviglia familiare commovente."
+   },
+   {
+    "titolo": "Il buio oltre la siepe",
+    "anno": 1962,
+    "perche": "Esemplarità morale paterna integerrima e difesa calorosa della giustizia umana."
+   },
+   {
+    "titolo": "La vita è meravigliosa",
+    "anno": 1946,
+    "perche": "Generosità comunitaria sincera, peso dei sacrifici personali e ottimismo salvifico."
+   },
+   {
+    "titolo": "Un ponte per Terabithia",
+    "anno": 2007,
+    "perche": "Sensibilità infantile sincera, sostegno reciproco nelle avversità e crescita dolorosa."
+   },
+   {
+    "titolo": "L'albero degli zoccoli",
+    "anno": 1978,
+    "perche": "Dignità umile, legami familiari profondi e calore spirituale rurale autentico."
+   },
+   {
+    "titolo": "Miracolo a Milano",
+    "anno": 1951,
+    "perche": "Bontà disarmante, favola sociale ingenua e fede incrollabile nel prossimo."
+   },
+   {
+    "titolo": "Father and Son",
+    "anno": 2013,
+    "perche": "Paternità interrogata con infinita dolcezza, amore protettivo e riconciliazione intima."
+   },
+   {
+    "titolo": "Il gigante di ferro",
+    "anno": 1999,
+    "perche": "Scelta morale consapevole di essere buoni invece che armi letali."
+   },
+   {
+    "titolo": "Nel paese delle creature selvagge",
+    "anno": 2009,
+    "perche": "Delicatezza poetica nell'affrontare la rabbia infantile e la tenerezza domestica."
+   },
+   {
+    "titolo": "Wonder",
+    "anno": 2017,
+    "perche": "Gentilezza contagiosa, accoglienza delle diversità e amorevole dedizione genitoriale."
+   },
+   {
+    "titolo": "The Blind Side",
+    "anno": 2009,
+    "perche": "Accoglienza familiare incondizionata, generosità protettiva e riscatto umano caloroso."
+   },
+   {
+    "titolo": "Locke",
+    "anno": 2013,
+    "perche": "Senso del dovere morale incrollabile e assunzione totale delle proprie responsabilità."
+   },
+   {
+    "titolo": "Il piccolo Nicolas e i suoi genitori",
+    "anno": 2009,
+    "perche": "Dolcezza rétro della vita familiare, affetto rassicurante e innocenza ingenua."
+   },
+   {
+    "titolo": "Creature grandi e piccole - Un veterinario di provincia",
+    "anno": 2020,
+    "perche": "Conforto bucolico, gentilezza d'altri tempi e solidarietà comunitaria rassicurante."
+   }
+  ]
+ },
+ {
+  "seed": "movie:953",
+  "suggerimenti": [
+   {
+    "titolo": "Una notte da leoni",
+    "anno": 2009,
+    "perche": "Caos demenziale esilarante, panico collettivo per lo smarrimento e amicizia sgangherata."
+   },
+   {
+    "titolo": "Ace Ventura - L'acchiappanimali",
+    "anno": 1994,
+    "perche": "Esplosione di mimica facciale cartoonesca, follia ipercinetica e gag demenziali."
+   },
+   {
+    "titolo": "Monty Python e il Sacro Graal",
+    "anno": 1975,
+    "perche": "Umorismo dell'assurdo scatenato, comicità fisica surreale e totale irriverenza anarchica."
+   },
+   {
+    "titolo": "La pantera rosa",
+    "anno": 1963,
+    "perche": "Slapstick sofisticato e goffaggine catastrofica travolgente di un protagonista irresistibile."
+   },
+   {
+    "titolo": "Kung Fu Panda",
+    "anno": 2008,
+    "perche": "Dinamismo comico trascinante, nevrosi autoironica e divertimento spensierato per tutti."
+   },
+   {
+    "titolo": "Le follie dell'imperatore",
+    "anno": 2000,
+    "perche": "Follia slapstick a rotta di collo, battute fulminee e narcisismo buffo."
+   },
+   {
+    "titolo": "A qualcuno piace caldo",
+    "anno": 1959,
+    "perche": "Ritmo indiavolato, travestimenti caotici e tempi comici semplicemente perfetti."
+   },
+   {
+    "titolo": "Giù al Nord",
+    "anno": 2008,
+    "perche": "Shock culturale esilarante, nevrosi geografica e irresistibile calore comico collettivo."
+   },
+   {
+    "titolo": "Kung Fusion",
+    "anno": 2004,
+    "perche": "Cartoonesco dinamico dal vivo, slapstick sfrenato ed esagerazione visiva geniale."
+   },
+   {
+    "titolo": "Tre uomini e una gamba",
+    "anno": 1997,
+    "perche": "Nevrosi comiche intrecciate, viaggio strampalato e affiatamento comico spontaneo."
+   },
+   {
+    "titolo": "La guerra lampo dei Fratelli Marx",
+    "anno": 1933,
+    "perche": "Anarchia surreale pura, nonsense travolgente e satira slapstick inarrestabile."
+   },
+   {
+    "titolo": "Austin Powers - Il controspione",
+    "anno": 1997,
+    "perche": "Parodia sfacciata, colori sgargianti e umorismo grottesco e spensierato."
+   },
+   {
+    "titolo": "Piovono polpette",
+    "anno": 2009,
+    "perche": "Ritmo frenetico, bizzarria visiva eccentrica e battute visive a raffica."
+   },
+   {
+    "titolo": "L'aereo più pazzo del mondo",
+    "anno": 1980,
+    "perche": "Gag visive a ripetizione, parodia impassibile e demenzialità esilarante continua."
+   },
+   {
+    "titolo": "Minions",
+    "anno": 2015,
+    "perche": "Slapstick universale muto e frenetico, caos gioioso e simpatica goffaggine."
+   },
+   {
+    "titolo": "Un piedipiatti a Beverly Hills",
+    "anno": 1984,
+    "perche": "Pesce fuor d'acqua spavaldo, parlantina irresistibile e spensieratezza anni ottanta."
+   },
+   {
+    "titolo": "The Mask - Da zero a mito",
+    "anno": 1994,
+    "perche": "Elasticità cartoonesca sfrenata, esuberanza contagiosa e anarchia comica favolosa."
+   },
+   {
+    "titolo": "Asterix & Obelix - Missione Cleopatra",
+    "anno": 2002,
+    "perche": "Umorismo anacronistico brillante, gag visive memorabili e comicità irresistibile."
+   },
+   {
+    "titolo": "Barbie",
+    "anno": 2023,
+    "perche": "Esplosione cromatica euforica, autoironia intelligente e shock del mondo reale."
+   },
+   {
+    "titolo": "Space Jam",
+    "anno": 1996,
+    "perche": "Follia animata contaminata col reale, musica pop e divertimento scanzonato."
+   }
+  ]
+ },
+ {
+  "seed": "tv:63210",
+  "suggerimenti": [
+   {
+    "titolo": "Buffy l'ammazzavampiri",
+    "anno": 1997,
+    "perche": "Dialoghi brillanti, metafora adolescenziale soprannaturale e mitologia urbana appassionante."
+   },
+   {
+    "titolo": "The Vampire Diaries",
+    "anno": 2009,
+    "perche": "Triangoli amorosi tormentati, fascino gotico giovanile e ritmo narrativo incalzante."
+   },
+   {
+    "titolo": "Teen Wolf",
+    "anno": 2011,
+    "perche": "Azione sovrannaturale muscolare, atmosfera dark pop e cameratismo giovanile affiatato."
+   },
+   {
+    "titolo": "Underworld",
+    "anno": 2003,
+    "perche": "Tute in pelle aderenti, estetica gotica bluastra e faida ancestrale."
+   },
+   {
+    "titolo": "Twilight",
+    "anno": 2008,
+    "perche": "Romanticismo melodrammatico febbrile, desiderio proibito e malinconia boschiva adolescente."
+   },
+   {
+    "titolo": "Mercoledì",
+    "anno": 2022,
+    "perche": "Mistero collegiale dark, estetica gotica pop e cinica emancipazione giovanile."
+   },
+   {
+    "titolo": "Roswell",
+    "anno": 1999,
+    "perche": "Segreti alieni celati, amore proibito e senso di emarginazione adolescenziale."
+   },
+   {
+    "titolo": "Fate: The Winx Saga",
+    "anno": 2021,
+    "perche": "Scuola magica misteriosa, conflitti ormonali giovanili e poteri da risvegliare."
+   },
+   {
+    "titolo": "Streghe",
+    "anno": 1998,
+    "perche": "Sorellanza affettuosa, demoni affrontati quotidianamente e fascino sovrannaturale leggero."
+   },
+   {
+    "titolo": "I guardiani della notte",
+    "anno": 2004,
+    "perche": "Scontro urbano occulto tra fazioni mistiche, visioni cinetiche ed esoterismo."
+   },
+   {
+    "titolo": "Luna Nera",
+    "anno": 2020,
+    "perche": "Caccia alle streghe, amori tormentati e poteri occulti giovanili."
+   },
+   {
+    "titolo": "Marianne",
+    "anno": 2019,
+    "perche": "Atmosfera stregata opprimente, orrore evocativo e traumi giovanili riemersi."
+   },
+   {
+    "titolo": "Il patto dei lupi",
+    "anno": 2001,
+    "perche": "Cappa e spada gotico, arti marziali e misteriose bestie sanguinarie."
+   },
+   {
+    "titolo": "Dark Shadows",
+    "anno": 2012,
+    "perche": "Melodramma vampiresco eccentrico, estetica sfarzosa e comicità grottesca d'epoca."
+   },
+   {
+    "titolo": "Supernatural",
+    "anno": 2005,
+    "perche": "Caccia ai demoni su strada, mitologia popolare e legame fraterno viscerale."
+   },
+   {
+    "titolo": "Blade",
+    "anno": 1998,
+    "perche": "Techno-rave oscura, cacciatori spietati e azione sanguinaria ad alto voltaggio."
+   },
+   {
+    "titolo": "Ladyhawke",
+    "anno": 1985,
+    "perche": "Maledizione romantica struggente, atmosfera fiabesca epica e colonna sonora synth."
+   },
+   {
+    "titolo": "Highlander - L'ultimo immortale",
+    "anno": 1986,
+    "perche": "Guerrieri eterni nel contesto urbano moderno, spade e destino solenne."
+   },
+   {
+    "titolo": "Il bacio della pantera",
+    "anno": 1982,
+    "perche": "Erotismo torbido, metamorfosi mitologica e sensualità felina inquietante."
+   },
+   {
+    "titolo": "Intervista col vampiro",
+    "anno": 1994,
+    "perche": "Sontuosità decadente, tormento dell'immortalità e sensualità aristocratica oscura."
+   }
+  ]
+ },
+ {
+  "seed": "movie:8337",
+  "suggerimenti": [
+   {
+    "titolo": "RoboCop",
+    "anno": 1987,
+    "perche": "Satira aziendale spietata, ultraviolenza catartica e cinica disumanizzazione del capitalismo."
+   },
+   {
+    "titolo": "Videodrome",
+    "anno": 1983,
+    "perche": "Allucinazione mediatica ossessiva, cospirazione sotterranea e carne fusa alla tecnologia."
+   },
+   {
+    "titolo": "Brazil",
+    "anno": 1985,
+    "perche": "Incubo burocratico grottesco, alienazione totalitaria e disperata ribellione onirica soffocata."
+   },
+   {
+    "titolo": "L'invasione degli ultracorpi",
+    "anno": 1956,
+    "perche": "Paranoia conformista raggelante, perdita dell'umanità e allarme sociale invisibile."
+   },
+   {
+    "titolo": "2022: i sopravvissuti",
+    "anno": 1973,
+    "perche": "Distopia ecologica corrotta, verità sconvolgente insabbiata e disperazione proletaria."
+   },
+   {
+    "titolo": "Rollerball",
+    "anno": 1975,
+    "perche": "Controllo corporativo globale, violenza sportiva manipolatoria e ribellione individuale indomita."
+   },
+   {
+    "titolo": "The Truman Show",
+    "anno": 1998,
+    "perche": "Illusione mediatica pervasiva, risveglio della coscienza e fuga dalla simulazione."
+   },
+   {
+    "titolo": "Ikarie XB 1",
+    "anno": 1963,
+    "perche": "Fantascienza filosofica sobria, mistero spaziale e rigore umanista oltreoceano."
+   },
+   {
+    "titolo": "La decima vittima",
+    "anno": 1965,
+    "perche": "Satira pop futuristica, cinismo consumistico e spettacolo omicida legalizzato."
+   },
+   {
+    "titolo": "Stalker",
+    "anno": 1979,
+    "perche": "Desolazione post-industriale, fede disillusa e ricerca metafisica della verità interiore."
+   },
+   {
+    "titolo": "Quinto potere",
+    "anno": 1976,
+    "perche": "Rabbia mediatica incendiaria, manipolazione dell'opinione pubblica e cinismo televisivo."
+   },
+   {
+    "titolo": "Fight Club",
+    "anno": 1999,
+    "perche": "Nichilismo anti-consumista viscerale, violenza liberatoria e ribellione contro il vuoto."
+   },
+   {
+    "titolo": "Idiocracy",
+    "anno": 2006,
+    "perche": "Satira feroce dell'istupidimento commerciale di massa e collasso culturale farsesco."
+   },
+   {
+    "titolo": "L'armata delle tenebre",
+    "anno": 1992,
+    "perche": "Eroe proletario spaccone, b-movie scatenato e comicità d'azione slapstick."
+   },
+   {
+    "titolo": "Sorry to Bother You",
+    "anno": 2018,
+    "perche": "Satira anti-capitalista bizzarra, surrealismo provocatorio e rivolta operaia grottesca."
+   },
+   {
+    "titolo": "District 9",
+    "anno": 2009,
+    "perche": "Fantascienza grezza, segregazione razziale metaforica e cinismo corporativo corrotto."
+   },
+   {
+    "titolo": "Il mondo sul filo",
+    "anno": 1973,
+    "perche": "Paranoia cibernetica della simulazione, cospirazione industriale e disorientamento identitario."
+   },
+   {
+    "titolo": "Hardware - Metallo letale",
+    "anno": 1990,
+    "perche": "Cyberpunk post-apocalittico sporco, claustrofobia industriale e tecnologia assassina autonoma."
+   },
+   {
+    "titolo": "Civil War",
+    "anno": 2024,
+    "perche": "Disincanto glaciale, collasso democratico brutale e reportage distopico sul campo."
+   },
+   {
+    "titolo": "Fahrenheit 451",
+    "anno": 1966,
+    "perche": "Conformismo imposto, censura distopica della cultura e risveglio della coscienza."
+   }
+  ]
+ },
+ {
+  "seed": "tv:107113",
+  "suggerimenti": [
+   {
+    "titolo": "Misterioso omicidio a Manhattan",
+    "anno": 1993,
+    "perche": "Nevrosi comica coniugale, giallo amatoriale a New York e ritmo frizzante."
+   },
+   {
+    "titolo": "Cena con delitto - Knives Out",
+    "anno": 2019,
+    "perche": "Giallo classico brillante, satira sociale divertita e colpi di scena teatrali."
+   },
+   {
+    "titolo": "Il mistero del falco",
+    "anno": 1941,
+    "perche": "Cinismo brillante, galleria di personaggi stravaganti e indagine labirintica fascinosa."
+   },
+   {
+    "titolo": "Invito a cena con delitto",
+    "anno": 1976,
+    "perche": "Parodia spassosa dei detective celebri, humour bizzarro e cast corale."
+   },
+   {
+    "titolo": "Gosford Park",
+    "anno": 2001,
+    "perche": "Delitto aristocratica con arguzia corale, segreti sussurrati e pungente satira sociale."
+   },
+   {
+    "titolo": "Signori, il delitto è servito",
+    "anno": 1985,
+    "perche": "Slapstick frenetico, ritmo irresistibile e molteplici finali a sorpresa scoppiettanti."
+   },
+   {
+    "titolo": "Uno sparo nel buio",
+    "anno": 1964,
+    "perche": "Commedia d'investigazione surreale, goffaggine geniale e atmosfera d'altri tempi."
+   },
+   {
+    "titolo": "Delitto sotto il sole",
+    "anno": 1982,
+    "perche": "Vacanza glamour baciata dal sole, ironia salace e deduzione impeccabile."
+   },
+   {
+    "titolo": "The Afterparty",
+    "anno": 2022,
+    "perche": "Giallo corale metanarrativo, varietà di registri comici e delitto enigmatico."
+   },
+   {
+    "titolo": "Bored to Death - Investigatore per noia",
+    "anno": 2009,
+    "perche": "Nevrosi letteraria newyorkese, detective dilettanti strampalati e ironia sofisticata."
+   },
+   {
+    "titolo": "8 donne e un mistero",
+    "anno": 2002,
+    "perche": "Teatralità glamour rétro, segreti familiari velenosi e deliziosa commedia musicale."
+   },
+   {
+    "titolo": "Delitto a Porta Romana",
+    "anno": 1980,
+    "perche": "Giallo comico popolare, investigatore sui generis e dialetto verace irresistibile."
+   },
+   {
+    "titolo": "Il commissario Montalbano",
+    "anno": 1999,
+    "perche": "Ironia mediterranea quieta, misteri provinciali e calore umano confortevole."
+   },
+   {
+    "titolo": "Mistero a Saint-Tropez",
+    "anno": 2021,
+    "perche": "Pastiche comico balneare, investigazione goffa e satira d'epoca rétro."
+   },
+   {
+    "titolo": "Il segreto del mio successo",
+    "anno": 1987,
+    "perche": "Frizzante commedia newyorkese, equivoci brillanti e ambizione scanzonata."
+   },
+   {
+    "titolo": "Un colpo da dilettanti",
+    "anno": 1996,
+    "perche": "Goffaggine affettuosa, piani criminali sgangherati e bizzarra amicizia eccentrica."
+   },
+   {
+    "titolo": "Confess, Fletch",
+    "anno": 2022,
+    "perche": "Ironia sorniona rilassata, fascino svagato e mistero elegante senza affanni."
+   },
+   {
+    "titolo": "Sherlock",
+    "anno": 2010,
+    "perche": "Brillantezza deduttiva contemporanea, cameratismo complice e humour tagliente britannico."
+   },
+   {
+    "titolo": "Il mistero del cadavere scomparso",
+    "anno": 1982,
+    "perche": "Omaggio affettuoso e parodico al noir classico con gag montate."
+   },
+   {
+    "titolo": "Monk",
+    "anno": 2002,
+    "perche": "Nevrosi maniacali tenere, intuizioni geniali e calore investigativo rassicurante."
+   }
+  ]
+ },
+ {
+  "seed": "movie:537116",
+  "suggerimenti": [
+   {
+    "titolo": "Rent",
+    "anno": 2005,
+    "perche": "Bohemia newyorkese indomita, arte urgente e lotta solidale contro l'oblio."
+   },
+   {
+    "titolo": "All That Jazz - Lo spettacolo comincia",
+    "anno": 1979,
+    "perche": "Autodistruzione artistica febbrile, danza vitale e corsa straziante contro il tempo."
+   },
+   {
+    "titolo": "La La Land",
+    "anno": 2016,
+    "perche": "Malinconia del sogno artistico, passione musicale travolgente e sacrifici personali dolorosi."
+   },
+   {
+    "titolo": "Quasi famosi",
+    "anno": 2000,
+    "perche": "Amore devoto per la musica, giovinezza febbrile e perdita dell'innocenza."
+   },
+   {
+    "titolo": "A Star Is Born",
+    "anno": 2018,
+    "perche": "Passione musicale viscerale, alchimia creativa e doloroso logoramento interiore."
+   },
+   {
+    "titolo": "Hair",
+    "anno": 1979,
+    "perche": "Vitalità giovanile ribelle, canzoni liberatorie e tragedia incombente dell'epoca."
+   },
+   {
+    "titolo": "Hedwig - La diva con la spanna in più",
+    "anno": 2001,
+    "perche": "Rabbia glam rock trascinante, identità ferita e disperato bisogno d'amore."
+   },
+   {
+    "titolo": "Sing Street",
+    "anno": 2016,
+    "perche": "Euforia della prima creazione musicale, evasione adolescenziale e speranza romantica."
+   },
+   {
+    "titolo": "A proposito di Davis",
+    "anno": 2013,
+    "perche": "Inverno newyorkese cupo, fallimento artistico cronico e autenticità folk ostinata."
+   },
+   {
+    "titolo": "Moulin Rouge!",
+    "anno": 2001,
+    "perche": "Romanticismo bohémien fiammeggiante, estasi teatrale e amore eterno contro la malattia."
+   },
+   {
+    "titolo": "Les chansons d'amour",
+    "anno": 2007,
+    "perche": "Malinconia parigina cantata, giovinezza spezzata dal lutto e leggerezza emotiva."
+   },
+   {
+    "titolo": "120 battiti al minuto",
+    "anno": 2017,
+    "perche": "Urgenza politica febbrile, vitalità giovanile ribelle e minaccia costante dell'AIDS."
+   },
+   {
+    "titolo": "Prima della rivoluzione",
+    "anno": 1964,
+    "perche": "Angoscia ideologica giovanile, fervore romantico e malinconica resa borghese."
+   },
+   {
+    "titolo": "Les parapluies de Cherbourg",
+    "anno": 1964,
+    "perche": "Tutto cantato con struggente dolcezza, giovinezza romantica e destino amaro."
+   },
+   {
+    "titolo": "Saranno famosi",
+    "anno": 1980,
+    "perche": "Fame di successo a Manhattan, sacrifici quotidiani e passione per l'arte."
+   },
+   {
+    "titolo": "Velvet Goldmine",
+    "anno": 1998,
+    "perche": "Fascinazione per il glam rock, teatralità artistica e ossessione giovanile."
+   },
+   {
+    "titolo": "Frances Ha",
+    "anno": 2012,
+    "perche": "Ansia dei trent'anni a New York, sogni artistici traballanti e amicizia."
+   },
+   {
+    "titolo": "New York, New York",
+    "anno": 1977,
+    "perche": "Ambizione musicale spietata, jazz passionale e scontro sentimentale tormentato."
+   },
+   {
+    "titolo": "Sound of Metal",
+    "anno": 2019,
+    "perche": "Terrore di perdere la propria identità artistica e riscoperta del silenzio."
+   },
+   {
+    "titolo": "The Last Five Years",
+    "anno": 2014,
+    "perche": "Decostruzione musicale di un amore tra ambizioni teatrali e dolorosi disallineamenti."
+   }
+  ]
+ },
+ {
+  "seed": "movie:10138",
+  "suggerimenti": [
+   {
+    "titolo": "Fast & Furious 5",
+    "anno": 2011,
+    "perche": "Spavalderia muscolare rombante, spettacolarità sfacciata e cameratismo adrenalinico ad alto tasso."
+   },
+   {
+    "titolo": "Transformers",
+    "anno": 2007,
+    "perche": "Fragore metallico roboante, culto tecnologico muscolare e intrattenimento visivo ipercinetico."
+   },
+   {
+    "titolo": "RoboCop 2",
+    "anno": 1990,
+    "perche": "Satira cibernetica metallica, cinismo corporativo spietato e duelli tra prototipi."
+   },
+   {
+    "titolo": "Top Gun",
+    "anno": 1986,
+    "perche": "Ego smisurato, fascino per i velivoli militari e adrenalina virile spavalda."
+   },
+   {
+    "titolo": "Demolition Man",
+    "anno": 1993,
+    "perche": "Azione esplosiva sfacciata, sarcasmo machista e futuro tecnologico patinato e folle."
+   },
+   {
+    "titolo": "Men in Black",
+    "anno": 1997,
+    "perche": "Gadget tecnologici segreti, carisma brillante sfrontato e ritmo action irresistibile."
+   },
+   {
+    "titolo": "Speed Racer",
+    "anno": 2008,
+    "perche": "Iper-stimolazione visiva al neon, veicoli futuristici e sfida alle multinazionali corrotte."
+   },
+   {
+    "titolo": "Real Steel",
+    "anno": 2011,
+    "perche": "Scontri tra robot metallici giganti, redenzione spavalda e dinamica familiare affettuosa."
+   },
+   {
+    "titolo": "True Lies",
+    "anno": 1994,
+    "perche": "Spettacolarità esagerata, gadget hi-tech sfarzosi e comicità d'azione pirotecnica."
+   },
+   {
+    "titolo": "Io, Robot",
+    "anno": 2004,
+    "perche": "Paranoia tecnologica elegante, carisma sardonico e cospirazione di droidi all'avanguardia."
+   },
+   {
+    "titolo": "Dredd - Il giudice dell'apocalisse",
+    "anno": 2012,
+    "perche": "Azione balistica secca, futurismo cupo e indistruttibile fermezza d'acciaio."
+   },
+   {
+    "titolo": "Lo chiamavano Jeeg Robot",
+    "anno": 2015,
+    "perche": "Eroe riluttante di periferia, forza metallica grezza e carisma pop sfacciato."
+   },
+   {
+    "titolo": "Space Sweepers",
+    "anno": 2021,
+    "perche": "Equipaggio insolente, tecnologia spaziale rottamata e divertimento d'azione spettacolare."
+   },
+   {
+    "titolo": "Godzilla contro King Ghidorah",
+    "anno": 1991,
+    "perche": "Scontri cibernetici titanici, paradossi temporali kitsch ed esuberanza fantascientifica nipponica."
+   },
+   {
+    "titolo": "Taxxi",
+    "anno": 1998,
+    "perche": "Corse automobilistiche spericolate, arroganza simpatica e humour d'azione francese."
+   },
+   {
+    "titolo": "Face/Off - Due facce di un assassino",
+    "anno": 1997,
+    "perche": "Eccesso spettacolare puro, carisma sopra le righe ed esplosioni melodrammatiche favolose."
+   },
+   {
+    "titolo": "Terminator 3 - Le macchine ribelli",
+    "anno": 2003,
+    "perche": "Collisioni pesanti tra macchine inarrestabili, fatalismo e distruzione spettacolare urbana."
+   },
+   {
+    "titolo": "Il pianeta proibito",
+    "anno": 1956,
+    "perche": "Prodigi tecnologici futuristici, robot iconici e arroganza scientifica presuntuosa."
+   },
+   {
+    "titolo": "Anno 2000 - La corsa della morte",
+    "anno": 1975,
+    "perche": "Macchine corazzate grottesche, cinismo spettacolare satirico e sfrontata violenza pop."
+   },
+   {
+    "titolo": "Bullet Train",
+    "anno": 2022,
+    "perche": "Spavalderia pop caotica, sicari stravaganti e azione cinetica ad alto ritmo."
+   }
+  ]
+ },
+ {
+  "seed": "movie:64688",
+  "suggerimenti": [
+   {
+    "titolo": "Suxbad - Tre menti sopra il pelo",
+    "anno": 2007,
+    "perche": "Ansia adolescenziale sgangherata, dialoghi brillanti senza filtri e fratellanza commovente."
+   },
+   {
+    "titolo": "Hot Fuzz",
+    "anno": 2007,
+    "perche": "Parodia magistrale del buddy cop, violenza iperbolica e cameratismo impeccabile."
+   },
+   {
+    "titolo": "The Nice Guys",
+    "anno": 2016,
+    "perche": "Coppia di investigatori disastrosa, battute fulminee e comicità d'azione irresistibile."
+   },
+   {
+    "titolo": "Una pallottola spuntata",
+    "anno": 1988,
+    "perche": "Demenzialità parodistica no-stop, gag visive esilaranti e totale serietà comica."
+   },
+   {
+    "titolo": "Starsky & Hutch",
+    "anno": 2004,
+    "perche": "Parodia nostalgica affettuosa, comicità sopra le righe e alchimia perfetta tra partner."
+   },
+   {
+    "titolo": "La rivincita delle sfigate",
+    "anno": 2019,
+    "perche": "Commedia adolescenziale scatenata, complicità femminile travolgente e humour moderno brillante."
+   },
+   {
+    "titolo": "American Pie",
+    "anno": 1999,
+    "perche": "Imbarazzo ormonale spinto, gag scurrili e tenera lealtà cameratesca tra amici."
+   },
+   {
+    "titolo": "Fuori di testa",
+    "anno": 1982,
+    "perche": "Ritratto scolastico disinibito, umorismo sfacciato e personaggi stravaganti indimenticabili."
+   },
+   {
+    "titolo": "Bad Boys",
+    "anno": 1995,
+    "perche": "Botta e risposta frenetico tra sbirri, sparatorie patinate e machismo scanzonato."
+   },
+   {
+    "titolo": "La bottega del barbiere",
+    "anno": 2002,
+    "perche": "Chiacchiere comunitarie irresistibili, calore urbano e comicità d'insieme spontanea."
+   },
+   {
+    "titolo": "Smetto quando voglio",
+    "anno": 2014,
+    "perche": "Ricercatori improvvisati criminali, ritmo indiavolato e satira comica contemporanea brillante."
+   },
+   {
+    "titolo": "Due agenti molto speciali",
+    "anno": 2012,
+    "perche": "Scontro di caratteri poliziesco, battute affilate e caotica azione parigina."
+   },
+   {
+    "titolo": "Poliziotto o canaglia",
+    "anno": 1979,
+    "perche": "Sfrontatezza guascona, poliziesco ironico d'altri tempi e fascino irresistibile."
+   },
+   {
+    "titolo": "Animal House",
+    "anno": 1978,
+    "perche": "Anarchia studentesca totale, ribellione goliardica sfrenata e comicità demenziale epocale."
+   },
+   {
+    "titolo": "Rush Hour - Due mine vaganti",
+    "anno": 1998,
+    "perche": "Contrasto culturale scoppiettante, slapstick acrobatico e battute a valanga."
+   },
+   {
+    "titolo": "I poliziotti di riserva",
+    "anno": 2010,
+    "perche": "Assurdità demenziale imprevedibile, parodia del machismo e dinamiche strampalate esilaranti."
+   },
+   {
+    "titolo": "Bottoms",
+    "anno": 2023,
+    "perche": "Comicità queer caotica, violenza farsesca a scuola e spirito irriverente selvaggio."
+   },
+   {
+    "titolo": "Amici miei",
+    "anno": 1975,
+    "perche": "Zingarate goliardiche contro la maturità, cinismo affettuoso e cameratismo maschile."
+   },
+   {
+    "titolo": "Il grande Lebowski",
+    "anno": 1998,
+    "perche": "Pigrizia filosofica esilarante, equivoci strampalati e amicizia disfunzionale indimenticabile."
+   },
+   {
+    "titolo": "Mean Girls",
+    "anno": 2004,
+    "perche": "Satira scolastica crudele e brillante, battute cult e amicizie velenose."
+   }
+  ]
+ },
+ {
+  "seed": "movie:446354",
+  "suggerimenti": [
+   {
+    "titolo": "Tutti gli uomini del presidente",
+    "anno": 1976,
+    "perche": "Rigore metodico del giornalismo d'inchiesta, penombra e tensione etica democratica."
+   },
+   {
+    "titolo": "Il caso Spotlight",
+    "anno": 2015,
+    "perche": "Sobria dedizione investigativa, indignazione civile trattenuta e ricerca instancabile della verità."
+   },
+   {
+    "titolo": "Frost/Nixon - Il duello",
+    "anno": 2008,
+    "perche": "Scontro verbale psicologico teso, confessione storica e riscatto mediatico incalzante."
+   },
+   {
+    "titolo": "Good Night, and Good Luck.",
+    "anno": 2005,
+    "perche": "Eleganza in bianco e nero, etica giornalistica intransigente contro il potere."
+   },
+   {
+    "titolo": "Dentro la notizia - Broadcast News",
+    "anno": 1987,
+    "perche": "Conflitto etico tra informazione seria e spettacolo, nevrosi redazionale brillante."
+   },
+   {
+    "titolo": "Danton",
+    "anno": 1983,
+    "perche": "Retorica politica infuocata, dibattito sui diritti civili e deriva autoritaria."
+   },
+   {
+    "titolo": "Le vite degli altri",
+    "anno": 2006,
+    "perche": "Risveglio della coscienza morale sotto regime oppressivo e integrità silenziosa."
+   },
+   {
+    "titolo": "Un popolo e il suo re",
+    "anno": 2018,
+    "perche": "Efervescenza democratica, nascita della rappresentanza civica e dibattito appassionato popolare."
+   },
+   {
+    "titolo": "Z - L'orgia del potere",
+    "anno": 1969,
+    "perche": "Tensione civile bruciante, inchiesta giudiziaria coraggiosa contro la cospirazione militare."
+   },
+   {
+    "titolo": "A Civil Action",
+    "anno": 1998,
+    "perche": "Battaglia legale estenuante, rovina finanziaria e ricerca intransigente di giustizia."
+   },
+   {
+    "titolo": "L'insulto",
+    "anno": 2017,
+    "perche": "Dignità ferita, dibattito pubblico incendiario e riflessione etica sulla riconciliazione."
+   },
+   {
+    "titolo": "La parola ai giurati",
+    "anno": 1957,
+    "perche": "Ragionevole dubbio salvifico, integrità morale ostinata e tensione democratica magistrale."
+   },
+   {
+    "titolo": "Insider - Dietro la verità",
+    "anno": 1999,
+    "perche": "Paranoia corporativa soffocante, coraggio civile del testimone e integrità giornalistica."
+   },
+   {
+    "titolo": "Cattive acque",
+    "anno": 2019,
+    "perche": "Pazienza metodica dell'avvocato, lotta solitaria contro colossi chimici e verità."
+   },
+   {
+    "titolo": "Official Secrets - Segreto di stato",
+    "anno": 2019,
+    "perche": "Dilemma morale tra lealtà patriottica e dovere etico verso la pace."
+   },
+   {
+    "titolo": "Mr. Smith va a Washington",
+    "anno": 1939,
+    "perche": "Idealismo democratico puro, ostruzionismo parlamentare sfiancante e trionfo della rettitudine."
+   },
+   {
+    "titolo": "Tempesta su Washington",
+    "anno": 1962,
+    "perche": "Manovre politiche ciniche di corridoio, rigore istituzionale e integrità morale."
+   },
+   {
+    "titolo": "L'ufficiale e la spia",
+    "anno": 2019,
+    "perche": "Rigore procedurale storico, lotta contro l'antisemitismo militare e verità ostinata."
+   },
+   {
+    "titolo": "Anche io",
+    "anno": 2022,
+    "perche": "Inchiesta giornalistica meticolosa, ascolto delle vittime e coraggio istituzionale redazionale."
+   },
+   {
+    "titolo": "La regola del gioco",
+    "anno": 2014,
+    "perche": "Isolamento del cronista d'inchiesta, diffamazione istituzionale e ostinata ricerca documentale."
+   }
+  ]
+ },
+ {
+  "seed": "tv:249042",
+  "suggerimenti": [
+   {
+    "titolo": "This Is England",
+    "anno": 2006,
+    "perche": "Realismo sociale britannico grezzo, fragilità adolescenziale e seduzione della violenza."
+   },
+   {
+    "titolo": "L'odio",
+    "anno": 1995,
+    "perche": "Tensione urbana a fior di pelle, gioventù disperata e miccia innescata."
+   },
+   {
+    "titolo": "Il sospetto",
+    "anno": 2012,
+    "perche": "Paranoia collettiva claustrofobica, distruzione sociale innocente e rigore morale implacabile."
+   },
+   {
+    "titolo": "Broadchurch",
+    "anno": 2013,
+    "perche": "Lutto comunitario lancinante, sospetto reciproco tra vicini e indagine straziante."
+   },
+   {
+    "titolo": "Boiling Point - Il disastro è servito",
+    "anno": 2021,
+    "perche": "Tensione asfissiante in tempo reale, stress corrosivo e collasso umano inevitabile."
+   },
+   {
+    "titolo": "Scum",
+    "anno": 1979,
+    "perche": "Brutalità carceraria giovanile senza sconti, violenza istituzionale e disperazione disarmante."
+   },
+   {
+    "titolo": "Elephant",
+    "anno": 2003,
+    "perche": "Sguardo sospeso e distaccato sulla banalità e imprevedibilità del massacro giovanile."
+   },
+   {
+    "titolo": "I 400 colpi",
+    "anno": 1959,
+    "perche": "Disagio giovanile incompreso, ribellione solitaria e sguardo empatico sull'infanzia ferita."
+   },
+   {
+    "titolo": "L'incredibile volo",
+    "anno": 1996,
+    "perche": "Fragilità adolescenziale, riscatto emotivo intimo e riconnessione con il mondo reale."
+   },
+   {
+    "titolo": "Monster",
+    "anno": 2023,
+    "perche": "Prospettive multiple sul bullismo, incomprensioni scolastiche e straziante vulnerabilità infantile."
+   },
+   {
+    "titolo": "The Night Of - Cos'è successo quella notte?",
+    "anno": 2016,
+    "perche": "Spolpamento giudiziario asfissiante, perdita dell'innocenza carceraria e disperazione familiare."
+   },
+   {
+    "titolo": "Happy Valley",
+    "anno": 2014,
+    "perche": "Dolore viscerale della provincia, criminalità giovanile e resilienza morale tenace."
+   },
+   {
+    "titolo": "Kes",
+    "anno": 1969,
+    "perche": "Durezza proletaria spietata, isolamento infantile e fugace speranza poetica schiacciata."
+   },
+   {
+    "titolo": "Kids",
+    "anno": 1995,
+    "perche": "Nichilismo adolescenziale crudo e sgradevole, deriva morale e assenza di guida."
+   },
+   {
+    "titolo": "Euphoria",
+    "anno": 2019,
+    "perche": "Estetica febbrile, dolore esistenziale della giovinezza e dipendenze autodistruttive spietate."
+   },
+   {
+    "titolo": "Diamanti grezzi",
+    "anno": 2019,
+    "perche": "Tensione asfissiante a mille all'ora, scelte sbagliate e rovina imminente."
+   },
+   {
+    "titolo": "Rocco e i suoi fratelli",
+    "anno": 1960,
+    "perche": "Tragedia familiare dolorosa, corruzione dell'innocenza e violenza che disgrega i legami."
+   },
+   {
+    "titolo": "Boy A",
+    "anno": 2007,
+    "perche": "Reinserimento impossibile dopo un crimine infantile, colpa indelebile e condanna sociale."
+   },
+   {
+    "titolo": "...e ora parliamo di Kevin",
+    "anno": 2011,
+    "perche": "Terrore materno intimo, presagio del male infantile e macerazione della colpa."
+   },
+   {
+    "titolo": "Time",
+    "anno": 2021,
+    "perche": "Realismo carcerario straziante, rimorso divorante e ricerca disperata di redenzione etica."
+   }
+  ]
+ },
+ {
+  "seed": "movie:591275",
+  "suggerimenti": [
+   {
+    "titolo": "The Witch",
+    "anno": 2015,
+    "perche": "Paranoia puritana soffocante, folklore ancestrale maligno e isolamento boschivo inquietante."
+   },
+   {
+    "titolo": "La seduzione del male",
+    "anno": 1996,
+    "perche": "Fanatismo religioso ipocrita, isteria di massa per la stregoneria e persecuzione."
+   },
+   {
+    "titolo": "The Village",
+    "anno": 2004,
+    "perche": "Paura isolazionista del male nei boschi, segreti arcaici e amore ribelle."
+   },
+   {
+    "titolo": "La pelle di Satana",
+    "anno": 1971,
+    "perche": "Folk horror rurale corrotto, possessione giovanile morbosa e follia contadina."
+   },
+   {
+    "titolo": "The Wicker Man",
+    "anno": 1973,
+    "perche": "Paganismo rurale inquietante, isolamento insulare ostile e sacrificio rituale solenne."
+   },
+   {
+    "titolo": "Il grande inquisitore",
+    "anno": 1968,
+    "perche": "Crudeltà sadica della caccia alle streghe, paranoia storica e vendetta amara."
+   },
+   {
+    "titolo": "La stregoneria attraverso i secoli",
+    "anno": 1922,
+    "perche": "Iconografia demoniaca allucinata, fanatismo inquisitorio e fascinazione visiva per il macabro."
+   },
+   {
+    "titolo": "Apostolo",
+    "anno": 2018,
+    "perche": "Fanatismo di culto rurale isolato, sangue della terra e orrore corporale."
+   },
+   {
+    "titolo": "Il mistero di Sleepy Hollow",
+    "anno": 1999,
+    "perche": "Gotico nebbioso sontuoso, leggende rurali macabre e decapitazioni sanguinose fiabesche."
+   },
+   {
+    "titolo": "Crimson Peak",
+    "anno": 2015,
+    "perche": "Romanticismo gotico marcescente, fantasmi del passato e segreti di famiglia sanguinari."
+   },
+   {
+    "titolo": "La maschera del demonio",
+    "anno": 1960,
+    "perche": "Maledizione secolare di stregoneria, gotico suggestivo e bellezza funerea immortale."
+   },
+   {
+    "titolo": "Errementari - Il fabbro e il diavolo",
+    "anno": 2017,
+    "perche": "Folklore basco demoniaco, patti diabolici e atmosfera cupa da fiaba nera."
+   },
+   {
+    "titolo": "Gretel e Hansel",
+    "anno": 2020,
+    "perche": "Estetica ipnotica oscura, emancipazione stregonesca e fascino visivo per il bosco."
+   },
+   {
+    "titolo": "Licantropia",
+    "anno": 2000,
+    "perche": "Mutazione ormonale mostruosa, legame fraterno viscerale e ribellione giovanile oscura."
+   },
+   {
+    "titolo": "Quella casa nel bosco",
+    "anno": 2011,
+    "perche": "Decostruzione metanarrativa brillante dei cliché slasher e antichi sacrifici rituali."
+   },
+   {
+    "titolo": "Vij",
+    "anno": 1967,
+    "perche": "Terrore rurale slavo, veglia funebre stregata e folklore demoniaco autentico."
+   },
+   {
+    "titolo": "Carrie - Lo sguardo di Satana",
+    "anno": 1976,
+    "perche": "Fanatismo religioso opprimente, umiliazione e devastante vendetta soprannaturale liberatoria."
+   },
+   {
+    "titolo": "It Follows",
+    "anno": 2014,
+    "perche": "Minaccia ineluttabile che avanza, solidarietà giovanile nostalgica e angoscia costante."
+   },
+   {
+    "titolo": "Il nome della rosa",
+    "anno": 1986,
+    "perche": "Oscurantismo inquisitorio medievale, delitti misteriosi e fanatismo dogmatico nell'abbazia."
+   },
+   {
+    "titolo": "Midsommar - Il villaggio dei dannati",
+    "anno": 2019,
+    "perche": "Folk horror luminoso, elaborazione del lutto e catarsi rituale pagana sconvolgente."
+   }
+  ]
+ },
+ {
+  "seed": "movie:1236153",
+  "suggerimenti": [
+   {
+    "titolo": "Minority Report",
+    "anno": 2002,
+    "perche": "Sistema di giustizia infallibile, fuga dell'innocente incastrato e paranoia predittiva."
+   },
+   {
+    "titolo": "Gattaca - La porta dell'universo",
+    "anno": 1997,
+    "perche": "Determinismo genetico discriminatorio, identità contraffatta e lotta solitaria contro il sistema."
+   },
+   {
+    "titolo": "1997: Fuga da New York",
+    "anno": 1981,
+    "perche": "Futuro distopico carcerario cinico, countdown disperato e ribellione anti-sistema."
+   },
+   {
+    "titolo": "Il processo",
+    "anno": 1962,
+    "perche": "Accusa assurda e ineluttabile da un apparato giudiziario labirintico e opprimente."
+   },
+   {
+    "titolo": "Blade Runner 2049",
+    "anno": 2017,
+    "perche": "Solitudine esistenziale, indagine investigativa opprimente in un futuro tecnologico asettico."
+   },
+   {
+    "titolo": "Strange Days",
+    "anno": 1995,
+    "perche": "Thriller tecnologico febbrile, memorie digitali corrotte e cospirazione poliziesca urbana."
+   },
+   {
+    "titolo": "Source Code",
+    "anno": 2011,
+    "perche": "Corsa contro il tempo algoritmica, simulazione claustrofobica e ricerca dell'indizio risolutivo."
+   },
+   {
+    "titolo": "Agente Lemmy Caution: missione Alphaville",
+    "anno": 1965,
+    "perche": "Città governata da un supercomputer tirannico, freddezza logica e sentimento represso."
+   },
+   {
+    "titolo": "Io, Robot",
+    "anno": 2004,
+    "perche": "Diritto penale delegato ai robot, complotto sintetico e investigatore scettico."
+   },
+   {
+    "titolo": "L'implacabile",
+    "anno": 1987,
+    "perche": "Condannato incastrato dai media, giustizia spettacolarizzata e lotta gladiatoria futuristica."
+   },
+   {
+    "titolo": "Déjà Vu - Corsa contro il tempo",
+    "anno": 2006,
+    "perche": "Sorveglianza quantistica ossessiva, indagine temporale e disperato riscatto morale controfattuale."
+   },
+   {
+    "titolo": "Orwell 1984",
+    "anno": 1984,
+    "perche": "Giustizia totalitaria che cancella l'individuo, sorveglianza ubiqua e disperazione kafkiana."
+   },
+   {
+    "titolo": "Ghost in the Shell 2 - Innocence",
+    "anno": 2004,
+    "perche": "Indagine cibernetica forense, speculazione filosofica sui crimini sintetici e vuoto."
+   },
+   {
+    "titolo": "Eagle Eye",
+    "anno": 2008,
+    "perche": "Intelligenza artificiale persecutoria onnisciente, pedinamento costante e fuga per la vita."
+   },
+   {
+    "titolo": "L'uomo che fuggì dal futuro",
+    "anno": 1971,
+    "perche": "Giustizia automatizzata disumanizzante, controllo poliziesco robotico e fuga verso la libertà."
+   },
+   {
+    "titolo": "Upgrade",
+    "anno": 2018,
+    "perche": "Simbiosi brutale con un chip intelligente, violenza chirurgica e inganno computazionale."
+   },
+   {
+    "titolo": "Indagine su un cittadino al di sopra di ogni sospetto",
+    "anno": 1970,
+    "perche": "Delirio di onnipotenza dell'autorità, paradosso giudiziario e cinico abuso di potere."
+   },
+   {
+    "titolo": "Hardcore!",
+    "anno": 2015,
+    "perche": "Adrenalina cinetica pura in prima persona, innesti cibernetici e inseguimenti implacabili."
+   },
+   {
+    "titolo": "Il mondo dei robot",
+    "anno": 1973,
+    "perche": "Malfunzionamento letale dell'automa giudicante, persecuzione meccanica inarrestabile e terrore tecnologico."
+   },
+   {
+    "titolo": "The Creator",
+    "anno": 2023,
+    "perche": "Pregiudizio tecnologico, caccia al bersaglio algoritmico ed empatia per l'intelligenza artificiale."
+   }
+  ]
+ }
+]

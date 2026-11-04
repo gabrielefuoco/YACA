@@ -55,21 +55,28 @@ def carica(path) -> sp.csr_matrix:
     return M.tocsr().astype(np.float32)
 
 
-def _ordine(M, i, taglia=3000):
+def _ordine(M, i, taglia=3000, max_cand=0):
+    if i >= M.shape[0]:        # grafo su un canone più corto (V15 ha 66.259 righe)
+        return []
     r = M.getrow(i)
     if r.nnz == 0:
         return []
     o = np.argsort(-r.data)
-    return [int(j) for j in r.indices[o] if int(j) != i][:taglia]
+    ids = [int(j) for j in r.indices[o] if int(j) != i]
+    if max_cand:
+        # CONTROLLO DEL POOL: un grafo su 66k nodi ha meno candidati di uno su 76k, e a parità di
+        # top-20 un catalogo più corto alza meccanicamente il recall. Si confronta a parità di pool.
+        ids = [j for j in ids if j < max_cand]
+    return ids[:taglia]
 
 
-def metriche_per_sorgente(M, casi, ks=KS):
+def metriche_per_sorgente(M, casi, ks=KS, max_cand=0):
     """Valori PER SORGENTE (serve al bootstrap). Denominatore fisso: un link non trovato vale 0."""
     out = {f'r{k}': [] for k in ks}
     out['rw20'] = []
     out['mrr'] = []
     for i, links in casi:
-        rank = {j: k + 1 for k, j in enumerate(_ordine(M, i))}
+        rank = {j: k + 1 for k, j in enumerate(_ordine(M, i, max_cand=max_cand))}
         for k in ks:
             # CONTEGGIO di link trovati, non somma dei pesi: `rw20` e' l'unica metrica pesata.
             # Sommare i pesi qui gonfiava l'recall di ~2,4x (il peso medio della curatela).
@@ -165,11 +172,11 @@ def valuta_trakt(M, max_utenti=400, k=20, seme=0, alpha=0.60, iterazioni=20):
             'snips_per': np.asarray(snips), 'surp_per': np.asarray(surp)}
 
 
-def valuta(path, casi=None, semi=None):
+def valuta(path, casi=None, semi=None, max_cand=0):
     M = carica(path)
     casi = banco() if casi is None else casi
     semi = semi_popolari() if semi is None else semi
-    m = metriche_per_sorgente(M, casi)
+    m = metriche_per_sorgente(M, casi, max_cand=max_cand)
     q = quota_popolare(M, semi)
     return {'path': str(path), 'metriche': m, 'pop': q,
             'medie': {k: float(v.mean()) for k, v in m.items()} |
@@ -214,13 +221,22 @@ def main():
     ap.add_argument('--chiave', default='r20', choices=[f'r{k}' for k in KS] + ['rw20', 'mrr'])
     ap.add_argument('--trakt', action='store_true', help='aggiunge SNIPS e surprise sui log Trakt')
     ap.add_argument('--utenti', type=int, default=400)
+    ap.add_argument('--gold', default=None, help='banco alternativo (default: cross-merged.json)')
+    ap.add_argument('--max-cand', type=int, default=0,
+                    help='ignora i candidati con riga >= N: confronto a parità di pool')
+    ap.add_argument('--max-riga', type=int, default=0,
+                    help='tieni solo i semi con riga < N: confronto giusto fra grafi di canoni diversi')
     a = ap.parse_args()
-    casi = banco()
+    casi = banco(a.gold)
+    if a.max_riga:
+        casi = [(i, l) for i, l in casi if i < a.max_riga]
+        print(f'  semi tenuti: {len(casi)} (riga < {a.max_riga:,})', flush=True)
     semi = semi_popolari()
+    print(f'  banco: {len(casi)} sorgenti · {sum(len(l) for _, l in casi):,} link', flush=True)
     risultati = []
     for p in a.grafi:
         nome = Path(p).parent.name or Path(p).stem
-        r = valuta(p, casi, semi)
+        r = valuta(p, casi, semi, max_cand=a.max_cand)
         if a.trakt:
             r['trakt'] = valuta_trakt(carica(p), max_utenti=a.utenti)
             print(f"  trakt: snips {r['trakt']['snips']:.4f} · surprise {r['trakt']['surprise']:.4f} "

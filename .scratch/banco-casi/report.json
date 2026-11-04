@@ -1,0 +1,208 @@
+{
+ "blocchi": [
+  {
+   "file": "risposte-01.json",
+   "semi": 20,
+   "link": 395,
+   "stati": {
+    "ok": 296,
+    "ok-anno": 86,
+    "ambiguo-anno": 13,
+    "non in canone": 5
+   }
+  },
+  {
+   "file": "risposte-02.json",
+   "semi": 20,
+   "link": 390,
+   "stati": {
+    "ok": 298,
+    "ok-anno": 78,
+    "non in canone": 10,
+    "ambiguo": 4,
+    "ambiguo-anno": 10
+   }
+  },
+  {
+   "file": "risposte-03.json",
+   "semi": 20,
+   "link": 363,
+   "stati": {
+    "ok-anno": 80,
+    "ok": 277,
+    "non in canone": 37,
+    "ambiguo-anno": 6
+   }
+  },
+  {
+   "file": "risposte-04.json",
+   "semi": 20,
+   "link": 359,
+   "stati": {
+    "ok": 276,
+    "ok-anno": 71,
+    "non in canone": 41,
+    "ambiguo-anno": 8,
+    "ambiguo": 4
+   }
+  },
+  {
+   "file": "risposte-05.json",
+   "semi": 20,
+   "link": 397,
+   "stati": {
+    "ok": 320,
+    "ok-anno": 67,
+    "ambiguo-anno": 10,
+    "non in canone": 3
+   }
+  },
+  {
+   "file": "risposte-06.json",
+   "semi": 20,
+   "link": 393,
+   "stati": {
+    "ok": 298,
+    "ok-anno": 81,
+    "non in canone": 7,
+    "ambiguo-anno": 14
+   }
+  },
+  {
+   "file": "risposte-07.json",
+   "semi": 20,
+   "link": 394,
+   "stati": {
+    "ok": 317,
+    "ok-anno": 73,
+    "non in canone": 6,
+    "ambiguo-anno": 3,
+    "ambiguo": 1
+   }
+  },
+  {
+   "file": "risposte-08.json",
+   "semi": 20,
+   "link": 395,
+   "stati": {
+    "ok": 295,
+    "ok-anno": 89,
+    "ambiguo-anno": 11,
+    "non in canone": 5
+   }
+  },
+  {
+   "file": "risposte-09.json",
+   "semi": 20,
+   "link": 397,
+   "stati": {
+    "ok-anno": 100,
+    "ok": 290,
+    "ambiguo-anno": 6,
+    "ambiguo": 1,
+    "non in canone": 3
+   }
+  },
+  {
+   "file": "risposte-10.json",
+   "semi": 20,
+   "link": 387,
+   "stati": {
+    "ok-anno": 83,
+    "ok": 294,
+    "ambiguo-anno": 10,
+    "non in canone": 13
+   }
+  }
+ ],
+ "non_agganciati": {
+  "Rigor Mortis": 2,
+  "Il sesto senso": 2,
+  "Tonari no Totoro": 2,
+  "Kaguya-hime no Monogatari": 2,
+  "Quasi amici": 2,
+  "Il dottor Stranamore": 2,
+  "God of Gamblers": 1,
+  "Il segno del comando": 1,
+  "I quattrocento colpi": 1,
+  "Sid & Nancy": 1,
+  "Dhoom 3": 1,
+  "E per tetto un cielo di stelle": 1,
+  "L'incredibile castello di Howl": 1,
+  "Tell No One": 1,
+  "I miserabili hanno sempre torto": 1,
+  "La 317ª sezione": 1,
+  "S Club 7 in Miami": 1,
+  "Non me lo dire!": 1,
+  "Tutti cantano la mia canzone": 1,
+  "Sousou no Frieren": 1,
+  "Haibane Renmei": 1,
+  "Juuni Kokuki": 1,
+  "Koe no Katachi": 1,
+  "Bakemono no Ko": 1,
+  "Sayonara no Asa ni Yakusoku no Hana wo Kazarou": 1,
+  "Bom Yeoreum Gaeul Gyeoul Geurigo Bom": 1,
+  "Kamera wo Tomeru na!": 1,
+  "Ah-ga-ssi": 1,
+  "Chinjeolhan geumjassi": 1,
+  "Gæsterne": 1,
+  "Chugyeokja": 1,
+  "Sen to Chihiro no kamikakushi": 1,
+  "Nochnoy dozor": 1,
+  "Salinui chueok": 1,
+  "The Drover's Wife: The Legend of Molly Johnson": 1,
+  "Kimi no suizou wo tabetai": 1,
+  "Nae meorisogui jiugae": 1,
+  "Sekai no chuushin de, ai wo sakebu": 1,
+  "Jigeum mannareo gamnida": 1,
+  "Okuribito": 1,
+  "Vozvrashchenie": 1,
+  "The Raid 2": 1,
+  "Dhoom 2": 1,
+  "Fei ying gai wak": 1,
+  "Biyeolhan geori": 1,
+  "Boku no Hero Academia": 1,
+  "Monster Allergy": 1,
+  "Janghwa, Hongryeon": 1,
+  "Die Höhle des gelben Hundes": 1,
+  "Aruitemo aruitemo": 1,
+  "Manbiki Kazoku": 1,
+  "Dodookdeul": 1,
+  "Gamsijaadeul": 1,
+  "Aparajito": 1,
+  "The 400 Blows": 1,
+  "Turtles Can Fly": 1,
+  "My Life as a Courgette": 1,
+  "The Battle of Algiers": 1,
+  "Fantastic Planet": 1,
+  "Uncle Boonmee Who Can Recall His Past Lives": 1,
+  "Waking Ned Devine": 1,
+  "Flickering Lights": 1,
+  "Mondays in the Sun": 1,
+  "Aguirre, the Wrath of God": 1,
+  "Hard to Be a God": 1,
+  "Spirits of the Dead": 1,
+  "The Hourglass Sanatorium": 1,
+  "Pather Panchali": 1,
+  "Lagaan": 1,
+  "Limonádový Joe": 1,
+  "Floating Clouds": 1,
+  "Taegukgi": 1,
+  "Tengoku to jigoku": 1,
+  "Withnail and I": 1,
+  "Branded to Kill": 1,
+  "Kimssi pyoryugi": 1,
+  "Kikujirô no natsu": 1,
+  "Beyond the Infinite Two Minutes": 1,
+  "One Cut of the Dead": 1,
+  "Guo chan Ling Ling Qi": 1
+ },
+ "stati": {
+  "ok": 2961,
+  "ok-anno": 808,
+  "ambiguo-anno": 91,
+  "non in canone": 130,
+  "ambiguo": 10
+ },
+ "duplicati_tra_semi": 801
+}
