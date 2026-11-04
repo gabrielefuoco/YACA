@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 13
 
@@ -35,3 +35,30 @@ filtro delle liste.
 - Sul dev set: **copertura@500 +2,5 punti** e R@20 sopra l'MDE bootstrap;
 - sui 200 semi popolari la quota >5k **non sale**;
 - il tipo entra in V23 e si misura una volta sola sul banco tonale a fine giro.
+
+---
+
+## Esito: costruito, misurato, e la premessa non regge sui nostri dati
+
+`listsem.py`: 1.117 liste utili (autori holdout esclusi, nome non generico), embedding Qwen3 di
+nome+descrizione, centroide per film pesato `1/log(1+n)`. **3.478.300 archi · 45,5% del canone ha un
+vettore di liste.**
+
+Segnale di fallimento dichiarato nel ticket — *«se la sovrapposizione di genere dei nuovi vicini sale, sta
+re-imparando il genere»* — non è quello che è successo. È successo dell'altro:
+
+| natura delle 1.117 liste | quota |
+|---|---:|
+| premi, festival, classifiche, "top rated" | 13% |
+| **nome di tono** («Best Mindfucks», «Tearjerkers», «Euro-Nordic Noir») | **2%** |
+| altro | 84% |
+
+La riga di *Barbie* in LISTSEM grezzo: *Maestro · American Fiction · La società della neve · May December
+· Rustin · La zona d'interesse* — **i candidati agli Oscar 2023-24**. Il corpus di liste che abbiamo è un
+corpus di premi, non di tono.
+
+Nel grafo (V24, peso 0,7): `R@20 0,038` contro `0,043` (−0,0043, **sotto l'MDE**), R@5 e MRR migliori,
+quota >5k peggiore (70,2% contro 66,5%). **Netto: neutro, con deriva verso il prestigio.**
+
+Cosa servirebbe perché l'idea funzioni: **scaricare liste con nomi non generici** — non le "popular",
+che sono classifiche. Il fetch esiste (`complete-trakt-lists.js`) ma è una fonte nuova, e va deciso.

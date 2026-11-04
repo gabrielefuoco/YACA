@@ -21,16 +21,38 @@ def sha(name: str, base: Path | None = None) -> str:
 
 
 def basic():
-    """Canone, metadati, bolle, partizione, mappa. Niente archi."""
+    """Canone e metadati. Le bolle sono OPZIONALI (16/11/2026).
+
+    Fino a ieri questa funzione pretendeva `bolle.json` e la partizione: un canone nuovo senza
+    partizione non si poteva nemmeno aprire, e il prodotto del grafo restava prigioniero delle bolle.
+    Ora, se la partizione non c'e' o non copre tutte le chiavi (canone esteso in coda), si serve
+    `mem = -1` e `bid = -1` con un avviso: chi ha bisogno delle bolle le chiede, chi lavora sul grafo
+    titolo-titolo (matrice sparsa) non ne ha piu' bisogno.
+    """
     z = np.load(C.SRC / C.SPAZI, allow_pickle=True)
     tmdb, tipo, year, votes = z["tmdb"], z["tipo"], z["year"], z["votes"]
     keys = [f"{t}:{int(i)}" for t, i in zip(tipo, tmdb)]
     titoli = np.array((C.SRC / C.TITOLI).read_text(encoding="utf-8").split("\n"), dtype=object)
     m = np.load(C.SRC / C.META)
-    b = json.load(open(C.SRC / C.BOLLE, encoding="latin-1"))
-    mem = np.load(C.SRC / C.PARTITION).astype(np.int32)
-    bid = np.array([b["titoli"][k] for k in keys], dtype=np.int32)
-    sz = np.bincount(mem)
+    N = len(keys)
+
+    mem = np.full(N, -1, np.int32)
+    bid = np.full(N, -1, np.int32)
+    b = {}
+    pf = C.SRC / C.PARTITION
+    if pf.exists():
+        p = np.load(pf).astype(np.int32)
+        if len(p) == N:
+            mem = p
+        else:
+            print(f"  basic: partizione di {len(p):,} righe su un canone di {N:,} — bolle disattivate"
+                  f" (la partizione va rifatta o non serve piu')", flush=True)
+    bf = C.SRC / C.BOLLE
+    if bf.exists() and (mem >= 0).any():
+        b = json.load(open(bf, encoding="latin-1"))
+        if isinstance(b.get("titoli"), dict):
+            bid = np.array([b["titoli"].get(k, -1) for k in keys], dtype=np.int32)
+    sz = np.bincount(mem[mem >= 0]) if (mem >= 0).any() else np.zeros(1, np.int64)
     return {
         "keys": keys, "tipo": np.asarray(tipo), "tmdb": np.asarray(tmdb),
         "year": np.asarray(year), "votes": np.asarray(votes), "titoli": titoli,
@@ -39,7 +61,7 @@ def basic():
         "ANNO": m["ANNO"].astype(np.float64), "NEP": m["NEP"].astype(np.float64),
         "POP": m["POP"].astype(np.float64),
         "is_tv": np.asarray(tipo) == "tv", "mem": mem, "bid": bid, "sz": sz,
-        "bolle": b, "N": len(keys), "NB": int(mem.max()) + 1,
+        "bolle": b, "N": N, "NB": int(mem.max()) + 1 if (mem >= 0).any() else 0,
         "row_of": {k: i for i, k in enumerate(keys)},
     }
 

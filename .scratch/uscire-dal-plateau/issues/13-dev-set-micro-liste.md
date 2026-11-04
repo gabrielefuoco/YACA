@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # Dev set: micro-liste Trakt cross-genere in holdout
@@ -40,3 +40,24 @@ cross-genere/cross-decennio, ed è 100% holdout rispetto alla costruzione del gr
 
 14 (LISTSEM), 15 (COV_RES), 19 (equilibrio topk), 20 (V15 sul canone nuovo): senza dev set non si
 può decidere niente senza contaminare il test.
+
+---
+
+## Esito
+
+`dev-set.py`: **166 casi · 3.063 link · 0 semi in comune col banco tonale**, da 155 autori Trakt in
+holdout (20% con seme 777, elenco in `holdout-autori.json`).
+
+Il progetto del senior (micro-liste pure) non era costruibile sui nostri dati: le liste popolari sono
+liste-franchise (MCU, Nolan, Bond), e chiedere che l'**intera** lista sia cross-genere ne scarta il 95%.
+La correzione: il vincolo sta sui **target**, non sulla lista — seme = il titolo più votato, target =
+quelli che non condividono genere primario, regista né decennio col seme, con target eterogenei
+(≥ 3 generi e ≥ 3 decenni) per escludere i franchise travestiti.
+
+Misura che chiude un sospetto: **`LIST` non contaminava il dev set** — ricostruito senza gli autori
+holdout, il grafo dà esattamente gli stessi numeri (`V23 − V22 = +0,0000`), perché `LIST` richiede
+supporto ≥ 2 liste e quelle del dev sono singole.
+
+Sul dev set umano: **V15 0,041 · V23 0,043 · V18 0,034**; `V15 − V23 = −0,0018` (rumore),
+`V18 − V23 = −0,0084` (sopra l'MDE, peggiore). Il vantaggio di V15 sul banco LLM **non si riproduce**
+sulle liste umane: era specifico del generatore del banco.

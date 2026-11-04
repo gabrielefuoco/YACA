@@ -1,0 +1,12 @@
+{
+ "liste_valutate": 286,
+ "casi_usati": 166,
+ "autori": 775,
+ "autori_holdout": 155,
+ "scartate": {
+  "dimensione": 112,
+  "pochi target cross-genere": 53,
+  "target omogenei (franchise)": 50,
+  "seme nel test set": 17
+ }
+}
