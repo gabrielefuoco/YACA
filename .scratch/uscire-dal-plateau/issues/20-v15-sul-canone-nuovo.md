@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: wontfix
 Type: task
 Blocked by: 16
 
@@ -22,3 +22,13 @@ nuovo.
 
 - Un artefatto V15-76k con la sua misura;
 - verdetto: se il vantaggio sopravvive sul canone nuovo, V15-76k diventa la base di prodotto.
+
+---
+
+## Chiuso: reso inutile dal dev set
+
+Serviva a riportare V15 sul canone di 76.497 perché V15 sembrava il migliore (+0,0183 sopra l'MDE sul
+banco scritto dagli agenti). Sul dev set **umano**: V15 0,041 · V23 0,043 — `V15 − V23 = −0,0018`,
+rumore. Non c'è nessun vantaggio da riportare.
+
+E il ticket 16 ha chiuso anche la spiegazione: non è lo studente.
