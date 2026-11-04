@@ -10,7 +10,14 @@ autoriale: **390x di distorsione, applicata dopo la taratura dei pesi**. Da qui 
   attuale       O = |vicini comuni| (conteggio binario)          <- quello che ha prodotto i numeri V10-V18
   adamic-adar   O = somma su k di 1/log(1+grado(k))               <- pesa meno gli hub
   log           O = log(1 + |vicini comuni|)                      <- comprime la cricca: 390x -> ~4x
+  coseno        O = coseno pesato fra le righe di transizione      <- in [0,1] per Cauchy-Schwarz
   nessuna       identita' (per misurare quanto la chiusura sta sostenendo il banco)
+
+Il modo `coseno` nasce dalla revisione esterna: `attuale` e `adamic-adar` binarizzano S, e con gradi
+264-521 il peso 1/log(1+deg) e' quasi costante (0,155-0,167), quindi AA degenera nel conteggio. Il
+coseno invece **tiene i pesi RRF**, smorza i vicini comuni per in-degree (beta), e normalizza per norma
+di riga: Omega_ij in [0,1] per costruzione, e il rapporto fra l'arco piu' supportato e uno isolato e'
+limitato a 1/alpha0.
 
 MISURATO su V18 (banco 499, bootstrap appaiato, IC95):
   nessuna     R@20 -0,0119 (sopra l'MDE) · >5k 73,2% · Lady Bird #10 in Barbie
@@ -30,13 +37,70 @@ from services.graph_dense import data as D
 from services.graph_dense import provenance as PV
 
 T0 = time.time()
-MODI = ('attuale', 'adamic-adar', 'log', 'nessuna')
+MODI = ('attuale', 'adamic-adar', 'log', 'coseno', 'nessuna')
+
+
+def _coseno(S: sp.csr_matrix, alpha0: float, blocco: int, beta: float = 0.20,
+            gamma: float = 0.50) -> sp.csr_matrix:
+    """Chiusura strutturaale del secondo ordine, invariante al grado.
+
+    1. smorza i vicini intermedi per in-degree (`d^-beta`): un blockbuster non fa da ponte universale;
+    2. normalizza ogni riga in norma L2 -> il prodotto scalare e' in [0,1] (Cauchy-Schwarz) qualunque
+       sia il grado;
+    3. Omega_ij = <riga_i, riga_j>, poi scalato sul 95o percentile della riga;
+    4. S_ij *= alpha0 + (1-alpha0) * Omega^gamma, quindi il fattore sta in [alpha0, 1].
+    """
+    S = S.tocsr().astype(np.float32)
+    N = S.shape[0]
+    in_deg = np.asarray((S > 0).sum(axis=0)).ravel().astype(np.float32)
+    hub = np.power(np.maximum(in_deg, 1.0), -beta).astype(np.float32)
+    Sw = (S @ sp.diags(hub)).tocsr()
+    norme = np.sqrt(np.asarray(Sw.multiply(Sw).sum(axis=1)).ravel()) + 1e-9
+    H = (sp.diags(1.0 / norme) @ Sw).tocsr()
+    Ht = H.T.tocsr()
+    out = []
+    for st in range(0, N, blocco):
+        en = min(st + blocco, N)
+        Om = (H[st:en] @ Ht).tocsr()
+        bloc = S[st:en].tocsr()
+        rows, cols, vals = [], [], []
+        for r in range(en - st):
+            lo, hi = bloc.indptr[r], bloc.indptr[r + 1]
+            if hi <= lo:
+                continue
+            js = bloc.indices[lo:hi]
+            w = bloc.data[lo:hi]
+            om_r = Om.getrow(r)
+            om = np.zeros(len(js), np.float32)
+            if om_r.nnz:
+                pos = np.searchsorted(om_r.indices, js)
+                ok = pos < len(om_r.indices)
+                if ok.any():
+                    hit = om_r.indices[pos[ok]] == js[ok]
+                    om[np.flatnonzero(ok)[hit]] = om_r.data[pos[ok][hit]]
+            positivi = om[om > 0]
+            scala = float(np.percentile(positivi, 95)) if len(positivi) >= 3 else (
+                float(positivi.max()) if len(positivi) else 1.0)
+            om = np.clip(om / max(scala, 1e-6), 0.0, 1.0)
+            mult = alpha0 + (1.0 - alpha0) * np.power(om, gamma)
+            rows.append(np.full(len(js), r, np.int32))   # indice LOCALE al blocco
+            cols.append(js.astype(np.int32))
+            vals.append((w * mult).astype(np.float32))
+        out.append(sp.csr_matrix((np.concatenate(vals), (np.concatenate(rows),
+                                                         np.concatenate(cols))),
+                                 shape=(en - st, N)))
+    M = sp.vstack(out).tocsr()
+    M.setdiag(0)
+    M.eliminate_zeros()
+    return M
 
 
 def fattore(S: sp.csr_matrix, modo: str, alpha0: float, blocco: int = 1024) -> sp.csr_matrix:
     """Moltiplicatore per arco. `nessuna` restituisce la matrice tal quale (il fattore non si applica)."""
     if modo == 'nessuna':
         return S
+    if modo == 'coseno':
+        return _coseno(S, alpha0, blocco, beta=0.20, gamma=0.50)
     Sb = (S > 0).astype(np.float32).tocsr()
     if modo == 'adamic-adar':
         grado = np.asarray(Sb.sum(1)).ravel()

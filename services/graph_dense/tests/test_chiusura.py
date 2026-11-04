@@ -61,3 +61,21 @@ def test_adamic_adar_a_mano():
     w = 1.0 / np.log(3.0)          # deg(2) = 2
     assert abs(out[0, 1] - (0.1 + w)) < 1e-5
     assert abs(out[0, 3] - 0.1) < 1e-6
+
+
+def test_il_coseno_tiene_i_pesi_e_resta_limitato():
+    """Il modo coseno non binarizza: due archi con pesi diversi restano diversi."""
+    S = _due_cricche()
+    out = chiudi.fattore(S, 'coseno', 0.25)
+    assert out.nnz == S.nnz, "la chiusura non aggiunge archi"
+    # il fattore sta in [alpha0, 1]: nessun arco cresce e nessuno sparisce
+    Sm = S.tocsr()
+    for i in range(Sm.shape[0]):
+        lo, hi = Sm.indptr[i], Sm.indptr[i + 1]
+        for j, w in zip(Sm.indices[lo:hi], Sm.data[lo:hi]):
+            nuovo = float(out[i, j])
+            assert 0.24 * w <= nuovo <= 1.0 * w + 1e-6, (i, j, w, nuovo)
+    # l'arco SENZA supporto scende ad alpha0, quello con supporto resta >= alpha0:
+    # il coseno non amplifica mai, attenua soltanto (fattore in [alpha0, 1]).
+    assert abs(float(out[0, 3]) - 0.25 * float(S[0, 3])) < 1e-5
+    assert float(out[0, 1]) > float(out[0, 3])
