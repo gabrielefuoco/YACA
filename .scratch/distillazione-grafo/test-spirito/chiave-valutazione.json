@@ -1,0 +1,578 @@
+{
+  "q001": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 18,
+    "title": "Spider-Man: Across the Spider-Verse",
+    "v18_rank": 4,
+    "kwlat2_rank": 3
+  },
+  "q002": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 19,
+    "title": "Oppenheimer",
+    "v18_rank": 7,
+    "kwlat2_rank": null
+  },
+  "q003": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 93,
+    "title": "Il gatto con gli stivali 2 - L'ultimo desiderio",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  },
+  "q004": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 123,
+    "title": "Super Mario Bros. Il Film",
+    "v18_rank": 6,
+    "kwlat2_rank": 7
+  },
+  "q005": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 175,
+    "title": "Everything Everywhere All at Once",
+    "v18_rank": 2,
+    "kwlat2_rank": 2
+  },
+  "q006": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 228,
+    "title": "Encanto",
+    "v18_rank": 8,
+    "kwlat2_rank": 5
+  },
+  "q007": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 318,
+    "title": "Soul",
+    "v18_rank": null,
+    "kwlat2_rank": 6
+  },
+  "q008": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 354,
+    "title": "Glass Onion - Knives Out",
+    "v18_rank": 5,
+    "kwlat2_rank": null
+  },
+  "q009": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 462,
+    "title": "Dungeons & Dragons - L'onore dei ladri",
+    "v18_rank": null,
+    "kwlat2_rank": 8
+  },
+  "q010": {
+    "seed": "movie:346698",
+    "seed_title": "Barbie",
+    "row": 66280,
+    "title": "Wonka",
+    "v18_rank": 3,
+    "kwlat2_rank": 4
+  },
+  "q011": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 772,
+    "title": "Past Lives",
+    "v18_rank": 6,
+    "kwlat2_rank": 6
+  },
+  "q012": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 943,
+    "title": "Gli spiriti dell'isola",
+    "v18_rank": 3,
+    "kwlat2_rank": 3
+  },
+  "q013": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 1572,
+    "title": "Triangle of Sadness",
+    "v18_rank": 8,
+    "kwlat2_rank": 8
+  },
+  "q014": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 1699,
+    "title": "Il piacere è tutto mio",
+    "v18_rank": 5,
+    "kwlat2_rank": 5
+  },
+  "q015": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 66265,
+    "title": "The Substance",
+    "v18_rank": 4,
+    "kwlat2_rank": 4
+  },
+  "q016": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 66312,
+    "title": "Anora",
+    "v18_rank": 2,
+    "kwlat2_rank": 2
+  },
+  "q017": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 66505,
+    "title": "Kinds of Kindness",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  },
+  "q018": {
+    "seed": "movie:792307",
+    "seed_title": "Povere creature!",
+    "row": 66524,
+    "title": "Babygirl",
+    "v18_rank": 7,
+    "kwlat2_rank": 7
+  },
+  "q019": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 10,
+    "title": "Spider-Man: No Way Home",
+    "v18_rank": 8,
+    "kwlat2_rank": 8
+  },
+  "q020": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 45,
+    "title": "Dune",
+    "v18_rank": 3,
+    "kwlat2_rank": 3
+  },
+  "q021": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 202,
+    "title": "Shang-Chi e la leggenda dei dieci anelli",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  },
+  "q022": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 677,
+    "title": "The Whale",
+    "v18_rank": 7,
+    "kwlat2_rank": 6
+  },
+  "q023": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 772,
+    "title": "Past Lives",
+    "v18_rank": 2,
+    "kwlat2_rank": 2
+  },
+  "q024": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 1507,
+    "title": "Beau ha paura",
+    "v18_rank": 4,
+    "kwlat2_rank": 4
+  },
+  "q025": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 1572,
+    "title": "Triangle of Sadness",
+    "v18_rank": 6,
+    "kwlat2_rank": 7
+  },
+  "q026": {
+    "seed": "movie:545611",
+    "seed_title": "Everything Everywhere All at Once",
+    "row": 3178,
+    "title": "Causeway",
+    "v18_rank": 5,
+    "kwlat2_rank": 5
+  },
+  "q027": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 1849,
+    "title": "Non è un'altra stupida commedia americana",
+    "v18_rank": 5,
+    "kwlat2_rank": 3
+  },
+  "q028": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 2355,
+    "title": "Borat - Seguito di film cinema",
+    "v18_rank": null,
+    "kwlat2_rank": 7
+  },
+  "q029": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 2943,
+    "title": "Crossroads - Le strade della vita",
+    "v18_rank": 4,
+    "kwlat2_rank": 5
+  },
+  "q030": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 4008,
+    "title": "Giovani, pazzi e svitati",
+    "v18_rank": null,
+    "kwlat2_rank": 6
+  },
+  "q031": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 4485,
+    "title": "Ragazze nel pallone",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  },
+  "q032": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 4593,
+    "title": "Assatanata",
+    "v18_rank": 3,
+    "kwlat2_rank": 4
+  },
+  "q033": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 4960,
+    "title": "Le avventure di Joe Dirt",
+    "v18_rank": 6,
+    "kwlat2_rank": 8
+  },
+  "q034": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 5877,
+    "title": "Rock Star",
+    "v18_rank": 7,
+    "kwlat2_rank": null
+  },
+  "q035": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 6269,
+    "title": "Lungo la valle delle bambole",
+    "v18_rank": 8,
+    "kwlat2_rank": null
+  },
+  "q036": {
+    "seed": "movie:19366",
+    "seed_title": "Josie and the Pussycats",
+    "row": 33170,
+    "title": "2gether",
+    "v18_rank": 2,
+    "kwlat2_rank": 2
+  },
+  "q037": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 42,
+    "title": "L'amore bugiardo - Gone Girl",
+    "v18_rank": 5,
+    "kwlat2_rank": null
+  },
+  "q038": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 60,
+    "title": "Shutter Island",
+    "v18_rank": 7,
+    "kwlat2_rank": null
+  },
+  "q039": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 67,
+    "title": "Whiplash",
+    "v18_rank": 4,
+    "kwlat2_rank": 4
+  },
+  "q040": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 83,
+    "title": "Django Unchained",
+    "v18_rank": 3,
+    "kwlat2_rank": 6
+  },
+  "q041": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 271,
+    "title": "Revenant - Redivivo",
+    "v18_rank": 8,
+    "kwlat2_rank": null
+  },
+  "q042": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 307,
+    "title": "Baby Driver - Il genio della fuga",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  },
+  "q043": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 340,
+    "title": "Heat - La sfida",
+    "v18_rank": null,
+    "kwlat2_rank": 8
+  },
+  "q044": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 429,
+    "title": "Sicario",
+    "v18_rank": null,
+    "kwlat2_rank": 2
+  },
+  "q045": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 450,
+    "title": "Lo sciacallo - Nightcrawler",
+    "v18_rank": 6,
+    "kwlat2_rank": 7
+  },
+  "q046": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 727,
+    "title": "Birdman o (L'imprevedibile virtù dell'ignoranza)",
+    "v18_rank": null,
+    "kwlat2_rank": 3
+  },
+  "q047": {
+    "seed": "movie:64690",
+    "seed_title": "Drive",
+    "row": 2652,
+    "title": "Come un tuono",
+    "v18_rank": 2,
+    "kwlat2_rank": 5
+  },
+  "q048": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 82,
+    "title": "Joker",
+    "v18_rank": 4,
+    "kwlat2_rank": 3
+  },
+  "q049": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 120,
+    "title": "Scappa - Get Out",
+    "v18_rank": 5,
+    "kwlat2_rank": 5
+  },
+  "q050": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 143,
+    "title": "C'era una volta a… Hollywood",
+    "v18_rank": 8,
+    "kwlat2_rank": null
+  },
+  "q051": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 353,
+    "title": "Train to Busan",
+    "v18_rank": 2,
+    "kwlat2_rank": 4
+  },
+  "q052": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 803,
+    "title": "Diamanti grezzi",
+    "v18_rank": null,
+    "kwlat2_rank": 8
+  },
+  "q053": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 1016,
+    "title": "Moonlight",
+    "v18_rank": 7,
+    "kwlat2_rank": 7
+  },
+  "q054": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 3487,
+    "title": "The Host",
+    "v18_rank": 6,
+    "kwlat2_rank": 6
+  },
+  "q055": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 3632,
+    "title": "Okja",
+    "v18_rank": 1,
+    "kwlat2_rank": 2
+  },
+  "q056": {
+    "seed": "movie:496243",
+    "seed_title": "Parasite",
+    "row": 66515,
+    "title": "No Other Choice - Non c'è altra scelta",
+    "v18_rank": 3,
+    "kwlat2_rank": 1
+  },
+  "q057": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 41,
+    "title": "Fight Club",
+    "v18_rank": 2,
+    "kwlat2_rank": 2
+  },
+  "q058": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 54,
+    "title": "Il miglio verde",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  },
+  "q059": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 115,
+    "title": "Prova a prendermi",
+    "v18_rank": 4,
+    "kwlat2_rank": 5
+  },
+  "q060": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 217,
+    "title": "Will Hunting - Genio ribelle",
+    "v18_rank": 3,
+    "kwlat2_rank": 4
+  },
+  "q061": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 269,
+    "title": "The Sixth Sense - Il sesto senso",
+    "v18_rank": 7,
+    "kwlat2_rank": 7
+  },
+  "q062": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 358,
+    "title": "Se mi lasci ti cancello",
+    "v18_rank": 6,
+    "kwlat2_rank": 6
+  },
+  "q063": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 414,
+    "title": "Ricomincio da capo",
+    "v18_rank": 5,
+    "kwlat2_rank": 3
+  },
+  "q064": {
+    "seed": "movie:37165",
+    "seed_title": "The Truman Show",
+    "row": 641,
+    "title": "A Beautiful Mind",
+    "v18_rank": 8,
+    "kwlat2_rank": 8
+  },
+  "q065": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 254,
+    "title": "Piccole donne",
+    "v18_rank": 2,
+    "kwlat2_rank": 2
+  },
+  "q066": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 355,
+    "title": "Chiamami col tuo nome",
+    "v18_rank": 5,
+    "kwlat2_rank": 5
+  },
+  "q067": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 955,
+    "title": "Manchester by the Sea",
+    "v18_rank": 7,
+    "kwlat2_rank": 7
+  },
+  "q068": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 1016,
+    "title": "Moonlight",
+    "v18_rank": 6,
+    "kwlat2_rank": 6
+  },
+  "q069": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 1154,
+    "title": "Un sogno chiamato Florida",
+    "v18_rank": 4,
+    "kwlat2_rank": 4
+  },
+  "q070": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 1958,
+    "title": "La rivincita delle sfigate",
+    "v18_rank": 3,
+    "kwlat2_rank": 3
+  },
+  "q071": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 2754,
+    "title": "17 anni (e come uscirne vivi)",
+    "v18_rank": 8,
+    "kwlat2_rank": 8
+  },
+  "q072": {
+    "seed": "movie:391713",
+    "seed_title": "Lady Bird",
+    "row": 3102,
+    "title": "Eighth Grade - Terza Media",
+    "v18_rank": 1,
+    "kwlat2_rank": 1
+  }
+}

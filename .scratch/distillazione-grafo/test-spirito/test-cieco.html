@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test cieco — somiglianza di spirito</title>
+<style>
+:root{color-scheme:dark;--bg:#111318;--card:#1b1e26;--line:#343946;--muted:#aeb4c2;--accent:#8fb8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f2f3f7;font:16px/1.45 system-ui,sans-serif}
+header{max-width:850px;margin:28px auto 16px;padding:0 18px}h1{font-size:1.6rem;margin:0 0 8px}p{color:var(--muted);margin:6px 0}
+.seed{max-width:850px;margin:20px auto;padding:0 18px}.seed h2{font-size:1.15rem;margin:0 0 10px;color:var(--accent)}
+.item{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:7px 0}
+.title{font-weight:600}.buttons{display:flex;gap:5px;flex-shrink:0}.buttons button,footer button{border:1px solid #525968;border-radius:7px;background:#272b35;color:#eee;padding:7px 10px;cursor:pointer}
+.buttons button.active{background:#476da8;border-color:#8fb8ff}.buttons button[data-v="0"].active{background:#7b3438}.buttons button[data-v="x"].active{background:#555c68}
+footer{position:sticky;bottom:0;background:#111318ed;border-top:1px solid var(--line);padding:12px max(18px,calc((100vw - 814px)/2));display:flex;gap:10px;align-items:center}
+#progress{color:var(--muted);white-space:nowrap}#export{margin-left:auto;background:#365f9a;border:0}textarea{display:block;width:min(850px,calc(100% - 36px));height:100px;margin:12px auto;background:#1b1e26;color:#eee;border:1px solid var(--line);padding:10px;display:none}
+@media(max-width:620px){.item{align-items:flex-start;flex-direction:column}.buttons{width:100%}.buttons button{flex:1}footer{flex-wrap:wrap}#export{margin-left:0}}
+</style></head><body>
+<header><h1>Somiglianza di spirito — test cieco</h1>
+<p>Per ogni seed, valuta i candidati pensando a tono, sensibilità, umorismo, stile o esperienza emotiva. Non premiare soltanto trama, argomento o genere condivisi.</p>
+<p><b>0</b> = no · <b>1</b> = forse/parzialmente · <b>2</b> = sì, affine nello spirito · <b>?</b> = non conosco / non saprei. Le liste sono mescolate; non indicano quale grafo propone ciascun titolo.</p>
+<p>Puoi interromperti e riprendere: le risposte restano salvate in questo browser.</p></header>
+<main id="app"></main><footer><span id="progress"></span><button id="export">Copia risposte</button></footer><textarea id="payload" readonly aria-label="Risposte da copiare"></textarea>
+<script>
+const data = [{"seed": "Barbie", "items": [{"id": "q008", "title": "Glass Onion - Knives Out"}, {"id": "q005", "title": "Everything Everywhere All at Once"}, {"id": "q006", "title": "Encanto"}, {"id": "q002", "title": "Oppenheimer"}, {"id": "q003", "title": "Il gatto con gli stivali 2 - L'ultimo desiderio"}, {"id": "q010", "title": "Wonka"}, {"id": "q004", "title": "Super Mario Bros. Il Film"}, {"id": "q001", "title": "Spider-Man: Across the Spider-Verse"}, {"id": "q007", "title": "Soul"}, {"id": "q009", "title": "Dungeons & Dragons - L'onore dei ladri"}]}, {"seed": "Povere creature!", "items": [{"id": "q016", "title": "Anora"}, {"id": "q014", "title": "Il piacere è tutto mio"}, {"id": "q013", "title": "Triangle of Sadness"}, {"id": "q015", "title": "The Substance"}, {"id": "q018", "title": "Babygirl"}, {"id": "q012", "title": "Gli spiriti dell'isola"}, {"id": "q011", "title": "Past Lives"}, {"id": "q017", "title": "Kinds of Kindness"}]}, {"seed": "Everything Everywhere All at Once", "items": [{"id": "q024", "title": "Beau ha paura"}, {"id": "q021", "title": "Shang-Chi e la leggenda dei dieci anelli"}, {"id": "q026", "title": "Causeway"}, {"id": "q023", "title": "Past Lives"}, {"id": "q019", "title": "Spider-Man: No Way Home"}, {"id": "q025", "title": "Triangle of Sadness"}, {"id": "q022", "title": "The Whale"}, {"id": "q020", "title": "Dune"}]}, {"seed": "Josie and the Pussycats", "items": [{"id": "q028", "title": "Borat - Seguito di film cinema"}, {"id": "q030", "title": "Giovani, pazzi e svitati"}, {"id": "q034", "title": "Rock Star"}, {"id": "q031", "title": "Ragazze nel pallone"}, {"id": "q033", "title": "Le avventure di Joe Dirt"}, {"id": "q032", "title": "Assatanata"}, {"id": "q027", "title": "Non è un'altra stupida commedia americana"}, {"id": "q035", "title": "Lungo la valle delle bambole"}, {"id": "q036", "title": "2gether"}, {"id": "q029", "title": "Crossroads - Le strade della vita"}]}, {"seed": "Drive", "items": [{"id": "q040", "title": "Django Unchained"}, {"id": "q044", "title": "Sicario"}, {"id": "q038", "title": "Shutter Island"}, {"id": "q046", "title": "Birdman o (L'imprevedibile virtù dell'ignoranza)"}, {"id": "q045", "title": "Lo sciacallo - Nightcrawler"}, {"id": "q047", "title": "Come un tuono"}, {"id": "q043", "title": "Heat - La sfida"}, {"id": "q037", "title": "L'amore bugiardo - Gone Girl"}, {"id": "q042", "title": "Baby Driver - Il genio della fuga"}, {"id": "q039", "title": "Whiplash"}, {"id": "q041", "title": "Revenant - Redivivo"}]}, {"seed": "Parasite", "items": [{"id": "q055", "title": "Okja"}, {"id": "q053", "title": "Moonlight"}, {"id": "q054", "title": "The Host"}, {"id": "q052", "title": "Diamanti grezzi"}, {"id": "q048", "title": "Joker"}, {"id": "q051", "title": "Train to Busan"}, {"id": "q056", "title": "No Other Choice - Non c'è altra scelta"}, {"id": "q049", "title": "Scappa - Get Out"}, {"id": "q050", "title": "C'era una volta a… Hollywood"}]}, {"seed": "The Truman Show", "items": [{"id": "q058", "title": "Il miglio verde"}, {"id": "q059", "title": "Prova a prendermi"}, {"id": "q064", "title": "A Beautiful Mind"}, {"id": "q061", "title": "The Sixth Sense - Il sesto senso"}, {"id": "q060", "title": "Will Hunting - Genio ribelle"}, {"id": "q057", "title": "Fight Club"}, {"id": "q062", "title": "Se mi lasci ti cancello"}, {"id": "q063", "title": "Ricomincio da capo"}]}, {"seed": "Lady Bird", "items": [{"id": "q070", "title": "La rivincita delle sfigate"}, {"id": "q066", "title": "Chiamami col tuo nome"}, {"id": "q068", "title": "Moonlight"}, {"id": "q065", "title": "Piccole donne"}, {"id": "q071", "title": "17 anni (e come uscirne vivi)"}, {"id": "q069", "title": "Un sogno chiamato Florida"}, {"id": "q072", "title": "Eighth Grade - Terza Media"}, {"id": "q067", "title": "Manchester by the Sea"}]}], storageKey = 'yaca-spirito-v1';
+let answers = {}; try { answers = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch {}
+const app = document.getElementById('app');
+function draw(){
+  app.innerHTML='';
+  for(const group of data){
+    const section=document.createElement('section'); section.className='seed';
+    const h=document.createElement('h2'); h.textContent='Seed: '+group.seed; section.append(h);
+    for(const item of group.items){
+      const card=document.createElement('div'); card.className='item';
+      const title=document.createElement('span'); title.className='title'; title.textContent=item.title; card.append(title);
+      const buttons=document.createElement('div'); buttons.className='buttons';
+      for(const [v,label] of [['0','No'],['1','Forse'],['2','Sì'],['x','?']]){
+        const b=document.createElement('button'); b.textContent=label; b.dataset.v=v;
+        if(answers[item.id]===v)b.classList.add('active');
+        b.onclick=()=>{answers[item.id]=v;try{localStorage.setItem(storageKey,JSON.stringify(answers))}catch{};draw()};
+        buttons.append(b);
+      }
+      card.append(buttons); section.append(card);
+    }
+    app.append(section);
+  }
+  const total=data.reduce((n,g)=>n+g.items.length,0), done=Object.keys(answers).length;
+  document.getElementById('progress').textContent=`Valutati ${done}/${total}`;
+}
+draw();
+document.getElementById('export').onclick=async()=>{
+  const out={experiment:'yaca-spirito-v1',ratings:Object.entries(answers).map(([id,rating])=>({id,rating}))};
+  const text=JSON.stringify(out);
+  const box=document.getElementById('payload'); box.value=text; box.style.display='block';
+  try{await navigator.clipboard.writeText(text);document.getElementById('export').textContent='Copiato — incollalo qui in chat'}
+  catch{box.focus();box.select();document.getElementById('export').textContent='Selezionato — copia e incolla qui in chat'}
+};
+</script></body></html>
