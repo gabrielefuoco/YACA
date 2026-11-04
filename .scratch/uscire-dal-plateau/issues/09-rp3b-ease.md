@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: wontfix
 Type: research
 Blocked by: 01, 02
 
@@ -28,3 +28,14 @@ batte l'euristica a parità di dati, e gira in pochi secondi su CPU.
 ## Nota
 
 Non è una migrazione architetturale: il resto del grafo, il motore e lo studente restano identici.
+
+---
+
+## Chiuso come wontfix (2026-11-04)
+
+Il senior ha risposto alla domanda di `risposta-al-senior.md` §5: con COVISION a peso 1,0, normalizzata
+al p99 per fonte, con lo sconto temporale e sotto chiusura `log`, il guadagno marginale di RP3β/EASE^R
+sarebbe **< 0,004 su R@20**, cioè sotto il nostro MDE (0,005-0,012). Non vale il costo.
+
+Il problema della popolarità nella co-visione si affronta per un'altra strada: il ticket 15 (COV_RES,
+residuo contro genere/epoca/popolare).

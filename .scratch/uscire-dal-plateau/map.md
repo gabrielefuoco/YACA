@@ -10,6 +10,13 @@ falsi amici in top-10; R@20 ≥ 0,25 sul banco e quota >5k in top-10 ≤ 55%.
 
 ## Decisions so far
 
+- **Il banco tonale è un TEST SET**: 200 semi, 3.870 link, scritti da agenti che non hanno mai visto il
+  grafo. Non si usa per tarare niente. Per sviluppare serve il dev set del ticket 13.
+- **Il tetto è la copertura, non il ranking**: R@500 = R@2000 = il numero di link presenti (26-30%).
+  Il grafo non *ordina male* il 70% dei legami di tono, non li *contiene*.
+- **V15 batte V21 di +0,0183 [0,0102, 0,0263]** (sopra l'MDE) sul banco tonale, a parità di semi e di
+  pool. Le spiegazioni ovvie sono state testate e scartate: pool (0,001), chiusura a conteggio (+0,0008,
+  rumore), peso COVISION (−0,0086, peggio). Resta l'ipotesi studente (ticket 16).
 - **La base congelata è V19** (COVISION temporale, CREWPROP 0,35, chiusura `log`, gate asimmetrico):
   accuratezza identica a V18 (R@20 0,256 contro 0,254, sotto l'MDE) e **−10 punti di blockbuster**
   in top-10 (64,5% contro 74,5%). *Barbie*: Piccole donne #1 · Wonka · Lady Bird #3 · Oppenheimer #24.
@@ -33,11 +40,12 @@ falsi amici in top-10; R@20 ≥ 0,25 sul banco e quota >5k in top-10 ≤ 55%.
 
 ## Not yet specified
 
-- **La fonte del tono**: recensioni utente TMDB (~15.000 richieste per i film con ≥200 voti) o
-  Wikipedia (intro + sezione Themes/Style). Serve una decisione, perché è una fonte nuova.
-- **La soglia del 55%** di blockbuster in top-10: oggi 64,5%. Le leve già provate si sono esaurite;
-  le prossime (RP3β, ticket 09) agiscono sulla stessa co-visione.
-- **Il peso di CREWPROP** è a 0,35 per decisione; se il tono arriva da un'altra fonte, scenderà.
+- **Se `tone.py` e `critica.py` vanno cancellati o archiviati** (ticket 21): sono ipotesi falsificate,
+  ma il codice documenta i numeri del perché. Proposta: `.scratch/falsificati/` con un README.
+- **Il peso delle tagline** dentro LISTSEM (ticket 14): 10% di copertura ma tono puro.
+- **L'equilibrio della COVISION** (ticket 19): fra 20 e 100 archi per riga, o nella forma del peso.
+  Oggi solo V15 ha copertura ≥ 29% *e* precisione dentro la copertura > 30%.
+- **Peso di CREWPROP**: 0,15 (deciso) — ma il ticket 21 propone di fonderlo in DIR e togliere il tipo.
 - Se il prodotto debba restare a bolle o passare alla matrice sparsa (fuori da questo effort, ma
   blocca la messa in produzione di V18).
 - La soglia oltre la quale un titolo nuovo ha abbastanza segnali per entrare nel grafo.

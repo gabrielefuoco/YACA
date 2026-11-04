@@ -58,3 +58,24 @@ restante è per **tipo di pubblico**, e il pubblico di *Barbie* è quello dei bl
 
 Da decidere (ticket aperto): adottare la COVISION temporale come base — costa 0,008 di R@20 e
 guadagna 7 punti di coda. Consigliata sì, con il costo dichiarato.
+
+---
+
+## Correzione (2026-11-04, revisione esterna)
+
+Il verdetto di questo ticket era **contaminato**. `covision.py` senza `--semplice` tronca ogni riga a
+`--topk` (**default 20**), mentre il ramo `--semplice` esce **prima** di quel taglio: quindi la
+"COVISION senza sconto temporale" ha anche perso 1,4 milioni di archi, e il ramo semplice ne salvava
+~2,5M senza taglio.
+
+Rifatta con `--topk 100`: **3.950.110 archi** contro 1.112.164. Effetto sul banco tonale:
+
+| grafo | copertura | R@20 | R@20 dentro la copertura |
+|---|---:|---:|---:|
+| V21 (topk 20) | 26,0% | 0,071 | 27,5% |
+| V22 (topk 100) | 29,1% | 0,075 | 25,9% |
+| V15 (`--semplice`, ~150/riga) | 29,5% | 0,090 | 30,4% |
+
+`+0,0038` (sotto l'MDE) e **precisione dentro la copertura peggiorata**: gli archi recuperati sono
+deboli. Conclusioni: (a) lo sconto temporale va tenuto ma il taglio a 20 va alzato, (b) il numero di
+archi non è la leva — la forma del peso sì. Vedi ticket 19.
