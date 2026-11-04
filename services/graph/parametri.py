@@ -25,6 +25,12 @@ import os
 # concatenazione esplicita e' un SyntaxError, e il file non si carica piu' — quindi non falliscono solo
 # le descrizioni, falliscono TUTTI gli arbitri che importano di qui. Se serve piu' spazio, si usa la
 # concatenazione implicita (stringhe adiacenti), come nella voce CATALOGHI_MIN_RIPETIZIONI.
+# --- l'artefatto servito e la partizione (ticket 22: bolle come vista sul canone esteso)
+# Per servire il canone esteso basta mettere qui l'artefatto nuovo (es. la V23 a 76.497 nodi): la
+# partizione viene estesa da sola al caricamento, con gli ID delle 3.497 bolle intatti.
+TRIANGOLO = "bolle-eterogeneo-V10-p1.0-triangolo.npz"
+PARTIZIONE = "bolle-eterogeneo-subvoti.npy"
+
 SCHEDA = [
     # NOTA: ogni stringa sta su UNA riga, o e' concatenata con stringhe adiacenti. Vedi l'avviso in testa.
     # ---------------------------------------------------------------- diffusione

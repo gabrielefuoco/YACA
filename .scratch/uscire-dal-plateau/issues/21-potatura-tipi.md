@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: task
 
 # Potatura: PROD fuori, CREWPROP dentro DIR, rami morti via
@@ -20,3 +20,22 @@ Type: task
 
 Misurare l'effetto di (1) e (2) da soli sul dev set, prima di toccare altro. Il punto 3 è una decisione
 di casa, non una misura. Il punto 4 è puro guadagno: farlo subito.
+
+---
+
+## Esito parziale (misurato: PROD e CREWPROP fuori)
+
+V26 = V23 senza `PROD` e senza `CREWPROP`: 27.696.856 archi (da 36,1M), grado mediano 370 (da 454).
+
+| | R@5 | R@20 | MRR | >5k |
+|---|---:|---:|---:|---:|
+| V23 | 0,008 | 0,043 | 0,0083 | 66,5% |
+| V26 | 0,009 | 0,041 | 0,0081 | 66,4% |
+
+`ΔR@20 = −0,0012 [−0,0059, +0,0029]`, **rumore**. Toglierli **non costa niente e non guadagna niente**:
+sono 8,4M di archi che non spostano la misura. Come potatura di manutenzione è sensata (meno archi, stessa
+qualità); come leva no.
+
+Non fatto: fondere CREWPROP in DIR (richiede aggiungere gli sceneggiatori a DIR, che oggi non li ha) e la
+decisione su `tone.py`/`critica.py` — **contrario alla cancellazione**: il codice documenta i numeri del
+perché due ipotesi sono false. Proposta: `.scratch/falsificati/` con un README.

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 13
 
@@ -28,3 +28,19 @@ scende sotto il caso, il residuo è rumore: chiudere.
 ## Criteri di accettazione
 
 - Sul dev set: copertura@500 +2 punti e R@20 sopra l'MDE; quota >5k non in aumento.
+
+---
+
+## Esito: neutro, e per un motivo strutturale
+
+`cov_res.py`: tiene solo gli archi di co-visione che scavalcano **genere** (nessun genere in comune) ed
+**epoca** (≥ 10 anni di distanza), con soglia di forza al p50. **81.275 archi · 21,1% di copertura** ·
+scarta 1,89M di archi per genere/epoca e 1,98M per debolezza.
+
+Nel grafo (V25): `R@20 −0,0003 [−0,0015, +0,0006]`, **rumore**. Il numero di archi del grafo **non
+cambia** (36.126.858 prima e dopo): ogni arco di COV_RES è già in COVISION, quindi il tipo non aggiunge
+collegamenti — **ripesa** quelli che esistono. È esattamente la previsione: non alza il tetto, cambia
+l'ordine dentro il tetto, e su un ordine già dominato da altro non si vede.
+
+La riga di *Barbie* in COV_RES è **vuota**: i suoi co-spettatori sono tutti dello stesso genere e della
+stessa epoca. Non c'è niente da ripesare.

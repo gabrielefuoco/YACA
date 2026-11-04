@@ -87,7 +87,19 @@ class Motore:
         # potatura). Prima si rifaceva a ogni avvio: era il costo dei 2 secondi che restavano.
         self.Tr = C.transizione_pronta()
         self.N = self.Tr.shape[0]
-        self.MEM = np.load(K.A("bolle-eterogeneo-subvoti.npy"))
+        self.MEM = np.load(K.A(P.PARTIZIONE))
+        # TICKET 22: LA PARTIZIONE SI ESTENDE DA SOLA. Il canone cresce in coda (append-only) e gli ID
+        # delle 3.497 bolle restano validi: i titoli nuovi prendono la bolla più votata dai loro vicini
+        # già collocati. Oggi è un no-op (grafo e partizione hanno la stessa lunghezza); il giorno che
+        # qui si serve un artefatto più grande, funziona senza toccare centroidi, mappa o fixture.
+        if len(self.MEM) < self.Tr.shape[0]:
+            from graph import estensione_bolle as _EB
+            self.MEM, _st = _EB.estendi(self.MEM, self.Tr)
+            if not silenzioso:
+                print(f"  partizione estesa: {_st['nuovi']:,} titoli nuovi · "
+                      f"{_st['assegnati_per_voto']:,} per voto dei vicini · "
+                      f"{_st['in_riserva']} in riserva · ID preservati: {_st['id_preservati']}",
+                      flush=True)
         self.NB = int(self.MEM.max()) + 1
         self.SZ = np.bincount(self.MEM)
         # I MEMBRI SENZA 3.497 SCANSIONI. Prima: `[np.where(self.MEM == b)[0] for b in range(NB)]` —
@@ -116,7 +128,7 @@ class Motore:
         # L'IDENTITA' DEL MOTORE include anche i metadati: cambiare `metadati-canone.npz`
         # (COLL/DIR/ANIME/ADULTO) cambia le righe servite, quindi il client deve invalidare la cache.
         # Senza questo pezzo l'artefatto nuovo girava e le righe in cache restavano quelle di prima.
-        _sha_bolle = K.sha_file("bolle-eterogeneo-subvoti.npy")
+        _sha_bolle = K.sha_file(P.PARTIZIONE)   # l'identità del motore include la partizione servita
         _sha_meta = K.sha_file("metadati-canone.npz")
         self.artefatto = f"{_sha_bolle}+{_sha_meta}" if _sha_meta else _sha_bolle
         # TUTTI I METADATI IN UN COLPO: `canon.metadati()` li costruisce una volta, vettorizzato, e li

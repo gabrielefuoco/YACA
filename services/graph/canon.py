@@ -968,7 +968,12 @@ def metadati(path_npz=None, path_txt=None):
     # ANIME: gli id che il prodotto ha certificato come anime (stesso file di `src/anime/mapping.js`).
     # Se il file non c'e', il flag resta False e lo si dichiara: nessun proxy inventato.
     anime_ids = set()
-    _anime_path = ROOT / ".cache" / "tmdb" / "anime_mapping.json"
+    # L'ordine di ricerca: prima il prodotto (graph/data), poi la cache. `anime_mapping.json` lo
+    # produciamo NOI dall'anibridge, quindi non puo' vivere solo in `.cache`: se `.cache` si pulisce,
+    # il flag ANIME tornerebbe vuoto e i filtri anime del prodotto resterebbero inerti in silenzio.
+    _anime_path = DATA / "anime_mapping.json"
+    if not _anime_path.exists():
+        _anime_path = ROOT / ".cache" / "tmdb" / "anime_mapping.json"
     _lista_anime = ROOT / ".cache" / "tmdb" / "anime-list-mini.json"
     if not _anime_path.exists() and _lista_anime.exists():
         # Sul mate il file del prodotto e' `anime-list-mini.json` (anime-offline-database): la stessa

@@ -39,7 +39,7 @@ def pota(M, k=None):
     return (D + D.T).tocsr()
 
 
-def transizione_pronta(nome="bolle-eterogeneo-V10-p1.0-triangolo.npz", k=None):
+def transizione_pronta(nome=None, k=None):
     """LA TRANSIZIONE POTATA, CACHATA SU DISCO — 1,52M archi invece di 13,2M da riportare in giro.
 
     Il costo dell'avvio era qui: caricare il triangolo (6,6M archi), simmetrizzarlo (13,2M) e potarlo
@@ -50,6 +50,9 @@ def transizione_pronta(nome="bolle-eterogeneo-V10-p1.0-triangolo.npz", k=None):
     modulo combatte e' sempre la stessa: un artefatto vecchio e un parametro nuovo che si disallineano
     senza far crashare niente.
     """
+    # IL NOME VIENE DAI PARAMETRI: era un default scritto nella firma, e cambiare artefatto voleva dire
+    # modificare il codice invece di un parametro (e la cache restava buona per l'artefatto sbagliato).
+    nome = nome or P.TRIANGOLO
     k = P.POTA_PER_RIGA if k is None else k
     z = K.DATA / "transizione-potata.npz"
     # LA CHIAVE E' LA PROVENIENZA, NON LO SHA DEL FILE (ticket 12). Lo sha del file cambia anche per

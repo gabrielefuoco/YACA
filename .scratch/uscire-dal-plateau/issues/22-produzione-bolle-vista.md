@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # Produzione: le bolle come vista dinamica sui 76.497 nodi
@@ -26,3 +26,23 @@ Costo atteso: minuti di CPU, zero rebuild, ID stabili, centroidi e mappa ancora 
 - gli ID 0..3.496 sono invariati al 100%;
 - il motore carica e serve i 5.264 titoli 2024-2026;
 - le righe servite su 20 semi noti sono identiche a prima (regressione).
+
+---
+
+## Esito: funzione pronta e testata, innesto sicuro; smoke test impossibile in questo checkout
+
+`services/graph/estensione_bolle.py`: `estendi(mem_old, S)` assegna i titoli nuovi con il **voto pesato
+dei vicini già collocati**, manda gli isolati in una **bolla di riserva dichiarata** (la più numerosa, e
+il fatto viene contato), e verifica che gli ID siano preservati. 4 test.
+
+Provato sul canone reale: partizione 66.259 → **76.497**, **10.237 nuovi assegnati per voto, 1 in
+riserva, 3.497 bolle, ID preservati: True**.
+
+Innesto: `parametri.TRIANGOLO` / `parametri.PARTIZIONE` (prima erano un default scritto nella firma di
+`transizione_pronta`, e cambiare artefatto voleva dire modificare il codice), e `Motore.__init__` che
+**estende da solo** se la partizione è più corta del grafo. Oggi è un no-op — il motore serve ancora
+V10 a 66.259.
+
+**Cosa manca**: lo smoke test. In questo checkout `services/graph/data/` non contiene gli artefatti di
+prodotto (`nuovo-LIST.npz`, e i sei che `Motore` carica dopo la partizione): vivono sul server. Il
+cambio va fatto lì, con la regressione su 20 semi noti.
