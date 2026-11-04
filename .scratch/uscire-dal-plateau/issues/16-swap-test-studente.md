@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 # Swap test dello studente (3 minuti) — l'ipotesi che spiega il crollo V15 → V18
@@ -27,3 +27,22 @@ altrove e va cercato nei pesi/tipi residui.
 
 - Un artefatto `v23-swap` con RRFST ibrido e la sua misura;
 - verdetto esplicito: l'ipotesi regge o no.
+
+---
+
+## Esito: l'ipotesi è falsa
+
+Costruito lo studente ibrido: prime 66.259 righe dai vettori **esatti** del V15 (2.560-d, proiettati a
+2.048 con proiezione deterministica), le ultime 10.238 dal nuovo. Rigenerato **solo** RRFST, tutto il
+resto identico a V23.
+
+| | R@5 | R@10 | R@20 | R@50 | MRR | >5k |
+|---|---:|---:|---:|---:|---:|---:|
+| V23 | 0,008 | 0,017 | **0,043** | 0,082 | 0,0083 | 66,5% |
+| V27 (studente vecchio) | 0,009 | 0,018 | 0,041 | **0,089** | 0,0086 | 67,2% |
+
+`ΔR@20 = −0,0021 [−0,0079, +0,0035]`, **sotto l'MDE**: nessuna differenza misurabile.
+
+**Conseguenza sul ticket 08**: l'ipotesi che il crollo V15→V18 fosse lo studente non regge sul dev set
+umano. Riaddestrare lo studente con logQ + modality dropout **non servirà al tono**. Resta sensato per
+il suo scopo originale — il cold-start dei titoli nuovi — ma non è più la leva che credevamo.
