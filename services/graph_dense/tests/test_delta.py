@@ -27,7 +27,8 @@ def test_incremento_uguale_alla_ricostruzione():
     W_full = sp.lil_matrix((n_old + n_new, n_old + n_new), dtype=np.float32)
     W_full[:n_old, :n_old] = W
     W_full[n_old:, :n_old] = nuove
-    S_full = DL.paia(W_full.tocsr(), k)
+    D_ref = DL.paia(W_full.tocsr(), k)
+    S_full = (D_ref + D_ref.T).tocsr()
 
     assert S_inc.shape == S_full.shape
     diff = (S_inc != S_full)
@@ -60,3 +61,40 @@ def test_nessun_arco_reciproco_se_il_peso_e_troppo_basso():
     nuove = sp.csr_matrix(np.array([[0.001] * 12], np.float32))
     S_inc, _, reciproci = DL.aggiungi(W, nuove, 4)
     assert reciproci <= 2, "un arco debolissimo non deve iniettare reciprocita' ovunque"
+
+
+def test_riga_nuova_troncata_ai_suoi_top_k():
+    """Bug segnalato in revisione: una riga nuova con piu' di k archi non veniva troncata."""
+    W = _base()
+    k = 2
+    nuove = sp.csr_matrix(np.array([[0.1, 0.9, 0.5, 0.8, 0.2, 0.7] + [0.0] * 6], np.float32))
+    S_inc, _, _ = DL.aggiungi(W, nuove, k)
+    assert S_inc.getrow(12).nnz <= 2 * k, f"riga nuova con {S_inc.getrow(12).nnz} archi su k={k}"
+
+
+def test_due_titoli_nuovi_sulla_stessa_riga_vecchia():
+    """Bug segnalato in revisione: kth[j] vecchio poteva sfrattare un arco piu' forte dell'entrante."""
+    W = sp.csr_matrix(np.array([[0, 0, 0], [0.5, 0, 0], [0.4, 0, 0]], np.float32))
+    nuove = sp.csr_matrix(np.array([[0.0, 0.45, 0.0], [0.0, 0.44, 0.0]], np.float32))
+    S_inc, _, _ = DL.aggiungi(W, nuove, 2)
+
+    W_full = sp.lil_matrix((5, 5), dtype=np.float32)
+    W_full[:3, :3] = W
+    W_full[3:, :3] = nuove
+    D_ref = DL.paia(W_full.tocsr(), 2)
+    S_ref = (D_ref + D_ref.T).tocsr()
+    assert (S_inc[:5, :5] != S_ref).nnz == 0, "l'incremento deve coincidere con la ricostruzione"
+
+
+def test_il_risultato_e_la_matrice_del_motore():
+    """`aggiungi` restituisce S + S.T: identico a `camminata.pota(W_full, k)`."""
+    W = _base()
+    nuove = sp.csr_matrix(np.array([[0.9, 0.0, 0.5] + [0.0] * 9], np.float32))
+    S_inc, _, _ = DL.aggiungi(W, nuove, 4)
+    W_full = sp.lil_matrix((13, 13), dtype=np.float32)
+    W_full[:12, :12] = W
+    W_full[12:, :12] = nuove
+    D = DL.paia(W_full.tocsr(), 4)
+    S_pota = (D + D.T).tocsr()
+    assert S_inc.shape == S_pota.shape
+    assert (S_inc != S_pota).nnz == 0

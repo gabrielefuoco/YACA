@@ -78,6 +78,14 @@ def aggiungi(W: sp.spmatrix, nuove: sp.spmatrix, k: int):
     Ritorna `(S, kth, n_reciproci)`: `S` e' il simmetrizzato potato (vecchi + nuovi), `kth` il nuovo
     vettore dei k-esimi pesi (per il prossimo aggiornamento), `n_reciproci` quanti archi reciproci
     sono stati iniettati nei vecchi nodi.
+
+    TRE CORREZIONI (revisione esterna, 2026-11-04, tutte riprodotte con un test):
+      · la riga del titolo nuovo va troncata ai suoi top-k (`S[i, j] = w` li inseriva tutti);
+      · `kth[j]` va aggiornato DOPO ogni sfratto: con la soglia vecchia il secondo titolo che colpisce
+        la stessa riga poteva sfrattare un arco piu' forte di se';  
+      · si restituisce `S + S.T`, cosi' il risultato e' *identico* a `camminata.pota(W_full, k)`.
+        Non e' un'approssimazione a 2 hop: `paia` produce gia' `D` (top-k di `W + W.T`), e `pota`
+        aggiunge solo la trasposta.
     """
     W = W.tocsr()
     n_old = W.shape[0]
@@ -92,11 +100,20 @@ def aggiungi(W: sp.spmatrix, nuove: sp.spmatrix, k: int):
     C = nuove.tocoo()
     for i_new, j, w in zip(C.row, C.col, C.data):
         i = n_old + int(i_new); j = int(j); w = float(w)
-        S[i, j] = w
+        if (i, j) not in {(i, q) for q in S.rows[i]}:
+            S[i, j] = w
+            # la riga nuova si tiene ai suoi top-k: senza questo un titolo nuovo con 100 archi
+            # ne conservava 100 mentre la ricostruzione completa ne tiene k
+            if len(S.rows[i]) > k:
+                pesi_i = S.data[i]
+                q = int(np.argmin(pesi_i))
+                S[i, S.rows[i][q]] = 0.0
         riga_j = S.rows[j]
         if len(riga_j) < k:
             S[j, i] = w
             reciproci += 1
+            if len(S.rows[j]) >= k:
+                kth[j] = float(np.min(S.data[j]))     # riga piena: il minimo e' il k-esimo
         elif w >= kth[j]:
             # entra e sfila il piu' debole: la riga resta di k elementi
             pesi_j = S.data[j]
@@ -105,10 +122,14 @@ def aggiungi(W: sp.spmatrix, nuove: sp.spmatrix, k: int):
                 S[j, riga_j[q]] = 0.0
             S[j, i] = w
             reciproci += 1
+            # LA SOGLIA SI AGGIORNA SUBITO: con quella vecchia il prossimo inserimento sulla stessa
+            # riga poteva sfrattare un arco piu' forte di se'.
+            kth[j] = float(np.min(np.asarray(S.data[j], np.float32)))
     S = S.tocsr()
     S.setdiag(0)
     S.eliminate_zeros()
-    return S, kth_pesi(S, k), reciproci
+    kth = kth_pesi(S, k)
+    return (S + S.T).tocsr(), kth, reciproci
 
 
 def carica_con_delta(base: sp.spmatrix, delta: sp.spmatrix) -> sp.csr_matrix:

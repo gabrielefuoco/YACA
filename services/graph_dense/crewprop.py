@@ -80,6 +80,105 @@ def incidenza(B, ruoli=('dir', 'wr', 'ca')):
     return A, per, col2p
 
 
+def costruisci_canone(B=None, k=100, ruoli=('dir', 'wr', 'ca'), z=None, max_stessi=2, dim=512):
+    """CREWPROP vero: la carriera di un titolo cerca i vicini su TUTTO il canone.
+
+    IL DIFETTO CHE CORREGGE (revisione esterna, 2026-11-04). La prima versione cercava i candidati
+    solo dentro la filmografia delle persone del titolo: risultato, **20 vicini su 20 di *Barbie*
+    condividevano una persona con lei** — un DIR+CAST ripesato, che per costruzione non puo' raggiungere
+    *Povere creature!* (Lanthimos) o *The Substance* (Fargeat). Ed era esattamente cio' che l'utente
+    non vuole: «altra roba dello stesso autore».
+
+    Ora: si calcola il vettore di carriera LOO di ogni titolo, e si cercano i k vicini **su tutti i
+    76.497**, con un tetto di `max_stessi` film che condividono gia' una persona (cosi' i primi due
+    possono essere della stessa mano — *Lady Bird*, *Piccole donne* — ma il resto deve essere di
+    **altri autori** con una carriera simile).
+    """
+    t0 = time.time()
+    B = D.basic() if B is None else B
+    N = B['N']
+    if z is None:
+        z = np.load(C.DATA / 'rrfstudent-v18.npz')['Z'].astype(np.float32)
+    z = z / (np.linalg.norm(z, axis=1, keepdims=True) + 1e-9)
+    # proiezione deterministica a `dim` colonne: conserva i coseni (Johnson-Lindenstrauss) e tiene
+    # 76.497 x 512 in 156 MB invece di 627 MB. Il seme e' fisso: due run danno gli stessi numeri.
+    if z.shape[1] > dim:
+        rng = np.random.default_rng(20261104)
+        R = rng.standard_normal((z.shape[1], dim)).astype(np.float32) / np.sqrt(dim)
+        z = z @ R
+        z /= (np.linalg.norm(z, axis=1, keepdims=True) + 1e-9)
+    A, per, col2p = incidenza(B, ruoli)
+    A = A.tocsr()
+    vox = np.log1p(np.maximum(B['VOT'], 0)).astype(np.float32)
+
+    # vettore di carriera LOO per ogni titolo
+    car = np.zeros_like(z)
+    for i in range(N):
+        lo, hi = A.indptr[i], A.indptr[i + 1]
+        if hi <= lo:
+            continue
+        acc = np.zeros(z.shape[1], np.float32)
+        w_tot = 0.0
+        for col, rp in zip(A.indices[lo:hi], A.data[lo:hi]):
+            lst = per[col2p[int(col)]][:150]        # tetto: chi ha 300 film non deve dominare
+            films = [j for (j, _) in lst if j != i]
+            if not films:
+                continue
+            w = vox[films]
+            acc += float(rp) * (w[:, None] * z[films]).sum(0)
+            w_tot += rp * float(w.sum())
+        if w_tot > 0:
+            v = acc / w_tot
+            n = float(np.linalg.norm(v))
+            if n > 0:
+                car[i] = v / n
+    print(f'  crewprop: carriere calcolate ({time.time()-t0:.0f}s)', flush=True)
+
+    # stesso autora/cast: per il tetto sui 1-hop
+    stesso = (A @ A.T).tocsr()
+    stesso.setdiag(0)
+
+    righe, colonne, valori = [], [], []
+    blocco = 256
+    with_edges = 0
+    for st in range(0, N, blocco):
+        en = min(st + blocco, N)
+        sim = car[st:en] @ z.T
+        for r, i in enumerate(range(st, en)):
+            if not car[i].any():
+                continue
+            sim[r, i] = -9.0
+            cand = np.argpartition(-sim[r], min(4 * k, N - 1))[: 4 * k]
+            cand = cand[np.argsort(-sim[r, cand])]
+            suoi = set(stesso.getrow(i).indices.tolist())
+            tenuti, pesi, n_stessi = [], [], 0
+            for j in cand:
+                w = float(sim[r, j])
+                if w <= 0.05:
+                    break
+                if int(j) in suoi:
+                    if n_stessi >= max_stessi:
+                        continue
+                    n_stessi += 1
+                tenuti.append(int(j)); pesi.append(w)
+                if len(tenuti) >= k:
+                    break
+            if tenuti:
+                with_edges += 1
+                righe.append(np.full(len(tenuti), i, np.int32))
+                colonne.append(np.asarray(tenuti, np.int32))
+                valori.append(np.asarray(pesi, np.float32))
+        if (st // blocco) % 40 == 0:
+            print(f'    ricerca {en:,}/{N:,} ({time.time()-t0:.0f}s)', flush=True)
+    M = sp.csr_matrix((np.concatenate(valori), (np.concatenate(righe), np.concatenate(colonne))),
+                      shape=(N, N))
+    M.setdiag(0)
+    M.eliminate_zeros()
+    print(f'  crewprop: {M.nnz:,} archi · {with_edges:,} titoli con vicini ({time.time()-t0:.0f}s)',
+          flush=True)
+    return M
+
+
 def costruisci(B=None, k=100, ruoli=('dir', 'wr', 'ca'), z=None, _A=None, _per=None, _col2p=None):
     """Il tipo CREWPROP: per ogni titolo, i vicini nella sua *carriera* (leave-one-out).
 
@@ -160,12 +259,19 @@ def main():
     ap.add_argument('--ruoli', default='dir,wr,ca')
     ap.add_argument('--out', default='services/graph/data/tipi2/CREWPROP.npz')
     ap.add_argument('--manifest', default='services/graph/data/tipi2/manifest.json')
+    ap.add_argument('--modo', choices=['canone', '1hop'], default='canone',
+                    help="canone = ricerca su tutti i titoli (corretto); 1hop = vecchia versione")
+    ap.add_argument('--max-stessi', type=int, default=2)
     a = ap.parse_args()
     from . import provenance as PV
     B = D.basic()
-    M = costruisci(B, k=a.k, ruoli=tuple(a.ruoli.split(',')))
+    if a.modo == 'canone':
+        M = costruisci_canone(B, k=a.k, ruoli=tuple(a.ruoli.split(',')), max_stessi=a.max_stessi)
+    else:
+        M = costruisci(B, k=a.k, ruoli=tuple(a.ruoli.split(',')))
     prov = PV.scrivi(a.out, M, step='tipi',
-                     params={'tipo': 'CREWPROP', 'k': a.k, 'ruoli': a.ruoli},
+                     params={'tipo': 'CREWPROP', 'modo': a.modo, 'k': a.k, 'ruoli': a.ruoli,
+                             'max_stessi': a.max_stessi},
                      inputs={'rrfstudent': PV.sha256_file(C.DATA / 'rrfstudent-v18.npz')},
                      canon_len=B['N'])
     # IL MANIFEST VA AGGIORNATO QUI, non "da qualche parte": `tipi.py norm` e `budget` iterano su
@@ -182,8 +288,10 @@ def main():
                            grado_mediano=int(np.median(g[g > 0])) if (g > 0).any() else 0,
                            riga_mediana=float(np.median(np.asarray(M.sum(1)).ravel()[g > 0])),
                            ricetta=f'top-{a.k} coseno sulla carriera di regia/sceneggiatura/cast, '
-                                   f'leave-one-out, peso log1p(voti)',
-                           khi={'k': a.k, 'ruoli': a.ruoli},
+                                   f'leave-one-out, peso log1p(voti), modo {a.modo}, '
+                                   f'max {a.max_stessi} film della stessa persona',
+                           khi={'k': a.k, 'ruoli': a.ruoli, 'modo': a.modo,
+                                'max_stessi': a.max_stessi},
                            creato=time.strftime('%Y-%m-%d %H:%M'))
     json.dump(man, open(a.manifest, 'w', encoding='utf-8'), indent=1, ensure_ascii=False)
     print(f'scritto {a.out} · prov {prov["sha256"][:12]} · manifest aggiornato')
