@@ -1,0 +1,212 @@
+[
+ {
+  "key": "tv:38472",
+  "titolo": "Jessica Jones",
+  "anno": 2015,
+  "voti": 2741,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:11544",
+  "titolo": "Lilo & Stitch",
+  "anno": 2002,
+  "voti": 7282,
+  "generi": [
+   "animation",
+   "comedy",
+   "family",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:556694",
+  "titolo": "Tremila anni di attesa",
+  "anno": 2022,
+  "voti": 1759,
+  "generi": [
+   "drama",
+   "fantasy",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:28",
+  "titolo": "Apocalypse Now",
+  "anno": 1979,
+  "voti": 9446,
+  "generi": [
+   "drama",
+   "war"
+  ]
+ },
+ {
+  "key": "movie:938614",
+  "titolo": "Late Night with the Devil - In onda con il diavolo",
+  "anno": 2024,
+  "voti": 2329,
+  "generi": [
+   "horror"
+  ]
+ },
+ {
+  "key": "tv:95480",
+  "titolo": "Slow Horses",
+  "anno": 2022,
+  "voti": 1046,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "tv:90669",
+  "titolo": "1899",
+  "anno": 2022,
+  "voti": 1606,
+  "generi": [
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:16997",
+  "titolo": "The Pacific",
+  "anno": 2010,
+  "voti": 2606,
+  "generi": [
+   "action & adventure",
+   "drama",
+   "war & politics"
+  ]
+ },
+ {
+  "key": "movie:1304313",
+  "titolo": "Lee Cronin - La Mummia",
+  "anno": 2026,
+  "voti": 2768,
+  "generi": [
+   "horror",
+   "mystery"
+  ]
+ },
+ {
+  "key": "tv:105009",
+  "titolo": "Tokyo Revengers",
+  "anno": 2021,
+  "voti": 1361,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:613504",
+  "titolo": "After 2",
+  "anno": 2020,
+  "voti": 5504,
+  "generi": [
+   "drama",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:10867",
+  "titolo": "Malèna",
+  "anno": 2000,
+  "voti": 2849,
+  "generi": [
+   "animation",
+   "kids"
+  ]
+ },
+ {
+  "key": "movie:360920",
+  "titolo": "Il Grinch",
+  "anno": 2018,
+  "voti": 4532,
+  "generi": [
+   "animation",
+   "comedy",
+   "family",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:438631",
+  "titolo": "Dune",
+  "anno": 2021,
+  "voti": 15716,
+  "generi": [
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:694",
+  "titolo": "Shining",
+  "anno": 1980,
+  "voti": 19524,
+  "generi": [
+   "horror",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:278",
+  "titolo": "Le ali della libertà",
+  "anno": 1994,
+  "voti": 31583,
+  "generi": [
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:105971",
+  "titolo": "Star Wars: The Bad Batch",
+  "anno": 2021,
+  "voti": 1204,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:570670",
+  "titolo": "L'uomo invisibile",
+  "anno": 2020,
+  "voti": 6500,
+  "generi": [
+   "horror",
+   "science fiction",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:2907",
+  "titolo": "La famiglia Addams",
+  "anno": 1991,
+  "voti": 5227,
+  "generi": [
+   "comedy",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:87093",
+  "titolo": "Big Eyes",
+  "anno": 2014,
+  "voti": 3673,
+  "generi": [
+   "comedy"
+  ]
+ }
+]

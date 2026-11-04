@@ -1,0 +1,212 @@
+[
+ {
+  "key": "movie:121986",
+  "titolo": "Frances Ha",
+  "anno": 2013,
+  "voti": 1880,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:73481",
+  "titolo": "Ecomoda",
+  "anno": 2001,
+  "voti": 1097,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:10139",
+  "titolo": "Milk",
+  "anno": 2008,
+  "voti": 2508,
+  "generi": [
+   "drama",
+   "history"
+  ]
+ },
+ {
+  "key": "movie:483",
+  "titolo": "Cuore selvaggio",
+  "anno": 1990,
+  "voti": 2001,
+  "generi": [
+   "crime",
+   "romance",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:376290",
+  "titolo": "Miss Sloane - Giochi di potere",
+  "anno": 2016,
+  "voti": 2026,
+  "generi": [
+   "crime",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:90461",
+  "titolo": "Monsters & Co. La serie - Lavori in corso!",
+  "anno": 2021,
+  "voti": 1416,
+  "generi": [
+   "animation",
+   "comedy",
+   "family"
+  ]
+ },
+ {
+  "key": "movie:37799",
+  "titolo": "The Social Network",
+  "anno": 2010,
+  "voti": 13634,
+  "generi": [
+   "action & adventure",
+   "animation"
+  ]
+ },
+ {
+  "key": "tv:100883",
+  "titolo": "Non ho mai...",
+  "anno": 2020,
+  "voti": 1947,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:599",
+  "titolo": "Viale del tramonto",
+  "anno": 1950,
+  "voti": 3058,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:1621",
+  "titolo": "Boardwalk Empire - L'impero del crimine",
+  "anno": 2010,
+  "voti": 1343,
+  "generi": [
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:548",
+  "titolo": "Rashomon",
+  "anno": 1950,
+  "voti": 2637,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:4032",
+  "titolo": "Papà, ho trovato un amico",
+  "anno": 1991,
+  "voti": 2368,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:1368337",
+  "titolo": "Odissea",
+  "anno": 2026,
+  "voti": 4138,
+  "generi": [
+   "action",
+   "adventure",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:937287",
+  "titolo": "Challengers",
+  "anno": 2024,
+  "voti": 2896,
+  "generi": [
+   "drama",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:7305",
+  "titolo": "Alive - Sopravvissuti",
+  "anno": 1993,
+  "voti": 1639,
+  "generi": [
+   "adventure",
+   "drama",
+   "history"
+  ]
+ },
+ {
+  "key": "movie:9394",
+  "titolo": "Lo chiamavano Trinità...",
+  "anno": 1970,
+  "voti": 1501,
+  "generi": [
+   "action",
+   "comedy",
+   "western"
+  ]
+ },
+ {
+  "key": "tv:21510",
+  "titolo": "White Collar - Fascino criminale",
+  "anno": 2009,
+  "voti": 1623,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:330459",
+  "titolo": "Rogue One: A Star Wars Story",
+  "anno": 2016,
+  "voti": 16861,
+  "generi": [
+   "action",
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:198375",
+  "titolo": "Il giardino delle parole",
+  "anno": 2013,
+  "voti": 2300,
+  "generi": [
+   "animation",
+   "drama",
+   "romance"
+  ]
+ },
+ {
+  "key": "tv:80240",
+  "titolo": "La regina del flow",
+  "anno": 2018,
+  "voti": 1580,
+  "generi": [
+   "crime",
+   "drama"
+  ]
+ }
+]

@@ -1,0 +1,203 @@
+[
+ {
+  "key": "movie:2011",
+  "titolo": "Persepolis",
+  "anno": 2007,
+  "voti": 2254,
+  "generi": [
+   "animation",
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:63639",
+  "titolo": "The Expanse",
+  "anno": 2015,
+  "voti": 2938,
+  "generi": [
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:34647",
+  "titolo": "Enter the Void",
+  "anno": 2010,
+  "voti": 2062,
+  "generi": [
+   "drama",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:782",
+  "titolo": "Gattaca - La porta dell'universo",
+  "anno": 1997,
+  "voti": 7193,
+  "generi": [
+   "drama",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "tv:4574",
+  "titolo": "Insuperabili X-Men",
+  "anno": 1992,
+  "voti": 1418,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "kids",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:9427",
+  "titolo": "Full Monty - Squattrinati organizzati",
+  "anno": 1997,
+  "voti": 1863,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "tv:65708",
+  "titolo": "Taboo",
+  "anno": 2017,
+  "voti": 1537,
+  "generi": [
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:140300",
+  "titolo": "Kung Fu Panda 3",
+  "anno": 2016,
+  "voti": 6811,
+  "generi": [
+   "action",
+   "adventure",
+   "animation",
+   "comedy"
+  ]
+ },
+ {
+  "key": "tv:83659",
+  "titolo": "Guillermo del Toro's Cabinet of Curiosities",
+  "anno": 2022,
+  "voti": 1085,
+  "generi": [
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:595",
+  "titolo": "Il buio oltre la siepe",
+  "anno": 1962,
+  "voti": 2967,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:316029",
+  "titolo": "The Greatest Showman",
+  "anno": 2017,
+  "voti": 10281,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:1104",
+  "titolo": "Mad Men",
+  "anno": 2007,
+  "voti": 1618,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:505600",
+  "titolo": "La rivincita delle sfigate",
+  "anno": 2019,
+  "voti": 2921,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "movie:612",
+  "titolo": "Munich",
+  "anno": 2005,
+  "voti": 3105,
+  "generi": [
+   "drama",
+   "history",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:269",
+  "titolo": "Fino all'ultimo respiro",
+  "anno": 1960,
+  "voti": 2099,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:162",
+  "titolo": "Edward mani di forbice",
+  "anno": 1990,
+  "voti": 14110,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "movie:550988",
+  "titolo": "Free Guy - Eroe per gioco",
+  "anno": 2021,
+  "voti": 10252,
+  "generi": [
+   "adventure",
+   "comedy",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:420809",
+  "titolo": "Maleficent - Signora del male",
+  "anno": 2019,
+  "voti": 6636,
+  "generi": [
+   "adventure",
+   "family",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:5176",
+  "titolo": "Quel treno per Yuma",
+  "anno": 2007,
+  "voti": 4199,
+  "generi": [
+   "western"
+  ]
+ },
+ {
+  "key": "tv:4313",
+  "titolo": "Gli amici di papà",
+  "anno": 1987,
+  "voti": 1178,
+  "generi": [
+   "comedy",
+   "family"
+  ]
+ }
+]

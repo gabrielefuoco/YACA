@@ -1,0 +1,214 @@
+[
+ {
+  "key": "movie:2062",
+  "titolo": "Ratatouille",
+  "anno": 2007,
+  "voti": 19076,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:369885",
+  "titolo": "Allied - Un'ombra nascosta",
+  "anno": 2016,
+  "voti": 4905,
+  "generi": [
+   "action",
+   "drama",
+   "romance",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:858024",
+  "titolo": "Hamnet - Nel nome del figlio",
+  "anno": 2025,
+  "voti": 1687,
+  "generi": [
+   "drama",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:36557",
+  "titolo": "Casino Royale",
+  "anno": 2006,
+  "voti": 12096,
+  "generi": [
+   "action",
+   "adventure",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:54344",
+  "titolo": "The Leftovers - Svaniti nel nulla",
+  "anno": 2014,
+  "voti": 1307,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:113036",
+  "titolo": "American Horror Stories",
+  "anno": 2021,
+  "voti": 1005,
+  "generi": [
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:55931",
+  "titolo": "Animatrix",
+  "anno": 2003,
+  "voti": 1862,
+  "generi": [
+   "animation",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:698948",
+  "titolo": "Tredici vite",
+  "anno": 2022,
+  "voti": 1598,
+  "generi": [
+   "drama",
+   "history",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:95057",
+  "titolo": "Superman & Lois",
+  "anno": 2021,
+  "voti": 2775,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:953",
+  "titolo": "Madagascar",
+  "anno": 2005,
+  "voti": 12021,
+  "generi": [
+   "comedy",
+   "western"
+  ]
+ },
+ {
+  "key": "tv:63210",
+  "titolo": "Shadowhunters",
+  "anno": 2016,
+  "voti": 1260,
+  "generi": [
+   "action & adventure",
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:8337",
+  "titolo": "Essi vivono",
+  "anno": 1988,
+  "voti": 3666,
+  "generi": [
+   "action",
+   "science fiction",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:107113",
+  "titolo": "Only Murders in the Building",
+  "anno": 2021,
+  "voti": 2299,
+  "generi": [
+   "comedy",
+   "crime",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:537116",
+  "titolo": "tick, tick... BOOM!",
+  "anno": 2021,
+  "voti": 2373,
+  "generi": [
+   "drama",
+   "music"
+  ]
+ },
+ {
+  "key": "movie:10138",
+  "titolo": "Iron Man 2",
+  "anno": 2010,
+  "voti": 23028,
+  "generi": [
+   "action",
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:64688",
+  "titolo": "21 Jump Street",
+  "anno": 2012,
+  "voti": 11293,
+  "generi": [
+   "action",
+   "comedy",
+   "crime"
+  ]
+ },
+ {
+  "key": "movie:446354",
+  "titolo": "The Post",
+  "anno": 2017,
+  "voti": 5048,
+  "generi": [
+   "drama",
+   "history"
+  ]
+ },
+ {
+  "key": "tv:249042",
+  "titolo": "Adolescence",
+  "anno": 2025,
+  "voti": 1810,
+  "generi": [
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:591275",
+  "titolo": "Fear Street Parte 3: 1666",
+  "anno": 2021,
+  "voti": 2070,
+  "generi": [
+   "horror",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:1236153",
+  "titolo": "Mercy - Sotto accusa",
+  "anno": 2026,
+  "voti": 1763,
+  "generi": [
+   "crime",
+   "mystery",
+   "science fiction",
+   "thriller"
+  ]
+ }
+]

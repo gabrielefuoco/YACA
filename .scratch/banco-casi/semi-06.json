@@ -1,0 +1,216 @@
+[
+ {
+  "key": "movie:24",
+  "titolo": "Kill Bill: Volume 1",
+  "anno": 2003,
+  "voti": 19565,
+  "generi": [
+   "action",
+   "crime"
+  ]
+ },
+ {
+  "key": "tv:68507",
+  "titolo": "His Dark Materials - Queste oscure materie",
+  "anno": 2019,
+  "voti": 1965,
+  "generi": [
+   "action & adventure",
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:299536",
+  "titolo": "Avengers: Infinity War",
+  "anno": 2018,
+  "voti": 33155,
+  "generi": [
+   "action",
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:354912",
+  "titolo": "Coco",
+  "anno": 2017,
+  "voti": 21495,
+  "generi": [
+   "adventure",
+   "animation",
+   "family",
+   "music"
+  ]
+ },
+ {
+  "key": "movie:346648",
+  "titolo": "Paddington 2",
+  "anno": 2017,
+  "voti": 2929,
+  "generi": [
+   "adventure",
+   "comedy",
+   "family"
+  ]
+ },
+ {
+  "key": "movie:87502",
+  "titolo": "Flight",
+  "anno": 2012,
+  "voti": 6649,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:31251",
+  "titolo": "Victorious",
+  "anno": 2010,
+  "voti": 1752,
+  "generi": [
+   "comedy",
+   "kids"
+  ]
+ },
+ {
+  "key": "movie:397837",
+  "titolo": "Prima di domani",
+  "anno": 2017,
+  "voti": 3590,
+  "generi": [
+   "drama",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "tv:80307",
+  "titolo": "Bodyguard",
+  "anno": 2018,
+  "voti": 1225,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery",
+   "war & politics"
+  ]
+ },
+ {
+  "key": "movie:520763",
+  "titolo": "A Quiet Place II",
+  "anno": 2021,
+  "voti": 7688,
+  "generi": [
+   "horror",
+   "science fiction",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:713704",
+  "titolo": "La casa - Il risveglio del male",
+  "anno": 2023,
+  "voti": 4022,
+  "generi": [
+   "horror",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:9411",
+  "titolo": "Il tocco del male",
+  "anno": 1998,
+  "voti": 1690,
+  "generi": [
+   "crime",
+   "drama",
+   "fantasy",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:4658",
+  "titolo": "ALF",
+  "anno": 1986,
+  "voti": 1270,
+  "generi": [
+   "comedy",
+   "family",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:12697",
+  "titolo": "Dragon Ball GT",
+  "anno": 1996,
+  "voti": 2117,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:687163",
+  "titolo": "L'ultima missione: Project Hail Mary",
+  "anno": 2026,
+  "voti": 8311,
+  "generi": [
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:335",
+  "titolo": "C'era una volta il West",
+  "anno": 1968,
+  "voti": 5085,
+  "generi": [
+   "drama",
+   "western"
+  ]
+ },
+ {
+  "key": "movie:76341",
+  "titolo": "Mad Max: Fury Road",
+  "anno": 2015,
+  "voti": 24772,
+  "generi": [
+   "action",
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:9470",
+  "titolo": "Kung Fusion",
+  "anno": 2004,
+  "voti": 3374,
+  "generi": [
+   "action",
+   "comedy",
+   "crime",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:138843",
+  "titolo": "L'evocazione - The Conjuring",
+  "anno": 2013,
+  "voti": 13174,
+  "generi": [
+   "horror",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:76719",
+  "titolo": "The Rain",
+  "anno": 2018,
+  "voti": 1365,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ }
+]

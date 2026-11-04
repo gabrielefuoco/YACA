@@ -1,0 +1,214 @@
+[
+ {
+  "key": "movie:490",
+  "titolo": "Il settimo sigillo",
+  "anno": 1957,
+  "voti": 3477,
+  "generi": [
+   "drama",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "tv:94664",
+  "titolo": "Mushoku Tensei: Jobless Reincarnation",
+  "anno": 2021,
+  "voti": 1781,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:2391",
+  "titolo": "I racconti della cripta",
+  "anno": 1989,
+  "voti": 1020,
+  "generi": [
+   "comedy",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:72750",
+  "titolo": "Killing Eve",
+  "anno": 2018,
+  "voti": 1576,
+  "generi": [
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:381288",
+  "titolo": "Split",
+  "anno": 2017,
+  "voti": 18733,
+  "generi": [
+   "horror",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:762",
+  "titolo": "Monty Python e il Sacro Graal",
+  "anno": 1975,
+  "voti": 6661,
+  "generi": [
+   "adventure",
+   "comedy",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:65",
+  "titolo": "8 Mile",
+  "anno": 2002,
+  "voti": 8017,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:9479",
+  "titolo": "Nightmare Before Christmas",
+  "anno": 1993,
+  "voti": 10730,
+  "generi": [
+   "animation",
+   "family",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "tv:50825",
+  "titolo": "Sleepy Hollow",
+  "anno": 2013,
+  "voti": 1141,
+  "generi": [
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:656690",
+  "titolo": "The Social Dilemma",
+  "anno": 2020,
+  "voti": 1865,
+  "generi": [
+   "documentary",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:338766",
+  "titolo": "Hell or High Water",
+  "anno": 2016,
+  "voti": 5039,
+  "generi": [
+   "crime",
+   "drama",
+   "western"
+  ]
+ },
+ {
+  "key": "movie:419478",
+  "titolo": "Il sole a mezzanotte - Midnight sun",
+  "anno": 2018,
+  "voti": 3577,
+  "generi": [
+   "drama",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:504172",
+  "titolo": "Il corriere - The Mule",
+  "anno": 2018,
+  "voti": 5485,
+  "generi": [
+   "crime",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:337339",
+  "titolo": "Fast & Furious 8",
+  "anno": 2017,
+  "voti": 11038,
+  "generi": [
+   "action",
+   "crime",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:522627",
+  "titolo": "The Gentlemen",
+  "anno": 2020,
+  "voti": 6949,
+  "generi": [
+   "action",
+   "comedy",
+   "crime"
+  ]
+ },
+ {
+  "key": "tv:2309",
+  "titolo": "Danny Phantom",
+  "anno": 2004,
+  "voti": 1180,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "comedy",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:56296",
+  "titolo": "Orphan Black",
+  "anno": 2013,
+  "voti": 1489,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:481848",
+  "titolo": "Il richiamo della foresta",
+  "anno": 2020,
+  "voti": 4018,
+  "generi": [
+   "adventure",
+   "drama",
+   "family"
+  ]
+ },
+ {
+  "key": "movie:65057",
+  "titolo": "Paradiso amaro",
+  "anno": 2011,
+  "voti": 3160,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:9654",
+  "titolo": "The Italian Job",
+  "anno": 2003,
+  "voti": 6224,
+  "generi": [
+   "action",
+   "crime"
+  ]
+ }
+]

@@ -1,0 +1,17 @@
+{
+ "blocchi": [
+  ".scratch\\banco-casi\\semi-01.json",
+  ".scratch\\banco-casi\\semi-02.json",
+  ".scratch\\banco-casi\\semi-03.json",
+  ".scratch\\banco-casi\\semi-04.json",
+  ".scratch\\banco-casi\\semi-05.json",
+  ".scratch\\banco-casi\\semi-06.json",
+  ".scratch\\banco-casi\\semi-07.json",
+  ".scratch\\banco-casi\\semi-08.json",
+  ".scratch\\banco-casi\\semi-09.json",
+  ".scratch\\banco-casi\\semi-10.json"
+ ],
+ "per_blocco": 20,
+ "film": 140,
+ "serie": 60
+}

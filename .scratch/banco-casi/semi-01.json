@@ -1,0 +1,217 @@
+[
+ {
+  "key": "tv:79788",
+  "titolo": "Watchmen",
+  "anno": 2019,
+  "voti": 1713,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:114868",
+  "titolo": "Record of Ragnarok",
+  "anno": 2021,
+  "voti": 1917,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:60743",
+  "titolo": "Constantine",
+  "anno": 2014,
+  "voti": 1665,
+  "generi": [
+   "action & adventure",
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:391713",
+  "titolo": "Lady Bird",
+  "anno": 2017,
+  "voti": 9211,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:545611",
+  "titolo": "Everything Everywhere All at Once",
+  "anno": 2022,
+  "voti": 8531,
+  "generi": [
+   "action",
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "tv:105248",
+  "titolo": "Cyberpunk: Edgerunners",
+  "anno": 2022,
+  "voti": 2016,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "crime",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:83631",
+  "titolo": "What We Do in the Shadows",
+  "anno": 2019,
+  "voti": 1062,
+  "generi": [
+   "comedy",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:1395",
+  "titolo": "Gossip Girl",
+  "anno": 2007,
+  "voti": 2365,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:268",
+  "titolo": "Batman",
+  "anno": 1989,
+  "voti": 8867,
+  "generi": [
+   "action & adventure",
+   "drama",
+   "reality"
+  ]
+ },
+ {
+  "key": "movie:64690",
+  "titolo": "Drive",
+  "anno": 2011,
+  "voti": 14124,
+  "generi": [
+   "crime",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:8195",
+  "titolo": "Ronin",
+  "anno": 1998,
+  "voti": 2804,
+  "generi": [
+   "action",
+   "crime",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:792307",
+  "titolo": "Povere creature!",
+  "anno": 2023,
+  "voti": 5834,
+  "generi": [
+   "comedy",
+   "romance",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:5548",
+  "titolo": "RoboCop",
+  "anno": 1987,
+  "voti": 6012,
+  "generi": [
+   "action",
+   "science fiction",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:11886",
+  "titolo": "Robin Hood",
+  "anno": 1973,
+  "voti": 4770,
+  "generi": [
+   "adventure",
+   "animation",
+   "family"
+  ]
+ },
+ {
+  "key": "movie:185",
+  "titolo": "Arancia meccanica",
+  "anno": 1971,
+  "voti": 14220,
+  "generi": [
+   "drama",
+   "mystery",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:37165",
+  "titolo": "The Truman Show",
+  "anno": 1998,
+  "voti": 21034,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:346698",
+  "titolo": "Barbie",
+  "anno": 2023,
+  "voti": 11684,
+  "generi": [
+   "adventure",
+   "comedy",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:496243",
+  "titolo": "Parasite",
+  "anno": 2019,
+  "voti": 21488,
+  "generi": [
+   "comedy",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:627",
+  "titolo": "Trainspotting",
+  "anno": 1996,
+  "voti": 10747,
+  "generi": [
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:933260",
+  "titolo": "The Substance",
+  "anno": 2024,
+  "voti": 6614,
+  "generi": [
+   "horror",
+   "science fiction"
+  ]
+ }
+]

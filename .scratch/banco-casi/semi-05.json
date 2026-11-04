@@ -1,0 +1,211 @@
+[
+ {
+  "key": "tv:64432",
+  "titolo": "The Magicians",
+  "anno": 2015,
+  "voti": 1729,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:466282",
+  "titolo": "Tutte le volte che ho scritto ti amo",
+  "anno": 2018,
+  "voti": 8787,
+  "generi": [
+   "comedy",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:756999",
+  "titolo": "Black Phone",
+  "anno": 2022,
+  "voti": 6153,
+  "generi": [
+   "horror",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:4689",
+  "titolo": "Mr. Vendetta",
+  "anno": 2002,
+  "voti": 1790,
+  "generi": [
+   "action",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:697843",
+  "titolo": "Tyler Rake 2",
+  "anno": 2023,
+  "voti": 3095,
+  "generi": [
+   "action",
+   "crime",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:4586",
+  "titolo": "Una mamma per amica",
+  "anno": 2000,
+  "voti": 1323,
+  "generi": [
+   "comedy",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:9475",
+  "titolo": "Scent of a Woman - Profumo di donna",
+  "anno": 1992,
+  "voti": 4126,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:2609",
+  "titolo": "Un biglietto in due",
+  "anno": 1987,
+  "voti": 2340,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:116745",
+  "titolo": "I sogni segreti di Walter Mitty",
+  "anno": 2013,
+  "voti": 8532,
+  "generi": [
+   "adventure",
+   "comedy",
+   "drama",
+   "fantasy"
+  ]
+ },
+ {
+  "key": "movie:112198",
+  "titolo": "Cena tra amici",
+  "anno": 2012,
+  "voti": 1827,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "tv:84661",
+  "titolo": "The Outsider",
+  "anno": 2020,
+  "voti": 1752,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:500664",
+  "titolo": "Upgrade",
+  "anno": 2018,
+  "voti": 5292,
+  "generi": [
+   "action",
+   "science fiction",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:4147",
+  "titolo": "Era mio padre",
+  "anno": 2002,
+  "voti": 4146,
+  "generi": [
+   "crime",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:127235",
+  "titolo": "Invasion",
+  "anno": 2021,
+  "voti": 1237,
+  "generi": [
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "tv:62710",
+  "titolo": "Blindspot",
+  "anno": 2015,
+  "voti": 2594,
+  "generi": [
+   "action & adventure",
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:1903",
+  "titolo": "Vanilla Sky",
+  "anno": 2001,
+  "voti": 4898,
+  "generi": [
+   "action & adventure",
+   "animation"
+  ]
+ },
+ {
+  "key": "movie:2109",
+  "titolo": "Rush Hour - Due mine vaganti",
+  "anno": 1998,
+  "voti": 5950,
+  "generi": [
+   "action",
+   "comedy",
+   "crime"
+  ]
+ },
+ {
+  "key": "movie:3432",
+  "titolo": "Mr. Brooks",
+  "anno": 2007,
+  "voti": 1950,
+  "generi": [
+   "crime",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:76121",
+  "titolo": "DARLING in the FRANXX",
+  "anno": 2018,
+  "voti": 1939,
+  "generi": [
+   "animation",
+   "comedy",
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:1878",
+  "titolo": "Paura e delirio a Las Vegas",
+  "anno": 1998,
+  "voti": 5216,
+  "generi": [
+   "animation",
+   "kids"
+  ]
+ }
+]

@@ -1,0 +1,215 @@
+[
+ {
+  "key": "movie:385687",
+  "titolo": "Fast X",
+  "anno": 2023,
+  "voti": 6525,
+  "generi": [
+   "action",
+   "crime",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:617653",
+  "titolo": "The Last Duel",
+  "anno": 2021,
+  "voti": 4048,
+  "generi": [
+   "drama",
+   "history"
+  ]
+ },
+ {
+  "key": "tv:96648",
+  "titolo": "Sweet Home",
+  "anno": 2020,
+  "voti": 1628,
+  "generi": [
+   "action & adventure",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:515001",
+  "titolo": "Jojo Rabbit",
+  "anno": 2019,
+  "voti": 10769,
+  "generi": [
+   "comedy",
+   "drama",
+   "war"
+  ]
+ },
+ {
+  "key": "tv:1891",
+  "titolo": "Roma",
+  "anno": 2005,
+  "voti": 1587,
+  "generi": [
+   "action & adventure",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:57214",
+  "titolo": "Project X - Una festa che spacca",
+  "anno": 2012,
+  "voti": 7086,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "tv:81146",
+  "titolo": "Rosario Tijeras",
+  "anno": 2010,
+  "voti": 1134,
+  "generi": [
+   "action & adventure",
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "movie:447365",
+  "titolo": "Guardiani della Galassia Vol. 3",
+  "anno": 2023,
+  "voti": 8952,
+  "generi": [
+   "action",
+   "adventure",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:5503",
+  "titolo": "Il fuggitivo",
+  "anno": 1993,
+  "voti": 4983,
+  "generi": [
+   "action",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:598",
+  "titolo": "City of God",
+  "anno": 2002,
+  "voti": 8521,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "movie:718789",
+  "titolo": "Lightyear - La vera storia di Buzz",
+  "anno": 2022,
+  "voti": 3978,
+  "generi": [
+   "adventure",
+   "animation",
+   "family",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:7270",
+  "titolo": "Il genio della truffa",
+  "anno": 2003,
+  "voti": 2075,
+  "generi": [
+   "comedy",
+   "crime",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:115004",
+  "titolo": "Omicidio a Easttown",
+  "anno": 2021,
+  "voti": 1768,
+  "generi": [
+   "crime",
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "movie:537996",
+  "titolo": "La ballata di Buster Scruggs",
+  "anno": 2018,
+  "voti": 4610,
+  "generi": [
+   "comedy",
+   "drama",
+   "western"
+  ]
+ },
+ {
+  "key": "movie:3176",
+  "titolo": "Battle Royale",
+  "anno": 2000,
+  "voti": 3974,
+  "generi": [
+   "action",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "tv:109958",
+  "titolo": "The Haunting of Bly Manor",
+  "anno": 2020,
+  "voti": 1491,
+  "generi": [
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "tv:31356",
+  "titolo": "Big Time Rush",
+  "anno": 2009,
+  "voti": 1689,
+  "generi": [
+   "comedy",
+   "kids"
+  ]
+ },
+ {
+  "key": "movie:1725",
+  "titolo": "West Side Story",
+  "anno": 1961,
+  "voti": 2112,
+  "generi": [
+   "crime",
+   "drama",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:114150",
+  "titolo": "Voices",
+  "anno": 2012,
+  "voti": 7011,
+  "generi": [
+   "comedy",
+   "music",
+   "romance"
+  ]
+ },
+ {
+  "key": "movie:399366",
+  "titolo": "Marrowbone",
+  "anno": 2017,
+  "voti": 1899,
+  "generi": [
+   "horror",
+   "mystery",
+   "thriller"
+  ]
+ }
+]

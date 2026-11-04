@@ -1,0 +1,222 @@
+[
+ {
+  "key": "tv:128839",
+  "titolo": "La Brea",
+  "anno": 2021,
+  "voti": 1631,
+  "generi": [
+   "action & adventure",
+   "drama",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:9100",
+  "titolo": "Giovani streghe",
+  "anno": 1996,
+  "voti": 2152,
+  "generi": [
+   "drama",
+   "fantasy",
+   "horror"
+  ]
+ },
+ {
+  "key": "movie:466272",
+  "titolo": "C'era una volta a… Hollywood",
+  "anno": 2019,
+  "voti": 15401,
+  "generi": [
+   "comedy",
+   "drama",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:2005",
+  "titolo": "Sister Act - Una svitata in abito da suora",
+  "anno": 1992,
+  "voti": 3543,
+  "generi": [
+   "animation",
+   "comedy",
+   "family",
+   "kids"
+  ]
+ },
+ {
+  "key": "movie:11797",
+  "titolo": "Ammazzavampiri",
+  "anno": 1985,
+  "voti": 1618,
+  "generi": [
+   "comedy",
+   "horror"
+  ]
+ },
+ {
+  "key": "tv:67335",
+  "titolo": "Sin senos sí hay paraíso",
+  "anno": 2016,
+  "voti": 2935,
+  "generi": [
+   "action & adventure",
+   "crime",
+   "drama",
+   "mystery"
+  ]
+ },
+ {
+  "key": "tv:3498",
+  "titolo": "I maghi di Waverly",
+  "anno": 2007,
+  "voti": 1207,
+  "generi": [
+   "comedy",
+   "kids",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:765",
+  "titolo": "La casa 2",
+  "anno": 1987,
+  "voti": 3692,
+  "generi": [
+   "comedy",
+   "fantasy",
+   "horror"
+  ]
+ },
+ {
+  "key": "movie:569094",
+  "titolo": "Spider-Man: Across the Spider-Verse",
+  "anno": 2023,
+  "voti": 9394,
+  "generi": [
+   "action",
+   "adventure",
+   "animation",
+   "science fiction"
+  ]
+ },
+ {
+  "key": "movie:2288",
+  "titolo": "Closer",
+  "anno": 2004,
+  "voti": 3823,
+  "generi": [
+   "action & adventure",
+   "crime",
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:97180",
+  "titolo": "Selena: La serie",
+  "anno": 2020,
+  "voti": 1585,
+  "generi": [
+   "drama"
+  ]
+ },
+ {
+  "key": "tv:34391",
+  "titolo": "Ultimate Spider-Man",
+  "anno": 2012,
+  "voti": 1062,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "comedy",
+   "sci-fi & fantasy"
+  ]
+ },
+ {
+  "key": "movie:1251",
+  "titolo": "Lettere da Iwo Jima",
+  "anno": 2006,
+  "voti": 2406,
+  "generi": [
+   "action",
+   "drama",
+   "war"
+  ]
+ },
+ {
+  "key": "movie:365222",
+  "titolo": "Ip Man 3",
+  "anno": 2015,
+  "voti": 1977,
+  "generi": [
+   "action",
+   "drama",
+   "history"
+  ]
+ },
+ {
+  "key": "movie:8835",
+  "titolo": "La rivincita delle bionde",
+  "anno": 2001,
+  "voti": 4763,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "movie:854",
+  "titolo": "The Mask: Da zero a mito",
+  "anno": 1994,
+  "voti": 11648,
+  "generi": [
+   "comedy"
+  ]
+ },
+ {
+  "key": "movie:529216",
+  "titolo": "Durante la tormenta",
+  "anno": 2018,
+  "voti": 2056,
+  "generi": [
+   "drama",
+   "fantasy",
+   "mystery",
+   "thriller"
+  ]
+ },
+ {
+  "key": "movie:801",
+  "titolo": "Good Morning, Vietnam",
+  "anno": 1987,
+  "voti": 3119,
+  "generi": [
+   "comedy",
+   "drama",
+   "war"
+  ]
+ },
+ {
+  "key": "tv:3570",
+  "titolo": "Sailor Moon",
+  "anno": 1992,
+  "voti": 1050,
+  "generi": [
+   "action & adventure",
+   "animation",
+   "comedy",
+   "kids"
+  ]
+ },
+ {
+  "key": "movie:15157",
+  "titolo": "Another Cinderella Story",
+  "anno": 2008,
+  "voti": 2152,
+  "generi": [
+   "comedy",
+   "family",
+   "music",
+   "romance"
+  ]
+ }
+]
