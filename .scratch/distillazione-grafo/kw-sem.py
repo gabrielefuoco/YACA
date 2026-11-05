@@ -11,8 +11,11 @@ keyword rara ma precisa non viene diluita.
 """
 import argparse
 import collections
+import hashlib
 import json
+import os
 import time
+from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sp
@@ -20,7 +23,7 @@ import torch
 from transformers import AutoModel, AutoTokenizer
 
 import tipi
-from services.graph_dense import data as D
+from services.graph_dense import config as C, data as D
 
 ISTRUZIONE = "Instruct: Represent this film keyword for semantic comparison\nQuery: {t}"
 
@@ -49,6 +52,29 @@ def embed_nomi(nomi, modello, istruzione=True, batch=256, maxlen=48):
     if dev == 'cuda':
         torch.cuda.empty_cache()
     return out
+
+
+def embed_nomi_cache(nomi, modello):
+    """Riusa e conserva gli embedding esatti usati da KWSEM; il fingerprint include prompt e ordine."""
+    names_sha = hashlib.sha256(json.dumps(nomi, ensure_ascii=False).encode('utf-8')).hexdigest()
+    key = hashlib.sha256(json.dumps({
+        'model': modello, 'names_sha': names_sha, 'instruction': ISTRUZIONE,
+        'pooling': 'last-token-left-padding', 'maxlen': 48, 'dtype': 'float16',
+    }, sort_keys=True).encode('utf-8')).hexdigest()
+    path = Path(os.environ.get('KWSEM_EMBEDDINGS', C.DATA / 'embeddings' / 'kwsem-qwen3-0.6b.npz'))
+    if path.exists():
+        with np.load(path, allow_pickle=False) as z:
+            if str(z['key']) == key and z['E'].shape[0] == len(nomi):
+                print(f'  embedding keyword riusati: {path} {z["E"].shape}', flush=True)
+                return z['E'].astype(np.float32)
+    E = embed_nomi(nomi, modello)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.stem + '.tmp.npz')
+    np.savez_compressed(tmp, E=E.astype(np.float32), key=np.array(key), names_sha=np.array(names_sha),
+                        model=np.array(modello), instruction=np.array(ISTRUZIONE))
+    tmp.replace(path)
+    print(f'  embedding keyword conservati: {path} {E.shape}', flush=True)
+    return E
 
 
 def grafo_ppmi(Xk, per_kw, blk=1000):
@@ -209,7 +235,7 @@ def main():
     print(f'    PPMI: {Gp.nnz:,} archi', flush=True)
 
     print(f'  embedding dei {len(nomi):,} nomi con {a.model}...', flush=True)
-    E = embed_nomi(nomi, a.model)
+    E = embed_nomi_cache(nomi, a.model)
     print(f'    embedding: {E.shape}', flush=True)
     Gs = grafo_semantico(E, a.per_kw)
     print(f'    semantica: {Gs.nnz:,} archi', flush=True)

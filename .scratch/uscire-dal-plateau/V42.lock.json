@@ -1,0 +1,73 @@
+{
+  "version": "V42",
+  "status": "frozen-base",
+  "canon_len": 76497,
+  "weights": {
+    "CAST": 0.4,
+    "COLL": 0.5,
+    "CONTESTI": 0.2,
+    "COVISION": 0.8,
+    "CREWPROP": 0.15,
+    "DIR": 1.0,
+    "KWSEM": 1.4,
+    "LIST": 1.0,
+    "LISTSEM": 0.15,
+    "PROD": 0.3,
+    "RESID": 1.2,
+    "RRFST": 1.0,
+    "TRAMA": 0.15,
+    "TRIBU": 0.15
+  },
+  "tipi": [
+    "COVISION", "TRAMA", "KWSEM", "RRFST", "CAST", "DIR", "PROD",
+    "COLL", "LIST", "CREWPROP", "CONTESTI", "LISTSEM", "TRIBU", "RESID"
+  ],
+  "tipi_source_sha256": {
+    "COVISION": "68ec6c4c0d5ccc96a15e22a077a806477398b2422068e61a7c84c8fe11dd4278",
+    "TRAMA": "dbd2e4e740e2d13acbdeed4cd25146ffddb1b0e042152d28c1528b107e28021e",
+    "KWSEM": "e383b012cd952888c5d3aea87b882a551ca7f4f70e0876940d436bdb5edc3050",
+    "RRFST": "a6dd69f4c17baf8188806fef8076b2cc994f627acb232acd25202a4a34e986cb",
+    "CAST": "db2096be58f2d1a71ad2facb0e7ec6e62ffa25c01ab5a06119bdb32a06360ca4",
+    "DIR": "8616b5e68befab1da5497f2eeb3e6e0c1f9c9d3144a0c049bb5f661b3ee1dc59",
+    "PROD": "5c690487b2c5ad57d5bc71ed58250683d309f640e525a3377147aca809d96a58",
+    "COLL": "0a72ad47f8336837ebf470967735842a2d5739ceea70959c64d149ccdda2f469",
+    "LIST": "a290b592d8898d3403cae0705e95ff9dffae074e3aa164acbdeecb7993992fda",
+    "CREWPROP": "41718c00eb7cf9fbcf0ac1c28a1e5ece8aec5e763568d54e3957e534c9747fb2",
+    "CONTESTI": "db58bfe5575985b5b0ec72614ce796c3a317faeb0c1089328218bc5edd472edb",
+    "LISTSEM": "75c001bcab659dd2bf4d6a50156674178c85aff693d9e59b07498e99b828ee6f",
+    "TRIBU": "fdd966b73fc3fc2706a667146fc88e4f3ab11f976881777b0c64530629af4864",
+    "RESID": "74bc34137fd8b1c0a60d1fb31ed0a60d0f2da9aa049e7e78c6bcb4405a950a8f"
+  },
+  "mixer_inputs_sha256": {
+    "CAST": "1f28f27aa70b4fcbbb11f7a4603308dce4e2fb52c57515b62ca6962b405bfc45",
+    "COLL": "3c2989c9227f0c599b8b89c1ffdf1382b5cd1d5045bf37e242f37f918390663f",
+    "CONTESTI": "3f9dbc9354085a504ee450f52de1f6c212e3f2c67881a80b9ba889f37ef44dd5",
+    "COVISION": "2bb06a518e0876806eb122b3efe1313f9d7b92c81401e011329eb3ddebdd8e39",
+    "CREWPROP": "fab5d6e0328494ecb3df9867ecb63e394af4da0aa43b7caf438b452eea895038",
+    "DIR": "55df8286aeb36069b8085e524669c1edda9c74915ee2ffb24d109d3a8e5522f8",
+    "KWSEM": "29c22b3fa812436d4f690bee590782c7e291a3aec9df76bc71ca14e6c27e5db7",
+    "LIST": "b884e1c0277f36826eaac6b44d1381553ba58ddef42c370aeb53a4d2f7ae9282",
+    "LISTSEM": "54d6e95a60b8dc18be3178712271d36117bc4774e474ff8f017f3605d522a757",
+    "PROD": "e9799fa58f42c1df9c39b372bb45341a5b3996bf94935c6916c5170ae48f3a98",
+    "RESID": "9f0cb61f1c1bf1528c4ef11fb7695ebe57a49942c9e920dd0a6a38341ded3920",
+    "RRFST": "b880f6eb4879fff662a71997565b987a99e46180328f20bfc0e71c50b1c84090",
+    "TRAMA": "0e6790748eda111e9df286f474f5d234d6d1fd54497a215d0285ae8d75fa1587",
+    "TRIBU": "954d56cf33a7ae57466a313ac4367209071d9fea83ee18b7b0c03df6a3644e0d"
+  },
+  "mixer_params_sha256": "e35c2c9e3edca5d222eab44257ae91c8561e11724203769d7d2d47e3aa9b9aac",
+  "pipeline_code_sha256": {
+    ".scratch/uscire-dal-plateau/build-v42.py": "0dfb85b67100add080667250fa5bc6a555fd5983e15cd106319939bc78761108",
+    ".scratch/distillazione-grafo/mixer.py": "95c1bf876f26f917cb0af2d2102d876c8124828cd7a6985065cb596b3b3c5c9d",
+    ".scratch/distillazione-grafo/chiudi.py": "603415f57daf861d1aa71099017c9bce10a7652de074f1efc7460a4b8a6677d6",
+    "services/graph_dense/data.py": "d18304ea39e16de084c86dc41cf8124b564c39c03f0e28af09cc056e03d41f51",
+    "services/graph_dense/config.py": "265cfc943506afc7ffdbe606ea0734ec250cca6be386b3a6c2baf3b8db049c25",
+    "services/graph_dense/provenance.py": "29a7f6095d723963ff52fa55f4e1a883c0ca280eb1057388ced27900ef4bb607"
+  },
+  "mixer_provenance_sha256": "47d950226e2ea469a402853460b9f2dc5975c7034af675f6bdf3c9acfd3b4399",
+  "final_provenance_sha256": "967637f6e20100f6f40b107d11548904b05a5c2fb9a3e91a2c2ad1c6b9fb14be",
+  "artifacts_sha256": {
+    "MIX-rrf-dc-dt-ga.npz": "665f947f9dbb2c11632bbfdcee00e8fdd32159b03d238eaf12e30c1794eacc12",
+    "bolle-eterogeneo-V42-p1.0-triangolo.npz": "54e4adf1579f76c22369e664bc811d90a0f2c50d7b43ef94f8bed09c4eb877e0"
+  },
+  "artifact_stats": {"mix_nnz": 52789575, "final_nnz": 52789575}
+}

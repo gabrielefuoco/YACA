@@ -29,8 +29,13 @@ def carica(n, N):
     return sp.csr_matrix((z['data'], z['indices'], z['indptr']), shape=(N, N))
 
 
-def rrf(M, w, k=60):
-    """Sostituisce ogni peso col suo rango: 1/(k + rango). Indifferente alla scala del tipo."""
+def rrf(M, w, k=60, taglia=0):
+    """Sostituisce ogni peso col suo rango: 1/(k + rango). Indifferente alla scala del tipo.
+
+    `taglia` (handoff 5, §3) tronca il tipo ai primi `taglia` ranghi: un tipo specialistico non deve
+    iniettare rumore nella coda. Con `k` corto e `taglia` corta il rango #0 di un tipo debole resta
+    udibile (w/3 con k=3 invece di w/18 con k=15) senza che i ranghi 20-100 inquinino la fusione.
+    """
     rows, cols, vals = [], [], []
     for i in range(M.shape[0]):
         r = M.getrow(i)
@@ -38,6 +43,8 @@ def rrf(M, w, k=60):
             continue
         o = np.argsort(-r.data)
         js = r.indices[o]
+        if taglia:
+            js = js[:taglia]
         rows.append(np.full(len(js), i, np.int32))
         cols.append(js.astype(np.int32))
         vals.append((w / (k + np.arange(len(js)))).astype(np.float32))
@@ -355,6 +362,8 @@ def main():
     ap.add_argument('--hub-tipi', default='CAST,PROD')
     ap.add_argument('--hub-beta', type=float, default=0.25)
     ap.add_argument('--rrf-k', type=int, default=60)
+    ap.add_argument('--temperatura', default='',
+                    help='k e troncatura per tipo, es. "LISTSEM:3:15;CREWPROP:3:15;LIST:5:40"')
     ap.add_argument('--pop-gap', type=float, default=0.0)
     ap.add_argument('--pop-slope', type=float, default=1.5)
     ap.add_argument('--gate-asimmetrico', action='store_true',
@@ -375,9 +384,12 @@ def main():
     from services.graph_dense import data as D
     N = D.basic()['N']
     os.makedirs(DST, exist_ok=True)
-    tipi = sorted(json.load(open('services/graph/data/tipi/manifest.json', encoding='utf-8')))
+    # BUG (handoff 5, 4): questo `open` era incondizionato e leggeva un percorso fisso, quindi su una
+    # macchina senza `services/graph/data/tipi/` la build moriva prima di guardare `--tipi`.
     if a.tipi:
         tipi = [t.strip() for t in a.tipi.split(',') if t.strip()]
+    else:
+        tipi = sorted(json.load(open('services/graph/data/tipi/manifest.json', encoding='utf-8')))
     pf = f'{DST}/pesi.json'
     # NIENTE FALLBACK A 1,0 (ticket 12). Senza questo file una build intera e' passata con tutti i
     # pesi uguali e ce ne siamo accorti solo perche' il comportamento di DIR era strano: l'errore
@@ -400,7 +412,18 @@ def main():
         if a.hub_tipi and t in a.hub_tipi.split(','):
             A = correggi_hub(A, a.hub_beta)
         if a.modo == 'rrf':
-            A = rrf(A, pesi[t], k=a.rrf_k)
+            # `--temperatura TIPO:k:tronca` (ripetibile): k corto per i tipi specialistici.
+            kt, tg = a.rrf_k, 0
+            for spec in (a.temperatura or '').split(';'):
+                if not spec.strip():
+                    continue
+                nome, _, resto = spec.partition(':')
+                if nome.strip() != t:
+                    continue
+                pezzi = resto.split(':')
+                kt = int(pezzi[0]) if pezzi and pezzi[0] else kt
+                tg = int(pezzi[1]) if len(pezzi) > 1 and pezzi[1] else 0
+            A = rrf(A, pesi[t], k=kt, taglia=tg)
         elif a.modo == 'potenza':
             A = A.copy()
             A.data = (np.power(A.data, a.alpha) * pesi[t]).astype(np.float32)
@@ -460,6 +483,7 @@ def main():
     from services.graph_dense import provenance as PV
     _params = {'modo': a.modo, 'alpha': a.alpha, 'pota': a.pota, 'simmetrizza': a.simmetrizza,
                'damp_coll': a.damp_coll, 'damp_titolo': a.damp_titolo, 'rrf_k': a.rrf_k,
+               'temperatura': a.temperatura,
                'pop_gap': a.pop_gap, 'pop_slope': a.pop_slope, 'pop_smooth': a.pop_smooth,
                'gate_asimmetrico': a.gate_asimmetrico, 'gate_k': a.gate_k,
                'damp_animazione': a.damp_animazione, 'damp_anim_fattore': a.damp_anim_fattore, 'damp_anime_saga': a.damp_anime_saga,

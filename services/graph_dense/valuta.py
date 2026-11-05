@@ -122,6 +122,41 @@ def bootstrap_appaiato(a: np.ndarray, b: np.ndarray, replichi=BOOT, seme=2026102
             'sopra_mde': bool(abs(delta) >= mde)}
 
 
+def ndcg_per_sorgente(M, casi, k=50):
+    """nDCG@k per sorgente: metrica continua, al posto del gradino di R@20.
+
+    PERCHE' (handoff 5, §2). `I[rank <= 20]` ha varianza massima proprio dove i grafi si distinguono:
+    un link che passa da #180 a #22 vale 0 -> 0, cioe' e' invisibile al test. Con 166 sorgenti quella
+    varianza di quantizzazione finisce dritta dentro `sd` e alza l'MDE. Qui il guadagno e' continuo:
+    g(r) = 1/log2(1+r), con un pavimento a `k` posizioni.
+    """
+    out = np.zeros(len(casi), np.float64)
+    for n, (i, links) in enumerate(casi):
+        o = _ordine(M, i, taglia=k)
+        rank = {j: q + 1 for q, j in enumerate(o)}
+        dcg = sum(w / np.log2(1.0 + rank[int(j)]) for j, w in links if int(j) in rank)
+        idcg = sum(w / np.log2(2.0 + q) for q, w in enumerate(sorted((w for _, w in links), reverse=True)[:k]))
+        out[n] = dcg / max(idcg, 1e-9)
+    return out
+
+
+def permutazione_segni(a, b, replichi=20000, seme=20261021):
+    """Test di permutazione a segni ribaltati sulle differenze per sorgente (handoff 5, §2).
+
+    Non assume normalita' (R@20 e' limitato in [0,1] e massiccio in 0) e usa la stessa unita' del
+    bootstrap: la sorgente. Riporta anche il p-value a due code.
+    """
+    a = np.asarray(a, np.float64); b = np.asarray(b, np.float64)
+    n = min(len(a), len(b))
+    d = b[:n] - a[:n]
+    obs = float(d.mean())
+    rng = np.random.default_rng(seme)
+    segni = rng.choice(np.array([-1.0, 1.0]), size=(replichi, n))
+    medie = (segni * d[None, :]).mean(axis=1)
+    return {'delta': obs, 'p': float(np.mean(np.abs(medie) >= abs(obs))),
+            'mde': 2.80 * float(d.std(ddof=1) / np.sqrt(max(n, 1)))}
+
+
 def _transizione(M):
     deg = np.asarray(M.sum(1)).ravel()
     deg[deg <= 0] = 1

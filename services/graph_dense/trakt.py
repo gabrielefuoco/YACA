@@ -12,8 +12,10 @@ Cosa serve alla valutazione (ticket 01):
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import json
+import os
 import time
 import zlib
 from pathlib import Path
@@ -22,7 +24,7 @@ import numpy as np
 
 from . import data as D
 
-CACHE = Path(__file__).resolve().parent / "data" / "trakt-utenti.npz"
+CACHE = Path(os.environ.get('TRAKT_CACHE', Path(__file__).resolve().parent / 'data' / 'trakt-utenti.npz'))
 UTENTI = Path(".cache/trakt/users")
 
 
@@ -126,3 +128,14 @@ def propensioni(I, tau=1.0, gamma=0.75):
     freq = np.bincount(I, minlength=D.basic()['N']).astype(np.float64)
     p = (freq + tau) ** gamma
     return p / p.sum()
+
+
+def main():
+    ap = argparse.ArgumentParser(description='Prepara la matrice compatta delle cronologie Trakt cached.')
+    ap.add_argument('--out', default=str(CACHE))
+    a = ap.parse_args()
+    costruisci(cache=a.out)
+
+
+if __name__ == '__main__':
+    main()

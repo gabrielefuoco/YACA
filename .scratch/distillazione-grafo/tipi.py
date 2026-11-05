@@ -80,7 +80,7 @@ def topk_cosine(V, k, block=1024, etichetta='', shrink=False, tau_rel=1.0):
 
 
 def cmd_covision(a):
-    z = np.load('services/graph_dense/data/covision.npz')
+    z = np.load(_os.environ.get('COVISION_IN', 'services/graph_dense/data/covision.npz'))
     M = sp.csr_matrix((z['data'], z['indices'], z['indptr']), shape=(D.basic()['N'],) * 2)
     save('COVISION', M, 'co-visione 4 fonti: NPMI+ * log1p(Cw) * Cw/(Cw+1) * tempo, top-20, max-merge',
          {'fonti': ['MovieLens', 'Trakt', 'AniList', 'Serializd'], 'p99': z['p99'].tolist()})

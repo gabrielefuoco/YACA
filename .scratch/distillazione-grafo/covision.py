@@ -23,7 +23,7 @@ import scipy.sparse as sp
 from services.graph_dense import config as C, data as D
 
 B = D.basic(); N = B['N']; RO = B['row_of']; TITLES = B['titoli']; IS_TV = B['is_tv']
-RELEASE = np.load(C.DATA / 'uscite-ordinali.npy').astype(np.int64)
+RELEASE = np.load(os.environ.get('USCITE_ORDINALI', C.DATA / 'uscite-ordinali.npy')).astype(np.int64)
 LAG = 365
 CAP = 3.0
 SEMPLICE = False
@@ -57,7 +57,11 @@ def _pack(users, raw_len):
 
 def load_trakt():
     users = defaultdict(set); raw = defaultdict(set); times = defaultdict(dict); files = 0; max_day = 0
-    for f in glob.glob('.cache/trakt/users/movie-*.json') + glob.glob('.cache/trakt/users/show-*.json'):
+    # ATTENZIONE: `TRAKT_CACHE` di build_graph.py e' il FILE npz compatto, non la cartella dei JSON.
+    # Usarlo come cartella azzera la fonte Trakt (verificato: 0 file). La cartella si puo' cambiare
+    # con `TRAKT_DIR`, che e' un nome distinto proprio per non confondere le due cose.
+    _dir = os.environ.get('TRAKT_DIR', '.cache/trakt/users')
+    for f in glob.glob(os.path.join(_dir, 'movie-*.json')) + glob.glob(os.path.join(_dir, 'show-*.json')):
         base = os.path.basename(f)[:-5]
         if base.startswith('movie-'): typ, user = 'movie', base[6:]
         elif base.startswith('show-'): typ, user = 'tv', base[5:]
@@ -153,7 +157,12 @@ def load_movielens():
     X = sp.csr_matrix((np.ones(len(rr), np.float32), (rr, cc)), shape=(mu, N), dtype=np.float32)
     X.sum_duplicates(); X.data[:] = 1.0; X.eliminate_zeros()
     k = np.asarray(X.getnnz(axis=1)).ravel().astype(np.float64)
-    keep = tt > (np.where(RELEASE[cc] > 0, RELEASE[cc], 0) + LAG)
+    # BUG (handoff 5, 5): `np.where(RELEASE[cc] > 0, RELEASE[cc], 0) + LAG` per un film senza data di
+    # uscita dava soglia = giorno ordinale 365, cioe' considerava "tardiva" ogni visione. `load_trakt`
+    # fa la cosa giusta (salta quei film): qui ci si allinea. Il damp temporale non era comunque
+    # applicato a quelle coppie (`observable` richiede rel>0), quindi l'effetto sui numeri e' nullo:
+    # era un'incongruenza fra i due loader, non la causa della differenza di COVISION fra build.
+    keep = (RELEASE[cc] > 0) & (tt > RELEASE[cc] + LAG)
     Xl = sp.csr_matrix((np.ones(int(keep.sum()), np.float32), (rr[keep], cc[keep])), shape=(mu, N), dtype=np.float32)
     Xl.sum_duplicates(); Xl.data[:] = 1.0; Xl.eliminate_zeros()
     del rr, cc, tt, keep
@@ -398,7 +407,7 @@ def build(alpha, kappa, topk, minsup, topk_per_source=50):
         v0 = np.fromiter(best.values(), np.float32, len(best))
         W = sp.csr_matrix((v0, (r0, c0)), shape=(N, N))
         W.setdiag(0); W.eliminate_zeros()
-        out = 'services/graph_dense/data/covision-semplice.npz'
+        out = os.environ.get('COVISION_OUT', 'services/graph_dense/data/covision-semplice.npz')
         np.savez_compressed(out, indptr=W.indptr, indices=W.indices, data=W.data,
                             p99=np.array([p99[n] for n in names]))
         print(f'scritto {out} · archi {W.nnz:,}', flush=True)
@@ -438,7 +447,7 @@ def build(alpha, kappa, topk, minsup, topk_per_source=50):
 
     W = sp.csr_matrix((np.float32(vals_out), (np.int32(rows_out), np.int32(cols_out))), shape=(N, N))
     W.setdiag(0); W.eliminate_zeros()
-    out = 'services/graph_dense/data/covision.npz'
+    out = os.environ.get('COVISION_OUT', 'services/graph_dense/data/covision.npz')
     np.savez_compressed(out, indptr=W.indptr, indices=W.indices, data=W.data,
                         p99=np.array([p99[n] for n in names]), mask=np.asarray(mask_out, np.uint8))
     print(f'scritto {out} · archi {W.nnz:,} · items con archi {int((np.diff(W.indptr) > 0).sum()):,}/{N}', flush=True)

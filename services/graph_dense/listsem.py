@@ -17,7 +17,9 @@ escluse con una regola esplicita, non a intuito.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import time
 from collections import defaultdict
@@ -29,7 +31,8 @@ import scipy.sparse as sp
 from . import config as C, data as D
 
 LISTE = Path('.cache/trakt/lists')
-HOLDOUT = Path('.scratch/banco-casi/holdout-autori.json')
+HOLDOUT = Path(__import__('os').environ.get('HOLDOUT_AUTORI',
+                                         '.scratch/banco-casi/holdout-autori.json'))
 MODELLO = 'Qwen/Qwen3-Embedding-0.6B'
 
 # Una lista è "generica" se il nome non dice niente: contenitori, anni, ranking, supporti.
@@ -109,9 +112,21 @@ def liste():
 
 
 def embedda(testi, batch=32):
+    """Riusa e conserva gli embedding delle descrizioni-lista, legati a testo e ricetta."""
     import torch
     from transformers import AutoModel, AutoTokenizer
     dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+    texts_sha = hashlib.sha256(json.dumps(testi, ensure_ascii=False).encode('utf-8')).hexdigest()
+    key = hashlib.sha256(json.dumps({
+        'model': MODELLO, 'texts_sha': texts_sha, 'max_length': 128,
+        'pooling': 'last-token-left-padding', 'dtype': 'float16' if dev == 'cuda' else 'float32',
+    }, sort_keys=True).encode('utf-8')).hexdigest()
+    path = Path(os.environ.get('LISTSEM_EMBEDDINGS', C.DATA / 'embeddings' / 'listsem-qwen3-0.6b.npz'))
+    if path.exists():
+        with np.load(path, allow_pickle=False) as z:
+            if str(z['key']) == key and z['E'].shape[0] == len(testi):
+                print(f'  listsem: embedding riusati {path} {z["E"].shape}', flush=True)
+                return z['E'].astype(np.float32)
     tok = AutoTokenizer.from_pretrained(MODELLO, padding_side='left')
     mod = AutoModel.from_pretrained(MODELLO, dtype=torch.float16 if dev == 'cuda' else torch.float32)
     mod = mod.to(dev).eval()
@@ -122,7 +137,13 @@ def embedda(testi, batch=32):
             e = tok(b, padding=True, truncation=True, max_length=128, return_tensors='pt').to(dev)
             out.append(mod(**e).last_hidden_state[:, -1].float().cpu().numpy())
     E = np.concatenate(out).astype(np.float32)
-    return E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-9)
+    E /= np.linalg.norm(E, axis=1, keepdims=True) + 1e-9
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.stem + '.tmp.npz')
+    np.savez_compressed(tmp, E=E, key=np.array(key), texts_sha=np.array(texts_sha), model=np.array(MODELLO))
+    tmp.replace(path)
+    print(f'  listsem: embedding conservati {path} {E.shape}', flush=True)
+    return E
 
 
 def costruisci(B=None, k=100):

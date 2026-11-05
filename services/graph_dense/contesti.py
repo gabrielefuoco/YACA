@@ -100,10 +100,60 @@ def _serializd(B):
     return np.asarray(users, np.int32), np.asarray(righe, np.int32), 'serializd'
 
 
+def _liste(B):
+    """Ogni LISTA Trakt e' una riga: un curatore che ha scelto quei film.
+
+    Le liste non sono utenti, ma sono esattamente la stessa struttura (una riga x titoli) e portano il
+    giudizio di una persona — che e' il segnale che nel grafo entra oggi solo come co-appartenenza a
+    coppie (0,9% di massa). Dentro l'NMF contribuiscono alla *formazione dei contesti*, non solo agli
+    archi. Gli autori in holdout restano esclusi, come per LIST.
+    """
+    ro = B['row_of']
+    meta = {}
+    for f in sorted((ROOT / '.cache' / 'trakt' / 'lists').glob('popular-*.json')):
+        for e in json.loads(f.read_text(encoding='utf-8')):
+            l = e.get('list') or {}
+            lid = (l.get('ids') or {}).get('trakt')
+            u = (l.get('user') or {}).get('ids') or {}
+            if lid is None:
+                continue
+            meta[int(lid)] = (u.get('slug') or '')
+    hold = set()
+    hf = ROOT / '.scratch' / 'banco-casi' / 'holdout-autori.json'
+    if hf.exists():
+        hold = set(json.loads(hf.read_text(encoding='utf-8')))
+    righe, users = [], []
+    n = 0
+    for f in sorted((ROOT / '.cache' / 'trakt' / 'lists').glob('items-*.json')):
+        try:
+            lid = int(f.name[6:-5])
+        except ValueError:
+            continue
+        if meta.get(lid, '') in hold:
+            continue
+        try:
+            items = json.loads(f.read_text(encoding='utf-8'))
+        except Exception:
+            continue
+        for it in items:
+            o = it.get('movie') or it.get('show') or {}
+            t = (o.get('ids') or {}).get('tmdb')
+            if not t:
+                continue
+            r = ro.get(('movie:' if it.get('movie') else 'tv:') + str(int(t)))
+            if r is not None:
+                righe.append(r); users.append(n)
+        n += 1
+    return np.asarray(users, np.int32), np.asarray(righe, np.int32), 'liste'
+
+
+CON_LISTE = False
+
+
 def matrice(B):
     blocchi = []
     off = 0
-    for fn in (_ml, _trakt, _anilist, _serializd):
+    for fn in (_ml, _trakt, _anilist, _serializd) + ((_liste,) if CON_LISTE else ()):
         try:
             u, i, nome = fn(B)
         except Exception as e:
@@ -141,8 +191,13 @@ def nmf(X, k=48, iters=60, seme=7, verbose=True):
         XH = X @ H.T          # (utenti x titoli) @ (titoli x k) -> (utenti x k)
         HHt = H @ H.T
         W *= XH / (W @ HHt + 1e-9)
-        H /= (np.linalg.norm(H, axis=1, keepdims=True) + 1e-9)
-        W *= np.linalg.norm(H, axis=1)[None, :]
+        # LA NORMA VA SALVATA PRIMA DI DIVIDERE. Prima era `H /= norm(H)` e poi `W *= norm(H)`:
+        # la seconda riga rileggeva la norma di H gia' normalizzato (tutta 1,0), quindi la
+        # compensazione fra W e H era un no-op e a ogni iterazione la scala dei due fattori
+        # andava per conto suo. Stessa forma di `scelta_k._nmf`.
+        n = np.linalg.norm(H, axis=1, keepdims=True)        # (k, 1)
+        H /= (n + 1e-9)
+        W *= n.T                                            # (1, k)
         if verbose and it % 10 == 0:
             # proxy di convergenza: ||WtX - WtW H|| (costa k×N, non n×m)
             err = float(np.linalg.norm(WtX - WtW @ H))
@@ -160,8 +215,12 @@ def main():
     ap.add_argument('--k', type=int, default=48)
     ap.add_argument('--iter', type=int, default=60)
     ap.add_argument('--out', default='services/graph_dense/data/contesti.npz')
+    ap.add_argument('--con-liste', action='store_true',
+                    help='aggiunge le liste Trakt come quinto blocco (misurato: diluisce i contesti)')
     a = ap.parse_args()
     t0 = time.time()
+    global CON_LISTE
+    CON_LISTE = a.con_liste
     B = D.basic()
     T, YEAR, TV = B['titoli'], B['year'], B['is_tv']
     X, nomi = matrice(B)

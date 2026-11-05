@@ -22,7 +22,7 @@ import numpy as np
 from . import config as C, data as D
 
 
-def profili(H, eps=1e-9, centra=True):
+def profili(H, eps=1e-9, centra=True, alpha=0.05):
     """Profili di contesto per film: log-rapporto sulla media, **centrati**, L2-normalizzati.
 
     TRE CORREZIONI rispetto al primo tentativo.
@@ -33,22 +33,34 @@ def profili(H, eps=1e-9, centra=True):
         coppie a caso.
     (3) i film senza massa restano a zero e non entrano come vettori "medi".
     """
+    # QUARTA CORREZIONE (handoff 5, bug 2). Prima era `log(max(quota,1e-9) / max(media,1e-9))`: un
+    # contesto assente prendeva log(1e-9/0.04) ~ -17,5, cioe' SETTE unita' log di contrasto contro
+    # ~0,5 di segnale vero. Misurato: il 12,4% dell'energia veniva dagli zeri e il coseno correlava
+    # 0,525 col solo supporto binario. Ora smoothing di Dirichlet proporzionale a `media`
+    # (alpha=0.05 = 5% di pseudo-conteggio): dove H=0 il lift tende a 0. Con alpha=0 si riottiene
+    # esattamente il comportamento vecchio.
     H = np.asarray(H, np.float32)
-    quota = H / (H.sum(0, keepdims=True) + eps)          # P(contesto | film)
-    media = quota.mean(1, keepdims=True)                 # P(contesto) medio fra i film
+    col_sum = H.sum(0, keepdims=True)
+    attivi = col_sum.ravel() > 0
+    quota = H / (col_sum + eps)                         # P(contesto | film)
+    if alpha > 0 and attivi.any():
+        media = quota[:, attivi].mean(1, keepdims=True)  # media fra i film ATTIVI soltanto
+        quota = (H + alpha * media) / (col_sum + alpha)
+    else:
+        media = quota.mean(1, keepdims=True)
     v = np.log(np.maximum(quota, eps) / np.maximum(media, eps))
     if centra:
         v = v - v.mean(1, keepdims=True)
-    v[:, H.sum(0) <= 0] = 0.0
+    v[:, ~attivi] = 0.0
     n = np.linalg.norm(v, axis=0, keepdims=True)
     return (v / (n + eps)).T                             # (N, K)
 
 
-def costruisci(B=None, k=100):
+def costruisci(B=None, k=100, contesti=None):
     B = D.basic() if B is None else B
-    z = np.load(C.DATA / 'contesti.npz', allow_pickle=True)
+    z = np.load(contesti or C.DATA / 'contesti.npz', allow_pickle=True)
     H = z['H']
-    V = profili(H)
+    V = profili(H, alpha=float(__import__('os').environ.get('CONTESTI_SMOOTH', '0.05')))
     cop = float((np.linalg.norm(V, axis=1) > 0).mean())
     print(f'  contesti_tipo: {V.shape[1]} contesti · {cop:.1%} del canone ha un profilo', flush=True)
     import importlib.util
@@ -63,13 +75,15 @@ def main():
     ap.add_argument('--k', type=int, default=100)
     ap.add_argument('--out', default='services/graph/data/tipi2/CONTESTI.npz')
     ap.add_argument('--manifest', default='services/graph/data/tipi2/manifest.json')
+    ap.add_argument('--contesti', default=None, help='fattori NMF precomputati; default graph_dense/data/contesti.npz')
     a = ap.parse_args()
     from . import provenance as PV
     t0 = time.time()
     B = D.basic()
-    M = costruisci(B, a.k)
+    source = Path(a.contesti) if a.contesti else C.DATA / 'contesti.npz'
+    M = costruisci(B, a.k, source)
     prov = PV.scrivi(a.out, M, step='tipi', params={'tipo': 'CONTESTI', 'k': a.k},
-                     inputs={'contesti': PV.sha256_file(C.DATA / 'contesti.npz')}, canon_len=B['N'])
+                     inputs={'contesti': PV.sha256_file(source)}, canon_len=B['N'])
     man = json.loads(Path(a.manifest).read_text(encoding='utf-8')) if Path(a.manifest).exists() else {}
     g = np.asarray((M > 0).sum(1)).ravel()
     man['CONTESTI'] = dict(archi=int(M.nnz), copertura=float((g > 0).mean()),

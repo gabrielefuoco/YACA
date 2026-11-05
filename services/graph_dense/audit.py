@@ -28,7 +28,7 @@ import scipy.sparse as sp
 
 from . import config as C, data as D, provenance as PV
 
-RAGIONI = ('genere', 'keyword', 'cast', 'regia', 'collezione', 'co-visione', 'liste', 'trama')
+RAGIONI = ('genere', 'keyword', 'cast', 'regia', 'collezione', 'co-visione', 'liste', 'gusto-utente', 'tribu-gusto', 'trama')
 
 
 def _insiemi_campo(B, campo, tipo_prefisso):
@@ -94,16 +94,27 @@ def main():
     ap.add_argument('--semi', type=int, default=400)
     ap.add_argument('--k', type=int, default=20)
     ap.add_argument('--soglia-trama', type=float, default=0.55)
+    ap.add_argument('--pesi', help='pesi.json del grafo: include solo i tipi effettivamente usati')
+    ap.add_argument('--tipi-dir', default='services/graph/data/tipi2',
+                    help='cartella dei tipi comportamentali per l\'audit')
     a = ap.parse_args()
     B = D.basic()
     N, T = B['N'], B['titoli']
     M = PV.leggi(a.grafo)[0]
     prim = primitive(B)
 
-    # ragioni «comportamentali»: co-visione e liste esistono come tipi
+    # Ragioni comportamentali. Se passiamo i pesi, conta solo i tipi inclusi nel grafo.
+    pesi = json.loads(Path(a.pesi).read_text(encoding='utf-8')) if a.pesi else None
+    comportamentali = [('co-visione', 'COVISION'), ('liste', 'LIST')]
+    if pesi is not None and pesi.get('RESID', 0) > 0:
+        comportamentali.append(('gusto-utente', 'RESID'))
+    if pesi is not None and pesi.get('TRIBU', 0) > 0:
+        comportamentali.append(('tribu-gusto', 'TRIBU'))
     tipi = {}
-    for nome, f in (('co-visione', 'COVISION'), ('liste', 'LIST')):
-        p = Path(f'services/graph/data/tipi2/{f}.npz')
+    for nome, f in comportamentali:
+        if pesi is not None and pesi.get(f, 0) <= 0:
+            continue
+        p = Path(a.tipi_dir) / f'{f}.npz'
         if p.exists():
             z = PV.leggi(p)[0]
             tipi[nome] = set(zip(*z.nonzero())) if z.nnz < 3_000_000 else None

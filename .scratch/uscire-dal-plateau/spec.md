@@ -8,9 +8,10 @@ sul nostro codice prima di aprire i ticket.
 
 ## Destination
 
-Un grafo che, dato un titolo, proponga vicini **di tono e non solo di pubblico**, senza perdere
-accuratezza sul banco curato, con una valutazione che sappia distinguere un miglioramento vero da
-±0,005 di rumore, e con il cold-start (titoli nuovi) che funziona davvero.
+Un grafo eterogeneo che, dato un titolo, proponga vicini con ragioni varie — **genere, tono/temi,
+co-visione, gusto utente, liste reali, cast e regia** — senza lasciare che l'autoriale domini. La qualità
+si giudica sulle liste e con intervalli di confidenza; sequel e franchise si diversificano al retrieval.
+Cold-start e integrazione nel prodotto restano obiettivi separati.
 
 **Decisione dell'utente (2026-11-03)**: il bersaglio *tonale* deve prevalere su quello *autoriale*, e di
 parecchio — se coincidono bene, ma il grafo non deve diventare «ti suggerisco altra roba dello stesso
@@ -141,9 +142,18 @@ content-addressed, che chiude la classe di bug "build sbagliata in silenzio").
    esplicito "sopra/sotto l'MDE".
 4. `build` completa da zero senza fallback silenziosi: se manca un input, si ferma.
 
-## Stato al 2026-11-03
+## Stato aggiornato — base congelata V42
 
-Base congelata **V19** (`services/graph_dense/V19.md`): stessa accuratezza di V18, **−10 punti di
-blockbuster**, segnale autoriale in testa a *Barbie*. Il tono resta fuori portata con i segnali
-attuali: l'ipotesi del residuo ortogonale (ticket 07) è **falsamente** falsificata dai dati, e serve
-una fonte nuova (recensioni TMDB o Wikipedia Themes/Style).
+La base corrente è **V42** (`services/graph_dense/V42.md`): V36 + RESID a peso 1,2; KWSEM resta a 1,4.
+Sul dev set V42 e V36 sono pari in R@20 (0,290); V42 porta una quota >5k più alta (69,0% vs 65,9%),
+ma aggiunge il segnale esplicito di gusto utente. Il confronto 30 film + 20 serie mostra sia innesti
+utili sia falsi positivi: è una scelta provvisoria per la varietà delle ragioni, non una vittoria
+statistica.
+
+La valutazione dell'audit è stata corretta per riconoscere RESID come ragione `gusto-utente`; i vecchi
+numeri dell'audit V42 che lo chiamavano inspiegato sono superati. V42 è immutata e resta il riferimento. La pipeline end-to-end dei processing locali è
+`services/graph_dense/build_graph.py`: ricostruisce i tipi dai cache, riusa trama/studente e salva le
+nuove embedding. TRIBU è ora deterministica (seed esplicito), quindi l'output è una variante V42D e
+non sovrascrive la matrice storica. Il primo build completo è in attesa di materializzare gli embedding
+KWSEM/LISTSEM: i pesi Qwen non sono nella cache locale; il download, se autorizzato, riguarda solo il
+modello, mai i corpora. I criteri originari di Barbie e quota >5k restano non raggiunti.
