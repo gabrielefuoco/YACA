@@ -5,6 +5,7 @@ qui si ricalcolano le trasformazioni del grafo. L'output è versionato e non sov
 
   PYTHONPATH=. py -m services.graph_dense.build_graph --check
   PYTHONPATH=. py -m services.graph_dense.build_graph --build --version v42d
+  PYTHONPATH=. py .scratch/uscire-dal-plateau/build-v45.py --build --version v45-replay
 """
 from __future__ import annotations
 
@@ -39,7 +40,6 @@ CHIUDI_SCRIPT = ROOT / '.scratch/distillazione-grafo/chiudi.py'
 # Solo gli asset semantici già prodotti: non si ricalcolano né si sovrascrivono.
 EMBEDDING_ASSETS = (
     C.DATA / C.TRAMA, C.DATA / C.TRAMA_IDX,
-    C.DATA / 'rrfstudent-v18.npz', C.DATA / 'rrfstudent-v18.pt',
     C.DATA / 'kw-emb.npy', C.DATA / 'kw-emb.txt',
 )
 
@@ -82,8 +82,13 @@ def file_obbligatori():
     ]
 
 
-def preflight():
+def preflight(rrfst='rrfstudent-v18.npz'):
+    if Path(rrfst).name != rrfst or not rrfst.endswith('.npz'):
+        raise SystemExit(f'--rrfst deve essere il nome di un .npz dentro {C.DATA}')
     missing = [str(p.relative_to(ROOT)) for p in file_obbligatori() if not p.is_file()]
+    selected_student = C.DATA / rrfst
+    if not selected_student.is_file():
+        missing.append(str(selected_student.relative_to(ROOT)))
     for pattern in ('.cache/trakt/users/*.json', '.cache/trakt/lists/items-*.json',
                     '.cache/trakt/lists/popular-*.json', '.cache/anilist/users/*.json',
                     '.cache/serializd/users/*.json'):
@@ -99,9 +104,9 @@ def preflight():
     zi = np.load(C.DATA / C.TRAMA_IDX)
     if z.shape != (B['N'], 1024) or zi.ndim != 1 or len(zi) != 71855:
         raise SystemExit(f'embedding trama inatteso: {z.shape}, idx {zi.shape}')
-    student = np.load(C.DATA / 'rrfstudent-v18.npz', allow_pickle=False)
+    student = np.load(selected_student, allow_pickle=False)
     if student['Z'].shape != (B['N'], 2048):
-        raise SystemExit(f'embedding studente inatteso: {student["Z"].shape}')
+        raise SystemExit(f'embedding studente inatteso in {rrfst}: {student["Z"].shape}')
     return B
 
 
@@ -119,7 +124,7 @@ def encoder_cached():
         return False
 
 
-def snapshot_inputs():
+def snapshot_inputs(rrfst='rrfstudent-v18.npz', frozen_source_types=None):
     patterns = [
         '.cache/movielens/ml-32m/ratings.csv', '.cache/movielens/ml-32m/links.csv',
         '.cache/tmdb/movies.parquet', '.cache/tmdb/tv.parquet',
@@ -136,11 +141,28 @@ def snapshot_inputs():
         'services/graph_dense/data/graph/05-vocab.json',
         'services/graph_dense/data/trama-qwen3b.npy',
         'services/graph_dense/data/trama-qwen3b-idx.npy',
-        'services/graph_dense/data/rrfstudent-v18.npz',
-        'services/graph_dense/data/rrfstudent-v18.pt',
+        f'services/graph_dense/data/{rrfst}',
         'services/graph_dense/data/kw-emb.npy', 'services/graph_dense/data/kw-emb.txt',
     ]
+    patterns.extend((frozen_source_types or {}).values())
     return {str(p.relative_to(ROOT)).replace('\\', '/'): sha(p) for p in espandi(patterns)}
+
+
+def verify_frozen_source_types(lock):
+    """Controlla i tre tipi legacy congelati che avevano somme dipendenti dall'ordine dei set."""
+    files = lock.get('frozen_source_types', {})
+    if not files:
+        return
+    expected_file = lock.get('frozen_source_type_sha256', {})
+    expected_matrix = lock.get('frozen_source_type_matrix_sha256', {})
+    for name, rel in files.items():
+        p = ROOT / rel
+        if not p.is_file():
+            raise SystemExit(f'tipo V45 congelato mancante: {p}')
+        if sha(p) != expected_file.get(name):
+            raise SystemExit(f'tipo V45 congelato alterato: {p}')
+        if matrix_sha(p) != expected_matrix.get(name):
+            raise SystemExit(f'matrice del tipo V45 congelato alterata: {p}')
 
 
 def codice_sha():
@@ -193,10 +215,12 @@ def registra_list(env, lista_npz, tipi_out):
              {'minsup': 2, 'topk': 20})
 
 
-def build(a):
-    B = preflight()
-    assets_before = {str(p.relative_to(ROOT)): sha(p) for p in EMBEDDING_ASSETS}
-    inputs = snapshot_inputs()
+def build(a, lock):
+    B = preflight(a.rrfst)
+    protected_assets = (*EMBEDDING_ASSETS, C.DATA / a.rrfst)
+    assets_before = {str(p.relative_to(ROOT)): sha(p) for p in protected_assets}
+    verify_frozen_source_types(lock)
+    inputs = snapshot_inputs(a.rrfst, lock.get('frozen_source_types'))
     code = codice_sha()
     out = GRAPH / a.version
     aux = C.DATA / a.version
@@ -223,7 +247,6 @@ def build(a):
     beta_tag = f'{a.tribu_beta:.2f}'.replace('.', 'p')
     tribu_embed = C.DATA / 'embeddings' / f'tribu-svd-k{a.tribu_k}-b{beta_tag}-seed{a.tribu_seed}.npz'
 
-    lock = json.loads(V42_LOCK.read_text(encoding='utf-8'))
     weights = dict(lock['weights'])
     weights['TRIBU'] = float(a.tribu_weight)
     (out / 'pesi.json').write_text(json.dumps(weights, indent=1), encoding='utf-8')
@@ -279,6 +302,24 @@ def build(a):
          '--temi', '24', '--iter', '60', '--soglia', '0', '--embeddings-out', resid_embed,
          '--out', types / 'RESID.npz', '--manifest', types / 'manifest.json'], env)
 
+    # CAST/DIR/PROD usavano insiemi Python la cui iterazione casuale cambiava la somma float32
+    # sulle parità al confine del top-100. Per riprodurre V45 al bit di matrice, riusiamo i tre
+    # NPZ congelati e hash-verificati, prodotti dalla build canonica; tutti gli altri tipi si
+    # ricostruiscono dai corpora e dagli embedding cache.
+    frozen = lock.get('frozen_source_types', {})
+    if frozen:
+        man_path = types / 'manifest.json'
+        man = json.loads(man_path.read_text(encoding='utf-8')) if man_path.exists() else {}
+        source_man = json.loads((ROOT / Path(next(iter(frozen.values()))).parent / 'manifest.json')
+                                .read_text(encoding='utf-8'))
+        for name, rel in frozen.items():
+            src = ROOT / rel
+            shutil.copy2(src, types / f'{name}.npz')
+            if name in source_man:
+                man[name] = source_man[name]
+        man_path.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding='utf-8')
+        print('tipi congelati riusati: ' + ', '.join(sorted(frozen)), flush=True)
+
     type_names = ','.join(lock['tipi'])
     run([sys.executable, '-u', TIPI_SCRIPT, 'norm'], env)
     run([sys.executable, '-u', TIPI_SCRIPT, 'budget', '--pota', '100'], env)
@@ -291,7 +332,7 @@ def build(a):
          '--modo', 'log'], env)
 
     # Verifica che nessun embedding base sia stato sovrascritto e conserva un manifest completo.
-    assets_after = {str(p.relative_to(ROOT)): sha(p) for p in EMBEDDING_ASSETS}
+    assets_after = {str(p.relative_to(ROOT)): sha(p) for p in protected_assets}
     if assets_after != assets_before:
         raise SystemExit('Un embedding congelato è cambiato durante la build; output non promosso.')
     tipi_hash = {t: sha(types / f'{t}.npz') for t in lock['tipi']}
@@ -310,6 +351,11 @@ def build(a):
                        'damp_animation': 0.2},
         'raw_and_foundation_sha256': inputs,
         'preserved_embedding_sha256': assets_after,
+        'selected_rrfst_student_sha256': sha(C.DATA / a.rrfst),
+        'source_type_matrix_sha256': {
+            t: matrix_sha(types / f'{t}.npz') for t in lock['tipi']},
+        'budgeted_type_matrix_sha256': {
+            t: matrix_sha(pesi_out / f'{t}.npz') for t in lock['tipi']},
         'generated_embedding_sha256': {
             str(p.relative_to(ROOT)): sha(p) for p in (resid_embed, tribu_embed,
                 C.DATA / 'embeddings' / 'kwsem-qwen3-0.6b.npz',
@@ -326,6 +372,34 @@ def build(a):
     }
     (out / 'pipeline-manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
                                                 encoding='utf-8')
+    expected = lock.get('expected')
+    if expected:
+        checks = {
+            'raw_and_foundation_sha256': inputs,
+            'code_sha256': code,
+            'source_type_sha256': tipi_hash,
+            'budgeted_type_sha256': prepared_hash,
+            'source_type_matrix_sha256': manifest['source_type_matrix_sha256'],
+            'budgeted_type_matrix_sha256': manifest['budgeted_type_matrix_sha256'],
+            'selected_rrfst_student_sha256': manifest['selected_rrfst_student_sha256'],
+            'artifact_sha256': manifest['artifact_sha256'],
+            'artifact_matrix_sha256': manifest['artifact_matrix_sha256'],
+            'runtime': manifest['runtime'],
+            'frozen_source_type_sha256': {
+                t: sha(ROOT / p) for t, p in lock.get('frozen_source_types', {}).items()},
+            'frozen_source_type_matrix_sha256': {
+                t: matrix_sha(ROOT / p) for t, p in lock.get('frozen_source_types', {}).items()},
+        }
+        embed_by_name = {
+            Path(k.replace('\\', '/')).name: v
+            for k, v in manifest['generated_embedding_sha256'].items()
+        }
+        checks['generated_embedding_sha256'] = embed_by_name
+        mismatches = [name for name, actual in checks.items() if expected.get(name) != actual]
+        if mismatches:
+            raise SystemExit('Build NON identica alla ricetta congelata: ' + ', '.join(mismatches) +
+                             f'\\nConservata per diagnosi in {out}')
+        print('V45 LOCK OK: input, codice, tipi, MIX e grafo finale identici.', flush=True)
     print(f'\nBuild completata: {final}\nManifest: {out / "pipeline-manifest.json"}')
 
 
@@ -335,6 +409,8 @@ def main():
     mode.add_argument('--check', action='store_true', help='controlla input e embedding, senza scrivere')
     mode.add_argument('--build', action='store_true', help='ricostruisce tutti i tipi e il grafo da cache locali')
     ap.add_argument('--version', default='v42d', help='directory nuova sotto services/graph/data (default v42d)')
+    ap.add_argument('--recipe-lock', default=str(V42_LOCK),
+                    help='ricetta congelata (pesi/tipi + hash attesi); default V42')
     ap.add_argument('--tribu-seed', type=int, default=20261105)
     ap.add_argument('--tribu-k', type=int, default=64)
     ap.add_argument('--tribu-top', type=int, default=3)
@@ -351,7 +427,24 @@ def main():
     if not a.version.startswith('v') or '/' in a.version or '\\' in a.version:
         ap.error('--version deve essere un nome semplice, ad es. v42d o v42d-seed7')
     os.chdir(ROOT)
-    preflight()
+    lock_path = Path(a.recipe_lock)
+    if not lock_path.is_absolute():
+        lock_path = ROOT / lock_path
+    if not lock_path.is_file():
+        ap.error(f'ricetta non trovata: {lock_path}')
+    lock = json.loads(lock_path.read_text(encoding='utf-8'))
+    recipe = lock.get('recipe')
+    if recipe:
+        expected_cli = {
+            'rrfst': recipe['rrfst'], 'tribu_seed': recipe['tribu_seed'],
+            'tribu_k': recipe['tribu_k'], 'tribu_top': recipe['tribu_top'],
+            'tribu_mainstream': recipe['tribu_mainstream'], 'tribu_beta': recipe['tribu_beta'],
+            'tribu_weight': recipe['tribu_weight'], 'covision_topk': recipe['covision_topk'],
+        }
+        mismatches = [k for k, v in expected_cli.items() if getattr(a, k) != v]
+        if mismatches:
+            ap.error('parametri diversi dalla ricetta congelata: ' + ', '.join(mismatches))
+    preflight(a.rrfst)
     if a.check:
         print('Input locali presenti; embedding trama/studente coerenti col canone.')
         kw = C.DATA / 'embeddings' / 'kwsem-qwen3-0.6b.npz'
@@ -363,6 +456,20 @@ def main():
         if (not kw.exists() or not ls.exists()) and not local_model:
             raise SystemExit('Preflight incompleto: per il primo build servono i pesi Qwen una volta; '
                              'i corpora locali sono già presenti. Nessun download è stato avviato.')
+        expected = lock.get('expected')
+        if expected:
+            verify_frozen_source_types(lock)
+            current = {'raw_and_foundation_sha256': snapshot_inputs(a.rrfst, lock.get('frozen_source_types')),
+                       'code_sha256': codice_sha(),
+                       'selected_rrfst_student_sha256': sha(C.DATA / a.rrfst),
+                       'frozen_source_type_sha256': {
+                           t: sha(ROOT / p) for t, p in lock.get('frozen_source_types', {}).items()},
+                       'frozen_source_type_matrix_sha256': {
+                           t: matrix_sha(ROOT / p) for t, p in lock.get('frozen_source_types', {}).items()}}
+            bad = [k for k, v in current.items() if expected.get(k) != v]
+            if bad:
+                raise SystemExit('Preflight V45 bloccato: input/codice congelato diverso: ' + ', '.join(bad))
+            print('Ricetta congelata: input, codice e studente corrispondono.', flush=True)
         return
     if not a.allow_model_download and not encoder_cached():
         kw = C.DATA / 'embeddings' / 'kwsem-qwen3-0.6b.npz'
@@ -371,7 +478,7 @@ def main():
             raise SystemExit('Manca la cache locale Qwen per materializzare gli embedding KWSEM/LISTSEM. '
                              'La build si ferma prima di elaborare i dati. Dopo aver deciso il download '
                              'una tantum dei pesi, usa --allow-model-download; i corpora non vengono scaricati.')
-    build(a)
+    build(a, lock)
 
 
 if __name__ == '__main__':

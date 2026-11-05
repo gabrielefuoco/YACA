@@ -28,9 +28,13 @@ blocco alla volta:
 | keyword | #58.425 | #9.020 | #66.453 |
 | meta (attori/società) | **#187** | #98 | #678 |
 
-Il rango di V42D (#183) è spiegato dal blocco **meta** (#187), non dalla trama. Inoltre i tre file
-studente sono tutti `(76497, 2048)` = 1024+512+512: la ricostruzione «V15 era un modello a 4 blocchi da
-2560» è **smentita dagli artefatti**.
+Il rango di V42D (#183) è spiegato dal blocco **meta** (#187), non dalla trama. Questo test però
+riguarda `rrfstudent-norrfst.npz`, non lo studente storico di V15. Correzione della mia conclusione
+precedente: `rrfstudent.npz` è `(66259, 2560)`; `rrfstudent-swap.npz` è `(76497, 2048)` e le sue prime
+66.259 righe sono la proiezione deterministica dei vettori V15 (verificata fuori campione: R² 0,9996,
+coseno 0,9999), mentre le ultime 10.238 vengono da V18. V42 storico usava lo swap. **V42E e V45
+usano invece lo stesso nuovo `rrfstudent-norrfst.npz`**, addestrato oggi da zero sul grafo senza RRFST;
+la matrice del tipo RRFST nei due MIX ha identica impronta.
 
 ## 2. Fix accettati e applicati
 
@@ -93,8 +97,11 @@ strutturale: il dev set è fatto di **liste Trakt**, e LIST/LISTSEM sono esattam
 tipo che vince è quello che ripete il generatore dell'etichetta. Non è un guadagno: è un adattamento
 allo strumento.
 
-Dall'altro lato il banco curato è scritto da LLM, e sappiamo già (V15) che può premiare un curatore
-artificiale. **Nessuno dei due strumenti arbitra questa scelta.**
+Il banco LLM è un test set esterno, mai usato per addestrare lo studente o tarare i pesi. V15 aveva
+un vantaggio apparente su quel banco che non si riprodusse sul dev umano: questo mette in dubbio la
+validità esterna del banco per scegliere i pesi, **non** dimostra che V15 fosse stato distillato da un
+LLM. Il target V15 includeva co-visione MovieLens e il ramo `lc150` di Letterboxd. **Nessuno dei due
+strumenti arbitra da solo questa scelta.**
 
 A occhio, però, il riallineamento dà la lista di Barbie migliore mai vista: *Lady Bird · Glass Onion ·
 The Big Sick · La rivincita delle sfighe · American Fiction · The Disaster Artist · Everything
