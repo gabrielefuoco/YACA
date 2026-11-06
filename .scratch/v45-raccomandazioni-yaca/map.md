@@ -22,10 +22,12 @@ Sostituire il percorso bubble con un recommender V45 sparse per **tutte** le sup
 - [Cross-medium e diversità al retrieval](../uscire-dal-plateau/map.md) — i ponti cross-medium restano in costruzione; formato e ridondanza si trattano a retrieval.
 - [Il graph service possiede il clustering personale](issues/10-graph-service-clusters.md) — YACA passa segnali tipizzati; graph service clusterizza e diffonde, YACA presenta risultati e metadata.
 - [Ownership della pipeline V45 e dei moduli graph](issues/01-ownership-pipeline.md) — build e runtime vivono in `services/graph`; esperimenti in `.scratch`; V10 esce al cutover e il rollback ripristina la release precedente.
+- [Prova del runtime sparse e criteri di cutover](issues/09-runtime-cutover.md) — motore implementato e misurato: `carica_transizione` sta in 190,7 MiB e 134 ms; il caricamento on-the-fly costa 1,4 GiB e non entra nel container; soglie proposte, non ancora confermate.
 
 ## Not yet specified
 
 - Come collocare titoli nuovi che non sono ancora nel canone V45 e come far evolvere il canone senza perdere identità e provenienza.
+- Se il servizio debba esporre le ragioni per arco leggendo un sidecar di provenienza: il MIX V45 conserva un motivo aggregato per riga, non i tipi che sostengono ogni singolo arco.
 - Se/come spostare i 35 GB di cache dati da `services/graph_dense/data` a una directory dati canonica, senza duplicare o riscaricare gli artefatti.
 - Come risolvere collisioni fra cluster di lungo periodo e recenti quando producono lo stesso titolo o raccomandazioni in conflitto.
 - Se impressioni, click, skip e feedback espliciti aggiornano i cluster in modo incrementale o solo al ricalcolo del profilo.

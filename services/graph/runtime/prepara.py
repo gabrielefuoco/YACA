@@ -76,6 +76,10 @@ def prepara_transizione(
         flush=True,
     )
 
+    # La sequenza (W + W.T) -> pota -> transizione è la stessa di `camminata.transizione_pronta`,
+    # che non si può riusare qui: quella scrive su un percorso fisso e non registra la provenienza
+    # dentro l'artefatto. Sono tre righe di algebra, e duplicarle è preferibile a piegare la funzione
+    # canonica con un parametro in più che serve solo a questa build.
     print("Simmetrizzazione preventiva (W + W.T)...", flush=True)
     t1 = time.perf_counter()
     M = (M + M.T).tocsr()
