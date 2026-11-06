@@ -6,7 +6,7 @@ Un grafo eterogeneo in cui i vicini abbiano ragioni **varie e leggibili**: gener
 co-visione, gusto utente, liste reali, oltre a cast e regia. Nessuna regola rigida che faccia prevalere
 autore o popolarità. Valutazione con intervalli di confidenza; controllo della ridondanza al retrieval.
 
-La base provvisoria congelata è **V42**; cold-start e integrazione nel prodotto restano da completare.
+La base grafica congelata più recente è **V45** (`services/graph/V45.md`); l’integrazione nel prodotto e la rimozione delle bolle sono state riaperte in una nuova mappa: [V45 in YACA](../v45-raccomandazioni-yaca/map.md).
 
 ## Decisions so far
 
@@ -17,17 +17,11 @@ La base provvisoria congelata è **V42**; cold-start e integrazione nel prodotto
 - **V15 batte V21 di +0,0183 [0,0102, 0,0263]** (sopra l'MDE) sul banco tonale, a parità di semi e di
   pool. Le spiegazioni ovvie sono state testate e scartate: pool (0,001), chiusura a conteggio (+0,0008,
   rumore), peso COVISION (−0,0086, peggio). Resta l'ipotesi studente (ticket 16).
-- **Base corrente congelata: V42** (`services/graph_dense/V42.md`): V36 + RESID 1,2, con KWSEM 1,4 invariato.
-  Sul dev set: R@20 0,290, pari a V36 entro il rumore; quota >5k 69,0% (V36 65,9%). L'audit aggiornato
-  conta RESID come ragione «gusto-utente»: 21,3% dei vicini campionati. V42 è la base per varietà dei
-  segnali, non una vittoria dimostrata di accuratezza o popolarità.
+- **V45 è la base congelata attuale** (`services/graph/V45.md`): stessa ricetta/pesi di V42E e stesso studente norrfst, ricostruita dalla pipeline offline con replay byte-identico. V42 e V42E restano confronti storici.
 - **Niente primato automatico dell'autoriale** (decisione dell'utente): cast e regia sono segnali fra
   molti. In V42 il gusto utente è un tipo esplicito; sequel/franchise si diversificano al retrieval,
   non nella costruzione del grafo.
-- **Pipeline unificata in costruzione:** `services/graph_dense/build_graph.py` ricrea i tipi e la fusione
-  dai corpora cached, riusando gli embedding salvati e scrivendo in una directory versione separata.
-  V42 resta congelata; TRIBU deterministica produce V42D. Richiede una materializzazione Qwen una tantum
-  per KWSEM/LISTSEM, perché i relativi embedding non erano stati conservati.
+- **Pipeline V45 promossa sotto `services/graph/build/`**: `PYTHONPATH=services py -m graph.build --check|--build` verifica il lock e ricostruisce una directory versionata dalle cache. Il replay V45 è byte-identico; le matrici CAST/DIR/PROD congelate sono input bloccati per riprodurre i pareggi top-100. V42D/V42E restano confronti storici.
 - **Il residuo ortogonale al soggetto NON è il tono** (ticket 07, misurato): la riga TONE di *Barbie* è
   *Super Mario Bros. - Il Superfilm*, *V - Visitors*, *Doctor Who*. Il residuo concentra rumore
   specifico, non tono. La seconda metà (contrastivo) non si fa: addestrerebbe su rumore.

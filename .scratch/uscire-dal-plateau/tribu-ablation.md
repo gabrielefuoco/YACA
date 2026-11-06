@@ -52,6 +52,4 @@ TRIBU è una ragione distinta e talvolta cambia i vicini, ma con la ricetta attu
 set**. Non alzare il peso sulla base di questi numeri. Conservare l'embedding deterministico e il comando
 per sweep successivi; la pipeline completa usa seed 20261105. V42 storico resta intatto.
 
-Artefatti dell'ablazione, temporanei: `.cache/tribu-ablation-v42/`. La pipeline full V42D è
-`services/graph_dense/build_graph.py`; non è stata ancora eseguita end-to-end, perché i pesi Qwen necessari
-per materializzare una volta KWSEM/LISTSEM non sono nella cache locale.
+Artefatti dell'ablazione, temporanei: `.cache/tribu-ablation-v42/`. La nota originale diceva che il full build non era stato eseguito perché mancavano i pesi Qwen; quell'affermazione è superata. Le cache Qwen sono state materializzate, V42D/V42E sono stati ricostruiti e V45 è oggi la ricetta congelata. Comando canonico: `PYTHONPATH=services py -m graph.build --check|--build`.

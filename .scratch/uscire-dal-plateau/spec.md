@@ -142,18 +142,13 @@ content-addressed, che chiude la classe di bug "build sbagliata in silenzio").
    esplicito "sopra/sotto l'MDE".
 4. `build` completa da zero senza fallback silenziosi: se manca un input, si ferma.
 
-## Stato aggiornato — base congelata V42
+## Stato aggiornato — V45 congelata; migrazione prodotto in effort separata
 
-La base corrente è **V42** (`services/graph_dense/V42.md`): V36 + RESID a peso 1,2; KWSEM resta a 1,4.
-Sul dev set V42 e V36 sono pari in R@20 (0,290); V42 porta una quota >5k più alta (69,0% vs 65,9%),
-ma aggiunge il segnale esplicito di gusto utente. Il confronto 30 film + 20 serie mostra sia innesti
-utili sia falsi positivi: è una scelta provvisoria per la varietà delle ragioni, non una vittoria
-statistica.
+La base grafica più recente è **V45** (`services/graph/V45.md`), ricostruibile con `PYTHONPATH=services
+py -m graph.build`. La ricetta e gli hash sono in `services/graph/recipes/V45.lock.json`; il replay
+end-to-end ha verificato identici i 14 tipi, MIX e matrice finale. V42/V42E restano artefatti storici
+per confronto.
 
-La valutazione dell'audit è stata corretta per riconoscere RESID come ragione `gusto-utente`; i vecchi
-numeri dell'audit V42 che lo chiamavano inspiegato sono superati. V42 è immutata e resta il riferimento. La pipeline end-to-end dei processing locali è
-`services/graph_dense/build_graph.py`: ricostruisce i tipi dai cache, riusa trama/studente e salva le
-nuove embedding. TRIBU è ora deterministica (seed esplicito), quindi l'output è una variante V42D e
-non sovrascrive la matrice storica. Il primo build completo è in attesa di materializzare gli embedding
-KWSEM/LISTSEM: i pesi Qwen non sono nella cache locale; il download, se autorizzato, riguarda solo il
-modello, mai i corpora. I criteri originari di Barbie e quota >5k restano non raggiunti.
+Questa specifica rimane la cronologia della ricerca sul plateau, non il piano per sostituire le bolle
+in YACA. La migrazione end-to-end del prodotto — cluster per profilo, scaffali Stremio/API e cutover
+dal runtime bubble — è mappata separatamente in `.scratch/v45-raccomandazioni-yaca/map.md`.

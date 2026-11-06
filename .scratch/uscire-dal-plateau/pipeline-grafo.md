@@ -1,13 +1,18 @@
-# Pipeline del grafo — cosa ricostruisce, e cosa ha rivelato
+# Cronologia delle build V42D/V42E — superseduta dal builder V45
 
-Comando unico: `services/graph_dense/build_graph.py`. Ricostruisce tutti i *processing* dai corpora già
-in `.cache` e dagli embedding conservati; non scarica dati e non riaddestra lo studente. Non sovrascrive
-V42: scrive una versione nuova (`services/graph/data/v42d/`) con `pipeline-manifest.json`.
+Questa nota conserva gli esiti dei replay storici V42D/V42E. Il builder canonico V45 è ora in
+`services/graph/build/`; non dipende più dal codice in `.scratch/distillazione-grafo`.
 
 ```bash
-PYTHONPATH=. py -m services.graph_dense.build_graph --check
-PYTHONPATH=. py -m services.graph_dense.build_graph --build --version v42d
+# Preflight congelato
+PYTHONPATH=services py -m graph.build --check
+
+# Build offline, in una directory versionata nuova
+PYTHONPATH=services py -m graph.build --build --version v45-replay
 ```
+
+Lock e ricetta: `services/graph/recipes/V45.lock.json`. Documentazione: `services/graph/V45.md`.
+
 
 ## Cosa è entrato
 
