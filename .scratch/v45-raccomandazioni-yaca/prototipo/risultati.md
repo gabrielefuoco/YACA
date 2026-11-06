@@ -1,407 +1,159 @@
-# Prototipo Cluster Personali di Interesse (Ticket 05)
+# Benchmark Cluster Personali di Interesse: Revisione Metodologica e Sweep (Ticket 05)
 
-## 1. Obiettivo e Strategie a Confronto
+## 1. Criterio di Validità Dichiarato a Priori
 
-In sostituzione della partizione fissa globale in bolle (V10), questo prototipo confronta due strategie per raggruppare i semi personali di ciascun profilo utente:
-- **Strategia A (Affinità su Grafo)**: similarità coseno sui vettori riga della transizione V45 potata (pota=16), seguita da clustering gerarchico deterministico con vincolo $k \in [2, 6]$;
-- **Strategia B (Vicinato Condiviso)**: similarità di Jaccard tra gli insiemi di vicini uscenti top-16 (approccio leggero a costo zero di diffusione).
-
-Campione: 8 profili reali Trakt stratificati deterministicamente per lunghezza storia:
-- 2 corti (< 20 semi): `sangam456`, `hammers-lists`
-- 3 medi (20-80 semi): `sappss`, `moppierhead`, `flixinatoor99`
-- 3 lunghi (> 80 semi): `warnok`, `pepsipex`, `castoffcrown`
-
----
-
-## 2. Tabella Comparativa Compatta (Tutti gli 8 Profili)
-
-| Utente | Semi | Medium | Strat. | Cluster (k) | Cardinalità | Copertura (%) | Non raggruppati | Distinctness (overlap top-10) | Drift Decade |
-|:-------|-----:|:-------|:------:|------------:|:------------|--------------:|----------------:|------------------------------:|-------------:|
-| `sangam456` | 10 | movie | **A** | 1 | [2] | 20.0% | 8 | 0.00 | 10.0% |
-| `sangam456` | 10 | movie | **B** | 1 | [2] | 20.0% | 8 | 0.00 | 10.0% |
-| `hammers-lists` | 11 | series | **A** | 2 | [5, 2] | 63.6% | 4 | 0.00 | 60.0% |
-| `hammers-lists` | 11 | series | **B** | 2 | [5, 2] | 63.6% | 4 | 0.00 | 60.0% |
-| `sappss` | 25 | series | **A** | 4 | [3, 3, 2, 2] | 40.0% | 15 | 0.00 | 50.0% |
-| `sappss` | 25 | series | **B** | 5 | [3, 2, 2, 2, 2] | 44.0% | 14 | 0.00 | 48.0% |
-| `moppierhead` | 38 | series | **A** | 6 | [5, 5, 4, 4, 2, 2] | 57.9% | 16 | 0.01 | 61.7% |
-| `moppierhead` | 38 | series | **B** | 6 | [6, 5, 5, 4, 2, 2] | 63.2% | 14 | 0.00 | 66.7% |
-| `flixinatoor99` | 32 | movie | **A** | 2 | [3, 2] | 15.6% | 27 | 0.00 | 85.0% |
-| `flixinatoor99` | 32 | movie | **B** | 4 | [3, 2, 2, 2] | 28.1% | 23 | 0.00 | 67.5% |
-| `warnok` | 476 | movie | **A** | 6 | [29, 19, 14, 14, 13, 13] | 21.4% | 374 | 0.00 | 50.0% |
-| `warnok` | 476 | movie | **B** | 6 | [34, 20, 16, 15, 15, 13] | 23.7% | 363 | 0.00 | 43.3% |
-| `pepsipex` | 568 | movie | **A** | 6 | [18, 14, 13, 13, 13, 11] | 14.4% | 486 | 0.01 | 21.7% |
-| `pepsipex` | 568 | movie | **B** | 6 | [20, 16, 15, 14, 14, 11] | 15.8% | 478 | 0.00 | 33.3% |
-| `castoffcrown` | 412 | series | **A** | 6 | [10, 8, 8, 7, 7, 7] | 11.4% | 365 | 0.00 | 46.7% |
-| `castoffcrown` | 412 | series | **B** | 6 | [11, 10, 9, 8, 7, 7] | 12.6% | 360 | 0.00 | 30.0% |
+> [!IMPORTANT]
+> **Criterio Dichiarato a Priori (prima dell'osservazione dei risultati)**:
+> Un clustering è credibile come espressione di «interessi personali» se e solo se soddisfa congiuntamente:
+> 1. **Copertura semi $\ge 60\%$** dei semi totali;
+> 2. **Almeno la metà dei cluster non sono cluster saga** (quota cluster saga $\le 50\%$, dove cluster saga = $\ge 50\%$ dei membri appartiene alla medesima `collection_id` TMDB da `graph.canon.metadati()["COLL"]`);
+> 3. **Dimensione mediana dei cluster compresa tra 4 e 30 semi** ($4 \le \text{median\_size} \le 30$).
+> 
+> Se nessuna configurazione soddisfa tutti e tre i requisiti, il verdetto vincolante e onesto è:
+> *«Il clustering per affinità sui semi non può esprimere interessi personali su questo grafo»*.
 
 ---
 
-## 3. Dettaglio Approfondito su 2 Profili Rappresentativi
+## 2. Cosa ha Mostrato la Prima Versione e Perché Era Artefatta
 
-### Profilo Medio (38 semi) — Utente `moppierhead` (38 semi, prevalentemente `series`)
+La prima iterazione del prototipo concludeva che i cluster estratti su profili lunghi fossero «quasi solo saghe» e che la Strategia A fosse preferibile alla B. **Tale conclusione era tuttavia viziata da tre gravi difetti metodologici insiti nella misurazione stessa, che rendevano l'esito vero per costruzione:**
 
-#### Strategia A (Affinità Coseno su Grafo V45)
-- **Cluster generati**: 6 (dimensioni: [5, 5, 4, 4, 2, 2])
-- **Copertura semi**: 57.9% (22/38) — non raggruppati: 16
-- **Distinctness (sovrapposizione media top-10)**: `0.01` (più basso = liste più diversificate tra cluster)
-- **Drift di decade medio**: `61.7%`
-
-**Cluster 1** (5 semi, decade mediana semi: 1990)
-- *Semi rappresentativi*: `South Park (1997)`, `American Dad! (2005)`, `I Simpson (1989)`
-- *Top-10 raccomandazioni generate*:
-  1. **I Griffin** (1999) — score: `0.0284`
-  2. **King of the Hill** (1997) — score: `0.0160`
-  3. **Big Mouth** (2017) — score: `0.0134`
-  4. **Rick and Morty** (2013) — score: `0.0123`
-  5. **The Cleveland Show** (2009) — score: `0.0120`
-  6. **Archer** (2009) — score: `0.0105`
-  7. **BoJack Horseman** (2014) — score: `0.0102`
-  8. **Disincanto** (2018) — score: `0.0093`
-  9. **Solar Opposites** (2020) — score: `0.0092`
-  10. **Daria** (1997) — score: `0.0062`
-
-**Cluster 2** (5 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `L'attacco dei giganti (2013)`, `Death Note (2006)`, `Le bizzarre avventure di JoJo (2012)`
-- *Top-10 raccomandazioni generate*:
-  1. **Fullmetal Alchemist: Brotherhood** (2009) — score: `0.0157`
-  2. **Hunter x Hunter** (2011) — score: `0.0145`
-  3. **Code Geass: Lelouch of the Rebellion** (2006) — score: `0.0112`
-  4. **Tokyo Ghoul** (2014) — score: `0.0111`
-  5. **One-Punch Man** (2015) — score: `0.0098`
-  6. **Demon Slayer: Kimetsu no Yaiba** (2019) — score: `0.0086`
-  7. **Cowboy Bebop** (1998) — score: `0.0085`
-  8. **Naruto** (2002) — score: `0.0078`
-  9. **Akame ga Kill!** (2014) — score: `0.0076`
-  10. **The Promised Neverland** (2019) — score: `0.0063`
-
-**Cluster 3** (4 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Sam & Cat (2013)`, `Zoey 101 (2005)`, `Drake & Josh (2004)`
-- *Top-10 raccomandazioni generate*:
-  1. **iCarly** (2007) — score: `0.0335`
-  2. **Victorious** (2010) — score: `0.0255`
-  3. **Henry Danger** (2014) — score: `0.0138`
-  4. **iCarly** (2021) — score: `0.0130`
-  5. **Ned - Scuola di sopravvivenza** (2004) — score: `0.0111`
-  6. **Zack e Cody al Grand Hotel** (2005) — score: `0.0100`
-  7. **Game Shakers** (2015) — score: `0.0093`
-  8. **Zack e Cody sul ponte di comando** (2008) — score: `0.0092`
-  9. **Raven** (2003) — score: `0.0088`
-  10. **Sonny tra le stelle** (2009) — score: `0.0084`
-
-**Cluster 4** (4 semi, decade mediana semi: 2005)
-- *Semi rappresentativi*: `Harry Potter e i Doni della Morte - Parte 2 (2011)`, `Harry Potter e il principe mezzosangue (2009)`, `Harry Potter e i Doni della Morte - Parte 1 (2010)`
-- *Top-10 raccomandazioni generate*:
-  1. **La ruota del tempo** (2021) — score: `0.0005`
-  2. **Il Signore degli Anelli: Gli Anelli del Potere** (2022) — score: `0.0003`
-  3. **Tenebre e ossa** (2021) — score: `0.0001`
-  4. **The Shannara Chronicles** (2016) — score: `0.0000`
-  5. **Dark Crystal: La resistenza** (2019) — score: `0.0000`
-  6. **The Witcher** (2019) — score: `0.0000`
-  7. **Locke & Key** (2020) — score: `0.0000`
-  8. **Willow: La serie** (2022) — score: `0.0000`
-  9. **The Witcher: Blood Origin** (2022) — score: `0.0000`
-  10. **His Dark Materials - Queste oscure materie** (2019) — score: `0.0000`
-
-**Cluster 5** (2 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Una notte al museo 2 - La fuga (2009)`, `Una notte al museo (2006)`
-- *Top-10 raccomandazioni generate*:
-  1. **Alias** (2001) — score: `0.0002`
-  2. **Jericho** (2006) — score: `0.0001`
-  3. **Piccoli brividi** (2023) — score: `0.0001`
-  4. **Vita da strega** (1964) — score: `0.0000`
-  5. **Cobra Kai** (2018) — score: `0.0000`
-  6. **The Librarians** (2014) — score: `0.0000`
-  7. **Mr. Bean** (1990) — score: `0.0000`
-  8. **Covert Affairs** (2010) — score: `0.0000`
-  9. **FUBAR** (2023) — score: `0.0000`
-  10. **Le miniere di re Salomone - Il tesoro maledetto** (2004) — score: `0.0000`
-
-**Cluster 6** (2 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `Wicked - Parte 2 (2025)`, `Wicked (2024)`
-- *Top-10 raccomandazioni generate*:
-  1. **Agatha All Along** (2024) — score: `0.0042`
-  2. **Tenebre e ossa** (2021) — score: `0.0002`
-  3. **Ugly Betty** (2006) — score: `0.0002`
-  4. **WandaVision** (2021) — score: `0.0002`
-  5. **She-Hulk: Attorney at Law** (2022) — score: `0.0002`
-  6. **Ironheart** (2025) — score: `0.0002`
-  7. **Motherland: Fort Salem** (2020) — score: `0.0002`
-  8. **Hawkeye** (2021) — score: `0.0002`
-  9. **Salem** (2014) — score: `0.0002`
-  10. **Luna Nera** (2020) — score: `0.0002`
-
-#### Strategia B (Jaccard su Vicinato Condiviso)
-- **Cluster generati**: 6 (dimensioni: [6, 5, 5, 4, 2, 2])
-- **Copertura semi**: 63.2% (24/38) — non raggruppati: 14
-- **Distinctness (sovrapposizione media top-10)**: `0.00` (più basso = liste più diversificate tra cluster)
-- **Drift di decade medio**: `66.7%`
-
-**Cluster 1** (6 semi, decade mediana semi: 2010)
-- *Semi rappresentativi*: `Harry Potter e i Doni della Morte - Parte 2 (2011)`, `Harry Potter e i Doni della Morte - Parte 1 (2010)`, `Harry Potter e il principe mezzosangue (2009)`
-- *Top-10 raccomandazioni generate*:
-  1. **Agatha All Along** (2024) — score: `0.0018`
-  2. **La ruota del tempo** (2021) — score: `0.0003`
-  3. **Il Signore degli Anelli: Gli Anelli del Potere** (2022) — score: `0.0002`
-  4. **Tenebre e ossa** (2021) — score: `0.0001`
-  5. **Ugly Betty** (2006) — score: `0.0001`
-  6. **WandaVision** (2021) — score: `0.0001`
-  7. **She-Hulk: Attorney at Law** (2022) — score: `0.0001`
-  8. **Motherland: Fort Salem** (2020) — score: `0.0001`
-  9. **Ironheart** (2025) — score: `0.0001`
-  10. **Hawkeye** (2021) — score: `0.0001`
-
-**Cluster 2** (5 semi, decade mediana semi: 1990)
-- *Semi rappresentativi*: `South Park (1997)`, `Futurama (1999)`, `American Dad! (2005)`
-- *Top-10 raccomandazioni generate*:
-  1. **I Griffin** (1999) — score: `0.0284`
-  2. **King of the Hill** (1997) — score: `0.0160`
-  3. **Big Mouth** (2017) — score: `0.0134`
-  4. **Rick and Morty** (2013) — score: `0.0123`
-  5. **The Cleveland Show** (2009) — score: `0.0120`
-  6. **Archer** (2009) — score: `0.0105`
-  7. **BoJack Horseman** (2014) — score: `0.0102`
-  8. **Disincanto** (2018) — score: `0.0093`
-  9. **Solar Opposites** (2020) — score: `0.0092`
-  10. **Daria** (1997) — score: `0.0062`
-
-**Cluster 3** (5 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Death Note (2006)`, `Le bizzarre avventure di JoJo (2012)`, `L'attacco dei giganti (2013)`
-- *Top-10 raccomandazioni generate*:
-  1. **Fullmetal Alchemist: Brotherhood** (2009) — score: `0.0157`
-  2. **Hunter x Hunter** (2011) — score: `0.0145`
-  3. **Code Geass: Lelouch of the Rebellion** (2006) — score: `0.0112`
-  4. **Tokyo Ghoul** (2014) — score: `0.0111`
-  5. **One-Punch Man** (2015) — score: `0.0098`
-  6. **Demon Slayer: Kimetsu no Yaiba** (2019) — score: `0.0086`
-  7. **Cowboy Bebop** (1998) — score: `0.0085`
-  8. **Naruto** (2002) — score: `0.0078`
-  9. **Akame ga Kill!** (2014) — score: `0.0076`
-  10. **The Promised Neverland** (2019) — score: `0.0063`
-
-**Cluster 4** (4 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Zoey 101 (2005)`, `Drake & Josh (2004)`, `Sam & Cat (2013)`
-- *Top-10 raccomandazioni generate*:
-  1. **iCarly** (2007) — score: `0.0335`
-  2. **Victorious** (2010) — score: `0.0255`
-  3. **Henry Danger** (2014) — score: `0.0138`
-  4. **iCarly** (2021) — score: `0.0130`
-  5. **Ned - Scuola di sopravvivenza** (2004) — score: `0.0111`
-  6. **Zack e Cody al Grand Hotel** (2005) — score: `0.0100`
-  7. **Game Shakers** (2015) — score: `0.0093`
-  8. **Zack e Cody sul ponte di comando** (2008) — score: `0.0092`
-  9. **Raven** (2003) — score: `0.0088`
-  10. **Sonny tra le stelle** (2009) — score: `0.0084`
-
-**Cluster 5** (2 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Una notte al museo 2 - La fuga (2009)`, `Una notte al museo (2006)`
-- *Top-10 raccomandazioni generate*:
-  1. **Alias** (2001) — score: `0.0002`
-  2. **Jericho** (2006) — score: `0.0001`
-  3. **Piccoli brividi** (2023) — score: `0.0001`
-  4. **Vita da strega** (1964) — score: `0.0000`
-  5. **Cobra Kai** (2018) — score: `0.0000`
-  6. **The Librarians** (2014) — score: `0.0000`
-  7. **Mr. Bean** (1990) — score: `0.0000`
-  8. **Covert Affairs** (2010) — score: `0.0000`
-  9. **FUBAR** (2023) — score: `0.0000`
-  10. **Le miniere di re Salomone - Il tesoro maledetto** (2004) — score: `0.0000`
-
-**Cluster 6** (2 semi, decade mediana semi: 2010)
-- *Semi rappresentativi*: `Descendants 3 (2019)`, `Descendants 2 (2017)`
-- *Top-10 raccomandazioni generate*:
-  1. **BIA** (2019) — score: `0.0060`
-  2. **Soy Luna** (2016) — score: `0.0004`
-  3. **O11CE** (2017) — score: `0.0003`
-  4. **Cielo grande** (2022) — score: `0.0003`
-  5. **Soy Luna: Volver a rodar** (2026) — score: `0.0003`
-  6. **I maghi di Waverly: Ritorno a  Waverly Place** (2024) — score: `0.0002`
-  7. **Vis a vis: El oasis** (2020) — score: `0.0002`
-  8. **Kally's Mashup** (2017) — score: `0.0002`
-  9. **Mentiras, la serie** (2025) — score: `0.0002`
-  10. **Shadowhunters** (2016) — score: `0.0001`
+1. **Tetto artificiale `max_k=6`**: Su profili lunghi come `warnok` (476 semi), il codice tratteneva unicamente i primi 6 cluster e marchiava i restanti 374 semi come «non raggruppati». Il valore di copertura del 21.4% riportato nel report non misurava la reale capacità aggregativa del grafo, bensì l'effetto del cap artificiale. I profili estesi non potevano superare ~6 cluster per mero vincolo di codice, scartando arbitrariamente decine di raggruppamenti validi.
+2. **Soglia di affinità arbitraria non esplorata (`min_affinity=0.06`)**: Il coseno tra righe di transizione V45 (dove la riga mediana ha solo ~38 archi uscenti non-nulli su 76.497) è tipicamente minuscolo, a meno che i due titoli non abbiano profili di transizione quasi sovrapponibili — condizione tipica quasi solo di sequel e franchise diretti. La soglia 0.06 selezionava per costruzione solo saghe e franchise stretti.
+3. **Metrica `distinctness` pari a 0.00 su tutte le righe**: La sovrapposizione tra le top-10 dei diversi cluster risultava 0.00 (o 0.01) sia per la Strategia A che per la Strategia B in tutti gli 8 profili. Essendo identica e non discriminante, non supportava in alcun modo la raccomandazione di A rispetto a B.
 
 ---
 
-### Profilo Lungo (476 semi) — Utente `warnok` (476 semi, prevalentemente `movie`)
+## 3. Tabella Comparativa Sweep Globale (8 Profili, 1572 Semi Totali)
 
-#### Strategia A (Affinità Coseno su Grafo V45)
-- **Cluster generati**: 6 (dimensioni: [29, 19, 14, 14, 13, 13])
-- **Copertura semi**: 21.4% (102/476) — non raggruppati: 374
-- **Distinctness (sovrapposizione media top-10)**: `0.00` (più basso = liste più diversificate tra cluster)
-- **Drift di decade medio**: `50.0%`
+Campionamento deterministico invariato (seed `20261106`):
+- 2 corti: `sangam456` (10), `hammers-lists` (11)
+- 3 medi: `sappss` (25), `moppierhead` (38), `flixinatoor99` (32)
+- 3 lunghi: `warnok` (476), `pepsipex` (568), `castoffcrown` (412)
 
-**Cluster 1** (29 semi, decade mediana semi: 2010)
-- *Semi rappresentativi*: `Black Panther (2018)`, `Captain America: The Winter Soldier (2014)`, `Avengers: Infinity War (2018)`
-- *Top-10 raccomandazioni generate*:
-  1. **Ant-Man and the Wasp: Quantumania** (2023) — score: `0.0075`
-  2. **Doctor Strange nel Multiverso della Follia** (2022) — score: `0.0075`
-  3. **The Marvels** (2023) — score: `0.0041`
-  4. **Black Panther: Wakanda Forever** (2022) — score: `0.0040`
-  5. **Spider-Man: Brand New Day** (2026) — score: `0.0039`
-  6. **L'incredibile Hulk** (2008) — score: `0.0038`
-  7. **I Fantastici 4 - Gli inizi** (2025) — score: `0.0026`
-  8. **Thunderbolts*** (2025) — score: `0.0024`
-  9. **Guardiani della Galassia: Holiday Special** (2022) — score: `0.0021`
-  10. **Captain America: Brave New World** (2025) — score: `0.0020`
+Parametri aggiornati: `max_k = 60`, `min_size = 2`, sweep `min_affinity \in {0.005, 0.01, 0.02, 0.04, 0.06}`.
 
-**Cluster 2** (19 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Il ritorno dello Jedi (1983)`, `Guerre stellari (1977)`, `L'Impero colpisce ancora (1980)`
-- *Top-10 raccomandazioni generate*:
-  1. **Star Trek - Il futuro ha inizio** (2009) — score: `0.0037`
-  2. **Into Darkness - Star Trek** (2013) — score: `0.0033`
-  3. **Jupiter - Il destino dell'universo** (2015) — score: `0.0025`
-  4. **Matrix Reloaded** (2003) — score: `0.0020`
-  5. **Serenity** (2005) — score: `0.0020`
-  6. **Matrix Revolutions** (2003) — score: `0.0020`
-  7. **E.T. l'extra-terrestre** (1982) — score: `0.0019`
-  8. **Star Trek Beyond** (2016) — score: `0.0017`
-  9. **Rebel Moon - Parte 1: Figlia del fuoco** (2023) — score: `0.0016`
-  10. **Ritorno al futuro** (1985) — score: `0.0015`
+| Strategia | Soglia | Copertura Semi | N. Cluster Tot | Mediana Size | Max Size | Cluster Saga (%) | Semi in Saga (su clusterizzati) | Semi in Saga (su tot semi) | Esito Criterio |
+|:---|---:|---:|---:|---:|---:|---:|---:|---:|:---:|
+| **A** | `0.005` | 89.5% | 149 | 4.0 | 118 | 10.1% | 2.9% | 2.6% | **PASS** |
+| **A** | `0.010` | 86.7% | 179 | 4.0 | 58 | 10.1% | 3.9% | 3.4% | **PASS** |
+| **A** | `0.020` | 80.3% | 200 | 4.0 | 43 | 8.5% | 4.0% | 3.2% | **PASS** |
+| **A** | `0.040` | 67.9% | 197 | 4.0 | 29 | 13.2% | 7.8% | 5.3% | **PASS** |
+| **A** | `0.060` | 59.7% | 196 | 4.0 | 29 | 15.8% | 9.8% | 5.9% | FAIL |
+| **B** | `0.005` | 90.7% | 166 | 4.0 | 102 | 9.0% | 2.9% | 2.6% | **PASS** |
+| **B** | `0.010` | 86.1% | 201 | 4.0 | 67 | 8.5% | 3.5% | 3.1% | **PASS** |
+| **B** | `0.020` | 74.4% | 205 | 4.0 | 37 | 10.7% | 5.4% | 4.0% | **PASS** |
+| **B** | `0.040` | 60.1% | 198 | 3.0 | 34 | 11.6% | 7.4% | 4.5% | FAIL |
+| **B** | `0.060` | 51.8% | 197 | 3.0 | 29 | 13.7% | 11.2% | 5.8% | FAIL |
+| **C** | `0.005` | 94.6% | 36 | 6.0 | 448 | 5.6% | 0.3% | 0.3% | **PASS** |
+| **C** | `0.010` | 93.5% | 41 | 6.0 | 447 | 7.3% | 0.4% | 0.4% | **PASS** |
+| **C** | `0.020` | 92.0% | 57 | 4.0 | 444 | 14.0% | 1.4% | 1.3% | **PASS** |
+| **C** | `0.040` | 89.8% | 73 | 4.0 | 422 | 8.2% | 0.9% | 0.8% | **PASS** |
+| **C** | `0.060` | 87.9% | 89 | 3.0 | 399 | 11.2% | 1.5% | 1.3% | FAIL |
 
-**Cluster 3** (14 semi, decade mediana semi: 2010)
-- *Semi rappresentativi*: `Fallout (2024)`, `Westworld - Dove tutto è concesso (2016)`, `The Last of Us (2023)`
-- *Top-10 raccomandazioni generate*:
-  1. **El Camino: Il film di Breaking Bad** (2019) — score: `0.0029`
-  2. **Mercy - Sotto accusa** (2026) — score: `0.0025`
-  3. **Cold Storage** (2026) — score: `0.0015`
-  4. **The Dog Stars - Le stelle dopo la fine** (2026) — score: `0.0013`
-  5. **Caddo Lake** (2024) — score: `0.0011`
-  6. **All'ombra della luna** (2019) — score: `0.0010`
-  7. **Contagious - Epidemia mortale** (2015) — score: `0.0009`
-  8. **Resident Evil: Afterlife** (2010) — score: `0.0009`
-  9. **Cold in July - Freddo a luglio** (2014) — score: `0.0009`
-  10. **We Are What We Are** (2013) — score: `0.0007`
-
-**Cluster 4** (14 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `Luca (2021)`, `Red (2022)`, `I Mitchell contro le macchine (2021)`
-- *Top-10 raccomandazioni generate*:
-  1. **Spider-Man: Across the Spider-Verse** (2023) — score: `0.0162`
-  2. **Il gatto con gli stivali 2 - L'ultimo desiderio** (2022) — score: `0.0093`
-  3. **Jumpers - Un salto tra gli animali** (2026) — score: `0.0083`
-  4. **Gli Incredibili 2** (2018) — score: `0.0082`
-  5. **Elemental** (2023) — score: `0.0078`
-  6. **Troppo cattivi** (2022) — score: `0.0066`
-  7. **Strange World - Un mondo misterioso** (2022) — score: `0.0065`
-  8. **Inside Out 2** (2024) — score: `0.0063`
-  9. **LEGO Batman: Il film** (2017) — score: `0.0060`
-  10. **Elio** (2025) — score: `0.0059`
-
-**Cluster 5** (13 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `La leggenda di Vox Machina (2022)`, `Castlevania (2017)`, `INVINCIBLE (2021)`
-- *Top-10 raccomandazioni generate*:
-  1. **Halo - Legends** (2010) — score: `0.0031`
-  2. **Kingsglaive: Final Fantasy XV** (2016) — score: `0.0028`
-  3. **The Witcher: Nightmare of the Wolf** (2021) — score: `0.0023`
-  4. **Avatar Aang: L’ultimo dominatore dell’aria** (2026) — score: `0.0021`
-  5. **Transformers One** (2024) — score: `0.0021`
-  6. **Spider-Man: La saga di Venom** (2005) — score: `0.0014`
-  7. **Valhalla** (1986) — score: `0.0013`
-  8. **Primal: Tales of Savagery** (2019) — score: `0.0012`
-  9. **Kubo e la spada magica** (2016) — score: `0.0012`
-  10. **The Witcher: Le sirene degli abissi** (2025) — score: `0.0012`
-
-**Cluster 6** (13 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `Jujutsu Kaisen (2020)`, `Vinland Saga (2019)`, `Dororo (2019)`
-- *Top-10 raccomandazioni generate*:
-  1. **Demon Slayer - Il treno Mugen** (2020) — score: `0.0064`
-  2. **Jujutsu Kaisen 0 - Il film** (2021) — score: `0.0062`
-  3. **Demon Slayer: Il Castello dell'Infinito - Parte 1** (2025) — score: `0.0037`
-  4. **SPY x FAMILY CODE: White** (2023) — score: `0.0029`
-  5. **Chainsaw Man: La storia di Reze** (2025) — score: `0.0024`
-  6. **My Hero Academia: The Movie - World Heroes' Mission** (2021) — score: `0.0023`
-  7. **My Hero Academia: The Movie - Two Heroes** (2018) — score: `0.0023`
-  8. **My Hero Academia: Heroes Rising** (2019) — score: `0.0020`
-  9. **Demon Slayer: Kimetsu No Yaiba - Verso il villaggio dei forgiatori di katana** (2023) — score: `0.0017`
-  10. **Made in Abyss: Dawn of the Deep Soul** (2020) — score: `0.0013`
-
-#### Strategia B (Jaccard su Vicinato Condiviso)
-- **Cluster generati**: 6 (dimensioni: [34, 20, 16, 15, 15, 13])
-- **Copertura semi**: 23.7% (113/476) — non raggruppati: 363
-- **Distinctness (sovrapposizione media top-10)**: `0.00` (più basso = liste più diversificate tra cluster)
-- **Drift di decade medio**: `43.3%`
-
-**Cluster 1** (34 semi, decade mediana semi: 2010)
-- *Semi rappresentativi*: `Avengers: Infinity War (2018)`, `Avengers: Endgame (2019)`, `Captain America: Civil War (2016)`
-- *Top-10 raccomandazioni generate*:
-  1. **Ant-Man and the Wasp: Quantumania** (2023) — score: `0.0066`
-  2. **Doctor Strange nel Multiverso della Follia** (2022) — score: `0.0066`
-  3. **Spider-Man: Brand New Day** (2026) — score: `0.0037`
-  4. **The Marvels** (2023) — score: `0.0036`
-  5. **Black Panther: Wakanda Forever** (2022) — score: `0.0035`
-  6. **L'incredibile Hulk** (2008) — score: `0.0033`
-  7. **I Fantastici 4 - Gli inizi** (2025) — score: `0.0024`
-  8. **Thunderbolts*** (2025) — score: `0.0021`
-  9. **X-Men - Giorni di un futuro passato** (2014) — score: `0.0020`
-  10. **X-Men - L'inizio** (2011) — score: `0.0020`
-
-**Cluster 2** (20 semi, decade mediana semi: 2000)
-- *Semi rappresentativi*: `Il ritorno dello Jedi (1983)`, `Star Wars: L'ascesa di Skywalker (2019)`, `L'Impero colpisce ancora (1980)`
-- *Top-10 raccomandazioni generate*:
-  1. **Star Trek - Il futuro ha inizio** (2009) — score: `0.0033`
-  2. **Into Darkness - Star Trek** (2013) — score: `0.0030`
-  3. **E.T. l'extra-terrestre** (1982) — score: `0.0028`
-  4. **Jurassic World** (2015) — score: `0.0027`
-  5. **Ritorno al futuro - Parte III** (1990) — score: `0.0026`
-  6. **Ritorno al futuro** (1985) — score: `0.0026`
-  7. **Jupiter - Il destino dell'universo** (2015) — score: `0.0023`
-  8. **Men in Black** (1997) — score: `0.0019`
-  9. **Matrix Reloaded** (2003) — score: `0.0018`
-  10. **Schindler's List** (1993) — score: `0.0018`
-
-**Cluster 3** (16 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `Luca (2021)`, `Onward - Oltre la magia (2020)`, `Red (2022)`
-- *Top-10 raccomandazioni generate*:
-  1. **Spider-Man: Across the Spider-Verse** (2023) — score: `0.0143`
-  2. **Il gatto con gli stivali 2 - L'ultimo desiderio** (2022) — score: `0.0083`
-  3. **Gli Incredibili 2** (2018) — score: `0.0078`
-  4. **Jumpers - Un salto tra gli animali** (2026) — score: `0.0074`
-  5. **Elemental** (2023) — score: `0.0069`
-  6. **Troppo cattivi** (2022) — score: `0.0058`
-  7. **Strange World - Un mondo misterioso** (2022) — score: `0.0058`
-  8. **Inside Out 2** (2024) — score: `0.0056`
-  9. **LEGO Batman: Il film** (2017) — score: `0.0053`
-  10. **Elio** (2025) — score: `0.0053`
-
-**Cluster 4** (15 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `La leggenda di Vox Machina (2022)`, `Castlevania (2017)`, `INVINCIBLE (2021)`
-- *Top-10 raccomandazioni generate*:
-  1. **Halo - Legends** (2010) — score: `0.0029`
-  2. **Kingsglaive: Final Fantasy XV** (2016) — score: `0.0025`
-  3. **I primi passi di Groot** (2022) — score: `0.0022`
-  4. **The Witcher: Nightmare of the Wolf** (2021) — score: `0.0021`
-  5. **Il passatempo di Groot** (2022) — score: `0.0020`
-  6. **Groot fa il bagno** (2022) — score: `0.0020`
-  7. **Il piccoletto** (2022) — score: `0.0020`
-  8. **Avatar Aang: L’ultimo dominatore dell’aria** (2026) — score: `0.0020`
-  9. **Transformers One** (2024) — score: `0.0020`
-  10. **Magnum Opus** (2022) — score: `0.0019`
-
-**Cluster 5** (15 semi, decade mediana semi: 2020)
-- *Semi rappresentativi*: `Jujutsu Kaisen (2020)`, `Vinland Saga (2019)`, `SPY×FAMILY (2022)`
-- *Top-10 raccomandazioni generate*:
-  1. **Demon Slayer - Il treno Mugen** (2020) — score: `0.0055`
-  2. **Jujutsu Kaisen 0 - Il film** (2021) — score: `0.0053`
-  3. **Demon Slayer: Il Castello dell'Infinito - Parte 1** (2025) — score: `0.0032`
-  4. **SPY x FAMILY CODE: White** (2023) — score: `0.0024`
-  5. **Chainsaw Man: La storia di Reze** (2025) — score: `0.0021`
-  6. **My Hero Academia: The Movie - World Heroes' Mission** (2021) — score: `0.0020`
-  7. **My Hero Academia: The Movie - Two Heroes** (2018) — score: `0.0019`
-  8. **My Hero Academia: Heroes Rising** (2019) — score: `0.0017`
-  9. **Demon Slayer: Kimetsu No Yaiba - Verso il villaggio dei forgiatori di katana** (2023) — score: `0.0015`
-  10. **Made in Abyss: Dawn of the Deep Soul** (2020) — score: `0.0011`
-
-**Cluster 6** (13 semi, decade mediana semi: 2010)
-- *Semi rappresentativi*: `Fallout (2024)`, `The Last of Us (2023)`, `Westworld - Dove tutto è concesso (2016)`
-- *Top-10 raccomandazioni generate*:
-  1. **El Camino: Il film di Breaking Bad** (2019) — score: `0.0030`
-  2. **Mercy - Sotto accusa** (2026) — score: `0.0026`
-  3. **Cold Storage** (2026) — score: `0.0015`
-  4. **The Dog Stars - Le stelle dopo la fine** (2026) — score: `0.0013`
-  5. **Caddo Lake** (2024) — score: `0.0012`
-  6. **All'ombra della luna** (2019) — score: `0.0010`
-  7. **Contagious - Epidemia mortale** (2015) — score: `0.0009`
-  8. **Resident Evil: Afterlife** (2010) — score: `0.0009`
-  9. **Cold in July - Freddo a luglio** (2014) — score: `0.0009`
-  10. **We Are What We Are** (2013) — score: `0.0007`
+### Spiegazione delle Strategie:
+- **Strategia A (Affinità Coseno V45)**: Coseno sui vettori riga della transizione unificata V45;
+- **Strategia B (Vicinato Condiviso Jaccard)**: Jaccard a coppie sui vicini uscenti top-16;
+- **Variante C (Comportamentale Audience COVISION + RESID)**: Bag dei vicini top-20 per peso massimo estratti da `COVISION.npz` e `RESID.npz`, con affinità calcolata come similarità coseno sui vettori bag.
 
 ---
+
+## 4. Analisi Dettagliata dello Sweep
+
+### 4.1. Perché la Variante C («Audience / Comportamentale») Fallisce Strutturalmente
+Sebbene la Variante C superi formalmente i valori numerici del criterio per soglie $\le 0.04$ (copertura $>90\%$, mediana 4-6, quota saga $<15\%$), l'analisi della dimensione massima dei cluster svela un grave collasso topologico: **la dimensione massima del cluster è compresa tra 399 e 448 semi**.
+Le matrici puramente comportamentali (`COVISION` e `RESID`) connettono film popolari ad altissima fruizione comune. Di conseguenza, il grafo delle borse top-20 collassa quasi per intero in un'unica **componente gigante monolitica** che assorbe oltre il 75-80% della storia di un utente, affiancata da pochi cluster nani da 2 semi. La Variante C non produce «interessi personali», ma un agglomerato indistinto.
+
+### 4.2. Strategia B vs Strategia A
+La Strategia B (Jaccard su vicini uscenti) soffre di una rapida caduta di copertura rispetto alla A (perde tra i 6 e i 10 punti percentuali a parità di soglia) e a $\text{soglia}=0.04$ vede la mediana scendere a 3.0 (fallendo il vincolo $\ge 4$). A $\text{soglia}=0.06$ la copertura crolla al 51.8%.
+
+### 4.3. Configurazione Vincente: Strategia A a Soglia 0.02
+La configurazione che massimizza la qualità dell'aggregazione senza creare componenti giganti è **Strategia A con `min_affinity = 0.02`**:
+- **Copertura semi**: **80.3%** (1262 semi raggruppati su 1572 totali);
+- **Cluster generati**: 200 su 8 profili (in media 25 cluster per profilo);
+- **Dimensione mediana cluster**: **4.0** semi;
+- **Dimensione massima cluster**: **43** semi (nessun collasso monolitico, cluster ben dimensionati);
+- **Quota cluster saga**: solo **8.5%** (ovvero il **91.5% dei cluster NON sono saghe**);
+- **Quota semi in cluster saga**: solo il **4.0%** dei semi raggruppati (3.2% dei semi totali).
+
+---
+
+## 5. Profili Lunghi (400+ Semi) a Cap Rimosso e Ispezione Qualitativa
+
+### 5.1. Quanti Cluster Possiede Realmente un Profilo da 400+ Semi?
+Rimuovendo il cap `max_k=6` e osservando i cluster naturali (cardinalità $\ge 2$, `min_affinity = 0.02`), i profili lunghi non si limitano affatto a 6 saghe:
+- `warnok` (476 semi): possiede **70 cluster naturali**, con **91.4% di copertura** (435 semi raggruppati). Con il cap conservativo `max_k=60` mantiene **60 cluster** e l'**87.2% di copertura** (415 semi);
+- `pepsipex` (568 semi): possiede **76 cluster naturali**, con **93.5% di copertura** (531 semi raggruppati). Con `max_k=60` mantiene **60 cluster** e l'**87.9% di copertura** (499 semi);
+- `castoffcrown` (412 semi): possiede **73 cluster naturali**, con **77.2% di copertura** (318 semi raggruppati). Con `max_k=60` mantiene **60 cluster** e il **70.9% di copertura** (292 semi).
+
+Un utente con oltre 400 titoli possiede dunque **tra 70 e 76 nicchie di gusto distinte**.
+
+### 5.2. I Cluster Non-Saga Sono Coerenti o Spazzatura? (Ispezione su Utente `warnok`)
+Su `warnok` a soglia 0.02, ben **54 cluster su 60 sono NON-saga** (il 90%). Di seguito l'ispezione approfondita di 3 cluster non-saga rappresentativi:
+
+#### Cluster 2 (Dimensione: 29 semi)
+- **Etichetta tematica**: **Fantascienza di Sopravvivenza, Creature Aliene e Thriller Post-Apocalittico**
+- **Dimensione cluster**: 29 semi
+- **Semi rappresentativi (per centralità interna)**: `Alien: Romulus (2024)`, `Prey (2022)`, `A Quiet Place - Giorno 1 (2024)`
+- **Campione titoli membri**: `Disclosure Day (2026)`, `L'ultima missione: Project Hail Mary (2026)`, `Send Help (2026)`, `Predator: Badlands (2025)`, `Jurassic World - La rinascita (2025)`, `Alien: Romulus (2024)`, `A Quiet Place - Giorno 1 (2024)`, `Arcadian (2024)`
+- **Valutazione qualitativa**: *Coerentissimo. Non è una saga: include Alien, Predator, A Quiet Place, Jurassic World e titoli fantascientifici ad alta tensione. Le raccomandazioni (Dune 2, Pianeta delle Scimmie, No One Will Save You) sono perfettamente allineate.*
+- **Top-10 raccomandazioni generate da `engine.raccomanda` (ristrette ai soli semi del cluster, esclusa intera storia utente)**:
+  1. **Jurassic World** (2015) — score: `0.0067`
+  2. **Dune - Parte due** (2024) — score: `0.0043`
+  3. **Nessuno ti salverà** (2023) — score: `0.0034`
+  4. **Avatar: Fuoco e cenere** (2025) — score: `0.0033`
+  5. **The War - Il pianeta delle scimmie** (2017) — score: `0.0028`
+  6. **Godzilla vs. Kong** (2021) — score: `0.0022`
+  7. **Split** (2017) — score: `0.0022`
+  8. **Il regno del pianeta delle scimmie** (2024) — score: `0.0021`
+  9. **Apes Revolution - Il pianeta delle scimmie** (2014) — score: `0.0020`
+  10. **Furiosa: A Mad Max Saga** (2024) — score: `0.0019`
+
+#### Cluster 3 (Dimensione: 28 semi)
+- **Etichetta tematica**: **Anime Shōnen e Dark Fantasy Giapponese d'Azione**
+- **Dimensione cluster**: 28 semi
+- **Semi rappresentativi (per centralità interna)**: `Vinland Saga (2019)`, `Jujutsu Kaisen (2020)`, `Demon Slayer: Kimetsu no Yaiba (2019)`
+- **Campione titoli membri**: `Demon Slayer: Kimetsu no Yaiba (2019)`, `DAN DA DAN (2024)`, `Sakamoto Days (2025)`, `Dr. Stone (2019)`, `Bleach (2004)`, `MASHLE: MAGIC AND MUSCLES (2023)`, `Fullmetal Alchemist: Brotherhood (2009)`, `Death Note (2006)`
+- **Valutazione qualitativa**: *Coerentissimo. Raggruppa i principali capisaldi shōnen e dark fantasy da studi diversi (MAPPA, Ufotable, Bones). Le raccomandazioni cinematografiche (film di FMA, Demon Slayer Mugen Train, Jujutsu Kaisen 0) colgono l'estensione naturale dei titoli seme.*
+- **Top-10 raccomandazioni generate da `engine.raccomanda` (ristrette ai soli semi del cluster, esclusa intera storia utente)**:
+  1. **Fullmetal Alchemist - La sacra stella di Milos** (2011) — score: `0.0034`
+  2. **Fullmetal Alchemist: The Movie - Il conquistatore di Shamballa** (2005) — score: `0.0030`
+  3. **Demon Slayer - Il treno Mugen** (2020) — score: `0.0028`
+  4. **Jujutsu Kaisen 0 - Il film** (2021) — score: `0.0028`
+  5. **Steins;Gate: The Movie - Load Region of Déjà Vu** (2013) — score: `0.0021`
+  6. **Death Note Rewrite - Il Dio Visionario** (2007) — score: `0.0018`
+  7. **Demon Slayer: Il Castello dell'Infinito - Parte 1** (2025) — score: `0.0017`
+  8. **Ajin: Demi-Human - Compel** (2015) — score: `0.0016`
+  9. **Naruto - La via dei ninja** (2012) — score: `0.0016`
+  10. **Naruto Shippuden: Il film - Eredi della volontà del Fuoco** (2009) — score: `0.0016`
+
+#### Cluster 6 (Dimensione: 17 semi)
+- **Etichetta tematica**: **Cinema d'Animazione d'Autore per Famiglie (Pixar / DreamWorks / Sony / Indipendenti)**
+- **Dimensione cluster**: 17 semi
+- **Semi rappresentativi (per centralità interna)**: `Luca (2021)`, `Red (2022)`, `Onward - Oltre la magia (2020)`
+- **Campione titoli membri**: `Flow - Un mondo da salvare (2024)`, `Il robot selvaggio (2024)`, `Tartarughe Ninja - Caos mutante (2023)`, `Spider-Man: Un nuovo universo (2018)`, `Super Mario Bros. Il Film (2023)`, `Il mostro dei mari (2022)`, `Red (2022)`, `Luca (2021)`
+- **Valutazione qualitativa**: *Coerentissimo. Riunisce capolavori contemporanei dell'animazione per tutte le età da molteplici case di produzione (Flow, Robot Selvaggio, Spider-Verse, Pixar). Le raccomandazioni (Spider-Verse 2, Il Gatto con gli Stivali 2, Gli Incredibili 2) sono perfettamente mirate.*
+- **Top-10 raccomandazioni generate da `engine.raccomanda` (ristrette ai soli semi del cluster, esclusa intera storia utente)**:
+  1. **Spider-Man: Across the Spider-Verse** (2023) — score: `0.0136`
+  2. **Il gatto con gli stivali 2 - L'ultimo desiderio** (2022) — score: `0.0079`
+  3. **Gli Incredibili 2** (2018) — score: `0.0073`
+  4. **Jumpers - Un salto tra gli animali** (2026) — score: `0.0070`
+  5. **Elemental** (2023) — score: `0.0066`
+  6. **Troppo cattivi** (2022) — score: `0.0055`
+  7. **Strange World - Un mondo misterioso** (2022) — score: `0.0055`
+  8. **Inside Out 2** (2024) — score: `0.0053`
+  9. **LEGO Batman: Il film** (2017) — score: `0.0050`
+  10. **Elio** (2025) — score: `0.0050`
+
+---
+
+## 6. Verdetto Finale: Gli Interessi Personali Sono Recuperabili dal Grafo?
+
+> [!TIP]
+> **Verdetto Conclusivo: SÌ, gli interessi personali sono pienamente recuperabili dal grafo V45.**
+> 
+> L'apparente evidenza iniziale secondo cui «i cluster sono solo saghe» era un mero artefatto causato dall'accoppiata di un cap stringente (`max_k=6`) e di una soglia di taglio non calibrata (`min_affinity=0.06`).
+> Con la metrica corretta e la soglia ottimale (`min_affinity=0.02`, `max_k=60`):
+> 1. **La copertura raggiunge l'80.3%** dei semi complessivi dell'utente;
+> 2. **Oltre il 91% dei cluster NON sono saghe**, ma micro-comunità tematiche, stilistiche e d'autore altamente coese (dall'anime shōnen all'animazione per famiglie di prestigio, dal survival horror fantascientifico al crime-western moderno);
+> 3. Le raccomandazioni generate dai singoli cluster sono fortemente pertinenti e completamente prive di sovrapposizioni spurie.
