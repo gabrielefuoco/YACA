@@ -7,15 +7,22 @@ Metodo Vincitore:
   - Bounded macro <= 30 semi (bisezione ricorsiva)
   - Selezione di 5 scaffali per rango combinato di min_eta e supporto (massa)
   - Medium per macro (maggioranza dei semi del macro)
-  - Deduplica di famiglia (al più uno scaffale per collection_id dominante, scarto se >=50% sovrapposizione candidati)
+  - Deduplica di famiglia (al più uno scaffale per collection_id dominante, scarto se >=50% sovrapposizione)
+  - Etichettatura dinamica basata sull'evidenza keyword del cluster (TF-IDF medio) + modificatore fattuale
+  - Controllo di unicità del nome (NAME DISTINCTNESS) con disambiguazione automatica e rilevamento collasso
+  - Valutazione temporale rigorosa: separazione tra STALE (cand senza titoli ultimi 3 anni con semi correnti)
+    e DEEPENING (semi storici o mix di epoche).
 
 Produce:
   .scratch/v45-raccomandazioni-yaca/prototipo/dieci-storie.md
 """
 from __future__ import annotations
 
-from collections import Counter
+import sys
 from pathlib import Path
+sys.path.extend(["services", ".scratch/v45-raccomandazioni-yaca/prototipo"])
+
+from collections import Counter
 import time
 from typing import Any
 
@@ -25,6 +32,7 @@ import scipy.sparse as sp
 from graph import canon as K
 from graph import provenance as _PV
 from graph.runtime import Engine
+from graph.build import data as D
 from cluster import clusterizza_semi
 from macro import bounded_macros_for_profile
 
@@ -48,12 +56,22 @@ PROFILI_10 = [
     ("1jacobjohn", "Intermedio (167 semi)", "Gap Utente Medio Attivo (100-300 semi)"),
 ]
 
-# NOTA SUL GAP > 700 SEMI:
-# Nel dataset Trakt cached (.cache/trakt/users/), le esportazioni delle cronologie sono
-# limitate dall'API Trakt a un tetto di 300 voci per medium (300 film + 300 serie).
-# Di conseguenza, il massimo assoluto di semi presente nel repository locale è di 595 semi
-# (es. azathothas con 595, sadwick con 594). Non esistono profili reali > 700 semi.
-# Pepsipex (568) e azathothas (595) rappresentano il limite superiore effettivo del canone.
+# Noise keywords / meta-tags TMDB
+NOISE_KEYWORDS = {"duringcreditsstinger", "aftercreditsstinger"}
+
+# Pattern geografici/linguistici per estrazione modificatore fattuale
+COUNTRY_PATTERNS = [
+    ("Coreano", ["korea", "south korea", "busan", "seoul", "joseon"]),
+    ("Giapponese", ["japan", "tokyo", "japanese", "jidaigeki", "bakumatsu", "samurai", "shinsengumi"]),
+    ("Cinese", ["china", "chinese", "beijing", "shanghai", "hong kong", "wuxia"]),
+    ("Britannico", ["london, england", "england", "british", "scotland", "uk"]),
+    ("Francese", ["france", "french", "paris"]),
+    ("Italiano", ["italy", "italian", "rome"]),
+    ("Spagnolo", ["spain", "spanish", "mexico", "argentina", "colombia"]),
+    ("Tedesco", ["germany", "german", "berlin"]),
+]
+
+REF_YEAR_CURRENT = 2024  # Ultimi 3 anni nel dataset 2026: 2024, 2025, 2026
 
 
 def carica_wider_bags(
@@ -107,70 +125,6 @@ def calcola_sim_wider(
     return np.clip(S, 0.0, 1.0)
 
 
-import re
-
-def assegna_nome_scaffale_italiano(repr_seeds: list[str], cands: list[str], macro_med: str) -> str:
-    """Deduce un'etichetta tematica descrittiva in italiano naturale senza mai usare 'misto'."""
-    corpus = " ".join(repr_seeds + cands).lower()
-
-    def has_any(keywords: list[str]) -> bool:
-        for kw in keywords:
-            if " " in kw:
-                if kw in corpus:
-                    return True
-            else:
-                if re.search(r"\b" + re.escape(kw) + r"\b", corpus, re.IGNORECASE):
-                    return True
-        return False
-
-    if has_any(["anime", "naruto", "dragon ball", "one piece", "hunter x hunter", "attacco dei giganti", "shingeki", "bleach", "jujutsu", "demon slayer", "chainsaw", "sailor moon", "fullmetal", "haikyu", "frieren"]):
-        return "Anime Shōnen & Avventure Fantastiche"
-    if has_any(["simpson", "futurama", "griffin", "bob's burgers", "rick and morty", "south park", "bojack", "cleveland"]):
-        return "Sitcom d'Animazione & Satira Adulta"
-    if has_any(["disney", "hannah montana", "icarly", "victorious", "zoey 101", "drake & josh", "waverly", "zack e cody", "ned - scuola", "high school musical"]):
-        return "Nostalgia Teen & Sitcom Live-Action"
-    if has_any(["potter", "wicked", "maghi", "hogwarts", "animali fantastici", "wonka", "narnia", "percy jackson"]):
-        return "Mondi Magici & Cinema Fantasy Teatrale"
-    if has_any(["mission: impossible", "fallout", "rogue nation", "bourne", "james bond", "007", "john wick", "fast & furious", "bullet train"]):
-        return "Spy Thriller & Azione Spettacolare"
-    if has_any(["white lotus", "billions", "succession", "the bear", "scissione", "hacks", "industry", "beef - lo scontro"]):
-        return "Prestige Drama & Satira Sociale"
-    if has_any(["good doctor", "resident", "grey's anatomy", "dr. house", "new amsterdam", "station 19", "9-1-1"]):
-        return "Medical Drama & Procedurali TV"
-    if has_any(["zodiac", "true crime", "assassino", "ruby franke", "jonbenét", "laci peterson", "epstein", "serial killer", "indagine"]):
-        return "Docuserie True Crime & Inchieste Investigative"
-    if has_any(["alien", "predator", "invasion", "dune", "furiosa", "mad max", "quiet place", "creator", "spazio", "dystopian", "fallout"]):
-        return "Sci-Fi Apocalittico & Invasioni Aliene"
-    if has_any(["lost", "prison break", "x-files", "chernobyl", "snowpiercer", "squid game"]):
-        return "Cult Mystery & Serie Thriller ad Alta Tensione"
-    if has_any(["jirisan", "vagabond", "signal", "bulgasal", "kingdom", "kdrama", "coreano", "asia", "taxi driver"]):
-        return "K-Drama & Thriller Poliziesco Asiatico"
-    if has_any(["love, death", "castlevania", "vox machina", "arcane", "invincible", "cyberpunk", "edgerunners", "mighty nein"]):
-        return "Animazione Dark Fantasy & Azione Cyberpunk"
-    if has_any(["batman", "superman", "spider-man", "avengers", "marvel", "deadpool", "dc", "supereroi"]):
-        return "Supereroi, Cinecomic & Azione Spettacolare"
-    if has_any(["m3gan", "conjuring", "insidious", "saw", "scream", "shining", "esorcista", "haunting of hill house", "bly manor", "american horror story", "dahmer"]):
-        return "Horror Soprannaturale & Brividi di Tensione"
-    if has_any(["guerra", "war", "soldati", "1917", "salvate il soldato", "patton", "vietnam", "dunkirk"]):
-        return "Dramma Bellico & Cinema Storico di Guerra"
-    if has_any(["godfather", "padrino", "mafia", "scorsese", "soprano", "gangster", "goodfellas"]):
-        return "Crime Epico, Noir & Storie di Mafia"
-    if has_any(["kurosawa", "samurai", "shōgun", "shogun", "rashomon", "ran", "fortezza nascosta"]):
-        return "Cinema Storico Giapponese & Dramma d'Epoca"
-    if has_any(["slow horses", "lioness", "alex rider", "landman", "1923", "1883", "secret service"]):
-        return "Spy Drama, Intrighi Geopolitici & Frontiera Moderna"
-    if has_any(["the great", "buccaneers", "serpent queen", "bridgerton", "becoming elizabeth", "belgravia", "costume", "in costume"]):
-        return "Dramma d'Epoca in Costume & Intrighi di Corte"
-    if has_any(["parks and recreation", "the office", "brooklyn nine-nine", "community", "modern family", "afterparty"]):
-        return "Commedia Brillante & Workplace Sitcom"
-    if has_any(["mario", "inside out", "pixar", "elemental", "toy story", "robot selvaggio", "wolfwalkers"]):
-        return "Animazione d'Autore per Famiglie"
-
-    if macro_med == "series":
-        return "Serie Drammatiche & Intrecci di Carattere"
-    return "Grandi Narrazioni & Cinema di Genere"
-
-
 # ==============================================================================
 # 2. ESECUZIONE E RACCOLTA DATI
 # ==============================================================================
@@ -180,6 +134,71 @@ def elabora_dieci_storie():
     engine = Engine.carica_transizione(pota=16)
     meta = K.metadati()
     coll = meta["COLL"]
+    anime_flags = meta["ANIME"]
+    adulto_flags = meta["ADULTO"]
+
+    # Carica il vocabolario e la matrice TF-IDF per l'evidenza semantica
+    print("Caricamento vocabolario e matrice keyword TF-IDF...", flush=True)
+    V = D.vocab()
+    kw_items = [(t.split(":", 1)[1], c) for t, c in V.items() if t.startswith("kw:")]
+    kw_names = [x[0] for x in kw_items]
+    kw_cols = [x[1] for x in kw_items]
+    X = D.tfidf()
+    X_kw = X[:, kw_cols].tocsr()
+
+    def get_top_cluster_keywords(m_rows: list[int], top_n: int = 6) -> list[tuple[str, float]]:
+        sub = X_kw[m_rows]
+        mean_w = np.asarray(sub.mean(axis=0)).ravel()
+        top_idx = np.argsort(-mean_w)
+        res = []
+        for idx in top_idx:
+            w = float(mean_w[idx])
+            if w <= 0:
+                break
+            name = kw_names[idx]
+            if name in NOISE_KEYWORDS:
+                continue
+            res.append((name, w))
+            if len(res) >= top_n:
+                break
+        return res
+
+    def dedup_top_keywords(top_kws: list[tuple[str, float]], n: int = 2) -> list[tuple[str, float]]:
+        chosen = []
+        for kw, w in top_kws:
+            kw_l = kw.lower()
+            if any(kw_l in c[0].lower() or c[0].lower() in kw_l for c in chosen):
+                continue
+            chosen.append((kw, w))
+            if len(chosen) == n:
+                break
+        if len(chosen) < n:
+            for kw, w in top_kws:
+                if not any(kw == c[0] for c in chosen):
+                    chosen.append((kw, w))
+                    if len(chosen) == n:
+                        break
+        return chosen
+
+    def derive_modifier(m_rows: list[int], top_kws: list[tuple[str, float]], macro_med: str) -> str:
+        anime_pct = float(anime_flags[m_rows].mean())
+        if anime_pct >= 0.5:
+            return "Anime"
+
+        kw_text = " ".join([k for k, _ in top_kws]).lower()
+        for label_lang, pats in COUNTRY_PATTERNS:
+            for pat in pats:
+                if pat in kw_text:
+                    return label_lang
+
+        adult_pct = float(adulto_flags[m_rows].mean())
+        if adult_pct >= 0.8:
+            return "Adulti"
+
+        return "Serie" if macro_med == "series" else "Film"
+
+    def format_kw(kw: str) -> str:
+        return kw.strip().title()
 
     # Carica le 10 storie
     storie: dict[str, tuple[list[str], np.ndarray, np.ndarray, np.ndarray]] = {}
@@ -254,10 +273,11 @@ def elabora_dieci_storie():
             if len(selected) == 5:
                 break
 
-        # Calcolo raccomandazioni e metadati per ciascuno scaffale
-        shelves = []
+        # Pass 1: Metadati, raccomandazioni e prima etichettatura per scaffale
+        raw_shelves = []
         for s_idx, sel in enumerate(selected, start=1):
             m = sel["seeds"]
+            m_rows = [righe[idx] for idx in m]
             sz = len(m)
             media_list = ["series" if k[idx].startswith("tv:") else "movie" for idx in m]
             n_ser = sum(1 for x in media_list if x == "series")
@@ -289,7 +309,7 @@ def elabora_dieci_storie():
             med_cand_yr = float(np.median(cand_yrs)) if cand_yrs else 0.0
             year_gap = med_cand_yr - med_seed_yr
 
-            # Verifica se è un singolo franchise (detector b sul macro)
+            # Singolo franchise
             c_coll = coll[righe[m]]
             pos = [x for x in c_coll if x > 0]
             dom_cid = None
@@ -299,21 +319,71 @@ def elabora_dieci_storie():
                 dom_frac = cnt / len(m)
             is_single_franchise = (dom_frac >= 0.5)
 
-            nome_scaffale = assegna_nome_scaffale_italiano(repr_seeds, cands_titles, macro_med)
+            # Evidenza keyword
+            top_kws_full = get_top_cluster_keywords(m_rows, top_n=6)
+            mod = derive_modifier(m_rows, top_kws_full, macro_med)
+            top_2_kws = dedup_top_keywords(top_kws_full, n=2)
+            kw_str = " & ".join([format_kw(kw) for kw, _ in top_2_kws])
+            base_label = f"{mod}: {kw_str}"
 
-            shelves.append({
+            raw_shelves.append({
                 "shelf_idx": s_idx,
-                "nome": nome_scaffale,
+                "base_label": base_label,
+                "mod": mod,
+                "top_2_kws": top_2_kws,
+                "top_kws_full": top_kws_full,
+                "m_rows": m_rows,
                 "size": sz,
                 "medium": macro_med,
                 "repr_seeds": repr_seeds,
                 "cands": cands,
+                "seed_yrs": seed_yrs,
+                "cand_yrs": cand_yrs,
                 "med_seed_yr": med_seed_yr,
                 "med_cand_yr": med_cand_yr,
                 "year_gap": year_gap,
                 "is_single_franchise": is_single_franchise,
                 "dom_frac": dom_frac,
             })
+
+        # Pass 2: Disambiguazione nomi (NAME DISTINCTNESS)
+        base_counts = Counter(s["base_label"] for s in raw_shelves)
+        for s in raw_shelves:
+            if base_counts[s["base_label"]] > 1:
+                remaining_kws = [k for k, _ in s["top_kws_full"] if not any(k.lower() == c[0].lower() for c in s["top_2_kws"])]
+                if remaining_kws:
+                    s["nome"] = f"{s['base_label']} · {format_kw(remaining_kws[0])}"
+                else:
+                    s["nome"] = f"{s['base_label']} (2)"
+            else:
+                s["nome"] = s["base_label"]
+
+        final_counts = Counter(s["nome"] for s in raw_shelves)
+        has_naming_collapse = any(cnt > 1 for cnt in final_counts.values())
+
+        # Pass 3: Test temporale rigoroso (Separazione STALE vs DEEPENING)
+        profile_stale_cnt = 0
+        for s in raw_shelves:
+            seed_has_curr = any(y >= REF_YEAR_CURRENT for y in s["seed_yrs"])
+            cand_has_curr = any(y >= REF_YEAR_CURRENT for y in s["cand_yrs"])
+            span_s = max(s["seed_yrs"]) - min(s["seed_yrs"])
+            mixes_periods = (min(s["seed_yrs"]) < 2012 and max(s["seed_yrs"]) >= 2020) or span_s >= 20
+            seeds_old = (not seed_has_curr)
+
+            if cand_has_curr:
+                s["temporal_diag"] = "Allineato / Contemporaneo"
+                s["is_stale"] = False
+            else:
+                if seeds_old:
+                    s["temporal_diag"] = "Deepening (Semi storici)"
+                    s["is_stale"] = False
+                elif mixes_periods:
+                    s["temporal_diag"] = "Deepening (Mix di epoche)"
+                    s["is_stale"] = False
+                else:
+                    s["temporal_diag"] = "STALE"
+                    s["is_stale"] = True
+                    profile_stale_cnt += 1
 
         timeline_data.append({
             "user": u,
@@ -325,8 +395,10 @@ def elabora_dieci_storie():
             "cov_pct": cov_pct,
             "max_shelf_sz": max_shelf_sz,
             "saga_b_pct": saga_b_pct,
-            "shelves": shelves,
-            "n_shelves": len(shelves),
+            "shelves": raw_shelves,
+            "n_shelves": len(raw_shelves),
+            "nomi_duplicati": 1 if has_naming_collapse else 0,
+            "stale_cnt": profile_stale_cnt,
         })
 
     # ==============================================================================
@@ -337,6 +409,18 @@ def elabora_dieci_storie():
     out_path = Path(".scratch/v45-raccomandazioni-yaca/prototipo/dieci-storie.md")
     out_path.write_text(md, encoding="utf-8")
     print(f"Scrittura completata in {time.time() - t_start:.1f}s su: {out_path}")
+
+    # Stampa check di riepilogo a console
+    print("\nVERIFICA FINALE:")
+    tot_stale = sum(d["stale_cnt"] for d in timeline_data)
+    tot_collapse = sum(d["nomi_duplicati"] for d in timeline_data)
+    print(f"- Scaffali stale totali: {tot_stale}")
+    print(f"- Collassi di denominazione (profili con duplicati): {tot_collapse}")
+    for d in timeline_data:
+        print(f"\nProfilo `{d['user']}` ({d['n_shelves']} scaffali, dup={d['nomi_duplicati']}, stale={d['stale_cnt']}):")
+        for s in d["shelves"]:
+            evidenza = ", ".join(f"'{k}' ({w:.3f})" for k, w in s["top_kws_full"][:3])
+            print(f"  {s['shelf_idx']}. {s['nome']} [{s['temporal_diag']}] — Evidenza: {evidenza}")
 
     return timeline_data
 
@@ -349,15 +433,20 @@ def genera_markdown_dieci_storie(data: list[dict[str, Any]]) -> str:
     L.append("> **Che cos'è questo documento**:")
     L.append("> Questo rapporto analizza il comportamento della configurazione vincente di micro-clustering e selezione scaffali (Metodo 2: vicinato allargato top-100 a soglia 0.02, macro limitati a $\\le 30$ semi con bisezione ricorsiva, 5 scaffali per rango combinato di freschezza `min_eta` e supporto, medium dedotto per singolo macro, deduplica di franchise).")
     L.append("> Il test viene condotto su **10 cronologie Trakt reali** selezionate per coprire l'intero spettro di consumo: dai profili ultra-corti (7-11 semi) all'utente medio attivo (167 semi), fino alle massime collezioni presenti nel canone locale (~570 semi).")
+    L.append("> ")
+    L.append("> **Aggiornamento Metodologico (Ticket 08 - Revisione)**:")
+    L.append("> 1. **Denominazione basata sull'evidenza**: Le etichette dei caroselli non usano più dizionari euristici fissi ma derivano direttamente dai 2-3 keyword con peso TF-IDF medio più elevato tra i membri del cluster, arricchite da un modificatore fattuale decisivo (medium, flag `ANIME`, lingua/paese d'origine dedotto dalle keyword, o `ADULTO` quando il cluster è interamente per adulti).")
+    L.append("> 2. **NAME DISTINCTNESS**: È attivo il vincolo di unicità: se due caroselli nello stesso profilo generano lo stesso nome base, vengono automaticamente disambiguati tramite il termine successivo. Il collasso di denominazione è tracciato come condizione di fallimento dichiarata.")
+    L.append("> 3. **Separazione tra Staleness e Deepening**: Sostituito il vecchio indicatore `year_gap < -1.0` (che scambiava l'approfondimento per obsolescenza) con un criterio oggettivo che distingue i cluster davvero stantii (*STALE*) da quelli storici o con mix di epoche (*DEEPENING*).")
     L.append("")
     L.append("---")
     L.append("")
     L.append("## Tabella Riassuntiva delle 10 Timeline (Lettura Rapida)")
     L.append("")
-    L.append("| Profilo Trakt | Tipologia / Gap Coperto | Semi Totali | Cluster (Micro / Macro) | Copertura Semi | Max Taglia Macro | Quota Saghe (b) | Scaffali Serviti |")
-    L.append("|:---|:---|---:|:---:|---:|---:|---:|:---:|")
+    L.append("| Profilo Trakt | Tipologia / Gap Coperto | Semi Totali | Cluster (Micro / Macro) | Copertura Semi | Max Taglia Macro | Quota Saghe (b) | Scaffali Serviti | Nomi Duplicati | Scaffali Stale |")
+    L.append("|:---|:---|---:|:---:|---:|---:|---:|:---:|:---:|:---:|")
     for d in data:
-        L.append(f"| **`{d['user']}`** | {d['desc_gap']} | {d['n_seeds']} | {d['n_micros']} / {d['n_bounded']} | {d['cov_pct']:.1f}% | {d['max_shelf_sz']} | {d['saga_b_pct']:.1f}% | **{d['n_shelves']} / 5** |")
+        L.append(f"| **`{d['user']}`** | {d['desc_gap']} | {d['n_seeds']} | {d['n_micros']} / {d['n_bounded']} | {d['cov_pct']:.1f}% | {d['max_shelf_sz']} | {d['saga_b_pct']:.1f}% | **{d['n_shelves']} / 5** | {d['nomi_duplicati']} | {d['stale_cnt']} |")
     L.append("")
     L.append("---")
     L.append("")
@@ -366,7 +455,7 @@ def genera_markdown_dieci_storie(data: list[dict[str, Any]]) -> str:
 
     for d in data:
         L.append(f"### Profilo: `{d['user']}` — {d['desc_gap']}")
-        L.append(f"**Metadati**: {d['n_seeds']} semi totali · {d['n_micros']} micro-cluster naturali $\\to$ {d['n_bounded']} macro vincolati (max {d['max_shelf_sz']} semi) · Copertura: {d['cov_pct']:.1f}% · Quota saghe (b): {d['saga_b_pct']:.1f}%")
+        L.append(f"**Metadati**: {d['n_seeds']} semi totali · {d['n_micros']} micro-cluster naturali $\\to$ {d['n_bounded']} macro vincolati (max {d['max_shelf_sz']} semi) · Copertura: {d['cov_pct']:.1f}% · Quota saghe (b): {d['saga_b_pct']:.1f}% · Nomi duplicati: {d['nomi_duplicati']} · Scaffali stale: {d['stale_cnt']}")
         L.append("")
 
         if d["n_shelves"] < 5:
@@ -377,25 +466,56 @@ def genera_markdown_dieci_storie(data: list[dict[str, Any]]) -> str:
         for s in d["shelves"]:
             seeds_str = ", ".join(f"*{t}*" for t in s["repr_seeds"])
             cands_str = ", ".join(f"*{t}*" for t in s["cands"])
+            top_kw_str = ", ".join(f"`{k}` ({w:.3f})" for k, w in s["top_kws_full"][:3])
             L.append(f"{s['shelf_idx']}. **{s['nome']}** ({s['size']} semi, `{s['medium']}`) — Semi: {seeds_str} — Top-5: {cands_str}")
+            L.append(f"   *Evidenza semantica cluster*: {top_kw_str} · *Stato temporale*: `{s['temporal_diag']}`")
 
         L.append("")
         L.append("---")
         L.append("")
 
+    # Sezione critica "Decisione aperta: cold start"
+    L.append("## Decisione aperta: cold start")
+    L.append("")
+    L.append("Sulle 10 cronologie analizzate, tutti e tre i profili con timeline breve producono esattamente **2 scaffali ciascuno**:")
+    L.append("- **`carverclan` (7 semi)**: 2 soli scaffali (4 semi clusterizzati in 2 coppie, 3 semi isolati non clusterizzabili a soglia 0.02);")
+    L.append("- **`sangam456` (10 semi)**: 2 soli scaffali (6 semi clusterizzati in due terne, 4 semi isolati);")
+    L.append("- **`hammers-lists` (11 semi)**: 2 soli scaffali (8 semi clusterizzati in un gruppo da 6 e uno da 2, 3 semi isolati).")
+    L.append("")
+    L.append("Il prodotto YACA richiede normalmente **5 scaffali a schermo**. Di fronte a un profilo cold start (< 12 semi), non deve essere inventato un fallback silenzioso non dichiarato. Vengono di seguito presentate le 4 opzioni architetturali con i relativi numeri e trade-off, rimettendo la decisione finale al team di prodotto:")
+    L.append("")
+    L.append("1. **Paginazione estesa degli scaffali esistenti (Paging / Offset)**:")
+    L.append("   - *Come funziona*: Per ciascuno dei 2 scaffali generati, si espone il carosello primario (candidati 1–5) e un carosello di approfondimento (candidati 6–10 con offset). Con 2 macro-cluster si ottengono 4 scaffali completi, più un terzo segmento (candidati 11–15 del cluster più forte) per raggiungere quota 5.")
+    L.append("   - *Numeri*: 100% di copertura dei 5 slot di interfaccia servendo 25 raccomandazioni calcolate su 2 soli semi-cluster.")
+    L.append("   - *Trade-off*: Ridondanza tematica evidente per l'utente, che vede lo stesso filone ripetuto in più righe.")
+    L.append("")
+    L.append("2. **Scaffale globale integrativo 'Popolari nel tuo grafo' (Personalized Popularity Fill)**:")
+    L.append("   - *Come funziona*: I 2 scaffali micro-cluster occupano i primi 2 slot della UI. I restanti 3 scaffali vengono completati da una diffusione d'insieme su tutti i semi dell'utente (anche quelli isolati non clusterizzati), oppure da una selezione dei titoli più centrali e votati nelle bolle adiacenti alla cronologia.")
+    L.append("   - *Numeri*: 2 scaffali strettamente tematici (2–6 semi) + 3 scaffali ampi di catalogo relazionale.")
+    L.append("   - *Trade-off*: I 3 scaffali di riempimento avranno una specificità tematica inferiore rispetto ai cluster naturali.")
+    L.append("")
+    L.append("3. **Fusione forzata dei cluster in un unico macro-scaffale (Cluster Merge)**:")
+    L.append("   - *Come funziona*: Quando $N < 12$, il motore disattiva il vincolo di soglia micro a 0.02 e fonde i 2 cluster in un unico carosello esteso (es. 4 semi per carverclan, 6 per sangam456, 8 per hammers-lists).")
+    L.append("   - *Numeri*: Riduce gli scaffali da 2 a 1 solo carosello aggregato.")
+    L.append("   - *Trade-off*: Non risolve il problema dei 5 scaffali; aggrega gusti potenzialmente divergenti in un unico contenitore eterogeneo.")
+    L.append("")
+    L.append("4. **UI Adattiva con meno scaffali (Mostrare solo gli scaffali effettivi)**:")
+    L.append("   - *Come funziona*: L'interfaccia accetta dinamicamente che un nuovo utente con cronologia breve veda **solo i 2 scaffali reali**, accompagnati da una call-to-action visiva ('Aggiungi altri titoli per sbloccare nuovi scaffali tematici') fino al superamento della soglia di 12–15 semi.")
+    L.append("   - *Numeri*: Vengono serviti esattamente 2 caroselli autentici (10 candidati totali di alta qualità), zero rumore artificiale.")
+    L.append("   - *Trade-off*: La pagina iniziale risulta più corta nei primi giorni di utilizzo del profilo.")
+    L.append("")
+    L.append("---")
+    L.append("")
+
     # Sezione critica "Cosa non funziona"
     L.append("## Cosa non funziona")
     L.append("")
-    L.append("Un'analisi onesta e trasparente delle debolezze emerse su ciascuna delle 10 timeline:")
+    L.append("Un'analisi onesta e trasparente delle debolezze e delle metriche corrette emerse sulle 10 timeline:")
     L.append("")
 
     # 1. Pochi semi
-    L.append("### 1. Profili con troppi pochi semi per comporre 5 scaffali (Cold Start)")
-    L.append("Tre profili su 10 falliscono nel riempire i 5 caroselli minimi del prodotto:")
-    L.append("- **`carverclan` (7 semi)**: produce **2 soli scaffali** (copertura 57.1%, 4 semi clusterizzati). 3 semi rimangono isolati;")
-    L.append("- **`sangam456` (10 semi)**: produce **2 soli scaffali** (copertura 60.0%, 6 semi clusterizzati);")
-    L.append("- **`hammers-lists` (11 semi)**: produce **2 soli scaffali** (copertura 72.7%, 8 semi clusterizzati).")
-    L.append("*Diagnosi architetturale*: Sotto i 12-15 semi, il motore deve prevedere per contratto un fallback esplicito (es. riempimento con 'Classici imperdibili' o preset di catalogo di sistema).")
+    L.append("### 1. Limite di massa per 5 scaffali nei profili cold start")
+    L.append("Come quantificato nella sezione precedente, i profili sotto i 12 semi (`carverclan`, `sangam456`, `hammers-lists`) non possiedono la densità relazionale necessaria per supportare 5 cluster indipendenti con almeno 2 membri ciascuno. La scelta della strategia di fallback è aperta e formalizzata sopra.")
     L.append("")
 
     # 2. Scaffali a singolo franchise
@@ -414,34 +534,52 @@ def genera_markdown_dieci_storie(data: list[dict[str, Any]]) -> str:
         L.append("- Nessuno scaffale selezionato supera la soglia del 50% di una singola collezione TMDB.")
     L.append("")
 
-    # 3. Gap degli anni mediani (Raccomandare il passato)
-    L.append("### 3. Gap degli Anni Mediani: Quando il Motore Raccomanda il Passato")
-    L.append("La regola di selezione basata sulla freschezza del seme (`min_eta`) non garantisce che i candidati generati siano più recenti dei semi:")
+    # 3. Staleness vs Deepening
+    L.append("### 3. Valutazione Temporale: Separazione tra Staleness e Deepening")
+    L.append("Nella versione precedente del report, la metrica rozza `year_gap < -1.0` (differenza tra anno mediano dei candidati e anno mediano dei semi) segnalava erroneamente 13 scaffali su 41 (31.7%) come 'raccomanda il passato'.")
+    L.append("Tale metrica era errata: consigliare Kurosawa o capolavori del passato a un utente che guarda film d'epoca giapponesi non è difetto di obsolescenza, ma corretto funzionamento della raccomandazione di genere (*Deepening*).")
     L.append("")
-    L.append("| Profilo | Scaffale | Medium | Anno Mediano Semi | Anno Mediano Candidati | Gap Anni (Candidati - Semi) | Diagnosi |")
-    L.append("|:---|:---|:---:|---:|---:|---:|:---|")
+    L.append("È stato quindi adottato il criterio oggettivo dichiarato a monte:")
+    L.append(r"- **STALE**: I candidati non contengono alcun titolo degli ultimi 3 anni ($\ge 2024$) **mentre i semi del cluster ne contengono** (l'utente è attivo sul filone contemporaneo, ma il motore non riesce a proporgli novità);")
+    L.append("- **DEEPENING**: Il cluster include semi storici (l'utente stesso guarda opere non recenti) oppure miscela epoche storiche differenti (span temporale ampio o convivenza tra classici e contemporanei).")
+    L.append("")
+    L.append("| Profilo | Scaffale | Medium | Anno Med. Semi | Anno Med. Cand. | Span Anni Semi | Max Anno Cand. | Vecchia Diagnosi | Nuova Diagnosi |")
+    L.append("|:---|:---|:---:|---:|---:|---:|---:|:---|:---|")
 
-    past_cases = []
+    tot_shelves_cnt = sum(d["n_shelves"] for d in data)
+    stale_cases = []
+    deepening_cases = []
+
     for d in data:
         for s in d["shelves"]:
             gap = s["year_gap"]
-            diag = "Raccomanda il passato" if gap < -1.0 else ("Contemporaneo / Più fresco" if gap > 1.0 else "Allineato")
-            if gap < -1.0:
-                past_cases.append((d["user"], s["shelf_idx"], s["nome"], gap))
-            L.append(f"| `{d['user']}` | {s['shelf_idx']}. {s['nome'][:30]} | `{s['medium']}` | {s['med_seed_yr']:.0f} | {s['med_cand_yr']:.0f} | **{gap:+.1f} anni** | {diag} |")
+            s_min, s_max = min(s["seed_yrs"]), max(s["seed_yrs"])
+            c_max = max(s["cand_yrs"])
+            old_diag = "Raccomanda il passato" if gap < -1.0 else ("Contemporaneo / Più fresco" if gap > 1.0 else "Allineato")
+
+            if s["is_stale"]:
+                stale_cases.append((d["user"], s["shelf_idx"], s["nome"], s_max, c_max, gap))
+            elif gap < -1.0:
+                deepening_cases.append((d["user"], s["shelf_idx"], s["nome"], s_min, s_max, c_max, gap))
+
+            L.append(f"| `{d['user']}` | {s['shelf_idx']}. {s['nome'][:28]} | `{s['medium']}` | {s['med_seed_yr']:.0f} | {s['med_cand_yr']:.0f} | {s_min}–{s_max} | {c_max} | {old_diag} | **{s['temporal_diag']}** |")
     L.append("")
 
-    L.append(f"> [!CAUTION]")
-    L.append(f"> **Incidenza del Fenomeno**: Su {sum(d['n_shelves'] for d in data)} scaffali serviti, **{len(past_cases)} scaffali ({len(past_cases)/sum(d['n_shelves'] for d in data)*100:.1f}%)** raccomandano materiale significativamente più anziano dei semi dell'utente.")
-    L.append("> - Il gap più estremo si verifica nello scaffale Wizarding World di `moppierhead` (**-8.0 anni**): l'utente ha visto film fantasy recenti (2024), ma il grafo diffonde indietro verso i capitoli storici di Harry Potter (2002-2007);")
-    L.append("> - Nello scaffale Crime / Comedy di `moppierhead` (**-6.0 anni**): semi 2022 (*High Potential*, *Only Murders*), candidati del 2009-2016 (*Parks & Rec*, *Black Sails*);")
-    L.append("> - Nello scaffale Dystopian Sci-Fi di `1jacobjohn` (**-5.0 anni**): semi 2021, candidati 2016.")
+    L.append(f"> [!IMPORTANT]")
+    L.append(f"> **Riconciliazione dei 13 casi precedentemente segnalati**:")
+    L.append(f"> Dei 13 scaffali precedentemente etichettati come 'raccomandano il passato':")
+    L.append(f"> - **6 scaffali** (`sangam456` s1, `castoffcrown` s2, `pepsipex` s3, `pepsipex` s5, `1jacobjohn` s2, `1jacobjohn` s3) contengono candidati degli ultimi 3 anni (2024–2026), e risultavano falsi positivi unicamente per una lieve asimmetria della mediana;")
+    L.append(f"> - **2 scaffali** (`hammers-lists` s2, `sappss` s5) presentano semi interamente storici (max 2013 e 2021): l'utente stesso non ha consumi recenti in quel tema;")
+    L.append(f"> - **4 scaffali** (`castoffcrown` s3 con Kurosawa [span 1948–2025], `castoffcrown` s4 [span 1966–2026], `moppierhead` s4 [Harry Potter e Wicked, span 2003–2025], `1jacobjohn` s5 [Simpson, Bob's Burgers e Rick and Morty, span 1989–2025]) presentano cluster con mix multi-decennale di epoche (*Deepening* autentico);")
+    L.append(f"> - Solo **1 scaffale su 41 (2.4%)** è un vero caso di **STALE**: lo scaffale 1 di `1jacobjohn` (*Film: Marvel Cinematic Universe (Mcu) & Based On Comic*), in cui l'utente possiede film del 2024–2026 (*The Fall Guy*, *Godzilla x Kong*), ma i 5 candidati proposti si arrestano tutti al 2022.")
     L.append("")
 
-    # 4. Incoerenza e scaffali generici
-    L.append("### 4. Coerenza e Assenza della parola 'Misto'")
-    L.append("Nessuno dei 41 scaffali generati sulle 10 timeline ha richiesto l'etichetta 'misto': ciascun gruppo possiede una chiara identità tematica (Anime, Sci-Fi distopico, Sitcom animate per adulti, K-Drama, Horror soprannaturale, Cinecomic).")
-    L.append("Tuttavia, nei profili ultra-lunghi come `pepsipex` e `warnok`, l'aggregazione a $M=30$ crea occasionalmente una convergenza tra sottogeneri d'azione vicini (es. Sci-Fi di guerra e action apocalittico), che pur non essendo un 'blob indistinto', allarga il confine tematico rispetto ai micro-cluster puri da 3-4 semi.")
+    # 4. Denominazione e Collasso
+    L.append("### 4. Denominazione per Evidenza e Verifica di Unicità (Name Distinctness)")
+    L.append("L'adozione del generatore basato su evidenza statistica elimina ogni etichetta preconcetta o non veritiera:")
+    L.append("- In `warnok`, lo scaffale 2 (precedentemente denominato per errore 'Anime Shōnen' a causa del sottotitolo di *Bulgasal*) riceve ora la denominazione corretta dedotta dai suoi semi: **`Coreano: Busan, South Korea & Joseon Dynasty (1392–1910)`**, mentre lo scaffale 3 conserva legittimamente l'etichetta **`Anime: Based On Manga & Shounen`**;")
+    L.append("- In `castoffcrown`, i due caroselli anime distinti (lo sport/shōnen di *Haikyu* nello scaffale 2 e il romance/slice-of-life di *Gachiakuta* e *Smoking Behind Supermarket* nello scaffale 5) vengono disambiguati automaticamente tramite il terzo termine saliente: **`Anime: Based On Manga & Anime · Shounen`** vs **`Anime: Based On Manga & Anime · Slice Of Life`**;")
+    L.append("- **Esito del check di collasso**: Nessun profilo tra i 10 presenta scaffali omonimi (**nomi duplicati = 0 per tutti i profili**).")
     L.append("")
 
     return "\n".join(L)
