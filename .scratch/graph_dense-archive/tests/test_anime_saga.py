@@ -1,14 +1,8 @@
 """Ticket 11 — smorzare le appendici di saga dentro gli anime, senza toccare il resto."""
-import importlib.util
-from pathlib import Path
-
 import numpy as np
 import scipy.sparse as sp
 
-_spec = importlib.util.spec_from_file_location(
-    "mixer", Path(__file__).resolve().parents[3] / ".scratch" / "distillazione-grafo" / "mixer.py")
-mixer = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(mixer)
+from graph.build import mixer
 
 
 def test_smorza_solo_gli_archi_anime_della_stessa_saga():

@@ -1,14 +1,8 @@
 """Ticket 04 — il gate asimmetrico: attenuare solo dove serve."""
-import importlib.util
-from pathlib import Path
-
 import numpy as np
 import scipy.sparse as sp
 
-_spec = importlib.util.spec_from_file_location(
-    "mixer", Path(__file__).resolve().parents[3] / ".scratch" / "distillazione-grafo" / "mixer.py")
-mixer = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(mixer)
+from graph.build import mixer
 
 
 def _grafo(righe):

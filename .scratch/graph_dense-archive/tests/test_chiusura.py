@@ -1,15 +1,8 @@
 """Ticket 02 — la chiusura moltiplica, non chiude: i tre modi devono comportarsi come dichiarato."""
-import importlib.util
-import sys
-from pathlib import Path
-
 import numpy as np
 import scipy.sparse as sp
 
-_spec = importlib.util.spec_from_file_location(
-    "chiudi", Path(__file__).resolve().parents[3] / ".scratch" / "distillazione-grafo" / "chiudi.py")
-chiudi = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(chiudi)
+from graph.build import chiudi
 
 
 def _due_cricche():

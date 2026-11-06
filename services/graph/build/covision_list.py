@@ -5,8 +5,8 @@ con l'unione delle liste dello stesso autore. Peso per autore 1/sqrt(k-1), tetto
 da 1.000 voci non vale quanto migliaia di spettatori. Nessun fattore temporale: le liste non hanno
 date di visione.
 
-  py .scratch/distillazione-grafo/covision-list.py build
-  py .scratch/distillazione-grafo/covision-list.py build --type      # esporta come tipo per misurarlo
+  PYTHONPATH=services py -m graph.build.covision_list build
+  PYTHONPATH=services py -m graph.build.covision_list build --type      # esporta il tipo LIST
 """
 import argparse
 import glob
@@ -17,14 +17,14 @@ from collections import defaultdict
 import numpy as np
 import scipy.sparse as sp
 
-from services.graph_dense import data as D
+from . import data as D
 
 CAP = 3.0
 TOPK = 20
 MINSUP = 2.0
 import os as _os
 MINSUP = float(_os.environ.get('LIST_MINSUP', MINSUP))
-OUTPATH = _os.environ.get('LIST_OUT', 'services/graph_dense/data/covision-list.npz')
+OUTPATH = _os.environ.get('LIST_OUT', str(D.C.BUILD_CACHE / 'covision-list.npz'))
 BLOCK = 1000
 
 
@@ -45,7 +45,7 @@ def carica_autori():
     # HOLDOUT: gli autori del dev set restano FUORI dal tipo, altrimenti i link che misuriamo
     # sarebbero già nel grafo (una lista → archi fra tutti i suoi film).
     hold = set()
-    _hf = os.environ.get('HOLDOUT_AUTORI', '.scratch/banco-casi/holdout-autori.json')
+    _hf = os.environ.get('HOLDOUT_AUTORI', str(D.C.RECIPES / 'holdout-autori.json'))
     if _hf and os.path.exists(_hf):
         hold = set(json.load(open(_hf, encoding='utf-8')))
         print(f'  holdout: {len(hold):,} autori esclusi dal tipo LIST')

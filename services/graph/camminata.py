@@ -60,13 +60,8 @@ def transizione_pronta(nome=None, k=None):
     # significa: la chiusura si applica DOPO il mixer e trasforma i pesi senza toccare la topologia,
     # quindi un artefatto "chiuso" e uno "non chiuso" hanno lo stesso numero di archi e cache diverse
     # solo se qualcuno se ne ricorda. Con la provenienza la cache si invalida da sola.
-    try:
-        from graph_dense import provenance as _PV
-        sha = _PV.chiave_cache(K.A(nome), pota=int(k))
-    except ImportError:
-        # il motore gira con `services/` sul path: se `graph_dense` non e' importabile si degrada
-        # sullo sha del file, che e' il comportamento precedente (meno preciso, non rotto).
-        sha = K.sha_file(nome)
+    from . import provenance as _PV
+    sha = _PV.chiave_cache(K.A(nome), pota=int(k))
     if z.exists():
         d = np.load(z)
         if str(d["triangolo_sha"]) == sha and int(d["k"]) == int(k):

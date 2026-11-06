@@ -1,17 +1,11 @@
-"""Il grafo di YACA — il modulo, con una casa sua.
+"""Package di produzione del grafo YACA.
 
-Estratto da `.scratch/` il 15/10/2026, quando il lavoro e' arrivato al punto di dover essere usabile
-da qualcuno che non l'ha scritto.
+`motore.py`/`servizio.py` mantengono il runtime bubble V10 come percorso di rollback durante la
+migrazione. La build offline V45 e' in `graph.build` (non gira nel container di serving):
 
-  canon.py        il cuore: i titoli, le matrici, i banchi, i ranghi, i CONTRATTI
-  bubbles.py      il costruttore delle bolle: la miscela dei componenti, Leiden, la potatura
-  collocator.py   la collocazione di un titolo nuovo: V1 per la bolla, V3 per i vicini, la regola dei voti
-  plots.py        gli embedding delle trame via Ollama
-  pipeline.py     il comando unico: `python -m graph.pipeline <sottocomando>`
-  uscite.py       le uscite collocate: `python -m graph.uscite` costruisce la cache delle novita'
-                  (Ticket 10); a runtime il motore la legge senza ricostruire niente
+  PYTHONPATH=services py -m graph.build --check
+  PYTHONPATH=services py -m graph.build --build --version v45-replay
 
-Gli originali in `.scratch/` sono diventati **shim di due righe** che rimandano qui: i 117 script di
-misura continuano a funzionare, e la verita' e' una sola.
+La pipeline legacy `graph.pipeline` e' mantenuta temporaneamente per gli artefatti bubble.
 """
-__version__ = "1.0"
+__version__ = "1.1"

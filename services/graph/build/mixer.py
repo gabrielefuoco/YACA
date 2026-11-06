@@ -1,7 +1,7 @@
 """mixer.py — somma i tipi di arco in un grafo V12 (nessuna potatura, salvo richiesta).
 
-  py .scratch/distillazione-grafo/mixer.py --modo somma
-  py .scratch/distillazione-grafo/mixer.py --modo rrf --pota 100
+  PYTHONPATH=services py -m graph.build.mixer --modo somma
+  PYTHONPATH=services py -m graph.build.mixer --modo rrf --pota 100
 
 Legge i tipi gia' normalizzati e portati a quota 1 per riga in `tipi-pesi/`, applica i pesi da
 `v12/pesi.json` (mancante -> tutti 1) e scrive `v12/MIX-<modo>.npz`.
@@ -105,7 +105,7 @@ def _animazione():
     """True per i titoli con genere Animation nei Parquet TMDB (0 = film, 1 = serie)."""
     import json as _json
     import pandas as pd
-    from services.graph_dense import data as D
+    from . import data as D
     B = D.basic(); RO = B['row_of']
     out = np.zeros(B['N'], bool)
     for f, pre in (('.cache/tmdb/movies.parquet', 'movie'), ('.cache/tmdb/tv.parquet', 'tv')):
@@ -147,7 +147,7 @@ def damp_animazione(M, ani, fattore=0.2):
 def _runtime():
     """Durata in minuti per riga del canone (0 = sconosciuta). I Parquet la hanno, i metadati no."""
     import pandas as pd
-    from services.graph_dense import data as D
+    from . import data as D
     B = D.basic(); RO = B['row_of']
     out = np.zeros(B['N'], np.float32)
     for f, pre in (('.cache/tmdb/movies.parquet', 'movie'), ('.cache/tmdb/tv.parquet', 'tv')):
@@ -249,7 +249,7 @@ def gate_popolarita(M, voti, tau=3.0, slope=1.5, smooth=False):
 def _attributi_produzione():
     """Per ogni titolo del canone: (regista, set attori, set case di produzione)."""
     import pandas as pd
-    from services.graph_dense import data as D
+    from . import data as D
     B = D.basic(); RO = B['row_of']
     out = {}
     for f, pre in (('.cache/tmdb/movies.parquet', 'movie'), ('.cache/tmdb/tv.parquet', 'tv')):
@@ -381,7 +381,7 @@ def main():
     ap.add_argument('--tipi', default='')
     a = ap.parse_args()
 
-    from services.graph_dense import data as D
+    from . import data as D
     N = D.basic()['N']
     os.makedirs(DST, exist_ok=True)
     # BUG (handoff 5, 4): questo `open` era incondizionato e leggeva un percorso fisso, quindi su una
@@ -462,7 +462,7 @@ def main():
         M = damp_animazione(M, _animazione(), a.damp_anim_fattore)
     if a.damp_anime_saga:
         B = D.basic()
-        mMeta = np.load('services/graph_dense/data/graph/metadati-canone.npz', allow_pickle=True)
+        mMeta = np.load(D.C.SRC / D.C.META, allow_pickle=True)
         M, n_anime = damp_anime_saga(M, mMeta['ANIME'], B['COLL'].astype(np.int64), B['titoli'])
         print(f'  damping anime-saga: {n_anime:,} archi smorzati (x0.15)', flush=True)
     if a.pop_smooth:
@@ -480,7 +480,7 @@ def main():
 
     suffisso = ('-dc' if a.damp_coll else '') + ('-dt' if a.damp_titolo else '') + ('-ga' if a.gate_asimmetrico else '')
     out = f'{DST}/MIX-{a.modo}{suffisso}.npz'
-    from services.graph_dense import provenance as PV
+    from . import provenance as PV
     _params = {'modo': a.modo, 'alpha': a.alpha, 'pota': a.pota, 'simmetrizza': a.simmetrizza,
                'damp_coll': a.damp_coll, 'damp_titolo': a.damp_titolo, 'rrf_k': a.rrf_k,
                'temperatura': a.temperatura,

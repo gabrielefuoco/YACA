@@ -1,17 +1,7 @@
-"""pipeline.py — il comando unico del modulo. `python -m graph.pipeline <sottocomando>`
+"""CLI legacy del pipeline bubble V10.
 
-Perche' esiste: prima di oggi la pipeline erano cinque passi con dipendenze fra loro, sparsi in tre
-cartelle di `.scratch/`, e l'ordine giusto lo sapeva solo chi l'aveva costruito. Ora c'e' un posto dove
-guardare, e dei comandi che si possono lanciare.
-
-    python -m graph.pipeline stato            cosa c'e', cosa manca, gli hash, l'inventario
-    python -m graph.pipeline ricetta          i parametri con cui e' costruito tutto
-    python -m graph.pipeline colloca FILE     colloca titoli nuovi da un JSON
-    python -m graph.pipeline voti [SOGLIA]    la divisione per voti (dalla partizione base)
-    python -m graph.pipeline pesanti          come rigenerare tutto, per ordine
-
-`stato` e `colloca` e `voti` sono codice del modulo. `pesanti` non esegue nulla: stampa la sequenza
-dei comandi, perche' quei passi durano minuti e vanno lanciati con gli occhi aperti.
+Mantiene i comandi di ispezione/collocazione e gli step di costruzione delle bolle per il rollback.
+Non è la pipeline canonica del grafo V45: per la build sparse usare `PYTHONPATH=services py -m graph.build`.
 """
 from __future__ import annotations
 

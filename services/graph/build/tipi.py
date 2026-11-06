@@ -1,8 +1,8 @@
-"""tipi.py — gli archi di V12, un tipo per file, senza miscela.
+"""Tipi di arco V45: un costruttore per tipo, senza miscela.
 
-  py .scratch/distillazione-grafo/tipi.py covision
-  py .scratch/distillazione-grafo/tipi.py trama --k 100
-  py .scratch/distillazione-grafo/tipi.py kw --per-kw 20 --k 100
+  PYTHONPATH=services py -m graph.build.tipi covision
+  PYTHONPATH=services py -m graph.build.tipi trama --k 100
+  PYTHONPATH=services py -m graph.build.tipi kw --per-kw 20 --k 100
 
 Ogni tipo e' una CSR N x N float32 in services/graph/data/tipi/<TIPO>.npz, piu' una voce in
 manifest.json con ricetta, copertura e grado. La fonte di verita' resta l'emettitore: un tipo e' una
@@ -15,8 +15,8 @@ import time
 import numpy as np
 import scipy.sparse as sp
 
-from services.graph_dense import config as C, data as D
-from services.graph_dense import config as DC
+from . import config as C, data as D
+DC = C
 
 import os as _os
 OUT = _os.environ.get('TIPI_OUT', 'services/graph/data/tipi')
@@ -80,7 +80,7 @@ def topk_cosine(V, k, block=1024, etichetta='', shrink=False, tau_rel=1.0):
 
 
 def cmd_covision(a):
-    z = np.load(_os.environ.get('COVISION_IN', 'services/graph_dense/data/covision.npz'))
+    z = np.load(_os.environ.get('COVISION_IN', str(C.BUILD_CACHE / 'covision.npz')))
     M = sp.csr_matrix((z['data'], z['indices'], z['indptr']), shape=(D.basic()['N'],) * 2)
     save('COVISION', M, 'co-visione 4 fonti: NPMI+ * log1p(Cw) * Cw/(Cw+1) * tempo, top-20, max-merge',
          {'fonti': ['MovieLens', 'Trakt', 'AniList', 'Serializd'], 'p99': z['p99'].tolist()})

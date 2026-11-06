@@ -1,7 +1,7 @@
 """Co-visione: calibrazione su campione + costruzione dell'artefatto.
 
-  PYTHONPATH=. py .scratch/distillazione-grafo/covision.py calibrate
-  PYTHONPATH=. py .scratch/distillazione-grafo/covision.py build --alpha 0.5 --kappa 3
+  PYTHONPATH=services py -m graph.build.covision calibrate
+  PYTHONPATH=services py -m graph.build.covision build --alpha 0.5 --kappa 3
 
 Score per coppia, dentro una fonte:
     NPMI+ * log1p(Cw) * Cw/(Cw+kappa) * t
@@ -20,7 +20,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-from services.graph_dense import config as C, data as D
+from . import config as C, data as D
 
 B = D.basic(); N = B['N']; RO = B['row_of']; TITLES = B['titoli']; IS_TV = B['is_tv']
 RELEASE = np.load(os.environ.get('USCITE_ORDINALI', C.DATA / 'uscite-ordinali.npy')).astype(np.int64)
@@ -28,8 +28,8 @@ LAG = 365
 CAP = 3.0
 SEMPLICE = False
 BLOCK = 400
-OUT = '.scratch/distillazione-grafo'
-D_OUT_CAL = f'{OUT}/covision-calibration.md'
+OUT = str(C.BUILD_CACHE)
+D_OUT_CAL = str(C.BUILD_CACHE / 'covision-calibration.md')
 
 
 def item(key): return RO.get(key)
@@ -116,7 +116,8 @@ def load_id_list(pattern, mapper):
 def load_anilist():
     art = json.load(open('.cache/tmdb/anime-mappings.json', encoding='utf-8'))
     mal_tmdb = {int(m): int(t) for m, t in art['malToTmdb']}
-    rt = json.load(open(f'{OUT}/anilist-runtime-map.json', encoding='utf-8'))
+    runtime_map = pathlib.Path(os.environ.get('ANILIST_RUNTIME_MAP', C.RECIPES / 'anilist-runtime-map.json'))
+    rt = json.load(open(runtime_map, encoding='utf-8'))
     mal_type = dict(rt['type'])
     def mapper(x):
         try: m = int(x)
@@ -407,7 +408,7 @@ def build(alpha, kappa, topk, minsup, topk_per_source=50):
         v0 = np.fromiter(best.values(), np.float32, len(best))
         W = sp.csr_matrix((v0, (r0, c0)), shape=(N, N))
         W.setdiag(0); W.eliminate_zeros()
-        out = os.environ.get('COVISION_OUT', 'services/graph_dense/data/covision-semplice.npz')
+        out = os.environ.get('COVISION_OUT', str(C.BUILD_CACHE / 'covision-semplice.npz'))
         np.savez_compressed(out, indptr=W.indptr, indices=W.indices, data=W.data,
                             p99=np.array([p99[n] for n in names]))
         print(f'scritto {out} · archi {W.nnz:,}', flush=True)
@@ -447,7 +448,7 @@ def build(alpha, kappa, topk, minsup, topk_per_source=50):
 
     W = sp.csr_matrix((np.float32(vals_out), (np.int32(rows_out), np.int32(cols_out))), shape=(N, N))
     W.setdiag(0); W.eliminate_zeros()
-    out = os.environ.get('COVISION_OUT', 'services/graph_dense/data/covision.npz')
+    out = os.environ.get('COVISION_OUT', str(C.BUILD_CACHE / 'covision.npz'))
     np.savez_compressed(out, indptr=W.indptr, indices=W.indices, data=W.data,
                         p99=np.array([p99[n] for n in names]), mask=np.asarray(mask_out, np.uint8))
     print(f'scritto {out} · archi {W.nnz:,} · items con archi {int((np.diff(W.indptr) > 0).sum()):,}/{N}', flush=True)

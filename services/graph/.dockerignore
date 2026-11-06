@@ -3,6 +3,8 @@
 # (decisione ticket 07/18), non dall'immagine.
 data/
 log/
+build/
+recipes/
 .cache/
 __pycache__/
 *.pyc

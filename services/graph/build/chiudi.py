@@ -1,6 +1,6 @@
 """chiudi.py — applica il fattore di chiusura a un npz: S <- S .* (alpha0 + O).
 
-  PYTHONPATH=. py .scratch/distillazione-grafo/chiudi.py <in.npz> <out.npz> [--modo attuale] [--alpha0 0.1]
+  PYTHONPATH=services py -m graph.build.chiudi <in.npz> <out.npz> [--modo log] [--alpha0 0.1]
 
 ATTENZIONE, E' IL PUNTO CHE CI E' COSTATO TRE VERSIONI. Questa chiusura **non aggiunge archi**: moltra
 ogni peso per un fattore che dipende dai vicini comuni. Sul grafo V18 la riga di *Barbie* ha 532 archi
@@ -33,8 +33,8 @@ import time
 import numpy as np
 import scipy.sparse as sp
 
-from services.graph_dense import data as D
-from services.graph_dense import provenance as PV
+from . import data as D
+from . import provenance as PV
 
 T0 = time.time()
 MODI = ('attuale', 'adamic-adar', 'log', 'coseno', 'nessuna')

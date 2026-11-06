@@ -1,6 +1,6 @@
 """kw-sem.py — tipo KWSEM: il grafo delle keyword con PPMI *e* la semantica, senza clusterizzare.
 
-  PYTHONPATH=. py .scratch/distillazione-grafo/kw-sem.py [--sem-alpha 0.4] [--model Qwen/Qwen3-Embedding-0.6B]
+  PYTHONPATH=services py -m graph.build.kw_sem [--sem-alpha 0.4] [--model Qwen/Qwen3-Embedding-0.6B]
 
 Differenza da KW: KW usa solo il PPMI fra keyword; KWSEM aggiunge il coseno semantico fra i NOMI
 delle keyword, cosi' "youkai" e "yokai" (o "magical girl" e "mahou shoujo") si collegano senza
@@ -22,8 +22,8 @@ import scipy.sparse as sp
 import torch
 from transformers import AutoModel, AutoTokenizer
 
-import tipi
-from services.graph_dense import config as C, data as D
+from . import tipi
+from . import config as C, data as D
 
 ISTRUZIONE = "Instruct: Represent this film keyword for semantic comparison\nQuery: {t}"
 
