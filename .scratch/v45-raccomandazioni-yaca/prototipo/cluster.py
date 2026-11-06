@@ -477,7 +477,15 @@ def main() -> None:
 
     md_content = genera_report_markdown(sweep_results, dettagli_vincitore)
     out_md.write_text(md_content, encoding="utf-8")
-    print(f"Report completo scritto con successo in: {out_md}", flush=True)
+    print(f"Report base scritto con successo in: {out_md}", flush=True)
+
+    # Seconda passata e selezione scaffali (Part 1 e Part 2)
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from macro import main as run_macro
+    print("\nAvvio seconda passata e selezione scaffali (macro.py)...", flush=True)
+    run_macro()
+
 
 
 if __name__ == "__main__":
