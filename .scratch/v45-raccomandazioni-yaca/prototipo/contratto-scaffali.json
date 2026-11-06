@@ -1,0 +1,1798 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contratto_versione": 2,
+  "timestamp_congelamento": "2026-11-06T22:07:00Z",
+  "versioni": {
+    "artefatto": "bolle-eterogeneo-V45-p1.0-triangolo.npz",
+    "ricetta": "v45-m12-tau0.03-top100cos-tax36-combmineta"
+  },
+  "specifiche_ricetta": {
+    "M_bisection_cap": 12,
+    "tau_macro_merge": 0.03,
+    "min_affinity_micro": 0.02,
+    "ranking": "r_comb = (r_rec + r_sup)/2.0, tie-break consistenza",
+    "n_scaffali_max": 5,
+    "family_dedupe": true,
+    "waiver_cluster_piccolo": true
+  },
+  "esempi_reali_dry_run": {
+    "warnok": {
+      "profilo": "warnok",
+      "n_semi_totali": 476,
+      "n_scaffali_serviti": 5,
+      "scaffali": [
+        {
+          "slot_id": "yaca_shelf_1_series",
+          "shelf_index": 1,
+          "nome": "Animazione d'azione per adulti",
+          "nome_fonte": "tassonomia",
+          "confidenza": 0.917,
+          "matched_entry": "Animazione d'azione per adulti",
+          "medium": "series",
+          "consistenza": 0.0924,
+          "is_piccolo": false,
+          "n_semi": 12,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 86831,
+              "medium": "series",
+              "titolo": "Love, Death & Robots",
+              "anno": 2019,
+              "plays": 35.0,
+              "eta_giorni": 560.0
+            },
+            {
+              "tmdbId": 71024,
+              "medium": "series",
+              "titolo": "Castlevania",
+              "anno": 2017,
+              "plays": 32.0,
+              "eta_giorni": 1707.0
+            },
+            {
+              "tmdbId": 135934,
+              "medium": "series",
+              "titolo": "La leggenda di Vox Machina",
+              "anno": 2022,
+              "plays": 25.0,
+              "eta_giorni": 833.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 95557,
+              "medium": "series",
+              "titolo": "INVINCIBLE",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 225180,
+              "medium": "series",
+              "titolo": "BLUE EYE SAMURAI",
+              "anno": 2023
+            },
+            {
+              "tmdbId": 261579,
+              "medium": "series",
+              "titolo": "Secret Level",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 111111,
+              "medium": "series",
+              "titolo": "Blood of Zeus",
+              "anno": 2020
+            },
+            {
+              "tmdbId": 86831,
+              "medium": "series",
+              "titolo": "Love, Death & Robots",
+              "anno": 2019
+            },
+            {
+              "tmdbId": 97333,
+              "medium": "series",
+              "titolo": "Twilight of the Gods",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 135934,
+              "medium": "series",
+              "titolo": "La leggenda di Vox Machina",
+              "anno": 2022
+            },
+            {
+              "tmdbId": 204154,
+              "medium": "series",
+              "titolo": "Scavengers Reign",
+              "anno": 2023
+            },
+            {
+              "tmdbId": 123548,
+              "medium": "series",
+              "titolo": "Castlevania: Nocturne",
+              "anno": 2023
+            },
+            {
+              "tmdbId": 71024,
+              "medium": "series",
+              "titolo": "Castlevania",
+              "anno": 2017
+            },
+            {
+              "tmdbId": 94605,
+              "medium": "series",
+              "titolo": "Arcane",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 89456,
+              "medium": "series",
+              "titolo": "Primal",
+              "anno": 2019
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 219080,
+              "type": "series",
+              "titolo": "The Mighty Nein",
+              "anno": 2025,
+              "punteggio": 0.012649,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 152483,
+              "type": "series",
+              "titolo": "The Boys Presenta: Diabolico!",
+              "anno": 2022,
+              "punteggio": 0.010104,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 235930,
+              "type": "series",
+              "titolo": "Devil May Cry",
+              "anno": 2025,
+              "punteggio": 0.006411,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 60625,
+              "type": "series",
+              "titolo": "Rick and Morty",
+              "anno": 2013,
+              "punteggio": 0.006136,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 118956,
+              "type": "series",
+              "titolo": "DOTA: Dragon's Blood",
+              "anno": 2021,
+              "punteggio": 0.005257,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 94924,
+              "type": "series",
+              "titolo": "Trese - Detective delle tenebre",
+              "anno": 2021,
+              "punteggio": 0.004556,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 74440,
+              "type": "series",
+              "titolo": "Harley Quinn",
+              "anno": 2019,
+              "punteggio": 0.004552,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 74387,
+              "type": "series",
+              "titolo": "Final Space",
+              "anno": 2018,
+              "punteggio": 0.004479,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 131378,
+              "type": "series",
+              "titolo": "Adventure Time: Fionna and Cake",
+              "anno": 2023,
+              "punteggio": 0.004274,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 33880,
+              "type": "series",
+              "titolo": "La leggenda di Korra",
+              "anno": 2012,
+              "punteggio": 0.003852,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 97645,
+              "type": "series",
+              "titolo": "Solar Opposites",
+              "anno": 2020,
+              "punteggio": 0.003749,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 81046,
+              "type": "series",
+              "titolo": "Il principe dei draghi",
+              "anno": 2018,
+              "punteggio": 0.00363,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 73021,
+              "type": "series",
+              "titolo": "Disincanto",
+              "anno": 2018,
+              "punteggio": 0.003362,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 62798,
+              "type": "series",
+              "titolo": "Marvel Anime: Blade",
+              "anno": 2011,
+              "punteggio": 0.003198,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 96713,
+              "type": "series",
+              "titolo": "The Midnight Gospel",
+              "anno": 2020,
+              "punteggio": 0.003118,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 127372,
+              "type": "series",
+              "titolo": "Captain Laserhawk: A Blood Dragon Remix",
+              "anno": 2023,
+              "punteggio": 0.003112,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 234721,
+              "type": "series",
+              "titolo": "Masters of the Universe: Revolution",
+              "anno": 2024,
+              "punteggio": 0.002997,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 219543,
+              "type": "series",
+              "titolo": "Creature Commandos",
+              "anno": 2024,
+              "punteggio": 0.002974,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 61753,
+              "type": "series",
+              "titolo": "Thor & Loki: Blood Brothers",
+              "anno": 2011,
+              "punteggio": 0.002971,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            },
+            {
+              "tmdbId": 80560,
+              "type": "series",
+              "titolo": "Sirius the Jaeger",
+              "anno": 2018,
+              "punteggio": 0.002951,
+              "motivo": "Affinità con i 12 semi del cluster «Animazione d'azione per adulti»"
+            }
+          ]
+        },
+        {
+          "slot_id": "yaca_shelf_2_series",
+          "shelf_index": 2,
+          "nome": "Perché hai visto Lost, Il Trono di Spade e Stranger Things",
+          "nome_fonte": "perche_hai_visto",
+          "confidenza": 0.0,
+          "matched_entry": null,
+          "medium": "series",
+          "consistenza": 0.0796,
+          "is_piccolo": false,
+          "n_semi": 12,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 4607,
+              "medium": "series",
+              "titolo": "Lost",
+              "anno": 2004,
+              "plays": 164.0,
+              "eta_giorni": 53.0
+            },
+            {
+              "tmdbId": 1399,
+              "medium": "series",
+              "titolo": "Il Trono di Spade",
+              "anno": 2011,
+              "plays": 78.0,
+              "eta_giorni": 2454.0
+            },
+            {
+              "tmdbId": 66732,
+              "medium": "series",
+              "titolo": "Stranger Things",
+              "anno": 2016,
+              "plays": 42.0,
+              "eta_giorni": 309.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 4607,
+              "medium": "series",
+              "titolo": "Lost",
+              "anno": 2004
+            },
+            {
+              "tmdbId": 125988,
+              "medium": "series",
+              "titolo": "Silo",
+              "anno": 2023
+            },
+            {
+              "tmdbId": 66732,
+              "medium": "series",
+              "titolo": "Stranger Things",
+              "anno": 2016
+            },
+            {
+              "tmdbId": 63247,
+              "medium": "series",
+              "titolo": "Westworld - Dove tutto è concesso",
+              "anno": 2016
+            },
+            {
+              "tmdbId": 106379,
+              "medium": "series",
+              "titolo": "Fallout",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 103768,
+              "medium": "series",
+              "titolo": "Sweet Tooth",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 100088,
+              "medium": "series",
+              "titolo": "The Last of Us",
+              "anno": 2023
+            },
+            {
+              "tmdbId": 1396,
+              "medium": "series",
+              "titolo": "Breaking Bad",
+              "anno": 2008
+            },
+            {
+              "tmdbId": 76479,
+              "medium": "series",
+              "titolo": "The Boys",
+              "anno": 2019
+            },
+            {
+              "tmdbId": 70523,
+              "medium": "series",
+              "titolo": "Dark",
+              "anno": 2017
+            },
+            {
+              "tmdbId": 1399,
+              "medium": "series",
+              "titolo": "Il Trono di Spade",
+              "anno": 2011
+            },
+            {
+              "tmdbId": 4613,
+              "medium": "series",
+              "titolo": "Band of Brothers - Fratelli al fronte",
+              "anno": 2001
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 87108,
+              "type": "series",
+              "titolo": "Chernobyl",
+              "anno": 2019,
+              "punteggio": 0.012005,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 225171,
+              "type": "series",
+              "titolo": "Pluribus",
+              "anno": 2025,
+              "punteggio": 0.007768,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 75006,
+              "type": "series",
+              "titolo": "The Umbrella Academy",
+              "anno": 2019,
+              "punteggio": 0.006805,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 79788,
+              "type": "series",
+              "titolo": "Watchmen",
+              "anno": 2019,
+              "punteggio": 0.006262,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 54344,
+              "type": "series",
+              "titolo": "The Leftovers - Svaniti nel nulla",
+              "anno": 2014,
+              "punteggio": 0.00617,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 16997,
+              "type": "series",
+              "titolo": "The Pacific",
+              "anno": 2010,
+              "punteggio": 0.005851,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 60059,
+              "type": "series",
+              "titolo": "Better Call Saul",
+              "anno": 2015,
+              "punteggio": 0.005532,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 42009,
+              "type": "series",
+              "titolo": "Black Mirror",
+              "anno": 2011,
+              "punteggio": 0.005264,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 79680,
+              "type": "series",
+              "titolo": "Snowpiercer",
+              "anno": 2020,
+              "punteggio": 0.00493,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 69478,
+              "type": "series",
+              "titolo": "The Handmaid's Tale",
+              "anno": 2017,
+              "punteggio": 0.004851,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 69061,
+              "type": "series",
+              "titolo": "The OA",
+              "anno": 2016,
+              "punteggio": 0.004519,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 62286,
+              "type": "series",
+              "titolo": "Fear the Walking Dead",
+              "anno": 2015,
+              "punteggio": 0.004411,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 95396,
+              "type": "series",
+              "titolo": "Scissione",
+              "anno": 2022,
+              "punteggio": 0.004154,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 62560,
+              "type": "series",
+              "titolo": "Mr. Robot",
+              "anno": 2015,
+              "punteggio": 0.003914,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 205715,
+              "type": "series",
+              "titolo": "Gen V",
+              "anno": 2023,
+              "punteggio": 0.003643,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 68421,
+              "type": "series",
+              "titolo": "Altered Carbon",
+              "anno": 2018,
+              "punteggio": 0.003507,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 63351,
+              "type": "series",
+              "titolo": "Narcos",
+              "anno": 2015,
+              "punteggio": 0.003168,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 1398,
+              "type": "series",
+              "titolo": "I Soprano",
+              "anno": 1999,
+              "punteggio": 0.003157,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 1411,
+              "type": "series",
+              "titolo": "Person of Interest",
+              "anno": 2011,
+              "punteggio": 0.00305,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            },
+            {
+              "tmdbId": 60622,
+              "type": "series",
+              "titolo": "Fargo",
+              "anno": 2014,
+              "punteggio": 0.003044,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Lost, Il Trono di Spade e Stranger Things»"
+            }
+          ]
+        },
+        {
+          "slot_id": "yaca_shelf_3_movies",
+          "shelf_index": 3,
+          "nome": "Fantascienza d'invasione",
+          "nome_fonte": "tassonomia",
+          "confidenza": 0.583,
+          "matched_entry": "Fantascienza d'invasione",
+          "medium": "movie",
+          "consistenza": 0.0449,
+          "is_piccolo": false,
+          "n_semi": 12,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 447332,
+              "medium": "movie",
+              "titolo": "A Quiet Place - Un posto tranquillo",
+              "anno": 2018,
+              "plays": 2.0,
+              "eta_giorni": 2230.0
+            },
+            {
+              "tmdbId": 1275779,
+              "medium": "movie",
+              "titolo": "Disclosure Day",
+              "anno": 2026,
+              "plays": 1.0,
+              "eta_giorni": 103.0
+            },
+            {
+              "tmdbId": 1198994,
+              "medium": "movie",
+              "titolo": "Send Help",
+              "anno": 2026,
+              "plays": 1.0,
+              "eta_giorni": 193.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 1275779,
+              "medium": "movie",
+              "titolo": "Disclosure Day",
+              "anno": 2026
+            },
+            {
+              "tmdbId": 1198994,
+              "medium": "movie",
+              "titolo": "Send Help",
+              "anno": 2026
+            },
+            {
+              "tmdbId": 1242898,
+              "medium": "movie",
+              "titolo": "Predator: Badlands",
+              "anno": 2025
+            },
+            {
+              "tmdbId": 945961,
+              "medium": "movie",
+              "titolo": "Alien: Romulus",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 762441,
+              "medium": "movie",
+              "titolo": "A Quiet Place - Giorno 1",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 1051896,
+              "medium": "movie",
+              "titolo": "Arcadian",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 700391,
+              "medium": "movie",
+              "titolo": "65 - Fuga dalla Terra",
+              "anno": 2023
+            },
+            {
+              "tmdbId": 762504,
+              "medium": "movie",
+              "titolo": "Nope",
+              "anno": 2022
+            },
+            {
+              "tmdbId": 766507,
+              "medium": "movie",
+              "titolo": "Prey",
+              "anno": 2022
+            },
+            {
+              "tmdbId": 438631,
+              "medium": "movie",
+              "titolo": "Dune",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 520763,
+              "medium": "movie",
+              "titolo": "A Quiet Place II",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 447332,
+              "medium": "movie",
+              "titolo": "A Quiet Place - Un posto tranquillo",
+              "anno": 2018
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 693134,
+              "type": "movie",
+              "titolo": "Dune - Parte due",
+              "anno": 2024,
+              "punteggio": 0.009821,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 820609,
+              "type": "movie",
+              "titolo": "Nessuno ti salverà",
+              "anno": 2023,
+              "punteggio": 0.008948,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 786892,
+              "type": "movie",
+              "titolo": "Furiosa: A Mad Max Saga",
+              "anno": 2024,
+              "punteggio": 0.004831,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 929590,
+              "type": "movie",
+              "titolo": "Civil War",
+              "anno": 2024,
+              "punteggio": 0.003954,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 1035048,
+              "type": "movie",
+              "titolo": "Elevation: Linea di sopravvivenza",
+              "anno": 2024,
+              "punteggio": 0.003633,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 458723,
+              "type": "movie",
+              "titolo": "Noi",
+              "anno": 2019,
+              "punteggio": 0.003415,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 653346,
+              "type": "movie",
+              "titolo": "Il regno del pianeta delle scimmie",
+              "anno": 2024,
+              "punteggio": 0.003301,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 399566,
+              "type": "movie",
+              "titolo": "Godzilla vs. Kong",
+              "anno": 2021,
+              "punteggio": 0.002949,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 419430,
+              "type": "movie",
+              "titolo": "Scappa - Get Out",
+              "anno": 2017,
+              "punteggio": 0.002831,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 333371,
+              "type": "movie",
+              "titolo": "10 Cloverfield Lane",
+              "anno": 2016,
+              "punteggio": 0.002724,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 604079,
+              "type": "movie",
+              "titolo": "The Long Walk - Se ti fermi muori",
+              "anno": 2025,
+              "punteggio": 0.002523,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 1100988,
+              "type": "movie",
+              "titolo": "28 anni dopo",
+              "anno": 2025,
+              "punteggio": 0.002515,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 60935,
+              "type": "movie",
+              "titolo": "La cosa",
+              "anno": 2011,
+              "punteggio": 0.002503,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 335984,
+              "type": "movie",
+              "titolo": "Blade Runner 2049",
+              "anno": 2017,
+              "punteggio": 0.002474,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 720321,
+              "type": "movie",
+              "titolo": "Breathe - Fino all'ultimo respiro",
+              "anno": 2024,
+              "punteggio": 0.002432,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 1101383,
+              "type": "movie",
+              "titolo": "La fine di Oak Street",
+              "anno": 2026,
+              "punteggio": 0.002277,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 405774,
+              "type": "movie",
+              "titolo": "Bird Box",
+              "anno": 2018,
+              "punteggio": 0.002237,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 429415,
+              "type": "movie",
+              "titolo": "Extinction",
+              "anno": 2018,
+              "punteggio": 0.002207,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 840464,
+              "type": "movie",
+              "titolo": "Greenland 2: Migration",
+              "anno": 2026,
+              "punteggio": 0.002179,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            },
+            {
+              "tmdbId": 639720,
+              "type": "movie",
+              "titolo": "IF - Gli amici immaginari",
+              "anno": 2024,
+              "punteggio": 0.001999,
+              "motivo": "Affinità con i 12 semi del cluster «Fantascienza d'invasione»"
+            }
+          ]
+        },
+        {
+          "slot_id": "yaca_shelf_4_movies",
+          "shelf_index": 4,
+          "nome": "Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant",
+          "nome_fonte": "perche_hai_visto",
+          "confidenza": 0.0,
+          "matched_entry": null,
+          "medium": "movie",
+          "consistenza": 0.034,
+          "is_piccolo": false,
+          "n_semi": 12,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 1223601,
+              "medium": "movie",
+              "titolo": "Sisu: Il vendicatore",
+              "anno": 2025,
+              "plays": 1.0,
+              "eta_giorni": 176.0
+            },
+            {
+              "tmdbId": 646207,
+              "medium": "movie",
+              "titolo": "L'uomo dei ghiacci - The Ice Road",
+              "anno": 2021,
+              "plays": 1.0,
+              "eta_giorni": 474.0
+            },
+            {
+              "tmdbId": 302946,
+              "medium": "movie",
+              "titolo": "The Accountant",
+              "anno": 2016,
+              "plays": 1.0,
+              "eta_giorni": 558.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 1223601,
+              "medium": "movie",
+              "titolo": "Sisu: Il vendicatore",
+              "anno": 2025
+            },
+            {
+              "tmdbId": 646207,
+              "medium": "movie",
+              "titolo": "L'uomo dei ghiacci - The Ice Road",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 302946,
+              "medium": "movie",
+              "titolo": "The Accountant",
+              "anno": 2016
+            },
+            {
+              "tmdbId": 539972,
+              "medium": "movie",
+              "titolo": "Kraven - Il cacciatore",
+              "anno": 2024
+            },
+            {
+              "tmdbId": 840326,
+              "medium": "movie",
+              "titolo": "Sisu - L'immortale",
+              "anno": 2022
+            },
+            {
+              "tmdbId": 545609,
+              "medium": "movie",
+              "titolo": "Tyler Rake",
+              "anno": 2020
+            },
+            {
+              "tmdbId": 324552,
+              "medium": "movie",
+              "titolo": "John Wick - Capitolo 2",
+              "anno": 2017
+            },
+            {
+              "tmdbId": 522402,
+              "medium": "movie",
+              "titolo": "Finch",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 460465,
+              "medium": "movie",
+              "titolo": "Mortal Kombat",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 615457,
+              "medium": "movie",
+              "titolo": "Io sono nessuno",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 245891,
+              "medium": "movie",
+              "titolo": "John Wick",
+              "anno": 2014
+            },
+            {
+              "tmdbId": 345887,
+              "medium": "movie",
+              "titolo": "The Equalizer 2 - Senza perdono",
+              "anno": 2018
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 458156,
+              "type": "movie",
+              "titolo": "John Wick 3 - Parabellum",
+              "anno": 2019,
+              "punteggio": 0.012698,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 603692,
+              "type": "movie",
+              "titolo": "John Wick 4",
+              "anno": 2023,
+              "punteggio": 0.012281,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 156022,
+              "type": "movie",
+              "titolo": "The Equalizer - Il vendicatore",
+              "anno": 2014,
+              "punteggio": 0.008492,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 697843,
+              "type": "movie",
+              "titolo": "Tyler Rake 2",
+              "anno": 2023,
+              "punteggio": 0.008386,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 931285,
+              "type": "movie",
+              "titolo": "Mortal Kombat II",
+              "anno": 2026,
+              "punteggio": 0.007963,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 912649,
+              "type": "movie",
+              "titolo": "Venom: The Last Dance",
+              "anno": 2024,
+              "punteggio": 0.003749,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 353081,
+              "type": "movie",
+              "titolo": "Mission: Impossible - Fallout",
+              "anno": 2018,
+              "punteggio": 0.003669,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 926393,
+              "type": "movie",
+              "titolo": "The Equalizer 3 - Senza tregua",
+              "anno": 2023,
+              "punteggio": 0.003286,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 1318447,
+              "type": "movie",
+              "titolo": "Apex",
+              "anno": 2026,
+              "punteggio": 0.003195,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 590706,
+              "type": "movie",
+              "titolo": "Jiu Jitsu",
+              "anno": 2020,
+              "punteggio": 0.003054,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 48395,
+              "type": "movie",
+              "titolo": "Trasporto eccezionale - Un racconto di Natale",
+              "anno": 2010,
+              "punteggio": 0.003028,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 230179,
+              "type": "movie",
+              "titolo": "Big Game - Caccia al presidente",
+              "anno": 2014,
+              "punteggio": 0.002936,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 580489,
+              "type": "movie",
+              "titolo": "Venom - La furia di Carnage",
+              "anno": 2021,
+              "punteggio": 0.002795,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 637649,
+              "type": "movie",
+              "titolo": "La furia di un uomo - Wrath of Man",
+              "anno": 2021,
+              "punteggio": 0.002661,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 154400,
+              "type": "movie",
+              "titolo": "Chi è senza colpa",
+              "anno": 2014,
+              "punteggio": 0.002581,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 541671,
+              "type": "movie",
+              "titolo": "Ballerina",
+              "anno": 2025,
+              "punteggio": 0.002536,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 343611,
+              "type": "movie",
+              "titolo": "Jack Reacher - Punto di non ritorno",
+              "anno": 2016,
+              "punteggio": 0.002254,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 526896,
+              "type": "movie",
+              "titolo": "Morbius",
+              "anno": 2022,
+              "punteggio": 0.002232,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 1081003,
+              "type": "movie",
+              "titolo": "Supergirl",
+              "anno": 2026,
+              "punteggio": 0.002169,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            },
+            {
+              "tmdbId": 597891,
+              "type": "movie",
+              "titolo": "Kate",
+              "anno": 2021,
+              "punteggio": 0.002132,
+              "motivo": "Affinità con i 12 semi del cluster «Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant»"
+            }
+          ]
+        },
+        {
+          "slot_id": "yaca_shelf_5_series",
+          "shelf_index": 5,
+          "nome": "Anime shōnen",
+          "nome_fonte": "tassonomia",
+          "confidenza": 1.0,
+          "matched_entry": "Anime shōnen",
+          "medium": "series",
+          "consistenza": 0.2193,
+          "is_piccolo": false,
+          "n_semi": 9,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 88803,
+              "medium": "series",
+              "titolo": "Vinland Saga",
+              "anno": 2019,
+              "plays": 60.0,
+              "eta_giorni": 1209.0
+            },
+            {
+              "tmdbId": 95479,
+              "medium": "series",
+              "titolo": "Jujutsu Kaisen",
+              "anno": 2020,
+              "plays": 47.0,
+              "eta_giorni": 943.0
+            },
+            {
+              "tmdbId": 85937,
+              "medium": "series",
+              "titolo": "Demon Slayer: Kimetsu no Yaiba",
+              "anno": 2019,
+              "plays": 45.0,
+              "eta_giorni": 83.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 85937,
+              "medium": "series",
+              "titolo": "Demon Slayer: Kimetsu no Yaiba",
+              "anno": 2019
+            },
+            {
+              "tmdbId": 86031,
+              "medium": "series",
+              "titolo": "Dr. Stone",
+              "anno": 2019
+            },
+            {
+              "tmdbId": 95479,
+              "medium": "series",
+              "titolo": "Jujutsu Kaisen",
+              "anno": 2020
+            },
+            {
+              "tmdbId": 88803,
+              "medium": "series",
+              "titolo": "Vinland Saga",
+              "anno": 2019
+            },
+            {
+              "tmdbId": 120089,
+              "medium": "series",
+              "titolo": "SPY×FAMILY",
+              "anno": 2022
+            },
+            {
+              "tmdbId": 112613,
+              "medium": "series",
+              "titolo": "Ranking of Kings",
+              "anno": 2021
+            },
+            {
+              "tmdbId": 65930,
+              "medium": "series",
+              "titolo": "My Hero Academia",
+              "anno": 2016
+            },
+            {
+              "tmdbId": 83100,
+              "medium": "series",
+              "titolo": "Dororo",
+              "anno": 2019
+            },
+            {
+              "tmdbId": 65249,
+              "medium": "series",
+              "titolo": "Erased",
+              "anno": 2016
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 83097,
+              "type": "series",
+              "titolo": "The Promised Neverland",
+              "anno": 2019,
+              "punteggio": 0.014606,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 114410,
+              "type": "series",
+              "titolo": "Chainsaw Man",
+              "anno": 2022,
+              "punteggio": 0.014017,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 63926,
+              "type": "series",
+              "titolo": "One-Punch Man",
+              "anno": 2015,
+              "punteggio": 0.008023,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 67075,
+              "type": "series",
+              "titolo": "Mob Psycho 100",
+              "anno": 2016,
+              "punteggio": 0.007889,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 46298,
+              "type": "series",
+              "titolo": "Hunter x Hunter",
+              "anno": 2011,
+              "punteggio": 0.006576,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 127532,
+              "type": "series",
+              "titolo": "Solo Leveling",
+              "anno": 2024,
+              "punteggio": 0.006442,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 88046,
+              "type": "series",
+              "titolo": "Fire Force",
+              "anno": 2019,
+              "punteggio": 0.006178,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 207743,
+              "type": "series",
+              "titolo": "Ranking of Kings: The Treasure Chest of Courage",
+              "anno": 2023,
+              "punteggio": 0.0052,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 100565,
+              "type": "series",
+              "titolo": "86 Eighty Six",
+              "anno": 2021,
+              "punteggio": 0.005128,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 97860,
+              "type": "series",
+              "titolo": "Tower of God",
+              "anno": 2020,
+              "punteggio": 0.004592,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 116727,
+              "type": "series",
+              "titolo": "Oddtaxi",
+              "anno": 2021,
+              "punteggio": 0.003696,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 38464,
+              "type": "series",
+              "titolo": "Blue Exorcist",
+              "anno": 2011,
+              "punteggio": 0.003584,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 80564,
+              "type": "series",
+              "titolo": "Banana Fish",
+              "anno": 2018,
+              "punteggio": 0.003482,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 207468,
+              "type": "series",
+              "titolo": "Kaiju No. 8",
+              "anno": 2024,
+              "punteggio": 0.003424,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 117465,
+              "type": "series",
+              "titolo": "Hell's Paradise",
+              "anno": 2023,
+              "punteggio": 0.00335,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 207784,
+              "type": "series",
+              "titolo": "Dungeon Food",
+              "anno": 2024,
+              "punteggio": 0.003187,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 72636,
+              "type": "series",
+              "titolo": "Made in Abyss",
+              "anno": 2017,
+              "punteggio": 0.003096,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 78102,
+              "type": "series",
+              "titolo": "Steins;Gate 0",
+              "anno": 2018,
+              "punteggio": 0.002802,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 75208,
+              "type": "series",
+              "titolo": "Devilman Crybaby",
+              "anno": 2018,
+              "punteggio": 0.002664,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            },
+            {
+              "tmdbId": 217766,
+              "type": "series",
+              "titolo": "Zom 100: Bucket List of the Dead",
+              "anno": 2023,
+              "punteggio": 0.002156,
+              "motivo": "Affinità con i 9 semi del cluster «Anime shōnen»"
+            }
+          ]
+        }
+      ]
+    },
+    "carverclan": {
+      "profilo": "carverclan",
+      "n_semi_totali": 7,
+      "n_scaffali_serviti": 2,
+      "scaffali": [
+        {
+          "slot_id": "yaca_shelf_1_movies",
+          "shelf_index": 1,
+          "nome": "Horror soprannaturale",
+          "nome_fonte": "tassonomia",
+          "confidenza": 1.0,
+          "matched_entry": "Horror soprannaturale",
+          "medium": "movie",
+          "consistenza": 0.0,
+          "is_piccolo": true,
+          "n_semi": 2,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 1233413,
+              "medium": "movie",
+              "titolo": "I peccatori",
+              "anno": 2025,
+              "plays": 1.0,
+              "eta_giorni": 202.0
+            },
+            {
+              "tmdbId": 66732,
+              "medium": "series",
+              "titolo": "Stranger Things",
+              "anno": 2016,
+              "plays": 1.0,
+              "eta_giorni": 340.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 1233413,
+              "medium": "movie",
+              "titolo": "I peccatori",
+              "anno": 2025
+            },
+            {
+              "tmdbId": 66732,
+              "medium": "series",
+              "titolo": "Stranger Things",
+              "anno": 2016
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 1054867,
+              "type": "movie",
+              "titolo": "Una battaglia dopo l’altra",
+              "anno": 2025,
+              "punteggio": 0.014467,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1317288,
+              "type": "movie",
+              "titolo": "Marty Supreme",
+              "anno": 2025,
+              "punteggio": 0.01283,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1241983,
+              "type": "movie",
+              "titolo": "Train Dreams",
+              "anno": 2025,
+              "punteggio": 0.01178,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1078605,
+              "type": "movie",
+              "titolo": "Weapons",
+              "anno": 2025,
+              "punteggio": 0.010693,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1062722,
+              "type": "movie",
+              "titolo": "Frankenstein",
+              "anno": 2025,
+              "punteggio": 0.009097,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 426063,
+              "type": "movie",
+              "titolo": "Nosferatu",
+              "anno": 2024,
+              "punteggio": 0.008748,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 933260,
+              "type": "movie",
+              "titolo": "The Substance",
+              "anno": 2024,
+              "punteggio": 0.008349,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1124620,
+              "type": "movie",
+              "titolo": "The Monkey",
+              "anno": 2025,
+              "punteggio": 0.008252,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1245993,
+              "type": "movie",
+              "titolo": "Una scomoda circostanza - Caught Stealing",
+              "anno": 2025,
+              "punteggio": 0.007227,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 499932,
+              "type": "movie",
+              "titolo": "Le strade del male",
+              "anno": 2020,
+              "punteggio": 0.006774,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1101383,
+              "type": "movie",
+              "titolo": "La fine di Oak Street",
+              "anno": 2026,
+              "punteggio": 0.006523,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 858024,
+              "type": "movie",
+              "titolo": "Hamnet - Nel nome del figlio",
+              "anno": 2025,
+              "punteggio": 0.005834,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 701387,
+              "type": "movie",
+              "titolo": "Bugonia",
+              "anno": 2025,
+              "punteggio": 0.004365,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 284054,
+              "type": "movie",
+              "titolo": "Black Panther",
+              "anno": 2018,
+              "punteggio": 0.003894,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 505642,
+              "type": "movie",
+              "titolo": "Black Panther: Wakanda Forever",
+              "anno": 2022,
+              "punteggio": 0.00373,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 157354,
+              "type": "movie",
+              "titolo": "Prossima fermata: Fruitvale Station",
+              "anno": 2013,
+              "punteggio": 0.003453,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 889737,
+              "type": "movie",
+              "titolo": "Joker: Folie à Deux",
+              "anno": 2024,
+              "punteggio": 0.003033,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 850165,
+              "type": "movie",
+              "titolo": "The Warrior - The Iron Claw",
+              "anno": 2023,
+              "punteggio": 0.002701,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 726209,
+              "type": "movie",
+              "titolo": "Il mondo dietro di te",
+              "anno": 2023,
+              "punteggio": 0.002128,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            },
+            {
+              "tmdbId": 1339713,
+              "type": "movie",
+              "titolo": "Obsession",
+              "anno": 2026,
+              "punteggio": 0.00094,
+              "motivo": "Affinità con i 2 semi del cluster «Horror soprannaturale»"
+            }
+          ]
+        },
+        {
+          "slot_id": "yaca_shelf_2_movies",
+          "shelf_index": 2,
+          "nome": "Teatro filmato & Musical",
+          "nome_fonte": "tassonomia",
+          "confidenza": 0.5,
+          "matched_entry": "Teatro filmato & Musical",
+          "medium": "movie",
+          "consistenza": 0.0,
+          "is_piccolo": true,
+          "n_semi": 2,
+          "semi_rappresentativi": [
+            {
+              "tmdbId": 432484,
+              "medium": "movie",
+              "titolo": "Peter Pan Goes Wrong",
+              "anno": 2016,
+              "plays": 1.0,
+              "eta_giorni": 340.0
+            },
+            {
+              "tmdbId": 10029,
+              "medium": "series",
+              "titolo": "Great Performances",
+              "anno": 1971,
+              "plays": 1.0,
+              "eta_giorni": 340.0
+            }
+          ],
+          "semi_membri": [
+            {
+              "tmdbId": 432484,
+              "medium": "movie",
+              "titolo": "Peter Pan Goes Wrong",
+              "anno": 2016
+            },
+            {
+              "tmdbId": 10029,
+              "medium": "series",
+              "titolo": "Great Performances",
+              "anno": 1971
+            }
+          ],
+          "titoli": [
+            {
+              "tmdbId": 43134,
+              "type": "movie",
+              "titolo": "Pippin",
+              "anno": 1981,
+              "punteggio": 0.020079,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 76115,
+              "type": "movie",
+              "titolo": "The Phantom of the Opera at the Royal Albert Hall",
+              "anno": 2011,
+              "punteggio": 0.017991,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 301235,
+              "type": "movie",
+              "titolo": "Top Gear: The Perfect Road Trip 2",
+              "anno": 2014,
+              "punteggio": 0.012497,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 90098,
+              "type": "movie",
+              "titolo": "Scum",
+              "anno": 1977,
+              "punteggio": 0.011941,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 288841,
+              "type": "movie",
+              "titolo": "The Kate Bush Story: Running Up That Hill",
+              "anno": 2014,
+              "punteggio": 0.011194,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 258514,
+              "type": "movie",
+              "titolo": "Van Gogh - Lettere dalla follia",
+              "anno": 2010,
+              "punteggio": 0.011183,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 238234,
+              "type": "movie",
+              "titolo": "Top Gear: The Perfect Road Trip",
+              "anno": 2013,
+              "punteggio": 0.010441,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 882338,
+              "type": "movie",
+              "titolo": "Anything Goes",
+              "anno": 2021,
+              "punteggio": 0.009148,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 13206,
+              "type": "movie",
+              "titolo": "A Complete History of My Sexual Failures",
+              "anno": 2008,
+              "punteggio": 0.008864,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 524499,
+              "type": "movie",
+              "titolo": "An American in Paris - The Musical",
+              "anno": 2018,
+              "punteggio": 0.008173,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 400444,
+              "type": "movie",
+              "titolo": "National Theatre Live: One Man, Two Guvnors",
+              "anno": 2011,
+              "punteggio": 0.007063,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 515911,
+              "type": "movie",
+              "titolo": "Lady J",
+              "anno": 2018,
+              "punteggio": 0.006718,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 532267,
+              "type": "movie",
+              "titolo": "THE FABLE",
+              "anno": 2019,
+              "punteggio": 0.00626,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 915881,
+              "type": "movie",
+              "titolo": "The Prince of Egypt: The Musical",
+              "anno": 2023,
+              "punteggio": 0.006161,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 282537,
+              "type": "movie",
+              "titolo": "National Theatre Live: Skylight",
+              "anno": 2014,
+              "punteggio": 0.005884,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 545292,
+              "type": "movie",
+              "titolo": "The King and I",
+              "anno": 2018,
+              "punteggio": 0.00537,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 578118,
+              "type": "movie",
+              "titolo": "National Theatre Live: All About Eve",
+              "anno": 2019,
+              "punteggio": 0.005309,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 727333,
+              "type": "movie",
+              "titolo": "Come from Away",
+              "anno": 2021,
+              "punteggio": 0.005216,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 241618,
+              "type": "movie",
+              "titolo": "Louis Theroux: Law and Disorder in Lagos",
+              "anno": 2010,
+              "punteggio": 0.005067,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            },
+            {
+              "tmdbId": 26598,
+              "type": "movie",
+              "titolo": "Cats",
+              "anno": 1998,
+              "punteggio": 0.005022,
+              "motivo": "Affinità con i 2 semi del cluster «Teatro filmato & Musical»"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
