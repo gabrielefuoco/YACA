@@ -22,6 +22,7 @@ Sostituire il percorso bubble con un recommender V45 sparse per **tutte** le sup
 - [Cross-medium e diversità al retrieval](../uscire-dal-plateau/map.md) — i ponti cross-medium restano in costruzione; formato e ridondanza si trattano a retrieval.
 - [Il graph service possiede il clustering personale](issues/10-graph-service-clusters.md) — YACA passa segnali tipizzati; graph service clusterizza e diffonde, YACA presenta risultati e metadata.
 - [Ownership della pipeline V45 e dei moduli graph](issues/01-ownership-pipeline.md) — build e runtime vivono in `services/graph`; esperimenti in `.scratch`; V10 esce al cutover e il rollback ripristina la release precedente.
+- [Prototipo dei cluster d'interesse personali](issues/05-cluster-interessi.md) — ricetta misurata: micro a soglia 0,02 → macro con bisezione finché ≤30 semi → 5 scaffali per rango combinato di recenza (`min_eta`) e supporto, medium per macro.
 - [Prova del runtime sparse e criteri di cutover](issues/09-runtime-cutover.md) — motore implementato e misurato: `carica_transizione` sta in 190,7 MiB e 134 ms; il caricamento on-the-fly costa 1,4 GiB e non entra nel container; soglie proposte, non ancora confermate.
 
 ## Not yet specified

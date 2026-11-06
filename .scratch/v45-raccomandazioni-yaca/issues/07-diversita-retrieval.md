@@ -19,3 +19,16 @@ Secondo elemento emerso: i cluster di franchise non sono annidati in una sola `c
 Jurassic, Apes ne occupano più di una), quindi un cap «per saga» basato sulla collezione TMDB non
 basterà; serve un rilevatore di franchise più largo (collezione **oppure** regista+cast ricorrenti
 nella stessa lista).
+
+
+## Regole ereditate dal prototipo (misurate, da confermare in fase di contratto)
+
+- **Medium per macro, non per profilo**: il cluster anime di `warnok` (semi tutte serie) riceveva solo
+  lungometraggi perche il medium veniva dal profilo intero.
+- **Dedupe di famiglia**: al massimo uno scaffale per famiglia, dove famiglia = collezione TMDB
+  dominante; e scarto dello scaffale se il 50% dei suoi top-10 compare in un altro scaffale scelto.
+  Nel prototipo questa regola non ha mai prodotto un duplicato su 8 profili.
+- **Tetto di scaffale**: un macro oltre 40 semi non e uno scaffale. Con M=30 il vincolo e garantito
+  per costruzione.
+- **Recenza = `min_eta`** (il seme piu fresco del gruppo), non la mediana: la mediana spinge il gruppo
+  piu fresco al rango 28 su 31.

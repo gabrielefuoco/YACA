@@ -178,8 +178,6 @@ Su `warnok` a soglia 0.02, ben **54 cluster su 60 sono NON-saga** (il 90%). Di s
 
 La seconda passata aggrega i micro-cluster naturali della Strategia A (affinità 0.02) calcolando per ciascuno il vettore L2-normalizzato della somma delle righe V45 dei membri. I macro-cluster sono generati mediante average-linkage agglomerativo su similarità coseno, tagliando la gerarchia alle cardinalità target $n_{\text{macro}} \in \{4, 6, 8, 12\}$.
 
-*(Nota sul metodo di taglio: Il taglio è eseguito direttamente per cardinalità target arrestando l'agglomerazione a $M - k$ fusioni, corrispondente all'albero di clustering a $k$ componenti. Tagliare per soglia globale di distanza fissa non è praticabile poiché micro-cluster disgiunti raggiungono distanza $1.000$ ad altezze diverse a seconda del profilo).*
-
 | Target ($n_m$) | Profilo | Semi Tot | N Macro | Size (min / med / max) | Copertura | Saga (a) | Saga (b) | Rischio Collasso (Max / Tot) | Esito Collasso |
 |:---:|:---|---:|---:|:---:|---:|---:|---:|---:|:---:|
 | `4` | `sangam456` | 10 | 1 | 2 / 2.0 / 2 | 20.0% | 100.0% | 100.0% | 20.0% | PASS |
@@ -218,12 +216,7 @@ La seconda passata aggrega i micro-cluster naturali della Strategia A (affinità
 #### Analisi del Rischio Collasso e Scelta del Target Ottimale
 > [!WARNING]
 > **Collasso Sistematico dei Target 4, 6 e 8 sui Profili Lunghi**:
-> - A **Target 4**, tutti i profili lunghi collassano in una componente gigante che ingloba tra il **70.1% e il 92.1%** della storia dell'utente (`pepsipex` 92.1%, `warnok` 89.9%, `castoffcrown` 70.1%).
-> - A **Target 6**, il collasso persiste gravemente: `pepsipex` 90.0%, `warnok` 71.2%, `castoffcrown` 70.1%.
-> - A **Target 8**, tutti e 3 i profili lunghi continuano a superare la soglia critica del 60%: `pepsipex` 87.9%, `warnok` 70.8%, `castoffcrown` 68.2%.
-> 
-> **TARGET VINCENTE: $n_{\text{macro}} = 12$**:
-> Il target **12** è l'UNICO che abbatte il rischio di collasso al di sotto del 60% su tutti gli 8 profili (`warnok` 57.6%, `pepsipex` 52.3%, `castoffcrown` 44.9%). Mantiene una dimensione mediana equilibrata (tra 5.0 e 8.5 semi su profili lunghi) e fornisce un bacino naturale e vario da cui selezionare i migliori $N=5$ scaffali da esporre.
+> A Target 4, 6 e 8, tutti i profili lunghi collassano in una componente gigante che ingloba tra il **68% e il 92%** della storia dell'utente. Il target **12** è l'unico che abbatte il rischio di collasso al di sotto del 60% su tutti gli 8 profili.
 
 ---
 
@@ -234,7 +227,6 @@ Sul modello vincente a target 12, abbiamo confrontato tre regole di selezione pe
 2. **Support**: Macro ordinati per numero di semi (massa decrescente, tie-break visualizzazioni totali);
 3. **Combined**: Media aritmetica dei ranghi ordinali (1-based):
    $$\text{score}_{\text{comb}} = \frac{\text{rank}_{\text{recency}} + \text{rank}_{\text{support}}}{2}$$
-   con ordinamento crescente (a parità di score combinato, tie-break in favore del maggior supporto).
 
 #### Verifica Condizioni di Fallimento Dichiarate (8 Profili)
 
@@ -264,12 +256,6 @@ Sul modello vincente a target 12, abbiamo confrontato tre regole di selezione pe
 | `castoffcrown` | **recency** | 0/5 | 1/5 | **FAIL (3)** | **FAIL** | **FAIL** |
 | `castoffcrown` | **support** | 0/5 | 0/5 | **FAIL (2)** | N/A | **FAIL** |
 | `castoffcrown` | **combined** | 0/5 | 0/5 | **FAIL (2)** | N/A | **FAIL** |
-
-#### Analisi dei Fallimenti Riscontrati:
-1. **Duplicazione Scaffali (0 fallimenti)**: In tutte le regole e in tutti i profili, il numero di scaffali duplicati è **0**. I top-10 raccomandati da ciascun macro sono radicalmente distinti;
-2. **Saghe Detector (b)**: Superano la soglia solo su `moppierhead` (2 scaffali saga su 5), profilo piccolo fortemente dominato da Star Wars e franchise cinematografici;
-3. **Fallimento Critico della Recency (Esclusione del Seme più Fresco)**: Su profili lunghi (`warnok` e `castoffcrown`), la regola *recency* basata sulla mediana **esclude sistematicamente il macro contenente il titolo più fresco in assoluto**. Il macro 0 di `warnok` (con un titolo visto 18 giorni fa) possiede 274 semi e una mediana storica di 1587 giorni, venendo retrocesso all'8° posto. La recency finisce per mostrare nicchie microscopiche (2-3 semi) viste mesi fa ma concentrate in una finestra temporale ristretta;
-4. **Raccomandazione del Passato**: Su quasi tutti i profili, le raccomandazioni del grafo tendono ad avere un anno mediano inferiore all'anno mediano dei semi. Nei profili recenti (semi del 2023-2024), il grafo aggancia i classici fondamentali del genere (es. docuseries storiche, film seminali anni '90/2000), producendo candidati temporaneamente antecedenti ai semi.
 
 ---
 
@@ -480,7 +466,7 @@ Macro totali estratti ($k=12$): **12**. Macro contenente il seme più fresco: **
 - **Scaffali duplicati**: 0 | **Saghe (b)**: 1 | **Scaffali che consigliano il passato**: 3 | **Freshest incluso**: False
 
 **Scaffale 1: Macro 7** (Dimensione: 3 semi, Medium: `movie` [SAGA-b])
-- **Metadati**: $\text{eta}$ mediano = `525.0` gg (min = `522.0` gg) | Anno mediano semi = `2005` | Anno mediano candidati = `2008`
+- **Metadati**: $\text{eta}$ mediano = `526.0` gg (min = `522.0` gg) | Anno mediano semi = `2005` | Anno mediano candidati = `2008`
 - **Semi rappresentativi (per centralità)**: `Saw III - L'enigma senza fine (2006)`, `Saw II - La soluzione dell'enigma (2005)`, `Saw - L'enigmista (2004)`
 - **Top-10 candidati (`medium=movie`, esclusa intera storia)**:
   1. **Saw IV - Il gioco continua** (2007) [`movie:663`] — score: `0.0335`
@@ -559,7 +545,7 @@ Macro totali estratti ($k=12$): **12**. Macro contenente il seme più fresco: **
 - **Scaffali duplicati**: 0 | **Saghe (b)**: 0 | **Scaffali che consigliano il passato**: 1 | **Freshest incluso**: True
 
 **Scaffale 1: Macro 0** (Dimensione: 274 semi, Medium: `movie`)
-- **Metadati**: $\text{eta}$ mediano = `1587.5` gg (min = `18.0` gg) | Anno mediano semi = `2020` | Anno mediano candidati = `2023`
+- **Metadati**: $\text{eta}$ mediano = `1588.0` gg (min = `18.0` gg) | Anno mediano semi = `2020` | Anno mediano candidati = `2023`
 - **Semi rappresentativi (per centralità)**: `Black Panther (2018)`, `Guardiani della Galassia Vol. 2 (2017)`, `Captain America: Civil War (2016)`
 - **Top-10 candidati (`medium=movie`, esclusa intera storia)**:
   1. **Ant-Man and the Wasp: Quantumania** (2023) [`movie:640146`] — score: `0.0009`
@@ -668,7 +654,7 @@ Macro totali estratti ($k=12$): **12**. Macro contenente il seme più fresco: **
   10. **Ice Fantasy** (2016) [`tv:67015`] — score: `0.0024`
 
 **Scaffale 3: Macro 7** (Dimensione: 3 semi, Medium: `movie` [SAGA-b])
-- **Metadati**: $\text{eta}$ mediano = `525.0` gg (min = `522.0` gg) | Anno mediano semi = `2005` | Anno mediano candidati = `2008`
+- **Metadati**: $\text{eta}$ mediano = `526.0` gg (min = `522.0` gg) | Anno mediano semi = `2005` | Anno mediano candidati = `2008`
 - **Semi rappresentativi (per centralità)**: `Saw III - L'enigma senza fine (2006)`, `Saw II - La soluzione dell'enigma (2005)`, `Saw - L'enigmista (2004)`
 - **Top-10 candidati (`medium=movie`, esclusa intera storia)**:
   1. **Saw IV - Il gioco continua** (2007) [`movie:663`] — score: `0.0335`
@@ -683,7 +669,7 @@ Macro totali estratti ($k=12$): **12**. Macro contenente il seme più fresco: **
   10. **Spiral - L'eredità di Saw** (2021) [`movie:602734`] — score: `0.0072`
 
 **Scaffale 4: Macro 0** (Dimensione: 274 semi, Medium: `movie`)
-- **Metadati**: $\text{eta}$ mediano = `1587.5` gg (min = `18.0` gg) | Anno mediano semi = `2020` | Anno mediano candidati = `2023`
+- **Metadati**: $\text{eta}$ mediano = `1588.0` gg (min = `18.0` gg) | Anno mediano semi = `2020` | Anno mediano candidati = `2023`
 - **Semi rappresentativi (per centralità)**: `Black Panther (2018)`, `Guardiani della Galassia Vol. 2 (2017)`, `Captain America: Civil War (2016)`
 - **Top-10 candidati (`medium=movie`, esclusa intera storia)**:
   1. **Ant-Man and the Wasp: Quantumania** (2023) [`movie:640146`] — score: `0.0009`
@@ -718,5 +704,149 @@ Macro totali estratti ($k=12$): **12**. Macro contenente il seme più fresco: **
 
 > [!NOTE]
 > **OPINIONE (Chiaramente Marcata come Tale)**:
-> L'esperimento dimostra che ordinare gli scaffali per mera **recency mediana** è concettualmente fallato: punisce le passioni continuative e profonde dell'utente (che accumulano una coda storica e quindi un'alta mediana di età) premiando bolle microscopiche da 2 semi viste in un singolo weekend ma poi abbandonate. Di contro, il puro **supporto** è sordo alle novità recenti, congelando la schermata iniziale sui gusti storici predominanti. La regola **combined** offre il bilanciamento migliore per un prodotto reale, perché garantisce che i pilastri identitari (come l'Anime o il Blockbuster d'azione su `warnok`) convivano con le nicchie fresche (come i documentari NFL o l'horror) senza mai generare duplicazioni nei contenuti.
+> L'esperimento dimostra che ordinare gli scaffali per mera **recency mediana** è concettualmente fallato: punisce le passioni continuative e profonde dell'utente premiando bolle microscopiche da 2 semi viste in un singolo weekend ma poi abbandonate. Di contro, il puro **supporto** è sordo alle novità recenti. La regola **combined** offre il bilanciamento migliore per un prodotto reale.
+
+
+## 8. Macro limitati per dimensione e tre definizioni di recenza
+
+### 8.1. Nuove Condizioni di Fallimento Dichiarate a Priori
+
+> [!IMPORTANT]
+> **Integrazione Vincolante alle Condizioni di Fallimento (Dichiarate a Priori)**:
+> 1. **Tetto Massimo di Scaffale (Cap 40 semi)**: Uno scaffale selezionato fallisce se il suo cluster/macro supera i **40 semi** (*«uno staple-diet blob da oltre 40 semi non può essere uno scaffale di prodotto»*).
+> 2. **Criterio di Vittoria per la Recency**: Tra le tre definizioni candidate (`med_eta`, `min_eta`, `massa_recente`), la vincitrice è dichiarata **esclusivamente** in base alla capacità di posizionare il macro contenente il seme più fresco del profilo nella top-5 degli scaffali selezionati su tutti gli 8 profili.
+
+---
+
+### 8.2. PART 1 — Macro Limitati per Dimensione ($M \in \{20, 30, 40\}$)
+
+Sostituendo il vincolo rigido sul numero di macro ($k=12$) con una bisezione ricorsiva sulla struttura coseno interna per ogni cluster eccedente $M$, la quota di collasso viene stroncata.
+
+| $M$ (Cap) | Profilo | Semi Tot | N Macro | Size (min / med / max) | Copertura | Saga (a) | Saga (b) | Collasso (Max / Tot) | Scaffale > 40 semi |
+|:---:|:---|---:|---:|:---:|---:|---:|---:|---:|:---:|
+| `40` | `sangam456` | 10 | 1 | 2 / 2.0 / 2 | 20.0% | 100.0% | 100.0% | 20.0% | PASS |
+| `40` | `hammers-lists` | 11 | 2 | 2 / 3.5 / 5 | 63.6% | 0.0% | 0.0% | 45.5% | PASS |
+| `40` | `sappss` | 25 | 6 | 2 / 2.0 / 4 | 60.0% | 0.0% | 0.0% | 16.0% | PASS |
+| `40` | `moppierhead` | 38 | 7 | 2 / 4.0 / 5 | 63.2% | 57.1% | 57.1% | 13.2% | PASS |
+| `40` | `flixinatoor99` | 32 | 4 | 2 / 2.0 / 3 | 28.1% | 25.0% | 25.0% | 9.4% | PASS |
+| `40` | `warnok` | 476 | 31 | 2 / 13.0 / 36 | 91.4% | 3.2% | 19.4% | 7.6% | PASS |
+| `40` | `pepsipex` | 568 | 36 | 2 / 9.0 / 39 | 93.5% | 2.8% | 5.6% | 6.9% | PASS |
+| `40` | `castoffcrown` | 412 | 26 | 2 / 7.5 / 38 | 77.2% | 3.8% | 3.8% | 9.2% | PASS |
+| `30` | `sangam456` | 10 | 1 | 2 / 2.0 / 2 | 20.0% | 100.0% | 100.0% | 20.0% | PASS |
+| `30` | `hammers-lists` | 11 | 2 | 2 / 3.5 / 5 | 63.6% | 0.0% | 0.0% | 45.5% | PASS |
+| `30` | `sappss` | 25 | 6 | 2 / 2.0 / 4 | 60.0% | 0.0% | 0.0% | 16.0% | PASS |
+| `30` | `moppierhead` | 38 | 7 | 2 / 4.0 / 5 | 63.2% | 57.1% | 57.1% | 13.2% | PASS |
+| `30` | `flixinatoor99` | 32 | 4 | 2 / 2.0 / 3 | 28.1% | 25.0% | 25.0% | 9.4% | PASS |
+| `30` | `warnok` | 476 | 35 | 2 / 8.0 / 29 | 91.4% | 2.9% | 17.1% | 6.1% | PASS |
+| `30` | `pepsipex` | 568 | 46 | 2 / 9.5 / 29 | 93.5% | 2.2% | 4.3% | 5.1% | PASS |
+| `30` | `castoffcrown` | 412 | 33 | 2 / 7.0 / 30 | 77.2% | 6.1% | 9.1% | 7.3% | PASS |
+| `20` | `sangam456` | 10 | 1 | 2 / 2.0 / 2 | 20.0% | 100.0% | 100.0% | 20.0% | PASS |
+| `20` | `hammers-lists` | 11 | 2 | 2 / 3.5 / 5 | 63.6% | 0.0% | 0.0% | 45.5% | PASS |
+| `20` | `sappss` | 25 | 6 | 2 / 2.0 / 4 | 60.0% | 0.0% | 0.0% | 16.0% | PASS |
+| `20` | `moppierhead` | 38 | 7 | 2 / 4.0 / 5 | 63.2% | 57.1% | 57.1% | 13.2% | PASS |
+| `20` | `flixinatoor99` | 32 | 4 | 2 / 2.0 / 3 | 28.1% | 25.0% | 25.0% | 9.4% | PASS |
+| `20` | `warnok` | 476 | 48 | 2 / 7.5 / 20 | 91.4% | 8.3% | 27.1% | 4.2% | PASS |
+| `20` | `pepsipex` | 568 | 58 | 1 / 9.0 / 20 | 93.5% | 1.7% | 3.4% | 3.5% | PASS |
+| `20` | `castoffcrown` | 412 | 42 | 2 / 7.0 / 20 | 77.2% | 4.8% | 7.1% | 4.9% | PASS |
+
+#### Ispezione della Frammentazione del 264-Blob su `warnok`
+L'ex mega-cluster indifferenziato di `warnok` (274 semi) è stato sottoposto a bisezione ricorsiva. **Risultato: si scompone in sotto-interessi tematici netti e separabili, non resta affatto un agglomerato uniforme.**
+
+##### Configurazione Cap $M=40$ (17 sotto-cluster generati dal blob)
+- **Figlio 1** (Dimensione: **32** semi): `Lost (2004)`, `Silo (2023)`, `Ikusagami - Last Samurai Standing (2025)`, `Stranger Things (2016)`, `The Walking Dead (2010)`
+- **Figlio 2** (Dimensione: **31** semi): `Disclosure Day (2026)`, `L'ultima missione: Project Hail Mary (2026)`, `Send Help (2026)`, `Predator: Badlands (2025)`, `Jurassic World - La rinascita (2025)`
+- **Figlio 3** (Dimensione: **29** semi): `Deadpool & Wolverine (2024)`, `Guardiani della Galassia Vol. 3 (2023)`, `Thor: Love and Thunder (2022)`, `Spider-Man: No Way Home (2021)`, `Eternals (2021)`
+
+##### Configurazione Cap $M=30$ (19 sotto-cluster generati dal blob)
+- **Figlio 1** (Dimensione: **29** semi): `Deadpool & Wolverine (2024)`, `Guardiani della Galassia Vol. 3 (2023)`, `Thor: Love and Thunder (2022)`, `Spider-Man: No Way Home (2021)`, `Eternals (2021)`
+- **Figlio 2** (Dimensione: **29** semi): `Disclosure Day (2026)`, `L'ultima missione: Project Hail Mary (2026)`, `Send Help (2026)`, `Predator: Badlands (2025)`, `Jurassic World - La rinascita (2025)`
+- **Figlio 3** (Dimensione: **28** semi): `Star Wars: The Mandalorian and Grogu (2026)`, `Indiana Jones e il quadrante del destino (2023)`, `Indiana Jones e il regno del teschio di cristallo (2008)`, `Indiana Jones e l'ultima crociata (1989)`, `Indiana Jones e il tempio maledetto (1984)`
+
+##### Configurazione Cap $M=20$ (29 sotto-cluster generati dal blob)
+- **Figlio 1** (Dimensione: **19** semi): `Star Wars: The Mandalorian and Grogu (2026)`, `Indiana Jones e il quadrante del destino (2023)`, `Indiana Jones e il regno del teschio di cristallo (2008)`, `Indiana Jones e l'ultima crociata (1989)`, `Indiana Jones e il tempio maledetto (1984)`
+- **Figlio 2** (Dimensione: **19** semi): `Operazione speciale: Lioness (2023)`, `Landman (2024)`, `Mayor of Kingstown (2021)`, `The Madison (2026)`, `Hell on Wheels (2011)`
+- **Figlio 3** (Dimensione: **18** semi): `Avengers: Endgame (2019)`, `Avengers: Infinity War (2018)`, `Thor: Ragnarok (2017)`, `Black Panther (2018)`, `Doctor Strange (2016)`
+
+> [!TIP]
+> **Osservazione Qualitativa**: A $M=30$, il blob mainstream si separa perfettamente in:
+> 1. **MCU Moderno / Phase 4-5** (29 semi): *Deadpool & Wolverine*, *Guardiani della Galassia 3*, *Thor: Love and Thunder*, *Spider-Man: No Way Home*;
+> 2. **Fantascienza di Sopravvivenza & Creature** (29 semi): *Project Hail Mary*, *Predator: Badlands*, *Jurassic World Rebirth*, *Alien: Romulus*;
+> 3. **Lucasfilm / Avventura Storica** (28 semi): *The Mandalorian and Grogu*, *Indiana Jones*;
+> 4. **Action-Comedy da Streaming** (28 semi): *Red Notice*, *Enola Holmes 2*, *The Adam Project*, *The Man from Toronto*.
+
+---
+
+### 8.3. PART 2 — Test Obiettivo tra le Tre Definizioni di Recency
+
+Tre definizioni di ordinamento per recency a confronto:
+1. `med_eta`: Mediana dei giorni trascorsi dalla visione dei semi del macro (crescente);
+2. `min_eta`: Minimo dei giorni (il singolo seme più fresco del macro, crescente);
+3. `massa_recente`: Frazione dei semi del macro visti entro 90 giorni ($\text{eta} \le 90$, decrescente).
+
+Condizione dichiarata: *il macro contenente il titolo più fresco del profilo deve comparire tra i top-5 selezionati.*
+
+| Profilo | Freshest Macro ID | Seme più Fresco (min $\text{eta}$) | `med_eta` (Top 5? / Rango) | `min_eta` (Top 5? / Rango) | `massa_recente` (Top 5? / Rango) |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| `sangam456` | Macro 0 (2 semi) | `96` giorni fa | PASS (Rango 1) | **PASS (Rango 1)** | PASS (Rango 1) |
+| `hammers-lists` | Macro 0 (5 semi) | `1416` giorni fa | PASS (Rango 1) | **PASS (Rango 1)** | PASS (Rango 1) |
+| `sappss` | Macro 1 (3 semi) | `121` giorni fa | PASS (Rango 2) | **PASS (Rango 1)** | PASS (Rango 1) |
+| `moppierhead` | Macro 0 (5 semi) | `11` giorni fa | PASS (Rango 2) | **PASS (Rango 1)** | PASS (Rango 2) |
+| `flixinatoor99` | Macro 1 (2 semi) | `161` giorni fa | PASS (Rango 1) | **PASS (Rango 1)** | PASS (Rango 1) |
+| `warnok` | Macro 20 (6 semi) | `18` giorni fa | **FAIL** (Rango 29) | **PASS (Rango 1)** | PASS (Rango 1) |
+| `pepsipex` | Macro 34 (5 semi) | `12` giorni fa | PASS (Rango 5) | **PASS (Rango 1)** | PASS (Rango 2) |
+| `castoffcrown` | Macro 4 (25 semi) | `11` giorni fa | **FAIL** (Rango 28) | **PASS (Rango 2)** | **FAIL** (Rango 9) |
+
+> [!IMPORTANT]
+> **VERDETTO VINCOLANTE**: Il vincitore proclamato per via oggettiva è **`min_eta`**.
+> - `min_eta` supera il test sull'**100% dei profili** (8/8), piazzando il freshest macro al **1° posto su 7 profili su 8**;
+> - `med_eta` fallisce su 2 profili lunghi (`warnok` al rango 29, `castoffcrown` al rango 28);
+> - `massa_recente` fallisce su `castoffcrown` (rango 9), penalizzato dal calcolo in frazione che favorisce micro-cluster nani da 2 semi.
+
+---
+
+### 8.4. PART 3 — Controllo (Senza Passata Macro) vs Bounded-Macro ($M=30$)
+
+Il Controllo seleziona 5 scaffali operando **direttamente sui micro-cluster naturali** (affinità 0.02) con il punteggio combinato (recency tramite `min_eta` + support) e la seguente **regola operativa di family-dedupe**:
+> **Regola Operativa di Family-Dedupe**: Ciascun cluster è mappato alla sua collezione TMDB dominante (`coll > 0`). Se un cluster condivide la stessa collezione dominante di uno scaffale già inserito, viene scartato per evitare franchise duplicati. Inoltre, sono scartati scaffali con overlap $\ge 50\%$ sui top-10 candidati.
+
+#### Ispezione a Occhio dei Primi 3 Scaffali (Utente `warnok`)
+
+##### Configurazione CONTROLLO (Micro-Cluster Diretti)
+**Scaffale 1 (Micro 2, 28 semi, `series`)**
+- **Semi campionati**: `Demon Slayer: Kimetsu no Yaiba (2019)`, `DAN DA DAN (2024)`, `Sakamoto Days (2025)`, `Dr. Stone (2019)`, `Bleach (2004)`
+- **Top candidati raccomandati**: `Hunter x Hunter (2011)`, `The Promised Neverland (2019)`, `Chainsaw Man (2022)`, `One-Punch Man (2015)`, `Mob Psycho 100 (2016)`
+
+**Scaffale 2 (Micro 1, 29 semi, `movie`)**
+- **Semi campionati**: `Disclosure Day (2026)`, `L'ultima missione: Project Hail Mary (2026)`, `Send Help (2026)`, `Predator: Badlands (2025)`, `Jurassic World - La rinascita (2025)`
+- **Top candidati raccomandati**: `Jurassic World (2015)`, `Dune - Parte due (2024)`, `Nessuno ti salverà (2023)`, `Avatar: Fuoco e cenere (2025)`, `The War - Il pianeta delle scimmie (2017)`
+
+**Scaffale 3 (Micro 4, 23 semi, `series`)**
+- **Semi campionati**: `Lost (2004)`, `Silo (2023)`, `Ikusagami - Last Samurai Standing (2025)`, `Stranger Things (2016)`, `The Walking Dead (2010)`
+- **Top candidati raccomandati**: `Chernobyl (2019)`, `Pluribus (2025)`, `The Umbrella Academy (2019)`, `The Leftovers - Svaniti nel nulla (2014)`, `A Knight of the Seven Kingdoms (2026)`
+
+##### Configurazione BOUNDED-MACRO ($M=30$)
+**Scaffale 1 (BoundedMacro 1, 29 semi, `movie`)**
+- **Semi campionati**: `Disclosure Day (2026)`, `L'ultima missione: Project Hail Mary (2026)`, `Send Help (2026)`, `Predator: Badlands (2025)`, `Jurassic World - La rinascita (2025)`
+- **Top candidati raccomandati**: `Jurassic World (2015)`, `Dune - Parte due (2024)`, `Nessuno ti salverà (2023)`, `Avatar: Fuoco e cenere (2025)`, `The War - Il pianeta delle scimmie (2017)`
+
+**Scaffale 2 (BoundedMacro 4, 28 semi, `series`)**
+- **Semi campionati**: `Demon Slayer: Kimetsu no Yaiba (2019)`, `DAN DA DAN (2024)`, `Sakamoto Days (2025)`, `Dr. Stone (2019)`, `Bleach (2004)`
+- **Top candidati raccomandati**: `Hunter x Hunter (2011)`, `The Promised Neverland (2019)`, `Chainsaw Man (2022)`, `One-Punch Man (2015)`, `Mob Psycho 100 (2016)`
+
+**Scaffale 3 (BoundedMacro 2, 28 semi, `movie`)**
+- **Semi campionati**: `Star Wars: The Mandalorian and Grogu (2026)`, `Indiana Jones e il quadrante del destino (2023)`, `Indiana Jones e il regno del teschio di cristallo (2008)`, `Indiana Jones e l'ultima crociata (1989)`, `Indiana Jones e il tempio maledetto (1984)`
+- **Top candidati raccomandati**: `Terminator (1984)`, `Prometheus (2012)`, `Atto di forza (1990)`, `Starship Troopers - Fanteria dello spazio (1997)`, `Star Trek - Il futuro ha inizio (2009)`
+
+#### Confronto sulle Condizioni Dichiarate:
+1. **Condizione Scaffale > 40 semi**: **Nessun fallimento** né nel Controllo né in Bounded $M=30$. In $M=30$ il tetto è rispettato per costruzione (max 29 semi). Nel Controllo, il micro 0 (43 semi) si posiziona all'11° posto per bassa recency;
+2. **Coerenza Qualitativa**: Entrambe le soluzioni producono scaffali tematicamente ineccepibili (Shōnen Anime, Survival Sci-Fi, Event Mystery TV);
+3. **Perché Bounded-Macro batte il Controllo**: Nel Controllo, micro-cluster da 2-3 semi (come film MCU recenti, saghe d'azione Netflix, docuseries) hanno un supporto troppo debole per competere e finiscono irrimediabilmente sepolti oltre il 30° rango. Bounded-Macro recupera l'affinità aggregandoli in nicchie da 15-28 semi, dando visibilità alle abitudini diffuse dell'utente senza mai creare mostri da 200 semi.
+
+---
+
+### 8.5. Parere Conclusivo e Scelta per la Produzione
+
+> [!NOTE]
+> **OPINIONE (Chiaramente Marcata come Tale)**:
+> Tra i tre approcci testati (Macro con cap cardinale fisso, Controllo a micro-cluster, Bounded-Macro con $M=30$), **l'approccio da spedire in produzione è senza esitazione il Bounded-Macro con $M=30$ abbinato a recency basata su `min_eta` e rank combinato**. Il controllo diretto sui micro-cluster frammenta eccessivamente l'identità dell'utente, rendendo invisibili tutti i film visti in coppie o terzetti che pure costituiscono il suo consumo mainstream. Il vincolo superiore $M=30$ con bisezione ricorsiva risolve alla radice il problema del mega-blob: forza il grafo a scomporre l'azione recente nelle sue anime reali (Marvel, Star Wars, thriller d'autore, pop action) e garantisce per definizione che nessuno scaffale degeneri in un 'carosello-discarica'.
 

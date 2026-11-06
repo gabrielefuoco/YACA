@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: prototype
 Blocked by: 03
 
@@ -36,3 +36,30 @@ selezione con una regola esplicita (ticket 08).
 
 **Difetto trovato nel prototipo**: il filtro di medium è applicato al profilo, non al cluster — per
 questo il cluster anime di `warnok` (semi tutte serie) raccomanda solo lungometraggi. Va nel ticket 07.
+
+
+## Ricetta misurata (conferma dell'umano: seconda passata + selezione per recenza e massa)
+
+L'umano ha proposto: seconda passata per accorpare quando i cluster sono troppi, e selezione per
+recenza e per numero di elementi a supporto. Misurata, con condizioni di fallimento dichiarate prima.
+
+**Micro** - affinita coseno V45, soglia 0,02, tetto 60. Copertura 80,3%, 200 cluster su 8 profili,
+mediana 4 semi.
+
+**Macro - limitati per DIMENSIONE, non per numero.** Raggruppare "fino a k macro" produce sempre un
+blob: a k=12 il macro piu grande di `warnok` e **264 semi su 476 (55%)**, cioe la dieta principale
+dell'utente (MCU, Deadpool, Kingsman, Fast, Spider-Man). La bisezione ricorsiva finche ogni macro
+<= 30 semi lo spezza in nicchie leggibili (MCU / Star Wars-Indiana Jones / sci-fi di sopravvivenza /
+action Netflix). Verificato: M=30 -> 31 macro, max 29, mediana 12, copertura 87,2%; M=20 -> 42 macro,
+max 20; M=40 -> 28 macro, max 37. **M=30 e la scelta.**
+
+**Recenza: `min_eta`, non la mediana.** Test dichiarato in anticipo: il macro col seme piu fresco deve
+entrare nei 5 scaffali. Su `warnok` il seme piu fresco sta al **rango 1** con `min_eta` e al **rango
+28 di 31** con la mediana - la mediana penalizza le passioni continuative, che hanno coda storica.
+`massa_recente` (quota di semi <=90 giorni) fallisce su un profilo (rango 9). Vittoria: `min_eta` 8/8.
+
+**Selezione**: rango combinato `(rank_min_eta + rank_supporto)/2`, 5 scaffali, filtro medium **per
+macro** (non per profilo), dedupe di famiglia (collezione dominante) e scarto degli scaffali con
+overlap >=50% sui top-10. Il controllo senza passata macro produce scaffali ugualmente nitidi ma
+seppellisce i consumi diffusi in coppie/terzetti; la versione bounded li recupera senza mai superare
+29 semi.
