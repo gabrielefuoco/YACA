@@ -189,11 +189,26 @@ def aggrega_macro_cluster_tau(
     return macros
 
 
+DEFAULT_BISECTION_CAP_M: int = 12
+"""Cap massimo di semi per macro-cluster tramite bisezione ricorsiva (M = 12).
+
+Motivazione della scelta M = 12 (verificata e congelata su 10 timeline):
+1. A M=12 i grab bag (mix di generi come sitcom/drama) si scindono in blocchi tematicamente
+   puri che non competono per la cinquina servita (es. in castoffcrown emergono Anime shonen,
+   K-drama, Animazione d'autore, Cinema d'autore, Samurai Kurosawa).
+2. Impedisce la duplicazione di etichette all'interno dello stesso profilo: a M=8 la bisezione
+   eccessiva genera due scaffali entrambi denominati «Anime shōnen» in castoffcrown e due
+   «Sitcom animate» in 1jacobjohn, violando la regola di distinctness. A M=12 vi sono 0 duplicati.
+3. Preserva integralmente i conteggi degli scaffali serviti (41/41 su tutte le 10 timeline).
+4. Mantiene una copertura >= 85% sui profili lunghi (90.0% castoffcrown, 94.3% warnok, 94.9% pepsipex, 91.0% 1jacobjohn).
+"""
+
+
 def bounded_macros_for_profile(
     engine: Engine,
     righe: np.ndarray,
     micros: list[list[int]],
-    M: int = 30,
+    M: int = DEFAULT_BISECTION_CAP_M,
     tau: float = 0.03,
 ) -> list[list[int]]:
     """Genera macro-cluster limitati a cardinalità massima M con arresto su similarità tau."""

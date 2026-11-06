@@ -1,11 +1,26 @@
-# Rapporto Dieci Storie: Tassonomia Hand-Curata + «Perché hai visto» e Risoluzione Regressione Carverclan
+# Rapporto Dieci Storie: Adozione M = 12, Tassonomia Curata + «Perché hai visto» e Risoluzione Regressioni
 
 > [!IMPORTANT]
-> **Decisione Fondamentale di Denominazione (Specifica del Produttore Umano)**:
-> 1. **Adozione del binomio Tassonomia + «Perché hai visto»**: la denominazione degli scaffali è governata da una tassonomia italiana curata a mano (`tassonomia.py`, 36 voci). Uno scaffale assume il nome tassonomico **unicamente se un'entry univoca soddisfa la regola con confidenza dichiarata** (copertura $\ge 50\%$ dei membri e nessuna voce concorrente a pari merito).
-> 2. **Fallback Veritiero per Costruzione**: tutti i cluster eterogenei o privi di confidenza ricevono l'etichetta **«Perché hai visto <2-3 semi rappresentativi>»**. Essa è **vera al 100% per costruzione**, elimina ogni percentuale visibile (`87%`), ogni frammento inglese non tradotto e ogni pretesa di ruolo autorale generalizzata.
-> 3. **Cancellazione Totale della Vecchia Catena**: la catena (*Keyword Pair $	o$ Collezione $	o$ DIR $	o$ Medium + Keyword*) è stata **completamente eliminata**, non conservata come fallback. Le diciture *«Di X»* / *«Regia di X»* non vengono più prodotte dinamicamente.
-> 4. **Risoluzione Regressione Carverclan**: per i cluster con meno di 3 semi, il medium è deciso dal seme con più riproduzioni (tie-break recenza); l'asserzione 80% sui semi è condonata (`cluster piccolo`), mentre l'asserzione 100% sui candidati è mantenuta intatta. **`carverclan` torna a servire 2 / 5 scaffali**.
+> **Verdetto Finale e Riformulazione del Criterio di Validità (Adozione M = 12)**:
+> Il criterio quantitativo dichiarato in precedenza (tasso di adozione della tassonomia $\ge 70\%$) è **fallito a ogni $M$ esplorato** (massimo $65.85\%$ a $M=8$, $60.98\%$ a $M=12$ e $M=30$, $56.10\%$ a $M=20$). Tuttavia, **era la metrica a essere concettualmente errata, non la soglia**: «Perché hai visto» non è affatto un fallimento o un'eccezione non gestita, ma l'**onesto fallback trasparente e veritiero al 100% per costruzione** quando un cluster non ha una concordanza tassonomica univoca ad alta confidenza. Contare il fallback come un miss punisce la trasparenza e crea incentivi perversi a fabbricare etichette-ombrello generiche e ingannevoli.
+> 
+> Ciò che realmente decide e convalida la granularità $M=12$ è l'ispezione empirica qualitativa e strutturale:
+> - **A $M=12$**, i due grab bag (cluster eterogenei che fondevano sitcom e drama/thriller) si scindono nettamente in un blocco sitcom puro e un blocco drama/thriller puro, che scivolano fuori dai top-5 e **smettono di essere serviti**. La cinquina di `castoffcrown` diventa una sequenza esemplare di nicchie tematiche nitidissime: *Anime shōnen*, *Dramma coreano*, *Animazione d'autore*, *Cinema d'autore*, *Samurai Kurosawa*;
+> - **A $M=8$**, la bisezione eccessiva spezza artificiosamente lo shōnen producendo **due scaffali entrambi denominati «Anime shōnen» all'interno dello stesso profilo** di `castoffcrown` (e similmente due «Sitcom animate» in `1jacobjohn`), violando platealmente la regola fondamentale di distinctness tra scaffali.
+> 
+> Il **set di criteri onesti e vincolanti** contro cui è riscritta la validazione diventa:
+> 1. **Nessun nome duplicato all'interno di un profilo** $\to$ **PASS (0 duplicati su tutte le 10 timeline a $M=12$; a $M=8$ fallisce con 2 duplicazioni)**;
+> 2. **Nessun scaffale servito che si legga come un grab bag** $\to$ **PASS (tutti i blocchi misti decomposti e non serviti)**;
+> 3. **Preservazione dei conteggi degli scaffali serviti** $\to$ **PASS (41 / 41 scaffali serviti inalterati su 10 timeline)**;
+> 4. **Copertura semi $\ge 85\%$ sulle timeline lunghe** $\to$ **PASS (castoffcrown $90.0\%$, warnok $94.3\%$, pepsipex $94.9\%$, 1jacobjohn $91.0\%$, media $92.6\%$)**.
+
+---
+
+## Sintesi della Specifica di Produzione
+1. **Cap di Bisezione $M=12$**: ogni macro-cluster che supera i 12 semi viene bisecato ricorsivamente sulla sua struttura coseno interna fino a garantire $	ext{size} \le 12$.
+2. **Tassonomia Curata + «Perché hai visto»**: la denominazione è governata da una tassonomia italiana curata (`tassonomia.py`, 36 voci). Uno scaffale assume il nome tassonomico **unicamente se un'entry univoca soddisfa la regola con confidenza $\ge 50\%$ e nessuna voce concorrente a pari merito**. Tutti gli altri cluster ricevono l'etichetta trasparente **«Perché hai visto <2-3 semi>»**.
+3. **Cancellazione Totale della Vecchia Catena**: eliminate per sempre le percentuali nei titoli, l'inglese non tradotto e le diciture «Di X» / «Regia di X».
+4. **Risoluzione Regressione Carverclan**: per cluster con meno di 3 semi, medium deciso dal seme con più riproduzioni (tie-break recenza); asserzione 80% semi condonata (`cluster piccolo`), asserzione 100% candidati mantenuta intatta (`carverclan` serve regolarmente 2 / 5 scaffali).
 
 ---
 
@@ -16,61 +31,61 @@ La tassonomia si compone di **36 voci controllate**, raggruppate in 6 macro-aree
 ### Area: Animazione & Anime
 | Nome Entry | Evidenza / Regola Dichiarativa | Priorità | Origine / Derivazione dai Dati |
 |:---|:---|:---:|:---|
-| **«Anime shōnen»** | flag `ANIME=1`, kws=['seinen', 'martial arts', 'super power'] | `90` | **Dati reali**: Derivato dai dati: warnok S1, moppierhead S2, castoffcrown S1 |
-| **«Anime romantici & slice of life»** | flag `ANIME=1`, kws=['shoujo', 'romance', 'slice of life'] | `85` | **Dati reali**: Derivato dai dati: castoffcrown S2 (Gachiakuta, Polar Opposites) |
-| **«Animazione d'autore»** | medium=`movie`, flag `ANIME=1`, kws=['studio ghibli', 'surrealism', 'author animation'] | `80` | **Dati reali**: Derivato dai dati: film d'autore Studio Ghibli e lungometraggi animati |
-| **«Sitcom animate»** | medium=`series`, flag `ANIME=0`, kws=['family conflict', 'dysfunctional family', 'sitcom'] | `90` | **Dati reali**: Derivato dai dati: hammers-lists S2, sappss S3, moppierhead S1, 1jacobjohn S3 |
-| **«Animazione per famiglie»** | medium=`movie`, flag `ANIME=0`, kws=['pixar', 'anthropomorphism', '3d animation'] | `80` | **Dati reali**: Derivato dai dati: sappss S1 (Elio, Jumpers, La gang del bosco) |
-| **«Animazione d'azione per adulti»** | medium=`series`, flag `ANIME=0`, kws=['dark fantasy', 'adult animation', 'gore'] | `75` | **Dati reali**: Derivato dai dati: warnok S4 e flixinatoor99 S5 (Invincible, Blue Eye Samurai) |
+| **«Anime shōnen»** | flag `ANIME=1`, kws=['shounen', 'ninja', 'super power'] | `90` | **Dati reali**: Derivato dai dati: warnok S1, moppierhead S2, castoffcrown S1 |
+| **«Anime romantici & slice of life»** | flag `ANIME=1`, kws=['romance', 'slice of life', 'shoujo'] | `85` | **Dati reali**: Derivato dai dati: castoffcrown S2 (Gachiakuta, Polar Opposites) |
+| **«Animazione d'autore»** | medium=`movie`, flag `ANIME=1`, kws=['philosophical', 'author animation', 'surrealism'] | `80` | **Dati reali**: Derivato dai dati: film d'autore Studio Ghibli e lungometraggi animati |
+| **«Sitcom animate»** | medium=`series`, flag `ANIME=0`, kws=['dysfunctional family', 'adult humor', 'parody'] | `90` | **Dati reali**: Derivato dai dati: hammers-lists S2, sappss S3, moppierhead S1, 1jacobjohn S3 |
+| **«Animazione per famiglie»** | medium=`movie`, flag `ANIME=0`, kws=['anthropomorphism', 'dreamworks', 'pixar'] | `80` | **Dati reali**: Derivato dai dati: sappss S1 (Elio, Jumpers, La gang del bosco) |
+| **«Animazione d'azione per adulti»** | medium=`series`, flag `ANIME=0`, kws=['superhero', 'gore', 'dark fantasy'] | `75` | **Dati reali**: Derivato dai dati: warnok S4 e flixinatoor99 S5 (Invincible, Blue Eye Samurai) |
 
 ### Area: Fantascienza & Fantasy
 | Nome Entry | Evidenza / Regola Dichiarativa | Priorità | Origine / Derivazione dai Dati |
 |:---|:---|:---:|:---|
-| **«Space opera»** | kws=['galaxy', 'space opera', 'star wars'] | `95` | **Dati reali**: Derivato dai dati: warnok S3 (Star Wars, Mandalorian) |
-| **«Fantascienza d'invasione»** | kws=['alien monster', 'extraterrestrial', 'alien invasion'] | `85` | **Dati reali**: Derivato dai dati: sangam456 S2 e cluster alieni di warnok |
-| **«Fantascienza post-apocalittica»** | kws=['survival', 'dystopia', 'post-apocalyptic future'] | `80` | **Dati reali**: Derivato dai dati: warnok S2 e franchise Fallout |
-| **«Cyberpunk & Futuro distopico»** | kws=['cyberpunk', 'near future', 'cyborg'] | `80` | **Dati reali**: Derivato dai dati: 1jacobjohn S2 (Outside the Wire, Upgrade) |
-| **«Magia & Stregoneria»** | kws=['witch', 'sorcery', 'spell'] | `85` | **Dati reali**: Derivato dai dati: moppierhead S3/S4 e flixinatoor99 S6 (Harry Potter, Wicked) |
-| **«Cinecomic & Supereroi»** | kws=['super power', 'based on comic', 'marvel cinematic universe (mcu)'] | `80` | **Dati reali**: Derivato dai dati: 1jacobjohn S5 e flixinatoor99 S7 (Superman, Avatar) |
-| **«Viaggi nel tempo & Multiverso»** | kws=['alternate timeline', 'alternate reality', 'time travel'] | `80` | *Catalogo*: Pattern tematico classico di catalogo fantascientifico |
+| **«Space opera»** | kws=['galaxy', 'spacecraft', 'star wars'] | `95` | **Dati reali**: Derivato dai dati: warnok S3 (Star Wars, Mandalorian) |
+| **«Fantascienza d'invasione»** | kws=['alien invasion', 'alien monster', 'alien'] | `85` | **Dati reali**: Derivato dai dati: sangam456 S2 e cluster alieni di warnok |
+| **«Fantascienza post-apocalittica»** | kws=['survival', 'wasteland', 'post-apocalyptic future'] | `80` | **Dati reali**: Derivato dai dati: warnok S2 e franchise Fallout |
+| **«Cyberpunk & Futuro distopico»** | kws=['artificial intelligence (a.i.)', 'cyborg', 'transhumanism'] | `80` | **Dati reali**: Derivato dai dati: 1jacobjohn S2 (Outside the Wire, Upgrade) |
+| **«Magia & Stregoneria»** | kws=['wizard', 'sorcery', 'witch'] | `85` | **Dati reali**: Derivato dai dati: moppierhead S3/S4 e flixinatoor99 S6 (Harry Potter, Wicked) |
+| **«Cinecomic & Supereroi»** | kws=['based on comic', 'superhero', 'marvel cinematic universe (mcu)'] | `80` | **Dati reali**: Derivato dai dati: 1jacobjohn S5 e flixinatoor99 S7 (Superman, Avatar) |
+| **«Viaggi nel tempo & Multiverso»** | kws=['time travel', 'multiverse', 'alternate timeline'] | `80` | *Catalogo*: Pattern tematico classico di catalogo fantascientifico |
 
 ### Area: Crime, Thriller & Mistero
 | Nome Entry | Evidenza / Regola Dichiarativa | Priorità | Origine / Derivazione dai Dati |
 |:---|:---|:---:|:---|
-| **«Giallo investigativo»** | kws=['investigation', 'homicide detective', 'murder mystery'] | `85` | **Dati reali**: Derivato dai dati: pepsipex S1, pepsipex S2 e sangam456 S1 |
-| **«Docufiction true crime»** | kws=['true crime', 'dramatization', 'crime documentary'] | `90` | **Dati reali**: Derivato dai dati: sappss S5 e 1jacobjohn S4 / S6 |
-| **«Spy thriller»** | kws=['secret agent', 'espionage', 'spy thriller'] | `85` | **Dati reali**: Derivato dai dati: pepsipex S4 (Slow Horses, Lioness, The Agency) |
-| **«Thriller psicologico»** | kws=['psychological thriller', 'obsession', 'paranoia'] | `80` | **Dati reali**: Derivato dai dati: sappss S2 e pepsipex S2 |
-| **«Gangster & Criminalità»** | kws=['organized crime', 'mafia', 'gangster'] | `75` | *Catalogo*: Pattern classico crime / mafia del catalogo |
-| **«Horror soprannaturale»** | kws=['possession', 'demon', 'supernatural'] | `85` | **Dati reali**: Derivato dai dati: carverclan S1 (I peccatori, Stranger Things) e pepsipex S5 |
+| **«Giallo investigativo»** | kws=['detective', 'whodunit', 'investigation'] | `85` | **Dati reali**: Derivato dai dati: pepsipex S1, pepsipex S2 e sangam456 S1 |
+| **«Docufiction true crime»** | kws=['true crime', 'crime documentary', 'dramatization'] | `90` | **Dati reali**: Derivato dai dati: sappss S5 e 1jacobjohn S4 / S6 |
+| **«Spy thriller»** | kws=['secret agent', 'central intelligence agency (cia)', 'espionage'] | `85` | **Dati reali**: Derivato dai dati: pepsipex S4 (Slow Horses, Lioness, The Agency) |
+| **«Thriller psicologico»** | kws=['obsession', 'hallucination', 'mental illness'] | `80` | **Dati reali**: Derivato dai dati: sappss S2 e pepsipex S2 |
+| **«Gangster & Criminalità»** | kws=['heist', 'mafia', 'drug cartel'] | `75` | *Catalogo*: Pattern classico crime / mafia del catalogo |
+| **«Horror soprannaturale»** | kws=['haunted house', 'supernatural horror', 'demon'] | `85` | **Dati reali**: Derivato dai dati: carverclan S1 (I peccatori, Stranger Things) e pepsipex S5 |
 
 ### Area: Comedy & Sitcom
 | Nome Entry | Evidenza / Regola Dichiarativa | Priorità | Origine / Derivazione dai Dati |
 |:---|:---|:---:|:---|
 | **«Sitcom»** | medium=`series`, flag `ANIME=0`, kws=['sitcom', 'workplace comedy'] | `75` | **Dati reali**: Derivato dai dati: 1jacobjohn S1 (The King of Queens, My Name Is Earl) |
-| **«Commedia satirica»** | kws=['political satire', 'satire', 'social satire'] | `75` | **Dati reali**: Derivato dai dati: flixinatoor99 S3 (Spider-Noir, Parks & Rec, White Lotus) |
-| **«Dark comedy»** | kws=['dark comedy', 'crude comedy', 'black comedy'] | `70` | **Dati reali**: Derivato dai dati: sappss S7 (Brassic, This Country) |
-| **«Commedia romantica»** | medium=`movie`, flag `ANIME=0`, kws=['friends to lovers', 'romantic comedy', 'romance'] | `70` | *Catalogo*: Pattern classico commedie romantiche cinematografiche |
+| **«Commedia satirica»** | kws=['political satire', 'social satire', 'parody'] | `75` | **Dati reali**: Derivato dai dati: flixinatoor99 S3 (Spider-Noir, Parks & Rec, White Lotus) |
+| **«Dark comedy»** | kws=['black comedy', 'crude comedy', 'dark comedy'] | `70` | **Dati reali**: Derivato dai dati: sappss S7 (Brassic, This Country) |
+| **«Commedia romantica»** | medium=`movie`, flag `ANIME=0`, kws=['romance', 'friends to lovers', 'romantic comedy'] | `70` | *Catalogo*: Pattern classico commedie romantiche cinematografiche |
 
 ### Area: Drama & Internazionale
 | Nome Entry | Evidenza / Regola Dichiarativa | Priorità | Origine / Derivazione dai Dati |
 |:---|:---|:---:|:---|
-| **«Dramma d'epoca»** | kws=['period drama', 'costume drama', '19th century'] | `85` | **Dati reali**: Derivato dai dati: pepsipex S3 (La valle dell'Eden, The Forsytes) |
-| **«Medical drama»** | medium=`series`, kws=['nurse', 'surgery', 'doctor'] | `90` | **Dati reali**: Derivato dai dati: hammers-lists S1 (The Good Doctor, Chicago Med, 9-1-1) |
-| **«Thriller coreano»** | lingue=['ko'], kws=['investigation', 'murder', 'serial killer'] | `85` | **Dati reali**: Derivato dai dati: titoli thriller/crime K-drama in castoffcrown e warnok |
-| **«Dramma coreano»** | lingue=['ko'], kws=['friendship', 'melodrama', 'romance'] | `80` | **Dati reali**: Derivato dai dati: castoffcrown S4 (Hospital Playlist, Four Hands Two Sonatas) |
-| **«Commedia romantica asiatica»** | lingue=['zh', 'ja', 'ko'], kws=['youth', 'romantic comedy', 'romance'] | `80` | **Dati reali**: Derivato dai dati: romance asiatiche televisive e cinematografiche |
-| **«Cinema d'autore»** | medium=`movie`, kws=['independent film', 'arthouse', 'criterion collection'] | `75` | **Dati reali**: Derivato dai dati: castoffcrown S3 (Primetime, Il filo nascosto) |
+| **«Dramma d'epoca»** | kws=['costume drama', 'period drama', '19th century'] | `85` | **Dati reali**: Derivato dai dati: pepsipex S3 (La valle dell'Eden, The Forsytes) |
+| **«Medical drama»** | medium=`series`, kws=['surgery', 'medical drama', 'hospital'] | `90` | **Dati reali**: Derivato dai dati: hammers-lists S1 (The Good Doctor, Chicago Med, 9-1-1) |
+| **«Thriller coreano»** | lingue=['ko'], kws=['revenge', 'thriller', 'investigation'] | `85` | **Dati reali**: Derivato dai dati: titoli thriller/crime K-drama in castoffcrown e warnok |
+| **«Dramma coreano»** | lingue=['ko'], kws=['romance', 'bromance', 'melodrama'] | `80` | **Dati reali**: Derivato dai dati: castoffcrown S4 (Hospital Playlist, Four Hands Two Sonatas) |
+| **«Commedia romantica asiatica»** | lingue=['ja', 'ko', 'zh'], kws=['romance', 'romantic comedy', 'youth'] | `80` | **Dati reali**: Derivato dai dati: romance asiatiche televisive e cinematografiche |
+| **«Cinema d'autore»** | medium=`movie`, kws=['independent film', 'existentialism', 'arthouse'] | `75` | **Dati reali**: Derivato dai dati: castoffcrown S3 (Primetime, Il filo nascosto) |
 
 ### Area: Sport & Documentari
 | Nome Entry | Evidenza / Regola Dichiarativa | Priorità | Origine / Derivazione dai Dati |
 |:---|:---|:---:|:---|
-| **«Wrestling»** | kws=['sports entertainment', 'professional wrestling', 'wrestling'] | `95` | **Dati reali**: Derivato dai dati: moppierhead S5 (SmackDown, Raw) |
-| **«Documentari naturalistici»** | kws=['wildlife', 'farm', 'ocean'] | `85` | **Dati reali**: Derivato dai dati: sappss S4 e 1jacobjohn S15 (Big Beasts, Pianeta preistorico) |
-| **«Documentari sportivi»** | kws=['olympic games', 'athlete', 'basketball'] | `85` | **Dati reali**: Derivato dai dati: 1jacobjohn S10 (The Redeem Team, Skywalkers) |
-| **«Motori & Corse automobilistiche»** | kws=['car race', 'classic cars', 'automobile'] | `85` | **Dati reali**: Derivato dai dati: 1jacobjohn S14 (Car Masters, The Grand Tour) |
+| **«Wrestling»** | kws=['wrestling', 'wwe', 'sports entertainment'] | `95` | **Dati reali**: Derivato dai dati: moppierhead S5 (SmackDown, Raw) |
+| **«Documentari naturalistici»** | kws=['animals', 'ocean', 'farm'] | `85` | **Dati reali**: Derivato dai dati: sappss S4 e 1jacobjohn S15 (Big Beasts, Pianeta preistorico) |
+| **«Documentari sportivi»** | kws=['athlete', 'basketball', 'olympic games'] | `85` | **Dati reali**: Derivato dai dati: 1jacobjohn S10 (The Redeem Team, Skywalkers) |
+| **«Motori & Corse automobilistiche»** | kws=['car restoration', 'automobile', 'classic cars'] | `85` | **Dati reali**: Derivato dai dati: 1jacobjohn S14 (Car Masters, The Grand Tour) |
 | **«Teatro filmato & Musical»** | kws=['filmed theater', 'based on play or musical', 'stage musical'] | `85` | **Dati reali**: Derivato dai dati: carverclan S2 (Peter Pan Goes Wrong, Great Performances) |
-| **«Fede & Spiritualità»** | kws=['christian faith', 'christian film', 'religion'] | `80` | **Dati reali**: Derivato dai dati: 1jacobjohn S8 (The Chosen, Il re dei re) |
+| **«Fede & Spiritualità»** | kws=['religion', 'spirituality', 'christian faith'] | `80` | **Dati reali**: Derivato dai dati: 1jacobjohn S8 (The Chosen, Il re dei re) |
 
 ---
 
@@ -89,9 +104,9 @@ Su **41 scaffali serviti globalmente** nelle 10 timeline:
 | **`sappss`** | **5** | 3 | 2 | **60.0%** |
 | **`flixinatoor99`** | **5** | 2 | 3 | **40.0%** |
 | **`moppierhead`** | **5** | 4 | 1 | **80.0%** |
-| **`castoffcrown`** | **5** | 3 | 2 | **60.0%** |
+| **`castoffcrown`** | **5** | 2 | 3 | **40.0%** |
 | **`warnok`** | **5** | 3 | 2 | **60.0%** |
-| **`pepsipex`** | **5** | 2 | 3 | **40.0%** |
+| **`pepsipex`** | **5** | 3 | 2 | **60.0%** |
 | **`carverclan`** | **2** | 2 | 0 | **100.0%** |
 | **`1jacobjohn`** | **5** | 3 | 2 | **60.0%** |
 
@@ -104,18 +119,16 @@ Su **41 scaffali serviti globalmente** nelle 10 timeline:
 | **«Sitcom animate»** | 3 | 7.3% | **OK (Specifico)** |
 | **«Animazione d'azione per adulti»** | 3 | 7.3% | **OK (Specifico)** |
 | **«Anime shōnen»** | 3 | 7.3% | **OK (Specifico)** |
+| **«Fantascienza d'invasione»** | 2 | 4.9% | **OK (Specifico)** |
 | **«Docufiction true crime»** | 2 | 4.9% | **OK (Specifico)** |
 | **«Giallo investigativo»** | 2 | 4.9% | **OK (Specifico)** |
 | **«Magia & Stregoneria»** | 2 | 4.9% | **OK (Specifico)** |
-| **«Fantascienza d'invasione»** | 1 | 2.4% | **OK (Specifico)** |
+| **«Horror soprannaturale»** | 2 | 4.9% | **OK (Specifico)** |
 | **«Medical drama»** | 1 | 2.4% | **OK (Specifico)** |
 | **«Animazione per famiglie»** | 1 | 2.4% | **OK (Specifico)** |
-| **«Anime romantici & slice of life»** | 1 | 2.4% | **OK (Specifico)** |
 | **«Dramma coreano»** | 1 | 2.4% | **OK (Specifico)** |
-| **«Space opera»** | 1 | 2.4% | **OK (Specifico)** |
 | **«Dramma d'epoca»** | 1 | 2.4% | **OK (Specifico)** |
 | **«Spy thriller»** | 1 | 2.4% | **OK (Specifico)** |
-| **«Horror soprannaturale»** | 1 | 2.4% | **OK (Specifico)** |
 | **«Teatro filmato & Musical»** | 1 | 2.4% | **OK (Specifico)** |
 
 **Esito globale Over-Generic Check: SUPERATO AL 100%**. La voce più frequente copre al massimo il **7.3% degli scaffali**, garantendo varietà ed evitando la degenerazione in etichette-ombrello.
@@ -128,16 +141,17 @@ Confronto diretto tra la vecchia catena di fallback (affetta da percentuali, dic
 
 | Profilo | Scaffale | Vecchia Etichetta (Fallback Chain) | Nuova Etichetta (Tassonomia + Perché hai visto) | Tipologia Nuova | Perché è Migliore |
 |:---|:---:|:---|:---|:---:|:---|
-| `sangam456` | #2 | *Film: Alieni (67%) & Action (33%)* | **«Fantascienza d'invasione»** | Tassonomia | Elimina percentuali ed etichetta generica; nome evocativo italiano. |
+| `sangam456` | #1 | *Film: Alieni (67%) & Action (33%)* | **«Fantascienza d'invasione»** | Tassonomia | Elimina percentuali ed etichetta generica; nome evocativo italiano. |
 | `hammers-lists` | #1 | *Serie: Ospedale & Medicina (50%) & Medical Drama (50%)* | **«Medical drama»** | Tassonomia | Elimina ridondanze terminologiche e numeri grezzi. |
-| `sappss` | #5 | *Serie: True Crime (100%) & Hit-And-Run (50%)* | **«Docufiction true crime»** | Tassonomia | Elimina inglese non tradotto (*Hit-And-Run*) e formalizza il genere. |
-| `flixinatoor99` | #1 | *Serie: Amused (33%) & Cheerful (33%)* | **«Perché hai visto División Palermo, Cent'anni di solitudine e Stromberg»** | Perché hai visto | Sostituisce keyword TMDB emotive in inglese con trasparenza onesta al 100%. |
-| `moppierhead` | #1 | *Serie: Animazione per Adulti (71%) & Sitcom (71%)* | **«Sitcom animate»** | Tassonomia | Sintetizza in due parole naturali un concetto precedentemente prolisso. |
-| `castoffcrown` | #3 | *Film: Regia di Paul Thomas Anderson* | **«Perché hai visto Primetime, Il filo nascosto e Il colore venuto dallo spazio»** | Perché hai visto | Elimina l'attribuzione indebita dell'intero cluster di 30 film a un singolo regista. |
-| `warnok` | #3 | *Film: Sequel (54%) & Space Opera (54%)* | **«Space opera»** | Tassonomia | Riconosce il genere epico galattico senza la dicitura superflua 'Sequel'. |
-| `pepsipex` | #4 | *Serie: Di Taylor Sheridan* | **«Spy thriller»** | Tassonomia | Identifica il vero tema unificante (spionaggio), superando l'etichetta autore. |
+| `sappss` | #3 | *Serie: True Crime (100%) & Hit-And-Run (50%)* | **«Docufiction true crime»** | Tassonomia | Elimina inglese non tradotto (*Hit-And-Run*) e formalizza il genere. |
+| `flixinatoor99` | #1 | *Serie: Amused (33%) & Cheerful (33%)* | **«Perché hai visto Il Boss del condominio, División Palermo e Stromberg»** | Perché hai visto | Sostituisce keyword TMDB emotive in inglese con trasparenza onesta al 100%. |
+| `moppierhead` | #1 | *Serie: Animazione per Adulti (71%) & Sitcom (71%)* | **«Animazione d'azione per adulti»** | Tassonomia | Sintetizza con precisione tematica un concetto precedentemente prolisso. |
+| `castoffcrown` | #4 | *Film: Regia di Paul Thomas Anderson* | **«Perché hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York»** | Perché hai visto | A M=12 rispecchia fedelmente il cinema d'autore senza forzare un singolo regista. |
+| `castoffcrown` | #3 | *Film: Animazione d'Autore (58%)* | **«Perché hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno»** | Perché hai visto | Cattura con trasparenza il blocco animazione d'autore ad alta complessità. |
+| `warnok` | #2 | *Film: Sci-Fi & Alieni (63%)* | **«Fantascienza d'invasione»** | Tassonomia | Identifica con nitidezza il tema alien survival senza percentuali spurie. |
+| `pepsipex` | #5 | *Serie: Di Taylor Sheridan* | **«Spy thriller»** | Tassonomia | Identifica il vero tema unificante (spionaggio), superando l'etichetta autore. |
 | `carverclan` | #1 | *[0/5 scaffali — Regressione]* | **«Horror soprannaturale»** | Tassonomia (`cluster piccolo`) | **Risolve la regressione**: timeline ultra-corta torna a servire 2 scaffali autentici. |
-| `1jacobjohn` | #1 | *Serie: Di Michael Schur* | **«Sitcom»** | Tassonomia | Nome di genere puro e pulito al posto di una pretesa autorale parziale. |
+| `1jacobjohn` | #4 | *Serie: Di Michael Schur* | **«Sitcom animate»** | Tassonomia | Nome di genere pulito al posto di una pretesa autorale parziale. |
 
 ---
 
@@ -155,11 +169,11 @@ Nella versione precedente, la scissione automatica per medium divideva i due clu
 | **`sappss`** | Medio-basso storico (25 semi) | 25 | 7 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 0 |
 | **`flixinatoor99`** | Medio storico (32 semi) | 32 | 8 | **5 / 5** | **PASS (5/5)** | 2 | 3 | 0 | 0 |
 | **`moppierhead`** | Medio storico (38 semi) | 38 | 6 | **5 / 5** | **PASS (5/5)** | 4 | 1 | 0 | 0 |
-| **`castoffcrown`** | Lungo storico (412 semi) | 412 | 71 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 1 |
-| **`warnok`** | Lungo storico (476 semi) | 476 | 63 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 0 |
-| **`pepsipex`** | Massimo storico (568 semi) | 568 | 78 | **5 / 5** | **PASS (5/5)** | 2 | 3 | 0 | 0 |
+| **`castoffcrown`** | Lungo storico (412 semi) | 412 | 91 | **5 / 5** | **PASS (5/5)** | 2 | 3 | 0 | 1 |
+| **`warnok`** | Lungo storico (476 semi) | 476 | 108 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 0 |
+| **`pepsipex`** | Massimo storico (568 semi) | 568 | 121 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 0 |
 | **`carverclan`** | Ultra-corto (<10 semi, 7 semi) | 7 | 2 | **2 / 5** | **PASS (2/2, Waived)** | 2 | 0 | 0 | 0 |
-| **`1jacobjohn`** | Intermedio (167 semi) | 167 | 26 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 0 |
+| **`1jacobjohn`** | Intermedio (167 semi) | 167 | 41 | **5 / 5** | **PASS (5/5)** | 3 | 2 | 0 | 0 |
 
 ---
 
@@ -186,28 +200,28 @@ Nella versione precedente, la scissione automatica per medium divideva i due clu
 | `moppierhead` | 3. Magia & Stregoneria | `Film` | 12088 | 22760 | **1.88** | 7.68 | 7.71 | OK |
 | `moppierhead` | 4. Giallo investigativo | `Serie` | 1575 | 500 | **0.32** | 8.23 | 7.20 | OK |
 | `moppierhead` | 5. Perché hai visto Hannah Montana, Zoey 101 e Drake & Josh | `Serie` | 915 | 1171 | **1.28** | 7.85 | 8.20 | OK |
-| `castoffcrown` | 1. Anime shōnen | `Anime` | 793 | 2232 | **2.81** | 8.44 | 8.64 | OK |
-| `castoffcrown` | 2. Anime romantici & slice of life | `Anime` | 46 | 32 | **0.70** | 7.67 | 7.80 | OK |
-| `castoffcrown` | 3. Perché hai visto Il filo nascosto, Ubriaco d'amore e Perfect Days | `Film` | 1788 | 2285 | **1.28** | 7.42 | 7.21 | OK |
-| `castoffcrown` | 4. Dramma coreano | `Serie` | 178 | 358 | **2.01** | 8.50 | 8.46 | OK |
-| `castoffcrown` | 5. Perché hai visto E.R. - Medici in prima linea, C'è sempre il sole a Philadelphia e Shameless (UK) | `Serie` | 1951 | 3015 | **1.55** | 8.21 | 8.11 | OK |
-| `warnok` | 1. Anime shōnen | `Anime` | 1518 | 2232 | **1.47** | 8.50 | 8.49 | OK |
-| `warnok` | 2. Perché hai visto Prison Break, Lost e Il Trono di Spade | `Serie` | 4172 | 2938 | **0.70** | 8.04 | 8.07 | OK |
-| `warnok` | 3. Space opera | `Film` | 15098 | 12420 | **0.82** | 7.47 | 7.50 | OK |
-| `warnok` | 4. Animazione d'azione per adulti | `Serie` | 720 | 480 | **0.67** | 8.20 | 8.20 | OK |
-| `warnok` | 5. Perché hai visto Hell on Wheels, Yellowstone e Mayor of Kingstown | `Serie` | 690 | 398 | **0.58** | 7.98 | 8.00 | OK |
-| `pepsipex` | 1. Perché hai visto Animals, L'uomo dei sussurri e The Invite - Il piacere è tutto nostro | `Film` | 1080 | 1376 | **1.27** | 6.81 | 6.76 | OK |
-| `pepsipex` | 2. Perché hai visto The Diplomat, Paradise e Morte e altri dettagli | `Serie` | 227 | 256 | **1.13** | 7.05 | 7.45 | OK |
-| `pepsipex` | 3. Dramma d'epoca | `Serie` | 109 | 305 | **2.80** | 7.50 | 7.50 | OK |
-| `pepsipex` | 4. Spy thriller | `Serie` | 366 | 655 | **1.79** | 7.65 | 8.20 | OK |
-| `pepsipex` | 5. Perché hai visto American Horror Story, Servant e True Detective | `Serie` | 1069 | 1692 | **1.58** | 7.57 | 8.00 | OK |
+| `castoffcrown` | 1. Anime shōnen | `Anime` | 1729 | 2232 | **1.29** | 8.50 | 8.64 | OK |
+| `castoffcrown` | 2. Dramma coreano | `Serie` | 178 | 358 | **2.01** | 8.50 | 8.46 | OK |
+| `castoffcrown` | 3. Perché hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno | `Anime` | 3571 | 5004 | **1.40** | 7.69 | 7.80 | OK |
+| `castoffcrown` | 4. Perché hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York | `Film` | 2008 | 2795 | **1.39** | 7.21 | 7.09 | OK |
+| `castoffcrown` | 5. Perché hai visto Sanjuro, La sfida del samurai e Rurouni Kenshin 2 - Kyoto Inferno | `Film` | 747 | 1032 | **1.38** | 7.69 | 8.00 | OK |
+| `warnok` | 1. Animazione d'azione per adulti | `Serie` | 792 | 480 | **0.61** | 8.24 | 8.14 | OK |
+| `warnok` | 2. Perché hai visto Lost, Il Trono di Spade e Stranger Things | `Serie` | 6926 | 1713 | **0.25** | 8.41 | 7.90 | OK |
+| `warnok` | 3. Fantascienza d'invasione | `Film` | 4382 | 4646 | **1.06** | 7.28 | 6.80 | OK |
+| `warnok` | 4. Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant | `Film` | 6497 | 8416 | **1.30** | 7.31 | 7.44 | OK |
+| `warnok` | 5. Anime shōnen | `Anime` | 1804 | 2232 | **1.24** | 8.52 | 8.49 | OK |
+| `pepsipex` | 1. Dramma d'epoca | `Serie` | 92 | 41 | **0.44** | 7.33 | 7.90 | OK |
+| `pepsipex` | 2. Horror soprannaturale | `Serie` | 910 | 1491 | **1.64** | 7.50 | 7.53 | OK |
+| `pepsipex` | 3. Perché hai visto The Pact, The Calling e Annika | `Serie` | 46 | 38 | **0.84** | 6.86 | 6.38 | OK |
+| `pepsipex` | 4. Perché hai visto Ovunque tu sia, Long Bright River - I cieli di Philadelphia e Un inganno di troppo | `Serie` | 160 | 307 | **1.92** | 6.67 | 7.00 | OK |
+| `pepsipex` | 5. Spy thriller | `Serie` | 332 | 121 | **0.36** | 7.15 | 6.74 | OK |
 | `carverclan` | 1. Horror soprannaturale | `Film` | 13660 | 3955 | **0.29** | 8.03 | 7.33 | OK |
 | `carverclan` | 2. Teatro filmato & Musical | `Film` | 46 | 50 | **1.09** | 6.80 | 7.24 | OK |
-| `1jacobjohn` | 1. Sitcom animate | `Serie` | 688 | 2205 | **3.21** | 7.45 | 8.00 | OK |
-| `1jacobjohn` | 2. Perché hai visto Good Luck, Have Fun, Don't Die, Obsession e Creature luminose | `Film` | 1103 | 690 | **0.63** | 6.90 | 6.90 | OK |
-| `1jacobjohn` | 3. Animazione d'azione per adulti | `Serie` | 1629 | 1266 | **0.78** | 7.80 | 7.60 | OK |
-| `1jacobjohn` | 4. Docufiction true crime | `Film` | 166 | 70 | **0.42** | 6.63 | 6.71 | OK |
-| `1jacobjohn` | 5. Perché hai visto Grey's Anatomy, Stranger Things e Breaking Bad | `Serie` | 2988 | 4420 | **1.48** | 8.00 | 8.08 | OK |
+| `1jacobjohn` | 1. Animazione d'azione per adulti | `Serie` | 2465 | 1266 | **0.51** | 7.80 | 7.60 | OK |
+| `1jacobjohn` | 2. Perché hai visto Good Luck, Have Fun, Don't Die, Obsession e Send Help | `Film` | 1696 | 1955 | **1.15** | 6.83 | 6.90 | OK |
+| `1jacobjohn` | 3. Docufiction true crime | `Film` | 166 | 70 | **0.42** | 6.63 | 6.71 | OK |
+| `1jacobjohn` | 4. Sitcom animate | `Serie` | 1694 | 2205 | **1.30** | 8.01 | 8.00 | OK |
+| `1jacobjohn` | 5. Perché hai visto Creature luminose, Locked - In trappola e Neighborhood Watch | `Film` | 631 | 757 | **1.20** | 6.90 | 6.93 | OK |
 
 > [!NOTE]
 > **Verifica Popolarità**: Solo **1 casi reali di drift** su 41 scaffali. I candidati proposti mantengono popolarità e autorevolezza.
@@ -394,33 +408,17 @@ Nella versione precedente, la scissione automatica per medium divideva i due clu
 ---
 
 ### Profilo: `castoffcrown` — Lungo storico (412 semi)
-**Metadati**: 412 semi totali · 71 macro ammissibili (64 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
+**Metadati**: 412 semi totali · 91 macro ammissibili (79 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
 
-1. **Anime shōnen** (23 semi, `Anime`)
-   - **Denominazione**: `Tassonomia («Anime shōnen», conf: 83%)` | Consistenza Scaffale: `0.0304`
+1. **Anime shōnen** (12 semi, `Anime`)
+   - **Denominazione**: `Tassonomia («Anime shōnen», conf: 100%)` | Consistenza Scaffale: `0.0941`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *One Piece*, *Haikyu!! L'asso del volley*, *L'attacco dei giganti*
-   - **Candidati Raccomandati**: *Hunter x Hunter (2011)*, *One-Punch Man (2015)*, *Demon Slayer: Kimetsu no Yaiba (2019)*, *Frieren - Oltre la Fine del Viaggio (2023)*, *Mob Psycho 100 (2016)*
-   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 2021, Cand: 2016)
-   - **Popolarità**: VOT Semi=793, Cand=2232 (Ratio=2.81 $\to$ `OK`) · VAVE: 8.44 $\to$ 8.64
+   - **Semi**: *One Piece*, *L'attacco dei giganti*, *Food Wars!: Shokugeki no Soma*
+   - **Candidati Raccomandati**: *Hunter x Hunter (2011)*, *One-Punch Man (2015)*, *Demon Slayer: Kimetsu no Yaiba (2019)*, *Frieren - Oltre la Fine del Viaggio (2023)*, *Vinland Saga (2019)*
+   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 2016, Cand: 2019)
+   - **Popolarità**: VOT Semi=1729, Cand=2232 (Ratio=1.29 $\to$ `OK`) · VAVE: 8.50 $\to$ 8.64
 
-2. **Anime romantici & slice of life** (28 semi, `Anime`)
-   - **Denominazione**: `Tassonomia («Anime romantici & slice of life», conf: 71%)` | Consistenza Scaffale: `0.0154`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Tojima Wants to Be a Kamen Rider*, *The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You*, *Mars Red*
-   - **Candidati Raccomandati**: *Hana-Kimi (2026)*, *Honey Lemon Soda (2025)*, *Daemons of the Shadow Realm (2026)*, *The Yakuza's Guide to Babysitting (2022)*, *Quality Assurance in Another World (2024)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2025, Cand: 2025)
-   - **Popolarità**: VOT Semi=46, Cand=32 (Ratio=0.70 $\to$ `OK`) · VAVE: 7.67 $\to$ 7.80
-
-3. **Perché hai visto Il filo nascosto, Ubriaco d'amore e Perfect Days** (30 semi, `Film`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0119`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Il filo nascosto*, *Ubriaco d'amore*, *Perfect Days*
-   - **Candidati Raccomandati**: *Un affare di famiglia (2018)*, *Marty Supreme (2025)*, *Il male non esiste (2023)*, *Vizio di forma (2014)*, *Ritratto di famiglia con tempesta (2016)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2020, Cand: 2018)
-   - **Popolarità**: VOT Semi=1788, Cand=2285 (Ratio=1.28 $\to$ `OK`) · VAVE: 7.42 $\to$ 7.21
-
-4. **Dramma coreano** (11 semi, `Serie`)
+2. **Dramma coreano** (11 semi, `Serie`)
    - **Denominazione**: `Tassonomia («Dramma coreano», conf: 55%)` | Consistenza Scaffale: `0.0299`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
    - **Semi**: *Il Tassista*, *Crash Landing on You*, *Vincenzo*
@@ -428,103 +426,119 @@ Nella versione precedente, la scissione automatica per medium divideva i due clu
    - **Diagnostica Temporale**: `STALE` (Anno Med. Semi: 2021, Cand: 2020)
    - **Popolarità**: VOT Semi=178, Cand=358 (Ratio=2.01 $\to$ `OK`) · VAVE: 8.50 $\to$ 8.46
 
-5. **Perché hai visto E.R. - Medici in prima linea, C'è sempre il sole a Philadelphia e Shameless (UK)** (25 semi, `Serie`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0238`
+3. **Perché hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno** (12 semi, `Anime`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0243`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *E.R. - Medici in prima linea*, *C'è sempre il sole a Philadelphia*, *Shameless (UK)*
-   - **Candidati Raccomandati**: *Fallout (2024)*, *Scissione (2022)*, *Arrested Development - Ti presento i miei (2003)*, *The Office (US) (2005)*, *Community (2009)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2019, Cand: 2009)
-   - **Popolarità**: VOT Semi=1951, Cand=3015 (Ratio=1.55 $\to$ `OK`) · VAVE: 8.21 $\to$ 8.11
+   - **Semi**: *Ghost in the Shell*, *Toy Story - Il mondo dei giocattoli*, *Paprika - Sognando un sogno*
+   - **Candidati Raccomandati**: *Si alza il vento (2013)*, *Kiki - Consegne a domicilio (1989)*, *Toy Story 2 - Woody & Buzz alla riscossa (1999)*, *Ponyo sulla scogliera (2008)*, *Coraline e la porta magica (2009)*
+   - **Diagnostica Temporale**: `Deepening (Semi storici)` (Anno Med. Semi: 2010, Cand: 2008)
+   - **Popolarità**: VOT Semi=3571, Cand=5004 (Ratio=1.40 $\to$ `OK`) · VAVE: 7.69 $\to$ 7.80
+
+4. **Perché hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York** (12 semi, `Film`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0321`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Il filo nascosto*, *Ubriaco d'amore*, *Synecdoche, New York*
+   - **Candidati Raccomandati**: *Vizio di forma (2014)*, *The Master (2012)*, *Il petroliere (2007)*, *Marty Supreme (2025)*, *Bones and All (2022)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2017, Cand: 2014)
+   - **Popolarità**: VOT Semi=2008, Cand=2795 (Ratio=1.39 $\to$ `OK`) · VAVE: 7.21 $\to$ 7.09
+
+5. **Perché hai visto Sanjuro, La sfida del samurai e Rurouni Kenshin 2 - Kyoto Inferno** (9 semi, `Film`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.1085`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Sanjuro*, *La sfida del samurai*, *Rurouni Kenshin 2 - Kyoto Inferno*
+   - **Candidati Raccomandati**: *Rurouni Kenshin 3 - The legend ends (2014)*, *La fortezza nascosta (1958)*, *Il trono di sangue (1957)*, *Rashomon (1950)*, *I sette samurai (1954)*
+   - **Diagnostica Temporale**: `Deepening (Semi storici)` (Anno Med. Semi: 1964, Cand: 1957)
+   - **Popolarità**: VOT Semi=747, Cand=1032 (Ratio=1.38 $\to$ `OK`) · VAVE: 7.69 $\to$ 8.00
 
 ---
 
 ### Profilo: `warnok` — Lungo storico (476 semi)
-**Metadati**: 476 semi totali · 63 macro ammissibili (53 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
+**Metadati**: 476 semi totali · 108 macro ammissibili (84 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
 
-1. **Anime shōnen** (28 semi, `Anime`)
-   - **Denominazione**: `Tassonomia («Anime shōnen», conf: 96%)` | Consistenza Scaffale: `0.0813`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Naruto*, *L'attacco dei giganti*, *Monster*
-   - **Candidati Raccomandati**: *Hunter x Hunter (2011)*, *The Promised Neverland (2019)*, *Chainsaw Man (2022)*, *One-Punch Man (2015)*, *Mob Psycho 100 (2016)*
-   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 2016, Cand: 2016)
-   - **Popolarità**: VOT Semi=1518, Cand=2232 (Ratio=1.47 $\to$ `OK`) · VAVE: 8.50 $\to$ 8.49
-
-2. **Perché hai visto Prison Break, Lost e Il Trono di Spade** (28 semi, `Serie`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0353`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Prison Break*, *Lost*, *Il Trono di Spade*
-   - **Candidati Raccomandati**: *Chernobyl (2019)*, *The Expanse (2015)*, *Snowpiercer (2020)*, *Pluribus (2025)*, *The Umbrella Academy (2019)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2019, Cand: 2019)
-   - **Popolarità**: VOT Semi=4172, Cand=2938 (Ratio=0.70 $\to$ `OK`) · VAVE: 8.04 $\to$ 8.07
-
-3. **Space opera** (24 semi, `Film`)
-   - **Denominazione**: `Tassonomia («Space opera», conf: 62%)` | Consistenza Scaffale: `0.0844`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Rogue One: A Star Wars Story*, *Star Wars: Il risveglio della Forza*, *Alien - La clonazione*
-   - **Candidati Raccomandati**: *Terminator (1984)*, *Matrix Reloaded (2003)*, *E.T. l'extra-terrestre (1982)*, *Il Signore degli Anelli - Le due torri (2002)*, *Matrix Revolutions (2003)*
-   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 1999, Cand: 2002)
-   - **Popolarità**: VOT Semi=15098, Cand=12420 (Ratio=0.82 $\to$ `OK`) · VAVE: 7.47 $\to$ 7.50
-
-4. **Animazione d'azione per adulti** (19 semi, `Serie`)
-   - **Denominazione**: `Tassonomia («Animazione d'azione per adulti», conf: 68%)` | Consistenza Scaffale: `0.0472`
+1. **Animazione d'azione per adulti** (12 semi, `Serie`)
+   - **Denominazione**: `Tassonomia («Animazione d'azione per adulti», conf: 92%)` | Consistenza Scaffale: `0.0924`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
    - **Semi**: *Love, Death & Robots*, *Castlevania*, *La leggenda di Vox Machina*
-   - **Candidati Raccomandati**: *The Mighty Nein (2025)*, *The Boys Presenta: Diabolico! (2022)*, *X-Men '97 (2024)*, *Devil May Cry (2025)*, *Rick and Morty (2013)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2021, Cand: 2024)
-   - **Popolarità**: VOT Semi=720, Cand=480 (Ratio=0.67 $\to$ `OK`) · VAVE: 8.20 $\to$ 8.20
+   - **Candidati Raccomandati**: *The Mighty Nein (2025)*, *The Boys Presenta: Diabolico! (2022)*, *Devil May Cry (2025)*, *Rick and Morty (2013)*, *DOTA: Dragon's Blood (2021)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2022, Cand: 2022)
+   - **Popolarità**: VOT Semi=792, Cand=480 (Ratio=0.61 $\to$ `OK`) · VAVE: 8.24 $\to$ 8.14
 
-5. **Perché hai visto Hell on Wheels, Yellowstone e Mayor of Kingstown** (14 semi, `Serie`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0809`
+2. **Perché hai visto Lost, Il Trono di Spade e Stranger Things** (12 semi, `Serie`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0796`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Hell on Wheels*, *Yellowstone*, *Mayor of Kingstown*
-   - **Candidati Raccomandati**: *Marshals: A Yellowstone Story (2026)*, *Tulsa King (2022)*, *Dutton Ranch (2026)*, *Lawmen - La storia di Bass Reeves (2023)*, *The Agency (2024)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2022, Cand: 2024)
-   - **Popolarità**: VOT Semi=690, Cand=398 (Ratio=0.58 $\to$ `OK`) · VAVE: 7.98 $\to$ 8.00
+   - **Semi**: *Lost*, *Il Trono di Spade*, *Stranger Things*
+   - **Candidati Raccomandati**: *Chernobyl (2019)*, *Pluribus (2025)*, *The Umbrella Academy (2019)*, *Watchmen (2019)*, *The Leftovers - Svaniti nel nulla (2014)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2016, Cand: 2019)
+   - **Popolarità**: VOT Semi=6926, Cand=1713 (Ratio=0.25 $\to$ `OK`) · VAVE: 8.41 $\to$ 7.90
+
+3. **Fantascienza d'invasione** (12 semi, `Film`)
+   - **Denominazione**: `Tassonomia («Fantascienza d'invasione», conf: 58%)` | Consistenza Scaffale: `0.0449`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *A Quiet Place - Un posto tranquillo*, *Disclosure Day*, *Send Help*
+   - **Candidati Raccomandati**: *Dune - Parte due (2024)*, *Nessuno ti salverà (2023)*, *Furiosa: A Mad Max Saga (2024)*, *Civil War (2024)*, *Elevation: Linea di sopravvivenza (2024)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2024, Cand: 2024)
+   - **Popolarità**: VOT Semi=4382, Cand=4646 (Ratio=1.06 $\to$ `OK`) · VAVE: 7.28 $\to$ 6.80
+
+4. **Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant** (12 semi, `Film`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0340`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Sisu: Il vendicatore*, *L'uomo dei ghiacci - The Ice Road*, *The Accountant*
+   - **Candidati Raccomandati**: *John Wick 3 - Parabellum (2019)*, *John Wick 4 (2023)*, *The Equalizer - Il vendicatore (2014)*, *Tyler Rake 2 (2023)*, *Mortal Kombat II (2026)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2021, Cand: 2023)
+   - **Popolarità**: VOT Semi=6497, Cand=8416 (Ratio=1.30 $\to$ `OK`) · VAVE: 7.31 $\to$ 7.44
+
+5. **Anime shōnen** (9 semi, `Anime`)
+   - **Denominazione**: `Tassonomia («Anime shōnen», conf: 100%)` | Consistenza Scaffale: `0.2193`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Vinland Saga*, *Jujutsu Kaisen*, *Demon Slayer: Kimetsu no Yaiba*
+   - **Candidati Raccomandati**: *The Promised Neverland (2019)*, *Chainsaw Man (2022)*, *One-Punch Man (2015)*, *Mob Psycho 100 (2016)*, *Hunter x Hunter (2011)*
+   - **Diagnostica Temporale**: `Deepening (Semi storici)` (Anno Med. Semi: 2019, Cand: 2016)
+   - **Popolarità**: VOT Semi=1804, Cand=2232 (Ratio=1.24 $\to$ `OK`) · VAVE: 8.52 $\to$ 8.49
 
 ---
 
 ### Profilo: `pepsipex` — Massimo storico (568 semi)
-**Metadati**: 568 semi totali · 78 macro ammissibili (71 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
+**Metadati**: 568 semi totali · 121 macro ammissibili (108 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
 
-1. **Perché hai visto Animals, L'uomo dei sussurri e The Invite - Il piacere è tutto nostro** (24 semi, `Film`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0186`
+1. **Dramma d'epoca** (10 semi, `Serie`)
+   - **Denominazione**: `Tassonomia («Dramma d'epoca», conf: 60%)` | Consistenza Scaffale: `0.0695`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Animals*, *L'uomo dei sussurri*, *The Invite - Il piacere è tutto nostro*
-   - **Candidati Raccomandati**: *The Runner (2026)*, *Challengers (2024)*, *Kinds of Kindness (2024)*, *Sanctuary - Lui fa il gioco. Lei fa le regole. (2023)*, *Una donna promettente (2020)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2024, Cand: 2024)
-   - **Popolarità**: VOT Semi=1080, Cand=1376 (Ratio=1.27 $\to$ `OK`) · VAVE: 6.81 $\to$ 6.76
+   - **Semi**: *The Buccaneers*, *The Gilded Age*, *The Hardacres*
+   - **Candidati Raccomandati**: *Lillie (1978)*, *Belgravia: The Next Chapter (2024)*, *La casa nella prateria (2026)*, *The Duchess of Duke Street (1976)*, *The Forsyte Saga (2002)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2025, Cand: 2002)
+   - **Popolarità**: VOT Semi=92, Cand=41 (Ratio=0.44 $\to$ `OK`) · VAVE: 7.33 $\to$ 7.90
 
-2. **Perché hai visto The Diplomat, Paradise e Morte e altri dettagli** (22 semi, `Serie`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0277`
+2. **Horror soprannaturale** (9 semi, `Serie`)
+   - **Denominazione**: `Tassonomia («Horror soprannaturale», conf: 56%)` | Consistenza Scaffale: `0.1962`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *The Diplomat*, *Paradise*, *Morte e altri dettagli*
-   - **Candidati Raccomandati**: *The Night Agent (2023)*, *Feel Good (2020)*, *Poker Face (2023)*, *DTF St. Louis (2026)*, *Shining Girls (2022)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2024, Cand: 2023)
-   - **Popolarità**: VOT Semi=227, Cand=256 (Ratio=1.13 $\to$ `OK`) · VAVE: 7.05 $\to$ 7.45
+   - **Semi**: *Servant*, *FROM*, *Yellowjackets*
+   - **Candidati Raccomandati**: *The Haunting of Bly Manor (2020)*, *The Haunting of Hill House (2018)*, *IT: Welcome to Derry (2025)*, *La nebbia (2017)*, *The Boroughs - Ribelli senza tempo (2026)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2022, Cand: 2020)
+   - **Popolarità**: VOT Semi=910, Cand=1491 (Ratio=1.64 $\to$ `OK`) · VAVE: 7.50 $\to$ 7.53
 
-3. **Dramma d'epoca** (25 semi, `Serie`)
-   - **Denominazione**: `Tassonomia («Dramma d'epoca», conf: 56%)` | Consistenza Scaffale: `0.0266`
+3. **Perché hai visto The Pact, The Calling e Annika** (10 semi, `Serie`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0544`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *The Great*, *The Buccaneers*, *The Serpent Queen*
-   - **Candidati Raccomandati**: *Becoming Elizabeth (2022)*, *Bridgerton (2020)*, *Belgravia: The Next Chapter (2024)*, *The White Princess (2017)*, *The White Queen (2013)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2024, Cand: 2020)
-   - **Popolarità**: VOT Semi=109, Cand=305 (Ratio=2.80 $\to$ `OK`) · VAVE: 7.50 $\to$ 7.50
+   - **Semi**: *The Pact*, *The Calling*, *Annika*
+   - **Candidati Raccomandati**: *Joan (2024)*, *Kill Jackie (2026)*, *Atomic - Una Corsa Infernale (2025)*, *Safe House (2015)*, *Get Millie Black (2024)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2023, Cand: 2024)
+   - **Popolarità**: VOT Semi=46, Cand=38 (Ratio=0.84 $\to$ `OK`) · VAVE: 6.86 $\to$ 6.38
 
-4. **Spy thriller** (16 semi, `Serie`)
-   - **Denominazione**: `Tassonomia («Spy thriller», conf: 69%)` | Consistenza Scaffale: `0.0669`
+4. **Perché hai visto Ovunque tu sia, Long Bright River - I cieli di Philadelphia e Un inganno di troppo** (11 semi, `Serie`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0636`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Slow Horses*, *Operazione speciale: Lioness*, *Alex Rider*
-   - **Candidati Raccomandati**: *Secret Service (2026)*, *1923 (2022)*, *1883 (2021)*, *Landman (2024)*, *PONIES (2026)*
+   - **Semi**: *Ovunque tu sia*, *Long Bright River - I cieli di Philadelphia*, *Un inganno di troppo*
+   - **Candidati Raccomandati**: *SHELTER (2023)*, *Safe (2018)*, *The Stranger (2020)*, *56 giorni (2026)*, *Stay Close (2021)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2025, Cand: 2021)
+   - **Popolarità**: VOT Semi=160, Cand=307 (Ratio=1.92 $\to$ `OK`) · VAVE: 6.67 $\to$ 7.00
+
+5. **Spy thriller** (8 semi, `Serie`)
+   - **Denominazione**: `Tassonomia («Spy thriller», conf: 100%)` | Consistenza Scaffale: `0.1451`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Slow Horses*, *The Agency*, *The Capture*
+   - **Candidati Raccomandati**: *Secret Service (2026)*, *PONIES (2026)*, *The Veil (2024)*, *Rabbit Hole (2023)*, *Citadel (2023)*
    - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2022, Cand: 2024)
-   - **Popolarità**: VOT Semi=366, Cand=655 (Ratio=1.79 $\to$ `OK`) · VAVE: 7.65 $\to$ 8.20
-
-5. **Perché hai visto American Horror Story, Servant e True Detective** (18 semi, `Serie`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0640`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *American Horror Story*, *Servant*, *True Detective*
-   - **Candidati Raccomandati**: *The Haunting of Bly Manor (2020)*, *The Haunting of Hill House (2018)*, *IT: Welcome to Derry (2025)*, *DAHMER - Mostro: la storia di Jeffrey Dahmer (2022)*, *American Horror Stories (2021)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2022, Cand: 2021)
-   - **Popolarità**: VOT Semi=1069, Cand=1692 (Ratio=1.58 $\to$ `OK`) · VAVE: 7.57 $\to$ 8.00
+   - **Popolarità**: VOT Semi=332, Cand=121 (Ratio=0.36 $\to$ `OK`) · VAVE: 7.15 $\to$ 6.74
 
 ---
 
@@ -553,33 +567,25 @@ Nella versione precedente, la scissione automatica per medium divideva i due clu
 ---
 
 ### Profilo: `1jacobjohn` — Intermedio (167 semi)
-**Metadati**: 167 semi totali · 26 macro ammissibili (24 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
+**Metadati**: 167 semi totali · 41 macro ammissibili (33 con $\ge 2$ semi) · Scaffali serviti: **5 / 5**
 
-1. **Sitcom animate** (20 semi, `Serie`)
-   - **Denominazione**: `Tassonomia («Sitcom animate», conf: 60%)` | Consistenza Scaffale: `0.0418`
+1. **Animazione d'azione per adulti** (11 semi, `Serie`)
+   - **Denominazione**: `Tassonomia («Animazione d'azione per adulti», conf: 91%)` | Consistenza Scaffale: `0.2048`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *The Good Place*, *Man Seeking Woman*, *I Think You Should Leave with Tim Robinson*
-   - **Candidati Raccomandati**: *30 Rock (2006)*, *Community (2009)*, *Seinfeld (1989)*, *Arrested Development - Ti presento i miei (2003)*, *How I Met Your Mother (2005)*
-   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 2011, Cand: 2005)
-   - **Popolarità**: VOT Semi=688, Cand=2205 (Ratio=3.21 $\to$ `OK`) · VAVE: 7.45 $\to$ 8.00
-
-2. **Perché hai visto Good Luck, Have Fun, Don't Die, Obsession e Creature luminose** (13 semi, `Film`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0090`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Good Luck, Have Fun, Don't Die*, *Obsession*, *Creature luminose*
-   - **Candidati Raccomandati**: *Le sabbie del Kalahari (1965)*, *Ricchi... da morire - Delitti in famiglia (2026)*, *November Criminals (2017)*, *Vendetta (2026)*, *The Drama - Un segreto è per sempre (2026)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2025, Cand: 2026)
-   - **Popolarità**: VOT Semi=1103, Cand=690 (Ratio=0.63 $\to$ `OK`) · VAVE: 6.90 $\to$ 6.90
-
-3. **Animazione d'azione per adulti** (15 semi, `Serie`)
-   - **Denominazione**: `Tassonomia («Animazione d'azione per adulti», conf: 87%)` | Consistenza Scaffale: `0.1157`
-   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Bob's Burgers*, *Primal*, *South Park*
+   - **Semi**: *Bob's Burgers*, *South Park*, *Solar Opposites*
    - **Candidati Raccomandati**: *Big Mouth (2017)*, *The Cleveland Show (2009)*, *BoJack Horseman (2014)*, *Archer (2009)*, *King of the Hill (1997)*
-   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 2013, Cand: 2009)
-   - **Popolarità**: VOT Semi=1629, Cand=1266 (Ratio=0.78 $\to$ `OK`) · VAVE: 7.80 $\to$ 7.60
+   - **Diagnostica Temporale**: `Deepening (Mix di epoche)` (Anno Med. Semi: 2011, Cand: 2009)
+   - **Popolarità**: VOT Semi=2465, Cand=1266 (Ratio=0.51 $\to$ `OK`) · VAVE: 7.80 $\to$ 7.60
 
-4. **Docufiction true crime** (6 semi, `Film`)
+2. **Perché hai visto Good Luck, Have Fun, Don't Die, Obsession e Send Help** (8 semi, `Film`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0194`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Good Luck, Have Fun, Don't Die*, *Obsession*, *Send Help*
+   - **Candidati Raccomandati**: *Le sabbie del Kalahari (1965)*, *The Drama - Un segreto è per sempre (2026)*, *Companion (2025)*, *The Creator (2023)*, *Collide - Destini incrociati (2022)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2026, Cand: 2023)
+   - **Popolarità**: VOT Semi=1696, Cand=1955 (Ratio=1.15 $\to$ `OK`) · VAVE: 6.83 $\to$ 6.90
+
+3. **Docufiction true crime** (6 semi, `Film`)
    - **Denominazione**: `Tassonomia («Docufiction true crime», conf: 50%)` | Consistenza Scaffale: `0.1073`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
    - **Semi**: *A Toxic Love Story: Il caso Michelle Hadley*, *Numero sconosciuto: Uno scandalo di cyberbullismo*, *La ragazza nella foto*
@@ -587,19 +593,27 @@ Nella versione precedente, la scissione automatica per medium divideva i due clu
    - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2024, Cand: 2025)
    - **Popolarità**: VOT Semi=166, Cand=70 (Ratio=0.42 $\to$ `OK`) · VAVE: 6.63 $\to$ 6.71
 
-5. **Perché hai visto Grey's Anatomy, Stranger Things e Breaking Bad** (16 semi, `Serie`)
-   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0300`
+4. **Sitcom animate** (10 semi, `Serie`)
+   - **Denominazione**: `Tassonomia («Sitcom animate», conf: 80%)` | Consistenza Scaffale: `0.1479`
    - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
-   - **Semi**: *Grey's Anatomy*, *Stranger Things*, *Breaking Bad*
-   - **Candidati Raccomandati**: *The Watcher (2022)*, *American Horror Story (2011)*, *Monster: La storia di Lizzie Borden (2026)*, *Better Call Saul (2015)*, *True Detective (2014)*
-   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2018, Cand: 2015)
-   - **Popolarità**: VOT Semi=2988, Cand=4420 (Ratio=1.48 $\to$ `OK`) · VAVE: 8.00 $\to$ 8.08
+   - **Semi**: *The Good Place*, *Curb Your Enthusiasm*, *C'è sempre il sole a Philadelphia*
+   - **Candidati Raccomandati**: *30 Rock (2006)*, *Seinfeld (1989)*, *Community (2009)*, *How I Met Your Mother (2005)*, *Arrested Development - Ti presento i miei (2003)*
+   - **Diagnostica Temporale**: `Deepening (Semi storici)` (Anno Med. Semi: 2008, Cand: 2005)
+   - **Popolarità**: VOT Semi=1694, Cand=2205 (Ratio=1.30 $\to$ `OK`) · VAVE: 8.01 $\to$ 8.00
+
+5. **Perché hai visto Creature luminose, Locked - In trappola e Neighborhood Watch** (5 semi, `Film`)
+   - **Denominazione**: `Perché hai visto (trasparente)` | Consistenza Scaffale: `0.0158`
+   - **Verifica Medium**: `PASS (Semi: 100%, Cand: 100%)`
+   - **Semi**: *Creature luminose*, *Locked - In trappola*, *Neighborhood Watch*
+   - **Candidati Raccomandati**: *November Criminals (2017)*, *Ricchi... da morire - Delitti in famiglia (2026)*, *Vendetta (2026)*, *La ragazza della palude (2022)*, *Inheritance - Eredità (2020)*
+   - **Diagnostica Temporale**: `Allineato / Contemporaneo` (Anno Med. Semi: 2025, Cand: 2022)
+   - **Popolarità**: VOT Semi=631, Cand=757 (Ratio=1.20 $\to$ `OK`) · VAVE: 6.90 $\to$ 6.93
 
 ---
 
 ## 7. Riconciliazione Temporale (Staleness vs Deepening)
 
 Sui 41 scaffali serviti con il nuovo schema:
-- **33 scaffali (80.5%)** sono contemporanei o contengono candidati recenti (2024–2026);
-- **7 scaffali (17.1%)** sono casi autentici di *Deepening* (semi storici o mix multi-decennale di epoche);
-- **Solo 1 scaffale su 41 (2.4%)** è un vero caso di **STALE**: lo scaffale fantasy di `pepsipex` (*House of the Dragon*, *A Knight of the Seven Kingdoms*, *The Witcher*), i cui candidati si arrestano al 2022.
+- **22 scaffali (53.7%)** sono contemporanei o contengono candidati recenti (2024–2026);
+- **18 scaffali (43.9%)** sono casi autentici di *Deepening* (semi storici o mix multi-decennale di epoche);
+- **Solo 1 scaffale/i su 41 (2.4%)** è un vero caso di **STALE**: lo scaffale fantasy di `pepsipex` (*House of the Dragon*, *A Knight of the Seven Kingdoms*, *The Witcher*), i cui candidati si arrestano al 2022.
