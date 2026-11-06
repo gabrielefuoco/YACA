@@ -142,11 +142,64 @@ def split_until_M(engine: Engine, righe: np.ndarray, cluster_indices: list[int],
     return res
 
 
-def bounded_macros_for_profile(engine: Engine, righe: np.ndarray, micros: list[list[int]], M: int) -> list[list[int]]:
-    """Genera macro-cluster limitati a cardinalità massima M."""
-    macros_12 = aggrega_macro_cluster(engine, righe, micros, target_k=12)
+def aggrega_macro_cluster_tau(
+    engine: Engine,
+    righe: np.ndarray,
+    micro_clusters: list[list[int]],
+    tau: float = 0.03,
+) -> list[list[int]]:
+    """Esegue la seconda passata agglomerativa arrestando le fusioni quando la similarità scende sotto tau."""
+    m = len(micro_clusters)
+    if m <= 1:
+        return [list(c) for c in micro_clusters]
+
+    V = engine.Tr[righe, :]
+    norms = np.array(np.sqrt(V.multiply(V).sum(axis=1))).ravel()
+    norms[norms == 0] = 1.0
+    V_norm = sp.diags(1.0 / norms) @ V
+
+    c_vecs = []
+    for c in micro_clusters:
+        v_c = np.array(V_norm[c, :].sum(axis=0)).ravel()
+        norm_c = np.linalg.norm(v_c)
+        if norm_c == 0:
+            norm_c = 1.0
+        c_vecs.append(v_c / norm_c)
+    C_norm = np.array(c_vecs)
+
+    S = C_norm @ C_norm.T
+    d = np.clip(1.0 - S, 0.0, 1.0)
+    np.fill_diagonal(d, 0.0)
+
+    Z = linkage(squareform(d), method="average")
+    labels = fcluster(Z, t=1.0 - tau, criterion="distance")
+
+    groups: dict[int, list[int]] = {}
+    for micro_idx, lbl in enumerate(labels):
+        groups.setdefault(lbl, []).append(micro_idx)
+
+    macros = []
+    for micro_indices in groups.values():
+        m_seeds: list[int] = []
+        for mi in micro_indices:
+            m_seeds.extend(micro_clusters[mi])
+        macros.append(m_seeds)
+
+    macros.sort(key=len, reverse=True)
+    return macros
+
+
+def bounded_macros_for_profile(
+    engine: Engine,
+    righe: np.ndarray,
+    micros: list[list[int]],
+    M: int = 30,
+    tau: float = 0.03,
+) -> list[list[int]]:
+    """Genera macro-cluster limitati a cardinalità massima M con arresto su similarità tau."""
+    macros = aggrega_macro_cluster_tau(engine, righe, micros, tau=tau)
     bounded: list[list[int]] = []
-    for m in macros_12:
+    for m in macros:
         if len(m) <= M:
             bounded.append(m)
         else:

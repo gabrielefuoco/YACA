@@ -87,3 +87,25 @@ crime asiatico, shonen, fantascienza d'invasione, animazione adulta — nessun b
 
 Il metodo «solo contenuto» e stato scartato dall'umano per principio (il grafo raggruppa per natura);
 i suoi numeri restano nel report ma non e un candidato.
+
+
+## La fusione macro si ferma sulla similarita, non sul numero (tau=0,03)
+
+Il vecchio schema (fondere fino a k macro, poi bisecare) fondeva micro-cluster con similarita
+**mediana 0,0034** e le ultime dieci fusioni sotto 0,0004: a quel livello saldava *Come e fatto*,
+*Indiana Jones* e Lav Diaz. Sostituito con arresto sulla similarita. Sweep:
+
+| tau | macro | scarto cancello keyword | copertura (>100 semi) | scaffali serviti |
+|---|---:|---:|---:|---:|
+| 0,005 | 196 | 35,2% | 92,0-94,4% | 37/40 |
+| 0,01 | 218 | 32,6% | 92,0-94,4% | 37/40 |
+| 0,02 | 232 | 29,3% | 92,0-94,4% | 39/40 |
+| **0,03** | **236** | **28,4%** | **92,0-97,2%** | **40/40** |
+| 0,05 | 236 | 28,0% | 92,0-97,2% | 40/40 |
+
+**Il criterio dichiarato e fallito**: nessun tau porta lo scarto sotto il 10%. Il motivo e che il
+cancello keyword scarta gia il **30,2% dei micro-cluster grezzi** (45 su 149): in TMDB la copertura
+delle keyword e disomogenea, e gruppi coerenti per comportamento (wrestling, documentari sportivi)
+non hanno keyword condivise. **Il cancello misurava la copertura dei metadati, non la coerenza.**
+tau=0,03 e quindi una scelta pragmatica (nessuno scaffale perso, copertura 94,4%), non un criterio
+soddisfatto.
