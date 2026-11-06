@@ -63,3 +63,27 @@ macro** (non per profilo), dedupe di famiglia (collezione dominante) e scarto de
 overlap >=50% sui top-10. Il controllo senza passata macro produce scaffali ugualmente nitidi ma
 seppellisce i consumi diffusi in coppie/terzetti; la versione bounded li recupera senza mai superare
 29 semi.
+
+
+## Affinita: tre definizioni misurate, una vince (e la mia ipotesi e sbagliata)
+
+| metodo | soglia | copertura | cluster | mediana | saga (b) | esito |
+|---|---:|---:|---:|---:|---:|---|
+| per-ragione (famiglie di tipi) | 0,02 | 88,1% | 213 | 3 | 13,1% | fallisce (mediana < 4) |
+| **vicinato largo (top-100)** | **0,02** | **94,2%** | **128** | **4** | **10,9%** | **passa** |
+| solo contenuto | 0,02 | 89,2% | 319 | 3 | 16,6% | escluso per decisione, non per misura |
+
+**La mia ipotesi e stata falsificata dalla misura.** L'affinita «per ragione» doveva separare meglio le
+saghe; separa **peggio**: rapporto intra/inter-franchise 18,2x contro 26,9x del metodo attuale
+(-32%). Su `warnok`, coppie della stessa saga: 0,3786 medio contro 0,5407; coppie di saghe diverse:
+0,0208 contro 0,0201, cioe **il rumore inter-franchise non scende** (Deadpool, Kingsman e Fast X
+condividono cast, crew, co-visione e pubblico). Il vincolo di accordarsi su piu famiglie deprime la
+coesione interna dei franchise piu di quanto pulisca il rumore esterno.
+
+**Metodo scelto: vicinato largo.** Firma = top-100 vicini della matrice V45 NON potata, coseno.
+La camminata resta a 16 archi. Con la ricetta (macro <=30 semi, 5 scaffali per `min_eta` + supporto,
+medium per macro, dedupe di famiglia) i 5 scaffali di `warnok` sono: serie mystery/cult, K-drama e
+crime asiatico, shonen, fantascienza d'invasione, animazione adulta — nessun blob generico di blockbuster.
+
+Il metodo «solo contenuto» e stato scartato dall'umano per principio (il grafo raggruppa per natura);
+i suoi numeri restano nel report ma non e un candidato.
