@@ -255,8 +255,10 @@ class Engine:
           (stringa non numerica, negativo o NaN), solleva `ValueError`.
         - `plays`: se non valido, solleva `ValueError` (default: 1.0).
         - `frazione`: float in [0.0, 1.0]; se non valida solleva `ValueError`.
-        - `nep`: conteggio episodi esplicito; se sconosciuto o <= 0, ripiega sulla regola del film
-          (`min(plays, 3)`), impostando nep=1.0 per evitare inversioni o divisioni per zero.
+        - `nep`: conteggio episodi esplicito; se sconosciuto o <= 1, per le serie si calcola
+          `plays = PESO_SERIE_BASE + PESO_SERIE_FASCIA * frazione` impostando nep=1.0, garantendo
+          che il tetto del ramo film in camminata.pesi_semi (min(plays, 3)) sia una no-op e preservi
+          esattamente la formula dichiarata [1, 3] senza numeri arbitrari.
 
         Returns:
             Dizionario con parametri del seme validato o None se fuori dal canone.
@@ -380,8 +382,11 @@ class Engine:
                 if nep_effettivo > 1.0:
                     plays_effettivo = fr * nep_effettivo
                 else:
-                    # Ripiego film: frazione applicata sul massimo film PESO_FILM_MAX=3.0
-                    plays_effettivo = fr * float(P.PESO_FILM_MAX) if pl is None else pl
+                    # Quando nep <= 1.0 (episodi sconosciuti o singoli), pesi_semi applica il ramo film
+                    # min(plays, PESO_FILM_MAX=3). Applicando la formula canonica delle serie:
+                    # plays = PESO_SERIE_BASE + PESO_SERIE_FASCIA * fr (compreso in [1, 3]),
+                    # min(plays, 3) risulta una no-op e il peso finale è esattamente quello dichiarato.
+                    plays_effettivo = float(P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * fr)
             elif pl is not None:
                 plays_effettivo = pl
             else:

@@ -257,6 +257,43 @@ def test_frazione_one_equals_plays_nep(engine):
     assert res_frazione == res_nep
 
 
+def test_series_unknown_nep_frazione_uses_declared_series_formula(engine):
+    """Verifica che una serie con nep forzato a 1 e frazione=0.5 pesi esattamente 2.0 (1 + 2*0.5).
+
+    Risolve la mappatura inventata: non deve usare fr * PESO_FILM_MAX (1.5), ma la formula
+    dichiarata delle serie P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * fr = 2.0.
+    """
+    from graph import parametri as P
+
+    bb_key = "tv:1396"
+    companion_key = "movie:603"
+
+    # Test con nep forzato a 1.0 e frazione 0.5
+    res_tested = engine.raccomanda(
+        [{"key": bb_key, "nep": 1.0, "frazione": 0.5}, {"key": companion_key, "plays": 1}],
+        cap=20,
+    )
+    # Benchmark con peso esplicito calcolato secondo la formula dichiarata (1 + 2*0.5 = 2.0)
+    peso_atteso = P.PESO_SERIE_BASE + P.PESO_SERIE_FASCIA * 0.5  # 2.0
+    res_expected_2_0 = engine.raccomanda(
+        [{"key": bb_key, "peso": peso_atteso}, {"key": companion_key, "plays": 1}],
+        cap=20,
+    )
+    # Vecchio valore inventato errato (0.5 * 3.0 = 1.5)
+    res_old_1_5 = engine.raccomanda(
+        [{"key": bb_key, "peso": 1.5}, {"key": companion_key, "plays": 1}],
+        cap=20,
+    )
+
+    # Deve coincidere esattamente con il benchmark a 2.0
+    assert res_tested == res_expected_2_0
+    # E fallirebbe contro il vecchio 1.5
+    assert res_tested != res_old_1_5
+    scores_tested = {r["key"]: r["punteggio"] for r in res_tested}
+    scores_old = {r["key"]: r["punteggio"] for r in res_old_1_5}
+    assert scores_tested[bb_key] > scores_old[bb_key]
+
+
 def test_profilo_freddo_helper(engine):
     """Verifica l'helper Engine.profilo_freddo basato sulla soglia dichiarata FREDDO_SOTTO (3)."""
     assert Engine.FREDDO_SOTTO == 3
