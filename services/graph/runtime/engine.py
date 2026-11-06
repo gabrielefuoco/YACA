@@ -15,7 +15,13 @@ questo modulo realizza il runtime puro per la camminata sparsa (Personalized Pag
     di memoria di 50,6M archi all'avvio e rientrare stabilmente nel limite di 512 MiB del container;
   - calcola la transizione riga-stocastica e diffonde il PPR riusando le funzioni canoniche di
     `camminata.py` senza duplicazione di logica numerica;
-  - applica la regola del repository "dichiarare, non ingoiare": errori espliciti su pesi invalidi,
+  - calcola i pesi dei semi riusando canonicamente `camminata.pesi_semi(righe, plays, nep, tipi)`:
+    rispetta il cap di ri-visioni per i film (min(plays, PESO_FILM_MAX=3)) e la proporzione degli
+    episodi visti per le serie (1 + 2 x min(plays/nep, 1.0)), moltiplicati per il tipo di segnale;
+  - espone `Engine.nep` (conteggio episodi per titolo) e accetta `frazione` (0..1) oltre a `plays`;
+  - espone l'helper read-only `Engine.profilo_freddo(n_semi)` basato sulla soglia dichiarata
+    `parametri.FREDDO_SOTTO` (3);
+  - applica la regola del repository "dichiarare, non ingoiare": errori espliciti su pesi/frazioni invalidi,
     RuntimeError se il grafo non è caricato, e tracciamento in `ultimo_scarto` dei titoli fuori canone;
   - filtra per medium ("movie", "series", None) ed esclusi PRIMA di applicare il cap richiesto;
   - garantisce determinismo assoluto, zero I/O di rete, nessun download e nessuna scrittura su disco.
@@ -47,6 +53,9 @@ di runtime, è definito qui come costante di modulo visibile ed esplicita.
 class Engine:
     """Motore di raccomandazione sparso basato su camminata PageRank personalizzata."""
 
+    FREDDO_SOTTO: int = P.FREDDO_SOTTO
+    """Soglia dichiarata di prodotto (pari a 3) sotto cui un profilo utente è considerato 'freddo'."""
+
     def __init__(self) -> None:
         self.Tr: sp.csr_matrix | None = None
         self.prov: dict | None = None
@@ -57,6 +66,7 @@ class Engine:
         self.keys: list[str] = []
         self.row_of: dict[str, int] = {}
         self.is_tv: np.ndarray = np.zeros(0, dtype=bool)
+        self.nep: np.ndarray = np.ones(0, dtype=np.float64)
         self.tmdb_ids: np.ndarray = np.zeros(0, dtype=np.int64)
         self.mediums: np.ndarray = np.empty(0, dtype=object)
         self.tmdb_to_indices: dict[int, list[int]] = {}
@@ -65,19 +75,33 @@ class Engine:
             "esclusi_fuori_canone": 0,
         }
 
+    @staticmethod
+    def profilo_freddo(n_semi: int) -> bool:
+        """Determina se un profilo utente è 'freddo' in base al numero di semi forniti.
+
+        PERCHÉ ESISTE.
+        Usa la soglia dichiarata di prodotto `parametri.FREDDO_SOTTO` (pari a 3).
+        Sotto 3 titoli, il profilo è considerato 'freddo' e richiede strategie di arricchimento
+        da catalogo (ticket cold-start).
+        """
+        return int(n_semi) < P.FREDDO_SOTTO
+
     def _init_canone(self, n: int) -> None:
-        """Inizializza le strutture del canone titoli e mappature TMDB per N nodi."""
+        """Inizializza le strutture del canone titoli, mappature TMDB e nep per N nodi."""
         canon_keys, canon_row_of, canon_n, canon_is_tv = K.titoli()
 
         if n == canon_n:
             self.keys = list(canon_keys)
             self.row_of = dict(canon_row_of)
             self.is_tv = np.asarray(canon_is_tv, dtype=bool)
+            meta = K.metadati()
+            self.nep = np.asarray(meta["NEP"], dtype=np.float64)
         else:
             # Consente fixture o sottomatrici di test con dimensione diversa
             self.keys = [f"item:{i}" for i in range(n)]
             self.row_of = {k: i for i, k in enumerate(self.keys)}
             self.is_tv = np.zeros(n, dtype=bool)
+            self.nep = np.ones(n, dtype=np.float64)
 
         self.tmdb_ids = np.zeros(n, dtype=np.int64)
         self.mediums = np.empty(n, dtype=object)
@@ -218,26 +242,39 @@ class Engine:
 
         return inst
 
-    def _parse_seme(self, item: Any) -> tuple[int, float] | None:
-        """Estrae l'indice di riga e il peso numerico da una specifica di seme.
+    def _parse_seme(self, item: Any) -> dict | None:
+        """Estrae i parametri di un seme validandone i campi.
 
-        Accetta tuple/liste `(key, peso, tipo)`, `(key, peso)`, `(key,)`, stringhe pure,
-        o dizionari con chiavi `tmdbId`, `medium`, `tipo`, `peso` (o `key`).
+        Supporta:
+        - tuple o liste: `(key, peso, tipo)`, `(key, peso)`, `(key,)`, o con plays/frazione;
+        - stringhe pure: `"movie:603"`;
+        - dizionari con chiavi: `key`, `tmdbId`, `medium`, `peso`, `tipo`, `plays`, `frazione`, `nep`.
 
         DICHIARARE, NON INGOIARE:
-        Se `peso` è specificato (non None) ma non è un numero valido o è negativo/NaN,
-        solleva esplicitamente `ValueError` invece di ripiegare silenziosamente su 1.0.
-        Se `key` o il titolo TMDB non appartiene al canone, restituisce None per consentire
-        il conteggio in `Engine.ultimo_scarto`.
+        - `peso`: se specificato, ha precedenza assoluta sulla formula di pesatura. Se non valido
+          (stringa non numerica, negativo o NaN), solleva `ValueError`.
+        - `plays`: se non valido, solleva `ValueError` (default: 1.0).
+        - `frazione`: float in [0.0, 1.0]; se non valida solleva `ValueError`.
+        - `nep`: conteggio episodi esplicito; se sconosciuto o <= 0, ripiega sulla regola del film
+          (`min(plays, 3)`), impostando nep=1.0 per evitare inversioni o divisioni per zero.
+
+        Returns:
+            Dizionario con parametri del seme validato o None se fuori dal canone.
         """
         key = None
         peso = None
         tipo = None
+        plays = None
+        frazione = None
+        nep = None
 
         if isinstance(item, dict):
             key = item.get("key")
             peso = item.get("peso")
             tipo = item.get("tipo")
+            plays = item.get("plays")
+            frazione = item.get("frazione")
+            nep = item.get("nep")
             if not key:
                 tmdb_id = item.get("tmdbId") if "tmdbId" in item else (item.get("tmdb_id") or item.get("tmdb"))
                 medium = item.get("medium")
@@ -252,33 +289,115 @@ class Engine:
             if len(item) == 1:
                 key = item[0]
             elif len(item) == 2:
-                key, peso = item
-            elif len(item) >= 3:
+                key, peso = item[0], item[1]
+            elif len(item) == 3:
                 key, peso, tipo = item[0], item[1], item[2]
+            elif len(item) == 4:
+                key, peso, tipo, plays = item[0], item[1], item[2], item[3]
+            elif len(item) >= 5:
+                key, peso, tipo, plays, frazione = item[0], item[1], item[2], item[3], item[4]
         elif isinstance(item, str):
             key = item
 
-        # Validazione esplicita del peso: nessun fallback silenzioso
+        # Validazione esplicita del peso (se fornito come override numerico)
+        explicit_peso = None
         if peso is not None:
             try:
-                w = float(peso)
+                explicit_peso = float(peso)
             except (ValueError, TypeError) as exc:
                 raise ValueError(
                     f"peso non valido: {peso!r} (deve essere un numero float/int >= 0)"
                 ) from exc
-            if np.isnan(w) or w < 0.0:
+            if np.isnan(explicit_peso) or explicit_peso < 0.0:
                 raise ValueError(
                     f"peso non valido: {peso!r} (deve essere un numero finito >= 0)"
                 )
-        elif tipo is not None and str(tipo) in P.PESO_TIPO:
-            w = float(P.PESO_TIPO[str(tipo)])
-        else:
-            w = 1.0
+
+        # Validazione plays
+        pl = None
+        if plays is not None:
+            try:
+                pl = float(plays)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(
+                    f"plays non valido: {plays!r} (deve essere un numero float/int >= 0)"
+                ) from exc
+            if np.isnan(pl) or pl < 0.0:
+                raise ValueError(
+                    f"plays non valido: {plays!r} (deve essere un numero finito >= 0)"
+                )
+
+        # Validazione frazione (0..1)
+        fr = None
+        if frazione is not None:
+            try:
+                fr = float(frazione)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(
+                    f"frazione non valida: {frazione!r} (deve essere compresa tra 0.0 e 1.0)"
+                ) from exc
+            if np.isnan(fr) or fr < 0.0 or fr > 1.0:
+                raise ValueError(
+                    f"frazione non valida: {frazione!r} (deve essere compresa tra 0.0 e 1.0)"
+                )
+
+        # Validazione nep esplicito
+        np_val = None
+        if nep is not None:
+            try:
+                np_val = float(nep)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(
+                    f"nep non valido: {nep!r} (deve essere un numero float/int >= 0)"
+                ) from exc
+            if np.isnan(np_val) or np_val < 0.0:
+                raise ValueError(
+                    f"nep non valido: {nep!r} (deve essere un numero finito >= 0)"
+                )
 
         if not key or key not in self.row_of:
             return None
 
-        return self.row_of[key], w
+        row_idx = self.row_of[key]
+        is_series = bool(self.is_tv[row_idx]) if len(self.is_tv) > row_idx else key.startswith("tv:")
+
+        # Determinazione nep effettivo
+        if np_val is not None:
+            nep_effettivo = np_val
+        elif len(self.nep) > row_idx:
+            nep_effettivo = float(self.nep[row_idx])
+        else:
+            nep_effettivo = 1.0
+
+        # Quando nep è sconosciuto o 0, si ripiega sulla regola del film (min(plays, 3))
+        # impostando nep_effettivo = 1.0 per attivare il ramo film in camminata.pesi_semi
+        if nep_effettivo <= 0.0:
+            nep_effettivo = 1.0
+
+        # Determinazione plays effettivo
+        if is_series:
+            if fr is not None:
+                if nep_effettivo > 1.0:
+                    plays_effettivo = fr * nep_effettivo
+                else:
+                    # Ripiego film: frazione applicata sul massimo film PESO_FILM_MAX=3.0
+                    plays_effettivo = fr * float(P.PESO_FILM_MAX) if pl is None else pl
+            elif pl is not None:
+                plays_effettivo = pl
+            else:
+                plays_effettivo = 1.0
+        else:
+            # Per i film nep_effettivo resta 1.0 e plays conta le ri-visioni
+            nep_effettivo = 1.0
+            plays_effettivo = pl if pl is not None else 1.0
+
+        return {
+            "row": row_idx,
+            "explicit_peso": explicit_peso,
+            "tipo": tipo,
+            "plays": plays_effettivo,
+            "nep": nep_effettivo,
+        }
 
     def _parse_esclusi(self, esclusi: Iterable[Any]) -> tuple[set[int], int]:
         """Converte elementi esclusi in indici di riga, contando quelli fuori canone.
@@ -347,12 +466,15 @@ class Engine:
 
         DICHIARARE, NON INGOIARE:
         - Se invocato senza grafo caricato (Tr is None), solleva RuntimeError.
-        - Se peso nei semi è invalido, solleva ValueError.
+        - Se peso/plays/frazione nei semi è invalido, solleva ValueError.
+        - I pesi dei semi sono calcolati tramite `camminata.pesi_semi(righe, plays, nep, tipi)`,
+          tenendo conto delle ri-visioni dei film (tetto a 3) e della frazione di serie vista.
+          Un eventuale `peso` numerico esplicito sovrascrive la formula.
         - Se i semi o gli esclusi sono fuori dal canone, vengono saltati ma il loro conteggio
           è registrato in `self.ultimo_scarto` per trasparenza del chiamante.
 
         Args:
-            semi: Lista di tuple `(key, peso, tipo)` o dizionari con tmdbId, medium, tipo, peso.
+            semi: Lista di tuple o dizionari con specifica semi (key, peso, tipo, plays, frazione, nep).
             cap: Numero massimo di risultati da restituire (default `DEFAULT_CAP` = 60).
             medium: Filtro medium in ("movie", "series", None). "tv" è ammesso come sinonimo di "series".
             esclusi: Collezione di chiavi, tmdbId o dizionari da escludere prima del cap.
@@ -372,16 +494,13 @@ class Engine:
                     f"medium non valido: {medium!r} (ammessi 'movie', 'series', None)"
                 )
 
-        seme_idx: list[int] = []
-        seme_pesi: list[float] = []
+        parsed_seeds: list[dict] = []
         semi_fuori_canone = 0
 
         for s in semi:
             parsed = self._parse_seme(s)
             if parsed is not None:
-                idx, w = parsed
-                seme_idx.append(idx)
-                seme_pesi.append(w)
+                parsed_seeds.append(parsed)
             else:
                 semi_fuori_canone += 1
 
@@ -392,8 +511,29 @@ class Engine:
             "esclusi_fuori_canone": esclusi_fuori_canone,
         }
 
-        if cap <= 0 or not seme_idx:
+        if cap <= 0 or not parsed_seeds:
             return []
+
+        seme_idx = [s["row"] for s in parsed_seeds]
+        seme_plays = np.array([s["plays"] for s in parsed_seeds], dtype=np.float64)
+        seme_neps = np.array([s["nep"] for s in parsed_seeds], dtype=np.float64)
+        seme_tipi = [s["tipo"] for s in parsed_seeds]
+        seme_explicit = [s["explicit_peso"] for s in parsed_seeds]
+
+        # Calcolo dei pesi tramite la formula canonica di camminata.pesi_semi
+        # (senza re-implementare la logica numerica)
+        calcolati = _cam.pesi_semi(
+            righe=np.arange(len(parsed_seeds)),
+            plays=seme_plays,
+            NEP=seme_neps,
+            tipi=seme_tipi,
+        )
+
+        # Un peso numerico esplicito sovrascrive qualsiasi valore calcolato dalla formula
+        seme_pesi = [
+            float(exp) if exp is not None else float(calc)
+            for exp, calc in zip(seme_explicit, calcolati)
+        ]
 
         # Camminata PPR riga-stocastica: riuso di camminata.ppr senza duplicare la logica numerica
         r = _cam.ppr(

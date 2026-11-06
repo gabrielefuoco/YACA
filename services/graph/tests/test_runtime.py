@@ -1,14 +1,21 @@
 """Test unitari veloci e offline per il runtime sparso V45 (services/graph/runtime).
 
 VERIFICHE COPERTE:
-- caricamento corretto dell'Engine (dimensione n=76.497, percorso esposto, artefatto fingerprint);
+- caricamento corretto dell'Engine (dimensione n=76.497, percorso esposto, artefatto fingerprint, nep esposto);
 - stabilità dell'artefatto fingerprint tra due caricamenti e sensibilità alla potatura (pota);
 - simmetria del supporto della matrice di transizione per pota=16 e pota=None (fixture asimmetrica);
 - caricamento della transizione precalcolata (carica_transizione) con supporto simmetrico;
 - regola 'dichiarare, non ingoiare':
   * peso non valido solleva ValueError (nessun fallback silenzioso);
+  * plays o frazione non validi sollevano ValueError;
   * raccomanda senza grafo caricato solleva RuntimeError;
   * conteggio semi ed esclusi fuori canone registrato in Engine.ultimo_scarto;
+- pesatura semi canonica tramite camminata.pesi_semi:
+  * serie vista per intero (frazione=1.0 o plays=nep) supera una serie vista a metà (frazione=0.5);
+  * film con 10 ri-visioni ha tetto a 3 (risultato identico a 3 ri-visioni);
+  * peso numerico esplicito continua a sovrascrivere la formula;
+  * frazione=1.0 equivale esattamente al passaggio di plays=nep;
+- helper profilo freddo Engine.profilo_freddo(n_semi) basato sulla costante FREDDO_SOTTO (3);
 - costante di default DEFAULT_CAP = 60 per il cap;
 - raccomandazione da seme noto (Matrix, movie:603) con risultati coerenti;
 - filtro medium ("movie", "series") che restituisce esclusivamente quel medium;
@@ -37,31 +44,26 @@ def engine():
 
 
 def test_engine_loads(engine):
-    """Verifica che l'Engine esponga n, percorso, artefatto (fingerprint) e la matrice sparsa potata."""
+    """Verifica che l'Engine esponga n, percorso, artefatto (fingerprint), nep e matrice sparsa."""
     assert engine.n == 76497
     assert engine.percorso is not None
     assert engine.percorso.endswith("bolle-eterogeneo-V45-p1.0-triangolo.npz")
     assert engine.artefatto is not None
-    # L'artefatto deve essere un fingerprint canonico (chiave di provenienza), non un percorso di file
     assert not engine.artefatto.endswith(".npz")
     assert engine.Tr is not None
     assert engine.Tr.shape == (76497, 76497)
     assert engine.Tr.nnz > 0
+    assert engine.nep is not None
+    assert len(engine.nep) == 76497
 
 
 def test_transition_support_is_symmetric(engine, tmp_path):
-    """Verifica che il supporto della matrice di transizione sia simmetrico sia per pota=16 sia per pota=None.
-
-    Risolve il baco di simmetrizzazione: V45 grezzo è asimmetrico; simmetrizzando preventivamente (W + W.T),
-    il grafo unpruned e quello pruned non generano percorsi a senso unico verso fondi ciechi.
-    """
-    # 1. Verifica per pota=16 sul grafo V45 reale
+    """Verifica che il supporto della matrice di transizione sia simmetrico sia per pota=16 sia per pota=None."""
     supp_16 = (engine.Tr != 0).astype(np.int8)
     diff_16 = supp_16 - supp_16.T
     diff_16.eliminate_zeros()
     assert diff_16.nnz == 0, f"Supporto Tr (pota=16) non simmetrico: {diff_16.nnz} asimmetrie"
 
-    # 2. Verifica per pota=None su una fixture asimmetrica dedicata (senza caricare i 50,6M archi interi)
     row = np.array([0, 1, 2, 3], dtype=np.int32)
     col = np.array([1, 2, 0, 4], dtype=np.int32)
     val = np.array([2.0, 3.0, 1.0, 5.0], dtype=np.float32)
@@ -90,9 +92,7 @@ def test_fingerprint_stability_and_pota_sensitivity(tmp_path):
     e3 = Engine.carica(path=fixture_path, pota=2)
     e_none = Engine.carica(path=fixture_path, pota=None)
 
-    # Stabilità su due caricamenti identici
     assert e1.artefatto == e2.artefatto
-    # Sensibilità alla potatura: pota diverso genera fingerprint diverso
     assert e1.artefatto != e3.artefatto
     assert e1.artefatto != e_none.artefatto
 
@@ -115,13 +115,11 @@ def test_carica_transizione_precomputed():
     assert eng_trans.artefatto is not None
     assert not eng_trans.artefatto.endswith(".npz")
 
-    # Verifica simmetria del supporto della transizione precalcolata
     supp = (eng_trans.Tr != 0).astype(np.int8)
     diff = supp - supp.T
     diff.eliminate_zeros()
     assert diff.nnz == 0
 
-    # Risultati equivalenti su seme noto
     res = eng_trans.raccomanda([("movie:603", None, "loved")], cap=10)
     assert len(res) == 10
     top_keys = [r["key"] for r in res]
@@ -129,7 +127,7 @@ def test_carica_transizione_precomputed():
 
 
 def test_declare_dont_swallow_invalid_peso(engine):
-    """Verifica che pesi non validi sollevino ValueError senza ripiegare silenziosamente a 1.0."""
+    """Verifica che pesi, plays e frazioni non validi sollevino ValueError senza fallback silenziosi."""
     with pytest.raises(ValueError):
         engine.raccomanda([("movie:603", "invalido", "loved")])
 
@@ -138,6 +136,15 @@ def test_declare_dont_swallow_invalid_peso(engine):
 
     with pytest.raises(ValueError):
         engine.raccomanda([("movie:603", float("nan"), "loved")])
+
+    with pytest.raises(ValueError):
+        engine.raccomanda([{"key": "movie:603", "plays": -1}])
+
+    with pytest.raises(ValueError):
+        engine.raccomanda([{"key": "tv:1396", "frazione": 1.5}])
+
+    with pytest.raises(ValueError):
+        engine.raccomanda([{"key": "tv:1396", "frazione": -0.1}])
 
 
 def test_declare_dont_swallow_unloaded_engine():
@@ -161,6 +168,108 @@ def test_declare_dont_swallow_ultimo_scarto(engine):
     assert len(res) > 0
     assert engine.ultimo_scarto["semi_fuori_canone"] == 2
     assert engine.ultimo_scarto["esclusi_fuori_canone"] == 2
+
+
+def test_fully_watched_series_outranks_half_watched(engine):
+    """Verifica che una serie vista per intero (frazione=1.0) superi una serie vista a metà (frazione=0.5)."""
+    # Usiamo Breaking Bad (tv:1396) e Mad Men (tv:1104)
+    # Nel primo caso: Breaking Bad è a frazione=1.0 (peso base 3.0), Mad Men a frazione=0.5 (peso base 2.0)
+    res_a = engine.raccomanda(
+        [{"key": "tv:1396", "frazione": 1.0}, {"key": "tv:1104", "frazione": 0.5}],
+        cap=60,
+    )
+    scores_a = {r["key"]: r["punteggio"] for r in res_a}
+    assert scores_a["tv:1396"] > scores_a["tv:1104"]
+
+    # Nel secondo caso invertito: Mad Men a frazione=1.0 (peso base 3.0), Breaking Bad a frazione=0.5 (peso base 2.0)
+    res_b = engine.raccomanda(
+        [{"key": "tv:1396", "frazione": 0.5}, {"key": "tv:1104", "frazione": 1.0}],
+        cap=60,
+    )
+    scores_b = {r["key"]: r["punteggio"] for r in res_b}
+    assert scores_b["tv:1104"] > scores_b["tv:1396"]
+
+
+def test_film_plays_cap_at_three(engine):
+    """Verifica che un film con 10 ri-visioni abbia tetto a 3 (PESO_FILM_MAX=3), equivalente a 3 ri-visioni."""
+    seme_film = "movie:603"
+    seme_compagno = "movie:550"
+
+    res_3 = engine.raccomanda(
+        [{"key": seme_film, "plays": 3}, {"key": seme_compagno, "plays": 1}],
+        cap=20,
+    )
+    res_10 = engine.raccomanda(
+        [{"key": seme_film, "plays": 10}, {"key": seme_compagno, "plays": 1}],
+        cap=20,
+    )
+    res_1 = engine.raccomanda(
+        [{"key": seme_film, "plays": 1}, {"key": seme_compagno, "plays": 1}],
+        cap=20,
+    )
+
+    # Con cap a 3, 3 ri-visioni e 10 ri-visioni producono esattamente gli stessi punteggi
+    assert res_3 == res_10
+    # Invece con 1 sola ri-visione i punteggi differiscono
+    assert res_3 != res_1
+
+
+def test_explicit_numeric_peso_overrides_formula(engine):
+    """Verifica che un peso numerico esplicito sovrascriva completamente il calcolo della formula."""
+    seme_a = "movie:603"
+    seme_b = "movie:550"
+
+    # Con peso esplicito 10.0 (superiore al cap naturale di 3.0)
+    res_explicit = engine.raccomanda(
+        [{"key": seme_a, "peso": 10.0, "plays": 1}, {"key": seme_b, "plays": 1}],
+        cap=20,
+    )
+    # Senza peso esplicito, con plays=1 (peso naturale = 1.0)
+    res_formula = engine.raccomanda(
+        [{"key": seme_a, "plays": 1}, {"key": seme_b, "plays": 1}],
+        cap=20,
+    )
+
+    scores_explicit = {r["key"]: r["punteggio"] for r in res_explicit}
+    scores_formula = {r["key"]: r["punteggio"] for r in res_formula}
+    assert scores_explicit[seme_a] > scores_formula[seme_a]
+
+    # Verifica backward compatibility con tupla (key, peso, tipo)
+    res_tuple = engine.raccomanda([(seme_a, 10.0, None), (seme_b, 1.0, None)], cap=20)
+    assert res_tuple == res_explicit
+
+
+def test_frazione_one_equals_plays_nep(engine):
+    """Verifica che per una serie frazione=1.0 sia esattamente equivalente a plays=nep."""
+    bb_key = "tv:1396"
+    nep_bb = engine.nep[engine.row_of[bb_key]]
+    assert nep_bb > 1.0
+
+    res_frazione = engine.raccomanda(
+        [{"key": bb_key, "frazione": 1.0}, {"key": "movie:603", "plays": 1}],
+        cap=30,
+    )
+    res_nep = engine.raccomanda(
+        [{"key": bb_key, "plays": nep_bb}, {"key": "movie:603", "plays": 1}],
+        cap=30,
+    )
+
+    assert res_frazione == res_nep
+
+
+def test_profilo_freddo_helper(engine):
+    """Verifica l'helper Engine.profilo_freddo basato sulla soglia dichiarata FREDDO_SOTTO (3)."""
+    assert Engine.FREDDO_SOTTO == 3
+    assert Engine.profilo_freddo(0) is True
+    assert Engine.profilo_freddo(1) is True
+    assert Engine.profilo_freddo(2) is True
+    assert Engine.profilo_freddo(3) is False
+    assert Engine.profilo_freddo(4) is False
+    assert Engine.profilo_freddo(10) is False
+
+    # Verificabile anche come metodo sull'istanza
+    assert engine.profilo_freddo(2) is True
+    assert engine.profilo_freddo(3) is False
 
 
 def test_default_cap_constant(engine):
@@ -194,8 +303,6 @@ def test_known_seed_returns_results(engine):
     scores = [r["punteggio"] for r in res_tupla]
     assert scores == sorted(scores, reverse=True)
 
-    # I sequel canonici di Matrix (movie:604 Reloaded, movie:605 Revolutions)
-    # devono comparire nei top 10
     top_keys = [r["key"] for r in res_tupla[:10]]
     assert "movie:604" in top_keys
     assert "movie:605" in top_keys
