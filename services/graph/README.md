@@ -50,6 +50,37 @@ richiesta (p95 147 ms). `Engine.carica()` resta un percorso di laboratorio, non 
 L'artefatto è generato e quindi gitignored: si rigenera con il comando qui sopra, e `prepara` rifiuta
 di scrivere dentro `data/v45/` per non toccare il grafo congelato.
 
+### Vicini top-100 per clustering: rispetto del limite container a 512 MiB
+
+Calcolare l'affinità dei semi durante il clustering (`interessi.py`) caricando e simmetrizzando a runtime
+il triangolo V45 non potato (74,4M archi) generava un picco di memoria di **1.007,6 MB**, portando all'OOM
+immediato nel container Docker (`mem_limit: 512m` in `docker-compose.yml:74`). Poiché per ciascun seme
+servono unicamente i suoi top-100 vicini nel grafo non potato, l'artefatto compatto viene precalcolato
+offline con provenienza tracciata:
+
+```bash
+PYTHONPATH=services py -m graph.runtime.prepara --target vicini
+# oppure
+PYTHONPATH=services py -m graph.runtime.prepara --vicini
+# oppure entrambi gli artefatti:
+PYTHONPATH=services py -m graph.runtime.prepara --target entrambi
+# scrive services/graph/data/v45-vicini100/vicini-top100.npz (43.5 MB, prov tracciata)
+```
+
+```python
+from graph.interessi import carica_matrice_affinita, scaffali
+W_vicini = carica_matrice_affinita()  # carica vicini-top100.npz (~418 ms, ~62 MB RAM)
+```
+
+Misurazioni scientifiche Resident Set Size (RSS psutil):
+- **Runtime PPR puro (`Engine.carica_transizione`)**: **156,8 MB** peak RSS
+- **Clustering completo `scaffali()` su `warnok` (476 semi)**: **307,1 MB** peak RSS (target <= 400 MB rispettato)
+- **Clustering completo `scaffali()` su `pepsipex` (568 semi, caso peggiore)**: **305,9 MB** peak RSS (target <= 400 MB rispettato)
+
+Entrambi i percorsi rientrano stabilmente sotto la soglia di 400 MB con oltre 110 MiB di headroom per il container.
+È severamente vietato toccare `bolle-eterogeneo-V45-p1.0-triangolo.npz` nel modulo clustering. L'artefatto
+risiede in `services/graph/data/v45-vicini100/`, è gitignored e rigenerabile dal comando documentato.
+
 ## Compatibilità storica
 
 `services/graph_dense/` contiene i dati cache e shim temporanei per script di ricerca; i moduli

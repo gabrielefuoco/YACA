@@ -1,8 +1,8 @@
 # Contratto degli Scaffali YACA (Ticket 08)
 
-Documento di specifica per l'integrazione tra il motore di raccomandazione V45 (ricetta congelata $M=12$, $\tau=0.03$, vicinato allargato top-100 coseno) e le superfici di fruizione di YACA (Stremio Addon, Pool di raccomandazione e API Web), aggiornato con le **decisioni definitive del Produttore Umano**.
+Documento di specifica per l'integrazione tra il motore di raccomandazione V45 (ricetta congelata a 12 passi con budget $N = 6$, $\tau=0.03$, vicinato allargato top-100 coseno) e le superfici di fruizione di YACA (Stremio Addon, Pool di raccomandazione e API Web), aggiornato con l'adozione definitiva di **$N = 6$ scaffali per profilo**.
 
-Il file dati dry-run generato con dati reali per `warnok`, `carverclan` e `pepsipex` è collocato accanto a questo documento:
+Il file dati dry-run generato con dati reali per `warnok`, `castoffcrown` e `pepsipex` è collocato accanto a questo documento:
 [contratto-scaffali.json](file:///C:/Users/gabri/APP/YACA/.scratch/v45-raccomandazioni-yaca/prototipo/contratto-scaffali.json).
 
 ---
@@ -14,14 +14,12 @@ In [src/stremio/manifest.js](file:///C:/Users/gabri/APP/YACA/src/stremio/manifes
 `GET /:userHandle/catalog/:type/:id.json`
 Se un catalogo non è dichiarato nel manifest, Stremio non lo richiede mai. In [src/pool/index.js](file:///C:/Users/gabri/APP/YACA/src/pool/index.js#L37-L421), la tabella dei ruoli serviti `RUOLI_SERVITI` scarta a `nonServiti` qualsiasi ID non mappato.
 
-### 1.2. Decisione dell'Umano: Nessun Tetto Prefissato e Manifest per Profilo
-L'umano ha rigettato il numero fisso di slot: *«perché un numero prefissato?»*.
-L'infrastruttura YACA possiede già il meccanismo idoneo per supportare cataloghi dinamici per profilo:
-1. **Manifest per profilo**: l'endpoint [src/api/stremio.js](file:///C:/Users/gabri/APP/YACA/src/api/stremio.js#L181-L195) serve già `/:userHandle/:configVersion/manifest.json`.
-2. **Reconciler automatico**: in [src/stremio/reconciler.js](file:///C:/Users/gabri/APP/YACA/src/stremio/reconciler.js#L36-L100), il sistema calcola il fingerprint del manifest con `buildManifestFingerprint()`. Quando i cataloghi dichiarati cambiano:
-   - genera una nuova `configVersion = nanoid(8)`;
-   - invoca `updateStremioAddonCollection(stremioAuthKey, manifestUrl)` per sincronizzare istantaneamente la collezione Stremio dell'utente senza richiedere reinstallazioni manuali.
-3. **Numero di cataloghi**: il manifest dichiara esattamente il numero di scaffali che il profilo produce, senza slot fittizi né backfill forzato.
+### 1.2. Decisione del Produttore: Adozione del Budget N = 6 e Spesa per Copertura
+L'alternativa non vincolata produceva 51 scaffali su `pepsipex` e 32 su `castoffcrown`, insostenibili per l'utente.
+Un budget fisso è giustificato e non arbitrario se speso per massimizzare la diversità degli interessi serviti:
+1. **Budget N = 6**: ogni profilo riceve fino a un massimo di 6 scaffali qualificati (i profili corti ne ricevono meno se non hanno abbastanza gruppi qualificati, es. 2 per `sangam456` e `carverclan`);
+2. **Spesa ingorda per copertura (greedy)**: a ogni passo si seleziona lo scaffale che copre il maggior numero di semi non ancora rappresentati;
+3. **Manifest per profilo con Reconciler automatico**: in [src/stremio/reconciler.js](file:///C:/Users/gabri/APP/YACA/src/stremio/reconciler.js#L36-L100), il sistema sincronizza istantaneamente la collezione Stremio tramite `updateStremioAddonCollection(stremioAuthKey, manifestUrl)` solo quando cambiano i cluster qualificati (stabilità degli ID garantita).
 
 ---
 
@@ -141,121 +139,115 @@ In [src/pool/index.js](file:///C:/Users/gabri/APP/YACA/src/pool/index.js#L101-L1
 
 ---
 
-## 4. La Regola di Arresto all'80% e Misure sulle 10 Timeline
+## 4. La Catena a 12 Passi con Budget N = 6 e Spesa per Copertura
 
-### 4.1. Definizione della Regola
-Si aggiungono scaffali in ordine di rango finché la quota cumulata di semi coperti non raggiunge l'**80% dei semi coperti dal profilo**, con i quattro vincoli rigidi:
-1. `size >= 3` semi (un gruppo autentico);
-2. `medium-homogeneous` (omogeneità di medium per scaffale);
-3. `family dedupe` (esclusione di macro con la stessa collezione dominante TMDB già presente);
-4. `overlap dedupe` (esclusione di macro che condividono $\ge 50\%$ di overlap Jaccard sui top-10 candidati con uno scaffale già scelto).
+### 4.1. Definizione della Regola Adottata
+La selezione degli scaffali non si arresta su percentuali teoriche di copertura (la regola dell'80% falliva producendo fino a 67 scaffali), bensì applica un **budget fisso $N = 6$ speso ingordamente (greedy) per massimizzare i semi non ancora coperti**.
 
-### 4.2. Misure Sperimentali su Tutte le 10 Timeline
-Confronto tra le due interpretazioni del medium-filter:
-- **Pipeline A (Scarto Macro Eterogenei)**: i macro raw $M=12$ con medium misto vengono scartati da `medium`.
-- **Pipeline B (Scissione per Medium)**: i macro misti vengono scissi per medium; i sotto-gruppi con $\ge 3$ semi vengono ammessi.
+I vincoli rigidi applicati sono:
+1. **Staple Diet Split**: bisezione ricorsiva di qualsiasi macro $> 40$ semi (nessun monolite da 65 semi);
+2. **Unnameable Rule**: bisezione dei gruppi non nominabili $> 12$ semi; gruppi $\le 12$ qualificati come fallback «Perché hai visto»;
+3. **Adaptive Floor**: soglia minima $\min(4, \max(2, \lceil \text{semi} / 4 \rceil))$;
+4. **Al massimo 1 scaffale per etichetta di tassonomia** all'interno dello stesso profilo;
+5. **Family dedupe**: esclusione di macro con la stessa collezione dominante TMDB già presente;
+6. **Overlap dedupe**: esclusione di macro che condividono $\ge 50\%$ di overlap Jaccard sui top-10 candidati raccomandati con uno scaffale già scelto;
+7. **Ordinamento display**: slot 1 riservato rigidamente allo scaffale con $\min(\text{min\_eta})$ (il titolo più recente visto dall'utente), slot 2..N ordinati per $r_{\text{comb}}$.
 
-| Profilo | Semi Tot | Semi Clust | Scaffali (A) | Semi Serviti (A) | Scarti A (sz, med, fam, ov) | Scaffali (B) | Semi Serviti (B) | Scarti B (sz, med, fam, ov) |
-|:---|---:|---:|---:|---:|:---|---:|---:|:---|
-| **sangam456** | 10 | 6 | **2** | 6 (100.0%) | (0, 0, 0, 0) | **2** | 6 (100.0%) | (0, 0, 0, 0) |
-| **hammers-lists** | 11 | 8 | **1** | 6 (75.0%) | (1, 0, 0, 0) | **1** | 6 (75.0%) | (1, 0, 0, 0) |
-| **sappss** | 25 | 19 | **2** | 7 (35.0%) | (2, 2, 0, 0) | **3** | 11 (57.9%) | (4, 0, 0, 0) |
-| **flixinatoor99** | 32 | 27 | **4** | 14 (51.9%) | (2, 1, 0, 0) | **6** | 23 (85.2%) | (2, 0, 0, 0) |
-| **moppierhead** | 38 | 31 | **4** | 25 (80.6%) | (1, 0, 0, 0) | **4** | 25 (80.6%) | (1, 0, 0, 0) |
-| **1jacobjohn** | 167 | 152 | **17** | 101 (65.6%) | (20, 3, 0, 0) | **21** | 120 (78.9%) | (20, 0, 0, 0) |
-| **castoffcrown** | 412 | 371 | **32** | 215 (56.7%) | (39, 14, 0, 0) | **47** | 295 (79.5%) | (44, 0, 0, 0) |
-| **warnok** | 476 | 449 | **49** | 312 (68.1%) | (43, 12, 0, 1) | **55** | 360 (80.2%) | (46, 0, 0, 1) |
-| **pepsipex** | 568 | 539 | **49** | 313 (56.7%) | (33, 26, 0, 0) | **67** | 434 (80.5%) | (45, 0, 0, 0) |
-| **carverclan** | 7 | 4 | **0** | 0 (0.0%) | (2, 0, 0, 0) | **0** | 0 (0.0%) | (2, 0, 0, 0) |
+### 4.2. Misure Sperimentali su Tutte le 10 Timeline con N = 6
 
----
-
-## 5. Diagnostica: Perché i Profili Lunghi Superano i 10 Scaffali
-
-> [!WARNING]
-> **Esito della Verifica sui 10 Scaffali**:
-> Ben 4 profili su 10 superano ampiamente la soglia di 10 scaffali:
-> - `1jacobjohn`: **17 - 21 scaffali**
-> - `castoffcrown`: **32 - 47 scaffali**
-> - `warnok`: **49 - 55 scaffali**
-> - `pepsipex`: **49 - 67 scaffali**
-
-### La Ragione Matematica
-Il cap di bisezione $M=12$ impone che nessun macro contenga più di 12 semi.
-In un profilo con 400-550 semi clusterizzati (`pepsipex` ne ha 539, `warnok` 449), raggiungere l'80% di copertura significa accumulare:
-- per `pepsipex`: $539 \times 0.80 = 431.2$ semi;
-- per `warnok`: $449 \times 0.80 = 359.2$ semi.
-
-Poiché la dimensione media di un macro qualificato è di soli $\approx 6.5$ semi, servono matematicamente:
-$$\frac{431.2}{6.5} \approx 66-67 \text{ scaffali!}$$
-Nella Pipeline A, poiché il 35-43% dei semi risiede in cluster scartati per eterogeneità di medium o taglia $<3$, **la soglia dell'80% non viene mai raggiunta**, e il sistema serve l'intero inventario dei cluster superstiti (49 scaffali per entrambi).
-
-### La Minima Regola Aggiuntiva Risolutiva (Senza Hard-Cap Costante)
-L'aggiunta di un `cap = 10` arbitrario violerebbe il principio dell'umano (*«perché un numero prefissato?»*).
-La soluzione architetturale corretta è **ancorare l'80% all'Attention Window del profilo (il Core Attivo di 100 semi)**:
-
-> [!TIP]
-> **Proposta: Regola dell'80% sul Core Attivo ($\le 100$ semi)**:
-> In qualsiasi motore di streaming, l'attenzione attiva di un utente si concentra sui 100 segnali più recenti/rilevanti della cronologia.
-> La regola di arresto diventa:
-> $$\text{Target Semi} = 0.80 \times \min(\text{semi\_clusterizzati}, 100)$$
-> 
-> **Effetto misurato su tutte le 10 timeline**:
-> - `sangam456`: **2 scaffali** (6 semi)
-> - `hammers-lists`: **1 scaffale** (6 semi)
-> - `sappss`: **3 scaffali** (11 semi)
-> - `flixinatoor99`: **6 scaffali** (23 semi)
-> - `moppierhead`: **4 scaffali** (25 semi)
-> - `1jacobjohn`: **10 scaffali** (82 semi)
-> - `castoffcrown`: **8 scaffali** (80 semi)
-> - `warnok`: **8 scaffali** (83 semi)
-> - `pepsipex`: **9 scaffali** (81 semi)
-> - `carverclan`: **0 scaffali** (0 semi)
-> 
-> **0 profili superano i 10 scaffali**, i profili corti rimangono a 1-6 scaffali, e nessun tetto numerico artificiale viene cablato nel codice.
+| Profilo | Semi Tot | Semi Clust | Floor Usato | Scaffali Serviti | Semi Coperti (%) | Etichette Servite |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| `sangam456` | 10 | 6 | **3** | **2** | 6 (100.0%) | «Fantascienza d'invasione», «Perché hai visto The White Lotus...» |
+| `carverclan` | 7 | 4 | **2** | **2** | 4 (100.0%) | «Horror soprannaturale», «Teatro filmato & Musical» |
+| `hammers-lists` | 11 | 8 | **3** | **1** | 6 (75.0%) | «Medical drama» (con floor 2: + «Sitcom animate», 100%) |
+| `sappss` | 25 | 20 | **4** | **2** | 10 (50.0%) | «Perché hai visto Euphoria...», «Animazione per famiglie» |
+| `flixinatoor99` | 32 | 27 | **4** | **2** | 14 (51.9%) | «Perché hai visto Il Boss del condominio...», «Perché hai visto Apex...» |
+| `moppierhead` | 38 | 31 | **4** | **5** | 29 (93.5%) | «Magia & Stregoneria», «Animazione d'azione per adulti», «Anime shōnen», «Giallo investigativo», «Perché hai visto Hannah Montana...» |
+| `1jacobjohn` | 167 | 154 | **4** | **6** | 80 (51.9%) | «Sitcom animate», «Animazione d'azione per adulti», «Docufiction true crime», «Cinecomic & Supereroi», 2x «Perché hai visto...» |
+| `castoffcrown` | 412 | 379 | **4** | **6** | 104 (27.4%) | «Anime shōnen», «Anime romantici & slice of life», «Dramma coreano», 3x «Perché hai visto...» |
+| `warnok` | 476 | 458 | **4** | **6** | 153 (33.4%) | «Animazione d'azione per adulti», «Anime shōnen», «Space opera», «Fantascienza d'invasione», «Cinecomic & Supereroi», «Animazione per famiglie» |
+| `pepsipex` | 568 | 552 | **4** | **6** | 143 (25.9%) | «Spy thriller», «Dramma d'epoca», «Horror soprannaturale», «Giallo investigativo», «Gangster & Criminalità», «Perché hai visto Succession...» |
 
 ---
 
-## 6. Dati Reali Dry-Run (`warnok`, `carverclan`, `pepsipex`)
+## 5. Dati Reali Dry-Run N = 6 (`warnok`, `castoffcrown`, `pepsipex`)
 
 Estratti dal file generato [contratto-scaffali.json](file:///C:/Users/gabri/APP/YACA/.scratch/v45-raccomandazioni-yaca/prototipo/contratto-scaffali.json):
 
-### 6.1. `warnok` (476 semi totali $\to$ 55 scaffali serviti, 360 semi coperti)
-- **Scaffale 1** (Freshest, `catalog_id: yaca_12609_series`):
-  - *Nome*: «Anime shōnen» [Conf: 1.0, min_eta: 15.0 gg, r_comb: 21.5]
-  - *Semi*: Dragon Ball Z (1989), Dragon Ball GT (1996), Dragon Ball (1986)...
-  - *Top Candidato*: Hunter x Hunter (2011)
-- **Scaffale 2** (Rank 1 per r_comb, `catalog_id: yaca_86831_series`):
-  - *Nome*: «Animazione d'azione per adulti» [Conf: 0.917, min_eta: 43.0 gg, r_comb: 3.0]
-  - *Semi*: Love, Death & Robots (2019), Castlevania (2017), Arcane (2021)...
-  - *Top Candidato*: The Mighty Nein (2025)
-- **Scaffale 3** (`catalog_id: yaca_4607_series`):
-  - *Nome*: «Perché hai visto Lost, Il Trono di Spade e Stranger Things» [Trasparente, r_comb: 4.0]
-  - *Top Candidato*: Chernobyl (2019)
-- **Scaffale 4** (`catalog_id: yaca_447332_movie`):
-  - *Nome*: «Horror di sopravvivenza» [Conf: 0.833, r_comb: 5.5]
-  - *Top Candidato*: A Quiet Place: Giorno 1 (2024)
-- **Scaffale 5** (`catalog_id: yaca_1223601_movie`):
-  - *Nome*: «Fantascienza d'invasione» [Conf: 0.875, r_comb: 7.0]
-  - *Top Candidato*: Jurassic World (2015)
-- *(Seguono ulteriori 50 scaffali fino al raggiungimento di 360 semi coperti - 80.18%)*.
+### 5.1. `warnok` (476 semi totali, 458 clust $\to$ 6 scaffali serviti, 153 semi coperti, 33.4%)
+- **Slot 1** (Freshest, `catalog_id: yaca_86831_series`):
+  - *Nome*: «Animazione d'azione per adulti» [tassonomia, 22 semi, min_eta: 44.0 gg, r_comb: 5.5]
+  - *Semi campione*: Love, Death & Robots (2019), Castlevania (2017), Arcane (2021)
+  - *Top Candidati*: The Mighty Nein, The Boys Presenta: Diabolico!
+- **Slot 2** (`catalog_id: yaca_46260_series`):
+  - *Nome*: «Anime shōnen» [tassonomia, 40 semi, min_eta: 83.0 gg, r_comb: 3.5]
+  - *Semi campione*: Hunter x Hunter, Bleach, Naruto Shippuden
+  - *Top Candidati*: Hunter x Hunter, The Promised Neverland
+- **Slot 3** (`catalog_id: yaca_82856_movie`):
+  - *Nome*: «Space opera» [tassonomia, 26 semi, min_eta: 89.0 gg, r_comb: 5.5]
+  - *Semi campione*: Dune (2021), Star Wars (1977), Rogue One
+  - *Top Candidati*: Terminator, Matrix Reloaded
+- **Slot 4** (`catalog_id: yaca_447332_movie`):
+  - *Nome*: «Fantascienza d'invasione» [tassonomia, 13 semi, min_eta: 103.0 gg, r_comb: 9.0]
+  - *Semi campione*: A Quiet Place, Independence Day
+  - *Top Candidati*: Dune - Parte due, Nessuno ti salverà
+- **Slot 5** (`catalog_id: yaca_100402_movie`):
+  - *Nome*: «Cinecomic & Supereroi» [tassonomia, 29 semi, min_eta: 734.0 gg, r_comb: 6.5]
+  - *Semi campione*: Captain America, The Avengers, Iron Man
+  - *Top Candidati*: Ant-Man and the Wasp: Quantumania, Doctor Strange nel Multiverso della Follia
+- **Slot 6** (`catalog_id: yaca_324857_movie`):
+  - *Nome*: «Animazione per famiglie» [tassonomia, 23 semi, min_eta: 544.0 gg, r_comb: 9.5]
+  - *Semi campione*: Spider-Man: Un nuovo universo, Zootropolis
+  - *Top Candidati*: Spider-Man: Across the Spider-Verse, Il gatto con gli stivali 2
 
-### 6.2. `pepsipex` (568 semi totali $\to$ 67 scaffali serviti, 434 semi coperti)
-- **Scaffale 1** (Freshest, `catalog_id: yaca_79053_series`):
-  - *Nome*: «Perché hai visto The Split, The Killing Kind e WAR» [min_eta: 13.0 gg, r_comb: 22.0]
-  - *Top Candidato*: The Split Up (2025)
-- **Scaffale 2** (`catalog_id: yaca_213338_series`):
-  - *Nome*: «Crime d'indagine & Mistero» [Conf: 0.800, r_comb: 7.5]
-  - *Top Candidato*: True Detective (2014)
-- **Scaffale 3** (`catalog_id: yaca_88055_series`):
-  - *Nome*: «Perché hai visto The Morning Show, Presunto innocente e Slow Horses» [r_comb: 8.5]
-  - *Top Candidato*: Ted Lasso (2020)
-- **Scaffale 4** (`catalog_id: yaca_125366_series`):
-  - *Nome*: «Perché hai visto I delitti della bella di notte, I'm a Celebrity e Naked and Afraid» [r_comb: 8.5]
-  - *Top Candidato*: Survivor (2000)
-- *(Seguono ulteriori 63 scaffali fino al raggiungimento di 434 semi coperti - 80.52%)*.
+### 5.2. `castoffcrown` (412 semi totali, 379 clust $\to$ 6 scaffali serviti, 104 semi coperti, 27.4%)
+- **Slot 1** (Freshest, `catalog_id: yaca_37854_series`):
+  - *Nome*: «Anime shōnen» [tassonomia, 26 semi, min_eta: 12.0 gg, r_comb: 3.0]
+  - *Semi campione*: Haikyu!! L'asso del volley (2014), My Hero Academia (2016), Aoashi (2022)
+  - *Top Candidati*: Hunter x Hunter, One-Punch Man
+- **Slot 2** (`catalog_id: yaca_285788_series`):
+  - *Nome*: «Anime romantici & slice of life» [tassonomia, 31 semi, min_eta: 18.0 gg, r_comb: 2.0]
+  - *Semi campione*: Kaguya-sama: Love Is War, Horimiya, Fruits Basket
+  - *Top Candidati*: Hana-Kimi, A Star Brighter than the Sun
+- **Slot 3** (`catalog_id: yaca_119769_series`):
+  - *Nome*: «Dramma coreano» [tassonomia, 11 semi, min_eta: 12.0 gg, r_comb: 5.5]
+  - *Semi campione*: Strangers From Hell, A Shop for Killers, Four Hands Two Sonatas
+  - *Top Candidati*: Venticinque e ventuno, Rugal
+- **Slot 4** (`catalog_id: yaca_9323_movie`):
+  - *Nome*: «Perché hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno» [fallback, 12 semi, min_eta: 24.0 gg, r_comb: 6.0]
+  - *Semi campione*: Toy Story 4 (2019), Ghost in the Shell (1995), Paprika (2006)
+  - *Top Candidati*: Si alza il vento, Kiki - Consegne a domicilio
+- **Slot 5** (`catalog_id: yaca_400617_movie`):
+  - *Nome*: «Perché hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York» [fallback, 12 semi, min_eta: 26.0 gg, r_comb: 7.0]
+  - *Semi campione*: Il filo nascosto (2017), Chiamami col tuo nome (2017)
+  - *Top Candidati*: Vizio di forma, The Master
+- **Slot 6** (`catalog_id: yaca_78797_series`):
+  - *Nome*: «Perché hai visto Wok of Love, Las crónicas del taco e Bourdain: cucine segrete» [fallback, 12 semi, min_eta: 43.0 gg, r_comb: 9.0]
+  - *Semi campione*: Las crónicas del taco (2019), Bourdain: cucine segrete (2013)
+  - *Top Candidati*: Tucci in Italy, Street Food: Asia
 
-### 6.3. `carverclan` (7 semi totali $\to$ 0 scaffali serviti)
-- **Esito**: `catalog_ids: []`, `scaffali: []`.
-- **Motivazione**: nessun macro soddisfa la soglia minima di gruppo (`size >= 3`).
-- **Comportamento Stremio**: nessun catalogo personale dichiarato nel manifest; Stremio non visualizza alcuna riga vuota, lasciando visibili esclusivamente i cataloghi hero/globali.
+### 5.3. `pepsipex` (568 semi totali, 552 clust $\to$ 6 scaffali serviti, 143 semi coperti, 25.9%)
+- **Slot 1** (Freshest, `catalog_id: yaca_95480_series`):
+  - *Nome*: «Spy thriller» [tassonomia, 27 semi, min_eta: 15.0 gg, r_comb: 3.5]
+  - *Semi campione*: Slow Horses, Lioness, The Agency
+  - *Top Candidati*: Secret Service, 1923
+- **Slot 2** (`catalog_id: yaca_93812_series`):
+  - *Nome*: «Dramma d'epoca» [tassonomia, 26 semi, min_eta: 35.0 gg, r_comb: 4.5]
+  - *Semi campione*: La valle dell'Eden, The Forsytes, Downton Abbey
+  - *Top Candidati*: Becoming Elizabeth, Bridgerton
+- **Slot 3** (`catalog_id: yaca_713704_movie`):
+  - *Nome*: «Horror soprannaturale» [tassonomia, 34 semi, min_eta: 90.0 gg, r_comb: 4.5]
+  - *Semi campione*: Hereditary, The Conjuring, Insidious
+  - *Top Candidati*: Five Nights at Freddy's 2, Train Dreams
+- **Slot 4** (`catalog_id: yaca_76331_series`):
+  - *Nome*: «Perché hai visto Succession, House of the Dragon e La ruota del tempo» [fallback, 12 semi, min_eta: 88.0 gg, r_comb: 7.0]
+  - *Semi campione*: Succession (2018), House of the Dragon (2022), La ruota del tempo (2021)
+  - *Top Candidati*: The Shannara Chronicles, Il Trono di Spade
+- **Slot 5** (`catalog_id: yaca_106454_movie`):
+  - *Nome*: «Giallo investigativo» [tassonomia, 31 semi, min_eta: 118.0 gg, r_comb: 7.0]
+  - *Semi campione*: Assassinio sull'Orient Express, Knives Out
+  - *Top Candidati*: Enola Holmes, Cena con delitto - Knives Out
+- **Slot 6** (`catalog_id: yaca_69740_series`):
+  - *Nome*: «Gangster & Criminalità» [tassonomia, 13 semi, min_eta: 99.0 gg, r_comb: 10.0]
+  - *Semi campione*: Gomorra, Peaky Blinders, Narcos
+  - *Top Candidati*: Regina del Sud, Top Boy

@@ -111,30 +111,19 @@ tau=0,03 e quindi una scelta pragmatica (nessuno scaffale perso, copertura 94,4%
 soddisfatto.
 
 
-## Verdetto Finale e Riformulazione del Criterio (Adozione M = 12)
+## Verdetto Finale e Riformulazione del Criterio (Adozione Budget N = 6 e Named Interests)
 
-### Perché il Criterio Precedente (Match Tassonomia >= 70%) era Sbagliato
-Il criterio quantitativo dichiarato a priori (almeno il 70% degli scaffali serviti etichettato con la tassonomia curata) è **fallito a ogni valore di M esplorato**:
-- $M = 8$: $65,85\%$ match rate (27/41 tassonomia, 14 fallback);
-- $M = 12$: $60,98\%$ match rate (25/41 tassonomia, 16 fallback);
-- $M = 20$: $56,10\%$ match rate (23/41 tassonomia, 18 fallback);
-- $M = 30$: $60,98\%$ match rate (25/41 tassonomia, 16 fallback).
+### I Tre Criteri Falliti e la Ragione Onesta del Loro Superamento
+1. **Keyword coherence gate (support >= 0.5)**: È fallito perché la copertura delle keyword nei metadati è intrinsecamente disomogenea tra generi: filoni chiarissimi al comportamento (wrestling, docufiction true crime, cucina) mancano di keyword condivise in TMDB, per cui il cancello misurava la completezza dei metadati anziché la coerenza del cluster.
+2. **Shelf consistency gate (Jaccard >= 0.10)**: È fallito perché la consistenza delle raccomandazioni riflette la densità locale del grafo e non l'omogeneità tematica: cluster di nicchia (film d'autore, documentari rari) producono distribuzioni PPR diffuse a bassa consistenza pur essendo perfettamente coerenti all'ispezione umana.
+3. **Regola di copertura 80% (e 60%)**: È fallita perché con scaffali limitati a <= 40 semi (mediana 12-20 semi), coprire l'80% di un profilo lungo da 400-550 semi richiede matematicamente 18-25 righe: forzare la copertura su un budget prefissato di 5-8 righe imporrebbe o di collassare i semi in enormi minestroni da 100 titoli o di far esplodere la UI a 51 scaffali.
 
-Tuttavia, **era la metrica a essere concettualmente errata, non la soglia**: «Perché hai visto» non è un fallimento dell'algoritmo o un buco di copertura, bensì il **fallback trasparente, veritiero al 100% per costruzione e onesto verso l'utente** quando un cluster non ha una firma tematica univoca ad alta confidenza. Contare il fallback come insuccesso punisce la trasparenza e incentiva perversamente la produzione di etichette generiche e forzate.
-
-Ciò che decide e convalida in modo oggettivo la granularità ottimale tra $M=8$ e $M=12$ è l'ispezione empirica dei cluster serviti:
-- **A $M=12$**, i due grab bag misti si scindono nettamente in un blocco sitcom puro e un blocco drama/thriller puro, che scivolano fuori dai primi 5 e **smettono di essere serviti**. La cinquina servita di `castoffcrown` diventa una sequenza esemplare di nicchie nitidissime: *Anime shōnen*, *Dramma coreano*, *Animazione d'autore*, *Cinema d'autore*, *Samurai Kurosawa*;
-- **A $M=8$**, la bisezione eccessiva spezza artificiosamente lo shōnen generando **due scaffali entrambi denominati «Anime shōnen» all'interno dello stesso profilo** di `castoffcrown` (e due «Sitcom animate» in `1jacobjohn`), violando platealmente la regola di distinctness.
-
-### I Quattro Criteri Onesti
-Il verdetto vincolante viene pertanto riformulato contro i **quattro criteri onesti**:
-1. **Nessun nome duplicato all'interno di un profilo**: **SUPERATO (PASS)** — 0 duplicati su tutte le 10 timeline a $M=12$ (a $M=8$ fallisce con 2 duplicazioni);
-2. **Nessun scaffale servito che si legga come grab bag**: **SUPERATO (PASS)** — tutti i blocchi misti decomposti e non serviti;
-3. **Preservazione dei conteggi degli scaffali serviti**: **SUPERATO (PASS)** — 41 / 41 scaffali serviti inalterati (2 per profili corti `<12` semi, 5/5 per tutti i profili $\ge 25$ semi);
-4. **Copertura semi >= 85% sulle timeline lunghe (>100 semi)**: **SUPERATO (PASS)** — `castoffcrown` 90,0%, `warnok` 94,3%, `pepsipex` 94,9%, `1jacobjohn` 91,0% (media 92,6%).
+### Risoluzione Finale: Il Concetto di "Named Interest" con Budget N = 6
+Uno scaffale è un **interesse nominato** (voce di tassonomia qualificata con confidenza dichiarata, oppure gruppo circoscritto <= 12 semi servito con fallback trasparente «Perché hai visto»).
+Il budget per profilo è fissato a **N = 6 scaffali**, speso **ingordamente (greedy) per massimizzare i semi scoperti**, garantendo che la pagina non esploda e che ogni riga rappresenti un interesse tematico netto.
 
 
-## Ricetta Finale di Produzione (Blocco Unico per l'Implementazione)
+## Ricetta Finale di Produzione Congelata (Catena a 12 Passi)
 
 Questo è il blocco operativo definitivo e congelato per l'implementazione del servizio cluster & scaffali:
 
@@ -145,7 +134,7 @@ RICETTA FINALE CLUSTERING E GENERAZIONE SCAFFALI (V45 / TICKET 05)
 
 1. MATRICE DI AFFINITÀ (TOP-100 UNPRUNED COSINE)
    - Grafo: matrice simmetrica non potata W = (M_tri + M_tri.T) da
-     bolle-eterogeneo-V45-p1.0-triangolo.npz (74,4M archi, grafo a pota aperta).
+     bolle-eterogeneo-V45-p1.0-triangolo.npz (74,409,922 archi, ~1.0 GB RAM).
    - Firma del seme: per ogni seme della storia utente, borsa dei top-100 vicini
      uscenti ordinati per peso decrescente, vettori L2-normalizzati.
    - Similarità tra semi: coseno S(u, v) = <b_u, b_v>.
@@ -164,67 +153,78 @@ RICETTA FINALE CLUSTERING E GENERAZIONE SCAFFALI (V45 / TICKET 05)
      dei membri, L2-normalizzata.
    - Similarità tra micro: coseno tra centroidi micro.
    - Aggregazione: average linkage agglomerativo sui centroidi micro, arresto alla
-     soglia di similarità tau = 0.03 (distanza 0.97). Nessun cap al numero di macro.
+     soglia di similarità tau = 0.03 (distanza 0.97). Nessuna fusione a conteggio prefissato.
    - Misure registrate: 236 macro generati su 8 profili; zero collassi monolitici;
      copertura 92.0% - 97.2% su profili lunghi; 41/41 scaffali servibili preservati.
 
-4. BISECTION CAP (CARDINALITÀ MASSIMA M = 12 SEMI)
-   - Vincolo: nessun macro-cluster può superare 12 semi.
-   - Bisezione ricorsiva: se len(macro) > 12, divisione deterministica in 2 partizioni
-     sulla struttura coseno interna del macro (2-way clustering agglomerativo);
-     ripetizione ricorsiva finché ogni frammento ha cardinalità <= 12 semi.
-   - Misure registrate: max shelf size = 12 semi su tutte le 10 timeline;
-     grab bag decomposti in blocchi puri non serviti; zero duplicati di etichette
-     (a M=8 si duplicava «Anime shōnen» in castoffcrown e «Sitcom animate» in 1jacobjohn);
-     copertura profili lunghi >= 85% (castoffcrown 90.0%, warnok 94.3%, pepsipex 94.9%,
-     1jacobjohn 91.0%, media 92.6%).
+4. STAPLE-DIET SPLIT (CARDINALITÀ MASSIMA 40 SEMI)
+   - Regola: qualsiasi macro > 40 semi viene bisecato ricorsivamente sulla struttura
+     coseno interna, INDIPENDENTEMENTE dal fatto che corrisponda o meno a una voce
+     di tassonomia («Anime shōnen» a 65 semi è una dieta alimentare, non un singolo scaffale).
+   - Misure registrate: il macro da 65 semi di castoffcrown si scinde in due blocchi
+     puri: «Anime romantici & slice of life» (31 semi) e «Anime shōnen» (26 semi);
+     i macro da 55 e 49 semi di warnok si scindono in blocchi <= 40 semi.
+     Nessun singolo scaffale dell'intero catalogo supera 40 semi (max registrato: 40).
 
-5. FILTRO MEDIUM PER MACRO (CON WAIVER PER CLUSTER PICCOLI < 3 SEMI)
-   - Macro standard (size >= 3 semi): se il macro contiene sia titoli film che serie,
-     scissione in due sotto-macro omogenei ('movie' e 'series'); ciascun sotto-macro
-     è ammissibile se size >= 2 semi.
-   - Cluster piccolo (size < 3 semi, waiver carverclan): se size < 3 semi, il medium
-     dello scaffale è deciso dal seme con più riproduzioni (tie-break sul seme più
-     recente); l'asserzione 80% semi omogenei è condonata (WAIVED); l'asserzione
-     100% candidati raccomandati conformi al medium dello scaffale resta rigida.
-   - Misure registrate: 0 fallimenti di asserzione medium su tutti i 41 scaffali;
-     risolta la regressione ultra-cold-start di carverclan (2 / 5 scaffali serviti).
+5. UNNAMEABLE RULE (BISEZIONE DEI GRAB BAG > 12 SEMI)
+   - Regola: un macro > 12 semi che non matcha alcuna voce di tassonomia viene bisecato
+     ricorsivamente e i figli ritestati. I gruppi non nominabili <= 12 semi rimangono
+     e vengono qualificati come fallback «Perché hai visto».
+   - Misure registrate: grab bag decomposti in blocchi puri non serviti; zero duplicati
+     di etichette su tutte le 10 timeline.
 
-6. SCORING E ORDINAMENTO (RANK COMBINATO MIN_ETA + SUPPORTO, TIE-BREAK CONSISTENZA)
-   - Recency rank: r_rec = ordine per min_eta crescente (singolo seme più fresco).
-   - Support rank: r_sup = ordine per dimensione decrescente, tie-break consistenza
-     decrescente (Jaccard medio a coppie sui top-10 vicini) e riproduzioni totali.
-   - Rango combinato: r_comb = (r_rec + r_sup) / 2.0.
-   - Ordinamento finale: r_comb crescente, con tie-break su consistenza decrescente,
-     dimensione decrescente, riproduzioni decrescenti.
-   - Misure registrate: min_eta porta il macro con il seme più recente nei top-5 nel
-     100% dei profili (10/10), posizionandolo al rango 1 su 7 profili su 8 (contro la
-     mediana che sprofondava al rango 28-29 sui profili lunghi).
+6. ADAPTIVE FLOOR (SOGLIA MINIMA VARIABILE)
+   - Formula: soglia = min(4, max(2, ceil(semi_clusterizzati / 4))).
+   - Misure registrate:
+     * sangam456 (10 semi tot, 6 clust): floor = 3 (o 2 su clust) -> 2 scaffali (100% copertura);
+     * carverclan (7 semi tot, 4 clust): floor = 2 -> 2 scaffali (100% copertura);
+     * hammers-lists (11 semi tot, 8 clust): floor = 3 (75% copertura) o floor = 2 (100%);
+     * profili >= 20 semi clust: floor = 4.
+     Eliminato l'azzeramento dei profili corti/ultra-corti.
 
-7. SELEZIONE CINQUE SCAFFALI E FAMILY DEDUPE
-   - Cap per profilo: selezione fino ai primi 5 scaffali ammissibili (o tutti quelli
-     disponibili se il profilo ne ha meno di 5).
-   - Family dedupe: ogni macro è mappato alla sua collezione TMDB dominante (coll > 0
-     presente in >= 50% dei membri). Se un candidato macro condivide la collezione
-     dominante di uno scaffale già inserito, viene scartato per evitare saghe duplicate.
-   - Overlap dedupe: scarto dei candidati macro che condividono >= 50% dei top-10
-     candidati raccomandati con uno scaffale già inserito.
-   - Misure registrate: 41 / 41 scaffali serviti (5/5 per tutti i 7 profili >= 25 semi,
-     2/5 per profili corti <12 semi); 0 saghe duplicate; 0 scaffali sovrapposti.
+7. ELIGIBILITY (A SHELF IS A NAMED INTEREST)
+   - Ammissibilità: uno scaffale è ammissibile se è un interesse nominato (match di
+     tassonomia con confidenza >= 50%) oppure un piccolo gruppo non nominabile (<= 12 semi)
+     servito con «Perché hai visto», sempre con size >= floor.
+   - Misure registrate: su 10 profili, gli scaffali ammissibili spaziano da 2 (profili corti)
+     a 34-51 (profili lunghi come castoffcrown e pepsipex).
 
-8. DENOMINAZIONE SCAFFALI (TASSONOMIA CURATA + «PERCHÉ HAI VISTO»)
-   - Tassonomia: vocabolario controllato di 36 voci tematiche in italiano distribuite
-     su 6 aree (Animazione, Sci-Fi, Crime, Comedy, Drama, Sport/Doc).
-   - Regola match: una voce di tassonomia è assegnata se e solo se un'entry univoca
-     soddisfa i requisiti di evidenza con confidenza >= 50% (almeno il 50% dei semi
-     soddisfa le keyword/criteri dell'entry e nessuna voce concorrente è a pari merito).
-   - Fallback trasparente: tutti i cluster eterogenei o con match ambiguo ricevono il
-     nome «Perché hai visto <titolo_1>, <titolo_2> e <titolo_3>» (con i 2-3 semi a
-     maggior consumo/recenza).
-   - Eliminazione totale della vecchia catena: rimosse percentuali («87%»), inglese non
-     tradotto ed euristiche autorali parziali («Di X» / «Regia di X»).
-   - Misure registrate: 25 scaffali tassonomia (60.98%), 16 scaffali «Perché hai visto»
-     (39.02%); 0 nomi duplicati all'interno di ciascun profilo; 0 etichette over-generic
-     (voce più frequente copre al massimo il 9.8% degli scaffali <= soglia 25%).
+8. MEDIUM OMOGENEO (CON WAIVER PER CLUSTER PICCOLI < 3 SEMI)
+   - Regola: medium determinato per ogni scaffale. Se size >= 3 semi e misto film/serie,
+     scissione nei due sotto-macro omogenei; se size < 3 semi (waiver carverclan), il medium
+     è deciso dal seme con più riproduzioni/recenza.
+   - Misure registrate: 0 violazioni di medium su tutti i candidati raccomandati serviti.
+
+9. SCORING E ORDINAMENTO DISPLAY (RECENCY IN SLOT 1, COMBINED RANK IN SLOT 2..N)
+   - Posizione 1: scaffale con min_eta minimo (il titolo più fresco visto dall'utente).
+   - Posizioni 2..N: ordinati per rango combinato r_comb = (r_rec + r_sup) / 2.0, con
+     tie-break su consistenza decrescente, dimensione e riproduzioni.
+   - Misure registrate: l'interesse più fresco è sempre al vertice della homepage nel
+     100% dei profili (10/10).
+
+10. BUDGET N = 6 SPESO PER COPERTURA (GREEDY SELECTION)
+   - Budget: N = 6 scaffali massimi per profilo.
+   - Selezione ingorda (greedy): a ogni passo 1..N viene selezionato lo scaffale che
+     aggiunge il maggior numero di SEMI NON ANCORA COPERTI, soggetto a:
+     (a) Al massimo 1 scaffale per etichetta di tassonomia nel profilo;
+     (b) Family dedupe (nessuna condivisione di TMDB collection dominante);
+     (c) Raccomandazioni disgiunte (Jaccard sui top-10 raccomandati < 0.5).
+   - Misure registrate su N=6:
+     * castoffcrown: 6 scaffali serviti (Anime romance 31, Anime shonen 26, Animazione
+       autore 12, Cinema autore 12, Cucina 12, K-drama 11);
+     * pepsipex: 6 scaffali serviti (Horror 34, Giallo 31, Spy thriller 27, Epoca 26,
+       Gangster 13, Succession/prestige 12);
+     * Zero duplicati di etichette, zero saghe duplicate, zero overlap >= 0.5.
+
+11. DENOMINAZIONE SCAFFALI (TASSONOMIA CURATA 36 VOCI + FALLBACK TRASPARENTE)
+   - Vocabolario controllato di 36 voci tematiche italiane su 6 macro-aree.
+   - Match: confidenza >= 50% univoca; fallback trasparente: «Perché hai visto <2-3 semi>».
+   - Misure registrate: 100% etichette tassonomia sui primi 5 scaffali di pepsipex;
+     terminologia pulita, nessun inglesismo crudo o percentuali esposte.
+
+12. CATALOG ID STABILE DERIVATO DAL CONTENUTO
+   - Identificatore: yaca_<top_representative_tmdbId>_<medium>.
+   - Misure registrate: 100% ID univoci (0 collisioni su tutte le 10 timeline);
+     stabilità del manifest garantita tra riordinamenti e modifiche di consistenza.
 ================================================================================
 ```
