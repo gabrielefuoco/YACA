@@ -293,7 +293,7 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         languages=frozenset({"ko", "ja", "zh"}),
     ),
     TaxonomyEntry(
-        nome="Cinema d'autore contemporaneo",
+        nome="Autore contemporaneo",
         tema="Drama & Internazionale",
         priorita=85,
         derived_from_data=True,
@@ -380,7 +380,7 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         keywords=frozenset({"automobile", "car race", "classic cars", "car restoration"}),
     ),
     TaxonomyEntry(
-        nome="Teatro filmato & Musical",
+        nome="Teatro & Musical",
         tema="Sport & Documentari",
         priorita=85,
         derived_from_data=True,
@@ -432,7 +432,7 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         medium="movie",
     ),
     TaxonomyEntry(
-        nome="Monster movie & Creature feature",
+        nome="Mostri & Creature",
         tema="Fantascienza & Fantasy",
         priorita=85,
         derived_from_data=True,
@@ -441,7 +441,7 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         medium="movie",
     ),
     TaxonomyEntry(
-        nome="Film di Natale",
+        nome="Storie di Natale",
         tema="Comedy & Sitcom",
         priorita=90,
         derived_from_data=True,
@@ -450,7 +450,7 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         medium="movie",
     ),
     TaxonomyEntry(
-        nome="Cinema samurai & Jidaigeki",
+        nome="Samurai & Jidaigeki",
         tema="Drama & Internazionale",
         priorita=85,
         derived_from_data=True,

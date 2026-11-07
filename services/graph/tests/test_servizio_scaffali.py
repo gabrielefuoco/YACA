@@ -220,6 +220,7 @@ def test_schema_risposta_esatto(sangam456_seeds):
     EXPECTED_SHELF_KEYS = {
         "catalog_id",
         "nome",
+        "nome_display",
         "nome_fonte",
         "confidenza",
         "medium",
@@ -236,6 +237,7 @@ def test_schema_risposta_esatto(sangam456_seeds):
         assert set(sh.keys()) == EXPECTED_SHELF_KEYS
         assert isinstance(sh["catalog_id"], str)
         assert isinstance(sh["nome"], str)
+        assert isinstance(sh["nome_display"], str)
         assert isinstance(sh["nome_fonte"], str)
         assert isinstance(sh["confidenza"], float)
         assert isinstance(sh["medium"], str)
@@ -373,4 +375,40 @@ def test_candidati_per_riga_tra_20_e_cap(warnok_seeds):
     assert len(res_custom["scaffali"]) >= 1
     for sh in res_custom["scaffali"]:
         assert 20 <= len(sh["titoli"]) <= 25, f"Riga con cap=25 ha {len(sh['titoli'])} candidati"
+
+
+# ------------------------------------------------------------------------------
+# 11. DEFECT 1 & 2: Adiacenza controparti, nome_display e limite <= 16 righe
+# ------------------------------------------------------------------------------
+def test_adiacenza_controparti_e_nome_display(warnok_seeds):
+    """Verifica che primario e controparte siano adiacenti e che nome_display contenga il suffisso."""
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8, "cap": 60})
+    assert status == 200
+    scaffali = res["scaffali"]
+    assert len(scaffali) <= 16
+
+    # Verifica adiacenza: a coppie (primario, controparte) condividono il prefisso di catalog_id
+    for i in range(0, len(scaffali) - 1, 2):
+        s1 = scaffali[i]
+        s2 = scaffali[i + 1]
+        pref1 = s1["catalog_id"].rsplit("_", 1)[0]
+        pref2 = s2["catalog_id"].rsplit("_", 1)[0]
+        if pref1 == pref2:
+            assert s1["medium"] != s2["medium"], f"Coppia adiacente {s1['nome']} ha stesso medium"
+            assert s1["nome_display"].endswith("(film)") or s1["nome_display"].endswith("(serie)")
+            assert s2["nome_display"].endswith("(film)") or s2["nome_display"].endswith("(serie)")
+            assert s1["nome"] == s2["nome"]
+            expected_s1 = f"{s1['nome']} ({'film' if s1['medium'] == 'movie' else 'serie'})"
+            expected_s2 = f"{s2['nome']} ({'film' if s2['medium'] == 'movie' else 'serie'})"
+            assert s1["nome_display"] == expected_s1
+            assert s2["nome_display"] == expected_s2
+
+    # Verifica che con filtro medium esplicito non ci sia suffisso
+    status_m, res_m = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8, "medium": "movie"})
+    assert status_m == 200
+    for sh in res_m["scaffali"]:
+        assert sh["nome_display"] == sh["nome"]
+        assert not sh["nome_display"].endswith("(film)")
+        assert not sh["nome_display"].endswith("(serie)")
+
 

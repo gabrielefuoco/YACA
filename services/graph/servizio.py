@@ -570,6 +570,7 @@ def esegui_scaffali(
         scaffali_out.append({
             "catalog_id": str(sh.catalog_id),
             "nome": str(sh.nome),
+            "nome_display": str(getattr(sh, "nome_display", sh.nome)),
             "nome_fonte": str(sh.nome_fonte),
             "confidenza": round(float(sh.confidenza), 3),
             "medium": str(sh.medium),

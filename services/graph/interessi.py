@@ -78,6 +78,7 @@ class Shelf:
     semi_rappresentativi: list[dict[str, Any]]
     semi_membri: list[dict[str, Any]]
     titoli: list[dict[str, Any]] = field(default_factory=list)
+    nome_display: str | None = None
     slot_position: int = 0
     min_eta: float = 0.0
     r_comb: float = 0.0
@@ -89,6 +90,10 @@ class Shelf:
     dom_coll: int | None = field(default=None, repr=False)
     _other_indices: list[int] = field(default_factory=list, repr=False)
     _ratio: float = field(default=0.0, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.nome_display is None:
+            self.nome_display = self.nome
 
     def attach_titoli(self, titoli: list[dict[str, Any]]) -> Shelf:
         """Attacca la lista dei titoli raccomandati restituiti dalla camminata."""
@@ -1046,8 +1051,10 @@ def scaffali(
         )
         sh.titoli = recs
 
-    # GAP 4: Generazione controparti cross-medium con filtro qualità permissivo a tau = 2.5%
-    counterpart_shelves: list[Shelf] = []
+    # GAP 4 & DEFECT 1/2: Generazione controparti cross-medium con filtro qualità permissivo a tau = 2.5%,
+    # raggruppamento adiacente per interesse («Western (serie)» poi «Western (film)»)
+    # e suffisso medium in `nome_display` applicato SOLO in presenza di controparte servita.
+    all_served: list[Shelf] = []
     if medium is None:
         for sh in ordered_shelves:
             c_med = "series" if sh.medium == "movie" else "movie"
@@ -1111,9 +1118,26 @@ def scaffali(
                     _ratio=ratio,
                 )
                 sh_c.titoli = recs_c
-                counterpart_shelves.append(sh_c)
 
-    all_served = ordered_shelves + counterpart_shelves
+                # DEFECT 2: Il suffisso medium viene aggiunto SOLO quando la controparte esiste nel set servito
+                sh.nome_display = f"{sh.nome} ({'film' if sh.medium == 'movie' else 'serie'})"
+                sh_c.nome_display = f"{sh_c.nome} ({'film' if c_med == 'movie' else 'serie'})"
+
+                # DEFECT 1: Adiacenza immediata (primario seguito immediatamente dalla sua controparte)
+                all_served.append(sh)
+                all_served.append(sh_c)
+            else:
+                # Nessuna controparte servita: nome pulito senza suffisso
+                sh.nome_display = sh.nome
+                all_served.append(sh)
+    else:
+        for sh in ordered_shelves:
+            sh.nome_display = sh.nome
+            all_served.append(sh)
+
+    # Ceiling massimo di 16 righe servite per profilo
+    all_served = all_served[:16]
+
     for slot_idx, sh in enumerate(all_served, 1):
         sh.slot_position = slot_idx
 
