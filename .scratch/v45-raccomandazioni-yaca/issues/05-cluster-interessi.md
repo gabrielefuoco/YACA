@@ -292,3 +292,24 @@ Ripartizione per fascia di `vote_count` dei 41 presenti ma esclusi:
 
 Nessun titolo presente ed escluso supera i 46 voti (media 24,7 voti, max 46).
 Il divario è strutturale e di prodotto: **il canone privilegia i titoli popolari, mentre un cinefilo consuma opere di nicchia e a basso voto**. Non si tratta quindi di uno snapshot obsoleto, bensì di un disallineamento tra soglia di popolarità del canone e consumi cinefili di coda lunga.
+
+## Congelamento della Ricetta Scaffali (Budget N = 8, Selezione Two-Tier, Zero Seed Overlap e Limiti Noti)
+
+La ricetta per la generazione degli scaffali della homepage è ufficialmente **congelata** per il passaggio all'endpoint di produzione.
+
+### 1. Regole della Ricetta Congelata
+1. **Budget N = 8**: Spendibile per massimizzare la copertura della massa del profilo.
+2. **Selezione Two-Tier**:
+   - **Tier 1 (Scaffali Tassonomici)**: Lo slot budget viene riempito prioritariamente con scaffali aventi etichetta tassonomica controllata (`nome_fonte == "tassonomia"`), ordinati per massa di semi non ancora coperti (`weighted_support`).
+   - **Tier 2 (Fallback «Perché hai visto»)**: Solo quando gli scaffali tassonomici sono esauriti o bloccati dalle regole di deduplica (etichetta unica, family dedupe, overlap Jaccard < 0.5), gli slot rimanenti vengono assegnati agli scaffali senza nome.
+3. **Ordinamento Display (Step 9)**:
+   - **Slot 1**: Scaffale tassonomico più fresco (minimo `min_eta`).
+   - **Slot 2..k**: Rimanenti scaffali tassonomici ordinati per rango combinato `r_comb`.
+   - **Slot in coda**: Eventuali righe senza nome («Perché hai visto») compaiono sempre e solo dopo tutti gli scaffali tassonomici.
+4. **Disgiunzione Rigorosa dei Semi (Zero Seed Overlap)**:
+   - Il partizionamento dei semi è matematicamente disgiunto: **nessun seme compare in più di uno scaffale servito** (verificato 0 overlap su tutte le timeline a N=8 e N=14).
+
+### 2. Limiti Noti Ufficializzati
+1. **Profili Cold-Start (< 15 titoli)**: Utenti con cronologie minime (es. `sangam456`, `carverclan`, `sappss`, `flixinatoor99`) generano tra 2 e 5 scaffali poiché i titoli non raggiungono la soglia minima di clustering (`adaptive_floor`). È un comportamento nominale per evitare scaffali fittizi o forzati.
+2. **Titoli di coda non clusterizzati**: I singoli titoli estemporanei che non raggiungono la massa critica per formare un cluster restano esclusi dagli scaffali della homepage, ma partecipano regolarmente al calcolo dei pesi teleport nel motore PPR.
+3. **Deduplica di sovrapposizione raccomandazioni (Jaccard >= 0.5)**: Scaffali con forte correlazione di catalogo nei top-10 consigliati vengono esclusi per garantire la diversità visiva dell'interfaccia.

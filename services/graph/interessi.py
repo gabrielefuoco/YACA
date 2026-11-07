@@ -706,7 +706,7 @@ def unisci_cluster_tassonomia_identici(
 def scaffali(
     engine: Engine,
     semi: Sequence[Any],
-    n: int = 6,
+    n: int = 8,
     medium: str | None = None,
     W_aff: sp.csr_matrix | None = None,
     label_merge: bool = False,
@@ -718,7 +718,7 @@ def scaffali(
     Args:
         engine: Istanza dell'Engine per calcolo raccomandazioni.
         semi: Lista di semi (possono essere dict TMDB, stringhe key o interi riga).
-        n: Budget massimo di scaffali da servire (default 6).
+        n: Budget massimo di scaffali da servire (default 8).
         medium: Filtro medium opzionale ("movie", "series").
         W_aff: Matrice non potata opzionale per l'affinità.
         label_merge: Se True, fonde i cluster con la stessa etichetta tassonomica prima del budget step.
@@ -846,66 +846,86 @@ def scaffali(
             cand.top10_cands = set(r["key"] for r in racs[:10])
             cand.titoli = racs[:10]
 
-    # Step 10: Selezione Greedy per Budget N
+    # Step 10: Selezione Greedy Two-Tier per Budget N
+    # Tier 1: Scaffali con etichetta tassonomica (nome_fonte == "tassonomia")
+    # Tier 2: Scaffali di fallback «Perché hai visto» (nome_fonte == "perche_hai_visto")
     chosen: list[Shelf] = []
     covered_seeds: set[int] = set()
     seen_tax_labels: set[str] = set()
     seen_colls: set[int] = set()
 
-    while len(chosen) < n:
-        best_cand: Shelf | None = None
-        best_key: tuple[float, float, float] | None = None
-
-        for cand in eligible:
-            if any(c is cand for c in chosen):
-                continue
-            # (a) Al massimo 1 scaffale per etichetta tassonomica nel profilo
-            if cand.nome_fonte == "tassonomia" and cand.nome in seen_tax_labels:
-                continue
-            # (b) Family dedupe
-            if cand.dom_coll is not None and cand.dom_coll in seen_colls:
-                continue
-
-            uncovered_set = set(cand.seeds_indices) - covered_seeds
-            if not uncovered_set:
-                continue
-
-            if weighted_support:
-                uncovered_score = float(sum(seed_weights[i] for i in uncovered_set))
-            else:
-                uncovered_score = float(len(uncovered_set))
-
-            cand_key = (uncovered_score, -cand.min_eta, cand.consistenza)
-            if best_cand is not None and cand_key <= best_key:
-                continue
-
-            # (c) Overlap dedupe lazy (solo per candidati che superano il seed-coverage test)
-            ensure_top10(cand)
-            if any(jaccard(cand.top10_cands, s.top10_cands) >= 0.5 for s in chosen):
-                continue
-
-            best_cand = cand
-            best_key = cand_key
-
-        if best_cand is None:
+    for tier_source in ("tassonomia", "perche_hai_visto"):
+        if len(chosen) >= n:
             break
 
-        ensure_top10(best_cand)
-        chosen.append(best_cand)
-        covered_seeds.update(best_cand.seeds_indices)
-        if best_cand.nome_fonte == "tassonomia":
-            seen_tax_labels.add(best_cand.nome)
-        if best_cand.dom_coll is not None:
-            seen_colls.add(best_cand.dom_coll)
+        while len(chosen) < n:
+            best_cand: Shelf | None = None
+            best_key: tuple[float, float, float] | None = None
+
+            for cand in eligible:
+                if cand.nome_fonte != tier_source:
+                    continue
+                if any(c is cand for c in chosen):
+                    continue
+                # (a) Al massimo 1 scaffale per etichetta tassonomica nel profilo
+                if cand.nome_fonte == "tassonomia" and cand.nome in seen_tax_labels:
+                    continue
+                # (b) Family dedupe
+                if cand.dom_coll is not None and cand.dom_coll in seen_colls:
+                    continue
+
+                uncovered_set = set(cand.seeds_indices) - covered_seeds
+                if not uncovered_set:
+                    continue
+
+                if weighted_support:
+                    uncovered_score = float(sum(seed_weights[i] for i in uncovered_set))
+                else:
+                    uncovered_score = float(len(uncovered_set))
+
+                cand_key = (uncovered_score, -cand.min_eta, cand.consistenza)
+                if best_cand is not None and cand_key <= best_key:
+                    continue
+
+                # (c) Overlap dedupe lazy (solo per candidati che superano il seed-coverage test)
+                ensure_top10(cand)
+                if any(jaccard(cand.top10_cands, s.top10_cands) >= 0.5 for s in chosen):
+                    continue
+
+                best_cand = cand
+                best_key = cand_key
+
+            if best_cand is None:
+                break
+
+            ensure_top10(best_cand)
+            chosen.append(best_cand)
+            covered_seeds.update(best_cand.seeds_indices)
+            if best_cand.nome_fonte == "tassonomia":
+                seen_tax_labels.add(best_cand.nome)
+            if best_cand.dom_coll is not None:
+                seen_colls.add(best_cand.dom_coll)
 
     if not chosen:
         return []
 
-    # Step 9: Ordinamento per esposizione UI (Slot 1 = freshest, Slot 2..N = r_comb)
-    best_freshest = min(chosen, key=lambda x: (x.min_eta, x.r_comb))
-    rem = [c for c in chosen if c is not best_freshest]
-    rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
-    ordered_shelves = [best_freshest] + rem
+    # Step 9: Ordinamento per esposizione UI:
+    # Slot 1 = freshest named shelf, il resto dei named per r_comb;
+    # gli scaffali senza nome («Perché hai visto»), se presenti, vanno in coda (ordinati per r_comb).
+    named_shelves = [c for c in chosen if c.nome_fonte == "tassonomia"]
+    unnamed_shelves = [c for c in chosen if c.nome_fonte == "perche_hai_visto"]
+
+    if named_shelves:
+        best_freshest = min(named_shelves, key=lambda x: (x.min_eta, x.r_comb))
+        rem_named = [c for c in named_shelves if c is not best_freshest]
+        rem_named.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
+        unnamed_shelves.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
+        ordered_shelves = [best_freshest] + rem_named + unnamed_shelves
+    else:
+        best_freshest = min(unnamed_shelves, key=lambda x: (x.min_eta, x.r_comb))
+        rem = [c for c in unnamed_shelves if c is not best_freshest]
+        rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
+        ordered_shelves = [best_freshest] + rem
 
     for slot_idx, sh in enumerate(ordered_shelves, 1):
         sh.slot_position = slot_idx
