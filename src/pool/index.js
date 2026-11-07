@@ -13,7 +13,8 @@
  */
 
 const cache = require('../cache');
-const { hybridRecommendationsCache } = require('../cache/cacheInstances');
+const { hybridRecommendationsCache, shelvesCache } = require('../cache/cacheInstances');
+const { buildShelfCacheKey } = require('../cache/shelfKey');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec, getHeroRuoli } = require('../catalog/registry');
 const { applicaDecadimento } = require('./impressioni');
@@ -370,12 +371,26 @@ const HERO_STRATEGIES = [
                 const semiPerScaffali = semi.map(({ recente, ...rest }) => rest);
                 if (!ENABLE_LEGACY_EDITORIAL_ROLES && typeof graphClient.scaffali === 'function') {
                     let resScaffali = null;
+                    // La risposta costa ~4 s e dipende solo da semi, cursori, cap e versione del
+                    // grafo: la si tiene in cache (RAM + Redis) invece di ricalcolarla a ogni
+                    // costruzione del pool. Chiave in `cache/shelfKey.js`.
+                    const chiaveScaffali = buildShelfCacheKey({
+                        semi: semiPerScaffali,
+                        medium: med,
+                        opzioni,
+                        cap,
+                        // Se il client non espone le versioni (mock, client vecchio) la chiave resta
+                        // valida ma senza l'impronta del grafo: il TTL breve copre quel caso.
+                        versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
+                            ? graphClient.getGraphHealthVersionsCached()
+                            : undefined
+                    });
                     try {
-                        resScaffali = await graphClient.scaffali(semiPerScaffali, {
+                        resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
                             medium: med,
                             opzioni,
                             cap
-                        });
+                        }));
                     } catch (scaffaliErr) {
                         if (!isMockFunction(graphClient.raccomanda)) {
                             throw scaffaliErr;

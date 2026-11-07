@@ -54,6 +54,25 @@ const dnaNamesCache = new CacheManager('dna_names', {
     redisTtlMs: ONE_DAY_MS * 14
 });
 
+/**
+ * Scaffali del profilo (`POST /scaffali` sul servizio del grafo).
+ *
+ * Costano ~4 secondi: sedici righe da sessanta titoli, ognuna con la sua diffusione,
+ * piu' le controparti dell'altro medium. Ma il risultato cambia solo quando cambia la
+ * storia dell'utente, i cursori o il grafo — non a ogni richiesta di un catalogo.
+ *
+ * TTL: due ore "fresche" e sei di stale-while-revalidate. Il limite vero e' piu' basso:
+ * `eta_giorni` entra nella chiave, quindi la risposta scade comunque una volta al giorno
+ * quando la freschezza dei semi cambia. Tenerla 24 ore in Redis e' sicuro proprio perche'
+ * la chiave di domani sara' diversa.
+ */
+const shelvesCache = new CacheManager('shelves', {
+    ramMax: 200,
+    ramTtlMs: 2 * ONE_HOUR_MS,
+    redisTtlMs: ONE_DAY_MS,
+    swrMs: 6 * ONE_HOUR_MS
+});
+
 module.exports = {
     aiPromptCache,
     aiDiscoveryCache,
@@ -61,5 +80,6 @@ module.exports = {
     catalogFallbackCache,
     catalogRequestCache,
     simulcastDatesCache,
-    dnaNamesCache
+    dnaNamesCache,
+    shelvesCache
 };
