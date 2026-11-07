@@ -1034,45 +1034,55 @@ def scaffali(
         rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
         ordered_shelves = [best_freshest] + rem
 
-    # GAP 2: Decoupling — riempimento dei candidati per le righe servite fino a cand_cap (tra 20 e 60)
+    # GAP 2 & PERFORMANCE: Materializzazione candidati per le righe servite tramite un'unica chiamata batched raccomanda_multi
     meta = K.metadati()
     titles = meta.get("TIT")
     years = meta.get("ANNO")
 
-    for sh in ordered_shelves:
-        semi_rac = [
+    n_ord = len(ordered_shelves)
+    if n_ord == 0:
+        return []
+
+    # Preparazione batch semi per i primari
+    batch_semi_primaries = [
+        [
             {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
             for i in sh.seeds_indices
         ]
-        recs = engine.raccomanda(
-            semi_rac,
+        for sh in ordered_shelves
+    ]
+    batch_medium_primaries = [sh.medium for sh in ordered_shelves]
+
+    all_served: list[Shelf] = []
+    if medium is None:
+        # Quando medium è None serviamo primari e controparti: eseguiamo un unico batched PPR (fino a 16 righe)
+        batch_semi_counterparts = [
+            [
+                {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
+                for i in sh.seeds_indices
+            ]
+            for sh in ordered_shelves
+        ]
+        batch_medium_counterparts = ["series" if sh.medium == "movie" else "movie" for sh in ordered_shelves]
+
+        all_batch_semi = batch_semi_primaries + batch_semi_counterparts
+        all_batch_medium = batch_medium_primaries + batch_medium_counterparts
+
+        # UNA sola esecuzione PPR batched per tutti i candidati (primari + controparti)
+        all_recs = engine.raccomanda_multi(
+            all_batch_semi,
             cap=cand_cap,
-            medium=sh.medium,
+            medium=all_batch_medium,
             esclusi=tutti_esclusi,
             tono=tono,
             complessita=complessita,
         )
-        sh.titoli = recs
 
-    # GAP 4 & DEFECT 1/2: Generazione controparti cross-medium con filtro qualità permissivo a tau = 2.5%,
-    # raggruppamento adiacente per interesse («Western (serie)» poi «Western (film)»)
-    # e suffisso medium in `nome_display` applicato SOLO in presenza di controparte servita.
-    all_served: list[Shelf] = []
-    if medium is None:
-        for sh in ordered_shelves:
-            c_med = "series" if sh.medium == "movie" else "movie"
-            semi_rac = [
-                {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
-                for i in sh.seeds_indices
-            ]
-            recs_c = engine.raccomanda(
-                semi_rac,
-                cap=cand_cap,
-                medium=c_med,
-                esclusi=tutti_esclusi,
-                tono=tono,
-                complessita=complessita,
-            )
+        for i, sh in enumerate(ordered_shelves):
+            sh.titoli = all_recs[i]
+            recs_c = all_recs[n_ord + i]
+            c_med = batch_medium_counterparts[i]
+
             top1_p = sh.titoli[0]["punteggio"] if sh.titoli else 0.0
             top1_c = recs_c[0]["punteggio"] if recs_c else 0.0
             ratio = (top1_c / top1_p) if top1_p > 0 else 0.0
@@ -1134,7 +1144,17 @@ def scaffali(
                 sh.nome_display = sh.nome
                 all_served.append(sh)
     else:
-        for sh in ordered_shelves:
+        # Filtro medium specifico: solo primari batched
+        prim_recs = engine.raccomanda_multi(
+            batch_semi_primaries,
+            cap=cand_cap,
+            medium=batch_medium_primaries,
+            esclusi=tutti_esclusi,
+            tono=tono,
+            complessita=complessita,
+        )
+        for i, sh in enumerate(ordered_shelves):
+            sh.titoli = prim_recs[i]
             sh.nome_display = sh.nome
             all_served.append(sh)
 

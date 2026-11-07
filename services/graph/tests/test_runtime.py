@@ -617,6 +617,129 @@ def test_library_signal_rules_table(engine):
     assert res_both_hist_loved == exp_5
 
 
+# ------------------------------------------------------------------------------
+# FIX 1 & FIX 2: BATCHED PPR (raccomanda_multi) ED EARLY STOPPING
+# ------------------------------------------------------------------------------
+def test_raccomanda_multi_equivalenza_numerica_e_ordinamento(engine):
+    """Verifica che raccomanda_multi produca risultati numericamente identici a raccomanda:
+    - max |score_batch - score_single| <= 1e-10;
+    - ordinamento identico dei candidati su 3 scaffali di un profilo reale.
+    """
+    from graph import canon as K
+    from graph import interessi as I
+
+    chiavi, _, plays, eta = K.storia_trakt("warnok", ordine="recente")
+    semi = [{"key": str(k), "plays": float(pl), "eta_giorni": float(et)} for k, pl, et in zip(chiavi, plays, eta)]
+
+    w_aff = I.carica_matrice_affinita()
+    shs = I.scaffali(engine, semi, n=8, W_aff=w_aff)
+    assert len(shs) >= 3
+
+    test_shelves = shs[:3]
+    semi_list = []
+    medium_list = []
+    for sh in test_shelves:
+        s_shelf = [
+            {"key": chiavi[i], "tipo": "watched", "plays": float(plays[i])}
+            for i in sh.seeds_indices
+        ]
+        semi_list.append(s_shelf)
+        medium_list.append(sh.medium)
+
+    # 1. Chiamate singole per-scaffale
+    single_results = []
+    for s_shelf, med in zip(semi_list, medium_list):
+        r_single = engine.raccomanda(s_shelf, cap=60, medium=med, tono=0.2, complessita=-0.1)
+        single_results.append(r_single)
+
+    # 2. Chiamata batched
+    batch_results = engine.raccomanda_multi(
+        semi_list,
+        cap=60,
+        medium=medium_list,
+        tono=0.2,
+        complessita=-0.1,
+    )
+
+    assert len(batch_results) == 3
+    for j in range(3):
+        s_res = single_results[j]
+        b_res = batch_results[j]
+        assert len(s_res) == len(b_res)
+
+        s_keys = [x["key"] for x in s_res]
+        b_keys = [x["key"] for x in b_res]
+        assert s_keys == b_keys, f"Ordinamento chiavi disallineato sullo scaffale {j} ({test_shelves[j].nome})"
+
+        s_scores = np.array([x["punteggio"] for x in s_res], dtype=np.float64)
+        b_scores = np.array([x["punteggio"] for x in b_res], dtype=np.float64)
+        max_d = np.max(np.abs(s_scores - b_scores))
+        assert max_d <= 1e-10, f"Differenza di punteggio sullo scaffale {j}: {max_d} > 1e-10"
+
+
+def test_raccomanda_multi_duplicati_e_filtri_per_colonna(engine):
+    """Verifica che raccomanda_multi sommi correttamente i duplicati con np.add.at,
+    gestisca medium ed esclusioni indipendenti per colonna.
+    """
+    seme_film = "movie:603"      # The Matrix
+    seme_serie = "tv:1396"       # Breaking Bad
+
+    # Query 1: duplicati dello stesso film con pesi diversi
+    q1 = [
+        {"key": seme_film, "peso": 1.5},
+        {"key": seme_film, "peso": 2.5},
+    ]
+    # Query 2: serie con plays
+    q2 = [
+        {"key": seme_serie, "plays": 10.0, "tipo": "watched"},
+    ]
+
+    single_1 = engine.raccomanda(q1, cap=20, medium="movie")
+    single_2 = engine.raccomanda(q2, cap=20, medium="series")
+
+    batch = engine.raccomanda_multi(
+        [q1, q2],
+        cap=20,
+        medium=["movie", "series"],
+    )
+
+    assert len(batch) == 2
+    # Confronto query 1
+    assert [x["key"] for x in batch[0]] == [x["key"] for x in single_1]
+    d1 = np.max(np.abs(np.array([x["punteggio"] for x in batch[0]]) - np.array([x["punteggio"] for x in single_1])))
+    assert d1 <= 1e-10
+
+    # Confronto query 2
+    assert [x["key"] for x in batch[1]] == [x["key"] for x in single_2]
+    d2 = np.max(np.abs(np.array([x["punteggio"] for x in batch[1]]) - np.array([x["punteggio"] for x in single_2])))
+    assert d2 <= 1e-10
+
+
+def test_early_stopping_convergenza_tolleranza(engine):
+    """Verifica che con la tolleranza dichiarata (parametri.PPR_TOL = 1e-5)
+    il top-60 dei candidati coincida esattamente con l'iterazione fissa a 20 passi.
+    """
+    from graph import parametri as P
+
+    chiavi = ["movie:603", "movie:550", "tv:1396"]  # Matrix, Fight Club, Breaking Bad
+    semi = [{"key": k, "plays": 2.0} for k in chiavi]
+
+    res_early = engine.raccomanda(semi, cap=60)
+
+    # Esegui forzando 20 iterazioni senza early stopping (tol=0.0)
+    from graph import camminata
+    orig_ppr = camminata.ppr
+    try:
+        def ppr_20iters(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False, tol=None):
+            return orig_ppr(Tr, seme, pesi=pesi, alpha=alpha, iters=P.ITER, normalizza=normalizza, tol=0.0)
+        camminata.ppr = ppr_20iters
+        res_fixed20 = engine.raccomanda(semi, cap=60)
+    finally:
+        camminata.ppr = orig_ppr
+
+    assert [x["key"] for x in res_early] == [x["key"] for x in res_fixed20]
+
+
 @pytest.mark.skipif(
     os.environ.get("YACA_SLOW") != "1",
     reason="Il test a grafo intero (pota=None) richiede YACA_SLOW=1 (salta di default)",

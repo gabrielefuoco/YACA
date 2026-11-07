@@ -205,7 +205,7 @@ def pesi_semi(righe, plays, NEP, tipi=None):
     return out
 
 
-def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False):
+def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False, tol=None):
     """PageRank personalizzato su una matrice di transizione GIA' PRONTA (vedi `transizione`).
 
     **L'unico posto dove sta il ciclo.** Prima era riscritto in NOVE arbitri (`alfa`, `cache`,
@@ -219,10 +219,13 @@ def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False):
         un seme scelto a caso;
       · `normalizza=True` -> `r / r.sum()` in uscita, come faceva `ricetta.py` (e `diffondi`);
       · `alpha=None` -> `parametri.ALPHA`, ma gli arbitri passano il LORO valore, perche' alcuni lo
-        leggono da una variabile d'ambiente (`ALPHA=0.9 python graph/measure/freddo.py`).
+        leggono da una variabile d'ambiente (`ALPHA=0.9 python graph/measure/freddo.py`);
+      · `tol=None` -> early stopping sulla variazione L1 tra iterazioni successive (default `parametri.PPR_TOL`).
     """
     alpha = P.ALPHA if alpha is None else float(alpha)
-    iters = P.ITER if iters is None else int(iters)
+    max_iters = P.ITER if iters is None else min(int(iters), P.ITER)
+    tol_val = getattr(P, "PPR_TOL", 1e-5) if tol is None else float(tol)
+
     e = np.zeros(Tr.shape[0], np.float64)
     # `np.add.at` INVECE DI `e[seme] = ...`. Con un indice duplicato l'assegnamento indicizzato di NumPy
     # SOVRASCRIVE, non somma: `e[[i,i]] = [3,7]` da' 7, non 10 — e la massa delle occorrenze precedenti
@@ -236,9 +239,61 @@ def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False):
         np.add.at(e, seme, np.asarray(pesi, np.float64))
     e /= max(float(e.sum()), 1e-12)
     r = e.copy()
-    for _ in range(iters):
-        r = alpha * e + (1 - alpha) * (r @ Tr)
+    for _ in range(max_iters):
+        r_next = alpha * e + (1.0 - alpha) * (r @ Tr)
+        if tol_val > 0.0:
+            delta = float(np.sum(np.abs(r_next - r)))
+            r = r_next
+            if delta < tol_val:
+                break
+        else:
+            r = r_next
     return r / r.sum() if normalizza else r
+
+
+def ppr_multi(Tr, E, alpha=None, iters=None, normalizza=False, tol=None, TrT=None):
+    """PageRank personalizzato batched per B vettori di riavvio (colonne della matrice densa E).
+
+    Args:
+        Tr: Matrice di transizione riga-stocastica CSR (n, n).
+        E: Matrice densa (n, B) dei vettori di riavvio (ciascuna colonna normalizzata a somma 1).
+        alpha: Probabilità di riavvio (default P.ALPHA).
+        iters: Numero massimo di iterazioni (default P.ITER, hard-capped a P.ITER).
+        normalizza: Se True, normalizza ciascuna colonna a somma 1 in uscita.
+        tol: Tolleranza di convergenza L1 (default P.PPR_TOL). Se <= 0, esegue tutte le iterazioni.
+        TrT: Matrice trasposta CSR opzionale precalcolata per efficienza del kernel (Tr.T.tocsr()).
+
+    Returns:
+        Matrice densa R di dimensione (n, B) con le distribuzioni stazionarie per colonna.
+    """
+    alpha = P.ALPHA if alpha is None else float(alpha)
+    max_iters = P.ITER if iters is None else min(int(iters), P.ITER)
+    tol_val = getattr(P, "PPR_TOL", 1e-5) if tol is None else float(tol)
+
+    if TrT is None:
+        TrT = Tr.T.tocsr()
+
+    B = E.shape[1]
+    R = E.copy()
+    if tol_val > 0.0 and B > 0:
+        active = np.ones(B, dtype=bool)
+        for _ in range(max_iters):
+            R_next = alpha * E + (1.0 - alpha) * (TrT @ R)
+            deltas = np.sum(np.abs(R_next - R), axis=0)
+            R[:, active] = R_next[:, active]
+            active[active] = deltas[active] >= tol_val
+            if not active.any():
+                break
+    else:
+        for _ in range(max_iters):
+            R = alpha * E + (1.0 - alpha) * (TrT @ R)
+
+    if normalizza and B > 0:
+        col_sums = R.sum(axis=0)
+        col_sums[col_sums < 1e-12] = 1.0
+        R /= col_sums
+
+    return R
 
 
 def diffondi(Tr, righe, plays, NEP, alpha=None, iters=None, tipi=None):

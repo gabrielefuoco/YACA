@@ -60,6 +60,7 @@ class Engine:
 
     def __init__(self) -> None:
         self.Tr: sp.csr_matrix | None = None
+        self._TrT: sp.csr_matrix | None = None
         self.prov: dict | None = None
         self.n: int = 0
         self.percorso: str | None = None
@@ -89,6 +90,13 @@ class Engine:
         da catalogo (ticket cold-start).
         """
         return int(n_semi) < P.FREDDO_SOTTO
+
+    @property
+    def TrT(self) -> sp.csr_matrix | None:
+        """Matrice trasposta CSR del grafo di transizione, cachata per batched PPR."""
+        if self._TrT is None and self.Tr is not None:
+            self._TrT = self.Tr.T.tocsr()
+        return self._TrT
 
     def _init_canone(self, n: int) -> None:
         """Inizializza le strutture del canone titoli, mappature TMDB e nep per N nodi."""
@@ -497,6 +505,93 @@ class Engine:
 
         return indici, fuori_canone
 
+    def _prepara_semi_vettore(self, semi: list | tuple) -> tuple[list[int], list[float], int]:
+        """Converte una specifica semi in vettori di righe e pesi, applicando le regole di segnale e libreria.
+
+        Returns:
+            Tupla (final_rows, final_pesi, semi_fuori_canone).
+        """
+        parsed_seeds: list[dict] = []
+        semi_fuori_canone = 0
+
+        for s in semi:
+            parsed = self._parse_seme(s)
+            if parsed is not None:
+                parsed_seeds.append(parsed)
+            else:
+                semi_fuori_canone += 1
+
+        if not parsed_seeds:
+            return [], [], semi_fuori_canone
+
+        # Raggruppamento per titolo (riga di canone):
+        grouped_by_row: dict[int, list[dict]] = defaultdict(list)
+        for s in parsed_seeds:
+            grouped_by_row[s["row"]].append(s)
+
+        final_rows = []
+        final_pesi = []
+
+        for r_idx, items in grouped_by_row.items():
+            # 1. Override numerico esplicito
+            exp_override = next((it["explicit_peso"] for it in items if it["explicit_peso"] is not None), None)
+            if exp_override is not None:
+                final_rows.append(r_idx)
+                final_pesi.append(float(exp_override))
+                continue
+
+            # 2. Aggregazione segnali e verifica cronologia vs libreria
+            all_signals: set[str] = set()
+            history_plays = []
+            history_neps = []
+            has_history = False
+            is_never_watched = False
+
+            for it in items:
+                t_val = it.get("tipo")
+                sigs = it.get("signals")
+                w_flag = it.get("watched")
+                lib_only = it.get("library_only")
+
+                if lib_only is True or w_flag is False:
+                    is_never_watched = True
+
+                if sigs:
+                    if isinstance(sigs, (list, tuple, set)):
+                        for s_ in sigs:
+                            all_signals.add(str(s_.get("type", s_.get("tipo")) if isinstance(s_, dict) else s_).lower())
+                    else:
+                        all_signals.add(str(sigs).lower())
+                if t_val:
+                    all_signals.add(str(t_val).lower())
+
+                if t_val == "watched" or "watched" in all_signals or w_flag is True:
+                    has_history = True
+                    history_plays.append(it["plays"])
+                    history_neps.append(it["nep"])
+                elif it["plays"] is not None and it["plays"] > 1.0 and not is_never_watched:
+                    has_history = True
+                    history_plays.append(it["plays"])
+                    history_neps.append(it["nep"])
+
+            other_signals = all_signals - {"library"}
+            if has_history or other_signals:
+                eff_signals = list(other_signals) if other_signals else ["watched"]
+                eff_plays = max(history_plays) if history_plays else (items[0]["plays"] if items else 1.0)
+                eff_nep = history_neps[0] if history_neps else (items[0]["nep"] if items else 1.0)
+                base_calc = _cam.pesi_semi(np.array([0]), np.array([eff_plays]), np.array([eff_nep]))[0]
+                w_calc = _cam.calcola_peso_segnale(
+                    base_val=base_calc,
+                    t=eff_signals,
+                )
+            else:
+                w_calc = 1.0
+
+            final_rows.append(r_idx)
+            final_pesi.append(min(5.0, float(w_calc)))
+
+        return final_rows, final_pesi, semi_fuori_canone
+
     def raccomanda(
         self,
         semi: list | tuple,
@@ -552,16 +647,7 @@ class Engine:
         except (TypeError, ValueError) as exc:
             raise ValueError(f"complessita non valida: {complessita!r} (deve essere compresa tra -1.0 e 1.0)") from exc
 
-        parsed_seeds: list[dict] = []
-        semi_fuori_canone = 0
-
-        for s in semi:
-            parsed = self._parse_seme(s)
-            if parsed is not None:
-                parsed_seeds.append(parsed)
-            else:
-                semi_fuori_canone += 1
-
+        final_rows, final_pesi, semi_fuori_canone = self._prepara_semi_vettore(semi)
         escl_indici, esclusi_fuori_canone = self._parse_esclusi(esclusi)
 
         self.ultimo_scarto = {
@@ -569,80 +655,10 @@ class Engine:
             "esclusi_fuori_canone": esclusi_fuori_canone,
         }
 
-        if cap <= 0 or not parsed_seeds:
+        if cap <= 0 or not final_rows:
             return []
 
-        # Raggruppamento per titolo (riga di canone):
-        # Permette la risoluzione corretta delle combinazioni cronologia + libreria e segnali multipli
-        grouped_by_row: dict[int, list[dict]] = defaultdict(list)
-        for s in parsed_seeds:
-            grouped_by_row[s["row"]].append(s)
-
-        final_rows = []
-        final_pesi = []
-
-        for r_idx, items in grouped_by_row.items():
-            # 1. Override numerico esplicito
-            exp_override = next((it["explicit_peso"] for it in items if it["explicit_peso"] is not None), None)
-            if exp_override is not None:
-                final_rows.append(r_idx)
-                final_pesi.append(float(exp_override))
-                continue
-
-            # 2. Aggregazione segnali e verifica cronologia vs libreria
-            all_signals: set[str] = set()
-            history_plays = []
-            history_neps = []
-            has_history = False
-            is_never_watched = False
-
-            for it in items:
-                t_val = it.get("tipo")
-                sigs = it.get("signals")
-                w_flag = it.get("watched")
-                lib_only = it.get("library_only")
-
-                if lib_only is True or w_flag is False:
-                    is_never_watched = True
-
-                if sigs:
-                    if isinstance(sigs, (list, tuple, set)):
-                        for s_ in sigs:
-                            all_signals.add(str(s_.get("type", s_.get("tipo")) if isinstance(s_, dict) else s_).lower())
-                    else:
-                        all_signals.add(str(sigs).lower())
-                if t_val:
-                    all_signals.add(str(t_val).lower())
-
-                if t_val == "watched" or "watched" in all_signals or w_flag is True:
-                    has_history = True
-                    history_plays.append(it["plays"])
-                    history_neps.append(it["nep"])
-                elif it["plays"] is not None and it["plays"] > 1.0 and not is_never_watched:
-                    has_history = True
-                    history_plays.append(it["plays"])
-                    history_neps.append(it["nep"])
-
-            # Regola della libreria (Capitolo 5):
-            # La libreria è un segnale alternativo, ignorato non appena il titolo ha qualsiasi altro segnale o presenza in cronologia!
-            other_signals = all_signals - {"library"}
-            if has_history or other_signals:
-                eff_signals = list(other_signals) if other_signals else ["watched"]
-                eff_plays = max(history_plays) if history_plays else (items[0]["plays"] if items else 1.0)
-                eff_nep = history_neps[0] if history_neps else (items[0]["nep"] if items else 1.0)
-                base_calc = _cam.pesi_semi(np.array([0]), np.array([eff_plays]), np.array([eff_nep]))[0]
-                w_calc = _cam.calcola_peso_segnale(
-                    base_val=base_calc,
-                    t=eff_signals,
-                )
-            else:
-                # Solo in libreria, mai visto -> peso 1
-                w_calc = 1.0
-
-            final_rows.append(r_idx)
-            final_pesi.append(min(5.0, float(w_calc)))
-
-        # Camminata PPR riga-stocastica: riuso di camminata.ppr senza duplicare la logica numerica
+        # Camminata PPR riga-stocastica con early stopping
         r = _cam.ppr(
             self.Tr,
             seme=final_rows,
@@ -650,6 +666,7 @@ class Engine:
             alpha=P.ALPHA,
             iters=P.ITER,
             normalizza=True,
+            tol=getattr(P, "PPR_TOL", 1e-5),
         )
 
         cand = r.copy()
@@ -700,3 +717,182 @@ class Engine:
             })
 
         return risultati
+
+    def raccomanda_multi(
+        self,
+        semi_list: Sequence[Any],
+        cap: int = DEFAULT_CAP,
+        medium: str | Sequence[str | None] | None = None,
+        esclusi: Iterable[Any] = (),
+        tono: float | Sequence[float] = 0.0,
+        complessita: float | Sequence[float] = 0.0,
+    ) -> list[list[dict]]:
+        """Esegue una camminata Personalized PageRank batched per B liste di semi.
+
+        Requisiti garantiti:
+        - Risultati identici alla chiamata singola (`max |score_batch - score_single| <= 1e-10`).
+        - Normalizzazione per colonna indipendente e somma duplicati con `np.add.at`.
+        - Mascheramento per medium e penalità assi applicati per colonna.
+
+        Args:
+            semi_list: Sequenza di B liste di semi (ciascuna compatibile con `raccomanda`).
+            cap: Numero massimo di risultati (intero broadcast o lista di interi).
+            medium: Filtro medium broadcast ("movie", "series", None) o sequenza per colonna.
+            esclusi: Insieme comune di chiavi/tmdbId esclusi da tutte le colonne.
+            tono: Valore tono broadcast (-1..1) o sequenza per colonna.
+            complessita: Valore complessità broadcast (-1..1) o sequenza per colonna.
+
+        Returns:
+            Lista di B liste di raccomandazioni ordinate per punteggio decrescente.
+        """
+        if self.Tr is None:
+            raise RuntimeError(
+                "Nessun grafo caricato nell'Engine: invocare prima 'Engine.carica()' "
+                "o 'Engine.carica_transizione()'."
+            )
+
+        if not semi_list:
+            return []
+
+        B = len(semi_list)
+
+        # 1. Risoluzione medium per colonna
+        if isinstance(medium, (list, tuple)):
+            if len(medium) != B:
+                raise ValueError(f"Lunghezza lista medium ({len(medium)}) != numero query ({B})")
+            med_list = [("series" if m == "tv" else m) for m in medium]
+        else:
+            m_single = "series" if medium == "tv" else medium
+            med_list = [m_single] * B
+
+        for m in med_list:
+            if m not in ("movie", "series", None):
+                raise ValueError(f"medium non valido: {m!r} (ammessi 'movie', 'series', None)")
+
+        # 2. Risoluzione cap per colonna
+        if isinstance(cap, (list, tuple)):
+            if len(cap) != B:
+                raise ValueError(f"Lunghezza lista cap ({len(cap)}) != numero query ({B})")
+            cap_list = [int(c) for c in cap]
+        else:
+            cap_list = [int(cap)] * B
+
+        # 3. Risoluzione tono per colonna
+        if isinstance(tono, (list, tuple, np.ndarray)):
+            if len(tono) != B:
+                raise ValueError(f"Lunghezza lista tono ({len(tono)}) != numero query ({B})")
+            tono_list = [float(t) for t in tono]
+        else:
+            tono_list = [float(tono)] * B
+
+        for t in tono_list:
+            if np.isnan(t) or t < -1.0 or t > 1.0:
+                raise ValueError(f"tono non valido: {t!r} (deve essere compreso tra -1.0 e 1.0)")
+
+        # 4. Risoluzione complessità per colonna
+        if isinstance(complessita, (list, tuple, np.ndarray)):
+            if len(complessita) != B:
+                raise ValueError(f"Lunghezza lista complessita ({len(complessita)}) != numero query ({B})")
+            comp_list = [float(c) for c in complessita]
+        else:
+            comp_list = [float(complessita)] * B
+
+        for c in comp_list:
+            if np.isnan(c) or c < -1.0 or c > 1.0:
+                raise ValueError(f"complessita non valida: {c!r} (deve essere compresa tra -1.0 e 1.0)")
+
+        # 5. Esclusioni comuni
+        escl_indici, _ = self._parse_esclusi(esclusi)
+
+        # 6. Preparazione matrice restart E (n, B)
+        n = self.n
+        E = np.zeros((n, B), dtype=np.float64)
+        empty_cols: set[int] = set()
+
+        for j in range(B):
+            seeds_j = semi_list[j]
+            if not seeds_j or cap_list[j] <= 0:
+                empty_cols.add(j)
+                continue
+
+            f_rows, f_pesi, _ = self._prepara_semi_vettore(seeds_j)
+            if not f_rows:
+                empty_cols.add(j)
+                continue
+
+            np.add.at(E[:, j], f_rows, f_pesi)
+            c_sum = float(E[:, j].sum())
+            if c_sum < 1e-12:
+                empty_cols.add(j)
+            else:
+                E[:, j] /= c_sum
+
+        if len(empty_cols) == B:
+            return [[] for _ in range(B)]
+
+        # 7. PageRank personalizzato batched con early stopping e kernel trasposto
+        R = _cam.ppr_multi(
+            self.Tr,
+            E,
+            alpha=P.ALPHA,
+            iters=P.ITER,
+            normalizza=True,
+            tol=getattr(P, "PPR_TOL", 1e-5),
+            TrT=self.TrT,
+        )
+
+        # 8. Slicing e selezione candidati per ciascuna query
+        risultati_batch: list[list[dict]] = []
+        for j in range(B):
+            if j in empty_cols:
+                risultati_batch.append([])
+                continue
+
+            cand = R[:, j].copy()
+            med_j = med_list[j]
+            if med_j == "movie":
+                cand[self.is_tv] = -np.inf
+            elif med_j == "series":
+                cand[~self.is_tv] = -np.inf
+
+            if escl_indici:
+                cand[list(escl_indici)] = -np.inf
+
+            valid_idx = np.flatnonzero(cand > -np.inf)
+            if len(valid_idx) == 0:
+                risultati_batch.append([])
+                continue
+
+            t_val = tono_list[j]
+            c_val = comp_list[j]
+            if (abs(t_val) >= 1e-6 or abs(c_val) >= 1e-6) and self.tono is not None and self.complessita is not None:
+                penalita = _assi.calcola_penalita(
+                    valid_idx,
+                    tono_req=t_val,
+                    comp_req=c_val,
+                    tono_arr=self.tono,
+                    comp_arr=self.complessita,
+                )
+                cand[valid_idx] = cand[valid_idx] * penalita
+
+            k = min(cap_list[j], len(valid_idx))
+            if k < len(valid_idx):
+                rel_top = np.argpartition(-cand[valid_idx], k - 1)[:k]
+                top_idx = valid_idx[rel_top]
+            else:
+                top_idx = valid_idx
+
+            top_idx = top_idx[np.argsort(-cand[top_idx], kind="stable")]
+
+            out = [
+                {
+                    "key": self.keys[idx],
+                    "tmdbId": int(self.tmdb_ids[idx]),
+                    "medium": self.mediums[idx],
+                    "punteggio": float(cand[idx]),
+                }
+                for idx in top_idx
+            ]
+            risultati_batch.append(out)
+
+        return risultati_batch

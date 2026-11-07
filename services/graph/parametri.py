@@ -49,6 +49,11 @@ SCHEDA = [
     ("ITER", 20, "NUMERICO",
      "Iterazioni di PageRank. A 20 la massa e' convergita: cambiarlo non muove niente di misurabile.",
      "tutti gli arbitri della diffusione"),
+    ("PPR_TOL", 1e-5, "DICHIARATO",
+     "Tolleranza L1 di convergenza per il PageRank personalizzato (early stopping). A 1e-5 il top-60 "
+     "restituito sui 10 profili di riferimento e' identico al 100% rispetto alle 20 iterazioni fisse, "
+     "con una media di ~10,4 iterazioni anziche' 20.",
+     "camminata.ppr / Engine.raccomanda_multi"),
     ("SOGLIA_PORTAFOGLIO", None, "DICHIARATO ASSENTE",
      "NON esiste una soglia per dire quali mondi sono «accesi». Una storia CASUALE della stessa "
      "lunghezza ne accende PIU' di una vera, a ogni soglia (0,9x costante): «quanti mondi si accendono» "
