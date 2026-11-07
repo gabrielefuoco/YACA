@@ -12,6 +12,8 @@ frontend-out/
 .env
 .env.test
 secrets.env
+secrets/
+secrets
 *.md
 Dockerfile
 .dockerignore
