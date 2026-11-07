@@ -690,6 +690,7 @@ def scaffali(
     W_aff: sp.csr_matrix | None = None,
     label_merge: bool = False,
     cap: int = 40,
+    weighted_support: bool = False,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 
@@ -701,6 +702,7 @@ def scaffali(
         W_aff: Matrice non potata opzionale per l'affinità.
         label_merge: Se True, fonde i cluster con la stessa etichetta tassonomica prima del budget step.
         cap: Cap massimo di semi per scaffale in caso di label_merge (default 40).
+        weighted_support: Se True, la selezione greedy e il rank supporto usano il peso/interazioni dei semi.
 
     Returns:
         Lista di al più `n` oggetti `Shelf` ordinati per esposizione UI.
@@ -786,12 +788,28 @@ def scaffali(
         else:
             sh.consistenza = 0.0
 
+    # Calcolo pesi semi per eventuale modalità weighted_support
+    if weighted_support:
+        nep_arr = engine.nep[righe_arr] if len(engine.nep) > 0 else np.ones(len(righe_arr))
+        is_tv_arr = np.array([k.startswith("tv:") for k in chiavi])
+        seed_weights = np.where(
+            is_tv_arr & (nep_arr > 1.0),
+            1.0 + 2.0 * np.minimum(plays_arr / nep_arr, 1.0),
+            np.minimum(plays_arr, 3.0),
+        )
+        for sh in eligible:
+            sh.weighted_support = float(sum(seed_weights[idx] for idx in sh.seeds_indices))
+
     # Precalcolo ranghi per combined rank display
     eligible.sort(key=lambda x: x.min_eta)
     for r_idx, item in enumerate(eligible):
         item._r_rec = r_idx + 1
 
-    eligible.sort(key=lambda x: (-x.size, -x.consistenza))
+    if weighted_support:
+        eligible.sort(key=lambda x: (-getattr(x, "weighted_support", float(x.size)), -x.consistenza))
+    else:
+        eligible.sort(key=lambda x: (-x.size, -x.consistenza))
+
     for r_idx, item in enumerate(eligible):
         item._r_sup = r_idx + 1
         item.r_comb = round((item._r_rec + item._r_sup) / 2.0, 1)
@@ -800,7 +818,7 @@ def scaffali(
     def ensure_top10(cand: Shelf) -> None:
         if not cand.top10_cands:
             semi_rac = [
-                {"key": chiavi[i], "tipo": "watched", "peso": 1.0}
+                {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
                 for i in cand.seeds_indices
             ]
             racs = engine.raccomanda(semi_rac, cap=10, medium=cand.medium, esclusi=chiavi)
@@ -815,7 +833,7 @@ def scaffali(
 
     while len(chosen) < n:
         best_cand: Shelf | None = None
-        best_key: tuple[int, float, float] | None = None
+        best_key: tuple[float, float, float] | None = None
 
         for cand in eligible:
             if any(c is cand for c in chosen):
@@ -827,11 +845,16 @@ def scaffali(
             if cand.dom_coll is not None and cand.dom_coll in seen_colls:
                 continue
 
-            uncovered_added = len(set(cand.seeds_indices) - covered_seeds)
-            if uncovered_added <= 0:
+            uncovered_set = set(cand.seeds_indices) - covered_seeds
+            if not uncovered_set:
                 continue
 
-            cand_key = (uncovered_added, -cand.min_eta, cand.consistenza)
+            if weighted_support:
+                uncovered_score = float(sum(seed_weights[i] for i in uncovered_set))
+            else:
+                uncovered_score = float(len(uncovered_set))
+
+            cand_key = (uncovered_score, -cand.min_eta, cand.consistenza)
             if best_cand is not None and cand_key <= best_key:
                 continue
 

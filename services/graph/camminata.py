@@ -96,9 +96,10 @@ def pesi_semi(righe, plays, NEP, tipi=None):
     film:  min(plays, PESO_FILM_MAX)                       «i plays vanno limitati»
     serie: 1 + 2 x (frazione di episodi visti)             le puntate NON contano come play
 
-    `tipi` (facoltativo) e' un array di stringhe: "loved", "liked", "watched", "library". Il peso di
-    base viene **moltiplicato** per il fattore del tipo. Senza `tipi` il comportamento e' quello di
-    prima, bit per bit: e' il contratto della regressione.
+    `tipi` (facoltativo) e' un array di stringhe o liste di segnali ("loved", "liked", "watched", "library").
+    Regola SUM-OF-SIGNALS (cap 5): se un titolo ha più segnali o `t` è una lista di tipi/segnali,
+    i pesi dei singoli segnali vengono sommati con tetto massimo rigido a 5.0.
+    Senza `tipi` o con tipo singolo stringa, il comportamento conserva la compatibilità bit per bit.
     """
     nep = NEP[righe]
     pl = np.asarray(plays, float)
@@ -107,8 +108,23 @@ def pesi_semi(righe, plays, NEP, tipi=None):
                     np.minimum(pl, P.PESO_FILM_MAX))
     if tipi is None:
         return base
-    fattore = np.array([PESO_TIPO_FATTORI.get(str(t), 1.0) for t in tipi], float)
-    return base * fattore
+
+    out = np.empty(len(righe), dtype=float)
+    for i, t in enumerate(tipi):
+        if isinstance(t, (list, tuple, set)):
+            tot = 0.0
+            for sig in t:
+                s_name = sig.get("type", sig.get("tipo", "watched")) if isinstance(sig, dict) else str(sig)
+                if s_name == "watched":
+                    tot += base[i]
+                else:
+                    tot += PESO_TIPO_FATTORI.get(s_name, 1.0)
+            out[i] = min(5.0, tot)
+        elif t is not None:
+            out[i] = base[i] * PESO_TIPO_FATTORI.get(str(t), 1.0)
+        else:
+            out[i] = base[i]
+    return out
 
 
 def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False):

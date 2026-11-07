@@ -438,6 +438,97 @@ def test_edge_cases(engine):
     assert engine.raccomanda([("movie:999999999", 1.0, "loved")], cap=10) == []
 
 
+def test_sum_of_signals_seed_dict_combination(engine):
+    """Verifica che un seme con signals=['watched', 'loved'] sommi i contributi (1.0 + 3.0 = 4.0)."""
+    seme_matrix = "movie:603"
+    seme_bb = "tv:1396"
+
+    # Matrix con watched + loved -> peso 4.0; BB con solo loved -> peso 3.0
+    res_multi = engine.raccomanda(
+        [
+            {"key": seme_matrix, "signals": ["watched", "loved"], "plays": 1},
+            {"key": seme_bb, "signals": ["loved"]},
+        ],
+        cap=20,
+    )
+    scores = {r["key"]: r["punteggio"] for r in res_multi}
+    # Matrix con peso 4.0 riceve punteggio proporzionalmente superiore a BB con peso 3.0
+    assert scores[seme_matrix] > 0
+    assert scores[seme_bb] > 0
+    assert scores[seme_matrix] / scores[seme_bb] > (4.0 / 3.0) * 0.5
+
+
+def test_sum_of_signals_cap_at_five(engine):
+    """Verifica che la somma dei segnali sia limitata rigidamente a 5.0 (cap 5)."""
+    seme = "movie:603"
+    compagno = "movie:550"
+
+    # plays=3 (peso 3.0) + loved (3.0) -> somma 6.0 -> capped a 5.0
+    res_capped_6 = engine.raccomanda(
+        [
+            {"key": seme, "signals": ["watched", "loved"], "plays": 3},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=20,
+    )
+    # plays=3 (3.0) + loved (3.0) + liked (2.0) -> somma 8.0 -> capped a 5.0
+    res_capped_8 = engine.raccomanda(
+        [
+            {"key": seme, "signals": ["watched", "loved", "liked"], "plays": 3},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=20,
+    )
+    # Con peso esplicito esattamente 5.0
+    res_explicit_5 = engine.raccomanda(
+        [
+            {"key": seme, "peso": 5.0},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=20,
+    )
+
+    # Entrambi i casi con somma > 5.0 devono produrre lo stesso identico risultato di peso=5.0
+    assert res_capped_6 == res_capped_8
+    assert res_capped_6 == res_explicit_5
+
+
+def test_sum_of_signals_duplicate_seeds_aggregated_and_capped(engine):
+    """Verifica che più voci dello stesso seme vengano aggregate e cappate a 5.0."""
+    seme = "movie:603"
+    compagno = "movie:550"
+
+    # Due voci per seme: watched (plays=2, peso 2.0) + loved (peso 3.0) -> somma 5.0
+    res_dup_5 = engine.raccomanda(
+        [
+            {"key": seme, "tipo": "watched", "plays": 2},
+            {"key": seme, "tipo": "loved"},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=20,
+    )
+    res_exp_5 = engine.raccomanda(
+        [
+            {"key": seme, "peso": 5.0},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=20,
+    )
+    assert res_dup_5 == res_exp_5
+
+    # Tre voci per seme: watched (plays=3, peso 3.0) + loved (3.0) + liked (2.0) -> somma 8.0 -> capped a 5.0
+    res_dup_capped = engine.raccomanda(
+        [
+            {"key": seme, "tipo": "watched", "plays": 3},
+            {"key": seme, "tipo": "loved"},
+            {"key": seme, "tipo": "liked"},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=20,
+    )
+    assert res_dup_capped == res_exp_5
+
+
 @pytest.mark.skipif(
     os.environ.get("YACA_SLOW") != "1",
     reason="Il test a grafo intero (pota=None) richiede YACA_SLOW=1 (salta di default)",

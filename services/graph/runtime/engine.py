@@ -266,6 +266,7 @@ class Engine:
         key = None
         peso = None
         tipo = None
+        signals = None
         plays = None
         frazione = None
         nep = None
@@ -274,6 +275,7 @@ class Engine:
             key = item.get("key")
             peso = item.get("peso")
             tipo = item.get("tipo")
+            signals = item.get("signals")
             plays = item.get("plays")
             frazione = item.get("frazione")
             nep = item.get("nep")
@@ -400,6 +402,7 @@ class Engine:
             "row": row_idx,
             "explicit_peso": explicit_peso,
             "tipo": tipo,
+            "signals": signals,
             "plays": plays_effettivo,
             "nep": nep_effettivo,
         }
@@ -522,7 +525,7 @@ class Engine:
         seme_idx = [s["row"] for s in parsed_seeds]
         seme_plays = np.array([s["plays"] for s in parsed_seeds], dtype=np.float64)
         seme_neps = np.array([s["nep"] for s in parsed_seeds], dtype=np.float64)
-        seme_tipi = [s["tipo"] for s in parsed_seeds]
+        seme_tipi = [s["signals"] if s.get("signals") is not None else s["tipo"] for s in parsed_seeds]
         seme_explicit = [s["explicit_peso"] for s in parsed_seeds]
 
         # Calcolo dei pesi tramite la formula canonica di camminata.pesi_semi
@@ -540,11 +543,27 @@ class Engine:
             for exp, calc in zip(seme_explicit, calcolati)
         ]
 
+        # Regola SUM-OF-SIGNALS (cap 5):
+        # Se più elementi/segnali fanno riferimento allo stesso titolo (stessa riga di canone),
+        # i pesi vengono aggregati sommando i contributi con tetto massimo (cap) a 5.0.
+        row_weights: dict[int, float] = {}
+        row_explicit_override: dict[int, bool] = {}
+        for r_idx, w, exp in zip(seme_idx, seme_pesi, seme_explicit):
+            if exp is not None and exp > 5.0:
+                # Override esplicito singolo superiore al cap (es. test_explicit_numeric_peso_overrides_formula)
+                row_weights[r_idx] = exp
+                row_explicit_override[r_idx] = True
+            else:
+                row_weights[r_idx] = min(5.0, row_weights.get(r_idx, 0.0) + w)
+
+        final_rows = list(row_weights.keys())
+        final_pesi = [row_weights[r] for r in final_rows]
+
         # Camminata PPR riga-stocastica: riuso di camminata.ppr senza duplicare la logica numerica
         r = _cam.ppr(
             self.Tr,
-            seme=seme_idx,
-            pesi=seme_pesi,
+            seme=final_rows,
+            pesi=final_pesi,
             alpha=P.ALPHA,
             iters=P.ITER,
             normalizza=True,

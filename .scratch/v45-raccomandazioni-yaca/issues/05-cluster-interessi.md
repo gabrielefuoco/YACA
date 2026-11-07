@@ -264,18 +264,31 @@ degli interessi (tutti i gruppi, serviti e non) appartiene alla superficie di es
 
 ## Perche 180 titoli su 600 di `castoffcrown` non entrano nel grafo
 
-Misurato sul file Trakt grezzo: 600 voci, **8 senza id TMDB** e **180 con id TMDB ma fuori canone**.
+Misurato sul file Trakt grezzo: 600 voci, **8 senza id TMDB** e **180 con id TMDB ma fuori canone** (106 film, 74 serie).
 Non sono spazzatura:
+- 8 senza id: canali YouTube (Game Grumps 18 visioni, noclip 13, Markiplier 10) — fuori per natura.
 
-- 8 senza id: canali YouTube (Game Grumps 18 visioni, noclip 13, Markiplier 10) — fuori per natura;
-- 74 serie e 106 film con id regolare, di cui **58 usciti dal 2024** (32%) e **21 precedenti al 1991**
-  (cinema d'autore: Lav Diaz, Masao Adachi, Godard, Antonioni).
+### Rettifica e Misura sul Canone: «Il canone e popolare, un cinefilo resta fuori» (NON «il canone e vecchio»)
 
-Due cause distinte:
-1. **il canone e una fotografia vecchia**: per `pepsipex` il 59% dei fuori canone e del 2024 o dopo.
-   Si risolve rigenerando il canone dai dump TMDB recenti;
-2. **il canone copre male il cinema d'autore e sperimentale** — venti classici (1933-1990) che un
-   utente cinefilo guarda davvero.
+La diagnosi precedente («il canone e una fotografia vecchia») era **errata**:
+il canone arriva fino al 2026: include **876 titoli del 2026, 2.519 del 2025 e 4.401 del 2024**.
 
-Nessuna delle due e «titoli spazzatura», tranne i canali YouTube e i PPV di wrestling, che non sono
-film e vanno esclusi per definizione.
+I 180 titoli fuori canone di `castoffcrown` **non sono recenti: hanno pochi voti**.
+Ad esempio *Lilly Turner* (1933) ha solo 12 voti su TMDB.
+Inoltre lo snapshot `.cache/tmdb/movies.parquet` è a sua volta filtrato per popolarità (il 25° percentile di `vote_count` è 16).
+
+Misura registrata per gli atti sui 180 titoli con ID TMDB fuori canone:
+- **139 titoli (77,2%) mancano interamente dal parquet TMDB** (68 film, 71 serie): non raggiungono la soglia minima di popolarità dei dump sorgente TMDB;
+- **41 titoli (22,8%) sono presenti nel parquet TMDB ma esclusi dal canone** (38 film, 3 serie).
+
+Ripartizione per fascia di `vote_count` dei 41 presenti ma esclusi:
+| Fascia vote_count | Film | Serie | Totale |
+|---|---:|---:|---:|
+| 0 voti | 0 | 0 | 0 |
+| 1 - 10 voti | 6 | 0 | 6 |
+| 11 - 20 voti | 11 | 2 | 13 |
+| 21 - 50 voti | 21 | 1 | 22 |
+| > 50 voti | 0 | 0 | 0 |
+
+Nessun titolo presente ed escluso supera i 46 voti (media 24,7 voti, max 46).
+Il divario è strutturale e di prodotto: **il canone privilegia i titoli popolari, mentre un cinefilo consuma opere di nicchia e a basso voto**. Non si tratta quindi di uno snapshot obsoleto, bensì di un disallineamento tra soglia di popolarità del canone e consumi cinefili di coda lunga.
