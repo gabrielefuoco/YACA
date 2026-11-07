@@ -1,0 +1,358 @@
+{
+  "castoffcrown": {
+    "profilo": "castoffcrown",
+    "tot_raw_trakt": 592,
+    "in_canon": 412,
+    "out_of_canon": 180,
+    "n_seeds_canon": 412,
+    "tot_play_mass": 4486.0,
+    "n_eligible": 34,
+    "n_served": 6,
+    "n_unserved": 28,
+    "served_titles_count": 104,
+    "served_titles_pct": 25.24271844660194,
+    "served_play_mass": 1183.0,
+    "served_play_mass_pct": 26.37093178778422,
+    "served_ge_20_titles_count": 57,
+    "served_ge_20_titles_pct": 13.834951456310678,
+    "served_ge_20_play_mass": 762.0,
+    "served_ge_20_play_mass_pct": 16.98617922425323,
+    "unserved_dist": {
+      "min": 4,
+      "q1": 5.0,
+      "median": 7.0,
+      "q3": 8.0,
+      "max": 11,
+      "all_sizes": [
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        10,
+        10,
+        10,
+        11,
+        11
+      ]
+    },
+    "largest_unserved": {
+      "size": 11,
+      "nome": "Perché hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+      "fonte": "perche_hai_visto",
+      "min_eta": 65.0,
+      "rep": [
+        "Adventure Time",
+        "Love, Death & Robots",
+        "Bob's Burgers"
+      ]
+    },
+    "unserved_ge_20": {
+      "clusters_count": 0,
+      "seeds_count": 0,
+      "share_pct": 0.0,
+      "details": []
+    },
+    "served_shelves_details": [
+      {
+        "size": 31,
+        "nome": "Anime romantici & slice of life",
+        "fonte": "tassonomia",
+        "min_eta": 18.0
+      },
+      {
+        "size": 26,
+        "nome": "Anime shōnen",
+        "fonte": "tassonomia",
+        "min_eta": 12.0
+      },
+      {
+        "size": 12,
+        "nome": "Perché hai visto Wok of Love, Las crónicas del taco e Bourdain: cucine segrete",
+        "fonte": "perche_hai_visto",
+        "min_eta": 43.0
+      },
+      {
+        "size": 12,
+        "nome": "Perché hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York",
+        "fonte": "perche_hai_visto",
+        "min_eta": 26.0
+      },
+      {
+        "size": 12,
+        "nome": "Perché hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+        "fonte": "perche_hai_visto",
+        "min_eta": 24.0
+      },
+      {
+        "size": 11,
+        "nome": "Dramma coreano",
+        "fonte": "tassonomia",
+        "min_eta": 12.0
+      }
+    ]
+  },
+  "warnok": {
+    "profilo": "warnok",
+    "tot_raw_trakt": 485,
+    "in_canon": 476,
+    "out_of_canon": 9,
+    "n_seeds_canon": 476,
+    "tot_play_mass": 3414.0,
+    "n_eligible": 40,
+    "n_served": 6,
+    "n_unserved": 34,
+    "served_titles_count": 153,
+    "served_titles_pct": 32.142857142857146,
+    "served_play_mass": 1329.0,
+    "served_play_mass_pct": 38.927943760984185,
+    "served_ge_20_titles_count": 140,
+    "served_ge_20_titles_pct": 29.411764705882355,
+    "served_ge_20_play_mass": 1315.0,
+    "served_ge_20_play_mass_pct": 38.517867603983596,
+    "unserved_dist": {
+      "min": 4,
+      "q1": 5.0,
+      "median": 7.0,
+      "q3": 8.75,
+      "max": 12,
+      "all_sizes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        7,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        10,
+        10,
+        11,
+        11,
+        12,
+        12,
+        12
+      ]
+    },
+    "largest_unserved": {
+      "size": 12,
+      "nome": "Perché hai visto Lost, Il Trono di Spade e Stranger Things",
+      "fonte": "perche_hai_visto",
+      "min_eta": 54.0,
+      "rep": [
+        "Lost",
+        "Il Trono di Spade",
+        "Stranger Things"
+      ]
+    },
+    "unserved_ge_20": {
+      "clusters_count": 0,
+      "seeds_count": 0,
+      "share_pct": 0.0,
+      "details": []
+    },
+    "served_shelves_details": [
+      {
+        "size": 40,
+        "nome": "Anime shōnen",
+        "fonte": "tassonomia",
+        "min_eta": 83.0
+      },
+      {
+        "size": 29,
+        "nome": "Cinecomic & Supereroi",
+        "fonte": "tassonomia",
+        "min_eta": 734.0
+      },
+      {
+        "size": 26,
+        "nome": "Space opera",
+        "fonte": "tassonomia",
+        "min_eta": 89.0
+      },
+      {
+        "size": 23,
+        "nome": "Animazione per famiglie",
+        "fonte": "tassonomia",
+        "min_eta": 544.0
+      },
+      {
+        "size": 22,
+        "nome": "Animazione d'azione per adulti",
+        "fonte": "tassonomia",
+        "min_eta": 44.0
+      },
+      {
+        "size": 13,
+        "nome": "Fantascienza d'invasione",
+        "fonte": "tassonomia",
+        "min_eta": 103.0
+      }
+    ]
+  },
+  "pepsipex": {
+    "profilo": "pepsipex",
+    "tot_raw_trakt": 600,
+    "in_canon": 568,
+    "out_of_canon": 32,
+    "n_seeds_canon": 568,
+    "tot_play_mass": 2958.0,
+    "n_eligible": 51,
+    "n_served": 6,
+    "n_unserved": 45,
+    "served_titles_count": 143,
+    "served_titles_pct": 25.176056338028168,
+    "served_play_mass": 812.0,
+    "served_play_mass_pct": 27.450980392156865,
+    "served_ge_20_titles_count": 118,
+    "served_ge_20_titles_pct": 20.774647887323944,
+    "served_ge_20_play_mass": 490.0,
+    "served_ge_20_play_mass_pct": 16.565246788370523,
+    "unserved_dist": {
+      "min": 4,
+      "q1": 5.0,
+      "median": 7.0,
+      "q3": 9.0,
+      "max": 18,
+      "all_sizes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
+        10,
+        11,
+        11,
+        11,
+        11,
+        11,
+        16,
+        18
+      ]
+    },
+    "largest_unserved": {
+      "size": 18,
+      "nome": "Giallo investigativo",
+      "fonte": "tassonomia",
+      "min_eta": 47.0,
+      "rep": [
+        "Strike",
+        "Vigil - Indagine a bordo",
+        "The Crow Girl"
+      ]
+    },
+    "unserved_ge_20": {
+      "clusters_count": 0,
+      "seeds_count": 0,
+      "share_pct": 0.0,
+      "details": []
+    },
+    "served_shelves_details": [
+      {
+        "size": 34,
+        "nome": "Horror soprannaturale",
+        "fonte": "tassonomia",
+        "min_eta": 90.0
+      },
+      {
+        "size": 31,
+        "nome": "Giallo investigativo",
+        "fonte": "tassonomia",
+        "min_eta": 118.0
+      },
+      {
+        "size": 27,
+        "nome": "Spy thriller",
+        "fonte": "tassonomia",
+        "min_eta": 15.0
+      },
+      {
+        "size": 26,
+        "nome": "Dramma d'epoca",
+        "fonte": "tassonomia",
+        "min_eta": 35.0
+      },
+      {
+        "size": 13,
+        "nome": "Gangster & Criminalità",
+        "fonte": "tassonomia",
+        "min_eta": 99.0
+      },
+      {
+        "size": 12,
+        "nome": "Perché hai visto Succession, House of the Dragon e La ruota del tempo",
+        "fonte": "perche_hai_visto",
+        "min_eta": 88.0
+      }
+    ]
+  }
+}

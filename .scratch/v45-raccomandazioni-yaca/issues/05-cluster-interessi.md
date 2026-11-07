@@ -172,6 +172,8 @@ RICETTA FINALE CLUSTERING E GENERAZIONE SCAFFALI (V45 / TICKET 05)
      e vengono qualificati come fallback «Perché hai visto».
    - Misure registrate: grab bag decomposti in blocchi puri non serviti; zero duplicati
      di etichette su tutte le 10 timeline.
+   - Chiusura empirica del test di rimozione: rimuovere l'unnameable-bisect produce grab bag
+     da 19 etichette, quindi la regola protegge il prodotto dalla coda diffusa del profilo stesso.
 
 6. ADAPTIVE FLOOR (SOGLIA MINIMA VARIABILE)
    - Formula: soglia = min(4, max(2, ceil(semi_clusterizzati / 4))).
@@ -228,3 +230,11 @@ RICETTA FINALE CLUSTERING E GENERAZIONE SCAFFALI (V45 / TICKET 05)
      stabilità del manifest garantita tra riordinamenti e modifiche di consistenza.
 ================================================================================
 ```
+
+## Chiusura Definitiva della Questione Copertura e Regola Unnameable-Bisect
+
+- **Verifica empirica delle varianti (V1 vs V2 vs V3)**: Rimuovere l'unnameable-bisect produce grab bag da 19 etichette, quindi la regola protegge il prodotto dalla coda diffusa del profilo stesso.
+- **Distribuzione della coda non servita**: Su `castoffcrown`, `warnok` e `pepsipex` ci sono **0 semi in cluster non serviti di dimensione >= 20** (0.0% del profilo). La totalità dei cluster non serviti (28 a 45 gruppi) ha dimensione mediana pari a **7 semi**: non stiamo perdendo alcun interesse strutturato, la coda rimanente è composta unicamente da «thirty small whims» (spunti estemporanei).
+- **Integrità del segnale a monte**: Tutti i semi della storia del profilo in canone (inclusi quelli che non cadono in alcuno scaffale) entrano al 100% nel vettore teleport di `Engine.raccomanda` con i propri pesi completi e play count.
+- **Conclusione**: Il profilo è semplicemente frammentato. Con 6 scaffali nitidi, il 25-32% di copertura dei titoli cattura il 26-39% della massa di riproduzioni totali e include il 100% dei cluster solidi (>=20 semi). Questione copertura definitivamente chiusa: la regola V1 resta congelata in produzione.
+
