@@ -15,6 +15,7 @@ ENV PORT=7862
 ENV V45_TRANSIZIONE_PATH=/app/services/graph/data/v45-transizione/transizione-pota16.npz
 ENV V45_VICINI_PATH=/app/services/graph/data/v45-vicini100/vicini-top100.npz
 ENV ASSI_CANONE_PATH=/app/services/graph/data/assi-canone.npz
+ENV KW_TFIDF_DIR=/app/services/graph/data/kw-tfidf
 
 EXPOSE 7862
 

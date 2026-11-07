@@ -226,21 +226,59 @@ def test_artefatto_assi_mancante_restituisce_503(monkeypatch):
     assert "graph.assi --build" in res["errore"]
 
 
+def test_tassonomia_mancante_health_segnala_warning_e_scaffali_degradano_200(monkeypatch, warnok_seeds, tmp_path):
+    """Verifica che l'assenza dell'artefatto tassonomia (kw-tfidf):
+    1. /scaffali continui a restituire 200 con le etichette degradate («Perché hai visto ...»);
+    2. /health segnali chiaramente l'artefatto come mancante (present=False, sha=None);
+    3. Il warning di startup nomini esplicitamente il file e la frase contrattuale
+       «senza questo artefatto nessuno scaffale riceve un nome: tutti ricadono su “Perché hai visto”».
+    """
+    non_existent_dir = tmp_path / "kw_non_esiste"
+    monkeypatch.setenv("KW_TFIDF_DIR", str(non_existent_dir))
+    servizio.reset_singletons_v45()
+
+    # 1. Health check segnala assenza
+    payload = servizio.costruisci_health_payload()
+    entry = payload["artefatti"]["tassonomia"]
+    assert entry["present"] is False
+    assert entry["loaded"] is False
+    assert entry["sha"] is None
+    assert "tfidf.npz" in entry["path"]
+
+    # 2. Startup warning nomina il file e include la frase di contratto
+    warnings: list[str] = []
+    servizio.verifica_startup_e_avvertimenti(logger_fn=lambda msg, *a, **kw: warnings.append(msg))
+    testo_warnings = "\n".join(warnings)
+    assert "senza questo artefatto nessuno scaffale riceve un nome: tutti ricadono su “Perché hai visto”" in testo_warnings
+    assert "tfidf.npz" in testo_warnings
+
+    # 3. /scaffali risponde 200 con etichette degradate (nessun 503)
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds})
+    assert status == 200
+    assert res["ok"] is True
+    assert len(res["scaffali"]) > 0
+    degradati = [s for s in res["scaffali"] if s["nome"].startswith("Perché hai visto")]
+    assert len(degradati) > 0, "Almeno uno scaffale doveva degradare a 'Perché hai visto'"
+
+
 def test_health_artefatti_presenti_in_layout_locale():
     p_trans = servizio.risolvi_percorso_transizione()
     p_vicini = servizio.risolvi_percorso_vicini()
     p_assi = servizio.risolvi_percorso_assi()
+    p_vocab, p_tfidf = servizio.risolvi_percorso_kw_tfidf()
 
-    if not (p_trans.is_file() and p_vicini.is_file() and p_assi.is_file()):
+    if not (p_trans.is_file() and p_vicini.is_file() and p_assi.is_file() and p_vocab.is_file() and p_tfidf.is_file()):
         pytest.skip(
             f"Artefatti non presenti nel layout locale (trans: {p_trans.is_file()}, "
-            f"vicini: {p_vicini.is_file()}, assi: {p_assi.is_file()})"
+            f"vicini: {p_vicini.is_file()}, assi: {p_assi.is_file()}, kw: {p_tfidf.is_file()})"
         )
 
     # Carica i singletons
     eng = servizio.get_engine_v45()
     w_aff = servizio.get_vicini_affinita()
     servizio.get_assi_canone()
+    from graph import interessi as I
+    I._carica_tfidf_keywords()
 
     payload = servizio.costruisci_health_payload(engine=eng, w_aff=w_aff)
 
@@ -253,9 +291,9 @@ def test_health_artefatti_presenti_in_layout_locale():
 
     # 2. Monitoraggio per-artefatto
     arts = payload["artefatti"]
-    assert set(arts.keys()) == {"transizione", "vicini", "assi", "grafo_v45"}
+    assert set(arts.keys()) == {"transizione", "vicini", "assi", "grafo_v45", "tassonomia"}
 
-    for nome in ("transizione", "vicini", "assi"):
+    for nome in ("transizione", "vicini", "assi", "tassonomia"):
         entry = arts[nome]
         assert entry["present"] is True
         assert entry["loaded"] is True
@@ -297,6 +335,8 @@ def test_health_chiamata_http_su_socket():
     assert data["artefatti"]["transizione"]["loaded"] is True
     assert data["artefatti"]["vicini"]["loaded"] is True
     assert data["artefatti"]["assi"]["loaded"] is True
+    assert data["artefatti"]["tassonomia"]["present"] is True
+    assert data["artefatti"]["tassonomia"]["loaded"] is True
 
 
 # ------------------------------------------------------------------------------

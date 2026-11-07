@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -108,6 +109,7 @@ class Shelf:
 _MATRICE_AFFINITA_CACHE: sp.csr_matrix | None = None
 _TMDB_EXTRA_INFO_CACHE: dict[str, dict[str, Any]] | None = None
 _TFIDF_KW_CACHE: tuple[list[str], sp.csr_matrix] | None = None
+_TFIDF_KW_PATH: tuple[str, str] | None = None
 
 NOISE_KEYWORDS: frozenset[str] = frozenset({"duringcreditsstinger", "aftercreditsstinger"})
 
@@ -224,14 +226,53 @@ def _carica_tmdb_extra() -> dict[str, dict[str, Any]]:
     return extra_info
 
 
-def _carica_tfidf_keywords() -> tuple[list[str], sp.csr_matrix] | None:
+def percorso_kw_tfidf(dir_path: str | Path | None = None) -> tuple[Path, Path]:
+    """Risolve i percorsi di (vocab.json, tfidf.npz) per la tassonomia.
+
+    Ordine di risoluzione:
+      1. Parametro esplicito dir_path o variabile d'ambiente KW_TFIDF_DIR;
+      2. Cartella canonica: services/graph/data/kw-tfidf/ (vocab.json, tfidf.npz);
+      3. Fallback prototipi locali dev: services/graph_dense/data/graph/ (05-vocab.json, 05-tfidf.npz).
+    """
+    env_dir = dir_path or os.environ.get("KW_TFIDF_DIR")
+    if env_dir:
+        d = Path(env_dir)
+        v = d / "vocab.json" if (d / "vocab.json").exists() else d / "05-vocab.json"
+        t = d / "tfidf.npz" if (d / "tfidf.npz").exists() else d / "05-tfidf.npz"
+        return v, t
+
+    # 2. Percorso canonico in services/graph/data/kw-tfidf
+    d_canon = K.DATA / "kw-tfidf"
+    v_canon = d_canon / "vocab.json"
+    t_canon = d_canon / "tfidf.npz"
+    if v_canon.is_file() and t_canon.is_file():
+        return v_canon, t_canon
+
+    # 3. Fallback per prototipi locali
+    d_dense = K.ROOT / "services" / "graph_dense" / "data" / "graph"
+    v_dense = d_dense / "05-vocab.json"
+    t_dense = d_dense / "05-tfidf.npz"
+    if v_dense.is_file() and t_dense.is_file():
+        return v_dense, t_dense
+
+    return v_canon, t_canon
+
+
+def reset_cache_tfidf_keywords() -> None:
+    """Reset della cache in memoria per i test."""
+    global _TFIDF_KW_CACHE, _TFIDF_KW_PATH
+    _TFIDF_KW_CACHE = None
+    _TFIDF_KW_PATH = None
+
+
+def _carica_tfidf_keywords(dir_path: str | Path | None = None) -> tuple[list[str], sp.csr_matrix] | None:
     """Carica lazily il vocabolario e la matrice TF-IDF delle keyword se presenti."""
-    global _TFIDF_KW_CACHE
-    if _TFIDF_KW_CACHE is not None:
+    global _TFIDF_KW_CACHE, _TFIDF_KW_PATH
+    vocab_p, tfidf_p = percorso_kw_tfidf(dir_path)
+    cur_key = (str(vocab_p), str(tfidf_p))
+    if _TFIDF_KW_CACHE is not None and _TFIDF_KW_PATH == cur_key:
         return _TFIDF_KW_CACHE
 
-    vocab_p = Path("services/graph_dense/data/graph/05-vocab.json")
-    tfidf_p = Path("services/graph_dense/data/graph/05-tfidf.npz")
     if vocab_p.is_file() and tfidf_p.is_file():
         try:
             with open(vocab_p, encoding="utf-8") as f:
@@ -242,6 +283,7 @@ def _carica_tfidf_keywords() -> tuple[list[str], sp.csr_matrix] | None:
             X = sp.load_npz(tfidf_p).tocsr()
             X_kw = X[:, kw_cols].tocsr()
             _TFIDF_KW_CACHE = (kw_names, X_kw)
+            _TFIDF_KW_PATH = cur_key
             return _TFIDF_KW_CACHE
         except Exception:
             pass

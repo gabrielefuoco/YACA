@@ -32,10 +32,16 @@ from graph.runtime import Engine
 CMD_RIGENERA_TRANSIZIONE: str = "PYTHONPATH=services python -m graph.runtime.prepara --pota 16"
 CMD_RIGENERA_VICINI: str = "PYTHONPATH=services python -m graph.runtime.prepara --target vicini"
 CMD_RIGENERA_ASSI: str = "PYTHONPATH=services python -m graph.assi --build"
+CMD_RIGENERA_KW_TFIDF: str = "PYTHONPATH=. py .scratch/distillazione-grafo/tfidf-v2.py"
 
 MSG_ERR_TRANSIZIONE: str = f"Artefatto transizione mancante: transizione-pota16.npz. Rigenerare con: {CMD_RIGENERA_TRANSIZIONE}"
 MSG_ERR_VICINI: str = f"Artefatto vicini mancante: vicini-top100.npz. Rigenerare con: {CMD_RIGENERA_VICINI}"
 MSG_ERR_ASSI: str = f"Artefatto assi mancante: assi-canone.npz. Rigenerare con: {CMD_RIGENERA_ASSI}"
+MSG_WARN_KW_TFIDF: str = (
+    "Artefatto tassonomia mancante (tfidf.npz / vocab.json): senza questo artefatto "
+    "nessuno scaffale riceve un nome: tutti ricadono su “Perché hai visto”. "
+    f"Rigenerare con: {CMD_RIGENERA_KW_TFIDF}"
+)
 
 # NOTA: motore.py (il motore denso V10) non è più importato né utilizzato da questo servizio,
 # che ora serve esclusivamente il runtime sparso V45 (graph.runtime.Engine).
@@ -264,6 +270,7 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
 TRANSIZIONE_PATH: str | Path | None = os.environ.get("V45_TRANSIZIONE_PATH")
 VICINI_PATH: str | Path | None = os.environ.get("V45_VICINI_PATH")
 ASSI_PATH: str | Path | None = os.environ.get("ASSI_CANONE_PATH")
+KW_TFIDF_PATH: str | Path | None = os.environ.get("KW_TFIDF_DIR")
 
 _ENGINE_V45: Engine | None = None
 _W_AFF: sp.csr_matrix | None = None
@@ -296,6 +303,11 @@ def risolvi_percorso_assi(path: str | Path | None = None) -> Path:
     if target is not None:
         return Path(target)
     return _assi.percorso_artefatto()
+
+
+def risolvi_percorso_kw_tfidf(path: str | Path | None = None) -> tuple[Path, Path]:
+    target = path or KW_TFIDF_PATH or os.environ.get("KW_TFIDF_DIR")
+    return I.percorso_kw_tfidf(target)
 
 
 def get_engine_v45(path: str | Path | None = None) -> Engine:
@@ -347,6 +359,7 @@ def reset_singletons_v45() -> None:
     _W_AFF = None
     _ASSI_CACHE = None
     _assi.reset_cache_assi()
+    I.reset_cache_tfidf_keywords()
 
 
 def _estrai_sha_da_npz(path: Path) -> str | None:
@@ -398,6 +411,12 @@ def stato_artefatti(engine: Engine | None = None, w_aff: sp.csr_matrix | None = 
     pres_v45 = p_v45.is_file()
     sha_v45 = _estrai_sha_da_npz(p_v45) if pres_v45 else None
 
+    # 5. Tassonomia (keyword TF-IDF)
+    p_vocab, p_tfidf = risolvi_percorso_kw_tfidf()
+    pres_tass = p_vocab.is_file() and p_tfidf.is_file()
+    loaded_tass = (I._TFIDF_KW_CACHE is not None)
+    sha_tass = _estrai_sha_da_npz(p_tfidf) if p_tfidf.is_file() else None
+
     return {
         "transizione": {
             "present": pres_trans,
@@ -419,6 +438,14 @@ def stato_artefatti(engine: Engine | None = None, w_aff: sp.csr_matrix | None = 
             "sha": sha_assi,
             "provenance": sha_assi,
             "loaded": loaded_assi,
+        },
+        "tassonomia": {
+            "present": pres_tass,
+            "path": str(p_tfidf).replace("\\", "/"),
+            "sha": sha_tass,
+            "provenance": sha_tass,
+            "loaded": loaded_tass,
+            "vocab_path": str(p_vocab).replace("\\", "/"),
         },
         "grafo_v45": {
             "present": pres_v45,
@@ -470,6 +497,11 @@ def verifica_startup_e_avvertimenti(logger_fn=print) -> None:
     if not arts["assi"]["present"]:
         logger_fn(
             f"WARNING [startup]: {MSG_ERR_ASSI} (percorso atteso: {arts['assi']['path']})",
+            file=sys.stderr,
+        )
+    if not arts["tassonomia"]["present"]:
+        logger_fn(
+            f"WARNING [startup]: {MSG_WARN_KW_TFIDF} (percorso atteso: {arts['tassonomia']['path']})",
             file=sys.stderr,
         )
 
@@ -902,6 +934,11 @@ def crea_server(host="0.0.0.0", port=7862, engine_v45=None, w_aff=None, carica_m
 
         try:
             get_assi_canone()
+        except Exception:
+            pass
+
+        try:
+            I._carica_tfidf_keywords()
         except Exception:
             pass
 
