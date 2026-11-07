@@ -453,11 +453,53 @@ def test_peak_rss_scaffali_warnok_under_400mb():
     except ImportError:
         pytest.skip("psutil non disponibile per misurare RSS")
 
+    import subprocess
+    import sys
+
+    # Eseguiamo in un sottoprocesso isolato per misurare il reale peak RSS del processo runtime
+    # senza contaminazioni da artefatti non potati caricati da altri test nella stessa sessione.
+    code = (
+        "import psutil\n"
+        "from graph import canon as K\n"
+        "from graph.runtime import Engine\n"
+        "from graph.interessi import scaffali\n"
+        "proc = psutil.Process()\n"
+        "engine = Engine.carica_transizione(pota=16)\n"
+        "k, righe, plays, eta = K.storia_trakt('warnok', ordine='recente')\n"
+        "semi_input = [{'key': k[i], 'plays': plays[i], 'eta_giorni': eta[i]} for i in range(len(k))]\n"
+        "serviti = scaffali(engine, semi_input, n=6)\n"
+        "assert len(serviti) == 6\n"
+        "mem = proc.memory_info()\n"
+        "peak = getattr(mem, 'peak_wset', mem.rss) / (1024 * 1024)\n"
+        "print(f'{peak:.2f}')\n"
+    )
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "services"
+    res = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
+    assert res.returncode == 0, f"Processo scaffali() fallito con stderr:\n{res.stderr}"
+
+    peak_rss_mib = float(res.stdout.strip())
+    assert peak_rss_mib <= 400.0, (
+        f"Picco RSS di scaffali() {peak_rss_mib:.1f} MB supera il limite di guardia di 400 MB "
+        "(il container Docker ha mem_limit: 512m)."
+    )
+
+
+# ==============================================================================
+# 10. TEST REGRESSIONE LATENZA: SCAFFALI SU WARNOK <= 1.5 S
+# ==============================================================================
+
+@pytest.mark.skipif(
+    os.getenv("YACA_SLOW") != "1",
+    reason="Test d'integrazione reale con misurazione latenza (attivo solo con YACA_SLOW=1)",
+)
+def test_scaffali_latency_warnok_under_1_5s():
+    """Regression guard: asserisce che il tempo di scaffali() su warnok (476 semi) rimanga <= 1.5 s."""
+    import time
     from graph import canon as K
     from graph.runtime import Engine
     from graph.interessi import scaffali
-
-    proc = psutil.Process()
 
     engine = Engine.carica_transizione(pota=16)
     k, righe, plays, eta = K.storia_trakt("warnok", ordine="recente")
@@ -466,16 +508,76 @@ def test_peak_rss_scaffali_warnok_under_400mb():
         for i in range(len(k))
     ]
 
+    t0 = time.perf_counter()
     serviti = scaffali(engine, semi_input, n=6)
+    elapsed = time.perf_counter() - t0
+
     assert len(serviti) == 6
+    assert elapsed <= 1.5, f"Latenza di scaffali() su warnok {elapsed:.3f} s supera il limite di 1.5 s"
 
-    mem_info = proc.memory_info()
-    if hasattr(mem_info, "peak_wset"):
-        peak_rss_mib = mem_info.peak_wset / (1024 * 1024)
-    else:
-        peak_rss_mib = mem_info.rss / (1024 * 1024)
 
-    assert peak_rss_mib <= 400.0, (
-        f"Picco RSS di scaffali() {peak_rss_mib:.1f} MB supera il limite di guardia di 400 MB "
-        "(il container Docker ha mem_limit: 512m)."
+# ==============================================================================
+# 11. TEST LABEL-MERGE PRIMA DEL BUDGET STEP
+# ==============================================================================
+
+def test_unisci_cluster_tassonomia_identici_syntetic():
+    """Verifica che unisci_cluster_tassonomia_identici fonda correttamente scaffali con stessa etichetta tassonomica."""
+    from graph.interessi import Shelf, unisci_cluster_tassonomia_identici
+
+    s1 = Shelf(
+        catalog_id="yaca_10_series",
+        nome="Anime shōnen",
+        nome_fonte="tassonomia",
+        confidenza=0.9,
+        medium="series",
+        semi_rappresentativi=[],
+        semi_membri=[],
+        size=25,
+        min_eta=10.0,
+        seeds_indices=list(range(0, 25)),
     )
+    s2 = Shelf(
+        catalog_id="yaca_20_series",
+        nome="Anime shōnen",
+        nome_fonte="tassonomia",
+        confidenza=0.85,
+        medium="series",
+        semi_rappresentativi=[],
+        semi_membri=[],
+        size=20,
+        min_eta=5.0,
+        seeds_indices=list(range(25, 45)),
+    )
+    s3 = Shelf(
+        catalog_id="yaca_30_movie",
+        nome="Perché hai visto Film X, Y e Z",
+        nome_fonte="perche_hai_visto",
+        confidenza=0.0,
+        medium="movie",
+        semi_rappresentativi=[],
+        semi_membri=[],
+        size=8,
+        min_eta=20.0,
+        seeds_indices=list(range(50, 58)),
+    )
+
+    n_tot = 60
+    righe_arr = np.arange(n_tot, dtype=np.int64)
+    chiavi = [f"tv:{i}" for i in range(n_tot)]
+    plays_arr = np.ones(n_tot, dtype=np.float32)
+    eta_arr = np.arange(n_tot, dtype=np.float32)
+
+    # Test con cap=40: 25 + 20 = 45 semi -> limitati a 40
+    merged_40 = unisci_cluster_tassonomia_identici([s1, s2, s3], righe_arr, chiavi, plays_arr, eta_arr, cap=40)
+    assert len(merged_40) == 2
+    sh_anime_40 = next(s for s in merged_40 if s.nome == "Anime shōnen")
+    assert sh_anime_40.size == 40
+    assert len(sh_anime_40.seeds_indices) == 40
+
+    # Test con cap=60: 25 + 20 = 45 semi -> tutti e 45 inclusi
+    merged_60 = unisci_cluster_tassonomia_identici([s1, s2, s3], righe_arr, chiavi, plays_arr, eta_arr, cap=60)
+    assert len(merged_60) == 2
+    sh_anime_60 = next(s for s in merged_60 if s.nome == "Anime shōnen")
+    assert sh_anime_60.size == 45
+    assert len(sh_anime_60.seeds_indices) == 45
+    assert sh_anime_40.min_eta == 0.0

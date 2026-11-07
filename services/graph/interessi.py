@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -100,10 +100,6 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
     È SEVERAMENTE VIETATO reintrodurre o caricare 'bolle-eterogeneo-V45-p1.0-triangolo.npz' nel percorso
     di clustering. Questo metodo solleva ValueError esplicito se viene passato il percorso del triangolo.
     """
-    global _MATRICE_AFFINITA_CACHE
-    if _MATRICE_AFFINITA_CACHE is not None:
-        return _MATRICE_AFFINITA_CACHE
-
     if path is not None:
         p_str = str(path).replace("\\", "/")
         if "bolle-eterogeneo-V45-p1.0-triangolo.npz" in p_str:
@@ -115,6 +111,9 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
             )
         cand_p = Path(path)
     else:
+        global _MATRICE_AFFINITA_CACHE
+        if _MATRICE_AFFINITA_CACHE is not None:
+            return _MATRICE_AFFINITA_CACHE
         cartella = Path(__file__).resolve().parent / "data" / "v45-vicini100"
         cand_p = cartella / "vicini-top100.npz"
         if not cand_p.is_file():
@@ -602,6 +601,83 @@ def clusters(
     return shelves
 
 
+def unisci_cluster_tassonomia_identici(
+    eligible: list[Shelf],
+    righe_arr: np.ndarray,
+    chiavi: list[str],
+    plays_arr: np.ndarray,
+    eta_arr: np.ndarray,
+    cap: int = 40,
+) -> list[Shelf]:
+    """Unisce i cluster con identica etichetta tassonomica prima del budget step, fino al cap specificato.
+
+    Args:
+        eligible: Lista di scaffali candidati da clusters().
+        righe_arr: Array degli indici di riga canonici per il profilo.
+        chiavi: Lista delle chiavi item (es. 'movie:123', 'tv:456').
+        plays_arr: Array dei play count per i semi.
+        eta_arr: Array dei giorni di anzianità per i semi.
+        cap: Dimensione massima ammessa per lo scaffale unito (default 40).
+
+    Returns:
+        Lista di scaffali con le etichette tassonomiche duplicate fuse fino a cap.
+    """
+    tax_groups: dict[str, list[Shelf]] = defaultdict(list)
+    other_clusters: list[Shelf] = []
+
+    for sh in eligible:
+        if sh.nome_fonte == "tassonomia":
+            tax_groups[sh.nome].append(sh)
+        else:
+            other_clusters.append(sh)
+
+    merged: list[Shelf] = list(other_clusters)
+    for nome, sh_list in tax_groups.items():
+        if len(sh_list) == 1:
+            merged.append(sh_list[0])
+            continue
+
+        all_seeds: set[int] = set()
+        for sh in sh_list:
+            all_seeds.update(sh.seeds_indices)
+
+        m_sorted = sorted(all_seeds, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+        capped_seeds = m_sorted[:cap]
+
+        m_keys = [chiavi[i] for i in capped_seeds]
+        c_med = Counter("series" if k.startswith("tv:") else "movie" for k in m_keys)
+        if c_med["series"] > c_med["movie"]:
+            m_med = "series"
+        elif c_med["movie"] > c_med["series"]:
+            m_med = "movie"
+        else:
+            m_med = sh_list[0].medium
+
+        top_s = capped_seeds[0]
+        top_r = righe_arr[top_s]
+        top_k = chiavi[top_s]
+        top_tid = int(top_k.split(":")[1]) if ":" in top_k else top_r
+        cat_id = f"yaca_{top_tid}_{m_med}"
+
+        merged_sh = Shelf(
+            catalog_id=cat_id,
+            nome=nome,
+            nome_fonte="tassonomia",
+            confidenza=max(s.confidenza for s in sh_list),
+            medium=m_med,
+            semi_rappresentativi=sh_list[0].semi_rappresentativi,
+            semi_membri=sh_list[0].semi_membri,
+            size=len(capped_seeds),
+            min_eta=min(eta_arr[idx] for idx in capped_seeds),
+            matched_entry=sh_list[0].matched_entry,
+            seeds_indices=capped_seeds,
+            dom_coll=sh_list[0].dom_coll,
+        )
+        merged.append(merged_sh)
+
+    return merged
+
+
 # ==============================================================================
 # STEP 9 - 10: SELEZIONE GREEDY SUL BUDGET N ED ORDINAMENTO DISPLAY
 # ==============================================================================
@@ -612,6 +688,8 @@ def scaffali(
     n: int = 6,
     medium: str | None = None,
     W_aff: sp.csr_matrix | None = None,
+    label_merge: bool = False,
+    cap: int = 40,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 
@@ -621,6 +699,8 @@ def scaffali(
         n: Budget massimo di scaffali da servire (default 6).
         medium: Filtro medium opzionale ("movie", "series").
         W_aff: Matrice non potata opzionale per l'affinità.
+        label_merge: Se True, fonde i cluster con la stessa etichetta tassonomica prima del budget step.
+        cap: Cap massimo di semi per scaffale in caso di label_merge (default 40).
 
     Returns:
         Lista di al più `n` oggetti `Shelf` ordinati per esposizione UI.
@@ -666,6 +746,8 @@ def scaffali(
         return []
 
     righe_arr = np.asarray(righe, dtype=np.int64)
+    plays_arr = np.asarray(plays_list, dtype=np.float32)
+    eta_arr = np.asarray(eta_list, dtype=np.float32)
 
     # 1. Ottieni tutti i cluster ammissibili (Steps 1-8)
     eligible = clusters(
@@ -679,29 +761,30 @@ def scaffali(
     if not eligible:
         return []
 
-    # 2. Precalcola top-10 raccomandazioni e consistenza per ciascuno scaffale
-    seed_top10_cache: dict[tuple[str, str], set[str]] = {}
+    # Label-merge opzionale prima del budget step
+    if label_merge:
+        eligible = unisci_cluster_tassonomia_identici(
+            eligible=eligible,
+            righe_arr=righe_arr,
+            chiavi=chiavi,
+            plays_arr=plays_arr,
+            eta_arr=eta_arr,
+            cap=cap,
+        )
 
-    def get_seed_top10(s_idx: int, med: str) -> set[str]:
-        ckey = (chiavi[s_idx], med)
-        if ckey not in seed_top10_cache:
-            racs = engine.raccomanda([{"key": chiavi[s_idx], "tipo": "watched", "peso": 1.0}], cap=10, medium=med, esclusi=chiavi)
-            seed_top10_cache[ckey] = set(r["key"] for r in racs[:10])
-        return seed_top10_cache[ckey]
+    # 2. Calcolo consistenza intra-cluster via coseno gratuito da W_aff
+    if W_aff is None:
+        W_aff = carica_matrice_affinita()
+    S = calcola_sim_affinity(righe_arr, W_aff)
 
     for sh in eligible:
         sz = len(sh.seeds_indices)
-        top10_members = [get_seed_top10(i, sh.medium) for i in sh.seeds_indices]
-        pairs = [jaccard(top10_members[i], top10_members[j]) for i in range(sz) for j in range(i + 1, sz)]
-        sh.consistenza = round(float(np.mean(pairs)), 4) if pairs else 0.0
-
-        semi_rac = [
-            {"key": chiavi[i], "tipo": "watched", "peso": 1.0}
-            for i in sh.seeds_indices
-        ]
-        racs = engine.raccomanda(semi_rac, cap=10, medium=sh.medium, esclusi=chiavi)
-        sh.top10_cands = set(r["key"] for r in racs[:10])
-        sh.titoli = racs[:10]
+        if sz >= 2:
+            sub = S[np.ix_(sh.seeds_indices, sh.seeds_indices)]
+            iu = np.triu_indices(sz, k=1)
+            sh.consistenza = round(float(np.mean(sub[iu])), 4)
+        else:
+            sh.consistenza = 0.0
 
     # Precalcolo ranghi per combined rank display
     eligible.sort(key=lambda x: x.min_eta)
@@ -712,6 +795,17 @@ def scaffali(
     for r_idx, item in enumerate(eligible):
         item._r_sup = r_idx + 1
         item.r_comb = round((item._r_rec + item._r_sup) / 2.0, 1)
+
+    # Raccomandazioni lazy evaluate per overlap dedupe
+    def ensure_top10(cand: Shelf) -> None:
+        if not cand.top10_cands:
+            semi_rac = [
+                {"key": chiavi[i], "tipo": "watched", "peso": 1.0}
+                for i in cand.seeds_indices
+            ]
+            racs = engine.raccomanda(semi_rac, cap=10, medium=cand.medium, esclusi=chiavi)
+            cand.top10_cands = set(r["key"] for r in racs[:10])
+            cand.titoli = racs[:10]
 
     # Step 10: Selezione Greedy per Budget N
     chosen: list[Shelf] = []
@@ -724,7 +818,7 @@ def scaffali(
         best_key: tuple[int, float, float] | None = None
 
         for cand in eligible:
-            if cand in chosen:
+            if any(c is cand for c in chosen):
                 continue
             # (a) Al massimo 1 scaffale per etichetta tassonomica nel profilo
             if cand.nome_fonte == "tassonomia" and cand.nome in seen_tax_labels:
@@ -732,22 +826,27 @@ def scaffali(
             # (b) Family dedupe
             if cand.dom_coll is not None and cand.dom_coll in seen_colls:
                 continue
-            # (c) Overlap dedupe (Jaccard < 0.5 sui top-10 raccomandati)
-            if any(jaccard(cand.top10_cands, s.top10_cands) >= 0.5 for s in chosen):
-                continue
 
             uncovered_added = len(set(cand.seeds_indices) - covered_seeds)
             if uncovered_added <= 0:
                 continue
 
             cand_key = (uncovered_added, -cand.min_eta, cand.consistenza)
-            if best_cand is None or cand_key > best_key:
-                best_cand = cand
-                best_key = cand_key
+            if best_cand is not None and cand_key <= best_key:
+                continue
+
+            # (c) Overlap dedupe lazy (solo per candidati che superano il seed-coverage test)
+            ensure_top10(cand)
+            if any(jaccard(cand.top10_cands, s.top10_cands) >= 0.5 for s in chosen):
+                continue
+
+            best_cand = cand
+            best_key = cand_key
 
         if best_cand is None:
             break
 
+        ensure_top10(best_cand)
         chosen.append(best_cand)
         covered_seeds.update(best_cand.seeds_indices)
         if best_cand.nome_fonte == "tassonomia":
@@ -760,7 +859,7 @@ def scaffali(
 
     # Step 9: Ordinamento per esposizione UI (Slot 1 = freshest, Slot 2..N = r_comb)
     best_freshest = min(chosen, key=lambda x: (x.min_eta, x.r_comb))
-    rem = [c for c in chosen if id(c) != id(best_freshest)]
+    rem = [c for c in chosen if c is not best_freshest]
     rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
     ordered_shelves = [best_freshest] + rem
 
