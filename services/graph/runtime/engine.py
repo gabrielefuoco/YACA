@@ -28,6 +28,7 @@ questo modulo realizza il runtime puro per la camminata sparsa (Personalized Pag
 """
 from __future__ import annotations
 
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -270,6 +271,8 @@ class Engine:
         plays = None
         frazione = None
         nep = None
+        watched = None
+        library_only = None
 
         if isinstance(item, dict):
             key = item.get("key")
@@ -279,6 +282,18 @@ class Engine:
             plays = item.get("plays")
             frazione = item.get("frazione")
             nep = item.get("nep")
+            watched = item.get("watched")
+            library_only = item.get("library_only")
+            if library_only is True:
+                watched = False
+                if not tipo and not signals:
+                    tipo = "library"
+            elif watched is False:
+                if not tipo and not signals:
+                    tipo = "library"
+            elif tipo == "library":
+                if watched is None:
+                    watched = False
             if not key:
                 tmdb_id = item.get("tmdbId") if "tmdbId" in item else (item.get("tmdb_id") or item.get("tmdb"))
                 medium = item.get("medium")
@@ -300,6 +315,8 @@ class Engine:
                 key, peso, tipo, plays = item[0], item[1], item[2], item[3]
             elif len(item) >= 5:
                 key, peso, tipo, plays, frazione = item[0], item[1], item[2], item[3], item[4]
+            if tipo == "library":
+                watched = False
         elif isinstance(item, str):
             key = item
 
@@ -405,6 +422,8 @@ class Engine:
             "signals": signals,
             "plays": plays_effettivo,
             "nep": nep_effettivo,
+            "watched": watched,
+            "library_only": library_only,
         }
 
     def _parse_esclusi(self, esclusi: Iterable[Any]) -> tuple[set[int], int]:
@@ -522,42 +541,75 @@ class Engine:
         if cap <= 0 or not parsed_seeds:
             return []
 
-        seme_idx = [s["row"] for s in parsed_seeds]
-        seme_plays = np.array([s["plays"] for s in parsed_seeds], dtype=np.float64)
-        seme_neps = np.array([s["nep"] for s in parsed_seeds], dtype=np.float64)
-        seme_tipi = [s["signals"] if s.get("signals") is not None else s["tipo"] for s in parsed_seeds]
-        seme_explicit = [s["explicit_peso"] for s in parsed_seeds]
+        # Raggruppamento per titolo (riga di canone):
+        # Permette la risoluzione corretta delle combinazioni cronologia + libreria e segnali multipli
+        grouped_by_row: dict[int, list[dict]] = defaultdict(list)
+        for s in parsed_seeds:
+            grouped_by_row[s["row"]].append(s)
 
-        # Calcolo dei pesi tramite la formula canonica di camminata.pesi_semi
-        # (senza re-implementare la logica numerica)
-        calcolati = _cam.pesi_semi(
-            righe=np.arange(len(parsed_seeds)),
-            plays=seme_plays,
-            NEP=seme_neps,
-            tipi=seme_tipi,
-        )
+        final_rows = []
+        final_pesi = []
 
-        # Un peso numerico esplicito sovrascrive qualsiasi valore calcolato dalla formula
-        seme_pesi = [
-            float(exp) if exp is not None else float(calc)
-            for exp, calc in zip(seme_explicit, calcolati)
-        ]
+        for r_idx, items in grouped_by_row.items():
+            # 1. Override numerico esplicito
+            exp_override = next((it["explicit_peso"] for it in items if it["explicit_peso"] is not None), None)
+            if exp_override is not None:
+                final_rows.append(r_idx)
+                final_pesi.append(float(exp_override))
+                continue
 
-        # Regola SUM-OF-SIGNALS (cap 5):
-        # Se più elementi/segnali fanno riferimento allo stesso titolo (stessa riga di canone),
-        # i pesi vengono aggregati sommando i contributi con tetto massimo (cap) a 5.0.
-        row_weights: dict[int, float] = {}
-        row_explicit_override: dict[int, bool] = {}
-        for r_idx, w, exp in zip(seme_idx, seme_pesi, seme_explicit):
-            if exp is not None and exp > 5.0:
-                # Override esplicito singolo superiore al cap (es. test_explicit_numeric_peso_overrides_formula)
-                row_weights[r_idx] = exp
-                row_explicit_override[r_idx] = True
+            # 2. Aggregazione segnali e verifica cronologia vs libreria
+            all_signals: set[str] = set()
+            history_plays = []
+            history_neps = []
+            has_history = False
+            is_never_watched = False
+
+            for it in items:
+                t_val = it.get("tipo")
+                sigs = it.get("signals")
+                w_flag = it.get("watched")
+                lib_only = it.get("library_only")
+
+                if lib_only is True or w_flag is False:
+                    is_never_watched = True
+
+                if sigs:
+                    if isinstance(sigs, (list, tuple, set)):
+                        for s_ in sigs:
+                            all_signals.add(str(s_.get("type", s_.get("tipo")) if isinstance(s_, dict) else s_).lower())
+                    else:
+                        all_signals.add(str(sigs).lower())
+                if t_val:
+                    all_signals.add(str(t_val).lower())
+
+                if t_val == "watched" or "watched" in all_signals or w_flag is True:
+                    has_history = True
+                    history_plays.append(it["plays"])
+                    history_neps.append(it["nep"])
+                elif it["plays"] is not None and it["plays"] > 1.0 and not is_never_watched:
+                    has_history = True
+                    history_plays.append(it["plays"])
+                    history_neps.append(it["nep"])
+
+            # Regola della libreria (Capitolo 5):
+            # La libreria è un segnale alternativo, ignorato non appena il titolo ha qualsiasi altro segnale o presenza in cronologia!
+            other_signals = all_signals - {"library"}
+            if has_history or other_signals:
+                eff_signals = list(other_signals) if other_signals else ["watched"]
+                eff_plays = max(history_plays) if history_plays else (items[0]["plays"] if items else 1.0)
+                eff_nep = history_neps[0] if history_neps else (items[0]["nep"] if items else 1.0)
+                base_calc = _cam.pesi_semi(np.array([0]), np.array([eff_plays]), np.array([eff_nep]))[0]
+                w_calc = _cam.calcola_peso_segnale(
+                    base_val=base_calc,
+                    t=eff_signals,
+                )
             else:
-                row_weights[r_idx] = min(5.0, row_weights.get(r_idx, 0.0) + w)
+                # Solo in libreria, mai visto -> peso 1
+                w_calc = 1.0
 
-        final_rows = list(row_weights.keys())
-        final_pesi = [row_weights[r] for r in final_rows]
+            final_rows.append(r_idx)
+            final_pesi.append(min(5.0, float(w_calc)))
 
         # Camminata PPR riga-stocastica: riuso di camminata.ppr senza duplicare la logica numerica
         r = _cam.ppr(

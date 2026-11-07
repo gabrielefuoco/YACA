@@ -498,10 +498,10 @@ def test_sum_of_signals_duplicate_seeds_aggregated_and_capped(engine):
     seme = "movie:603"
     compagno = "movie:550"
 
-    # Due voci per seme: watched (plays=2, peso 2.0) + loved (peso 3.0) -> somma 5.0
+    # Due voci per seme: watched (plays=3, peso 3.0) + loved (+2.0) -> somma 5.0
     res_dup_5 = engine.raccomanda(
         [
-            {"key": seme, "tipo": "watched", "plays": 2},
+            {"key": seme, "tipo": "watched", "plays": 3},
             {"key": seme, "tipo": "loved"},
             {"key": compagno, "peso": 1.0},
         ],
@@ -516,7 +516,7 @@ def test_sum_of_signals_duplicate_seeds_aggregated_and_capped(engine):
     )
     assert res_dup_5 == res_exp_5
 
-    # Tre voci per seme: watched (plays=3, peso 3.0) + loved (3.0) + liked (2.0) -> somma 8.0 -> capped a 5.0
+    # Tre voci per seme: watched (plays=3, base 3.0) + loved (+2.0) + liked (+1.0) -> min(5, 3+2+1) = 5.0
     res_dup_capped = engine.raccomanda(
         [
             {"key": seme, "tipo": "watched", "plays": 3},
@@ -527,6 +527,94 @@ def test_sum_of_signals_duplicate_seeds_aggregated_and_capped(engine):
         cap=20,
     )
     assert res_dup_capped == res_exp_5
+
+
+def test_library_signal_rules_table(engine):
+    """Verifica la tabella canonica dei segnali e della libreria:
+    - only in library, never watched -> 1
+    - watched (any plays) -> base, library ignored even if present
+    - liked -> 2, library ignored
+    - loved -> 3, library ignored
+    - loved + watched 3x -> min(5, base+2) = 5
+    - loved + watched 3x + library -> 5 (library ignored)
+    - both-in-library-and-in-history resolving to the history weight
+    """
+    seme = "movie:603"
+    compagno = "movie:550"
+
+    # Baseline con peso 1.0, 2.0, 3.0, 5.0 espliciti
+    exp_1 = engine.raccomanda([{"key": seme, "peso": 1.0}, {"key": compagno, "peso": 1.0}], cap=10)
+    exp_2 = engine.raccomanda([{"key": seme, "peso": 2.0}, {"key": compagno, "peso": 1.0}], cap=10)
+    exp_3 = engine.raccomanda([{"key": seme, "peso": 3.0}, {"key": compagno, "peso": 1.0}], cap=10)
+    exp_5 = engine.raccomanda([{"key": seme, "peso": 5.0}, {"key": compagno, "peso": 1.0}], cap=10)
+
+    # 1. Only in library, never watched -> 1 (con watched=False o library_only=True)
+    res_lib_flag = engine.raccomanda([{"key": seme, "tipo": "library", "watched": False}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_lib_marker = engine.raccomanda([{"key": seme, "library_only": True}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_lib_only = engine.raccomanda([{"key": seme, "signals": ["library"], "watched": False}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_lib_flag == exp_1
+    assert res_lib_marker == exp_1
+    assert res_lib_only == exp_1
+
+    # 2. Watched (any plays) -> base, library ignored even if present
+    res_w1 = engine.raccomanda([{"key": seme, "tipo": "watched", "plays": 1}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_w1_lib = engine.raccomanda([{"key": seme, "signals": ["watched", "library"], "plays": 1}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_w1 == exp_1
+    assert res_w1_lib == exp_1
+
+    res_w2 = engine.raccomanda([{"key": seme, "tipo": "watched", "plays": 2}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_w2_lib = engine.raccomanda([{"key": seme, "signals": ["watched", "library"], "plays": 2}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_w2 == exp_2
+    assert res_w2_lib == exp_2
+
+    res_w3 = engine.raccomanda([{"key": seme, "tipo": "watched", "plays": 3}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_w3_lib = engine.raccomanda([{"key": seme, "signals": ["watched", "library"], "plays": 3}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_w3 == exp_3
+    assert res_w3_lib == exp_3
+
+    # 3. Liked -> 2, library ignored
+    res_liked = engine.raccomanda([{"key": seme, "tipo": "liked"}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_liked_lib = engine.raccomanda([{"key": seme, "signals": ["liked", "library"]}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_liked == exp_2
+    assert res_liked_lib == exp_2
+
+    # 4. Loved -> 3, library ignored
+    res_loved = engine.raccomanda([{"key": seme, "tipo": "loved"}, {"key": compagno, "peso": 1.0}], cap=10)
+    res_loved_lib = engine.raccomanda([{"key": seme, "signals": ["loved", "library"]}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_loved == exp_3
+    assert res_loved_lib == exp_3
+
+    # 5. Loved + watched 3x -> min(5, base+2) = 5
+    res_loved_w3 = engine.raccomanda([{"key": seme, "signals": ["watched", "loved"], "plays": 3}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_loved_w3 == exp_5
+
+    # 6. Loved + watched 3x + library -> 5 (library ignored)
+    res_loved_w3_lib = engine.raccomanda([{"key": seme, "signals": ["watched", "loved", "library"], "plays": 3}, {"key": compagno, "peso": 1.0}], cap=10)
+    assert res_loved_w3_lib == exp_5
+
+    # 7. Both in library AND in history -> resolves to the history weight
+    # Caso 7a: film in watchlist (watched=False) + visto 2 volte in cronologia -> peso 2.0 (storia), libreria ignorata
+    res_both_hist_w2 = engine.raccomanda(
+        [
+            {"key": seme, "tipo": "library", "watched": False},
+            {"key": seme, "tipo": "watched", "plays": 2},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=10,
+    )
+    assert res_both_hist_w2 == exp_2
+
+    # Caso 7b: film in watchlist (watched=False) + visto 3 volte e loved in cronologia -> peso 5.0 (storia), libreria ignorata
+    res_both_hist_loved = engine.raccomanda(
+        [
+            {"key": seme, "library_only": True},
+            {"key": seme, "tipo": "watched", "plays": 3},
+            {"key": seme, "tipo": "loved"},
+            {"key": compagno, "peso": 1.0},
+        ],
+        cap=10,
+    )
+    assert res_both_hist_loved == exp_5
 
 
 @pytest.mark.skipif(

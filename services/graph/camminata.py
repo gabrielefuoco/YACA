@@ -15,6 +15,7 @@ le matrici, i pesi e i parametri arrivano da fuori.
     diffondi(Tr, righe, pesi, ...)      PageRank personalizzato: l'attivazione PER TITOLO
     attiva_per_mondo(r, MEM, NB)        la somma sui membri: l'attivazione PER MONDO
 """
+from typing import Any
 import numpy as np
 import scipy.sparse as sp
 
@@ -90,6 +91,91 @@ PESO_TIPO_FATTORI = P.PESO_TIPO
 resta solo il nome con cui questo modulo lo chiama, perche' `pipeline.py` lo importa da qui."""
 
 
+def calcola_peso_segnale(base_val: float, t: Any) -> float:
+    """Calcola il peso effettivo del seme applicando le regole canoniche sui segnali:
+    - only in library, never watched -> 1
+    - watched (any plays) -> base, library ignored even if present
+    - liked -> 2, library ignored
+    - loved -> 3, library ignored
+    - loved + watched 3x -> min(5, base+2) = 5
+    - loved + watched 3x + library -> 5 (library ignored)
+
+    La libreria è un segnale alternativo: decade non appena il titolo ha qualsiasi altro segnale.
+    """
+    if t is None:
+        return float(base_val)
+
+    if isinstance(t, str):
+        t_low = t.lower()
+        if t_low == "library":
+            return 1.0
+        elif t_low == "watched":
+            return float(base_val)
+        elif t_low == "liked":
+            return 2.0
+        elif t_low == "loved":
+            return 3.0
+        else:
+            return float(base_val) * PESO_TIPO_FATTORI.get(t_low, 1.0)
+
+    signals: set[str] = set()
+    watched_flag: bool | None = None
+    library_only = False
+
+    items = t if isinstance(t, (list, tuple, set)) else [t]
+    for it in items:
+        if isinstance(it, dict):
+            s_name = it.get("type", it.get("tipo"))
+            if s_name:
+                signals.add(str(s_name).lower())
+            if "signals" in it and isinstance(it["signals"], (list, tuple, set)):
+                for sub in it["signals"]:
+                    sub_name = sub.get("type", sub.get("tipo")) if isinstance(sub, dict) else sub
+                    if sub_name:
+                        signals.add(str(sub_name).lower())
+            if it.get("watched") is False:
+                watched_flag = False
+                if not s_name and "signals" not in it:
+                    signals.add("library")
+            elif it.get("watched") is True:
+                watched_flag = True
+            if it.get("library_only"):
+                library_only = True
+                signals.add("library")
+        elif it is not None:
+            signals.add(str(it).lower())
+
+    other_signals = signals - {"library"}
+    if other_signals:
+        # Library is an alternative signal, dropped as soon as the title has any other signal!
+        has_watched = ("watched" in other_signals) or (watched_flag is True)
+        has_loved = "loved" in other_signals
+        has_liked = "liked" in other_signals
+
+        if has_watched:
+            bonus = 0.0
+            if has_loved:
+                bonus += 2.0
+            elif has_liked:
+                bonus += 1.0
+            return min(5.0, float(base_val) + bonus)
+        elif has_loved:
+            bonus = 3.0
+            if has_liked:
+                bonus = min(5.0, bonus + 1.0)
+            return bonus
+        elif has_liked:
+            return 2.0
+        else:
+            return max(PESO_TIPO_FATTORI.get(s, 1.0) for s in other_signals)
+
+    if "library" in signals:
+        # Only in library, never watched -> 1
+        return 1.0
+
+    return float(base_val)
+
+
 def pesi_semi(righe, plays, NEP, tipi=None):
     """Il peso di ogni titolo della storia (§3b della mappa, esteso ai TIPI di segnale).
 
@@ -97,9 +183,13 @@ def pesi_semi(righe, plays, NEP, tipi=None):
     serie: 1 + 2 x (frazione di episodi visti)             le puntate NON contano come play
 
     `tipi` (facoltativo) e' un array di stringhe o liste di segnali ("loved", "liked", "watched", "library").
-    Regola SUM-OF-SIGNALS (cap 5): se un titolo ha più segnali o `t` è una lista di tipi/segnali,
-    i pesi dei singoli segnali vengono sommati con tetto massimo rigido a 5.0.
-    Senza `tipi` o con tipo singolo stringa, il comportamento conserva la compatibilità bit per bit.
+    Regola dei segnali e della libreria (Capitolo 5):
+    - only in library, never watched -> 1
+    - watched (any plays) -> base, library ignored even if present
+    - liked -> 2, library ignored
+    - loved -> 3, library ignored
+    - loved + watched 3x -> min(5, base+2) = 5
+    - loved + watched 3x + library -> 5 (library ignored)
     """
     nep = NEP[righe]
     pl = np.asarray(plays, float)
@@ -111,19 +201,7 @@ def pesi_semi(righe, plays, NEP, tipi=None):
 
     out = np.empty(len(righe), dtype=float)
     for i, t in enumerate(tipi):
-        if isinstance(t, (list, tuple, set)):
-            tot = 0.0
-            for sig in t:
-                s_name = sig.get("type", sig.get("tipo", "watched")) if isinstance(sig, dict) else str(sig)
-                if s_name == "watched":
-                    tot += base[i]
-                else:
-                    tot += PESO_TIPO_FATTORI.get(s_name, 1.0)
-            out[i] = min(5.0, tot)
-        elif t is not None:
-            out[i] = base[i] * PESO_TIPO_FATTORI.get(str(t), 1.0)
-        else:
-            out[i] = base[i]
+        out[i] = calcola_peso_segnale(base[i], t)
     return out
 
 

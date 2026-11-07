@@ -534,12 +534,33 @@ def clusters(
         eligible_raw.extend(eval_macro(m))
 
     # Filtro o split per medium se richiesto
+    tassonomia_map = {e.nome: e for e in TASSONOMIA_36}
     shelves: list[Shelf] = []
     for item in eligible_raw:
         if medium and item["medium"] != medium:
             continue
 
         m_indices = item["seeds"]
+
+        # Filtro semi esclusi se il cluster ha un'etichetta tassonomica con clausole di esclusione
+        entry_obj = tassonomia_map.get(item["nome"])
+        if entry_obj and (entry_obj.excluded_keywords or entry_obj.excluded_languages):
+            pruned_indices = []
+            for s_idx in m_indices:
+                r = righe_arr[s_idx]
+                k_seme = engine.keys[r]
+                kws = get_member_kws(r)
+                lang = extra_info.get(k_seme, {}).get("orig_lang")
+                if entry_obj.excluded_languages and lang in entry_obj.excluded_languages:
+                    continue
+                if entry_obj.excluded_keywords and any(k in entry_obj.excluded_keywords for k in kws):
+                    continue
+                pruned_indices.append(s_idx)
+            m_indices = pruned_indices
+
+        if len(m_indices) < floor:
+            continue
+
         m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
         top_seed_idx = m_sorted[0]
         top_row = righe_arr[top_seed_idx]
@@ -590,7 +611,7 @@ def clusters(
             medium=item["medium"],
             semi_rappresentativi=semi_rappresentativi,
             semi_membri=semi_membri,
-            size=item["size"],
+            size=len(m_indices),
             min_eta=float(min(eta_arr[idx] for idx in m_indices)),
             matched_entry=item["matched_entry"],
             seeds_indices=m_indices,
@@ -690,7 +711,7 @@ def scaffali(
     W_aff: sp.csr_matrix | None = None,
     label_merge: bool = False,
     cap: int = 40,
-    weighted_support: bool = False,
+    weighted_support: bool = True,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 

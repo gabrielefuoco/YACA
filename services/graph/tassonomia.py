@@ -32,6 +32,8 @@ class TaxonomyEntry:
     countries: frozenset[str] | None = None
     collections: frozenset[str] | None = None
     min_confidence: float = 0.50
+    excluded_keywords: frozenset[str] = field(default_factory=frozenset)
+    excluded_languages: frozenset[str] | None = None
 
 
 # ==============================================================================
@@ -63,9 +65,9 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         tema="Animazione & Anime",
         priorita=80,
         derived_from_data=True,
-        data_note="Derivato dai dati: film d'autore Studio Ghibli e lungometraggi animati",
-        keywords=frozenset({"studio ghibli", "philosophical", "author animation", "surrealism"}),
-        anime=True,
+        data_note="Derivato dai dati: film d'autore Studio Ghibli, Satoshi Kon e lungometraggi animati d'autore",
+        keywords=frozenset({"studio ghibli", "philosophical", "author animation", "surrealism", "stop motion", "independent animation", "adult animation"}),
+        anime=None,
         medium="movie",
     ),
     TaxonomyEntry(
@@ -89,12 +91,12 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         medium="movie",
     ),
     TaxonomyEntry(
-        nome="Animazione d'azione per adulti",
+        nome="Animazione per adulti",
         tema="Animazione & Anime",
-        priorita=75,
+        priorita=85,
         derived_from_data=True,
-        data_note="Derivato dai dati: warnok S4 e flixinatoor99 S5 (Invincible, Blue Eye Samurai)",
-        keywords=frozenset({"adult animation", "dark fantasy", "gore", "anti hero", "superhero"}),
+        data_note="Derivato dai dati: warnok S4, castoffcrown e flixinatoor99 (Invincible, Blue Eye Samurai, BoJack, Bob's Burgers)",
+        keywords=frozenset({"adult animation", "dark fantasy", "satire", "absurdist humor", "cartoon"}),
         anime=False,
         medium="series",
     ),
@@ -237,12 +239,12 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
     TaxonomyEntry(
         nome="Commedia romantica",
         tema="Comedy & Sitcom",
-        priorita=70,
-        derived_from_data=False,
-        data_note="Pattern classico commedie romantiche cinematografiche",
-        keywords=frozenset({"romantic comedy", "romance", "friends to lovers", "love triangle"}),
+        priorita=80,
+        derived_from_data=True,
+        data_note="Derivato dai dati: commedie romantiche classiche e moderne (es. Vacanze romane, One Day, Maxton Hall)",
+        keywords=frozenset({"romantic comedy", "romcom", "friends to lovers", "love triangle", "first love", "screwball comedy"}),
         anime=False,
-        medium="movie",
+        medium=None,
     ),
 
     # --- Drama, Epoca & Internazionale (6 voci) ---
@@ -291,23 +293,55 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         languages=frozenset({"ko", "ja", "zh"}),
     ),
     TaxonomyEntry(
-        nome="Cinema d'autore",
+        nome="Cinema d'autore contemporaneo",
         tema="Drama & Internazionale",
-        priorita=75,
+        priorita=85,
         derived_from_data=True,
-        data_note="Derivato dai dati: castoffcrown S3 (Primetime, Il filo nascosto)",
-        keywords=frozenset({"arthouse", "independent film", "existentialism", "criterion collection"}),
+        data_note="Derivato dai dati: castoffcrown arthouse contemporaneo (Kore-eda, PTA, Wenders, Jarmusch, Hamaguchi, Reichardt, Baker, Bong Joon-ho)",
+        keywords=frozenset({
+            "arthouse", "independent film", "criterion collection", "slow cinema",
+            "mumblecore", "magic realism", "social commentary", "character study",
+            "existentialism", "slice of life", "semi autobiographical", "surrealism",
+            "woman director", "philosophical", "neo-noir", "poetry", "fictional biography",
+            "meditative", "absurdist", "dark comedy",
+        }),
         medium="movie",
+        anime=False,
+        excluded_keywords=frozenset({
+            "superhero", "marvel cinematic universe (mcu)", "giant monster", "kaiju",
+            "space opera", "freedom fighter", "action hero", "shark", "dinosaur", "holiday",
+        }),
+        excluded_languages=frozenset({"te", "ta", "kn", "ml"}),
+    ),
+    TaxonomyEntry(
+        nome="Classici d'autore",
+        tema="Drama & Internazionale",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: castoffcrown classici d'autore (Kurosawa, Ozu, Antonioni, Godard, Melville, Kassovitz, Scorsese, Lang, Malle, Tarkovsky, Hitchcock)",
+        keywords=frozenset({
+            "film noir", "neo realism", "italian neo realism", "french new wave",
+            "nouvelle vague", "german expressionism", "expressionism", "new german cinema",
+            "new hollywood", "pre-code", "poetic realism", "criterion collection",
+            "world war ii", "french resistance", "holocaust (shoah)", "fascism",
+            "road movie", "psychological drama", "existentialism",
+        }),
+        medium="movie",
+        anime=False,
+        excluded_keywords=frozenset({
+            "romantic comedy", "romcom", "screwball comedy", "forbidden love", "superhero", "freedom fighter",
+            "action hero", "giant monster", "kaiju", "space opera", "holiday", "christmas",
+        }),
     ),
 
-    # --- Documentari, Sport & Spettacolo (6 voci) ---
+    # --- Documentari, Sport & Spettacolo (7 voci) ---
     TaxonomyEntry(
         nome="Wrestling",
         tema="Sport & Documentari",
         priorita=95,
         derived_from_data=True,
-        data_note="Derivato dai dati: moppierhead S5 (SmackDown, Raw)",
-        keywords=frozenset({"wrestling", "sports entertainment", "wwe", "professional wrestling"}),
+        data_note="Derivato dai dati: moppierhead S5 (SmackDown, Raw, Sumo)",
+        keywords=frozenset({"wrestling", "sports entertainment", "wwe", "professional wrestling", "sumo", "prowrestling"}),
     ),
     TaxonomyEntry(
         nome="Documentari naturalistici",
@@ -322,8 +356,20 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         tema="Sport & Documentari",
         priorita=85,
         derived_from_data=True,
-        data_note="Derivato dai dati: 1jacobjohn S10 (The Redeem Team, Skywalkers)",
-        keywords=frozenset({"sports documentary", "basketball", "olympic games", "athlete"}),
+        data_note="Derivato dai dati: Formula 1, MotoGP, basket, calcio e grandi atleti",
+        keywords=frozenset({
+            "sports documentary", "athlete", "racing", "formula 1", "car race", "football (soccer)",
+            "soccer", "tennis", "olympic games", "basketball", "motorcycle race", "extreme sport",
+            "championship", "world cup", "boxing",
+        }),
+    ),
+    TaxonomyEntry(
+        nome="Cucina & Food",
+        tema="Sport & Documentari",
+        priorita=80,
+        derived_from_data=True,
+        data_note="Derivato dai dati: serie e documentari gastronomici, chef e food",
+        keywords=frozenset({"cooking", "culinary", "food", "chef", "restaurant", "baking", "gastronomy", "foodie", "cuisine"}),
     ),
     TaxonomyEntry(
         nome="Motori & Corse automobilistiche",
@@ -348,6 +394,93 @@ TASSONOMIA_36: tuple[TaxonomyEntry, ...] = (
         derived_from_data=True,
         data_note="Derivato dai dati: 1jacobjohn S8 (The Chosen, Il re dei re)",
         keywords=frozenset({"christian faith", "christian film", "religion", "spirituality"}),
+    ),
+
+    # --- Estensioni tematiche basate sul censimento dei cluster ---
+    TaxonomyEntry(
+        nome="Cinema indiano",
+        tema="Drama & Internazionale",
+        priorita=90,
+        derived_from_data=True,
+        data_note="Derivato dai dati: produzioni Bollywood, Tollywood e Kollywood (RRR, Jawan, KGF, Dangal, Pathaan)",
+        languages=frozenset({"hi", "te", "ta", "kn", "ml"}),
+    ),
+    TaxonomyEntry(
+        nome="Western contemporaneo & Frontiera",
+        tema="Drama & Internazionale",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: universo Yellowstone / Taylor Sheridan e neo-western (1883, 1923, Mayor of Kingstown)",
+        keywords=frozenset({"neo-western", "western", "montana", "ranch", "cowboy", "frontier"}),
+    ),
+    TaxonomyEntry(
+        nome="Blockbuster d'azione",
+        tema="Crime, Thriller & Mistero",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: franchise action e thriller (John Wick, Sisu, The Accountant, Bullet Train, The Gray Man)",
+        keywords=frozenset({"assassin", "hitman", "revenge", "secret agent", "hand to hand combat", "action hero"}),
+        medium="movie",
+    ),
+    TaxonomyEntry(
+        nome="Action comedy & Avventura",
+        tema="Comedy & Sitcom",
+        priorita=80,
+        derived_from_data=True,
+        data_note="Derivato dai dati: blockbuster d'azione comica streaming (Red Notice, The Adam Project, The Man from Toronto, Uncharted)",
+        keywords=frozenset({"action comedy", "buddy comedy", "caper", "heist", "treasure hunt"}),
+        medium="movie",
+    ),
+    TaxonomyEntry(
+        nome="Monster movie & Creature feature",
+        tema="Fantascienza & Fantasy",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: creature marine, kaiju e dinosauri (Shark, Meg, Jurassic Park, Godzilla e Kong, Crawl)",
+        keywords=frozenset({"shark", "giant monster", "creature feature", "dinosaur", "kaiju", "monster attack", "monster"}),
+        medium="movie",
+    ),
+    TaxonomyEntry(
+        nome="Film di Natale",
+        tema="Comedy & Sitcom",
+        priorita=90,
+        derived_from_data=True,
+        data_note="Derivato dai dati: commedie e pellicole natalizie (Nutcrackers, Family Switch, Qualcuno salvi il Natale, Il Grinch)",
+        keywords=frozenset({"christmas", "santa claus", "holiday", "christmas party"}),
+        medium="movie",
+    ),
+    TaxonomyEntry(
+        nome="Cinema samurai & Jidaigeki",
+        tema="Drama & Internazionale",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: drammi storici feudali giapponesi (Shōgun, Sanjuro, La sfida del samurai, Rurouni Kenshin)",
+        keywords=frozenset({"samurai", "jidaigeki", "bakumatsu", "feudal japan", "swordplay", "katana", "ronin"}),
+    ),
+    TaxonomyEntry(
+        nome="Poliziesco britannico",
+        tema="Crime, Thriller & Mistero",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: serie poliziesche e procedurali UK (Vera, Unforgotten, Happy Valley, McDonald & Dodds)",
+        keywords=frozenset({"police detective", "police procedural", "murder investigation", "british crime", "scotland yard"}),
+        medium="series",
+    ),
+    TaxonomyEntry(
+        nome="Dramma & Romance LGBTQ+",
+        tema="Drama & Internazionale",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: serie e film a tematica queer (Young Royals, Uno di noi sta mentendo, Heartstopper, Fellow Travelers)",
+        keywords=frozenset({"lgbt", "gay theme", "boys' love (bl)", "queer", "lesbian theme"}),
+    ),
+    TaxonomyEntry(
+        nome="Giallo classico & Cozy crime",
+        tema="Crime, Thriller & Mistero",
+        priorita=85,
+        derived_from_data=True,
+        data_note="Derivato dai dati: adattamenti Agatha Christie e gialli deduttivi leggeri (Ludwig, Professor T, Towards Zero)",
+        keywords=frozenset({"cosy crime", "whodunit", "agatha christie", "amateur detective"}),
     ),
 )
 
@@ -393,6 +526,28 @@ def valuta_cluster(
         if (match_l / tot_langs) < 0.5:
             return False, 0.0
 
+    # 4b. Filtro Lingue escluse
+    if entry.excluded_languages:
+        langs_ex: dict[str, int] = cluster_evidence.get("languages", {})
+        tot_langs_ex = sum(langs_ex.values())
+        if tot_langs_ex > 0:
+            match_ex = sum(cnt for l, cnt in langs_ex.items() if l in entry.excluded_languages)
+            if (match_ex / tot_langs_ex) > 0.15:
+                return False, 0.0
+
+    # 4c. Filtro Keyword escluse
+    if entry.excluded_keywords:
+        member_kws_ex: list[set[str]] = cluster_evidence.get("member_kws", [])
+        if member_kws_ex:
+            match_ex_k = sum(1 for kws in member_kws_ex if any(k in entry.excluded_keywords for k in kws))
+            if (match_ex_k / float(sz)) > 0.15:
+                return False, 0.0
+        else:
+            kw_counts_ex: dict[str, int] = cluster_evidence.get("kw_counts", {})
+            match_ex_k = sum(kw_counts_ex.get(k, 0) for k in entry.excluded_keywords)
+            if (match_ex_k / float(sz)) > 0.15:
+                return False, 0.0
+
     # 5. Copertura keyword sui membri del cluster
     member_kws: list[set[str]] = cluster_evidence.get("member_kws", [])
     if member_kws and entry.keywords:
@@ -413,7 +568,7 @@ def valuta_cluster(
 
 def assegna_etichetta_cluster(
     cluster_evidence: dict[str, Any],
-    tassonomia: Iterable[TaxonomyEntry] = TASSONOMIA_36,
+    tassonomia: Iterable[TaxonomyEntry] | None = None,
 ) -> tuple[str, str, float, TaxonomyEntry | None]:
     """Assegna l'etichetta al cluster: tassonomia se match univoco con confidenza, altrimenti fallback trasparente.
 
@@ -421,6 +576,9 @@ def assegna_etichetta_cluster(
         (nome_etichetta, nome_fonte, confidenza, matched_entry_or_None)
         dove nome_fonte è 'tassonomia' oppure 'perche_hai_visto'.
     """
+    if tassonomia is None:
+        tassonomia = TASSONOMIA_36
+
     candidates: list[tuple[TaxonomyEntry, float]] = []
     for entry in tassonomia:
         ok, conf = valuta_cluster(cluster_evidence, entry)
