@@ -238,3 +238,44 @@ RICETTA FINALE CLUSTERING E GENERAZIONE SCAFFALI (V45 / TICKET 05)
 - **Integrità del segnale a monte**: Tutti i semi della storia del profilo in canone (inclusi quelli che non cadono in alcuno scaffale) entrano al 100% nel vettore teleport di `Engine.raccomanda` con i propri pesi completi e play count.
 - **Conclusione**: Il profilo è semplicemente frammentato. Con 6 scaffali nitidi, il 25-32% di copertura dei titoli cattura il 26-39% della massa di riproduzioni totali e include il 100% dei cluster solidi (>=20 semi). Questione copertura definitivamente chiusa: la regola V1 resta congelata in produzione.
 
+
+
+## Correzione: la coda esclusa NON e rumore (ispezione a mano dei gruppi)
+
+Avevo chiuso la questione copertura dicendo «fuori resta solo la coda dei capricci». Guardando i
+gruppi uno per uno, e falso. I profili hanno fra 34 e 51 gruppi ammissibili e ne serviamo 6:
+quelli esclusi sono interessi veri.
+
+- `castoffcrown` (34 gruppi, 6 serviti): restano fuori Kurosawa/samurai (10), animazione d'autore
+  Ghibli (12), cucina e food (12), wrestling (8), Formula 1 (8), true crime (7), sitcom (6),
+  noir classico (6), cinema d'autore europeo (10), cinema d'autore contemporaneo (9).
+- `warnok` (40 gruppi, 6 serviti): restano fuori cinema indiano (11 + 8), Sheridan/Yellowstone (10),
+  Jurassic e Avatar (11), action Netflix (9), Lost/Westworld/Fallout (12), horror (8),
+  post-apocalittico (8), film di Natale (5).
+- `pepsipex` (51 gruppi, 6 serviti): stesso quadro.
+
+**Il criterio «nessun gruppo non servito sopra i 20 semi» era arbitrario** e la misura dipende da
+quale selezione si guarda: in una run l'anime shonen da 40 semi e servito, in un'altra no. La
+verita: un profilo con 30-40 interessi reali non sta in 6 righe. Sesto righe = una selezione, non
+un riassunto.
+
+Conseguenza di prodotto: Stremio resta la superficie «lean back» con 6 righe; l'elenco completo
+degli interessi (tutti i gruppi, serviti e non) appartiene alla superficie di esplorazione web.
+
+## Perche 180 titoli su 600 di `castoffcrown` non entrano nel grafo
+
+Misurato sul file Trakt grezzo: 600 voci, **8 senza id TMDB** e **180 con id TMDB ma fuori canone**.
+Non sono spazzatura:
+
+- 8 senza id: canali YouTube (Game Grumps 18 visioni, noclip 13, Markiplier 10) — fuori per natura;
+- 74 serie e 106 film con id regolare, di cui **58 usciti dal 2024** (32%) e **21 precedenti al 1991**
+  (cinema d'autore: Lav Diaz, Masao Adachi, Godard, Antonioni).
+
+Due cause distinte:
+1. **il canone e una fotografia vecchia**: per `pepsipex` il 59% dei fuori canone e del 2024 o dopo.
+   Si risolve rigenerando il canone dai dump TMDB recenti;
+2. **il canone copre male il cinema d'autore e sperimentale** — venti classici (1933-1990) che un
+   utente cinefilo guarda davvero.
+
+Nessuna delle due e «titoli spazzatura», tranne i canali YouTube e i PPV di wrestling, che non sono
+film e vanno esclusi per definizione.
