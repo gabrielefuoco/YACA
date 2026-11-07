@@ -58,6 +58,19 @@ def carverclan_seeds() -> list[dict[str, Any]]:
     ]
 
 
+@pytest.fixture(scope="module")
+def sangam456_seeds() -> list[dict[str, Any]]:
+    chiavi, _, plays, eta = K.storia_trakt("sangam456", ordine="recente")
+    return [
+        {
+            "key": str(k),
+            "plays": float(pl),
+            "eta_giorni": float(et),
+        }
+        for k, pl, et in zip(chiavi, plays, eta)
+    ]
+
+
 # ------------------------------------------------------------------------------
 # 1. Profilo lungo -> 200 con 8 scaffali
 # ------------------------------------------------------------------------------
@@ -187,8 +200,8 @@ def test_artefatto_vicini_mancante_restituisce_503(monkeypatch):
 # ------------------------------------------------------------------------------
 # 6. Schema esatto della risposta (blocco anti-regressione)
 # ------------------------------------------------------------------------------
-def test_schema_risposta_esatto(carverclan_seeds):
-    status, res = servizio.esegui_scaffali({"semi": carverclan_seeds})
+def test_schema_risposta_esatto(sangam456_seeds):
+    status, res = servizio.esegui_scaffali({"semi": sangam456_seeds})
     assert status == 200
 
     # 1. Chiavi di primo livello ESATTE
@@ -258,16 +271,52 @@ def test_schema_risposta_esatto(carverclan_seeds):
 
 
 # ------------------------------------------------------------------------------
-# 7. Chiamata HTTP end-to-end su socket
+# 7. Omogeneità rigorosa del medium per riga (senza eccezioni)
 # ------------------------------------------------------------------------------
-def test_chiamata_http_scaffali_su_socket(carverclan_seeds):
+def test_omogeneita_rigorosa_medium_nessuna_eccezione(warnok_seeds):
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
+    assert status == 200
+    assert len(res["scaffali"]) > 0
+
+    engine = servizio.get_engine_v45()
+
+    for sh in res["scaffali"]:
+        m_row = sh["medium"]
+        for rep in sh["semi_rappresentativi"]:
+            pref = "tv" if m_row == "series" else "movie"
+            k = f"{pref}:{rep['tmdbId']}"
+            assert k in engine.row_of, f"Seme rappresentativo {k} non trovato nel canone per riga {m_row}"
+        for memb in sh["semi_membri"]:
+            assert memb["medium"] == m_row, f"Seme membro {memb} ha medium misto rispetto a riga {m_row}"
+        for cand in sh["titoli"]:
+            assert cand["medium"] == m_row, f"Titolo raccomandato {cand} medium errato in riga {m_row}"
+
+
+# ------------------------------------------------------------------------------
+# 8. Risoluzione del waiver: cluster sotto floor non serviti (carverclan = 0)
+# ------------------------------------------------------------------------------
+def test_profilo_corto_sotto_floor_restituisce_zero_scaffali(carverclan_seeds):
+    status, res = servizio.esegui_scaffali({"semi": carverclan_seeds})
+    assert status == 200
+    assert res["ok"] is True
+    assert res["contratto_versione"] == 2
+    assert len(res["scaffali"]) == 0
+    assert res["statistiche"]["semi_totali"] == 7
+    assert res["statistiche"]["semi_coperti"] == 0
+    assert res["statistiche"]["righe"] == 0
+
+
+# ------------------------------------------------------------------------------
+# 9. Chiamata HTTP end-to-end su socket
+# ------------------------------------------------------------------------------
+def test_chiamata_http_scaffali_su_socket(sangam456_seeds):
     server, _ = servizio.crea_server(host="127.0.0.1", port=0, carica_motore=False)
     port = server.server_address[1]
     th = threading.Thread(target=server.serve_forever, daemon=True)
     th.start()
 
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-    payload = json.dumps({"semi": carverclan_seeds}).encode("utf-8")
+    payload = json.dumps({"semi": sangam456_seeds}).encode("utf-8")
     conn.request("POST", "/scaffali", body=payload, headers={"Content-Type": "application/json"})
     resp = conn.getresponse()
     data = json.loads(resp.read().decode("utf-8"))
@@ -280,4 +329,4 @@ def test_chiamata_http_scaffali_su_socket(carverclan_seeds):
     assert data["ok"] is True
     assert data["contratto_versione"] == 2
     assert len(data["scaffali"]) == 2
-    assert data["statistiche"]["semi_totali"] == 7
+    assert data["statistiche"]["semi_totali"] == 10

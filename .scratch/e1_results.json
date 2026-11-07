@@ -1,0 +1,551 @@
+{
+  "sangam456": {
+    "n_seeds": 10,
+    "base_n_cl": 2,
+    "base_cov_all": 60.0,
+    "base_served_6": 2,
+    "base_cov_6": 60.0,
+    "base_served_8": 2,
+    "base_cov_8": 60.0,
+    "sweeps": {
+      "90": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Fantascienza d'invasione"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "180": {
+        "n_dropped": 1,
+        "n_survived": 1,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 30.0,
+        "served_6": 1,
+        "cov_6_pct": 30.0,
+        "served_8": 1,
+        "cov_8_pct": 30.0
+      },
+      "365": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 60.0,
+        "served_6": 2,
+        "cov_6_pct": 60.0,
+        "served_8": 2,
+        "cov_8_pct": 60.0
+      }
+    }
+  },
+  "hammers-lists": {
+    "n_seeds": 11,
+    "base_n_cl": 2,
+    "base_cov_all": 72.72727272727273,
+    "base_served_6": 2,
+    "base_cov_6": 72.72727272727273,
+    "base_served_8": 2,
+    "base_cov_8": 72.72727272727273,
+    "sweeps": {
+      "90": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Medical drama",
+          "Sitcom animate"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "180": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Medical drama",
+          "Sitcom animate"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "365": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Medical drama",
+          "Sitcom animate"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      }
+    }
+  },
+  "sappss": {
+    "n_seeds": 25,
+    "base_n_cl": 2,
+    "base_cov_all": 40.0,
+    "base_served_6": 2,
+    "base_cov_6": 40.0,
+    "base_served_8": 2,
+    "base_cov_8": 40.0,
+    "sweeps": {
+      "90": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Animazione per famiglie"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "180": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 40.0,
+        "served_6": 2,
+        "cov_6_pct": 40.0,
+        "served_8": 2,
+        "cov_8_pct": 40.0
+      },
+      "365": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 40.0,
+        "served_6": 2,
+        "cov_6_pct": 40.0,
+        "served_8": 2,
+        "cov_8_pct": 40.0
+      }
+    }
+  },
+  "flixinatoor99": {
+    "n_seeds": 32,
+    "base_n_cl": 2,
+    "base_cov_all": 43.75,
+    "base_served_6": 2,
+    "base_cov_6": 43.75,
+    "base_served_8": 2,
+    "base_cov_8": 43.75,
+    "sweeps": {
+      "90": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "180": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 43.75,
+        "served_6": 2,
+        "cov_6_pct": 43.75,
+        "served_8": 2,
+        "cov_8_pct": 43.75
+      },
+      "365": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 43.75,
+        "served_6": 2,
+        "cov_6_pct": 43.75,
+        "served_8": 2,
+        "cov_8_pct": 43.75
+      }
+    }
+  },
+  "moppierhead": {
+    "n_seeds": 38,
+    "base_n_cl": 5,
+    "base_cov_all": 76.31578947368422,
+    "base_served_6": 5,
+    "base_cov_6": 76.31578947368422,
+    "base_served_8": 5,
+    "base_cov_8": 76.31578947368422,
+    "sweeps": {
+      "90": {
+        "n_dropped": 1,
+        "n_survived": 4,
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Magia & Stregoneria"
+        ],
+        "cov_all_pct": 55.26315789473685,
+        "served_6": 4,
+        "cov_6_pct": 55.26315789473685,
+        "served_8": 4,
+        "cov_8_pct": 55.26315789473685
+      },
+      "180": {
+        "n_dropped": 1,
+        "n_survived": 4,
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Magia & Stregoneria"
+        ],
+        "cov_all_pct": 55.26315789473685,
+        "served_6": 4,
+        "cov_6_pct": 55.26315789473685,
+        "served_8": 4,
+        "cov_8_pct": 55.26315789473685
+      },
+      "365": {
+        "n_dropped": 0,
+        "n_survived": 5,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 76.31578947368422,
+        "served_6": 5,
+        "cov_6_pct": 76.31578947368422,
+        "served_8": 5,
+        "cov_8_pct": 76.31578947368422
+      }
+    }
+  },
+  "castoffcrown": {
+    "n_seeds": 412,
+    "base_n_cl": 34,
+    "base_cov_all": 72.33009708737865,
+    "base_served_6": 6,
+    "base_cov_6": 25.24271844660194,
+    "base_served_8": 8,
+    "base_cov_8": 30.582524271844658,
+    "sweeps": {
+      "90": {
+        "n_dropped": 14,
+        "n_survived": 20,
+        "dropped_tax": 4,
+        "dropped_tax_names": [
+          "Anime sh\u014dnen",
+          "Space opera",
+          "Cinecomic & Supereroi",
+          "Anime romantici & slice of life"
+        ],
+        "cov_all_pct": 49.271844660194176,
+        "served_6": 6,
+        "cov_6_pct": 25.24271844660194,
+        "served_8": 8,
+        "cov_8_pct": 30.339805825242717
+      },
+      "180": {
+        "n_dropped": 8,
+        "n_survived": 26,
+        "dropped_tax": 3,
+        "dropped_tax_names": [
+          "Anime sh\u014dnen",
+          "Cinecomic & Supereroi",
+          "Anime romantici & slice of life"
+        ],
+        "cov_all_pct": 62.13592233009708,
+        "served_6": 6,
+        "cov_6_pct": 25.24271844660194,
+        "served_8": 8,
+        "cov_8_pct": 30.582524271844658
+      },
+      "365": {
+        "n_dropped": 0,
+        "n_survived": 34,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 72.33009708737865,
+        "served_6": 6,
+        "cov_6_pct": 25.24271844660194,
+        "served_8": 8,
+        "cov_8_pct": 30.582524271844658
+      }
+    }
+  },
+  "warnok": {
+    "n_seeds": 476,
+    "base_n_cl": 40,
+    "base_cov_all": 82.14285714285714,
+    "base_served_6": 6,
+    "base_cov_6": 32.142857142857146,
+    "base_served_8": 8,
+    "base_cov_8": 37.18487394957983,
+    "sweeps": {
+      "90": {
+        "n_dropped": 32,
+        "n_survived": 8,
+        "dropped_tax": 14,
+        "dropped_tax_names": [
+          "Spy thriller",
+          "Fantascienza d'invasione",
+          "Fantascienza d'invasione",
+          "Fantascienza post-apocalittica",
+          "Giallo investigativo",
+          "Cinecomic & Supereroi",
+          "Cinecomic & Supereroi",
+          "Horror soprannaturale",
+          "Fantascienza post-apocalittica",
+          "Space opera",
+          "Animazione d'azione per adulti",
+          "Animazione per famiglie",
+          "Thriller coreano",
+          "Horror soprannaturale"
+        ],
+        "cov_all_pct": 27.310924369747898,
+        "served_6": 6,
+        "cov_6_pct": 24.789915966386555,
+        "served_8": 7,
+        "cov_8_pct": 26.260504201680675
+      },
+      "180": {
+        "n_dropped": 29,
+        "n_survived": 11,
+        "dropped_tax": 12,
+        "dropped_tax_names": [
+          "Spy thriller",
+          "Fantascienza d'invasione",
+          "Fantascienza post-apocalittica",
+          "Giallo investigativo",
+          "Cinecomic & Supereroi",
+          "Cinecomic & Supereroi",
+          "Horror soprannaturale",
+          "Fantascienza post-apocalittica",
+          "Space opera",
+          "Animazione d'azione per adulti",
+          "Animazione per famiglie",
+          "Horror soprannaturale"
+        ],
+        "cov_all_pct": 33.61344537815126,
+        "served_6": 6,
+        "cov_6_pct": 26.260504201680675,
+        "served_8": 8,
+        "cov_8_pct": 30.04201680672269
+      },
+      "365": {
+        "n_dropped": 21,
+        "n_survived": 19,
+        "dropped_tax": 10,
+        "dropped_tax_names": [
+          "Spy thriller",
+          "Fantascienza d'invasione",
+          "Fantascienza post-apocalittica",
+          "Giallo investigativo",
+          "Cinecomic & Supereroi",
+          "Horror soprannaturale",
+          "Fantascienza post-apocalittica",
+          "Space opera",
+          "Animazione d'azione per adulti",
+          "Animazione per famiglie"
+        ],
+        "cov_all_pct": 45.168067226890756,
+        "served_6": 6,
+        "cov_6_pct": 26.260504201680675,
+        "served_8": 8,
+        "cov_8_pct": 30.672268907563026
+      }
+    }
+  },
+  "pepsipex": {
+    "n_seeds": 568,
+    "base_n_cl": 51,
+    "base_cov_all": 84.50704225352112,
+    "base_served_6": 6,
+    "base_cov_6": 25.176056338028168,
+    "base_served_8": 8,
+    "base_cov_8": 29.049295774647888,
+    "sweeps": {
+      "90": {
+        "n_dropped": 32,
+        "n_survived": 19,
+        "dropped_tax": 12,
+        "dropped_tax_names": [
+          "Giallo investigativo",
+          "Gangster & Criminalit\u00e0",
+          "Thriller psicologico",
+          "Cyberpunk & Futuro distopico",
+          "Docufiction true crime",
+          "Thriller psicologico",
+          "Fantascienza post-apocalittica",
+          "Fantascienza d'invasione",
+          "Space opera",
+          "Thriller psicologico",
+          "Cyberpunk & Futuro distopico",
+          "Dramma d'epoca"
+        ],
+        "cov_all_pct": 42.07746478873239,
+        "served_6": 6,
+        "cov_6_pct": 22.535211267605636,
+        "served_8": 8,
+        "cov_8_pct": 26.408450704225352
+      },
+      "180": {
+        "n_dropped": 24,
+        "n_survived": 27,
+        "dropped_tax": 7,
+        "dropped_tax_names": [
+          "Cyberpunk & Futuro distopico",
+          "Docufiction true crime",
+          "Thriller psicologico",
+          "Fantascienza post-apocalittica",
+          "Space opera",
+          "Thriller psicologico",
+          "Dramma d'epoca"
+        ],
+        "cov_all_pct": 59.154929577464785,
+        "served_6": 6,
+        "cov_6_pct": 25.176056338028168,
+        "served_8": 8,
+        "cov_8_pct": 29.049295774647888
+      },
+      "365": {
+        "n_dropped": 15,
+        "n_survived": 36,
+        "dropped_tax": 4,
+        "dropped_tax_names": [
+          "Cyberpunk & Futuro distopico",
+          "Docufiction true crime",
+          "Thriller psicologico",
+          "Dramma d'epoca"
+        ],
+        "cov_all_pct": 67.95774647887323,
+        "served_6": 6,
+        "cov_6_pct": 25.176056338028168,
+        "served_8": 8,
+        "cov_8_pct": 29.049295774647888
+      }
+    }
+  },
+  "carverclan": {
+    "n_seeds": 7,
+    "base_n_cl": 2,
+    "base_cov_all": 57.14285714285714,
+    "base_served_6": 2,
+    "base_cov_6": 57.14285714285714,
+    "base_served_8": 2,
+    "base_cov_8": 57.14285714285714,
+    "sweeps": {
+      "90": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Horror soprannaturale",
+          "Teatro filmato & Musical"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "180": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Horror soprannaturale",
+          "Teatro filmato & Musical"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "365": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 57.14285714285714,
+        "served_6": 2,
+        "cov_6_pct": 57.14285714285714,
+        "served_8": 2,
+        "cov_8_pct": 57.14285714285714
+      }
+    }
+  },
+  "1jacobjohn": {
+    "n_seeds": 167,
+    "base_n_cl": 14,
+    "base_cov_all": 70.65868263473054,
+    "base_served_6": 6,
+    "base_cov_6": 47.90419161676647,
+    "base_served_8": 8,
+    "base_cov_8": 55.688622754491014,
+    "sweeps": {
+      "90": {
+        "n_dropped": 14,
+        "n_survived": 0,
+        "dropped_tax": 6,
+        "dropped_tax_names": [
+          "Cinecomic & Supereroi",
+          "Sitcom animate",
+          "Animazione d'azione per adulti",
+          "Docufiction true crime",
+          "Fede & Spiritualit\u00e0",
+          "Documentari sportivi"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "180": {
+        "n_dropped": 7,
+        "n_survived": 7,
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Cinecomic & Supereroi",
+          "Fede & Spiritualit\u00e0"
+        ],
+        "cov_all_pct": 41.31736526946108,
+        "served_6": 6,
+        "cov_6_pct": 38.92215568862276,
+        "served_8": 7,
+        "cov_8_pct": 41.31736526946108
+      },
+      "365": {
+        "n_dropped": 6,
+        "n_survived": 8,
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Fede & Spiritualit\u00e0"
+        ],
+        "cov_all_pct": 46.706586826347305,
+        "served_6": 6,
+        "cov_6_pct": 41.91616766467065,
+        "served_8": 8,
+        "cov_8_pct": 46.706586826347305
+      }
+    }
+  }
+}

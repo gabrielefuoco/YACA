@@ -1,0 +1,6208 @@
+{
+  "W_aff": {
+    "0.03": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 18,
+        "chosen_count": 8,
+        "covered_seeds": 194,
+        "coverage_pct": 47.0873786407767,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime romantici & slice of life",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [
+              "Anime romantici & slice of life",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "One Piece",
+              "Pok\u00e9mon",
+              "Haikyu!! L'asso del volley"
+            ]
+          },
+          {
+            "catalog_id": "yaca_126308_movie",
+            "nome": "Perch\u00e9 hai visto M - Il mostro di D\u00fcsseldorf, Anche i boia muoiono e La morte corre sul fiume",
+            "nome_fonte": "perche_hai_visto",
+            "size": 33,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sh\u014dgun",
+              "L'odio",
+              "Sanjuro"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Perfect Days, Dolls e L'innocenza",
+            "nome_fonte": "perche_hai_visto",
+            "size": 27,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Perfect Days"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 25,
+            "medium": "series",
+            "min_eta": 48.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "C'\u00e8 sempre il sole a Philadelphia",
+              "Shameless (UK)"
+            ]
+          },
+          {
+            "catalog_id": "yaca_64375_movie",
+            "nome": "Perch\u00e9 hai visto Mobile Suit Gundam: Iron-Blooded Orphans, Mobile Suit Gundam e Mobile Suit Gundam Thunderbolt",
+            "nome_fonte": "perche_hai_visto",
+            "size": 19,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Mobile Suit Gundam: Iron-Blooded Orphans",
+              "Mobile Suit Gundam",
+              "Mobile Suit Gundam Thunderbolt"
+            ]
+          },
+          {
+            "catalog_id": "yaca_63639_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 18,
+            "medium": "movie",
+            "min_eta": 38.0,
+            "mixed_tax": [
+              "Space opera"
+            ],
+            "reps": [
+              "The Expanse",
+              "Andor",
+              "The Mandalorian"
+            ]
+          },
+          {
+            "catalog_id": "yaca_87083_series",
+            "nome": "Perch\u00e9 hai visto Break Point, GRAND SUMO Highlights e Together: alla conquista del Triplete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 16,
+            "medium": "series",
+            "min_eta": 38.0,
+            "mixed_tax": [],
+            "reps": [
+              "Formula 1: Drive to Survive",
+              "Break Point",
+              "MotoGP\u2122 Unlimited"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 16,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Adventure Time",
+              "Star Wars: The Bad Batch",
+              "Batman: The Animated Series"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 10,
+        "chosen_count": 8,
+        "covered_seeds": 169,
+        "coverage_pct": 35.50420168067227,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Animazione d'azione per adulti",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4607_series",
+            "nome": "Spy thriller",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 54.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Fantascienza d'invasione",
+              "Cinecomic & Supereroi",
+              "Horror soprannaturale",
+              "Animazione d'azione per adulti",
+              "Space opera",
+              "Fantascienza post-apocalittica",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Lost",
+              "X-Files",
+              "Daredevil"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_17478_movie",
+            "nome": "Perch\u00e9 hai visto \u0927\u0942\u092e, Zero e \u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930",
+            "nome_fonte": "perche_hai_visto",
+            "size": 19,
+            "medium": "movie",
+            "min_eta": 833.0,
+            "mixed_tax": [],
+            "reps": [
+              "\u0927\u0942\u092e",
+              "Zero",
+              "\u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930"
+            ]
+          },
+          {
+            "catalog_id": "yaca_110533_movie",
+            "nome": "Thriller coreano",
+            "nome_fonte": "tassonomia",
+            "size": 17,
+            "medium": "movie",
+            "min_eta": 20.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Thriller coreano"
+            ],
+            "reps": [
+              "Jirisan",
+              "Vagabond",
+              "The Chosen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_606856_movie",
+            "nome": "Perch\u00e9 hai visto Nutcrackers, Family Switch e Il Grinch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 14,
+            "medium": "movie",
+            "min_eta": 707.0,
+            "mixed_tax": [],
+            "reps": [
+              "Togo - Una grande amicizia",
+              "Nutcrackers",
+              "Family Switch"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1401_series",
+            "nome": "Perch\u00e9 hai visto Hell on Wheels, Yellowstone e Mayor of Kingstown",
+            "nome_fonte": "perche_hai_visto",
+            "size": 10,
+            "medium": "series",
+            "min_eta": 33.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hell on Wheels",
+              "Yellowstone",
+              "Mayor of Kingstown"
+            ]
+          },
+          {
+            "catalog_id": "yaca_79649_series",
+            "nome": "Perch\u00e9 hai visto Project Blue Book, Enigmi alieni e Beyond Skinwalker Ranch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 320.0,
+            "mixed_tax": [],
+            "reps": [
+              "Project Blue Book",
+              "Enigmi alieni",
+              "Beyond Skinwalker Ranch"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 68,
+        "coverage_pct": 11.971830985915492,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1413_series",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Dark comedy",
+              "Thriller psicologico",
+              "Cinecomic & Supereroi",
+              "Fantascienza d'invasione",
+              "Horror soprannaturale",
+              "Docufiction true crime",
+              "Space opera",
+              "Gangster & Criminalit\u00e0",
+              "Cyberpunk & Futuro distopico",
+              "Dramma d'epoca",
+              "Fantascienza post-apocalittica",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "American Horror Story",
+              "Ozark",
+              "Servant"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1063422_movie",
+            "nome": "Perch\u00e9 hai visto The Strays, Newness e Consecration",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "movie",
+            "min_eta": 243.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Strays",
+              "Rosaline",
+              "After"
+            ]
+          },
+          {
+            "catalog_id": "yaca_275694_series",
+            "nome": "Perch\u00e9 hai visto Dimma, Una famiglia quasi normale e \u00c5remorden - Gli omicidi di \u00c5re",
+            "nome_fonte": "perche_hai_visto",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 375.0,
+            "mixed_tax": [],
+            "reps": [
+              "Dimma",
+              "Una famiglia quasi normale",
+              "\u00c5remorden - Gli omicidi di \u00c5re"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1242937_movie",
+            "nome": "Perch\u00e9 hai visto The Dreadful, Ella McCay - Perfettamente imperfetta e Vicious - I tre doni del Male",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 259.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Dreadful",
+              "Ella McCay - Perfettamente imperfetta",
+              "Vicious - I tre doni del Male"
+            ]
+          },
+          {
+            "catalog_id": "yaca_228066_movie",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 632.0,
+            "mixed_tax": [],
+            "reps": [
+              "Victor: La storia segreta del dottor Frankenstein",
+              "La mummia",
+              "Underworld"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 7,
+        "chosen_count": 7,
+        "covered_seeds": 116,
+        "coverage_pct": 69.46107784431138,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Avatar",
+              "La battaglia di Hacksaw Ridge",
+              "Bullet Train"
+            ]
+          },
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "The Good Place",
+              "Stranger Things",
+              "Man Seeking Woman"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_85077_movie",
+            "nome": "Fede & Spiritualit\u00e0",
+            "nome_fonte": "tassonomia",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 440.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Chosen",
+              "The Last Rodeo",
+              "Il re dei re - La pi\u00f9 grande storia mai raccontata"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1018648_movie",
+            "nome": "Documentari sportivi",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 118.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Redeem Team: Le Olimpiadi della riscossa",
+              "The Last Dance",
+              "Skywalkers: una storia d'amore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_426814_movie",
+            "nome": "Perch\u00e9 hai visto The Domestics, Alone e No Exit",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 789.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Domestics",
+              "Alone",
+              "No Exit"
+            ]
+          }
+        ]
+      }
+    },
+    "0.05": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 20,
+        "chosen_count": 8,
+        "covered_seeds": 187,
+        "coverage_pct": 45.38834951456311,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime romantici & slice of life",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [
+              "Anime romantici & slice of life",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "One Piece",
+              "Pok\u00e9mon",
+              "Haikyu!! L'asso del volley"
+            ]
+          },
+          {
+            "catalog_id": "yaca_126308_movie",
+            "nome": "Perch\u00e9 hai visto M - Il mostro di D\u00fcsseldorf, Anche i boia muoiono e La morte corre sul fiume",
+            "nome_fonte": "perche_hai_visto",
+            "size": 33,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sh\u014dgun",
+              "L'odio",
+              "Sanjuro"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Perfect Days, Dolls e L'innocenza",
+            "nome_fonte": "perche_hai_visto",
+            "size": 27,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Perfect Days"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 25,
+            "medium": "series",
+            "min_eta": 48.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "C'\u00e8 sempre il sole a Philadelphia",
+              "Shameless (UK)"
+            ]
+          },
+          {
+            "catalog_id": "yaca_63639_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 18,
+            "medium": "movie",
+            "min_eta": 38.0,
+            "mixed_tax": [
+              "Space opera"
+            ],
+            "reps": [
+              "The Expanse",
+              "Andor",
+              "The Mandalorian"
+            ]
+          },
+          {
+            "catalog_id": "yaca_87083_series",
+            "nome": "Perch\u00e9 hai visto Break Point, GRAND SUMO Highlights e Together: alla conquista del Triplete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 16,
+            "medium": "series",
+            "min_eta": 38.0,
+            "mixed_tax": [],
+            "reps": [
+              "Formula 1: Drive to Survive",
+              "Break Point",
+              "MotoGP\u2122 Unlimited"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 16,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Adventure Time",
+              "Star Wars: The Bad Batch",
+              "Batman: The Animated Series"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 13,
+        "chosen_count": 8,
+        "covered_seeds": 215,
+        "coverage_pct": 45.168067226890756,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Spy thriller",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 19.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Fantascienza d'invasione",
+              "Cinecomic & Supereroi",
+              "Space opera",
+              "Fantascienza post-apocalittica",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "The Mandalorian",
+              "Invasion",
+              "Alien: Pianeta Terra"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4607_series",
+            "nome": "Fantascienza post-apocalittica",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 54.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Animazione d'azione per adulti",
+              "Cinecomic & Supereroi",
+              "Space opera"
+            ],
+            "reps": [
+              "Lost",
+              "X-Files",
+              "Daredevil"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_17478_movie",
+            "nome": "Perch\u00e9 hai visto \u0927\u0942\u092e, Zero e \u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930",
+            "nome_fonte": "perche_hai_visto",
+            "size": 19,
+            "medium": "movie",
+            "min_eta": 833.0,
+            "mixed_tax": [],
+            "reps": [
+              "\u0927\u0942\u092e",
+              "Zero",
+              "\u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930"
+            ]
+          },
+          {
+            "catalog_id": "yaca_110533_movie",
+            "nome": "Thriller coreano",
+            "nome_fonte": "tassonomia",
+            "size": 17,
+            "medium": "movie",
+            "min_eta": 20.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Thriller coreano"
+            ],
+            "reps": [
+              "Jirisan",
+              "Vagabond",
+              "The Chosen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_124364_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 14,
+            "medium": "movie",
+            "min_eta": 453.0,
+            "mixed_tax": [
+              "Horror soprannaturale"
+            ],
+            "reps": [
+              "FROM",
+              "The Haunting of Hill House",
+              "The Haunting of Bly Manor"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 10,
+        "chosen_count": 8,
+        "covered_seeds": 159,
+        "coverage_pct": 27.992957746478876,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_69740_series",
+            "nome": "Dark comedy",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Dark comedy",
+              "Thriller psicologico",
+              "Gangster & Criminalit\u00e0",
+              "Dramma d'epoca",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Ozark",
+              "Vera",
+              "Slow Horses"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60694_movie",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 18.0,
+            "mixed_tax": [
+              "Docufiction true crime"
+            ],
+            "reps": [
+              "Last Week Tonight with John Oliver",
+              "Nell - Rinnegata",
+              "BEEF - LO SCONTRO"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1413_series",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 29.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione",
+              "Cinecomic & Supereroi",
+              "Thriller psicologico",
+              "Horror soprannaturale",
+              "Docufiction true crime",
+              "Space opera",
+              "Cyberpunk & Futuro distopico",
+              "Fantascienza post-apocalittica",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "American Horror Story",
+              "Servant",
+              "Succession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_314365_movie",
+            "nome": "Perch\u00e9 hai visto Il caso Spotlight, Official Secrets - Segreto di stato e Conclave",
+            "nome_fonte": "perche_hai_visto",
+            "size": 16,
+            "medium": "movie",
+            "min_eta": 94.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il caso Spotlight",
+              "Official Secrets - Segreto di stato",
+              "Odissea"
+            ]
+          },
+          {
+            "catalog_id": "yaca_275694_series",
+            "nome": "Perch\u00e9 hai visto Dimma, Una famiglia quasi normale e \u00c5remorden - Gli omicidi di \u00c5re",
+            "nome_fonte": "perche_hai_visto",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 375.0,
+            "mixed_tax": [],
+            "reps": [
+              "Dimma",
+              "Una famiglia quasi normale",
+              "\u00c5remorden - Gli omicidi di \u00c5re"
+            ]
+          },
+          {
+            "catalog_id": "yaca_826769_movie",
+            "nome": "Perch\u00e9 hai visto Rosaline, After e La sirenetta",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 243.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rosaline",
+              "After",
+              "La sirenetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1242937_movie",
+            "nome": "Perch\u00e9 hai visto The Dreadful, Ella McCay - Perfettamente imperfetta e Vicious - I tre doni del Male",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 259.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Dreadful",
+              "Ella McCay - Perfettamente imperfetta",
+              "Vicious - I tre doni del Male"
+            ]
+          },
+          {
+            "catalog_id": "yaca_128098_series",
+            "nome": "Perch\u00e9 hai visto Intervista col vampiro, Talamasca - L'ordine segreto e Le streghe Mayfair di Anne Rice",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "series",
+            "min_eta": 344.0,
+            "mixed_tax": [],
+            "reps": [
+              "Intervista col vampiro",
+              "Talamasca - L'ordine segreto",
+              "Le streghe Mayfair di Anne Rice"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 8,
+        "chosen_count": 8,
+        "covered_seeds": 118,
+        "coverage_pct": 70.65868263473054,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "The Good Place",
+              "Stranger Things",
+              "Man Seeking Woman"
+            ]
+          },
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 34,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Avatar",
+              "Bullet Train",
+              "Beckett"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324786_movie",
+            "nome": "Perch\u00e9 hai visto La battaglia di Hacksaw Ridge, Prisoners e Limitless",
+            "nome_fonte": "perche_hai_visto",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 797.0,
+            "mixed_tax": [],
+            "reps": [
+              "La battaglia di Hacksaw Ridge",
+              "Hit Man - Killer per caso",
+              "Prisoners"
+            ]
+          },
+          {
+            "catalog_id": "yaca_85077_movie",
+            "nome": "Fede & Spiritualit\u00e0",
+            "nome_fonte": "tassonomia",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 440.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Chosen",
+              "The Last Rodeo",
+              "Il re dei re - La pi\u00f9 grande storia mai raccontata"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1018648_movie",
+            "nome": "Documentari sportivi",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 118.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Redeem Team: Le Olimpiadi della riscossa",
+              "The Last Dance",
+              "Skywalkers: una storia d'amore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_426814_movie",
+            "nome": "Perch\u00e9 hai visto The Domestics, Alone e No Exit",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 789.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Domestics",
+              "Alone",
+              "No Exit"
+            ]
+          }
+        ]
+      }
+    },
+    "0.08": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 27,
+        "chosen_count": 8,
+        "covered_seeds": 143,
+        "coverage_pct": 34.70873786407767,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime romantici & slice of life",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [
+              "Anime romantici & slice of life",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "One Piece",
+              "Pok\u00e9mon",
+              "Haikyu!! L'asso del volley"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Perfect Days, Dolls e L'innocenza",
+            "nome_fonte": "perche_hai_visto",
+            "size": 27,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Perfect Days"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 17,
+            "medium": "series",
+            "min_eta": 87.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "C'\u00e8 sempre il sole a Philadelphia",
+              "Shameless (UK)"
+            ]
+          },
+          {
+            "catalog_id": "yaca_406_movie",
+            "nome": "Perch\u00e9 hai visto M - Il mostro di D\u00fcsseldorf, Anche i boia muoiono e La morte corre sul fiume",
+            "nome_fonte": "perche_hai_visto",
+            "size": 13,
+            "medium": "movie",
+            "min_eta": 49.0,
+            "mixed_tax": [],
+            "reps": [
+              "L'odio",
+              "Taxi Driver",
+              "M - Il mostro di D\u00fcsseldorf"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_78797_series",
+            "nome": "Perch\u00e9 hai visto Wok of Love, Las cr\u00f3nicas del taco e Bourdain: cucine segrete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wok of Love",
+              "Las cr\u00f3nicas del taco",
+              "Bourdain: cucine segrete"
+            ]
+          },
+          {
+            "catalog_id": "yaca_119769_series",
+            "nome": "Dramma coreano",
+            "nome_fonte": "tassonomia",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Tassista",
+              "Crash Landing on You",
+              "Vincenzo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Perch\u00e9 hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [],
+            "reps": [
+              "Adventure Time",
+              "Love, Death & Robots",
+              "Bob's Burgers"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 15,
+        "chosen_count": 8,
+        "covered_seeds": 227,
+        "coverage_pct": 47.689075630252105,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_127235_movie",
+            "nome": "Spy thriller",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 19.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Fantascienza d'invasione",
+              "Cinecomic & Supereroi",
+              "Fantascienza post-apocalittica",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Invasion",
+              "Alien: Pianeta Terra",
+              "War of the Worlds"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4607_series",
+            "nome": "Fantascienza post-apocalittica",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 54.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Animazione d'azione per adulti",
+              "Cinecomic & Supereroi",
+              "Space opera"
+            ],
+            "reps": [
+              "Lost",
+              "X-Files",
+              "Daredevil"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "movie",
+            "min_eta": 89.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Mandalorian",
+              "The Book of Boba Fett",
+              "Rogue One: A Star Wars Story"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_17478_movie",
+            "nome": "Perch\u00e9 hai visto \u0927\u0942\u092e, Zero e \u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930",
+            "nome_fonte": "perche_hai_visto",
+            "size": 19,
+            "medium": "movie",
+            "min_eta": 833.0,
+            "mixed_tax": [],
+            "reps": [
+              "\u0927\u0942\u092e",
+              "Zero",
+              "\u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930"
+            ]
+          },
+          {
+            "catalog_id": "yaca_110533_movie",
+            "nome": "Thriller coreano",
+            "nome_fonte": "tassonomia",
+            "size": 17,
+            "medium": "movie",
+            "min_eta": 20.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Thriller coreano"
+            ],
+            "reps": [
+              "Jirisan",
+              "Vagabond",
+              "The Chosen"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 14,
+        "chosen_count": 8,
+        "covered_seeds": 206,
+        "coverage_pct": 36.267605633802816,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_69740_series",
+            "nome": "Dark comedy",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Dark comedy",
+              "Thriller psicologico",
+              "Gangster & Criminalit\u00e0",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Ozark",
+              "Vera",
+              "Slow Horses"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1413_series",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 29.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione",
+              "Cinecomic & Supereroi",
+              "Thriller psicologico",
+              "Horror soprannaturale",
+              "Docufiction true crime",
+              "Space opera",
+              "Cyberpunk & Futuro distopico",
+              "Fantascienza post-apocalittica",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "American Horror Story",
+              "Servant",
+              "Succession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_154385_movie",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 38,
+            "medium": "movie",
+            "min_eta": 18.0,
+            "mixed_tax": [
+              "Docufiction true crime"
+            ],
+            "reps": [
+              "BEEF - LO SCONTRO",
+              "Trespasses",
+              "Babylon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_93812_series",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 32.0,
+            "mixed_tax": [
+              "Dramma d'epoca"
+            ],
+            "reps": [
+              "The Great",
+              "The Buccaneers",
+              "The Serpent Queen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_127641_series",
+            "nome": "Perch\u00e9 hai visto Young Royals, Uno di noi sta mentendo e This Is Going to Hurt",
+            "nome_fonte": "perche_hai_visto",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Surface",
+              "One Day",
+              "Young Royals"
+            ]
+          },
+          {
+            "catalog_id": "yaca_314365_movie",
+            "nome": "Perch\u00e9 hai visto Il caso Spotlight, Official Secrets - Segreto di stato e Conclave",
+            "nome_fonte": "perche_hai_visto",
+            "size": 16,
+            "medium": "movie",
+            "min_eta": 94.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il caso Spotlight",
+              "Official Secrets - Segreto di stato",
+              "Odissea"
+            ]
+          },
+          {
+            "catalog_id": "yaca_202162_series",
+            "nome": "Perch\u00e9 hai visto In The Clearing, North Shore e Black Snow",
+            "nome_fonte": "perche_hai_visto",
+            "size": 8,
+            "medium": "series",
+            "min_eta": 134.0,
+            "mixed_tax": [],
+            "reps": [
+              "In The Clearing",
+              "North Shore",
+              "Black Snow"
+            ]
+          },
+          {
+            "catalog_id": "yaca_275694_series",
+            "nome": "Perch\u00e9 hai visto Dimma, Una famiglia quasi normale e \u00c5remorden - Gli omicidi di \u00c5re",
+            "nome_fonte": "perche_hai_visto",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 375.0,
+            "mixed_tax": [],
+            "reps": [
+              "Dimma",
+              "Una famiglia quasi normale",
+              "\u00c5remorden - Gli omicidi di \u00c5re"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 9,
+        "chosen_count": 8,
+        "covered_seeds": 114,
+        "coverage_pct": 68.26347305389223,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "The Good Place",
+              "Stranger Things",
+              "Man Seeking Woman"
+            ]
+          },
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 34,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Avatar",
+              "Bullet Train",
+              "Beckett"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_85077_movie",
+            "nome": "Fede & Spiritualit\u00e0",
+            "nome_fonte": "tassonomia",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 440.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Chosen",
+              "The Last Rodeo",
+              "Il re dei re - La pi\u00f9 grande storia mai raccontata"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1018648_movie",
+            "nome": "Documentari sportivi",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 118.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Redeem Team: Le Olimpiadi della riscossa",
+              "The Last Dance",
+              "Skywalkers: una storia d'amore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_426814_movie",
+            "nome": "Perch\u00e9 hai visto The Domestics, Alone e No Exit",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 789.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Domestics",
+              "Alone",
+              "No Exit"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324786_movie",
+            "nome": "Perch\u00e9 hai visto La battaglia di Hacksaw Ridge, Prisoners e Limitless",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 797.0,
+            "mixed_tax": [],
+            "reps": [
+              "La battaglia di Hacksaw Ridge",
+              "Prisoners",
+              "Limitless"
+            ]
+          }
+        ]
+      }
+    },
+    "0.12": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 30,
+        "chosen_count": 8,
+        "covered_seeds": 140,
+        "coverage_pct": 33.980582524271846,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [
+              "Anime romantici & slice of life",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "One Piece",
+              "Haikyu!! L'asso del volley",
+              "L'attacco dei giganti"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Perfect Days, Dolls e L'innocenza",
+            "nome_fonte": "perche_hai_visto",
+            "size": 27,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Perfect Days"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 17,
+            "medium": "series",
+            "min_eta": 87.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "C'\u00e8 sempre il sole a Philadelphia",
+              "Shameless (UK)"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_78797_series",
+            "nome": "Perch\u00e9 hai visto Wok of Love, Las cr\u00f3nicas del taco e Bourdain: cucine segrete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wok of Love",
+              "Las cr\u00f3nicas del taco",
+              "Bourdain: cucine segrete"
+            ]
+          },
+          {
+            "catalog_id": "yaca_119769_series",
+            "nome": "Dramma coreano",
+            "nome_fonte": "tassonomia",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Tassista",
+              "Crash Landing on You",
+              "Vincenzo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Perch\u00e9 hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [],
+            "reps": [
+              "Adventure Time",
+              "Love, Death & Robots",
+              "Bob's Burgers"
+            ]
+          },
+          {
+            "catalog_id": "yaca_126308_movie",
+            "nome": "Perch\u00e9 hai visto Sh\u014dgun, Sanjuro e La sfida del samurai",
+            "nome_fonte": "perche_hai_visto",
+            "size": 10,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sh\u014dgun",
+              "Sanjuro",
+              "La sfida del samurai"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 20,
+        "chosen_count": 8,
+        "covered_seeds": 224,
+        "coverage_pct": 47.05882352941176,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_127235_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 19.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione"
+            ],
+            "reps": [
+              "Invasion",
+              "Alien: Pianeta Terra",
+              "War of the Worlds"
+            ]
+          },
+          {
+            "catalog_id": "yaca_95202_movie",
+            "nome": "Fantascienza post-apocalittica",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 176.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Cinecomic & Supereroi",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "To the Lake",
+              "Captain America: The Winter Soldier",
+              "Jurassic World \u2013 Il regno distrutto"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "movie",
+            "min_eta": 89.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Mandalorian",
+              "The Book of Boba Fett",
+              "Rogue One: A Star Wars Story"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_17478_movie",
+            "nome": "Perch\u00e9 hai visto \u0927\u0942\u092e, Zero e \u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930",
+            "nome_fonte": "perche_hai_visto",
+            "size": 19,
+            "medium": "movie",
+            "min_eta": 833.0,
+            "mixed_tax": [],
+            "reps": [
+              "\u0927\u0942\u092e",
+              "Zero",
+              "\u090f\u0915 \u0925\u093e \u091f\u093e\u0907\u0917\u0930"
+            ]
+          },
+          {
+            "catalog_id": "yaca_124364_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 14,
+            "medium": "movie",
+            "min_eta": 453.0,
+            "mixed_tax": [
+              "Horror soprannaturale"
+            ],
+            "reps": [
+              "FROM",
+              "The Haunting of Hill House",
+              "The Haunting of Bly Manor"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 19,
+        "chosen_count": 8,
+        "covered_seeds": 271,
+        "coverage_pct": 47.7112676056338,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_69740_series",
+            "nome": "Dark comedy",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Dark comedy",
+              "Thriller psicologico",
+              "Gangster & Criminalit\u00e0",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Ozark",
+              "Slow Horses",
+              "Operazione speciale: Lioness"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1413_series",
+            "nome": "Cyberpunk & Futuro distopico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 29.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi",
+              "Horror soprannaturale",
+              "Docufiction true crime",
+              "Space opera",
+              "Cyberpunk & Futuro distopico",
+              "Fantascienza post-apocalittica"
+            ],
+            "reps": [
+              "American Horror Story",
+              "Servant",
+              "Succession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_108545_movie",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 90.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione",
+              "Thriller psicologico",
+              "Horror soprannaturale",
+              "Cyberpunk & Futuro distopico",
+              "Fantascienza post-apocalittica"
+            ],
+            "reps": [
+              "Il problema dei 3 corpi",
+              "A Murder at the End of the World",
+              "Teacup"
+            ]
+          },
+          {
+            "catalog_id": "yaca_233629_movie",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 37,
+            "medium": "movie",
+            "min_eta": 118.0,
+            "mixed_tax": [
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Bodies",
+              "1899",
+              "Afterparty"
+            ]
+          },
+          {
+            "catalog_id": "yaca_39185_series",
+            "nome": "Perch\u00e9 hai visto Somewhere Boy, Playing Nice e Savage House",
+            "nome_fonte": "perche_hai_visto",
+            "size": 36,
+            "medium": "series",
+            "min_eta": 13.0,
+            "mixed_tax": [],
+            "reps": [
+              "Vera",
+              "Unforgotten",
+              "Happy Valley"
+            ]
+          },
+          {
+            "catalog_id": "yaca_93812_series",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 32.0,
+            "mixed_tax": [
+              "Dramma d'epoca"
+            ],
+            "reps": [
+              "The Great",
+              "The Buccaneers",
+              "The Serpent Queen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_127641_series",
+            "nome": "Perch\u00e9 hai visto Young Royals, Uno di noi sta mentendo e This Is Going to Hurt",
+            "nome_fonte": "perche_hai_visto",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Surface",
+              "One Day",
+              "Young Royals"
+            ]
+          },
+          {
+            "catalog_id": "yaca_154385_movie",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 21,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [
+              "Docufiction true crime"
+            ],
+            "reps": [
+              "BEEF - LO SCONTRO",
+              "Animals",
+              "L'uomo dei sussurri"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 11,
+        "chosen_count": 8,
+        "covered_seeds": 106,
+        "coverage_pct": 63.47305389221557,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 31,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "The Good Place",
+              "Stranger Things",
+              "Man Seeking Woman"
+            ]
+          },
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 21,
+            "medium": "movie",
+            "min_eta": 285.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Avatar",
+              "Bullet Train",
+              "Beckett"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1119449_movie",
+            "nome": "Perch\u00e9 hai visto Creature luminose, Locked - In trappola e Neighborhood Watch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 13,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [],
+            "reps": [
+              "Good Luck, Have Fun, Don't Die",
+              "Obsession",
+              "Creature luminose"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_85077_movie",
+            "nome": "Fede & Spiritualit\u00e0",
+            "nome_fonte": "tassonomia",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 440.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Chosen",
+              "The Last Rodeo",
+              "Il re dei re - La pi\u00f9 grande storia mai raccontata"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1018648_movie",
+            "nome": "Documentari sportivi",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 118.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Redeem Team: Le Olimpiadi della riscossa",
+              "The Last Dance",
+              "Skywalkers: una storia d'amore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_155537_series",
+            "nome": "Perch\u00e9 hai visto Black Bird, Ovunque tu sia e Good Girls",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 119.0,
+            "mixed_tax": [],
+            "reps": [
+              "Black Bird",
+              "Ovunque tu sia",
+              "Good Girls"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Tr": {
+    "0.03": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 31,
+        "chosen_count": 8,
+        "covered_seeds": 134,
+        "coverage_pct": 32.5242718446602,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [
+              "Anime romantici & slice of life",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "One Piece",
+              "Haikyu!! L'asso del volley",
+              "L'attacco dei giganti"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Parasite, Frank e Memorie di un assassino",
+            "nome_fonte": "perche_hai_visto",
+            "size": 21,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Synecdoche, New York"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 17,
+            "medium": "series",
+            "min_eta": 87.0,
+            "mixed_tax": [
+              "Sitcom animate"
+            ],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "C'\u00e8 sempre il sole a Philadelphia",
+              "Shameless (UK)"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_78797_series",
+            "nome": "Perch\u00e9 hai visto Wok of Love, Las cr\u00f3nicas del taco e Bourdain: cucine segrete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wok of Love",
+              "Las cr\u00f3nicas del taco",
+              "Bourdain: cucine segrete"
+            ]
+          },
+          {
+            "catalog_id": "yaca_119769_series",
+            "nome": "Dramma coreano",
+            "nome_fonte": "tassonomia",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Tassista",
+              "Crash Landing on You",
+              "Vincenzo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Perch\u00e9 hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [],
+            "reps": [
+              "Adventure Time",
+              "Love, Death & Robots",
+              "Bob's Burgers"
+            ]
+          },
+          {
+            "catalog_id": "yaca_126308_movie",
+            "nome": "Perch\u00e9 hai visto Sh\u014dgun, Sanjuro e La sfida del samurai",
+            "nome_fonte": "perche_hai_visto",
+            "size": 10,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sh\u014dgun",
+              "Sanjuro",
+              "La sfida del samurai"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 24,
+        "chosen_count": 8,
+        "covered_seeds": 217,
+        "coverage_pct": 45.588235294117645,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_351286_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 19.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione"
+            ],
+            "reps": [
+              "Jurassic World \u2013 Il regno distrutto",
+              "Il mondo perduto - Jurassic Park",
+              "Jurassic Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_100402_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 176.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Captain America: The Winter Soldier",
+              "Guardiani della Galassia",
+              "Captain America - Il primo vendicatore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "movie",
+            "min_eta": 89.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Mandalorian",
+              "The Book of Boba Fett",
+              "Rogue One: A Star Wars Story"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_110533_series",
+            "nome": "Thriller coreano",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 20.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Thriller coreano"
+            ],
+            "reps": [
+              "Jirisan",
+              "Vagabond",
+              "Bargain - Trattativa mortale"
+            ]
+          },
+          {
+            "catalog_id": "yaca_95202_movie",
+            "nome": "Perch\u00e9 hai visto Cassandra, M3GAN 2.0 e M3GAN",
+            "nome_fonte": "perche_hai_visto",
+            "size": 13,
+            "medium": "movie",
+            "min_eta": 497.0,
+            "mixed_tax": [],
+            "reps": [
+              "To the Lake",
+              "Cassandra",
+              "M3GAN 2.0"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 20,
+        "chosen_count": 8,
+        "covered_seeds": 285,
+        "coverage_pct": 50.176056338028175,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_39185_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 13.0,
+            "mixed_tax": [
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Vera",
+              "Unforgotten",
+              "Strike"
+            ]
+          },
+          {
+            "catalog_id": "yaca_69740_series",
+            "nome": "Gangster & Criminalit\u00e0",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Spy thriller",
+              "Gangster & Criminalit\u00e0"
+            ],
+            "reps": [
+              "Ozark",
+              "Slow Horses",
+              "Operazione speciale: Lioness"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1413_series",
+            "nome": "Cyberpunk & Futuro distopico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 29.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi",
+              "Horror soprannaturale",
+              "Docufiction true crime",
+              "Cyberpunk & Futuro distopico",
+              "Fantascienza post-apocalittica"
+            ],
+            "reps": [
+              "American Horror Story",
+              "Servant",
+              "Succession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_236235_series",
+            "nome": "Dark comedy",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 48.0,
+            "mixed_tax": [
+              "Dark comedy",
+              "Thriller psicologico",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "The Gentlemen",
+              "Paradise",
+              "Nine Perfect Strangers"
+            ]
+          },
+          {
+            "catalog_id": "yaca_83867_movie",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 90.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione",
+              "Thriller psicologico",
+              "Horror soprannaturale",
+              "Space opera",
+              "Fantascienza post-apocalittica"
+            ],
+            "reps": [
+              "Andor",
+              "Constellation",
+              "Il problema dei 3 corpi"
+            ]
+          },
+          {
+            "catalog_id": "yaca_93812_series",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 32.0,
+            "mixed_tax": [
+              "Dramma d'epoca"
+            ],
+            "reps": [
+              "The Great",
+              "The Buccaneers",
+              "The Serpent Queen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_154385_movie",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 28,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [
+              "Docufiction true crime"
+            ],
+            "reps": [
+              "BEEF - LO SCONTRO",
+              "Animals",
+              "L'uomo dei sussurri"
+            ]
+          },
+          {
+            "catalog_id": "yaca_127641_series",
+            "nome": "Perch\u00e9 hai visto Young Royals, Uno di noi sta mentendo e This Is Going to Hurt",
+            "nome_fonte": "perche_hai_visto",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Surface",
+              "One Day",
+              "Young Royals"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 13,
+        "chosen_count": 8,
+        "covered_seeds": 98,
+        "coverage_pct": 58.68263473053892,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 21,
+            "medium": "movie",
+            "min_eta": 285.0,
+            "mixed_tax": [
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Avatar",
+              "Bullet Train",
+              "Beckett"
+            ]
+          },
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 20,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Good Place",
+              "Man Seeking Woman",
+              "I Think You Should Leave with Tim Robinson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_66732_series",
+            "nome": "Perch\u00e9 hai visto Stranger Things, Breaking Bad e DAHMER - Mostro: la storia di Jeffrey Dahmer",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 378.0,
+            "mixed_tax": [],
+            "reps": [
+              "Stranger Things",
+              "Breaking Bad",
+              "DAHMER - Mostro: la storia di Jeffrey Dahmer"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1119449_movie",
+            "nome": "Perch\u00e9 hai visto Good Luck, Have Fun, Don't Die, Obsession e Send Help",
+            "nome_fonte": "perche_hai_visto",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [],
+            "reps": [
+              "Good Luck, Have Fun, Don't Die",
+              "Obsession",
+              "Send Help"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1330021_movie",
+            "nome": "Perch\u00e9 hai visto Creature luminose, Locked - In trappola e Neighborhood Watch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 111.0,
+            "mixed_tax": [],
+            "reps": [
+              "Creature luminose",
+              "Locked - In trappola",
+              "Neighborhood Watch"
+            ]
+          },
+          {
+            "catalog_id": "yaca_85077_movie",
+            "nome": "Fede & Spiritualit\u00e0",
+            "nome_fonte": "tassonomia",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 440.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Chosen",
+              "The Last Rodeo",
+              "Il re dei re - La pi\u00f9 grande storia mai raccontata"
+            ]
+          }
+        ]
+      }
+    },
+    "0.05": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 33,
+        "chosen_count": 8,
+        "covered_seeds": 119,
+        "coverage_pct": 28.883495145631066,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [
+              "Anime romantici & slice of life",
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "One Piece",
+              "Haikyu!! L'asso del volley",
+              "L'attacco dei giganti"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Synecdoche, New York"
+            ]
+          },
+          {
+            "catalog_id": "yaca_78797_series",
+            "nome": "Perch\u00e9 hai visto Wok of Love, Las cr\u00f3nicas del taco e Bourdain: cucine segrete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wok of Love",
+              "Las cr\u00f3nicas del taco",
+              "Bourdain: cucine segrete"
+            ]
+          },
+          {
+            "catalog_id": "yaca_119769_series",
+            "nome": "Dramma coreano",
+            "nome_fonte": "tassonomia",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Tassista",
+              "Crash Landing on You",
+              "Vincenzo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Perch\u00e9 hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [],
+            "reps": [
+              "Adventure Time",
+              "Love, Death & Robots",
+              "Bob's Burgers"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Perch\u00e9 hai visto E.R. - Medici in prima linea, Breaking Bad e Better Call Saul",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 131.0,
+            "mixed_tax": [],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "Breaking Bad",
+              "Better Call Saul"
+            ]
+          },
+          {
+            "catalog_id": "yaca_126308_movie",
+            "nome": "Perch\u00e9 hai visto Sh\u014dgun, Sanjuro e La sfida del samurai",
+            "nome_fonte": "perche_hai_visto",
+            "size": 10,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sh\u014dgun",
+              "Sanjuro",
+              "La sfida del samurai"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 30,
+        "chosen_count": 8,
+        "covered_seeds": 225,
+        "coverage_pct": 47.26890756302521,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Anime sh\u014dnen"
+            ],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4607_series",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 34,
+            "medium": "series",
+            "min_eta": 54.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione",
+              "Space opera",
+              "Animazione d'azione per adulti"
+            ],
+            "reps": [
+              "Lost",
+              "X-Files",
+              "Il Trono di Spade"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1223601_movie",
+            "nome": "Perch\u00e9 hai visto Red Notice, The Adam Project e The Man from Toronto",
+            "nome_fonte": "perche_hai_visto",
+            "size": 33,
+            "medium": "movie",
+            "min_eta": 176.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sisu: Il vendicatore",
+              "L'uomo dei ghiacci - The Ice Road",
+              "Un film Minecraft"
+            ]
+          },
+          {
+            "catalog_id": "yaca_100402_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 29,
+            "medium": "movie",
+            "min_eta": 734.0,
+            "mixed_tax": [],
+            "reps": [
+              "Captain America: The Winter Soldier",
+              "Guardiani della Galassia",
+              "Captain America - Il primo vendicatore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "movie",
+            "min_eta": 89.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Mandalorian",
+              "The Book of Boba Fett",
+              "Rogue One: A Star Wars Story"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_524047_movie",
+            "nome": "Perch\u00e9 hai visto Greenland, Ice Road - La vendetta e Twisters",
+            "nome_fonte": "perche_hai_visto",
+            "size": 18,
+            "medium": "movie",
+            "min_eta": 19.0,
+            "mixed_tax": [],
+            "reps": [
+              "Greenland",
+              "The Rush - Corsa contro il tempo",
+              "War Machine"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 29,
+        "chosen_count": 8,
+        "covered_seeds": 261,
+        "coverage_pct": 45.95070422535211,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_39185_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 41.0,
+            "mixed_tax": [
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Vera",
+              "Unforgotten",
+              "Strike"
+            ]
+          },
+          {
+            "catalog_id": "yaca_236235_series",
+            "nome": "Dark comedy",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 48.0,
+            "mixed_tax": [
+              "Dark comedy",
+              "Thriller psicologico",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "The Gentlemen",
+              "Paradise",
+              "Morte e altri dettagli"
+            ]
+          },
+          {
+            "catalog_id": "yaca_134095_movie",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 90.0,
+            "mixed_tax": [
+              "Thriller psicologico",
+              "Horror soprannaturale"
+            ],
+            "reps": [
+              "A Murder at the End of the World",
+              "Calibre",
+              "La casa - Il risveglio del male"
+            ]
+          },
+          {
+            "catalog_id": "yaca_95480_series",
+            "nome": "Spy thriller",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [
+              "Spy thriller"
+            ],
+            "reps": [
+              "Slow Horses",
+              "Operazione speciale: Lioness",
+              "Alex Rider"
+            ]
+          },
+          {
+            "catalog_id": "yaca_76331_series",
+            "nome": "Cyberpunk & Futuro distopico",
+            "nome_fonte": "tassonomia",
+            "size": 30,
+            "medium": "series",
+            "min_eta": 32.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Cinecomic & Supereroi",
+              "Cyberpunk & Futuro distopico"
+            ],
+            "reps": [
+              "Succession",
+              "Fondazione",
+              "The Boys"
+            ]
+          },
+          {
+            "catalog_id": "yaca_154385_movie",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 28,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [
+              "Docufiction true crime"
+            ],
+            "reps": [
+              "BEEF - LO SCONTRO",
+              "Animals",
+              "L'uomo dei sussurri"
+            ]
+          },
+          {
+            "catalog_id": "yaca_93812_series",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "series",
+            "min_eta": 35.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Great",
+              "The Buccaneers",
+              "The Serpent Queen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_127641_series",
+            "nome": "Perch\u00e9 hai visto Young Royals, Uno di noi sta mentendo e This Is Going to Hurt",
+            "nome_fonte": "perche_hai_visto",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Surface",
+              "One Day",
+              "Young Royals"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 14,
+        "chosen_count": 8,
+        "covered_seeds": 93,
+        "coverage_pct": 55.688622754491014,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 20,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Good Place",
+              "Man Seeking Woman",
+              "I Think You Should Leave with Tim Robinson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_718930_movie",
+            "nome": "Perch\u00e9 hai visto Bullet Train, Beckett e The Gray Man",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 410.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bullet Train",
+              "Beckett",
+              "The Gray Man"
+            ]
+          },
+          {
+            "catalog_id": "yaca_66732_series",
+            "nome": "Perch\u00e9 hai visto Stranger Things, Breaking Bad e DAHMER - Mostro: la storia di Jeffrey Dahmer",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 378.0,
+            "mixed_tax": [],
+            "reps": [
+              "Stranger Things",
+              "Breaking Bad",
+              "DAHMER - Mostro: la storia di Jeffrey Dahmer"
+            ]
+          },
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 9,
+            "medium": "movie",
+            "min_eta": 285.0,
+            "mixed_tax": [],
+            "reps": [
+              "Avatar",
+              "Guardiani della Galassia",
+              "Iron Man 3"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1119449_movie",
+            "nome": "Perch\u00e9 hai visto Good Luck, Have Fun, Don't Die, Obsession e Send Help",
+            "nome_fonte": "perche_hai_visto",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [],
+            "reps": [
+              "Good Luck, Have Fun, Don't Die",
+              "Obsession",
+              "Send Help"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1330021_movie",
+            "nome": "Perch\u00e9 hai visto Creature luminose, Locked - In trappola e Neighborhood Watch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 111.0,
+            "mixed_tax": [],
+            "reps": [
+              "Creature luminose",
+              "Locked - In trappola",
+              "Neighborhood Watch"
+            ]
+          }
+        ]
+      }
+    },
+    "0.08": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 34,
+        "chosen_count": 8,
+        "covered_seeds": 126,
+        "coverage_pct": 30.582524271844658,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_285788_series",
+            "nome": "Anime romantici & slice of life",
+            "nome_fonte": "tassonomia",
+            "size": 31,
+            "medium": "series",
+            "min_eta": 18.0,
+            "mixed_tax": [],
+            "reps": [
+              "Tojima Wants to Be a Kamen Rider",
+              "The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You",
+              "Mars Red"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "Haikyu!! L'asso del volley",
+              "L'attacco dei giganti"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Synecdoche, New York"
+            ]
+          },
+          {
+            "catalog_id": "yaca_78797_series",
+            "nome": "Perch\u00e9 hai visto Wok of Love, Las cr\u00f3nicas del taco e Bourdain: cucine segrete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wok of Love",
+              "Las cr\u00f3nicas del taco",
+              "Bourdain: cucine segrete"
+            ]
+          },
+          {
+            "catalog_id": "yaca_119769_series",
+            "nome": "Dramma coreano",
+            "nome_fonte": "tassonomia",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Tassista",
+              "Crash Landing on You",
+              "Vincenzo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Perch\u00e9 hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [],
+            "reps": [
+              "Adventure Time",
+              "Love, Death & Robots",
+              "Bob's Burgers"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Perch\u00e9 hai visto E.R. - Medici in prima linea, Breaking Bad e Better Call Saul",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 131.0,
+            "mixed_tax": [],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "Breaking Bad",
+              "Better Call Saul"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 35,
+        "chosen_count": 8,
+        "covered_seeds": 199,
+        "coverage_pct": 41.806722689075634,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 83.0,
+            "mixed_tax": [],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_100402_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 29,
+            "medium": "movie",
+            "min_eta": 734.0,
+            "mixed_tax": [],
+            "reps": [
+              "Captain America: The Winter Soldier",
+              "Guardiani della Galassia",
+              "Captain America - Il primo vendicatore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "movie",
+            "min_eta": 89.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Mandalorian",
+              "The Book of Boba Fett",
+              "Rogue One: A Star Wars Story"
+            ]
+          },
+          {
+            "catalog_id": "yaca_351286_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 24,
+            "medium": "movie",
+            "min_eta": 103.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione"
+            ],
+            "reps": [
+              "Jurassic World \u2013 Il regno distrutto",
+              "Il mondo perduto - Jurassic Park",
+              "Jurassic Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1223601_movie",
+            "nome": "Perch\u00e9 hai visto Un film Minecraft, Uno Rosso e Deadpool 2",
+            "nome_fonte": "perche_hai_visto",
+            "size": 24,
+            "medium": "movie",
+            "min_eta": 176.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sisu: Il vendicatore",
+              "L'uomo dei ghiacci - The Ice Road",
+              "Un film Minecraft"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_524047_movie",
+            "nome": "Perch\u00e9 hai visto Greenland, Ice Road - La vendetta e Twisters",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "movie",
+            "min_eta": 243.0,
+            "mixed_tax": [],
+            "reps": [
+              "Greenland",
+              "War Machine",
+              "Ice Road - La vendetta"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 37,
+        "chosen_count": 8,
+        "covered_seeds": 243,
+        "coverage_pct": 42.78169014084507,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_39185_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 41.0,
+            "mixed_tax": [
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Vera",
+              "Unforgotten",
+              "Strike"
+            ]
+          },
+          {
+            "catalog_id": "yaca_236235_series",
+            "nome": "Dark comedy",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 48.0,
+            "mixed_tax": [
+              "Dark comedy",
+              "Thriller psicologico",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "The Gentlemen",
+              "Paradise",
+              "Morte e altri dettagli"
+            ]
+          },
+          {
+            "catalog_id": "yaca_713704_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "movie",
+            "min_eta": 90.0,
+            "mixed_tax": [
+              "Horror soprannaturale"
+            ],
+            "reps": [
+              "La casa - Il risveglio del male",
+              "La casa - Il rogo del Male",
+              "La casa"
+            ]
+          },
+          {
+            "catalog_id": "yaca_76331_series",
+            "nome": "Cyberpunk & Futuro distopico",
+            "nome_fonte": "tassonomia",
+            "size": 30,
+            "medium": "series",
+            "min_eta": 32.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Cinecomic & Supereroi",
+              "Cyberpunk & Futuro distopico"
+            ],
+            "reps": [
+              "Succession",
+              "Fondazione",
+              "The Boys"
+            ]
+          },
+          {
+            "catalog_id": "yaca_95480_series",
+            "nome": "Spy thriller",
+            "nome_fonte": "tassonomia",
+            "size": 27,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [],
+            "reps": [
+              "Slow Horses",
+              "Operazione speciale: Lioness",
+              "Alex Rider"
+            ]
+          },
+          {
+            "catalog_id": "yaca_93812_series",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "series",
+            "min_eta": 35.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Great",
+              "The Buccaneers",
+              "The Serpent Queen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_154385_movie",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 21,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [
+              "Docufiction true crime"
+            ],
+            "reps": [
+              "BEEF - LO SCONTRO",
+              "Animals",
+              "L'uomo dei sussurri"
+            ]
+          },
+          {
+            "catalog_id": "yaca_108545_movie",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 19,
+            "medium": "movie",
+            "min_eta": 148.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Fantascienza d'invasione",
+              "Thriller psicologico"
+            ],
+            "reps": [
+              "Il problema dei 3 corpi",
+              "Teacup",
+              "Disclosure Day"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 14,
+        "chosen_count": 8,
+        "covered_seeds": 93,
+        "coverage_pct": 55.688622754491014,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 20,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Good Place",
+              "Man Seeking Woman",
+              "I Think You Should Leave with Tim Robinson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_718930_movie",
+            "nome": "Perch\u00e9 hai visto Bullet Train, Beckett e The Gray Man",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 410.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bullet Train",
+              "Beckett",
+              "The Gray Man"
+            ]
+          },
+          {
+            "catalog_id": "yaca_66732_series",
+            "nome": "Perch\u00e9 hai visto Stranger Things, Breaking Bad e DAHMER - Mostro: la storia di Jeffrey Dahmer",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 378.0,
+            "mixed_tax": [],
+            "reps": [
+              "Stranger Things",
+              "Breaking Bad",
+              "DAHMER - Mostro: la storia di Jeffrey Dahmer"
+            ]
+          },
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 9,
+            "medium": "movie",
+            "min_eta": 285.0,
+            "mixed_tax": [],
+            "reps": [
+              "Avatar",
+              "Guardiani della Galassia",
+              "Iron Man 3"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1119449_movie",
+            "nome": "Perch\u00e9 hai visto Good Luck, Have Fun, Don't Die, Obsession e Send Help",
+            "nome_fonte": "perche_hai_visto",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [],
+            "reps": [
+              "Good Luck, Have Fun, Don't Die",
+              "Obsession",
+              "Send Help"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1330021_movie",
+            "nome": "Perch\u00e9 hai visto Creature luminose, Locked - In trappola e Neighborhood Watch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 111.0,
+            "mixed_tax": [],
+            "reps": [
+              "Creature luminose",
+              "Locked - In trappola",
+              "Neighborhood Watch"
+            ]
+          }
+        ]
+      }
+    },
+    "0.12": {
+      "sangam456": {
+        "n_seeds": 10,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 6,
+        "coverage_pct": 60.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1275779_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 3,
+            "medium": "movie",
+            "min_eta": 97.0,
+            "mixed_tax": [],
+            "reps": [
+              "Disclosure Day",
+              "Lilo & Stitch",
+              "Mission: Impossible - Dead Reckoning Parte uno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_111803_series",
+            "nome": "Perch\u00e9 hai visto The White Lotus, Billions e A Murder at the End of the World",
+            "nome_fonte": "perche_hai_visto",
+            "size": 3,
+            "medium": "series",
+            "min_eta": 183.0,
+            "mixed_tax": [],
+            "reps": [
+              "The White Lotus",
+              "Billions",
+              "A Murder at the End of the World"
+            ]
+          }
+        ]
+      },
+      "hammers-lists": {
+        "n_seeds": 11,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 8,
+        "coverage_pct": 72.72727272727273,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_74016_series",
+            "nome": "Medical drama",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Resident",
+              "Big Sky",
+              "The Good Doctor"
+            ]
+          },
+          {
+            "catalog_id": "yaca_60625_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "series",
+            "min_eta": 1417.0,
+            "mixed_tax": [],
+            "reps": [
+              "Rick and Morty",
+              "I Griffin"
+            ]
+          }
+        ]
+      },
+      "sappss": {
+        "n_seeds": 25,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 10,
+        "coverage_pct": 40.0,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_85552_movie",
+            "nome": "Perch\u00e9 hai visto Euphoria, Fallout e Obsession",
+            "nome_fonte": "perche_hai_visto",
+            "size": 6,
+            "medium": "movie",
+            "min_eta": 125.0,
+            "mixed_tax": [],
+            "reps": [
+              "Euphoria",
+              "Fallout",
+              "Obsession"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1022787_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "movie",
+            "min_eta": 137.0,
+            "mixed_tax": [],
+            "reps": [
+              "Elio",
+              "I Simpson - Il film",
+              "Jumpers - Un salto tra gli animali"
+            ]
+          }
+        ]
+      },
+      "flixinatoor99": {
+        "n_seeds": 32,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 14,
+        "coverage_pct": 43.75,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_128306_series",
+            "nome": "Perch\u00e9 hai visto Il Boss del condominio, Divisi\u00f3n Palermo e Stromberg",
+            "nome_fonte": "perche_hai_visto",
+            "size": 9,
+            "medium": "series",
+            "min_eta": 142.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Boss del condominio",
+              "Divisi\u00f3n Palermo",
+              "Stromberg"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1318447_movie",
+            "nome": "Perch\u00e9 hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 143.0,
+            "mixed_tax": [],
+            "reps": [
+              "Apex",
+              "Una di famiglia - The Housemaid",
+              "Hamnet - Nel nome del figlio"
+            ]
+          }
+        ]
+      },
+      "moppierhead": {
+        "n_seeds": 38,
+        "remaining_clusters": 5,
+        "chosen_count": 5,
+        "covered_seeds": 29,
+        "coverage_pct": 76.31578947368422,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_967941_movie",
+            "nome": "Magia & Stregoneria",
+            "nome_fonte": "tassonomia",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 309.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wicked - Parte 2",
+              "Wicked",
+              "Harry Potter e i Doni della Morte - Parte 2"
+            ]
+          },
+          {
+            "catalog_id": "yaca_456_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 7,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "I Simpson",
+              "Bob's Burgers",
+              "Futurama"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 6,
+            "medium": "series",
+            "min_eta": 25.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "L'attacco dei giganti",
+              "Sailor Moon"
+            ]
+          },
+          {
+            "catalog_id": "yaca_226637_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "High Potential",
+              "Percy Jackson e gli dei dell'Olimpo",
+              "Only Murders in the Building"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4610_series",
+            "nome": "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+            "nome_fonte": "perche_hai_visto",
+            "size": 4,
+            "medium": "series",
+            "min_eta": 34.0,
+            "mixed_tax": [],
+            "reps": [
+              "Hannah Montana",
+              "Zoey 101",
+              "Drake & Josh"
+            ]
+          }
+        ]
+      },
+      "castoffcrown": {
+        "n_seeds": 412,
+        "remaining_clusters": 34,
+        "chosen_count": 8,
+        "covered_seeds": 126,
+        "coverage_pct": 30.582524271844658,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_285788_series",
+            "nome": "Anime romantici & slice of life",
+            "nome_fonte": "tassonomia",
+            "size": 31,
+            "medium": "series",
+            "min_eta": 18.0,
+            "mixed_tax": [],
+            "reps": [
+              "Tojima Wants to Be a Kamen Rider",
+              "The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You",
+              "Mars Red"
+            ]
+          },
+          {
+            "catalog_id": "yaca_37854_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "One Piece",
+              "Haikyu!! L'asso del volley",
+              "L'attacco dei giganti"
+            ]
+          },
+          {
+            "catalog_id": "yaca_9323_movie",
+            "nome": "Perch\u00e9 hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 24.0,
+            "mixed_tax": [],
+            "reps": [
+              "Ghost in the Shell",
+              "Toy Story - Il mondo dei giocattoli",
+              "Paprika - Sognando un sogno"
+            ]
+          },
+          {
+            "catalog_id": "yaca_400617_movie",
+            "nome": "Perch\u00e9 hai visto Il filo nascosto, Ubriaco d'amore e Synecdoche, New York",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 26.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il filo nascosto",
+              "Ubriaco d'amore",
+              "Synecdoche, New York"
+            ]
+          },
+          {
+            "catalog_id": "yaca_78797_series",
+            "nome": "Perch\u00e9 hai visto Wok of Love, Las cr\u00f3nicas del taco e Bourdain: cucine segrete",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "series",
+            "min_eta": 43.0,
+            "mixed_tax": [],
+            "reps": [
+              "Wok of Love",
+              "Las cr\u00f3nicas del taco",
+              "Bourdain: cucine segrete"
+            ]
+          },
+          {
+            "catalog_id": "yaca_119769_series",
+            "nome": "Dramma coreano",
+            "nome_fonte": "tassonomia",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 12.0,
+            "mixed_tax": [],
+            "reps": [
+              "Il Tassista",
+              "Crash Landing on You",
+              "Vincenzo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_15260_series",
+            "nome": "Perch\u00e9 hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 65.0,
+            "mixed_tax": [],
+            "reps": [
+              "Adventure Time",
+              "Love, Death & Robots",
+              "Bob's Burgers"
+            ]
+          },
+          {
+            "catalog_id": "yaca_4588_series",
+            "nome": "Perch\u00e9 hai visto E.R. - Medici in prima linea, Breaking Bad e Better Call Saul",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 131.0,
+            "mixed_tax": [],
+            "reps": [
+              "E.R. - Medici in prima linea",
+              "Breaking Bad",
+              "Better Call Saul"
+            ]
+          }
+        ]
+      },
+      "warnok": {
+        "n_seeds": 476,
+        "remaining_clusters": 38,
+        "chosen_count": 8,
+        "covered_seeds": 188,
+        "coverage_pct": 39.49579831932773,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_46260_series",
+            "nome": "Anime sh\u014dnen",
+            "nome_fonte": "tassonomia",
+            "size": 40,
+            "medium": "series",
+            "min_eta": 83.0,
+            "mixed_tax": [],
+            "reps": [
+              "Naruto",
+              "L'attacco dei giganti",
+              "Monster"
+            ]
+          },
+          {
+            "catalog_id": "yaca_100402_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 29,
+            "medium": "movie",
+            "min_eta": 734.0,
+            "mixed_tax": [],
+            "reps": [
+              "Captain America: The Winter Soldier",
+              "Guardiani della Galassia",
+              "Captain America - Il primo vendicatore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_82856_movie",
+            "nome": "Space opera",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "movie",
+            "min_eta": 89.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Mandalorian",
+              "The Book of Boba Fett",
+              "Rogue One: A Star Wars Story"
+            ]
+          },
+          {
+            "catalog_id": "yaca_351286_movie",
+            "nome": "Fantascienza d'invasione",
+            "nome_fonte": "tassonomia",
+            "size": 24,
+            "medium": "movie",
+            "min_eta": 103.0,
+            "mixed_tax": [
+              "Fantascienza d'invasione"
+            ],
+            "reps": [
+              "Jurassic World \u2013 Il regno distrutto",
+              "Il mondo perduto - Jurassic Park",
+              "Jurassic Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_324857_movie",
+            "nome": "Animazione per famiglie",
+            "nome_fonte": "tassonomia",
+            "size": 23,
+            "medium": "movie",
+            "min_eta": 544.0,
+            "mixed_tax": [],
+            "reps": [
+              "Spider-Man: Un nuovo universo",
+              "Il piccolo yeti",
+              "Wallace e Gromit - Le piume della vendetta"
+            ]
+          },
+          {
+            "catalog_id": "yaca_86831_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 22,
+            "medium": "series",
+            "min_eta": 44.0,
+            "mixed_tax": [],
+            "reps": [
+              "Love, Death & Robots",
+              "Castlevania",
+              "La leggenda di Vox Machina"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1223601_movie",
+            "nome": "Perch\u00e9 hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 176.0,
+            "mixed_tax": [],
+            "reps": [
+              "Sisu: Il vendicatore",
+              "L'uomo dei ghiacci - The Ice Road",
+              "The Accountant"
+            ]
+          },
+          {
+            "catalog_id": "yaca_950387_movie",
+            "nome": "Perch\u00e9 hai visto Un film Minecraft, Uno Rosso e Deadpool 2",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 539.0,
+            "mixed_tax": [],
+            "reps": [
+              "Un film Minecraft",
+              "Uno Rosso",
+              "Deadpool 2"
+            ]
+          }
+        ]
+      },
+      "pepsipex": {
+        "n_seeds": 568,
+        "remaining_clusters": 43,
+        "chosen_count": 8,
+        "covered_seeds": 211,
+        "coverage_pct": 37.147887323943664,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_245927_series",
+            "nome": "Thriller psicologico",
+            "nome_fonte": "tassonomia",
+            "size": 35,
+            "medium": "series",
+            "min_eta": 48.0,
+            "mixed_tax": [
+              "Thriller psicologico",
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Paradise",
+              "Morte e altri dettagli",
+              "Imperfect Women - Le mie amiche del cuore"
+            ]
+          },
+          {
+            "catalog_id": "yaca_39185_series",
+            "nome": "Giallo investigativo",
+            "nome_fonte": "tassonomia",
+            "size": 34,
+            "medium": "series",
+            "min_eta": 47.0,
+            "mixed_tax": [
+              "Giallo investigativo"
+            ],
+            "reps": [
+              "Vera",
+              "Unforgotten",
+              "Strike"
+            ]
+          },
+          {
+            "catalog_id": "yaca_713704_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 34,
+            "medium": "movie",
+            "min_eta": 90.0,
+            "mixed_tax": [],
+            "reps": [
+              "La casa - Il risveglio del male",
+              "La casa - Il rogo del Male",
+              "La casa"
+            ]
+          },
+          {
+            "catalog_id": "yaca_95480_series",
+            "nome": "Spy thriller",
+            "nome_fonte": "tassonomia",
+            "size": 27,
+            "medium": "series",
+            "min_eta": 15.0,
+            "mixed_tax": [],
+            "reps": [
+              "Slow Horses",
+              "Operazione speciale: Lioness",
+              "Alex Rider"
+            ]
+          },
+          {
+            "catalog_id": "yaca_93812_series",
+            "nome": "Dramma d'epoca",
+            "nome_fonte": "tassonomia",
+            "size": 26,
+            "medium": "series",
+            "min_eta": 35.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Great",
+              "The Buccaneers",
+              "The Serpent Queen"
+            ]
+          },
+          {
+            "catalog_id": "yaca_76331_series",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 25,
+            "medium": "series",
+            "min_eta": 32.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Cinecomic & Supereroi"
+            ],
+            "reps": [
+              "Succession",
+              "The Boys",
+              "Silo"
+            ]
+          },
+          {
+            "catalog_id": "yaca_154385_movie",
+            "nome": "Perch\u00e9 hai visto Anatomia di una caduta, Babygirl e Anora",
+            "nome_fonte": "perche_hai_visto",
+            "size": 15,
+            "medium": "movie",
+            "min_eta": 86.0,
+            "mixed_tax": [],
+            "reps": [
+              "BEEF - LO SCONTRO",
+              "The Invite - Il piacere \u00e8 tutto nostro",
+              "The Drama - Un segreto \u00e8 per sempre"
+            ]
+          },
+          {
+            "catalog_id": "yaca_108545_movie",
+            "nome": "Fantascienza post-apocalittica",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "movie",
+            "min_eta": 148.0,
+            "mixed_tax": [
+              "Fantascienza post-apocalittica",
+              "Fantascienza d'invasione"
+            ],
+            "reps": [
+              "Il problema dei 3 corpi",
+              "Teacup",
+              "Disclosure Day"
+            ]
+          }
+        ]
+      },
+      "carverclan": {
+        "n_seeds": 7,
+        "remaining_clusters": 2,
+        "chosen_count": 2,
+        "covered_seeds": 4,
+        "coverage_pct": 57.14285714285714,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_1233413_movie",
+            "nome": "Horror soprannaturale",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 203.0,
+            "mixed_tax": [],
+            "reps": [
+              "I peccatori",
+              "Stranger Things"
+            ]
+          },
+          {
+            "catalog_id": "yaca_432484_movie",
+            "nome": "Teatro filmato & Musical",
+            "nome_fonte": "tassonomia",
+            "size": 2,
+            "medium": "movie",
+            "min_eta": 341.0,
+            "mixed_tax": [],
+            "reps": [
+              "Peter Pan Goes Wrong",
+              "Great Performances"
+            ]
+          }
+        ]
+      },
+      "1jacobjohn": {
+        "n_seeds": 167,
+        "remaining_clusters": 14,
+        "chosen_count": 8,
+        "covered_seeds": 93,
+        "coverage_pct": 55.688622754491014,
+        "chosen_shelves": [
+          {
+            "catalog_id": "yaca_66573_series",
+            "nome": "Sitcom animate",
+            "nome_fonte": "tassonomia",
+            "size": 20,
+            "medium": "series",
+            "min_eta": 105.0,
+            "mixed_tax": [],
+            "reps": [
+              "The Good Place",
+              "Man Seeking Woman",
+              "I Think You Should Leave with Tim Robinson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_32726_series",
+            "nome": "Animazione d'azione per adulti",
+            "nome_fonte": "tassonomia",
+            "size": 15,
+            "medium": "series",
+            "min_eta": 113.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bob's Burgers",
+              "Primal",
+              "South Park"
+            ]
+          },
+          {
+            "catalog_id": "yaca_272299_series",
+            "nome": "Docufiction true crime",
+            "nome_fonte": "tassonomia",
+            "size": 13,
+            "medium": "series",
+            "min_eta": 103.0,
+            "mixed_tax": [],
+            "reps": [
+              "This is the Zodiac Speaking: lettere da un serial killer",
+              "Sean Combs: la resa dei conti",
+              "American Murder: il caso Laci Peterson"
+            ]
+          },
+          {
+            "catalog_id": "yaca_718930_movie",
+            "nome": "Perch\u00e9 hai visto Bullet Train, Beckett e The Gray Man",
+            "nome_fonte": "perche_hai_visto",
+            "size": 12,
+            "medium": "movie",
+            "min_eta": 410.0,
+            "mixed_tax": [],
+            "reps": [
+              "Bullet Train",
+              "Beckett",
+              "The Gray Man"
+            ]
+          },
+          {
+            "catalog_id": "yaca_66732_series",
+            "nome": "Perch\u00e9 hai visto Stranger Things, Breaking Bad e DAHMER - Mostro: la storia di Jeffrey Dahmer",
+            "nome_fonte": "perche_hai_visto",
+            "size": 11,
+            "medium": "series",
+            "min_eta": 378.0,
+            "mixed_tax": [],
+            "reps": [
+              "Stranger Things",
+              "Breaking Bad",
+              "DAHMER - Mostro: la storia di Jeffrey Dahmer"
+            ]
+          },
+          {
+            "catalog_id": "yaca_19995_movie",
+            "nome": "Cinecomic & Supereroi",
+            "nome_fonte": "tassonomia",
+            "size": 9,
+            "medium": "movie",
+            "min_eta": 285.0,
+            "mixed_tax": [],
+            "reps": [
+              "Avatar",
+              "Guardiani della Galassia",
+              "Iron Man 3"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1119449_movie",
+            "nome": "Perch\u00e9 hai visto Good Luck, Have Fun, Don't Die, Obsession e Send Help",
+            "nome_fonte": "perche_hai_visto",
+            "size": 8,
+            "medium": "movie",
+            "min_eta": 96.0,
+            "mixed_tax": [],
+            "reps": [
+              "Good Luck, Have Fun, Don't Die",
+              "Obsession",
+              "Send Help"
+            ]
+          },
+          {
+            "catalog_id": "yaca_1330021_movie",
+            "nome": "Perch\u00e9 hai visto Creature luminose, Locked - In trappola e Neighborhood Watch",
+            "nome_fonte": "perche_hai_visto",
+            "size": 5,
+            "medium": "movie",
+            "min_eta": 111.0,
+            "mixed_tax": [],
+            "reps": [
+              "Creature luminose",
+              "Locked - In trappola",
+              "Neighborhood Watch"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

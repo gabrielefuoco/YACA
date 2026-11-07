@@ -533,91 +533,117 @@ def clusters(
     for m in raw_macros:
         eligible_raw.extend(eval_macro(m))
 
-    # Filtro o split per medium se richiesto
+    # Filtro o split per medium se richiesto con omogeneità rigorosa (nessuna eccezione)
     tassonomia_map = {e.nome: e for e in TASSONOMIA_36}
     shelves: list[Shelf] = []
     for item in eligible_raw:
-        if medium and item["medium"] != medium:
-            continue
+        # Separa i semi per medium in modo rigoroso: ogni riga servita deve avere membri
+        # rigorosamente omogenei rispetto al proprio medium (nessuna eccezione).
+        raw_mov = [idx for idx in item["seeds"] if not engine.keys[righe_arr[idx]].startswith("tv:")]
+        raw_ser = [idx for idx in item["seeds"] if engine.keys[righe_arr[idx]].startswith("tv:")]
 
-        m_indices = item["seeds"]
+        candidati_media: list[tuple[str, list[int]]] = []
+        if medium == "movie":
+            candidati_media = [("movie", raw_mov)]
+        elif medium == "series":
+            candidati_media = [("series", raw_ser)]
+        else:
+            # Policy P2 (Conditional): se il cluster possiede semi nel medium e raggiunge il floor
+            candidati_media = [("movie", raw_mov), ("series", raw_ser)]
 
-        # Filtro semi esclusi se il cluster ha un'etichetta tassonomica con clausole di esclusione
-        entry_obj = tassonomia_map.get(item["nome"])
-        if entry_obj and (entry_obj.excluded_keywords or entry_obj.excluded_languages):
-            pruned_indices = []
-            for s_idx in m_indices:
-                r = righe_arr[s_idx]
+        for m_type, raw_indices in candidati_media:
+            if len(raw_indices) < floor:
+                continue
+
+            m_indices = raw_indices
+
+            # Filtro semi esclusi se il cluster ha un'etichetta tassonomica con clausole di esclusione
+            entry_obj = tassonomia_map.get(item["nome"])
+            if entry_obj and (entry_obj.excluded_keywords or entry_obj.excluded_languages):
+                pruned_indices = []
+                for s_idx in m_indices:
+                    r = righe_arr[s_idx]
+                    k_seme = engine.keys[r]
+                    kws = get_member_kws(r)
+                    lang = extra_info.get(k_seme, {}).get("orig_lang")
+                    if entry_obj.excluded_languages and lang in entry_obj.excluded_languages:
+                        continue
+                    if entry_obj.excluded_keywords and any(k in entry_obj.excluded_keywords for k in kws):
+                        continue
+                    pruned_indices.append(s_idx)
+                m_indices = pruned_indices
+
+            if len(m_indices) < floor:
+                continue
+
+            m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+            top_seed_idx = m_sorted[0]
+            top_row = righe_arr[top_seed_idx]
+            top_key = engine.keys[top_row]
+            top_tmdb_id = int(top_key.split(":")[1]) if ":" in top_key else top_row
+
+            catalog_id = f"yaca_{top_tmdb_id}_{m_type}"
+
+            # Dominant collection
+            dom_coll = None
+            if coll is not None:
+                c_coll = coll[righe_arr[m_indices]]
+                pos = [x for x in c_coll if x > 0]
+                if pos:
+                    dom_cid, dom_cnt = Counter(pos).most_common(1)[0]
+                    if (dom_cnt / len(m_indices)) >= 0.5:
+                        dom_coll = int(dom_cid)
+
+            # Se il nome è un fallback 'Perché hai visto...', rigeneriamo il nome con i semi del medium specifico
+            nome_scaffale = item["nome"]
+            if item["nome_fonte"] == "perche_hai_visto":
+                repr_titles = [str(titles[righe_arr[idx]]) for idx in m_sorted[:3]]
+                if len(repr_titles) == 1:
+                    nome_scaffale = f"Perché hai visto {repr_titles[0]}"
+                elif len(repr_titles) == 2:
+                    nome_scaffale = f"Perché hai visto {repr_titles[0]} e {repr_titles[1]}"
+                elif len(repr_titles) >= 3:
+                    nome_scaffale = f"Perché hai visto {repr_titles[0]}, {repr_titles[1]} e {repr_titles[2]}"
+
+            semi_rappresentativi = []
+            for idx in m_sorted[:3]:
+                r = righe_arr[idx]
                 k_seme = engine.keys[r]
-                kws = get_member_kws(r)
-                lang = extra_info.get(k_seme, {}).get("orig_lang")
-                if entry_obj.excluded_languages and lang in entry_obj.excluded_languages:
-                    continue
-                if entry_obj.excluded_keywords and any(k in entry_obj.excluded_keywords for k in kws):
-                    continue
-                pruned_indices.append(s_idx)
-            m_indices = pruned_indices
+                semi_rappresentativi.append({
+                    "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
+                    "medium": m_type,
+                    "titolo": str(titles[r]) if titles is not None else k_seme,
+                    "anno": int(years[r]) if years is not None else 0,
+                    "plays": float(plays_arr[idx]),
+                    "eta_giorni": float(eta_arr[idx]),
+                })
 
-        if len(m_indices) < floor:
-            continue
+            semi_membri = []
+            for idx in m_indices:
+                r = righe_arr[idx]
+                k_seme = engine.keys[r]
+                semi_membri.append({
+                    "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
+                    "medium": m_type,
+                    "titolo": str(titles[r]) if titles is not None else k_seme,
+                    "anno": int(years[r]) if years is not None else 0,
+                })
 
-        m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
-        top_seed_idx = m_sorted[0]
-        top_row = righe_arr[top_seed_idx]
-        top_key = engine.keys[top_row]
-        top_tmdb_id = int(top_key.split(":")[1]) if ":" in top_key else top_row
-
-        catalog_id = f"yaca_{top_tmdb_id}_{item['medium']}"
-
-        # Dominant collection
-        dom_coll = None
-        if coll is not None:
-            c_coll = coll[righe_arr[m_indices]]
-            pos = [x for x in c_coll if x > 0]
-            if pos:
-                dom_cid, dom_cnt = Counter(pos).most_common(1)[0]
-                if (dom_cnt / len(m_indices)) >= 0.5:
-                    dom_coll = int(dom_cid)
-
-        semi_rappresentativi = []
-        for idx in m_sorted[:3]:
-            r = righe_arr[idx]
-            k_seme = engine.keys[r]
-            semi_rappresentativi.append({
-                "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
-                "medium": "series" if k_seme.startswith("tv:") else "movie",
-                "titolo": str(titles[r]) if titles is not None else k_seme,
-                "anno": int(years[r]) if years is not None else 0,
-                "plays": float(plays_arr[idx]),
-                "eta_giorni": float(eta_arr[idx]),
-            })
-
-        semi_membri = []
-        for idx in m_indices:
-            r = righe_arr[idx]
-            k_seme = engine.keys[r]
-            semi_membri.append({
-                "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
-                "medium": "series" if k_seme.startswith("tv:") else "movie",
-                "titolo": str(titles[r]) if titles is not None else k_seme,
-                "anno": int(years[r]) if years is not None else 0,
-            })
-
-        sh = Shelf(
-            catalog_id=catalog_id,
-            nome=item["nome"],
-            nome_fonte=item["nome_fonte"],
-            confidenza=round(float(item["conf"]), 3),
-            medium=item["medium"],
-            semi_rappresentativi=semi_rappresentativi,
-            semi_membri=semi_membri,
-            size=len(m_indices),
-            min_eta=float(min(eta_arr[idx] for idx in m_indices)),
-            matched_entry=item["matched_entry"],
-            seeds_indices=m_indices,
-            dom_coll=dom_coll,
-        )
-        shelves.append(sh)
+            sh = Shelf(
+                catalog_id=catalog_id,
+                nome=nome_scaffale,
+                nome_fonte=item["nome_fonte"],
+                confidenza=round(float(item["conf"]), 3),
+                medium=m_type,
+                semi_rappresentativi=semi_rappresentativi,
+                semi_membri=semi_membri,
+                size=len(m_indices),
+                min_eta=float(min(eta_arr[idx] for idx in m_indices)),
+                matched_entry=item["matched_entry"],
+                seeds_indices=m_indices,
+                dom_coll=dom_coll,
+            )
+            shelves.append(sh)
 
     return shelves
 
@@ -630,7 +656,7 @@ def unisci_cluster_tassonomia_identici(
     eta_arr: np.ndarray,
     cap: int = 40,
 ) -> list[Shelf]:
-    """Unisce i cluster con identica etichetta tassonomica prima del budget step, fino al cap specificato.
+    """Unisce i cluster con identica etichetta tassonomica e medesimo medium prima del budget step, fino a cap.
 
     Args:
         eligible: Lista di scaffali candidati da clusters().
@@ -643,17 +669,21 @@ def unisci_cluster_tassonomia_identici(
     Returns:
         Lista di scaffali con le etichette tassonomiche duplicate fuse fino a cap.
     """
-    tax_groups: dict[str, list[Shelf]] = defaultdict(list)
+    meta = K.metadati()
+    titles = meta.get("TIT")
+    years = meta.get("ANNO")
+
+    tax_groups: dict[tuple[str, str], list[Shelf]] = defaultdict(list)
     other_clusters: list[Shelf] = []
 
     for sh in eligible:
         if sh.nome_fonte == "tassonomia":
-            tax_groups[sh.nome].append(sh)
+            tax_groups[(sh.nome, sh.medium)].append(sh)
         else:
             other_clusters.append(sh)
 
     merged: list[Shelf] = list(other_clusters)
-    for nome, sh_list in tax_groups.items():
+    for (nome, m_med), sh_list in tax_groups.items():
         if len(sh_list) == 1:
             merged.append(sh_list[0])
             continue
@@ -665,20 +695,35 @@ def unisci_cluster_tassonomia_identici(
         m_sorted = sorted(all_seeds, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
         capped_seeds = m_sorted[:cap]
 
-        m_keys = [chiavi[i] for i in capped_seeds]
-        c_med = Counter("series" if k.startswith("tv:") else "movie" for k in m_keys)
-        if c_med["series"] > c_med["movie"]:
-            m_med = "series"
-        elif c_med["movie"] > c_med["series"]:
-            m_med = "movie"
-        else:
-            m_med = sh_list[0].medium
-
         top_s = capped_seeds[0]
         top_r = righe_arr[top_s]
         top_k = chiavi[top_s]
         top_tid = int(top_k.split(":")[1]) if ":" in top_k else top_r
         cat_id = f"yaca_{top_tid}_{m_med}"
+
+        semi_rappresentativi = []
+        for idx in capped_seeds[:3]:
+            r = righe_arr[idx]
+            k_seme = chiavi[idx]
+            semi_rappresentativi.append({
+                "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
+                "medium": m_med,
+                "titolo": str(titles[r]) if titles is not None else k_seme,
+                "anno": int(years[r]) if years is not None else 0,
+                "plays": float(plays_arr[idx]),
+                "eta_giorni": float(eta_arr[idx]),
+            })
+
+        semi_membri = []
+        for idx in capped_seeds:
+            r = righe_arr[idx]
+            k_seme = chiavi[idx]
+            semi_membri.append({
+                "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
+                "medium": m_med,
+                "titolo": str(titles[r]) if titles is not None else k_seme,
+                "anno": int(years[r]) if years is not None else 0,
+            })
 
         merged_sh = Shelf(
             catalog_id=cat_id,
@@ -686,8 +731,8 @@ def unisci_cluster_tassonomia_identici(
             nome_fonte="tassonomia",
             confidenza=max(s.confidenza for s in sh_list),
             medium=m_med,
-            semi_rappresentativi=sh_list[0].semi_rappresentativi,
-            semi_membri=sh_list[0].semi_membri,
+            semi_rappresentativi=semi_rappresentativi,
+            semi_membri=semi_membri,
             size=len(capped_seeds),
             min_eta=min(eta_arr[idx] for idx in capped_seeds),
             matched_entry=sh_list[0].matched_entry,

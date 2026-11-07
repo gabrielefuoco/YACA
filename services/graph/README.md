@@ -19,21 +19,29 @@ input densi e gli embedding già materializzati rimangono nella cache locale
 
 ## Runtime
 
-- `servizio.py` espone l'API storica `/raccomanda` (alimentata dal runtime bubble V10) e la nuova rotta `POST /scaffali` (alimentata dal runtime V45).
+- `servizio.py` espone l'API storica `/raccomanda` e la rotta di aggregazione `POST /scaffali`. **V10 è stato completamente rimosso dal servizio runtime**: entrambe le rotte sono alimentate esclusivamente da `graph.runtime.Engine` (V45). Il vecchio modulo `motore.py` non è più importato né istanziato dal servizio (è conservato unicamente per script offline).
 - `runtime/` contiene il motore sparse V45 (`Engine`, PageRank personalizzato) e il banco di misura.
 - L'immagine Docker è runtime-only: `.dockerignore` esclude `build/`; gli artefatti si promuovono
   offline e il volume dati resta read-only.
 
-### Endpoint `/scaffali` e realtà della memoria a doppio motore
+### Endpoint `/raccomanda` (Cutover V45) e `/scaffali` (V45 Standalone)
 
-L'endpoint `POST /scaffali` implementa il contratto congelato (Ticket 08 / V45, contratto versione 2) restituendo fino a 8 scaffali qualificati per profilo spendendo il budget per copertura semi (two-tier: etichette tassonomiche in testa e fallback «Perché hai visto» in coda). L'endpoint è integrato direttamente in `servizio.py` e carica lazily come singleton di modulo l'engine sparso V45 (`graph.runtime.Engine`, ~34 MiB delta) e la matrice compatta top-100 vicini (`vicini-top100.npz`, ~65 MiB delta). Se gli artefatti sono assenti restituisce HTTP 503 con messaggio esplicito.
+- **`POST /raccomanda` (contratto versione 1)**: Preserva al 100% la compatibilità a livello di chiavi e tipi con i client YACA (`src/clients/graphClient.js`), producendo `il_tuo_mondo` e `un_passo_fuori`. È servito da `graph.runtime.Engine` (latenza: **p50 = 1,0 ms**, **p95 = 17,4 ms**).
+- **`POST /scaffali` (contratto versione 2)**: Implementa la ricetta congelata di clustering e ranking a due livelli (etichette tassonomiche in testa e fallback «Perché hai visto» in coda) con separazione rigorosa del medium per riga (policy P2).
 
-**Realtà della memoria (misure effettive RSS, non stime):**
-- **Processo standalone V45** (`Engine` pota16 + `vicini-top100` + clustering): **317,7 MiB** di picco RSS dopo 30 richieste sequenziali su `warnok`.
-- **Processo doppio motore** (`motore.Motore` V10 a 135,9 MiB + `Engine` V45 a 169,9 MiB + `vicini-top100` a 235,2 MiB + working set clustering su `warnok`): **312,3 MiB** alla prima richiesta e **353,6 MiB** di picco RSS stabile dopo 30 richieste sequenziali su `warnok` (476 semi).
-- **Latenza misurata su 30 richieste sequenziali warm**: **p50 = 1,34 s**, **p95 = 1,47 s** (ampiamente entro il target <= 3,0 s).
+**Realtà della memoria (misure effettive RSS con V45 standalone, non stime):**
+- **Processo runtime V45 standalone**: con la rimozione totale di V10 (eliminando la matrice densa da ~118 MiB), il server HTTP carica come singleton unicamente `graph.runtime.Engine` (~34 MiB delta) e la matrice compatta `vicini-top100.npz` (~65 MiB delta).
+- **Peak RSS misurato su 30 richieste sequenziali su `warnok` (476 semi)**: **323,41 MiB** (working set peak; RSS a riposo 299,1 MiB).
+- **Margine di sicurezza**: **188,59 MiB** di headroom nel container Docker da 512 MiB (`mem_limit: 512m`), e **76,59 MiB** stabilmente sotto la soglia di guardia di 400 MB.
+- **Latenze misurate su 30 richieste sequenziali warm su `warnok`**:
+  - `/scaffali`: **p50 = 1,525 s**, **p95 = 1,698 s** (ampiamente entro il target <= 3,0 s per 8 scaffali con walk PPR e clustering).
+  - `/raccomanda`: **p50 = 1,0 ms**, **p95 = 17,4 ms**.
 
-Il doppio motore si colloca a 353,6 MiB, al di sotto del vincolo di 400 MB (lasciando ~158 MiB di headroom nel container da 512 MiB); tuttavia, la coesistenza in shadow di V10 e V45 riduce il margine di sicurezza rispetto al cutover definitivo a V45 standalone. Fino al cutover, `/raccomanda` utilizza V10 mentre `/scaffali` utilizza V45.
+### Politica del Medium per gli Scaffali (Policy P2)
+Stremio impone cataloghi rigorosamente omogenei per tipologia (`movie` o `series`). Gli archi cross-medium nel grafo vengono preservati (rafforzano la camminata e catturano il gusto), ma le righe esposte applicano la politica **P2 (Conditional)** con omogeneità assoluta:
+1. **Nessuna commistione**: in ogni riga servita, tutti i semi membri (`semi_membri`), i semi rappresentativi e i candidati raccomandati appartengono al medesimo medium della riga. Non è ammessa alcuna deroga sui cluster piccoli.
+2. **Generazione condizionale**: un cluster produce una controparte dell'altro medium solo se possiede almeno `floor` semi di quel medium nella storia utente. Se un profilo non consuma un medium (es. solo serie in `hammers-lists`), le controparti dell'altro medium vengono soppresse per evitare righe vuote o spurie.
+3. **Risoluzione cluster sotto-floor**: i cluster che non possono essere partizionati in almeno `floor` semi omogenei (es. 1 film e 1 serie su `carverclan`) **non vengono serviti affatto** (0 cataloghi qualificati), proteggendo l'integrità del catalogo da scaffali artificiosi composti da un solo elemento.
 
 ### Transizione potata: l'unico percorso adatto al container
 

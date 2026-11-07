@@ -1,0 +1,5521 @@
+[
+  {
+    "profile": "sangam456",
+    "type": "base",
+    "cluster_idx": 1,
+    "label": "Perché hai visto The White Lotus, Billions e A Murder at the End of the World",
+    "medium": "series",
+    "size": 3,
+    "mass": 5.333333333333333,
+    "titles": [
+      "The White Lotus",
+      "Billions",
+      "A Murder at the End of the World"
+    ],
+    "keys": [
+      "tv:111803",
+      "tv:62852",
+      "tv:134095"
+    ],
+    "weights": [
+      3.0,
+      1.0476190476190477,
+      1.2857142857142856
+    ],
+    "top_kws": [
+      [
+        "hotel",
+        2
+      ],
+      [
+        "social elite",
+        1
+      ],
+      [
+        "vacation",
+        1
+      ],
+      [
+        "scathing",
+        1
+      ],
+      [
+        "exotic island",
+        1
+      ],
+      [
+        "anthology",
+        1
+      ],
+      [
+        "sardonic",
+        1
+      ],
+      [
+        "sicily, italy",
+        1
+      ],
+      [
+        "whodunit",
+        1
+      ],
+      [
+        "provocative",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 3
+    },
+    "countries": {}
+  },
+  {
+    "profile": "sappss",
+    "type": "base",
+    "cluster_idx": 0,
+    "label": "Perché hai visto Euphoria, Fallout e Obsession",
+    "medium": "movie",
+    "size": 6,
+    "mass": 7.333333333333334,
+    "titles": [
+      "Euphoria",
+      "Fallout",
+      "Obsession",
+      "Beautiful Boy",
+      "Good Boy",
+      "L'ultima missione: Project Hail Mary"
+    ],
+    "keys": [
+      "tv:85552",
+      "tv:106379",
+      "movie:1339713",
+      "movie:451915",
+      "movie:1381027",
+      "movie:687163"
+    ],
+    "weights": [
+      1.5833333333333335,
+      1.75,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "drug rehabilitation",
+        2
+      ],
+      [
+        "bold",
+        2
+      ],
+      [
+        "drug use",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "sex addiction",
+        1
+      ],
+      [
+        "transgender",
+        1
+      ],
+      [
+        "high school student",
+        1
+      ],
+      [
+        "euphoric",
+        1
+      ],
+      [
+        "abusive family",
+        1
+      ],
+      [
+        "relationship problems",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 6
+    },
+    "countries": {}
+  },
+  {
+    "profile": "flixinatoor99",
+    "type": "base",
+    "cluster_idx": 0,
+    "label": "Perché hai visto Il Boss del condominio, División Palermo e Stromberg",
+    "medium": "series",
+    "size": 9,
+    "mass": 12.108940439925625,
+    "titles": [
+      "Il Boss del condominio",
+      "División Palermo",
+      "Stromberg",
+      "Cent'anni di solitudine",
+      "El Chavo del Ocho",
+      "Padre no hay más que uno",
+      "Stromberg - Der Film",
+      "L’ultimo turno",
+      "Nadie nos va a extrañar"
+    ],
+    "keys": [
+      "tv:128306",
+      "tv:219066",
+      "tv:6202",
+      "tv:207333",
+      "tv:47",
+      "movie:587272",
+      "movie:240510",
+      "movie:1356670",
+      "tv:259666"
+    ],
+    "weights": [
+      1.8125,
+      2.428571428571429,
+      1.2173913043478262,
+      1.5,
+      1.0254777070063694,
+      1.0,
+      1.0,
+      1.0,
+      1.125
+    ],
+    "top_kws": [
+      [
+        "nostalgic",
+        2
+      ],
+      [
+        "amused",
+        2
+      ],
+      [
+        "cheerful",
+        2
+      ],
+      [
+        "manipulation",
+        1
+      ],
+      [
+        "buenos aires, argentina",
+        1
+      ],
+      [
+        "scheming",
+        1
+      ],
+      [
+        "apartment building",
+        1
+      ],
+      [
+        "police operation",
+        1
+      ],
+      [
+        "gang",
+        1
+      ],
+      [
+        "community",
+        1
+      ]
+    ],
+    "langs": {
+      "es": 6,
+      "de": 3
+    },
+    "countries": {}
+  },
+  {
+    "profile": "flixinatoor99",
+    "type": "base",
+    "cluster_idx": 1,
+    "label": "Perché hai visto Apex, Una di famiglia - The Housemaid e Hamnet - Nel nome del figlio",
+    "medium": "movie",
+    "size": 5,
+    "mass": 5.0,
+    "titles": [
+      "Apex",
+      "Una di famiglia - The Housemaid",
+      "Hamnet - Nel nome del figlio",
+      "People we meet on vacation - Un amore in vacanza",
+      "Dragon Trainer"
+    ],
+    "keys": [
+      "movie:1318447",
+      "movie:1368166",
+      "movie:858024",
+      "movie:1034716",
+      "movie:1087192"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "rock climbing",
+        1
+      ],
+      [
+        "cat and mouse",
+        1
+      ],
+      [
+        "survival instinct",
+        1
+      ],
+      [
+        "norway",
+        1
+      ],
+      [
+        "manipulation",
+        1
+      ],
+      [
+        "psychological thriller",
+        1
+      ],
+      [
+        "secret",
+        1
+      ],
+      [
+        "suspense thriller",
+        1
+      ],
+      [
+        "authoritarian",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "moppierhead",
+    "type": "base",
+    "cluster_idx": 4,
+    "label": "Perché hai visto Hannah Montana, Zoey 101 e Drake & Josh",
+    "medium": "series",
+    "size": 4,
+    "mass": 7.747985347985348,
+    "titles": [
+      "Hannah Montana",
+      "Zoey 101",
+      "Drake & Josh",
+      "Sam & Cat"
+    ],
+    "keys": [
+      "tv:4610",
+      "tv:1778",
+      "tv:2038",
+      "tv:45666"
+    ],
+    "weights": [
+      2.428571428571429,
+      2.5384615384615383,
+      1.6666666666666665,
+      1.1142857142857143
+    ],
+    "top_kws": [
+      [
+        "child star",
+        1
+      ],
+      [
+        "double life",
+        1
+      ],
+      [
+        "popstar",
+        1
+      ],
+      [
+        "secret identity",
+        1
+      ],
+      [
+        "boarding school",
+        1
+      ],
+      [
+        "california",
+        1
+      ],
+      [
+        "sibling relationship",
+        1
+      ],
+      [
+        "family",
+        1
+      ],
+      [
+        "blended family",
+        1
+      ],
+      [
+        "roommates",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 5,
+    "label": "Perché hai visto E.R. - Medici in prima linea, Breaking Bad e Better Call Saul",
+    "medium": "series",
+    "size": 11,
+    "mass": 26.52361285401442,
+    "titles": [
+      "E.R. - Medici in prima linea",
+      "Breaking Bad",
+      "Better Call Saul",
+      "The Pitt",
+      "The Bear",
+      "I segreti di Twin Peaks",
+      "Silo",
+      "Pluribus",
+      "The Last of Us",
+      "Chernobyl",
+      "Last Week Tonight with John Oliver"
+    ],
+    "keys": [
+      "tv:4588",
+      "tv:1396",
+      "tv:60059",
+      "tv:250307",
+      "tv:136315",
+      "tv:1920",
+      "tv:125988",
+      "tv:225171",
+      "tv:100088",
+      "tv:87108",
+      "tv:60694"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      1.9565217391304348,
+      1.7916666666666665,
+      1.6451612903225805,
+      3.0,
+      2.125,
+      3.0,
+      1.0052631578947369
+    ],
+    "top_kws": [
+      [
+        "dark comedy",
+        3
+      ],
+      [
+        "new mexico",
+        3
+      ],
+      [
+        "albuquerque, new mexico",
+        3
+      ],
+      [
+        "hospital",
+        2
+      ],
+      [
+        "chicago, illinois",
+        2
+      ],
+      [
+        "medical drama",
+        2
+      ],
+      [
+        "mexican cartel",
+        2
+      ],
+      [
+        "tragedy",
+        2
+      ],
+      [
+        "criminal lawyer",
+        2
+      ],
+      [
+        "neo-western",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 11
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 8,
+    "label": "Perché hai visto Adventure Time, Love, Death & Robots e Bob's Burgers",
+    "medium": "series",
+    "size": 11,
+    "mass": 15.302886777127041,
+    "titles": [
+      "Adventure Time",
+      "Love, Death & Robots",
+      "Bob's Burgers",
+      "Scavengers Reign",
+      "La serie di Cuphead!",
+      "The Owl House - Aspirante strega",
+      "Lo straordinario mondo di Gumball",
+      "Lo strano e meraviglioso mondo di Gumball",
+      "BoJack Horseman",
+      "The Venture Bros.",
+      "We Bare Bears - Siamo solo orsi"
+    ],
+    "keys": [
+      "tv:15260",
+      "tv:86831",
+      "tv:32726",
+      "tv:204154",
+      "tv:103786",
+      "tv:92685",
+      "tv:37606",
+      "tv:291904",
+      "tv:61222",
+      "tv:2418",
+      "tv:63401"
+    ],
+    "weights": [
+      1.4157706093189963,
+      1.8,
+      1.1022364217252396,
+      3.0,
+      1.6666666666666665,
+      1.1860465116279069,
+      1.0166666666666666,
+      1.05,
+      1.0263157894736843,
+      1.0246913580246915,
+      1.0144927536231885
+    ],
+    "top_kws": [
+      [
+        "adult animation",
+        5
+      ],
+      [
+        "sibling relationship",
+        3
+      ],
+      [
+        "magic",
+        2
+      ],
+      [
+        "cartoon",
+        2
+      ],
+      [
+        "robot",
+        2
+      ],
+      [
+        "science fiction",
+        2
+      ],
+      [
+        "wonder",
+        2
+      ],
+      [
+        "survival",
+        2
+      ],
+      [
+        "sitcom",
+        2
+      ],
+      [
+        "anthropomorphism",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 11
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 10,
+    "label": "Perché hai visto Ghost in the Shell, Toy Story - Il mondo dei giocattoli e Paprika - Sognando un sogno",
+    "medium": "movie",
+    "size": 12,
+    "mass": 27.0,
+    "titles": [
+      "Ghost in the Shell",
+      "Toy Story - Il mondo dei giocattoli",
+      "Paprika - Sognando un sogno",
+      "Porco Rosso",
+      "La tartaruga rossa",
+      "La vetta degli dei",
+      "Arrietty - Il mondo segreto sotto il pavimento",
+      "Il ragazzo e l'airone",
+      "Fantastic Mr. Fox",
+      "La sposa cadavere",
+      "Toy Story 4",
+      "Short Peace"
+    ],
+    "keys": [
+      "movie:9323",
+      "movie:862",
+      "movie:4977",
+      "movie:11621",
+      "movie:337703",
+      "movie:712454",
+      "movie:51739",
+      "movie:508883",
+      "movie:10315",
+      "movie:3933",
+      "movie:301528",
+      "movie:252520"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "anime",
+        6
+      ],
+      [
+        "3d animation",
+        4
+      ],
+      [
+        "adult animation",
+        3
+      ],
+      [
+        "villain",
+        3
+      ],
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "intense",
+        2
+      ],
+      [
+        "based on manga",
+        2
+      ],
+      [
+        "pixar",
+        2
+      ],
+      [
+        "friendship",
+        2
+      ],
+      [
+        "buddy",
+        2
+      ]
+    ],
+    "langs": {
+      "ja": 6,
+      "en": 4,
+      "fr": 2
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 13,
+    "label": "Perché hai visto Shōgun, Sanjuro e La sfida del samurai",
+    "medium": "movie",
+    "size": 10,
+    "mass": 23.0,
+    "titles": [
+      "Shōgun",
+      "Sanjuro",
+      "La sfida del samurai",
+      "Rurouni Kenshin 2 - Kyoto Inferno",
+      "Rurouni Kenshin",
+      "Rurouni Kenshin - The Final",
+      "Tre samurai fuorilegge",
+      "Rurouni Kenshin - The Beginning",
+      "Vivere",
+      "Viaggio a Tokyo"
+    ],
+    "keys": [
+      "tv:126308",
+      "movie:11712",
+      "movie:11878",
+      "movie:221731",
+      "movie:127533",
+      "movie:602063",
+      "movie:58878",
+      "movie:672322",
+      "movie:3782",
+      "movie:18148"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      2.0,
+      2.0,
+      2.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "japan",
+        8
+      ],
+      [
+        "samurai",
+        8
+      ],
+      [
+        "jidaigeki",
+        8
+      ],
+      [
+        "bakumatsu",
+        5
+      ],
+      [
+        "black and white",
+        4
+      ],
+      [
+        "katana",
+        4
+      ],
+      [
+        "based on manga",
+        4
+      ],
+      [
+        "shinsengumi",
+        4
+      ],
+      [
+        "ishin shishi",
+        4
+      ],
+      [
+        "feudal japan",
+        3
+      ]
+    ],
+    "langs": {
+      "en": 1,
+      "ja": 9
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 17,
+    "label": "Perché hai visto The Eric Andre Show, Good Mythical Morning e On Cinema",
+    "medium": "series",
+    "size": 8,
+    "mass": 11.616361090371212,
+    "titles": [
+      "The Eric Andre Show",
+      "Good Mythical Morning",
+      "On Cinema",
+      "Nathan for You",
+      "Dimension 20",
+      "Loiter Squad",
+      "Cunk on...",
+      "Taskmaster"
+    ],
+    "keys": [
+      "tv:56590",
+      "tv:65701",
+      "tv:76345",
+      "tv:58957",
+      "tv:89180",
+      "tv:40520",
+      "tv:79063",
+      "tv:63404"
+    ],
+    "weights": [
+      2.4,
+      1.0074605451936873,
+      1.1219512195121952,
+      1.4516129032258065,
+      1.038338658146965,
+      1.3870967741935485,
+      2.2,
+      1.00990099009901
+    ],
+    "top_kws": [
+      [
+        "hilarious",
+        3
+      ],
+      [
+        "mockumentary",
+        2
+      ],
+      [
+        "hidden camera",
+        1
+      ],
+      [
+        "parody",
+        1
+      ],
+      [
+        "talk show",
+        1
+      ],
+      [
+        "surreal",
+        1
+      ],
+      [
+        "absurdist humor",
+        1
+      ],
+      [
+        "morning show",
+        1
+      ],
+      [
+        "variety show",
+        1
+      ],
+      [
+        "cringe",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 8
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 21,
+    "label": "Perché hai visto Mobile Suit Gundam: Iron-Blooded Orphans, Mobile Suit Gundam e Mobile Suit Gundam Thunderbolt",
+    "medium": "series",
+    "size": 7,
+    "mass": 16.0,
+    "titles": [
+      "Mobile Suit Gundam: Iron-Blooded Orphans",
+      "Mobile Suit Gundam",
+      "Mobile Suit Gundam Thunderbolt",
+      "Armitage III",
+      "Riding Bean",
+      "Macross - Il film",
+      "九十九"
+    ],
+    "keys": [
+      "tv:64375",
+      "tv:21731",
+      "tv:64809",
+      "tv:69980",
+      "movie:55374",
+      "movie:14132",
+      "movie:211358"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      2.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "anime",
+        6
+      ],
+      [
+        "mecha",
+        4
+      ],
+      [
+        "gundam",
+        3
+      ],
+      [
+        "real robot",
+        3
+      ],
+      [
+        "space",
+        2
+      ],
+      [
+        "found family",
+        1
+      ],
+      [
+        "mafia",
+        1
+      ],
+      [
+        "anti hero",
+        1
+      ],
+      [
+        "agriculture",
+        1
+      ],
+      [
+        "war",
+        1
+      ]
+    ],
+    "langs": {
+      "ja": 7
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 23,
+    "label": "Perché hai visto Collateral, Ocean's Eleven - Fate il vostro gioco e Il talento di Mr. Ripley",
+    "medium": "movie",
+    "size": 6,
+    "mass": 11.0,
+    "titles": [
+      "Collateral",
+      "Ocean's Eleven - Fate il vostro gioco",
+      "Il talento di Mr. Ripley",
+      "Flawless - Senza difetti",
+      "Defiance - I giorni del coraggio",
+      "La tigre e il dragone"
+    ],
+    "keys": [
+      "movie:1538",
+      "movie:161",
+      "movie:1213",
+      "movie:31582",
+      "movie:13813",
+      "movie:146"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "briefcase",
+        1
+      ],
+      [
+        "hitman",
+        1
+      ],
+      [
+        "suspense thriller",
+        1
+      ],
+      [
+        "taxi driver",
+        1
+      ],
+      [
+        "police",
+        1
+      ],
+      [
+        "self-fulfilling prophecy",
+        1
+      ],
+      [
+        "dreary",
+        1
+      ],
+      [
+        "bold",
+        1
+      ],
+      [
+        "frantic",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5,
+      "zh": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 25,
+    "label": "Perché hai visto Miyazaki - 10 anni di magia, Onora il padre e la madre e Conta su di me",
+    "medium": "movie",
+    "size": 5,
+    "mass": 13.0,
+    "titles": [
+      "Miyazaki - 10 anni di magia",
+      "Onora il padre e la madre",
+      "Conta su di me",
+      "La famiglia Savage",
+      "A Cock and Bull Story"
+    ],
+    "keys": [
+      "tv:89764",
+      "movie:7972",
+      "movie:14295",
+      "movie:8272",
+      "movie:8435"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      2.0,
+      2.0
+    ],
+    "top_kws": [
+      [
+        "sibling relationship",
+        3
+      ],
+      [
+        "filmmaking",
+        2
+      ],
+      [
+        "daughter",
+        2
+      ],
+      [
+        "drawing and painting",
+        1
+      ],
+      [
+        "japan",
+        1
+      ],
+      [
+        "anime",
+        1
+      ],
+      [
+        "animation",
+        1
+      ],
+      [
+        "paranoid",
+        1
+      ],
+      [
+        "doubtful",
+        1
+      ],
+      [
+        "botched robbery",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 26,
+    "label": "Perché hai visto Il fiume di fango, Furyo e Evoluzione di una famiglia filippina",
+    "medium": "movie",
+    "size": 5,
+    "mass": 9.0,
+    "titles": [
+      "Il fiume di fango",
+      "Furyo",
+      "Evoluzione di una famiglia filippina",
+      "Fiore secco",
+      "Norte, Hangganan ng Kasaysayan"
+    ],
+    "keys": [
+      "movie:125257",
+      "movie:11948",
+      "movie:163957",
+      "movie:61475",
+      "movie:186975"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "japanese",
+        1
+      ],
+      [
+        "friendship",
+        1
+      ],
+      [
+        "osaka, japan",
+        1
+      ],
+      [
+        "class relations",
+        1
+      ],
+      [
+        "1940s",
+        1
+      ],
+      [
+        "java, indonesia",
+        1
+      ],
+      [
+        "depressing",
+        1
+      ],
+      [
+        "frustrated",
+        1
+      ],
+      [
+        "pacific war",
+        1
+      ],
+      [
+        "complicated",
+        1
+      ]
+    ],
+    "langs": {
+      "ja": 3,
+      "tl": 2
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 27,
+    "label": "Perché hai visto Undine - Un Amore per Sempre, Next Door e Rosa L.",
+    "medium": "movie",
+    "size": 4,
+    "mass": 7.0,
+    "titles": [
+      "Undine - Un Amore per Sempre",
+      "Next Door",
+      "Rosa L.",
+      "Solo Sunny"
+    ],
+    "keys": [
+      "movie:615761",
+      "movie:681349",
+      "movie:55562",
+      "movie:1906"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      2.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "berlin, germany",
+        4
+      ],
+      [
+        "break-up",
+        1
+      ],
+      [
+        "diving",
+        1
+      ],
+      [
+        "based on fairy tale",
+        1
+      ],
+      [
+        "love affair",
+        1
+      ],
+      [
+        "female protagonist",
+        1
+      ],
+      [
+        "urban development",
+        1
+      ],
+      [
+        "bar",
+        1
+      ],
+      [
+        "neighbor",
+        1
+      ],
+      [
+        "stalking",
+        1
+      ]
+    ],
+    "langs": {
+      "de": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 28,
+    "label": "Perché hai visto 2002 - La seconda odissea, Pulse e Tetsuo 2 - Martello di carne",
+    "medium": "movie",
+    "size": 4,
+    "mass": 7.0,
+    "titles": [
+      "2002 - La seconda odissea",
+      "Pulse",
+      "Tetsuo 2 - Martello di carne",
+      "Surf Nazis Must Die"
+    ],
+    "keys": [
+      "movie:811",
+      "movie:27324",
+      "movie:17991",
+      "movie:28070"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      2.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "biosphere",
+        1
+      ],
+      [
+        "greenhouse",
+        1
+      ],
+      [
+        "space station",
+        1
+      ],
+      [
+        "thoughtful",
+        1
+      ],
+      [
+        "forest",
+        1
+      ],
+      [
+        "food",
+        1
+      ],
+      [
+        "enviromentalism",
+        1
+      ],
+      [
+        "biotope",
+        1
+      ],
+      [
+        "human android relationship",
+        1
+      ],
+      [
+        "saturn",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 2,
+      "ja": 2
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 29,
+    "label": "Perché hai visto Come è fatto, Grand Designs e アントニー・ガウディー",
+    "medium": "series",
+    "size": 4,
+    "mass": 6.2849963715529755,
+    "titles": [
+      "Come è fatto",
+      "Grand Designs",
+      "アントニー・ガウディー",
+      "L'uscita dalle fabbriche Lumiere"
+    ],
+    "keys": [
+      "tv:1749",
+      "tv:1831",
+      "movie:37239",
+      "movie:774"
+    ],
+    "weights": [
+      1.2548076923076923,
+      1.030188679245283,
+      2.0,
+      2.0
+    ],
+    "top_kws": [
+      [
+        "factory",
+        2
+      ],
+      [
+        "architecture",
+        2
+      ],
+      [
+        "manufacturing",
+        1
+      ],
+      [
+        "renovation",
+        1
+      ],
+      [
+        "perseverance",
+        1
+      ],
+      [
+        "engineering",
+        1
+      ],
+      [
+        "appreciative",
+        1
+      ],
+      [
+        "sustainability",
+        1
+      ],
+      [
+        "intimate",
+        1
+      ],
+      [
+        "innovation",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 2,
+      "ja": 1,
+      "fr": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "castoffcrown",
+    "type": "base",
+    "cluster_idx": 30,
+    "label": "Perché hai visto I predatori dell'arca perduta, Il Signore degli Anelli - La Compagnia dell'Anello e Harry, ti presento Sally...",
+    "medium": "movie",
+    "size": 4,
+    "mass": 10.0,
+    "titles": [
+      "I predatori dell'arca perduta",
+      "Il Signore degli Anelli - La Compagnia dell'Anello",
+      "Harry, ti presento Sally...",
+      "Un amore tutto suo"
+    ],
+    "keys": [
+      "movie:85",
+      "movie:120",
+      "movie:639",
+      "movie:2064"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "wonder",
+        2
+      ],
+      [
+        "nepal",
+        1
+      ],
+      [
+        "treasure hunt",
+        1
+      ],
+      [
+        "saving the world",
+        1
+      ],
+      [
+        "globetrotting",
+        1
+      ],
+      [
+        "treasure",
+        1
+      ],
+      [
+        "moses",
+        1
+      ],
+      [
+        "adventurer",
+        1
+      ],
+      [
+        "archaeologist",
+        1
+      ],
+      [
+        "hat",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 0,
+    "label": "Perché hai visto Nutcrackers, Family Switch e Il Grinch",
+    "medium": "movie",
+    "size": 5,
+    "mass": 5.0,
+    "titles": [
+      "Nutcrackers",
+      "Family Switch",
+      "Il Grinch",
+      "Qualcuno salvi il Natale 2",
+      "Qualcuno salvi il Natale"
+    ],
+    "keys": [
+      "movie:1203236",
+      "movie:798021",
+      "movie:8871",
+      "movie:654028",
+      "movie:527435"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "holiday",
+        4
+      ],
+      [
+        "santa claus",
+        3
+      ],
+      [
+        "christmas",
+        3
+      ],
+      [
+        "christmas party",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "saving christmas",
+        2
+      ],
+      [
+        "car accident",
+        1
+      ],
+      [
+        "workaholic",
+        1
+      ],
+      [
+        "death of parent",
+        1
+      ],
+      [
+        "embarrassed",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 3,
+    "label": "Perché hai visto To the Lake, Shark 2 - L'abisso e Shark - Il primo squalo",
+    "medium": "movie",
+    "size": 7,
+    "mass": 8.0,
+    "titles": [
+      "To the Lake",
+      "Shark 2 - L'abisso",
+      "Shark - Il primo squalo",
+      "Attraction",
+      "Sputnik - Terrore Dallo Spazio",
+      "Tartarughe Ninja",
+      "Rampage - Furia animale"
+    ],
+    "keys": [
+      "tv:95202",
+      "movie:615656",
+      "movie:345940",
+      "movie:401513",
+      "movie:594718",
+      "movie:98566",
+      "movie:427641"
+    ],
+    "weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "kaiju",
+        3
+      ],
+      [
+        "shark",
+        2
+      ],
+      [
+        "underwater",
+        2
+      ],
+      [
+        "megalodon",
+        2
+      ],
+      [
+        "animal horror",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "deep sea",
+        2
+      ],
+      [
+        "alien",
+        2
+      ],
+      [
+        "mutation",
+        2
+      ],
+      [
+        "sequel",
+        1
+      ]
+    ],
+    "langs": {
+      "ru": 3,
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 4,
+    "label": "Perché hai visto Anaconda, Una di famiglia - The Housemaid e The Running Man",
+    "medium": "movie",
+    "size": 10,
+    "mass": 10.0,
+    "titles": [
+      "Anaconda",
+      "Una di famiglia - The Housemaid",
+      "The Running Man",
+      "Playdate",
+      "Una pallottola spuntata",
+      "Mr. Morfina",
+      "The Fall Guy",
+      "Freelance",
+      "Me Time - Un weekend tutto per me",
+      "Ghostbusters - Legacy"
+    ],
+    "keys": [
+      "movie:1234731",
+      "movie:1368166",
+      "movie:798645",
+      "movie:1248226",
+      "movie:1035259",
+      "movie:1195506",
+      "movie:746036",
+      "movie:897087",
+      "movie:862551",
+      "movie:425909"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "action comedy",
+        3
+      ],
+      [
+        "reboot",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "stay-at-home dad",
+        2
+      ],
+      [
+        "based on tv series",
+        2
+      ],
+      [
+        "sequel",
+        2
+      ],
+      [
+        "bold",
+        1
+      ],
+      [
+        "reptile",
+        1
+      ],
+      [
+        "snake",
+        1
+      ],
+      [
+        "jungle",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 10
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 5,
+    "label": "Perché hai visto War Machine, Capi di Stato in fuga e Fountain of Youth - L’eterna giovinezza",
+    "medium": "movie",
+    "size": 7,
+    "mass": 7.0,
+    "titles": [
+      "War Machine",
+      "Capi di Stato in fuga",
+      "Fountain of Youth - L’eterna giovinezza",
+      "The Electric State",
+      "Misteri dal profondo",
+      "Atlas",
+      "The Creator"
+    ],
+    "keys": [
+      "movie:1265609",
+      "movie:749170",
+      "movie:1098006",
+      "movie:777443",
+      "movie:950396",
+      "movie:614933",
+      "movie:670292"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "artificial intelligence (a.i.)",
+        3
+      ],
+      [
+        "robot",
+        2
+      ],
+      [
+        "afghanistan veteran",
+        1
+      ],
+      [
+        "military sci-fi",
+        1
+      ],
+      [
+        "struggle for survival",
+        1
+      ],
+      [
+        "grim",
+        1
+      ],
+      [
+        "u.s. army ranger",
+        1
+      ],
+      [
+        "military training",
+        1
+      ],
+      [
+        "mi6",
+        1
+      ],
+      [
+        "amused",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 7
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 6,
+    "label": "Perché hai visto The Rush - Corsa contro il tempo, A Working Man e Arthur the King - Insieme a ogni costo",
+    "medium": "movie",
+    "size": 7,
+    "mass": 7.0,
+    "titles": [
+      "The Rush - Corsa contro il tempo",
+      "A Working Man",
+      "Arthur the King - Insieme a ogni costo",
+      "The Beekeeper",
+      "The Family Plan",
+      "Project X-Traction",
+      "I mercenari 2"
+    ],
+    "keys": [
+      "movie:1377237",
+      "movie:1197306",
+      "movie:618588",
+      "movie:866398",
+      "movie:1029575",
+      "movie:457332",
+      "movie:76163"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "assertive",
+        1
+      ],
+      [
+        "drug cartel",
+        1
+      ],
+      [
+        "black market",
+        1
+      ],
+      [
+        "race against time",
+        1
+      ],
+      [
+        "vigilante",
+        1
+      ],
+      [
+        "kidnapping",
+        1
+      ],
+      [
+        "black ops",
+        1
+      ],
+      [
+        "missing person",
+        1
+      ],
+      [
+        "based on novel or book",
+        1
+      ],
+      [
+        "criminal conspiracy",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 7
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 9,
+    "label": "Perché hai visto Greenland, Ice Road - La vendetta e Twisters",
+    "medium": "movie",
+    "size": 4,
+    "mass": 5.0,
+    "titles": [
+      "Greenland",
+      "Ice Road - La vendetta",
+      "Twisters",
+      "Fall"
+    ],
+    "keys": [
+      "movie:524047",
+      "movie:1119878",
+      "movie:718821",
+      "movie:985939"
+    ],
+    "weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "natural disaster",
+        2
+      ],
+      [
+        "suspenseful",
+        2
+      ],
+      [
+        "sequel",
+        2
+      ],
+      [
+        "greenland",
+        1
+      ],
+      [
+        "destruction of planet",
+        1
+      ],
+      [
+        "comet",
+        1
+      ],
+      [
+        "kidnapping",
+        1
+      ],
+      [
+        "looting",
+        1
+      ],
+      [
+        "state of emergency",
+        1
+      ],
+      [
+        "atlanta, georgia",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 11,
+    "label": "Perché hai visto Jurassic World – Il regno distrutto, Il mondo perduto - Jurassic Park e Jurassic Park",
+    "medium": "movie",
+    "size": 11,
+    "mass": 14.0,
+    "titles": [
+      "Jurassic World – Il regno distrutto",
+      "Il mondo perduto - Jurassic Park",
+      "Jurassic Park",
+      "L'ultima missione: Project Hail Mary",
+      "The Lost Bus",
+      "Jurassic World - La rinascita",
+      "L'alba del pianeta delle scimmie",
+      "Avatar: La via dell'acqua",
+      "Jurassic World - Il dominio",
+      "Alita - Angelo della battaglia",
+      "Ready Player One"
+    ],
+    "keys": [
+      "movie:351286",
+      "movie:330",
+      "movie:329",
+      "movie:687163",
+      "movie:1236470",
+      "movie:1234821",
+      "movie:61791",
+      "movie:76600",
+      "movie:507086",
+      "movie:399579",
+      "movie:333339"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "sequel",
+        5
+      ],
+      [
+        "dinosaur",
+        5
+      ],
+      [
+        "tyrannosaurus rex",
+        4
+      ],
+      [
+        "paleontology",
+        3
+      ],
+      [
+        "scientist",
+        3
+      ],
+      [
+        "island",
+        3
+      ],
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "dystopia",
+        3
+      ],
+      [
+        "exotic island",
+        2
+      ],
+      [
+        "theme park",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 11
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 14,
+    "label": "Perché hai visto Red Notice, The Adam Project e The Man from Toronto",
+    "medium": "movie",
+    "size": 9,
+    "mass": 9.0,
+    "titles": [
+      "Red Notice",
+      "The Adam Project",
+      "The Man from Toronto",
+      "Uncharted",
+      "Come ti ammazzo il bodyguard",
+      "Jungle Cruise",
+      "Bloodshot",
+      "Gemini Man",
+      "Tomb Raider"
+    ],
+    "keys": [
+      "movie:512195",
+      "movie:696806",
+      "movie:667739",
+      "movie:335787",
+      "movie:390043",
+      "movie:451048",
+      "movie:338762",
+      "movie:453405",
+      "movie:338970"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "assassin",
+        2
+      ],
+      [
+        "treasure hunt",
+        2
+      ],
+      [
+        "based on video game",
+        2
+      ],
+      [
+        "hitman",
+        2
+      ],
+      [
+        "fbi",
+        1
+      ],
+      [
+        "art thief",
+        1
+      ],
+      [
+        "interpol",
+        1
+      ],
+      [
+        "heist",
+        1
+      ],
+      [
+        "cleopatra",
+        1
+      ],
+      [
+        "time travel",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 9
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 16,
+    "label": "Perché hai visto Un film Minecraft, Uno Rosso e Deadpool 2",
+    "medium": "movie",
+    "size": 12,
+    "mass": 12.0,
+    "titles": [
+      "Un film Minecraft",
+      "Uno Rosso",
+      "Deadpool 2",
+      "Deadpool",
+      "Dungeons & Dragons - L'onore dei ladri",
+      "The King's Man - Le origini",
+      "Kingsman: Il cerchio d'oro",
+      "Kingsman: Secret Service",
+      "Free Guy - Eroe per gioco",
+      "Love and Monsters",
+      "Jumanji - The Next Level",
+      "Jumanji: Benvenuti nella giungla"
+    ],
+    "keys": [
+      "movie:950387",
+      "movie:845781",
+      "movie:383498",
+      "movie:293660",
+      "movie:493529",
+      "movie:476669",
+      "movie:343668",
+      "movie:207703",
+      "movie:550988",
+      "movie:590223",
+      "movie:512200",
+      "movie:353486"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "sequel",
+        4
+      ],
+      [
+        "based on comic",
+        4
+      ],
+      [
+        "video game",
+        4
+      ],
+      [
+        "enthusiastic",
+        3
+      ],
+      [
+        "awestruck",
+        3
+      ],
+      [
+        "spy",
+        3
+      ],
+      [
+        "amused",
+        3
+      ],
+      [
+        "friends",
+        2
+      ],
+      [
+        "hero",
+        2
+      ],
+      [
+        "superhero",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 12
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 17,
+    "label": "Perché hai visto Sisu: Il vendicatore, L'uomo dei ghiacci - The Ice Road e The Accountant",
+    "medium": "movie",
+    "size": 12,
+    "mass": 12.0,
+    "titles": [
+      "Sisu: Il vendicatore",
+      "L'uomo dei ghiacci - The Ice Road",
+      "The Accountant",
+      "Kraven - Il cacciatore",
+      "Sisu - L'immortale",
+      "Tyler Rake",
+      "John Wick - Capitolo 2",
+      "Finch",
+      "Mortal Kombat",
+      "Io sono nessuno",
+      "John Wick",
+      "The Equalizer 2 - Senza perdono"
+    ],
+    "keys": [
+      "movie:1223601",
+      "movie:646207",
+      "movie:302946",
+      "movie:539972",
+      "movie:840326",
+      "movie:545609",
+      "movie:324552",
+      "movie:522402",
+      "movie:460465",
+      "movie:615457",
+      "movie:245891",
+      "movie:345887"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "sequel",
+        3
+      ],
+      [
+        "hand to hand combat",
+        3
+      ],
+      [
+        "assassin",
+        3
+      ],
+      [
+        "revenge",
+        3
+      ],
+      [
+        "secret organization",
+        3
+      ],
+      [
+        "1940s",
+        2
+      ],
+      [
+        "survival instinct",
+        2
+      ],
+      [
+        "based on comic",
+        2
+      ],
+      [
+        "one man army",
+        2
+      ],
+      [
+        "drug dealer",
+        2
+      ]
+    ],
+    "langs": {
+      "fi": 2,
+      "en": 10
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 18,
+    "label": "Perché hai visto Cassandra, M3GAN 2.0 e M3GAN",
+    "medium": "movie",
+    "size": 6,
+    "mass": 8.0,
+    "titles": [
+      "Cassandra",
+      "M3GAN 2.0",
+      "M3GAN",
+      "Il mistero della casa del tempo",
+      "Scary Stories to Tell in the Dark",
+      "Crawl - Intrappolati"
+    ],
+    "keys": [
+      "tv:248982",
+      "movie:1071585",
+      "movie:536554",
+      "movie:463821",
+      "movie:417384",
+      "movie:511987"
+    ],
+    "weights": [
+      3.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "robot",
+        3
+      ],
+      [
+        "smart home",
+        2
+      ],
+      [
+        "artificial intelligence (a.i.)",
+        2
+      ],
+      [
+        "killer robot",
+        2
+      ],
+      [
+        "doll",
+        2
+      ],
+      [
+        "evil doll",
+        2
+      ],
+      [
+        "possessed doll",
+        2
+      ],
+      [
+        "android",
+        2
+      ],
+      [
+        "android horror",
+        2
+      ],
+      [
+        "creepy doll",
+        2
+      ]
+    ],
+    "langs": {
+      "de": 1,
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 21,
+    "label": "Perché hai visto X-Files, Revolution e Debris",
+    "medium": "series",
+    "size": 5,
+    "mass": 8.294814882266792,
+    "titles": [
+      "X-Files",
+      "Revolution",
+      "Debris",
+      "Sleepy Hollow",
+      "Heroes"
+    ],
+    "keys": [
+      "tv:4087",
+      "tv:1410",
+      "tv:106159",
+      "tv:50825",
+      "tv:1639"
+    ],
+    "weights": [
+      1.7431192660550459,
+      3.0,
+      1.4615384615384617,
+      1.064516129032258,
+      1.0256410256410255
+    ],
+    "top_kws": [
+      [
+        "fbi agent",
+        2
+      ],
+      [
+        "paranormal investigation",
+        1
+      ],
+      [
+        "fbi",
+        1
+      ],
+      [
+        "alien",
+        1
+      ],
+      [
+        "investigation",
+        1
+      ],
+      [
+        "paranormal phenomena",
+        1
+      ],
+      [
+        "government cover-up",
+        1
+      ],
+      [
+        "supernatural",
+        1
+      ],
+      [
+        "ufo",
+        1
+      ],
+      [
+        "conspiracy",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 25,
+    "label": "Perché hai visto Lost, Il Trono di Spade e Stranger Things",
+    "medium": "series",
+    "size": 12,
+    "mass": 26.48700716845878,
+    "titles": [
+      "Lost",
+      "Il Trono di Spade",
+      "Stranger Things",
+      "Breaking Bad",
+      "Dark",
+      "Silo",
+      "The Boys",
+      "The Last of Us",
+      "Fallout",
+      "Sweet Tooth",
+      "Westworld - Dove tutto è concesso",
+      "Band of Brothers - Fratelli al fronte"
+    ],
+    "keys": [
+      "tv:4607",
+      "tv:1399",
+      "tv:66732",
+      "tv:1396",
+      "tv:70523",
+      "tv:125988",
+      "tv:76479",
+      "tv:100088",
+      "tv:106379",
+      "tv:103768",
+      "tv:63247",
+      "tv:4613"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      2.258064516129032,
+      3.0,
+      2.5483870967741935,
+      1.8,
+      2.25,
+      2.125,
+      1.25,
+      1.0555555555555556,
+      1.2
+    ],
+    "top_kws": [
+      [
+        "post-apocalyptic future",
+        4
+      ],
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "small town",
+        2
+      ],
+      [
+        "super power",
+        2
+      ],
+      [
+        "tragedy",
+        2
+      ],
+      [
+        "thriller",
+        2
+      ],
+      [
+        "corruption",
+        2
+      ],
+      [
+        "based on comic",
+        2
+      ],
+      [
+        "based on video game",
+        2
+      ],
+      [
+        "robot",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 11,
+      "de": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 30,
+    "label": "Perché hai visto धूम, Zero e एक था टाइगर",
+    "medium": "movie",
+    "size": 8,
+    "mass": 10.0,
+    "titles": [
+      "धूम",
+      "Zero",
+      "एक था टाइगर",
+      "Pathaan",
+      "Bajrangi Bhaijaan",
+      "Jersey",
+      "3 Idiots",
+      "पीके"
+    ],
+    "keys": [
+      "movie:17478",
+      "movie:496076",
+      "movie:85985",
+      "movie:864692",
+      "movie:348892",
+      "movie:679018",
+      "movie:20453",
+      "movie:297222"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "spy",
+        2
+      ],
+      [
+        "religion",
+        2
+      ],
+      [
+        "gang of thieves",
+        1
+      ],
+      [
+        "cop",
+        1
+      ],
+      [
+        "motorcycle",
+        1
+      ],
+      [
+        "motor sport",
+        1
+      ],
+      [
+        "small person",
+        1
+      ],
+      [
+        "wealthy family",
+        1
+      ],
+      [
+        "romantic",
+        1
+      ],
+      [
+        "tragic",
+        1
+      ]
+    ],
+    "langs": {
+      "hi": 8
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 31,
+    "label": "Perché hai visto जवान, भेड़िया e Laal Singh Chaddha",
+    "medium": "movie",
+    "size": 11,
+    "mass": 11.0,
+    "titles": [
+      "जवान",
+      "भेड़िया",
+      "Laal Singh Chaddha",
+      "K.G.F: Chapter 2",
+      "K.G.F: Chapter 1",
+      "RRR",
+      "Il fulmine Murali",
+      "Pushpa: The Rise",
+      "Stree",
+      "मर्द को दर्द नहीं होता",
+      "Tumbbad"
+    ],
+    "keys": [
+      "movie:872906",
+      "movie:799177",
+      "movie:601635",
+      "movie:587412",
+      "movie:564147",
+      "movie:579974",
+      "movie:657644",
+      "movie:690957",
+      "movie:533991",
+      "movie:541495",
+      "movie:538858"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "maddock horror comedy universe (mhcu)",
+        2
+      ],
+      [
+        "india",
+        2
+      ],
+      [
+        "crime",
+        2
+      ],
+      [
+        "one man army",
+        2
+      ],
+      [
+        "action hero",
+        2
+      ],
+      [
+        "drama",
+        2
+      ],
+      [
+        "intense",
+        2
+      ],
+      [
+        "undercover",
+        2
+      ],
+      [
+        "suspenseful",
+        2
+      ],
+      [
+        "revenge",
+        1
+      ]
+    ],
+    "langs": {
+      "hi": 6,
+      "kn": 2,
+      "te": 2,
+      "ml": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 35,
+    "label": "Perché hai visto Hell on Wheels, Yellowstone e Mayor of Kingstown",
+    "medium": "series",
+    "size": 10,
+    "mass": 25.666666666666668,
+    "titles": [
+      "Hell on Wheels",
+      "Yellowstone",
+      "Mayor of Kingstown",
+      "Landman",
+      "1923",
+      "1883",
+      "Operazione speciale: Lioness",
+      "The Madison",
+      "Uno di noi",
+      "Quelli che mi vogliono morto"
+    ],
+    "keys": [
+      "tv:1401",
+      "tv:73586",
+      "tv:97951",
+      "tv:157741",
+      "tv:157744",
+      "tv:118357",
+      "tv:113962",
+      "tv:225891",
+      "movie:596161",
+      "movie:578701"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      1.6666666666666665,
+      3.0,
+      2.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "montana",
+        4
+      ],
+      [
+        "neo-western",
+        3
+      ],
+      [
+        "family drama",
+        3
+      ],
+      [
+        "violence",
+        2
+      ],
+      [
+        "wild west",
+        2
+      ],
+      [
+        "frontier",
+        2
+      ],
+      [
+        "historical",
+        2
+      ],
+      [
+        "civil war veteran",
+        2
+      ],
+      [
+        "19th century",
+        2
+      ],
+      [
+        "yellowstone",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 10
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 36,
+    "label": "Perché hai visto Togo - Una grande amicizia, Fidanzata in affitto e Un matrimonio esplosivo",
+    "medium": "movie",
+    "size": 9,
+    "mass": 10.0,
+    "titles": [
+      "Togo - Una grande amicizia",
+      "Fidanzata in affitto",
+      "Un matrimonio esplosivo",
+      "Max",
+      "Marry Me - Sposami",
+      "Una fantastica e incredibile giornata da dimenticare",
+      "La tela di Carlotta",
+      "Eurovision Song Contest - La storia dei Fire Saga",
+      "L'unico e insuperabile Ivan"
+    ],
+    "keys": [
+      "movie:606856",
+      "movie:884605",
+      "movie:758009",
+      "movie:272878",
+      "movie:615904",
+      "movie:218778",
+      "movie:9986",
+      "movie:531454",
+      "movie:508570"
+    ],
+    "weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on true story",
+        3
+      ],
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "dog",
+        2
+      ],
+      [
+        "pets",
+        2
+      ],
+      [
+        "friendship",
+        2
+      ],
+      [
+        "lighthearted",
+        2
+      ],
+      [
+        "wedding",
+        2
+      ],
+      [
+        "rescue",
+        2
+      ],
+      [
+        "based on children's book",
+        2
+      ],
+      [
+        "sled dogs",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 9
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 37,
+    "label": "Perché hai visto Project Blue Book, Enigmi alieni e Beyond Skinwalker Ranch",
+    "medium": "series",
+    "size": 6,
+    "mass": 8.81413560666138,
+    "titles": [
+      "Project Blue Book",
+      "Enigmi alieni",
+      "Beyond Skinwalker Ranch",
+      "The Age of Disclosure",
+      "Top Secret UFO: Rivelazioni",
+      "Ghosted"
+    ],
+    "keys": [
+      "tv:79649",
+      "tv:32608",
+      "tv:227384",
+      "movie:1422166",
+      "tv:129677",
+      "tv:71739"
+    ],
+    "weights": [
+      3.0,
+      1.0481099656357389,
+      1.3076923076923077,
+      1.0,
+      1.3333333333333333,
+      1.125
+    ],
+    "top_kws": [
+      [
+        "ufo",
+        3
+      ],
+      [
+        "paranormal investigation",
+        3
+      ],
+      [
+        "based on true story",
+        1
+      ],
+      [
+        "secret investigation",
+        1
+      ],
+      [
+        "alien conspiracy",
+        1
+      ],
+      [
+        "alien spaceship",
+        1
+      ],
+      [
+        "unexplained",
+        1
+      ],
+      [
+        "cold war",
+        1
+      ],
+      [
+        "1950s",
+        1
+      ],
+      [
+        "ufo conspiracy",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 6
+    },
+    "countries": {}
+  },
+  {
+    "profile": "warnok",
+    "type": "base",
+    "cluster_idx": 39,
+    "label": "Perché hai visto Kung Fusion, Il labirinto del fauno e Chinese Odyssey (Part I), A",
+    "medium": "movie",
+    "size": 4,
+    "mass": 4.0,
+    "titles": [
+      "Kung Fusion",
+      "Il labirinto del fauno",
+      "Chinese Odyssey (Part I), A",
+      "Fight Back to School"
+    ],
+    "keys": [
+      "movie:9470",
+      "movie:1417",
+      "movie:13345",
+      "movie:47647"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "martial arts",
+        2
+      ],
+      [
+        "1940s",
+        1
+      ],
+      [
+        "mafia",
+        1
+      ],
+      [
+        "policeman",
+        1
+      ],
+      [
+        "magic",
+        1
+      ],
+      [
+        "defense",
+        1
+      ],
+      [
+        "china",
+        1
+      ],
+      [
+        "joyful",
+        1
+      ],
+      [
+        "pretending to be gay",
+        1
+      ],
+      [
+        "gangster",
+        1
+      ]
+    ],
+    "langs": {
+      "cn": 3,
+      "es": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 0,
+    "label": "Perché hai visto In The Clearing, North Shore e Black Snow",
+    "medium": "series",
+    "size": 8,
+    "mass": 14.576923076923077,
+    "titles": [
+      "In The Clearing",
+      "North Shore",
+      "Black Snow",
+      "The Rig",
+      "High Country",
+      "The Killings at Parrish Station",
+      "The Artful Dodger",
+      "The Twelve"
+    ],
+    "keys": [
+      "tv:202162",
+      "tv:226267",
+      "tv:210178",
+      "tv:112581",
+      "tv:239909",
+      "tv:301284",
+      "tv:202208",
+      "tv:202113"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      2.0,
+      1.6666666666666665,
+      1.375,
+      1.3333333333333333,
+      1.125,
+      1.0769230769230769
+    ],
+    "top_kws": [
+      [
+        "sydney, australia",
+        2
+      ],
+      [
+        "miniseries",
+        1
+      ],
+      [
+        "murder mystery",
+        1
+      ],
+      [
+        "murder",
+        1
+      ],
+      [
+        "queensland, australia",
+        1
+      ],
+      [
+        "terror",
+        1
+      ],
+      [
+        "straightforward",
+        1
+      ],
+      [
+        "earnest",
+        1
+      ],
+      [
+        "oil rig",
+        1
+      ],
+      [
+        "cautionary",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 8
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 1,
+    "label": "Perché hai visto Il caso Spotlight, Official Secrets - Segreto di stato e Conclave",
+    "medium": "movie",
+    "size": 6,
+    "mass": 8.0,
+    "titles": [
+      "Il caso Spotlight",
+      "Official Secrets - Segreto di stato",
+      "Conclave",
+      "Il ponte delle spie",
+      "La ricerca della felicità",
+      "The Millionaire"
+    ],
+    "keys": [
+      "movie:314365",
+      "movie:393624",
+      "movie:974576",
+      "movie:296098",
+      "movie:1402",
+      "movie:12405"
+    ],
+    "weights": [
+      2.0,
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on true story",
+        4
+      ],
+      [
+        "cardinal",
+        2
+      ],
+      [
+        "lawyer",
+        2
+      ],
+      [
+        "roman catholic church",
+        2
+      ],
+      [
+        "catholicism",
+        2
+      ],
+      [
+        "biography",
+        2
+      ],
+      [
+        "newspaper",
+        1
+      ],
+      [
+        "florida",
+        1
+      ],
+      [
+        "pedophilia",
+        1
+      ],
+      [
+        "journalism",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 6
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 2,
+    "label": "Perché hai visto Odissea, Oppenheimer e Predestination",
+    "medium": "movie",
+    "size": 10,
+    "mass": 10.0,
+    "titles": [
+      "Odissea",
+      "Oppenheimer",
+      "Predestination",
+      "La donna che canta",
+      "Looper - In fuga dal passato",
+      "Sicario",
+      "L'alba del pianeta delle scimmie",
+      "Napoleon",
+      "Margin Call",
+      "Niente di nuovo sul fronte occidentale"
+    ],
+    "keys": [
+      "movie:1368337",
+      "movie:872585",
+      "movie:206487",
+      "movie:46738",
+      "movie:59967",
+      "movie:273481",
+      "movie:61791",
+      "movie:753342",
+      "movie:50839",
+      "movie:49046"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on true story",
+        3
+      ],
+      [
+        "period drama",
+        2
+      ],
+      [
+        "moral dilemma",
+        2
+      ],
+      [
+        "interrogation",
+        2
+      ],
+      [
+        "biography",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "orphanage",
+        2
+      ],
+      [
+        "time travel",
+        2
+      ],
+      [
+        "mission",
+        2
+      ],
+      [
+        "shocking",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 8,
+      "fr": 1,
+      "de": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 5,
+    "label": "Perché hai visto La coppia della porta accanto, Hijack e The Last Frontier",
+    "medium": "movie",
+    "size": 8,
+    "mass": 11.433333333333334,
+    "titles": [
+      "La coppia della porta accanto",
+      "Hijack",
+      "The Last Frontier",
+      "Mercy - Sotto accusa",
+      "Turbulence",
+      "Anniversary",
+      "Dirty Angels",
+      "Carry-On"
+    ],
+    "keys": [
+      "tv:223438",
+      "tv:198102",
+      "tv:221079",
+      "movie:1236153",
+      "movie:1401778",
+      "movie:1126336",
+      "movie:1043905",
+      "movie:1005331"
+    ],
+    "weights": [
+      2.833333333333333,
+      2.2,
+      1.4,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "kidnapping",
+        3
+      ],
+      [
+        "couple",
+        2
+      ],
+      [
+        "flight",
+        2
+      ],
+      [
+        "los angeles, california",
+        2
+      ],
+      [
+        "near future",
+        2
+      ],
+      [
+        "race against time",
+        2
+      ],
+      [
+        "serie tv",
+        1
+      ],
+      [
+        "airplane pilot",
+        1
+      ],
+      [
+        "ex-wife",
+        1
+      ],
+      [
+        "airplane passenger",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 8
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 7,
+    "label": "Perché hai visto Somewhere Boy, Playing Nice e Savage House",
+    "medium": "series",
+    "size": 5,
+    "mass": 10.0,
+    "titles": [
+      "Somewhere Boy",
+      "Playing Nice",
+      "Savage House",
+      "Maryland",
+      "Blackshore"
+    ],
+    "keys": [
+      "tv:210180",
+      "tv:242706",
+      "movie:1245859",
+      "tv:212802",
+      "tv:245547"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      1.0,
+      1.6666666666666665,
+      1.3333333333333333
+    ],
+    "top_kws": [
+      [
+        "psychological",
+        1
+      ],
+      [
+        "cousin",
+        1
+      ],
+      [
+        "child abuse",
+        1
+      ],
+      [
+        "parent",
+        1
+      ],
+      [
+        "thriller",
+        1
+      ],
+      [
+        "parenting",
+        1
+      ],
+      [
+        "co-parenting",
+        1
+      ],
+      [
+        "son",
+        1
+      ],
+      [
+        "switched at birth",
+        1
+      ],
+      [
+        "father son relationship",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 8,
+    "label": "Perché hai visto Nine Perfect Strangers, Your Honor e Presunto innocente",
+    "medium": "series",
+    "size": 5,
+    "mass": 11.075,
+    "titles": [
+      "Nine Perfect Strangers",
+      "Your Honor",
+      "Presunto innocente",
+      "Devil in Disguise: John Wayne Gacy",
+      "Giurato numero 2"
+    ],
+    "keys": [
+      "tv:88989",
+      "tv:86430",
+      "tv:156933",
+      "tv:257534",
+      "movie:1106739"
+    ],
+    "weights": [
+      2.625,
+      2.2,
+      3.0,
+      2.25,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "remake",
+        2
+      ],
+      [
+        "legal thriller",
+        2
+      ],
+      [
+        "courtroom drama",
+        2
+      ],
+      [
+        "murder",
+        2
+      ],
+      [
+        "psychedelic drug",
+        1
+      ],
+      [
+        "resort",
+        1
+      ],
+      [
+        "group therapy",
+        1
+      ],
+      [
+        "lsd",
+        1
+      ],
+      [
+        "psychedelics",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 12,
+    "label": "Perché hai visto Ovunque tu sia, Long Bright River - I cieli di Philadelphia e Un inganno di troppo",
+    "medium": "series",
+    "size": 11,
+    "mass": 28.625,
+    "titles": [
+      "Ovunque tu sia",
+      "Long Bright River - I cieli di Philadelphia",
+      "Un inganno di troppo",
+      "Lazarus di Harlan Coben",
+      "La fidanzata",
+      "The Woman in the Wall",
+      "The Stolen Girl",
+      "Missing You",
+      "L'Istituto",
+      "The Serial Killer's Wife",
+      "Fuga"
+    ],
+    "keys": [
+      "tv:278178",
+      "tv:244628",
+      "tv:220801",
+      "tv:245827",
+      "tv:253376",
+      "tv:209922",
+      "tv:233256",
+      "tv:244243",
+      "tv:253372",
+      "tv:229940",
+      "tv:244244"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      1.375,
+      2.0,
+      1.25
+    ],
+    "top_kws": [
+      [
+        "miniseries",
+        8
+      ],
+      [
+        "based on novel or book",
+        8
+      ],
+      [
+        "thriller",
+        6
+      ],
+      [
+        "murder",
+        3
+      ],
+      [
+        "psychological thriller",
+        3
+      ],
+      [
+        "mystery",
+        2
+      ],
+      [
+        "false imprisonment",
+        1
+      ],
+      [
+        "prison",
+        1
+      ],
+      [
+        "police officer",
+        1
+      ],
+      [
+        "opioid crisis",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 11
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 13,
+    "label": "Perché hai visto The Split, The Killing Kind e WAR",
+    "medium": "series",
+    "size": 5,
+    "mass": 11.5,
+    "titles": [
+      "The Split",
+      "The Killing Kind",
+      "WAR",
+      "Gone",
+      "The Rainmaker"
+    ],
+    "keys": [
+      "tv:79053",
+      "tv:231340",
+      "tv:298852",
+      "tv:306603",
+      "tv:256711"
+    ],
+    "weights": [
+      2.666666666666667,
+      3.0,
+      2.0,
+      2.333333333333333,
+      1.5
+    ],
+    "top_kws": [
+      [
+        "law firm",
+        2
+      ],
+      [
+        "lawyer",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "legal drama",
+        2
+      ],
+      [
+        "infidelity",
+        1
+      ],
+      [
+        "family relationships",
+        1
+      ],
+      [
+        "family business",
+        1
+      ],
+      [
+        "divorce lawyer",
+        1
+      ],
+      [
+        "cheating",
+        1
+      ],
+      [
+        "london, england",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 14,
+    "label": "Perché hai visto The Pact, The Calling e Annika",
+    "medium": "series",
+    "size": 10,
+    "mass": 23.414285714285715,
+    "titles": [
+      "The Pact",
+      "The Calling",
+      "Annika",
+      "The Dark",
+      "Bergerac",
+      "Ascolta i fiori dimenticati",
+      "The Gathering",
+      "Last Seen",
+      "Six Four",
+      "Le indagini di Roy Grace"
+    ],
+    "keys": [
+      "tv:125366",
+      "tv:156473",
+      "tv:130273",
+      "tv:298939",
+      "tv:251750",
+      "tv:125816",
+      "tv:241272",
+      "tv:258230",
+      "tv:203235",
+      "tv:120317"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      2.166666666666667,
+      3.0,
+      2.0,
+      2.7142857142857144,
+      2.333333333333333,
+      2.0,
+      2.0,
+      1.2
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        6
+      ],
+      [
+        "missing daughter",
+        2
+      ],
+      [
+        "cover-up",
+        1
+      ],
+      [
+        "secret",
+        1
+      ],
+      [
+        "murder",
+        1
+      ],
+      [
+        "based on tv series",
+        1
+      ],
+      [
+        "ex-cop",
+        1
+      ],
+      [
+        "professional athlete",
+        1
+      ],
+      [
+        "drugs",
+        1
+      ],
+      [
+        "refugee",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 10
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 15,
+    "label": "Perché hai visto Vera, Unforgotten e Happy Valley",
+    "medium": "series",
+    "size": 10,
+    "mass": 25.043506493506495,
+    "titles": [
+      "Vera",
+      "Unforgotten",
+      "Happy Valley",
+      "McDonald & Dodds",
+      "Vienna Blood",
+      "Karen Pirie",
+      "Prime Target",
+      "Poirot",
+      "The Long Shadow",
+      "L'ispettore Barnaby"
+    ],
+    "keys": [
+      "tv:39185",
+      "tv:62505",
+      "tv:61244",
+      "tv:99962",
+      "tv:94000",
+      "tv:194636",
+      "tv:246381",
+      "tv:790",
+      "tv:231811",
+      "tv:764"
+    ],
+    "weights": [
+      2.428571428571429,
+      2.7222222222222223,
+      3.0,
+      2.8181818181818183,
+      2.8181818181818183,
+      3.0,
+      3.0,
+      1.2285714285714286,
+      3.0,
+      1.0277777777777777
+    ],
+    "top_kws": [
+      [
+        "police",
+        4
+      ],
+      [
+        "murder",
+        4
+      ],
+      [
+        "murder investigation",
+        4
+      ],
+      [
+        "detective",
+        3
+      ],
+      [
+        "police detective",
+        3
+      ],
+      [
+        "murder mystery",
+        3
+      ],
+      [
+        "england",
+        2
+      ],
+      [
+        "cosy crime",
+        2
+      ],
+      [
+        "crime investigation",
+        2
+      ],
+      [
+        "police procedural",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 10
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 16,
+    "label": "Perché hai visto Ludwig, Professor T e I delitti della bella di notte",
+    "medium": "series",
+    "size": 6,
+    "mass": 16.866666666666667,
+    "titles": [
+      "Ludwig",
+      "Professor T",
+      "I delitti della bella di notte",
+      "Towards Zero",
+      "I sette quadranti di Agatha Christie",
+      "Murder Is Easy"
+    ],
+    "keys": [
+      "tv:243360",
+      "tv:126660",
+      "tv:241548",
+      "tv:245773",
+      "tv:250505",
+      "tv:230364"
+    ],
+    "weights": [
+      3.0,
+      1.8666666666666667,
+      3.0,
+      3.0,
+      3.0,
+      3.0
+    ],
+    "top_kws": [
+      [
+        "cosy crime",
+        4
+      ],
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "miniseries",
+        2
+      ],
+      [
+        "disappearance",
+        1
+      ],
+      [
+        "bold",
+        1
+      ],
+      [
+        "twins",
+        1
+      ],
+      [
+        "cambridge",
+        1
+      ],
+      [
+        "police",
+        1
+      ],
+      [
+        "remake",
+        1
+      ],
+      [
+        "professor",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 6
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 18,
+    "label": "Perché hai visto Intervista col vampiro, Talamasca - L'ordine segreto e Le streghe Mayfair di Anne Rice",
+    "medium": "series",
+    "size": 5,
+    "mass": 10.5,
+    "titles": [
+      "Intervista col vampiro",
+      "Talamasca - L'ordine segreto",
+      "Le streghe Mayfair di Anne Rice",
+      "Baghead",
+      "I segreti della notte"
+    ],
+    "keys": [
+      "tv:128098",
+      "tv:256624",
+      "tv:207863",
+      "movie:845783",
+      "movie:526007"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      1.5,
+      2.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "supernatural",
+        3
+      ],
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "witch",
+        3
+      ],
+      [
+        "vampire",
+        2
+      ],
+      [
+        "new orleans, louisiana",
+        1
+      ],
+      [
+        "toxic relationship",
+        1
+      ],
+      [
+        "lgbt",
+        1
+      ],
+      [
+        "gothic horror",
+        1
+      ],
+      [
+        "interracial romance",
+        1
+      ],
+      [
+        "horror romance",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 19,
+    "label": "Perché hai visto Bodies, 1899 e The Devil's Hour",
+    "medium": "series",
+    "size": 6,
+    "mass": 11.272727272727273,
+    "titles": [
+      "Bodies",
+      "1899",
+      "The Devil's Hour",
+      "Borderline",
+      "Caddo Lake",
+      "The Menu"
+    ],
+    "keys": [
+      "tv:233629",
+      "tv:90669",
+      "tv:157061",
+      "movie:1013482",
+      "movie:863873",
+      "movie:593643"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      2.2727272727272725,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "time travel",
+        2
+      ],
+      [
+        "thriller",
+        2
+      ],
+      [
+        "dark comedy",
+        2
+      ],
+      [
+        "obsession",
+        2
+      ],
+      [
+        "gay theme",
+        1
+      ],
+      [
+        "murder victim",
+        1
+      ],
+      [
+        "rogue cop",
+        1
+      ],
+      [
+        "london, england",
+        1
+      ],
+      [
+        "parallel stories",
+        1
+      ],
+      [
+        "timeline",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5,
+      "de": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 20,
+    "label": "Perché hai visto Succession, House of the Dragon e La ruota del tempo",
+    "medium": "series",
+    "size": 12,
+    "mass": 31.333653846153847,
+    "titles": [
+      "Succession",
+      "House of the Dragon",
+      "La ruota del tempo",
+      "The Sandman",
+      "The Witcher",
+      "Il Signore degli Anelli: Gli Anelli del Potere",
+      "Tenebre e ossa",
+      "Good Omens",
+      "Shōgun",
+      "Mercoledì",
+      "A Knight of the Seven Kingdoms",
+      "Damsel"
+    ],
+    "keys": [
+      "tv:76331",
+      "tv:94997",
+      "tv:71914",
+      "tv:90802",
+      "tv:71912",
+      "tv:84773",
+      "tv:85720",
+      "tv:71915",
+      "tv:126308",
+      "tv:119051",
+      "tv:224372",
+      "movie:763215"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      2.1875,
+      2.5,
+      3.0,
+      2.8461538461538463,
+      2.8,
+      2.0,
+      3.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        8
+      ],
+      [
+        "fantasy world",
+        4
+      ],
+      [
+        "dark fantasy",
+        4
+      ],
+      [
+        "prequel",
+        3
+      ],
+      [
+        "knight",
+        3
+      ],
+      [
+        "magic",
+        3
+      ],
+      [
+        "fantasy",
+        3
+      ],
+      [
+        "dysfunctional family",
+        2
+      ],
+      [
+        "kingdom",
+        2
+      ],
+      [
+        "dragon",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 12
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 26,
+    "label": "Perché hai visto Shell, C'è qualcuno nel mio scantinato e Miller's Girl",
+    "medium": "movie",
+    "size": 4,
+    "mass": 4.0,
+    "titles": [
+      "Shell",
+      "C'è qualcuno nel mio scantinato",
+      "Miller's Girl",
+      "Sharper"
+    ],
+    "keys": [
+      "movie:787747",
+      "movie:957121",
+      "movie:1026436",
+      "movie:717980"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "pretentious",
+        3
+      ],
+      [
+        "absurd",
+        2
+      ],
+      [
+        "provocative",
+        2
+      ],
+      [
+        "based on novel or book",
+        1
+      ],
+      [
+        "writer",
+        1
+      ],
+      [
+        "teachers and students",
+        1
+      ],
+      [
+        "teacher student relationship",
+        1
+      ],
+      [
+        "husband wife relationship",
+        1
+      ],
+      [
+        "school",
+        1
+      ],
+      [
+        "pathetic",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 33,
+    "label": "Perché hai visto A Murder at the End of the World, L'inverno più duro e Oddity",
+    "medium": "movie",
+    "size": 4,
+    "mass": 6.0,
+    "titles": [
+      "A Murder at the End of the World",
+      "L'inverno più duro",
+      "Oddity",
+      "The Watchers - Loro ti guardano"
+    ],
+    "keys": [
+      "tv:134095",
+      "movie:850439",
+      "movie:1216191",
+      "movie:1086747"
+    ],
+    "weights": [
+      3.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "iceland",
+        2
+      ],
+      [
+        "murder",
+        2
+      ],
+      [
+        "female detective",
+        1
+      ],
+      [
+        "secret",
+        1
+      ],
+      [
+        "tech-mogul",
+        1
+      ],
+      [
+        "hotel",
+        1
+      ],
+      [
+        "miniseries",
+        1
+      ],
+      [
+        "arctic",
+        1
+      ],
+      [
+        "curse",
+        1
+      ],
+      [
+        "folk horror",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 36,
+    "label": "Perché hai visto The Conjuring: Il rito finale, L'esorcismo di Emma Schmidt - The Ritual e Heretic",
+    "medium": "movie",
+    "size": 9,
+    "mass": 9.0,
+    "titles": [
+      "The Conjuring: Il rito finale",
+      "L'esorcismo di Emma Schmidt - The Ritual",
+      "Heretic",
+      "Appartamento 7A",
+      "Omen - L’origine del presagio",
+      "Immaculate - La prescelta",
+      "Una notte violenta e silenziosa",
+      "The Nun II",
+      "L'esorcista del Papa"
+    ],
+    "keys": [
+      "movie:1038392",
+      "movie:1278950",
+      "movie:1138194",
+      "movie:807339",
+      "movie:437342",
+      "movie:1041613",
+      "movie:899112",
+      "movie:968051",
+      "movie:758323"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "priest",
+        4
+      ],
+      [
+        "exorcism",
+        3
+      ],
+      [
+        "religion",
+        3
+      ],
+      [
+        "halloween",
+        3
+      ],
+      [
+        "demonic possession",
+        3
+      ],
+      [
+        "nun",
+        3
+      ],
+      [
+        "church",
+        3
+      ],
+      [
+        "1980s",
+        2
+      ],
+      [
+        "supernatural horror",
+        2
+      ],
+      [
+        "sequel",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 9
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 37,
+    "label": "Perché hai visto Young Royals, Uno di noi sta mentendo e This Is Going to Hurt",
+    "medium": "series",
+    "size": 11,
+    "mass": 20.65833333333333,
+    "titles": [
+      "Young Royals",
+      "Uno di noi sta mentendo",
+      "This Is Going to Hurt",
+      "Mary & George",
+      "Heated Rivalry",
+      "Half Man",
+      "The Crowded Room",
+      "Pillion - Amore senza freni",
+      "My Policeman",
+      "Rosso, bianco & sangue blu",
+      "L'amante di Lady Chatterley"
+    ],
+    "keys": [
+      "tv:125910",
+      "tv:118958",
+      "tv:154359",
+      "tv:212462",
+      "tv:301507",
+      "tv:257994",
+      "tv:123192",
+      "movie:1287141",
+      "movie:744114",
+      "movie:930094",
+      "movie:814338"
+    ],
+    "weights": [
+      2.333333333333333,
+      2.125,
+      3.0,
+      3.0,
+      3.0,
+      2.0,
+      1.2,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "lgbt",
+        10
+      ],
+      [
+        "gay theme",
+        9
+      ],
+      [
+        "based on novel or book",
+        6
+      ],
+      [
+        "boys' love (bl)",
+        3
+      ],
+      [
+        "romance",
+        3
+      ],
+      [
+        "royal family",
+        2
+      ],
+      [
+        "royalty",
+        2
+      ],
+      [
+        "coming out",
+        2
+      ],
+      [
+        "lgbt teen",
+        2
+      ],
+      [
+        "intimate",
+        2
+      ]
+    ],
+    "langs": {
+      "sv": 1,
+      "en": 10
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 38,
+    "label": "Perché hai visto Surface, One Day e Maxton Hall - Il mondo tra di noi",
+    "medium": "series",
+    "size": 11,
+    "mass": 20.09188034188034,
+    "titles": [
+      "Surface",
+      "One Day",
+      "Maxton Hall - Il mondo tra di noi",
+      "L'estate dei segreti perduti",
+      "Sterling Point - L'isola dei segreti",
+      "Love Story: John F. Kennedy Jr. & Carolyn Bessette",
+      "The Love Hypothesis: Il teorema dell'amore",
+      "The Threesome",
+      "È colpa mia: Londra",
+      "Bridget Jones - Un amore di ragazzo",
+      "L'idea che ho di te"
+    ],
+    "keys": [
+      "tv:127641",
+      "tv:240667",
+      "tv:250670",
+      "tv:215522",
+      "tv:283297",
+      "tv:131142",
+      "movie:1032863",
+      "movie:993708",
+      "movie:1294203",
+      "movie:1272149",
+      "movie:843527"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      2.230769230769231,
+      2.5,
+      2.25,
+      2.111111111111111,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        6
+      ],
+      [
+        "romance",
+        3
+      ],
+      [
+        "memory loss",
+        2
+      ],
+      [
+        "romcom",
+        2
+      ],
+      [
+        "therapist",
+        1
+      ],
+      [
+        "rich husband",
+        1
+      ],
+      [
+        "search for truth",
+        1
+      ],
+      [
+        "married woman",
+        1
+      ],
+      [
+        "memories",
+        1
+      ],
+      [
+        "questioning",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 10,
+      "de": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 40,
+    "label": "Perché hai visto The Patient, Full Circle e The Doll Factory",
+    "medium": "series",
+    "size": 9,
+    "mass": 24.333333333333332,
+    "titles": [
+      "The Patient",
+      "Full Circle",
+      "The Doll Factory",
+      "The Seduction",
+      "Grandi speranze",
+      "Racconto di due città",
+      "Miss Austen",
+      "The Vanishing Triangle",
+      "Expats"
+    ],
+    "keys": [
+      "tv:135868",
+      "tv:132016",
+      "tv:214191",
+      "tv:255719",
+      "tv:157972",
+      "tv:301626",
+      "tv:241114",
+      "tv:209280",
+      "tv:95556"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      3.0,
+      2.666666666666667,
+      2.666666666666667,
+      3.0,
+      3.0,
+      2.333333333333333,
+      1.6666666666666665
+    ],
+    "top_kws": [
+      [
+        "miniseries",
+        9
+      ],
+      [
+        "based on novel or book",
+        5
+      ],
+      [
+        "intense",
+        1
+      ],
+      [
+        "serious",
+        1
+      ],
+      [
+        "new york city",
+        1
+      ],
+      [
+        "kidnapping",
+        1
+      ],
+      [
+        "obsession",
+        1
+      ],
+      [
+        "courtesan",
+        1
+      ],
+      [
+        "coming of age",
+        1
+      ],
+      [
+        "period piece",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 8,
+      "fr": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 41,
+    "label": "Perché hai visto Last Week Tonight with John Oliver, Nell - Rinnegata e Mrs. Davis",
+    "medium": "series",
+    "size": 7,
+    "mass": 10.151754385964912,
+    "titles": [
+      "Last Week Tonight with John Oliver",
+      "Nell - Rinnegata",
+      "Mrs. Davis",
+      "Cattiverie a domicilio",
+      "Eden",
+      "The Regime - Il palazzo del potere",
+      "Ammonite - Sopra un'onda del mare"
+    ],
+    "keys": [
+      "tv:60694",
+      "tv:157569",
+      "tv:197548",
+      "movie:975773",
+      "movie:1042834",
+      "tv:206829",
+      "movie:568467"
+    ],
+    "weights": [
+      1.068421052631579,
+      3.0,
+      1.75,
+      1.0,
+      1.0,
+      1.3333333333333333,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "dramatic",
+        3
+      ],
+      [
+        "cheerful",
+        3
+      ],
+      [
+        "admiring",
+        3
+      ],
+      [
+        "political satire",
+        2
+      ],
+      [
+        "compassionate",
+        2
+      ],
+      [
+        "aggressive",
+        2
+      ],
+      [
+        "exuberant",
+        2
+      ],
+      [
+        "suspenseful",
+        2
+      ],
+      [
+        "complicated",
+        2
+      ],
+      [
+        "hilarious",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 7
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 43,
+    "label": "Perché hai visto Dimma, Una famiglia quasi normale e Åremorden - Gli omicidi di Åre",
+    "medium": "series",
+    "size": 7,
+    "mass": 14.283333333333333,
+    "titles": [
+      "Dimma",
+      "Una famiglia quasi normale",
+      "Åremorden - Gli omicidi di Åre",
+      "I delitti di Valhalla",
+      "Legenden - L'infiltrata",
+      "Glaskupan - La cupola di vetro",
+      "Ondskan"
+    ],
+    "keys": [
+      "tv:275694",
+      "tv:235571",
+      "tv:224021",
+      "tv:97405",
+      "tv:262920",
+      "tv:275388",
+      "tv:228034"
+    ],
+    "weights": [
+      3.0,
+      3.0,
+      2.2,
+      1.75,
+      1.6666666666666665,
+      1.3333333333333333,
+      1.3333333333333333
+    ],
+    "top_kws": [
+      [
+        "nordic noir",
+        5
+      ],
+      [
+        "based on novel or book",
+        4
+      ],
+      [
+        "thriller",
+        4
+      ],
+      [
+        "police investigation",
+        1
+      ],
+      [
+        "miniseries",
+        1
+      ],
+      [
+        "family",
+        1
+      ],
+      [
+        "suspense",
+        1
+      ],
+      [
+        "missing girl",
+        1
+      ],
+      [
+        "detective",
+        1
+      ],
+      [
+        "suspicious",
+        1
+      ]
+    ],
+    "langs": {
+      "is": 2,
+      "sv": 4,
+      "da": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 44,
+    "label": "Perché hai visto Rosaline, After e La sirenetta",
+    "medium": "movie",
+    "size": 6,
+    "mass": 7.0,
+    "titles": [
+      "Rosaline",
+      "After",
+      "La sirenetta",
+      "Murder Mystery 2",
+      "Invitati per forza",
+      "L'accademia del bene e del male"
+    ],
+    "keys": [
+      "movie:826769",
+      "movie:537915",
+      "movie:447277",
+      "movie:638974",
+      "movie:802372",
+      "movie:779782"
+    ],
+    "weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "wedding",
+        2
+      ],
+      [
+        "love",
+        1
+      ],
+      [
+        "teenage crush",
+        1
+      ],
+      [
+        "based on fanfiction",
+        1
+      ],
+      [
+        "toxic relationship",
+        1
+      ],
+      [
+        "teenage romance",
+        1
+      ],
+      [
+        "indifferent",
+        1
+      ],
+      [
+        "teenage girl",
+        1
+      ],
+      [
+        "bad boy",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 6
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 45,
+    "label": "Perché hai visto The Dreadful, Ella McCay - Perfettamente imperfetta e Vicious - I tre doni del Male",
+    "medium": "movie",
+    "size": 5,
+    "mass": 5.0,
+    "titles": [
+      "The Dreadful",
+      "Ella McCay - Perfettamente imperfetta",
+      "Vicious - I tre doni del Male",
+      "La casa del padre",
+      "Deliver Us"
+    ],
+    "keys": [
+      "movie:1242937",
+      "movie:1206008",
+      "movie:1251717",
+      "movie:798362",
+      "movie:1097150"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "angry",
+        2
+      ],
+      [
+        "baffled",
+        2
+      ],
+      [
+        "ambiguous",
+        2
+      ],
+      [
+        "bewildered",
+        2
+      ],
+      [
+        "dreary",
+        1
+      ],
+      [
+        "political scandal",
+        1
+      ],
+      [
+        "woman",
+        1
+      ],
+      [
+        "absurd",
+        1
+      ],
+      [
+        "aunt",
+        1
+      ],
+      [
+        "politics",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "pepsipex",
+    "type": "base",
+    "cluster_idx": 47,
+    "label": "Perché hai visto The Strays, Newness e Consecration",
+    "medium": "movie",
+    "size": 5,
+    "mass": 6.0,
+    "titles": [
+      "The Strays",
+      "Newness",
+      "Consecration",
+      "The Apology",
+      "Sissy"
+    ],
+    "keys": [
+      "movie:1063422",
+      "movie:434203",
+      "movie:884184",
+      "movie:1035654",
+      "movie:934207"
+    ],
+    "weights": [
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "social media",
+        2
+      ],
+      [
+        "hidden past",
+        1
+      ],
+      [
+        "religious horror",
+        1
+      ],
+      [
+        "horror anthology",
+        1
+      ],
+      [
+        "devil",
+        1
+      ],
+      [
+        "horror mystery",
+        1
+      ],
+      [
+        "christmas",
+        1
+      ],
+      [
+        "bachelorette party",
+        1
+      ],
+      [
+        "childhood friends",
+        1
+      ],
+      [
+        "revenge",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 5
+    },
+    "countries": {}
+  },
+  {
+    "profile": "1jacobjohn",
+    "type": "base",
+    "cluster_idx": 3,
+    "label": "Perché hai visto Bullet Train, Beckett e The Gray Man",
+    "medium": "movie",
+    "size": 12,
+    "mass": 17.0,
+    "titles": [
+      "Bullet Train",
+      "Beckett",
+      "The Gray Man",
+      "Top Gun: Maverick",
+      "Mr. Morfina",
+      "Operazione vendetta",
+      "The Fall Guy",
+      "The Covenant",
+      "The Batman",
+      "Kingsman: Il cerchio d'oro",
+      "Baby Driver - Il genio della fuga",
+      "L'autista"
+    ],
+    "keys": [
+      "movie:718930",
+      "movie:597433",
+      "movie:725201",
+      "movie:361743",
+      "movie:1195506",
+      "movie:1087891",
+      "movie:746036",
+      "movie:882569",
+      "movie:414906",
+      "movie:343668",
+      "movie:339403",
+      "movie:471014"
+    ],
+    "weights": [
+      3.0,
+      2.0,
+      2.0,
+      2.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "based on novel or book",
+        3
+      ],
+      [
+        "agent",
+        3
+      ],
+      [
+        "hitman",
+        2
+      ],
+      [
+        "government conspiracy",
+        2
+      ],
+      [
+        "central intelligence agency (cia)",
+        2
+      ],
+      [
+        "sequel",
+        2
+      ],
+      [
+        "superhero",
+        2
+      ],
+      [
+        "bank robbery",
+        2
+      ],
+      [
+        "suspenseful",
+        2
+      ],
+      [
+        "robbery",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 11,
+      "it": 1
+    },
+    "countries": {}
+  },
+  {
+    "profile": "1jacobjohn",
+    "type": "base",
+    "cluster_idx": 4,
+    "label": "Perché hai visto Stranger Things, Breaking Bad e DAHMER - Mostro: la storia di Jeffrey Dahmer",
+    "medium": "series",
+    "size": 11,
+    "mass": 17.77387273886337,
+    "titles": [
+      "Stranger Things",
+      "Breaking Bad",
+      "DAHMER - Mostro: la storia di Jeffrey Dahmer",
+      "Resident Alien",
+      "MONSTERS: La storia di Lyle ed Erik Menendez",
+      "Black Mirror",
+      "MINDHUNTER",
+      "Barry",
+      "Monster: La storia di Ed Gein",
+      "The 100",
+      "American Crime Story"
+    ],
+    "keys": [
+      "tv:66732",
+      "tv:1396",
+      "tv:113988",
+      "tv:96580",
+      "tv:225634",
+      "tv:42009",
+      "tv:67744",
+      "tv:73107",
+      "tv:286801",
+      "tv:48866",
+      "tv:64513"
+    ],
+    "weights": [
+      2.666666666666667,
+      1.8064516129032258,
+      3.0,
+      1.2727272727272727,
+      2.111111111111111,
+      1.2424242424242424,
+      1.2105263157894737,
+      1.125,
+      1.25,
+      1.02,
+      1.0689655172413792
+    ],
+    "top_kws": [
+      [
+        "based on true story",
+        4
+      ],
+      [
+        "horror",
+        3
+      ],
+      [
+        "criminal",
+        3
+      ],
+      [
+        "dark comedy",
+        3
+      ],
+      [
+        "serial killer",
+        3
+      ],
+      [
+        "depressing",
+        2
+      ],
+      [
+        "complex",
+        2
+      ],
+      [
+        "psychopath",
+        2
+      ],
+      [
+        "thriller",
+        2
+      ],
+      [
+        "murder",
+        2
+      ]
+    ],
+    "langs": {
+      "en": 11
+    },
+    "countries": {}
+  },
+  {
+    "profile": "1jacobjohn",
+    "type": "base",
+    "cluster_idx": 6,
+    "label": "Perché hai visto Black Bird, Ovunque tu sia e Good Girls",
+    "medium": "series",
+    "size": 4,
+    "mass": 7.58,
+    "titles": [
+      "Black Bird",
+      "Ovunque tu sia",
+      "Good Girls",
+      "The Girl from Plainville"
+    ],
+    "keys": [
+      "tv:155537",
+      "tv:278178",
+      "tv:71715",
+      "tv:107114"
+    ],
+    "weights": [
+      3.0,
+      2.25,
+      1.08,
+      1.25
+    ],
+    "top_kws": [
+      [
+        "based on true story",
+        2
+      ],
+      [
+        "miniseries",
+        2
+      ],
+      [
+        "based on novel or book",
+        2
+      ],
+      [
+        "prison",
+        2
+      ],
+      [
+        "compulsive liar",
+        1
+      ],
+      [
+        "missouri",
+        1
+      ],
+      [
+        "fbi agent",
+        1
+      ],
+      [
+        "criminal",
+        1
+      ],
+      [
+        "serial killer",
+        1
+      ],
+      [
+        "oddball",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  },
+  {
+    "profile": "1jacobjohn",
+    "type": "base",
+    "cluster_idx": 11,
+    "label": "Perché hai visto The Domestics, Alone e No Exit",
+    "medium": "movie",
+    "size": 4,
+    "mass": 4.0,
+    "titles": [
+      "The Domestics",
+      "Alone",
+      "No Exit",
+      "Back in Time"
+    ],
+    "keys": [
+      "movie:426814",
+      "movie:509635",
+      "movie:833425",
+      "movie:330127"
+    ],
+    "weights": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "top_kws": [
+      [
+        "survive",
+        1
+      ],
+      [
+        "gang",
+        1
+      ],
+      [
+        "cannibal",
+        1
+      ],
+      [
+        "post-apocalyptic future",
+        1
+      ],
+      [
+        "husband wife relationship",
+        1
+      ],
+      [
+        "kidnapping",
+        1
+      ],
+      [
+        "chase",
+        1
+      ],
+      [
+        "remake",
+        1
+      ],
+      [
+        "forest",
+        1
+      ],
+      [
+        "sadist",
+        1
+      ]
+    ],
+    "langs": {
+      "en": 4
+    },
+    "countries": {}
+  }
+]

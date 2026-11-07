@@ -1,0 +1,2436 @@
+{
+  "req1": {
+    "req": {
+      "semi": [
+        {
+          "tmdbId": 603,
+          "medium": "movie",
+          "tipo": "watched"
+        }
+      ]
+    },
+    "status": 200,
+    "resp": {
+      "contratto": 1,
+      "versioni": {
+        "artefatto": "cf1d80dcba3eddce+041f62094d34108a",
+        "ricetta": "fee303c7e91ebcc3"
+      },
+      "semi": {
+        "n": 1,
+        "da_catalogo": false,
+        "recenti": 0
+      },
+      "liste": [
+        {
+          "ruolo": "il_tuo_mondo",
+          "mondo": 2551,
+          "descrizione": "il tuo mondo (2551) e i vicini (2327, 2088, 2105, 1822, 1565, 2543) — 60 titoli, voti mediani 11821.5 · es. Matrix, Matrix Reloaded, Matrix Revolutions",
+          "attivazione": 0.9035,
+          "mediana_voti": 11821.5,
+          "quota_serie": 0.0,
+          "semi": [
+            603
+          ],
+          "titoli": [
+            {
+              "tmdbId": 604,
+              "medium": "movie",
+              "punteggio": 0.108882
+            },
+            {
+              "tmdbId": 83542,
+              "medium": "movie",
+              "punteggio": 0.002087
+            },
+            {
+              "tmdbId": 38,
+              "medium": "movie",
+              "punteggio": 0.000938
+            },
+            {
+              "tmdbId": 137113,
+              "medium": "movie",
+              "punteggio": 0.000551
+            },
+            {
+              "tmdbId": 2666,
+              "medium": "movie",
+              "punteggio": 0.000527
+            },
+            {
+              "tmdbId": 5548,
+              "medium": "movie",
+              "punteggio": 0.000361
+            },
+            {
+              "tmdbId": 272,
+              "medium": "movie",
+              "punteggio": 0.000128
+            },
+            {
+              "tmdbId": 121,
+              "medium": "movie",
+              "punteggio": 0.000128
+            },
+            {
+              "tmdbId": 522402,
+              "medium": "movie",
+              "punteggio": 0.000128
+            },
+            {
+              "tmdbId": 9659,
+              "medium": "movie",
+              "punteggio": 7.6e-05
+            },
+            {
+              "tmdbId": 141,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 75612,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 629,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 198184,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 80274,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 49530,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 339964,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 588228,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 68,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 752,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 9323,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 7299,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 68724,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 8810,
+              "medium": "movie",
+              "punteggio": 7.4e-05
+            },
+            {
+              "tmdbId": 1635,
+              "medium": "movie",
+              "punteggio": 6.8e-05
+            },
+            {
+              "tmdbId": 500664,
+              "medium": "movie",
+              "punteggio": 6.2e-05
+            },
+            {
+              "tmdbId": 110415,
+              "medium": "movie",
+              "punteggio": 6.1e-05
+            },
+            {
+              "tmdbId": 865,
+              "medium": "movie",
+              "punteggio": 5.8e-05
+            },
+            {
+              "tmdbId": 1103,
+              "medium": "movie",
+              "punteggio": 5.5e-05
+            },
+            {
+              "tmdbId": 210577,
+              "medium": "movie",
+              "punteggio": 5.4e-05
+            },
+            {
+              "tmdbId": 1949,
+              "medium": "movie",
+              "punteggio": 4.7e-05
+            },
+            {
+              "tmdbId": 587,
+              "medium": "movie",
+              "punteggio": 4.5e-05
+            },
+            {
+              "tmdbId": 500,
+              "medium": "movie",
+              "punteggio": 4.2e-05
+            },
+            {
+              "tmdbId": 242582,
+              "medium": "movie",
+              "punteggio": 4.1e-05
+            },
+            {
+              "tmdbId": 1417,
+              "medium": "movie",
+              "punteggio": 4.1e-05
+            },
+            {
+              "tmdbId": 49049,
+              "medium": "movie",
+              "punteggio": 3.9e-05
+            },
+            {
+              "tmdbId": 274870,
+              "medium": "movie",
+              "punteggio": 3.7e-05
+            },
+            {
+              "tmdbId": 2277,
+              "medium": "movie",
+              "punteggio": 3.5e-05
+            },
+            {
+              "tmdbId": 70981,
+              "medium": "movie",
+              "punteggio": 3.5e-05
+            },
+            {
+              "tmdbId": 1954,
+              "medium": "movie",
+              "punteggio": 3.4e-05
+            },
+            {
+              "tmdbId": 395992,
+              "medium": "movie",
+              "punteggio": 3.3e-05
+            },
+            {
+              "tmdbId": 198663,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 670292,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 38050,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 1903,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 10494,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 153,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 44214,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 194,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 294254,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 297762,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 13183,
+              "medium": "movie",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 4977,
+              "medium": "movie",
+              "punteggio": 2e-05
+            },
+            {
+              "tmdbId": 238615,
+              "medium": "movie",
+              "punteggio": 1.8e-05
+            },
+            {
+              "tmdbId": 240832,
+              "medium": "movie",
+              "punteggio": 1.8e-05
+            },
+            {
+              "tmdbId": 49051,
+              "medium": "movie",
+              "punteggio": 1.8e-05
+            },
+            {
+              "tmdbId": 149,
+              "medium": "movie",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 101,
+              "medium": "movie",
+              "punteggio": 1.6e-05
+            },
+            {
+              "tmdbId": 57158,
+              "medium": "movie",
+              "punteggio": 1.6e-05
+            },
+            {
+              "tmdbId": 146233,
+              "medium": "movie",
+              "punteggio": 1.5e-05
+            }
+          ],
+          "specificita": 80,
+          "doppioni_tolti": 56,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 3,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "un_passo_fuori",
+          "mondo": null,
+          "descrizione": "mondi vicini (1822, 2327, 2088)",
+          "attivazione": 0.0163,
+          "mediana_voti": 9455.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 80710,
+              "medium": "movie",
+              "punteggio": 3e-06
+            }
+          ],
+          "specificita": 70,
+          "doppioni_tolti": 16,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 17,
+          "motivo": "un_passo_fuori: 16 copie gia' in righe piu' specifiche, restano 1/60"
+        },
+        {
+          "ruolo": "uscite_nuove",
+          "mondo": null,
+          "descrizione": "uscite recenti (2025+) nei mondi accesi",
+          "attivazione": 0.0198,
+          "mediana_voti": 12.0,
+          "quota_serie": 1.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 228179,
+              "medium": "series",
+              "punteggio": 0.0
+            }
+          ],
+          "parziale": true,
+          "fonte": "canone",
+          "candidati": 1,
+          "nel_bacino": 1,
+          "scartati_pavimento": 0,
+          "specificita": 10,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 1,
+          "motivo": "uscite_nuove: cache uscite-collocate.npz assente, solo il canone storico (che non ha quasi uscite 2025+); uscite_nuove: riga corta 1/60 titoli"
+        },
+        {
+          "ruolo": "nicchia_di_qualita",
+          "mondo": null,
+          "descrizione": "titoli di alta qualità e bassa popolarità (riga corta: 54/60 titoli)",
+          "attivazione": 0.0,
+          "mediana_voti": 573.5,
+          "quota_serie": 0.02,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 1090,
+              "medium": "movie",
+              "punteggio": 8e-05
+            },
+            {
+              "tmdbId": 15999,
+              "medium": "movie",
+              "punteggio": 7.5e-05
+            },
+            {
+              "tmdbId": 21712,
+              "medium": "movie",
+              "punteggio": 4.6e-05
+            },
+            {
+              "tmdbId": 14139,
+              "medium": "movie",
+              "punteggio": 3.7e-05
+            },
+            {
+              "tmdbId": 846,
+              "medium": "movie",
+              "punteggio": 2.6e-05
+            },
+            {
+              "tmdbId": 84329,
+              "medium": "movie",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 892,
+              "medium": "movie",
+              "punteggio": 1.6e-05
+            },
+            {
+              "tmdbId": 647,
+              "medium": "movie",
+              "punteggio": 1e-05
+            },
+            {
+              "tmdbId": 95515,
+              "medium": "series",
+              "punteggio": 9e-06
+            },
+            {
+              "tmdbId": 936117,
+              "medium": "movie",
+              "punteggio": 9e-06
+            },
+            {
+              "tmdbId": 28874,
+              "medium": "movie",
+              "punteggio": 8e-06
+            },
+            {
+              "tmdbId": 71883,
+              "medium": "movie",
+              "punteggio": 8e-06
+            },
+            {
+              "tmdbId": 281,
+              "medium": "movie",
+              "punteggio": 7e-06
+            },
+            {
+              "tmdbId": 13398,
+              "medium": "movie",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 15916,
+              "medium": "movie",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 902,
+              "medium": "movie",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 426865,
+              "medium": "movie",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 14784,
+              "medium": "movie",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 11049,
+              "medium": "movie",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 10559,
+              "medium": "movie",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 14069,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 395991,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 653734,
+              "medium": "movie",
+              "punteggio": 1e-06
+            },
+            {
+              "tmdbId": 14506,
+              "medium": "movie",
+              "punteggio": 1e-06
+            },
+            {
+              "tmdbId": 272878,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 11019,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 315465,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 64847,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 13980,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 11639,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 39005,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 446829,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 426410,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 37797,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 242828,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 149871,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 776305,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 11837,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 550738,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 957461,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 961722,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 856437,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 701524,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 252511,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 773569,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 41712,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 602301,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 497802,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 33030,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 475242,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 280874,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 582206,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 216769,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 550776,
+              "medium": "movie",
+              "punteggio": 0.0
+            }
+          ],
+          "parziale": true,
+          "specificita": 20,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 54,
+          "motivo": "nicchia_di_qualita: riga corta 54/60 titoli"
+        },
+        {
+          "ruolo": "classici_imperdibili",
+          "mondo": null,
+          "descrizione": "classici imperdibili del tuo mondo (riga corta: 10/60 titoli)",
+          "attivazione": 0.2903,
+          "mediana_voti": 27595.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 27205,
+              "medium": "movie",
+              "punteggio": 0.946283
+            },
+            {
+              "tmdbId": 157336,
+              "medium": "movie",
+              "punteggio": 0.559438
+            },
+            {
+              "tmdbId": 550,
+              "medium": "movie",
+              "punteggio": 0.32224
+            },
+            {
+              "tmdbId": 680,
+              "medium": "movie",
+              "punteggio": 0.280187
+            },
+            {
+              "tmdbId": 120,
+              "medium": "movie",
+              "punteggio": 0.267256
+            },
+            {
+              "tmdbId": 807,
+              "medium": "movie",
+              "punteggio": 0.25245
+            },
+            {
+              "tmdbId": 11324,
+              "medium": "movie",
+              "punteggio": 0.189273
+            },
+            {
+              "tmdbId": 286217,
+              "medium": "movie",
+              "punteggio": 0.040456
+            },
+            {
+              "tmdbId": 329865,
+              "medium": "movie",
+              "punteggio": 0.028764
+            },
+            {
+              "tmdbId": 76341,
+              "medium": "movie",
+              "punteggio": 0.016663
+            }
+          ],
+          "parziale": true,
+          "specificita": 30,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 10,
+          "motivo": "classici_imperdibili: riga corta 10/60 titoli"
+        },
+        {
+          "ruolo": "ultime_visioni",
+          "mondo": null,
+          "descrizione": "ultime_visioni: meno di 3 semi recenti (0); ultime_visioni: riga corta 0/60 titoli",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "ultime_visioni: meno di 3 semi recenti (0); ultime_visioni: riga corta 0/60 titoli",
+          "totale_sopravvissuti": 0,
+          "target_dimensione": 60,
+          "parziale": true,
+          "corta": true,
+          "semi_recenti": 0,
+          "specificita": 50,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "micro_cluster_1",
+          "mondo": 2551,
+          "descrizione": "Perché hai amato Matrix (riga corta: 53/60 titoli)",
+          "attivazione": 0.0027,
+          "mediana_voti": 8196.0,
+          "quota_serie": 0.0,
+          "semi": [
+            603
+          ],
+          "titoli": [
+            {
+              "tmdbId": 604,
+              "medium": "movie",
+              "punteggio": 0.108882
+            },
+            {
+              "tmdbId": 861,
+              "medium": "movie",
+              "punteggio": 0.008116
+            },
+            {
+              "tmdbId": 218,
+              "medium": "movie",
+              "punteggio": 0.00684
+            },
+            {
+              "tmdbId": 18,
+              "medium": "movie",
+              "punteggio": 0.005562
+            },
+            {
+              "tmdbId": 782,
+              "medium": "movie",
+              "punteggio": 0.003427
+            },
+            {
+              "tmdbId": 63,
+              "medium": "movie",
+              "punteggio": 0.002574
+            },
+            {
+              "tmdbId": 180,
+              "medium": "movie",
+              "punteggio": 0.001933
+            },
+            {
+              "tmdbId": 264660,
+              "medium": "movie",
+              "punteggio": 0.001643
+            },
+            {
+              "tmdbId": 2048,
+              "medium": "movie",
+              "punteggio": 0.00087
+            },
+            {
+              "tmdbId": 563,
+              "medium": "movie",
+              "punteggio": 0.000708
+            },
+            {
+              "tmdbId": 9693,
+              "medium": "movie",
+              "punteggio": 0.000545
+            },
+            {
+              "tmdbId": 45612,
+              "medium": "movie",
+              "punteggio": 0.000404
+            },
+            {
+              "tmdbId": 348,
+              "medium": "movie",
+              "punteggio": 0.000363
+            },
+            {
+              "tmdbId": 602,
+              "medium": "movie",
+              "punteggio": 0.000356
+            },
+            {
+              "tmdbId": 644,
+              "medium": "movie",
+              "punteggio": 0.000304
+            },
+            {
+              "tmdbId": 77,
+              "medium": "movie",
+              "punteggio": 0.000302
+            },
+            {
+              "tmdbId": 1124,
+              "medium": "movie",
+              "punteggio": 0.000302
+            },
+            {
+              "tmdbId": 152601,
+              "medium": "movie",
+              "punteggio": 0.000289
+            },
+            {
+              "tmdbId": 686,
+              "medium": "movie",
+              "punteggio": 0.000245
+            },
+            {
+              "tmdbId": 49047,
+              "medium": "movie",
+              "punteggio": 0.000208
+            },
+            {
+              "tmdbId": 17431,
+              "medium": "movie",
+              "punteggio": 0.000182
+            },
+            {
+              "tmdbId": 74,
+              "medium": "movie",
+              "punteggio": 0.00018
+            },
+            {
+              "tmdbId": 106,
+              "medium": "movie",
+              "punteggio": 0.000172
+            },
+            {
+              "tmdbId": 17654,
+              "medium": "movie",
+              "punteggio": 0.000162
+            },
+            {
+              "tmdbId": 59967,
+              "medium": "movie",
+              "punteggio": 9.6e-05
+            },
+            {
+              "tmdbId": 14337,
+              "medium": "movie",
+              "punteggio": 9.5e-05
+            },
+            {
+              "tmdbId": 206487,
+              "medium": "movie",
+              "punteggio": 8.1e-05
+            },
+            {
+              "tmdbId": 31011,
+              "medium": "movie",
+              "punteggio": 7.6e-05
+            },
+            {
+              "tmdbId": 51876,
+              "medium": "movie",
+              "punteggio": 6.7e-05
+            },
+            {
+              "tmdbId": 4553,
+              "medium": "movie",
+              "punteggio": 6.6e-05
+            },
+            {
+              "tmdbId": 2649,
+              "medium": "movie",
+              "punteggio": 6.1e-05
+            },
+            {
+              "tmdbId": 1381,
+              "medium": "movie",
+              "punteggio": 5.5e-05
+            },
+            {
+              "tmdbId": 2164,
+              "medium": "movie",
+              "punteggio": 5.3e-05
+            },
+            {
+              "tmdbId": 766507,
+              "medium": "movie",
+              "punteggio": 4.8e-05
+            },
+            {
+              "tmdbId": 641,
+              "medium": "movie",
+              "punteggio": 4.1e-05
+            },
+            {
+              "tmdbId": 13363,
+              "medium": "movie",
+              "punteggio": 3.1e-05
+            },
+            {
+              "tmdbId": 220289,
+              "medium": "movie",
+              "punteggio": 3.1e-05
+            },
+            {
+              "tmdbId": 95,
+              "medium": "movie",
+              "punteggio": 2.4e-05
+            },
+            {
+              "tmdbId": 2832,
+              "medium": "movie",
+              "punteggio": 2.2e-05
+            },
+            {
+              "tmdbId": 1491,
+              "medium": "movie",
+              "punteggio": 1.9e-05
+            },
+            {
+              "tmdbId": 320,
+              "medium": "movie",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 1272,
+              "medium": "movie",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 4547,
+              "medium": "movie",
+              "punteggio": 1.6e-05
+            },
+            {
+              "tmdbId": 435,
+              "medium": "movie",
+              "punteggio": 1.2e-05
+            },
+            {
+              "tmdbId": 601,
+              "medium": "movie",
+              "punteggio": 1e-05
+            },
+            {
+              "tmdbId": 840,
+              "medium": "movie",
+              "punteggio": 8e-06
+            },
+            {
+              "tmdbId": 7191,
+              "medium": "movie",
+              "punteggio": 7e-06
+            },
+            {
+              "tmdbId": 29917,
+              "medium": "movie",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 26466,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 605,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 280,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 679,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 290859,
+              "medium": "movie",
+              "punteggio": 2e-06
+            }
+          ],
+          "parziale": true,
+          "cluster_id": "b2551",
+          "quota_peso": 1.0,
+          "titoli_seme": [
+            "Matrix"
+          ],
+          "specificita": 60,
+          "doppioni_tolti": 6,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 4,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 59,
+          "motivo": "micro_cluster_1: 6 copie gia' in righe piu' specifiche, restano 53/60"
+        },
+        {
+          "ruolo": "punti_incontro_1",
+          "mondo": null,
+          "descrizione": "punti_incontro: i semi stanno in un mondo solo, nessun ponte fra due sponde; punti_incontro_1: riga corta 0/60 titoli",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "punti_incontro: i semi stanno in un mondo solo, nessun ponte fra due sponde; punti_incontro_1: riga corta 0/60 titoli",
+          "totale_sopravvissuti": 0,
+          "target_dimensione": 60,
+          "parziale": true,
+          "corta": true,
+          "titoli_seme": [],
+          "coppia_id": null,
+          "fallback": true,
+          "specificita": 40,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_2327",
+          "mondo": 2327,
+          "descrizione": "mondo_2327: 1 copie gia' in righe piu' specifiche, restano 0/60",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "mondo_2327: 1 copie gia' in righe piu' specifiche, restano 0/60",
+          "totale_sopravvissuti": 1,
+          "target_dimensione": 60,
+          "corta": true,
+          "specificita": 90,
+          "doppioni_tolti": 1,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_2088",
+          "mondo": 2088,
+          "descrizione": "mondo_2088: 8 copie gia' in righe piu' specifiche, restano 0/60",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "mondo_2088: 8 copie gia' in righe piu' specifiche, restano 0/60",
+          "totale_sopravvissuti": 8,
+          "target_dimensione": 60,
+          "corta": true,
+          "specificita": 90,
+          "doppioni_tolti": 8,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_2105",
+          "mondo": 2105,
+          "descrizione": "mondo_2105: 5 copie gia' in righe piu' specifiche, restano 0/60",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "mondo_2105: 5 copie gia' in righe piu' specifiche, restano 0/60",
+          "totale_sopravvissuti": 5,
+          "target_dimensione": 60,
+          "corta": true,
+          "specificita": 90,
+          "doppioni_tolti": 5,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_1822",
+          "mondo": 1822,
+          "descrizione": "mondo_1822: 8 copie gia' in righe piu' specifiche, restano 0/60",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "mondo_1822: 8 copie gia' in righe piu' specifiche, restano 0/60",
+          "totale_sopravvissuti": 8,
+          "target_dimensione": 60,
+          "corta": true,
+          "specificita": 90,
+          "doppioni_tolti": 8,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_1565",
+          "mondo": 1565,
+          "descrizione": "mondo 1565 — 9 titoli, voti mediani 5292.0 · es. In Time, Oblivion, Cloud Atlas",
+          "attivazione": 0.0028,
+          "mediana_voti": 5292.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 64635,
+              "medium": "movie",
+              "punteggio": 0.000229
+            },
+            {
+              "tmdbId": 31867,
+              "medium": "movie",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 165597,
+              "medium": "movie",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 161051,
+              "medium": "movie",
+              "punteggio": 0.0
+            }
+          ],
+          "specificita": 90,
+          "doppioni_tolti": 5,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 9,
+          "motivo": "mondo_1565: 5 copie gia' in righe piu' specifiche, restano 4/60"
+        },
+        {
+          "ruolo": "mondo_2543",
+          "mondo": 2543,
+          "descrizione": "mondo 2543 — 6 titoli, voti mediani 6214.0 · es. Alien, Aliens - Scontro finale, Alien³",
+          "attivazione": 0.0027,
+          "mediana_voti": 6214.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 522828,
+              "medium": "movie",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 230263,
+              "medium": "movie",
+              "punteggio": 0.0
+            }
+          ],
+          "specificita": 90,
+          "doppioni_tolti": 1,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 60,
+          "totale_sopravvissuti": 3,
+          "motivo": "mondo_2543: 1 copie gia' in righe piu' specifiche, restano 2/60"
+        }
+      ],
+      "motivi": [
+        "ultime_visioni: meno di 3 semi recenti (0); ultime_visioni: riga corta 0/60 titoli",
+        "punti_incontro: i semi stanno in un mondo solo, nessun ponte fra due sponde; punti_incontro_1: riga corta 0/60 titoli",
+        "mondo_2327: 1 copie gia' in righe piu' specifiche, restano 0/60",
+        "mondo_2088: 8 copie gia' in righe piu' specifiche, restano 0/60",
+        "mondo_2105: 5 copie gia' in righe piu' specifiche, restano 0/60",
+        "mondo_1822: 8 copie gia' in righe piu' specifiche, restano 0/60"
+      ],
+      "filtri": {
+        "applicato": false,
+        "motivo": "nessun filtro richiesto",
+        "scartati": 0
+      }
+    }
+  },
+  "req2": {
+    "req": {
+      "semi": [
+        {
+          "tmdbId": 655,
+          "medium": "series",
+          "tipo": "watched",
+          "peso": 0.42
+        },
+        {
+          "tmdbId": 1396,
+          "medium": "series",
+          "tipo": "loved"
+        }
+      ],
+      "medium": "series",
+      "cap": 30
+    },
+    "status": 200,
+    "resp": {
+      "contratto": 1,
+      "versioni": {
+        "artefatto": "cf1d80dcba3eddce+041f62094d34108a",
+        "ricetta": "fee303c7e91ebcc3"
+      },
+      "semi": {
+        "n": 2,
+        "da_catalogo": false,
+        "recenti": 0
+      },
+      "liste": [
+        {
+          "ruolo": "il_tuo_mondo",
+          "mondo": 3262,
+          "descrizione": "il tuo mondo (3262) e i vicini (1084, 1164, 1451, 3034) — 30 titoli, voti mediani 4949.0 · es. Breaking Bad, Better Call Saul, Ozark",
+          "attivazione": 0.7392,
+          "mediana_voti": 4949.0,
+          "quota_serie": 1.0,
+          "semi": [
+            655,
+            1396
+          ],
+          "titoli": [
+            {
+              "tmdbId": 2288,
+              "medium": "series",
+              "punteggio": 0.004648
+            },
+            {
+              "tmdbId": 62560,
+              "medium": "series",
+              "punteggio": 0.002782
+            },
+            {
+              "tmdbId": 61056,
+              "medium": "series",
+              "punteggio": 0.001299
+            },
+            {
+              "tmdbId": 42009,
+              "medium": "series",
+              "punteggio": 0.00117
+            },
+            {
+              "tmdbId": 1438,
+              "medium": "series",
+              "punteggio": 0.000521
+            },
+            {
+              "tmdbId": 110316,
+              "medium": "series",
+              "punteggio": 0.000448
+            },
+            {
+              "tmdbId": 95396,
+              "medium": "series",
+              "punteggio": 0.000418
+            },
+            {
+              "tmdbId": 78191,
+              "medium": "series",
+              "punteggio": 0.000217
+            },
+            {
+              "tmdbId": 125988,
+              "medium": "series",
+              "punteggio": 0.000195
+            },
+            {
+              "tmdbId": 1436,
+              "medium": "series",
+              "punteggio": 0.000191
+            },
+            {
+              "tmdbId": 106379,
+              "medium": "series",
+              "punteggio": 0.000178
+            },
+            {
+              "tmdbId": 1621,
+              "medium": "series",
+              "punteggio": 0.000107
+            },
+            {
+              "tmdbId": 186,
+              "medium": "series",
+              "punteggio": 8.4e-05
+            },
+            {
+              "tmdbId": 196322,
+              "medium": "series",
+              "punteggio": 8.2e-05
+            },
+            {
+              "tmdbId": 1413,
+              "medium": "series",
+              "punteggio": 7.3e-05
+            },
+            {
+              "tmdbId": 108978,
+              "medium": "series",
+              "punteggio": 5.1e-05
+            },
+            {
+              "tmdbId": 81349,
+              "medium": "series",
+              "punteggio": 4.4e-05
+            },
+            {
+              "tmdbId": 61664,
+              "medium": "series",
+              "punteggio": 4.3e-05
+            },
+            {
+              "tmdbId": 99966,
+              "medium": "series",
+              "punteggio": 4.3e-05
+            },
+            {
+              "tmdbId": 96648,
+              "medium": "series",
+              "punteggio": 4.2e-05
+            },
+            {
+              "tmdbId": 41727,
+              "medium": "series",
+              "punteggio": 3.4e-05
+            },
+            {
+              "tmdbId": 37680,
+              "medium": "series",
+              "punteggio": 3e-05
+            },
+            {
+              "tmdbId": 1425,
+              "medium": "series",
+              "punteggio": 3e-05
+            },
+            {
+              "tmdbId": 75191,
+              "medium": "series",
+              "punteggio": 3e-05
+            },
+            {
+              "tmdbId": 60797,
+              "medium": "series",
+              "punteggio": 2.9e-05
+            },
+            {
+              "tmdbId": 100088,
+              "medium": "series",
+              "punteggio": 2.9e-05
+            },
+            {
+              "tmdbId": 1424,
+              "medium": "series",
+              "punteggio": 2.6e-05
+            },
+            {
+              "tmdbId": 58841,
+              "medium": "series",
+              "punteggio": 2.3e-05
+            },
+            {
+              "tmdbId": 108545,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 3322,
+              "medium": "series",
+              "punteggio": 1.6e-05
+            }
+          ],
+          "specificita": 80,
+          "doppioni_tolti": 37,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "un_passo_fuori",
+          "mondo": null,
+          "descrizione": "mondi vicini (1164, 2162, 1451)",
+          "attivazione": 0.0208,
+          "mediana_voti": 311.0,
+          "quota_serie": 1.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 132171,
+              "medium": "series",
+              "punteggio": 0.005159
+            },
+            {
+              "tmdbId": 137893,
+              "medium": "series",
+              "punteggio": 0.003147
+            },
+            {
+              "tmdbId": 97890,
+              "medium": "series",
+              "punteggio": 0.001923
+            },
+            {
+              "tmdbId": 66676,
+              "medium": "series",
+              "punteggio": 0.001158
+            },
+            {
+              "tmdbId": 101591,
+              "medium": "series",
+              "punteggio": 0.00105
+            },
+            {
+              "tmdbId": 126386,
+              "medium": "series",
+              "punteggio": 0.000343
+            },
+            {
+              "tmdbId": 124394,
+              "medium": "series",
+              "punteggio": 0.000301
+            },
+            {
+              "tmdbId": 88189,
+              "medium": "series",
+              "punteggio": 0.000277
+            },
+            {
+              "tmdbId": 93297,
+              "medium": "series",
+              "punteggio": 3e-05
+            },
+            {
+              "tmdbId": 84452,
+              "medium": "series",
+              "punteggio": 2e-05
+            },
+            {
+              "tmdbId": 255793,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 235555,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 79086,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 211169,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 219937,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 90254,
+              "medium": "series",
+              "punteggio": 1e-06
+            },
+            {
+              "tmdbId": 283392,
+              "medium": "series",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 252135,
+              "medium": "series",
+              "punteggio": 0.0
+            },
+            {
+              "tmdbId": 231100,
+              "medium": "series",
+              "punteggio": 0.0
+            }
+          ],
+          "specificita": 70,
+          "doppioni_tolti": 10,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 30,
+          "totale_sopravvissuti": 29,
+          "motivo": "un_passo_fuori: 10 copie gia' in righe piu' specifiche, restano 19/30"
+        },
+        {
+          "ruolo": "uscite_nuove",
+          "mondo": null,
+          "descrizione": "uscite recenti (2025+) nei mondi accesi",
+          "attivazione": 0.0165,
+          "mediana_voti": 62.0,
+          "quota_serie": 1.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 225171,
+              "medium": "series",
+              "punteggio": 0.003162
+            },
+            {
+              "tmdbId": 232557,
+              "medium": "series",
+              "punteggio": 0.000694
+            },
+            {
+              "tmdbId": 223530,
+              "medium": "series",
+              "punteggio": 0.000685
+            },
+            {
+              "tmdbId": 290193,
+              "medium": "series",
+              "punteggio": 0.000633
+            },
+            {
+              "tmdbId": 244321,
+              "medium": "series",
+              "punteggio": 0.000614
+            },
+            {
+              "tmdbId": 248226,
+              "medium": "series",
+              "punteggio": 0.000269
+            },
+            {
+              "tmdbId": 241554,
+              "medium": "series",
+              "punteggio": 0.000204
+            },
+            {
+              "tmdbId": 285807,
+              "medium": "series",
+              "punteggio": 0.000201
+            },
+            {
+              "tmdbId": 278624,
+              "medium": "series",
+              "punteggio": 0.000136
+            },
+            {
+              "tmdbId": 262388,
+              "medium": "series",
+              "punteggio": 0.000113
+            },
+            {
+              "tmdbId": 208851,
+              "medium": "series",
+              "punteggio": 0.000113
+            },
+            {
+              "tmdbId": 241609,
+              "medium": "series",
+              "punteggio": 9.7e-05
+            },
+            {
+              "tmdbId": 259909,
+              "medium": "series",
+              "punteggio": 4.9e-05
+            },
+            {
+              "tmdbId": 263330,
+              "medium": "series",
+              "punteggio": 3.6e-05
+            },
+            {
+              "tmdbId": 293550,
+              "medium": "series",
+              "punteggio": 3e-05
+            },
+            {
+              "tmdbId": 258742,
+              "medium": "series",
+              "punteggio": 2.9e-05
+            },
+            {
+              "tmdbId": 256711,
+              "medium": "series",
+              "punteggio": 2.2e-05
+            },
+            {
+              "tmdbId": 304842,
+              "medium": "series",
+              "punteggio": 2.1e-05
+            },
+            {
+              "tmdbId": 273207,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 285042,
+              "medium": "series",
+              "punteggio": 1.6e-05
+            },
+            {
+              "tmdbId": 228305,
+              "medium": "series",
+              "punteggio": 1.2e-05
+            },
+            {
+              "tmdbId": 254486,
+              "medium": "series",
+              "punteggio": 1.1e-05
+            },
+            {
+              "tmdbId": 229958,
+              "medium": "series",
+              "punteggio": 1.1e-05
+            },
+            {
+              "tmdbId": 282606,
+              "medium": "series",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 239006,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 259453,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 209876,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 271309,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 281967,
+              "medium": "series",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 277805,
+              "medium": "series",
+              "punteggio": 3e-06
+            }
+          ],
+          "parziale": true,
+          "fonte": "canone",
+          "candidati": 89,
+          "nel_bacino": 89,
+          "scartati_pavimento": 0,
+          "specificita": 10,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "motivo": "uscite_nuove: cache uscite-collocate.npz assente, solo il canone storico (che non ha quasi uscite 2025+)"
+        },
+        {
+          "ruolo": "nicchia_di_qualita",
+          "mondo": null,
+          "descrizione": "titoli di alta qualità e bassa popolarità",
+          "attivazione": 0.0007,
+          "mediana_voti": 613.5,
+          "quota_serie": 1.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 253,
+              "medium": "series",
+              "punteggio": 0.010141
+            },
+            {
+              "tmdbId": 69158,
+              "medium": "series",
+              "punteggio": 0.003569
+            },
+            {
+              "tmdbId": 2290,
+              "medium": "series",
+              "punteggio": 0.002744
+            },
+            {
+              "tmdbId": 34379,
+              "medium": "series",
+              "punteggio": 0.001015
+            },
+            {
+              "tmdbId": 1435,
+              "medium": "series",
+              "punteggio": 0.000662
+            },
+            {
+              "tmdbId": 76231,
+              "medium": "series",
+              "punteggio": 0.00051
+            },
+            {
+              "tmdbId": 65708,
+              "medium": "series",
+              "punteggio": 0.000441
+            },
+            {
+              "tmdbId": 3137,
+              "medium": "series",
+              "punteggio": 0.000177
+            },
+            {
+              "tmdbId": 66980,
+              "medium": "series",
+              "punteggio": 0.000149
+            },
+            {
+              "tmdbId": 71365,
+              "medium": "series",
+              "punteggio": 0.000148
+            },
+            {
+              "tmdbId": 61068,
+              "medium": "series",
+              "punteggio": 0.000139
+            },
+            {
+              "tmdbId": 41597,
+              "medium": "series",
+              "punteggio": 0.000124
+            },
+            {
+              "tmdbId": 6357,
+              "medium": "series",
+              "punteggio": 0.000109
+            },
+            {
+              "tmdbId": 65495,
+              "medium": "series",
+              "punteggio": 0.000104
+            },
+            {
+              "tmdbId": 4598,
+              "medium": "series",
+              "punteggio": 6.3e-05
+            },
+            {
+              "tmdbId": 116612,
+              "medium": "series",
+              "punteggio": 6.2e-05
+            },
+            {
+              "tmdbId": 1414,
+              "medium": "series",
+              "punteggio": 6.2e-05
+            },
+            {
+              "tmdbId": 113036,
+              "medium": "series",
+              "punteggio": 4e-05
+            },
+            {
+              "tmdbId": 39651,
+              "medium": "series",
+              "punteggio": 3.1e-05
+            },
+            {
+              "tmdbId": 44856,
+              "medium": "series",
+              "punteggio": 3e-05
+            },
+            {
+              "tmdbId": 90,
+              "medium": "series",
+              "punteggio": 2.6e-05
+            },
+            {
+              "tmdbId": 688,
+              "medium": "series",
+              "punteggio": 1.9e-05
+            },
+            {
+              "tmdbId": 12822,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 119773,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 15621,
+              "medium": "series",
+              "punteggio": 1.1e-05
+            },
+            {
+              "tmdbId": 112940,
+              "medium": "series",
+              "punteggio": 8e-06
+            },
+            {
+              "tmdbId": 72787,
+              "medium": "series",
+              "punteggio": 7e-06
+            },
+            {
+              "tmdbId": 120911,
+              "medium": "series",
+              "punteggio": 7e-06
+            },
+            {
+              "tmdbId": 2391,
+              "medium": "series",
+              "punteggio": 7e-06
+            },
+            {
+              "tmdbId": 3371,
+              "medium": "series",
+              "punteggio": 6e-06
+            }
+          ],
+          "parziale": true,
+          "specificita": 20,
+          "doppioni_tolti": 3,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "classici_imperdibili",
+          "mondo": null,
+          "descrizione": "classici imperdibili del tuo mondo (riga corta: 3/30 titoli)",
+          "attivazione": 0.5889,
+          "mediana_voti": 11399.0,
+          "quota_serie": 1.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 87108,
+              "medium": "series",
+              "punteggio": 1.0
+            },
+            {
+              "tmdbId": 60574,
+              "medium": "series",
+              "punteggio": 0.766638
+            },
+            {
+              "tmdbId": 93405,
+              "medium": "series",
+              "punteggio": 0.0
+            }
+          ],
+          "parziale": true,
+          "specificita": 30,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 30,
+          "totale_sopravvissuti": 3,
+          "motivo": "classici_imperdibili: riga corta 3/30 titoli"
+        },
+        {
+          "ruolo": "ultime_visioni",
+          "mondo": null,
+          "descrizione": "ultime_visioni: meno di 3 semi recenti (0); ultime_visioni: riga corta 0/30 titoli",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "ultime_visioni: meno di 3 semi recenti (0); ultime_visioni: riga corta 0/30 titoli",
+          "totale_sopravvissuti": 0,
+          "target_dimensione": 30,
+          "parziale": true,
+          "corta": true,
+          "semi_recenti": 0,
+          "specificita": 50,
+          "doppioni_tolti": 0,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "micro_cluster_1",
+          "mondo": 3262,
+          "descrizione": "Perché hai amato Breaking Bad (riga corta: 3/30 titoli)",
+          "attivazione": 0.0002,
+          "mediana_voti": 3731.0,
+          "quota_serie": 1.0,
+          "semi": [
+            1396
+          ],
+          "titoli": [
+            {
+              "tmdbId": 78191,
+              "medium": "series",
+              "punteggio": 0.000246
+            },
+            {
+              "tmdbId": 1409,
+              "medium": "series",
+              "punteggio": 0.000139
+            },
+            {
+              "tmdbId": 43348,
+              "medium": "series",
+              "punteggio": 0.00011
+            }
+          ],
+          "parziale": true,
+          "cluster_id": "b3262",
+          "quota_peso": 0.8794,
+          "titoli_seme": [
+            "Breaking Bad"
+          ],
+          "specificita": 60,
+          "doppioni_tolti": 10,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 30,
+          "totale_sopravvissuti": 13,
+          "motivo": "micro_cluster_1: 10 copie gia' in righe piu' specifiche, restano 3/30"
+        },
+        {
+          "ruolo": "micro_cluster_2",
+          "mondo": 1084,
+          "descrizione": "Perché hai amato Star Trek: The Next Generation (riga corta: 4/30 titoli)",
+          "attivazione": 0.0,
+          "mediana_voti": 1008.5,
+          "quota_serie": 1.0,
+          "semi": [
+            655
+          ],
+          "titoli": [
+            {
+              "tmdbId": 32754,
+              "medium": "series",
+              "punteggio": 7.8e-05
+            },
+            {
+              "tmdbId": 96580,
+              "medium": "series",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 31295,
+              "medium": "series",
+              "punteggio": 1e-06
+            },
+            {
+              "tmdbId": 67773,
+              "medium": "series",
+              "punteggio": 1e-06
+            }
+          ],
+          "parziale": true,
+          "cluster_id": "b1084",
+          "quota_peso": 0.1206,
+          "titoli_seme": [
+            "Star Trek: The Next Generation"
+          ],
+          "specificita": 60,
+          "doppioni_tolti": 24,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 30,
+          "totale_sopravvissuti": 28,
+          "motivo": "micro_cluster_2: 24 copie gia' in righe piu' specifiche, restano 4/30"
+        },
+        {
+          "ruolo": "punti_incontro_1",
+          "mondo": null,
+          "descrizione": "Tra «Breaking Bad» e «Star Trek: The Next Generation»",
+          "attivazione": 0.8948,
+          "mediana_voti": 1708.0,
+          "quota_serie": 1.0,
+          "semi": [
+            1396,
+            655
+          ],
+          "titoli": [
+            {
+              "tmdbId": 60059,
+              "medium": "series",
+              "punteggio": 0.00014
+            },
+            {
+              "tmdbId": 1855,
+              "medium": "series",
+              "punteggio": 0.000106
+            },
+            {
+              "tmdbId": 580,
+              "medium": "series",
+              "punteggio": 0.0001
+            },
+            {
+              "tmdbId": 103516,
+              "medium": "series",
+              "punteggio": 9.8e-05
+            },
+            {
+              "tmdbId": 4629,
+              "medium": "series",
+              "punteggio": 8.4e-05
+            },
+            {
+              "tmdbId": 314,
+              "medium": "series",
+              "punteggio": 7.9e-05
+            },
+            {
+              "tmdbId": 67198,
+              "medium": "series",
+              "punteggio": 7.2e-05
+            },
+            {
+              "tmdbId": 1437,
+              "medium": "series",
+              "punteggio": 6.3e-05
+            },
+            {
+              "tmdbId": 62425,
+              "medium": "series",
+              "punteggio": 5.6e-05
+            },
+            {
+              "tmdbId": 5148,
+              "medium": "series",
+              "punteggio": 4.6e-05
+            },
+            {
+              "tmdbId": 85949,
+              "medium": "series",
+              "punteggio": 4.2e-05
+            },
+            {
+              "tmdbId": 1972,
+              "medium": "series",
+              "punteggio": 3.7e-05
+            },
+            {
+              "tmdbId": 63351,
+              "medium": "series",
+              "punteggio": 2.2e-05
+            },
+            {
+              "tmdbId": 69740,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 63639,
+              "medium": "series",
+              "punteggio": 1.7e-05
+            },
+            {
+              "tmdbId": 75758,
+              "medium": "series",
+              "punteggio": 1.6e-05
+            },
+            {
+              "tmdbId": 127235,
+              "medium": "series",
+              "punteggio": 1.4e-05
+            },
+            {
+              "tmdbId": 71738,
+              "medium": "series",
+              "punteggio": 1.3e-05
+            },
+            {
+              "tmdbId": 21494,
+              "medium": "series",
+              "punteggio": 1.1e-05
+            },
+            {
+              "tmdbId": 54650,
+              "medium": "series",
+              "punteggio": 8e-06
+            },
+            {
+              "tmdbId": 86374,
+              "medium": "series",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 34967,
+              "medium": "series",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 80968,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 71411,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 1398,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 48866,
+              "medium": "series",
+              "punteggio": 5e-06
+            },
+            {
+              "tmdbId": 14141,
+              "medium": "series",
+              "punteggio": 4e-06
+            },
+            {
+              "tmdbId": 131927,
+              "medium": "series",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 1405,
+              "medium": "series",
+              "punteggio": 3e-06
+            },
+            {
+              "tmdbId": 47640,
+              "medium": "series",
+              "punteggio": 2e-06
+            }
+          ],
+          "parziale": true,
+          "titoli_seme": [
+            "Breaking Bad",
+            "Star Trek: The Next Generation"
+          ],
+          "coppia_id": "b3262_b1084",
+          "fallback": false,
+          "specificita": 40,
+          "doppioni_tolti": 3,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_1084",
+          "mondo": 1084,
+          "descrizione": "mondo 1084 — 25 titoli, voti mediani 636.0 · es. Star Trek: Discovery, Star Trek: Picard, Stargate SG-1",
+          "attivazione": 0.1145,
+          "mediana_voti": 636.0,
+          "quota_serie": 1.0,
+          "semi": [
+            655
+          ],
+          "titoli": [
+            {
+              "tmdbId": 1992,
+              "medium": "series",
+              "punteggio": 0.00434
+            },
+            {
+              "tmdbId": 4271,
+              "medium": "series",
+              "punteggio": 0.001172
+            },
+            {
+              "tmdbId": 82491,
+              "medium": "series",
+              "punteggio": 0.000586
+            },
+            {
+              "tmdbId": 106393,
+              "medium": "series",
+              "punteggio": 0.00025
+            },
+            {
+              "tmdbId": 85948,
+              "medium": "series",
+              "punteggio": 0.000241
+            },
+            {
+              "tmdbId": 1818,
+              "medium": "series",
+              "punteggio": 0.000132
+            },
+            {
+              "tmdbId": 13834,
+              "medium": "series",
+              "punteggio": 7.8e-05
+            },
+            {
+              "tmdbId": 224784,
+              "medium": "series",
+              "punteggio": 6.4e-05
+            },
+            {
+              "tmdbId": 2985,
+              "medium": "series",
+              "punteggio": 6.4e-05
+            },
+            {
+              "tmdbId": 72925,
+              "medium": "series",
+              "punteggio": 5.3e-05
+            },
+            {
+              "tmdbId": 238,
+              "medium": "series",
+              "punteggio": 2e-06
+            },
+            {
+              "tmdbId": 12443,
+              "medium": "series",
+              "punteggio": 1e-06
+            }
+          ],
+          "specificita": 90,
+          "doppioni_tolti": 12,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 30,
+          "totale_sopravvissuti": 24,
+          "motivo": "mondo_1084: 12 copie gia' in righe piu' specifiche, restano 12/30"
+        },
+        {
+          "ruolo": "mondo_1164",
+          "mondo": 1164,
+          "descrizione": "mondo_1164: 12 copie gia' in righe piu' specifiche, restano 0/30",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "mondo_1164: 12 copie gia' in righe piu' specifiche, restano 0/30",
+          "totale_sopravvissuti": 12,
+          "target_dimensione": 30,
+          "corta": true,
+          "specificita": 90,
+          "doppioni_tolti": 12,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_1451",
+          "mondo": 1451,
+          "descrizione": "mondo_1451: 8 copie gia' in righe piu' specifiche, restano 0/30",
+          "attivazione": 0.0,
+          "mediana_voti": 0.0,
+          "quota_serie": 0.0,
+          "semi": [],
+          "titoli": [],
+          "vuota": true,
+          "motivo": "mondo_1451: 8 copie gia' in righe piu' specifiche, restano 0/30",
+          "totale_sopravvissuti": 8,
+          "target_dimensione": 30,
+          "corta": true,
+          "specificita": 90,
+          "doppioni_tolti": 8,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0
+        },
+        {
+          "ruolo": "mondo_3034",
+          "mondo": 3034,
+          "descrizione": "mondo 3034 — 8 titoli, voti mediani 225.0 · es. Peaky Blinders, Taboo, L'altra Grace",
+          "attivazione": 0.0056,
+          "mediana_voti": 225.0,
+          "quota_serie": 1.0,
+          "semi": [],
+          "titoli": [
+            {
+              "tmdbId": 72615,
+              "medium": "series",
+              "punteggio": 6e-06
+            },
+            {
+              "tmdbId": 157368,
+              "medium": "series",
+              "punteggio": 2e-06
+            }
+          ],
+          "specificita": 90,
+          "doppioni_tolti": 2,
+          "waterfall_partecipa": true,
+          "diversita_rimandati": 0,
+          "duplicati_saga": 0,
+          "corta": true,
+          "target_dimensione": 30,
+          "totale_sopravvissuti": 4,
+          "motivo": "mondo_3034: 2 copie gia' in righe piu' specifiche, restano 2/30"
+        }
+      ],
+      "motivi": [
+        "ultime_visioni: meno di 3 semi recenti (0); ultime_visioni: riga corta 0/30 titoli",
+        "mondo_1164: 12 copie gia' in righe piu' specifiche, restano 0/30",
+        "mondo_1451: 8 copie gia' in righe piu' specifiche, restano 0/30"
+      ],
+      "filtri": {
+        "applicato": false,
+        "motivo": "nessun filtro richiesto",
+        "scartati": 0
+      }
+    }
+  },
+  "req3": {
+    "req": {
+      "semi": [
+        {
+          "tmdbId": 99999999,
+          "medium": "movie"
+        }
+      ]
+    },
+    "status": 200,
+    "resp": {
+      "contratto": 1,
+      "versioni": {
+        "artefatto": "cf1d80dcba3eddce+041f62094d34108a",
+        "ricetta": "fee303c7e91ebcc3"
+      },
+      "semi": {
+        "n": 0,
+        "da_catalogo": false,
+        "recenti": 0
+      },
+      "liste": [],
+      "motivi": [
+        "storia fuori dal canone"
+      ]
+    }
+  }
+}

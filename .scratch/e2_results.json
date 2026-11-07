@@ -1,0 +1,405 @@
+{
+  "sangam456": {
+    "n_seeds": 10,
+    "base_n_cl": 2,
+    "base_cov_all": 60.0,
+    "base_served_6": 2,
+    "base_cov_6": 60.0,
+    "base_served_8": 2,
+    "base_cov_8": 60.0,
+    "sweeps": {
+      "4": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Fantascienza d'invasione"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "5": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Fantascienza d'invasione"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      }
+    }
+  },
+  "hammers-lists": {
+    "n_seeds": 11,
+    "base_n_cl": 2,
+    "base_cov_all": 72.72727272727273,
+    "base_served_6": 2,
+    "base_cov_6": 72.72727272727273,
+    "base_served_8": 2,
+    "base_cov_8": 72.72727272727273,
+    "sweeps": {
+      "4": {
+        "n_dropped": 1,
+        "n_survived": 1,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Sitcom animate"
+        ],
+        "cov_all_pct": 54.54545454545454,
+        "served_6": 1,
+        "cov_6_pct": 54.54545454545454,
+        "served_8": 1,
+        "cov_8_pct": 54.54545454545454
+      },
+      "5": {
+        "n_dropped": 1,
+        "n_survived": 1,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Sitcom animate"
+        ],
+        "cov_all_pct": 54.54545454545454,
+        "served_6": 1,
+        "cov_6_pct": 54.54545454545454,
+        "served_8": 1,
+        "cov_8_pct": 54.54545454545454
+      }
+    }
+  },
+  "sappss": {
+    "n_seeds": 25,
+    "base_n_cl": 2,
+    "base_cov_all": 40.0,
+    "base_served_6": 2,
+    "base_cov_6": 40.0,
+    "base_served_8": 2,
+    "base_cov_8": 40.0,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 40.0,
+        "served_6": 2,
+        "cov_6_pct": 40.0,
+        "served_8": 2,
+        "cov_8_pct": 40.0
+      },
+      "5": {
+        "n_dropped": 1,
+        "n_survived": 1,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Animazione per famiglie"
+        ],
+        "cov_all_pct": 24.0,
+        "served_6": 1,
+        "cov_6_pct": 24.0,
+        "served_8": 1,
+        "cov_8_pct": 24.0
+      }
+    }
+  },
+  "flixinatoor99": {
+    "n_seeds": 32,
+    "base_n_cl": 2,
+    "base_cov_all": 43.75,
+    "base_served_6": 2,
+    "base_cov_6": 43.75,
+    "base_served_8": 2,
+    "base_cov_8": 43.75,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 43.75,
+        "served_6": 2,
+        "cov_6_pct": 43.75,
+        "served_8": 2,
+        "cov_8_pct": 43.75
+      },
+      "5": {
+        "n_dropped": 0,
+        "n_survived": 2,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 43.75,
+        "served_6": 2,
+        "cov_6_pct": 43.75,
+        "served_8": 2,
+        "cov_8_pct": 43.75
+      }
+    }
+  },
+  "moppierhead": {
+    "n_seeds": 38,
+    "base_n_cl": 5,
+    "base_cov_all": 76.31578947368422,
+    "base_served_6": 5,
+    "base_cov_6": 76.31578947368422,
+    "base_served_8": 5,
+    "base_cov_8": 76.31578947368422,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 5,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 76.31578947368422,
+        "served_6": 5,
+        "cov_6_pct": 76.31578947368422,
+        "served_8": 5,
+        "cov_8_pct": 76.31578947368422
+      },
+      "5": {
+        "n_dropped": 0,
+        "n_survived": 5,
+        "freshness_saved": 2,
+        "freshness_saved_names": [
+          "Giallo investigativo",
+          "Perch\u00e9 hai visto Hannah Montana, Zoey 101 e Drake & Josh"
+        ],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 76.31578947368422,
+        "served_6": 5,
+        "cov_6_pct": 76.31578947368422,
+        "served_8": 5,
+        "cov_8_pct": 76.31578947368422
+      }
+    }
+  },
+  "castoffcrown": {
+    "n_seeds": 412,
+    "base_n_cl": 34,
+    "base_cov_all": 72.33009708737865,
+    "base_served_6": 6,
+    "base_cov_6": 25.24271844660194,
+    "base_served_8": 8,
+    "base_cov_8": 30.582524271844658,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 34,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 72.33009708737865,
+        "served_6": 6,
+        "cov_6_pct": 25.24271844660194,
+        "served_8": 8,
+        "cov_8_pct": 30.582524271844658
+      },
+      "5": {
+        "n_dropped": 2,
+        "n_survived": 32,
+        "freshness_saved": 2,
+        "freshness_saved_names": [
+          "Perch\u00e9 hai visto Undine - Un Amore per Sempre, Next Door e Rosa L.",
+          "Perch\u00e9 hai visto 2002 - La seconda odissea, Pulse e Tetsuo 2 - Martello di carne"
+        ],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 70.3883495145631,
+        "served_6": 6,
+        "cov_6_pct": 25.24271844660194,
+        "served_8": 8,
+        "cov_8_pct": 30.582524271844658
+      }
+    }
+  },
+  "warnok": {
+    "n_seeds": 476,
+    "base_n_cl": 40,
+    "base_cov_all": 82.14285714285714,
+    "base_served_6": 6,
+    "base_cov_6": 32.142857142857146,
+    "base_served_8": 8,
+    "base_cov_8": 37.18487394957983,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 40,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 82.14285714285714,
+        "served_6": 6,
+        "cov_6_pct": 32.142857142857146,
+        "served_8": 8,
+        "cov_8_pct": 37.18487394957983
+      },
+      "5": {
+        "n_dropped": 8,
+        "n_survived": 32,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 5,
+        "dropped_tax_names": [
+          "Spy thriller",
+          "Fantascienza post-apocalittica",
+          "Giallo investigativo",
+          "Fantascienza post-apocalittica",
+          "Horror soprannaturale"
+        ],
+        "cov_all_pct": 75.42016806722688,
+        "served_6": 6,
+        "cov_6_pct": 32.142857142857146,
+        "served_8": 8,
+        "cov_8_pct": 37.18487394957983
+      }
+    }
+  },
+  "pepsipex": {
+    "n_seeds": 568,
+    "base_n_cl": 51,
+    "base_cov_all": 84.50704225352112,
+    "base_served_6": 6,
+    "base_cov_6": 25.176056338028168,
+    "base_served_8": 8,
+    "base_cov_8": 29.049295774647888,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 51,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 84.50704225352112,
+        "served_6": 6,
+        "cov_6_pct": 25.176056338028168,
+        "served_8": 8,
+        "cov_8_pct": 29.049295774647888
+      },
+      "5": {
+        "n_dropped": 5,
+        "n_survived": 46,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Thriller psicologico",
+          "Fantascienza post-apocalittica"
+        ],
+        "cov_all_pct": 80.98591549295774,
+        "served_6": 6,
+        "cov_6_pct": 25.176056338028168,
+        "served_8": 8,
+        "cov_8_pct": 29.049295774647888
+      }
+    }
+  },
+  "carverclan": {
+    "n_seeds": 7,
+    "base_n_cl": 2,
+    "base_cov_all": 57.14285714285714,
+    "base_served_6": 2,
+    "base_cov_6": 57.14285714285714,
+    "base_served_8": 2,
+    "base_cov_8": 57.14285714285714,
+    "sweeps": {
+      "4": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Horror soprannaturale",
+          "Teatro filmato & Musical"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      },
+      "5": {
+        "n_dropped": 2,
+        "n_survived": 0,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 2,
+        "dropped_tax_names": [
+          "Horror soprannaturale",
+          "Teatro filmato & Musical"
+        ],
+        "cov_all_pct": 0.0,
+        "served_6": 0,
+        "cov_6_pct": 0.0,
+        "served_8": 0,
+        "cov_8_pct": 0.0
+      }
+    }
+  },
+  "1jacobjohn": {
+    "n_seeds": 167,
+    "base_n_cl": 14,
+    "base_cov_all": 70.65868263473054,
+    "base_served_6": 6,
+    "base_cov_6": 47.90419161676647,
+    "base_served_8": 8,
+    "base_cov_8": 55.688622754491014,
+    "sweeps": {
+      "4": {
+        "n_dropped": 0,
+        "n_survived": 14,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 0,
+        "dropped_tax_names": [],
+        "cov_all_pct": 70.65868263473054,
+        "served_6": 6,
+        "cov_6_pct": 47.90419161676647,
+        "served_8": 8,
+        "cov_8_pct": 55.688622754491014
+      },
+      "5": {
+        "n_dropped": 5,
+        "n_survived": 9,
+        "freshness_saved": 0,
+        "freshness_saved_names": [],
+        "dropped_tax": 1,
+        "dropped_tax_names": [
+          "Documentari sportivi"
+        ],
+        "cov_all_pct": 58.68263473053892,
+        "served_6": 6,
+        "cov_6_pct": 47.90419161676647,
+        "served_8": 8,
+        "cov_8_pct": 55.688622754491014
+      }
+    }
+  }
+}
