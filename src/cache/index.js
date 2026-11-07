@@ -123,7 +123,19 @@ function deriva(descrizione) {
                 ? `_rs_${crypto.createHash('md5').update(righe.join(',')).digest('hex').slice(0, 8)}`
                 : '';
 
-            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}${righeSuffix}`;
+            // Inclusione identità scaffali (catalog_id + nome): se cambiano gli interessi o i cluster
+            // del profilo, la chiave si invalida immediatamente e l'utente non eredita il vecchio feed.
+            const shelvesList = invalida.shelves ?? invalida.scaffali ?? varia.shelves ?? varia.scaffali;
+            let shelvesSuffix = '';
+            if (Array.isArray(shelvesList) && shelvesList.length > 0) {
+                const shelfSig = shelvesList
+                    .map(s => `${s.catalog_id || s.id || ''}:${s.nome || s.name || ''}`)
+                    .sort()
+                    .join('|');
+                shelvesSuffix = `_sh_${crypto.createHash('md5').update(shelfSig).digest('hex').slice(0, 8)}`;
+            }
+
+            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}${righeSuffix}${shelvesSuffix}`;
             break;
         }
 
@@ -163,7 +175,17 @@ function deriva(descrizione) {
                 }
             }
 
-            chiave = `${utente}_${profilo}_${catalogo}_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffixRec}`;
+            const shelvesListRec = invalida.shelves ?? invalida.scaffali ?? varia.shelves ?? varia.scaffali;
+            let shelvesSuffixRec = '';
+            if (Array.isArray(shelvesListRec) && shelvesListRec.length > 0) {
+                const shelfSig = shelvesListRec
+                    .map(s => `${s.catalog_id || s.id || ''}:${s.nome || s.name || ''}`)
+                    .sort()
+                    .join('|');
+                shelvesSuffixRec = `_sh_${crypto.createHash('md5').update(shelfSig).digest('hex').slice(0, 8)}`;
+            }
+
+            chiave = `${utente}_${profilo}_${catalogo}_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffixRec}${shelvesSuffixRec}`;
             break;
         }
 

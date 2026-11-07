@@ -340,8 +340,28 @@ function getHeroPrefixes() {
 
 const HERO_PREFIXES = getHeroPrefixes();
 
+/**
+ * Genera definizioni di catalogo Stremio a partire dagli scaffali dinamici del grafo (V45).
+ * catalog_id -> id catalogo (es. yaca_12609_series)
+ * medium -> type ('movie' o 'series')
+ * nome -> name
+ * Ordinati in modo deterministico per slot position.
+ */
+function catalogDefinitionsFromShelves(shelves = []) {
+    if (!Array.isArray(shelves)) return [];
+    const sorted = [...shelves].sort((a, b) => (Number(a.slot || 0) - Number(b.slot || 0)));
+    return sorted.map((s, idx) => ({
+        id: s.catalog_id || s.id,
+        type: s.medium === 'tv' ? 'series' : (s.medium || s.type || 'movie'),
+        name: s.nome || s.name || s.label || 'Scaffale',
+        slot: s.slot !== undefined ? Number(s.slot) : (idx + 1),
+        extra: [{ name: 'skip' }]
+    }));
+}
+
 function isHeroCatalogId(id) {
     if (!id || typeof id !== 'string') return false;
+    if (/^yaca_\d+_(movie|series|movies)$/.test(id)) return true;
     return HERO_PREFIXES.some(prefix => id.startsWith(prefix));
 }
 
@@ -362,8 +382,26 @@ function getHeroCatalogKindMap() {
 
 /**
  * UI groups (base rows by idBase) for configuration dashboard.
+ * Se vengono passati gli scaffali del profilo, proietta direttamente le card degli scaffali.
  */
-function getHeroUiGroups() {
+function getHeroUiGroups(shelves = null) {
+    if (Array.isArray(shelves)) {
+        return shelves.map((s, idx) => ({
+            id: s.catalog_id || s.id,
+            catalog_id: s.catalog_id || s.id,
+            idBase: s.catalog_id || s.id,
+            label: s.nome || s.name || s.label || 'Scaffale',
+            nome: s.nome || s.name || s.label || 'Scaffale',
+            emoji: (s.medium === 'movie' || s.type === 'movie') ? '🎬' : '📺',
+            desc: s.desc || (Array.isArray(s.semi_rappresentativi) && s.semi_rappresentativi.length > 0
+                ? `Ispirato da: ${s.semi_rappresentativi.map(sr => sr.titolo).slice(0, 3).join(', ')}`
+                : ''),
+            type: s.medium === 'tv' ? 'series' : (s.medium || s.type || 'movie'),
+            medium: s.medium === 'tv' ? 'series' : (s.medium || s.type || 'movie'),
+            slot: s.slot !== undefined ? Number(s.slot) : (idx + 1)
+        }));
+    }
+
     const groups = [];
     const seen = new Set();
     for (const r of HERO_SYSTEM_CATALOGS) {
@@ -467,6 +505,7 @@ module.exports = {
     DAILY_WINDOW_CATALOG_IDS,
     isDailyWindowCatalog,
     getManifestHeroCatalogs,
+    catalogDefinitionsFromShelves,
     getHeroCatalogFingerprintRows,
     getHeroCatalogModes,
     getHeroPrefixes,

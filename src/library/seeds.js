@@ -112,12 +112,13 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
         library: new Map()
     };
     const ultimaVisione = new Map();
+    const plays = new Map();
 
     let historyDocs = [];
     try {
         const HistoryModel = getHistoryModel();
         if (HistoryModel?.db && HistoryModel.db.readyState !== 1) {
-            return { seeds: new Map(), tipi: new Map(), counts: { loved: 0, liked: 0, watched: 0, library: 0 }, ultimaVisione: new Map() };
+            return { seeds: new Map(), tipi: new Map(), counts: { loved: 0, liked: 0, watched: 0, library: 0 }, ultimaVisione: new Map(), plays: new Map() };
         }
         historyDocs = await HistoryModel.find({ owner: userId, context: ctx }).lean();
         if (!Array.isArray(historyDocs)) historyDocs = [];
@@ -145,6 +146,8 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
                 if (at > 0) keepMostRecentSeed(ultimaVisione, id, at);
             }
         }
+        const docPlays = Number(doc.episodesWatched || doc.plays || doc.timesWatched || signals.filter(s => SIGNALI_VISIONE.has(s?.type)).length || 1);
+        plays.set(id, Math.max(1, docPlays));
     }
 
     // Regola esplicita: se il profilo non ha cronologia reale, resta freddo (niente lettura libreria)
@@ -200,7 +203,7 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
         }
     }
 
-    return { seeds, tipi, counts, ultimaVisione };
+    return { seeds, tipi, counts, ultimaVisione, plays };
 }
 
 const collectRealSeeds = semiDi;

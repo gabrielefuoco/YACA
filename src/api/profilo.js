@@ -46,6 +46,15 @@ router.get('/', async (req, res) => {
             traktExpiresAt: user.apiKeys?.traktExpiresAt || null
         };
 
+        const { getCachedProfileShelves } = require('../pool');
+        const activeProfId = user.activeProfileId || 'global';
+        const profileObj = (user.profiles || []).find(p => p.id === activeProfId);
+        const profileShelves = profileObj?.shelves
+            || profileObj?.scaffali
+            || getCachedProfileShelves(activeProfId)
+            || getCachedProfileShelves(user.userId)
+            || [];
+
         return res.json({
             userId: user.userId,
             email: user.email || null,
@@ -56,7 +65,7 @@ router.get('/', async (req, res) => {
             customCatalogs: user.customCatalogs || [],
             apiKeys: safeApiKeys,
             hasGlobalErdb: Boolean(process.env.ERDB_CONFIG),
-            heroCatalogs: getHeroUiGroups()
+            heroCatalogs: getHeroUiGroups(profileShelves)
         });
     } catch (err) {
         console.error('[ProfiloAPI] Errore lettura profilo:', err.message);

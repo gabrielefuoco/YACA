@@ -102,6 +102,110 @@ async function raccomanda({ semi = [], medium, opzioni, sliders, slider, cap = 6
     throw new Error(`Servizio grafo ha risposto con stato ${response.status}`);
 }
 
+const ALLOWED_SCAFFALI_SEED_KEYS = new Set([
+    'key', 'tmdbId', 'tmdb_id', 'medium', 'plays', 'frazione',
+    'tipo', 'tipi', 'eta_giorni', 'watched', 'library_only'
+]);
+
+function sanitizeScaffaliSeed(s, idx) {
+    if (!s || typeof s !== 'object') return s;
+    const sanitized = {};
+    for (const key of Object.keys(s)) {
+        if (ALLOWED_SCAFFALI_SEED_KEYS.has(key)) {
+            sanitized[key] = s[key];
+        }
+    }
+    if (sanitized.medium === 'tv') {
+        sanitized.medium = 'series';
+    }
+    if (sanitized.plays !== undefined) {
+        const pl = Number(sanitized.plays);
+        sanitized.plays = Number.isFinite(pl) && pl >= 0 ? pl : 1.0;
+    } else {
+        sanitized.plays = 1.0;
+    }
+    if (sanitized.eta_giorni !== undefined) {
+        const eg = Number(sanitized.eta_giorni);
+        sanitized.eta_giorni = Number.isFinite(eg) && eg >= 0 ? eg : Number(idx);
+    } else {
+        sanitized.eta_giorni = Number(idx);
+    }
+    if (sanitized.tmdbId !== undefined) {
+        sanitized.tmdbId = Number(sanitized.tmdbId);
+    }
+    return sanitized;
+}
+
+/**
+ * Invia una richiesta di generazione scaffali al servizio Python (POST /scaffali).
+ *
+ * Supporta sia:
+ *   scaffali(semi, opts, conf)
+ * che:
+ *   scaffali({ semi, medium, opzioni, cap, n, esclusi, tono, complessita }, conf)
+ *
+ * Sanitizza ciascun seme garantendo che non contenga chiavi sconosciute (es. recente, peso),
+ * e assicurando che plays, eta_giorni e medium siano passati correttamente secondo il contratto.
+ */
+async function scaffali(semiOrPayload = [], opts = {}, conf = {}) {
+    let payload;
+    let config;
+
+    if (Array.isArray(semiOrPayload)) {
+        const o = opts || {};
+        const optionsMotore = o.opzioni || o.sliders || o.slider;
+        payload = {
+            semi: semiOrPayload.map((s, idx) => sanitizeScaffaliSeed(s, idx)),
+            ...(o.medium ? { medium: o.medium === 'tv' ? 'series' : o.medium } : {}),
+            ...(optionsMotore && typeof optionsMotore === 'object' && Object.keys(optionsMotore).length > 0 ? { opzioni: optionsMotore } : {}),
+            ...(o.cap !== undefined ? { cap: Number(o.cap) || 60 } : {}),
+            ...(o.n !== undefined ? { n: Number(o.n) || 8 } : {}),
+            ...(Array.isArray(o.esclusi) ? { esclusi: o.esclusi } : {}),
+            ...(o.tono !== undefined ? { tono: Number(o.tono) } : {}),
+            ...(o.complessita !== undefined ? { complessita: Number(o.complessita) } : {})
+        };
+        config = conf && (conf.baseUrl || conf.timeout) ? conf : (o.baseUrl || o.timeout ? o : {});
+    } else {
+        const p = semiOrPayload || {};
+        const o = p.opzioni || p.sliders || p.slider || opts.opzioni || opts.sliders || opts.slider;
+        const semiList = Array.isArray(p.semi) ? p.semi : [];
+        payload = {
+            semi: semiList.map((s, idx) => sanitizeScaffaliSeed(s, idx)),
+            ...(p.medium ? { medium: p.medium === 'tv' ? 'series' : p.medium } : (opts.medium ? { medium: opts.medium === 'tv' ? 'series' : opts.medium } : {})),
+            ...(o && typeof o === 'object' && Object.keys(o).length > 0 ? { opzioni: o } : {}),
+            ...(p.cap !== undefined ? { cap: Number(p.cap) || 60 } : (opts.cap !== undefined ? { cap: Number(opts.cap) || 60 } : {})),
+            ...(p.n !== undefined ? { n: Number(p.n) || 8 } : (opts.n !== undefined ? { n: Number(opts.n) || 8 } : {})),
+            ...(Array.isArray(p.esclusi) ? { esclusi: p.esclusi } : (Array.isArray(opts.esclusi) ? { esclusi: opts.esclusi } : {})),
+            ...(p.tono !== undefined ? { tono: Number(p.tono) } : (opts.tono !== undefined ? { tono: Number(opts.tono) } : {})),
+            ...(p.complessita !== undefined ? { complessita: Number(p.complessita) } : (opts.complessita !== undefined ? { complessita: Number(opts.complessita) } : {}))
+        };
+        config = opts && (opts.baseUrl || opts.timeout) ? opts : conf;
+    }
+
+    const baseUrl = config.baseUrl || GRAPH_SERVICE_URL;
+    const timeout = config.timeout || GRAPH_TIMEOUT_MS;
+
+    const response = await axios.post(`${baseUrl}/scaffali`, payload, {
+        timeout,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (response.status === 200 && response.data) {
+        if (response.data.versioni) {
+            cachedHealth = {
+                data: response.data.versioni,
+                expiresAt: Date.now() + HEALTH_CACHE_TTL_MS
+            };
+        }
+        return response.data;
+    }
+
+    throw new Error(`Servizio grafo ha risposto con stato ${response.status}`);
+}
+
 function resetHealthCache() {
     cachedHealth = { data: null, expiresAt: 0 };
 }
@@ -110,5 +214,6 @@ module.exports = {
     getGraphHealthVersionsCached,
     getGraphHealthVersions,
     raccomanda,
+    scaffali,
     resetHealthCache
 };

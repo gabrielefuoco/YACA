@@ -10,26 +10,6 @@ import { formatDnaLabel, groupDnaItems, DnaCategoryGroup } from '@/lib/dnaChart'
 import { CatalogLivePreview } from './CatalogLivePreview';
 import { registerHeroCatalogs } from '@/lib/catalogKind';
 
-const FALLBACK_HERO_BASES = [
-  'yaca_mondi',
-  'yaca_passo_fuori',
-  'yaca_uscite_nuove',
-  'yaca_nicchia_di_qualita',
-  'yaca_classici',
-  'yaca_ultime_visioni',
-  'yaca_punti_incontro',
-  'yaca_micro_cluster_1',
-  'yaca_micro_cluster_2',
-  'yaca_micro_cluster_3',
-];
-
-const DEFAULT_HERO_CATALOGS_FALLBACK: HeroCatalogUiGroup[] = FALLBACK_HERO_BASES.map(idBase => ({
-  idBase,
-  label: '',
-  emoji: '✨',
-  desc: ''
-}));
-
 const TMDB_KEY_TO_DNA_TYPE: Record<string, DNAItem['type']> = {
   with_genres: 'genre',
   with_keywords: 'keyword',
@@ -131,7 +111,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     if (analytics?.heroCatalogs && analytics.heroCatalogs.length > 0) {
       return analytics.heroCatalogs;
     }
-    return DEFAULT_HERO_CATALOGS_FALLBACK;
+    return [];
   }, [analytics?.heroCatalogs]);
 
   const heroListItems = useMemo(() => {
@@ -145,35 +125,17 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     }> = [];
 
     heroCatalogs.forEach((catalog) => {
-      if (catalog.type === 'movie' || catalog.type === 'series') {
-        items.push({
-          id: catalog.id || `${catalog.idBase}_${catalog.type === 'movie' ? 'movies' : 'series'}`,
-          idBase: catalog.idBase,
-          label: catalog.label || catalog.idBase,
-          emoji: catalog.emoji || '✨',
-          desc: catalog.desc || '',
-          type: catalog.type,
-        });
-      } else {
-        items.push(
-          {
-            id: `${catalog.idBase}_movies`,
-            idBase: catalog.idBase,
-            label: catalog.label || catalog.idBase,
-            emoji: catalog.emoji || '✨',
-            desc: catalog.desc || '',
-            type: 'movie',
-          },
-          {
-            id: `${catalog.idBase}_series`,
-            idBase: catalog.idBase,
-            label: catalog.label || catalog.idBase,
-            emoji: catalog.emoji || '✨',
-            desc: catalog.desc || '',
-            type: 'series',
-          }
-        );
-      }
+      const rawType = catalog.medium || catalog.type;
+      const type: 'movie' | 'series' = rawType === 'series' || (rawType as string) === 'tv' ? 'series' : 'movie';
+      const id = catalog.catalog_id || catalog.id || `${catalog.idBase || 'yaca_shelf'}_${type === 'movie' ? 'movies' : 'series'}`;
+      items.push({
+        id,
+        idBase: catalog.idBase || id,
+        label: catalog.nome || catalog.label || catalog.idBase || id,
+        emoji: catalog.emoji || (type === 'movie' ? '🎬' : '📺'),
+        desc: catalog.desc || '',
+        type,
+      });
     });
 
     return items;
@@ -427,15 +389,19 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
               <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Fascia di Canone</span>
+                    {/* «Notorietà» e non «Popolarità»: il cursore non sposta verso i titoli più amati,
+                        sposta il baricentro attorno alla mediana dei voti dello storico — da un titolo che
+                        conoscono in pochi a uno che conoscono tutti. Il campo resta `canone` ovunque
+                        (API, impostazioni, chiavi di cache): cambia solo l'etichetta visibile. */}
+                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Notorietà</span>
                     <span className="ml-1 text-xs font-mono text-marrow-light/40">(canone)</span>
                   </div>
                   <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
                     {shownSliders.canone < -0.05
-                      ? `Nicchia (${shownSliders.canone.toFixed(1)})`
+                      ? `Poco nota (${shownSliders.canone.toFixed(1)})`
                       : shownSliders.canone > 0.05
-                      ? `Popolare (+${shownSliders.canone.toFixed(1)})`
-                      : 'Storico (0.0)'}
+                      ? `Molto nota (+${shownSliders.canone.toFixed(1)})`
+                      : 'Come da storico (0.0)'}
                   </span>
                 </div>
                 <div className="py-1">
@@ -449,9 +415,9 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                   />
                 </div>
                 <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
-                  <span>Nicchia (-1.0)</span>
+                  <span>Poco nota (-1.0)</span>
                   <span>Come da storico (0.0)</span>
-                  <span>Popolare (+1.0)</span>
+                  <span>Molto nota (+1.0)</span>
                 </div>
                 <p className="text-xs text-marrow-light/40 leading-snug">
                   Sposta la finestra attorno al canone dedotto dallo storico (DELTA_FASCIA calibrato a 1.0, ~2.7x di fattore). Modula senza escludere.
@@ -460,70 +426,80 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
             </div>
           </div>
 
-          {heroListItems.map((item) => {
-            const isEnabled = (profile.raw_ui_state?.selectedPresets ?? []).includes(item.id);
-            const switchId = `${item.id}-switch`;
-            const mediumBadge = item.type === 'movie' ? 'Film' : 'Serie';
-            const switchLabel = item.type === 'movie' ? 'FILM' : 'SERIE';
+          {heroListItems.length === 0 ? (
+            <div className="glass-panel rounded-xl p-6 sm:p-10 border border-marrow-light/10 text-center flex flex-col items-center justify-center gap-3">
+              <div className="text-3xl">📚</div>
+              <div className="text-sm font-bold text-marrow-light">Nessuno scaffale generato per questo profilo</div>
+              <p className="text-xs text-marrow-light/60 max-w-md leading-relaxed">
+                Gli scaffali del motore nascono dalla tua cronologia e dai tuoi gusti reali. Guarda qualche titolo o sincronizza la tua libreria Stremio/Trakt per far emergere i tuoi primi scaffali tematici.
+              </p>
+            </div>
+          ) : (
+            heroListItems.map((item) => {
+              const isEnabled = (profile.raw_ui_state?.selectedPresets ?? []).includes(item.id);
+              const switchId = `${item.id}-switch`;
+              const mediumBadge = item.type === 'movie' ? 'Film' : 'Serie';
+              const switchLabel = item.type === 'movie' ? 'FILM' : 'SERIE';
 
-            return (
-              <div
-                key={item.id}
-                className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
-              >
-                <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{item.emoji}</span>
-                      <span className="text-sm font-bold text-marrow-light">{item.label || item.idBase}</span>
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
-                        {mediumBadge}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <label htmlFor={switchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
-                        {switchLabel}
-                        <Switch
-                          id={switchId}
-                          checked={isEnabled}
-                          onCheckedChange={(checked: boolean) => toggleHeroCatalog(item.id, checked)}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {item.desc && (
-                    <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
-                      {item.desc}
-                    </p>
-                  )}
-                </div>
-                <div className="p-4 flex-grow flex flex-col gap-4">
-                  {!isEnabled ? (
-                    <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
-                      <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
-                      <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
-                        Catalogo disattivato
-                      </p>
-                      <p className="text-xs text-marrow-light/40 mt-1">
-                        Attiva il catalogo per visualizzare l&apos;anteprima dal vivo.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1.5">
-                        <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
+              return (
+                <div
+                  key={item.id}
+                  className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
+                >
+                  <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{item.emoji}</span>
+                        <span className="text-sm font-bold text-marrow-light">{item.label || item.idBase}</span>
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
+                          {mediumBadge}
+                        </span>
                       </div>
-                      <CatalogLivePreview 
-                        catalogId={item.id} 
-                        userId={activeUserId!} 
-                        profileId={profile.id} 
-                      />
+                      <div className="flex items-center gap-3 shrink-0">
+                        <label htmlFor={switchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
+                          {switchLabel}
+                          <Switch
+                            id={switchId}
+                            checked={isEnabled}
+                            onCheckedChange={(checked: boolean) => toggleHeroCatalog(item.id, checked)}
+                          />
+                        </label>
+                      </div>
                     </div>
-                  )}
+                    {item.desc && (
+                      <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
+                        {item.desc}
+                      </p>
+                    )}
+                  </div>
+                  <div className="p-4 flex-grow flex flex-col gap-4">
+                    {!isEnabled ? (
+                      <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
+                        <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
+                        <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
+                          Catalogo disattivato
+                        </p>
+                        <p className="text-xs text-marrow-light/40 mt-1">
+                          Attiva il catalogo per visualizzare l&apos;anteprima dal vivo.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5">
+                          <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
+                        </div>
+                        <CatalogLivePreview 
+                          catalogId={item.id} 
+                          userId={activeUserId!} 
+                          profileId={profile.id} 
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </section>
     </div>

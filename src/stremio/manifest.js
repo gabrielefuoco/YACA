@@ -74,7 +74,7 @@ function buildRootManifest(hostUrl = 'http://localhost:7000') {
     };
 }
 
-function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userHandle = null) {
+function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userHandle = null, options = {}) {
     const cv = userConfig?.configVersion?.toString().replace(/_/g, '-');
     const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
 
@@ -84,7 +84,25 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
 
     const rawPresets = profile?.uiState?.selectedPresets || profile?.raw_ui_state?.selectedPresets;
     const selectedPresets = Array.isArray(rawPresets) ? rawPresets : null;
-    const heroCatalogs = getManifestHeroCatalogs();
+
+    // Recupero scaffali dinamici del profilo (V45):
+    // Opzioni > userConfig > profile > cache RAM per profileId/userId
+    const { catalogDefinitionsFromShelves, getManifestHeroCatalogs } = require('../catalog/registry');
+    const { getCachedProfileShelves } = require('../pool');
+    const shelvesList = options?.shelves
+        || options?.scaffali
+        || userConfig?.shelves
+        || userConfig?.scaffali
+        || profile?.shelves
+        || profile?.scaffali
+        || (profile?.id ? getCachedProfileShelves(profile.id) : null)
+        || (userConfig?.userId ? getCachedProfileShelves(userConfig.userId) : null)
+        || null;
+
+    const hasDynamicShelves = Array.isArray(shelvesList);
+    const heroCatalogs = hasDynamicShelves
+        ? catalogDefinitionsFromShelves(shelvesList)
+        : getManifestHeroCatalogs();
 
     const typeSelectors = profile?.settings?.typeSelectors;
 
@@ -105,23 +123,26 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
             eligibleHeroCatalogs = matchingHeroCatalogs;
         } else {
             const profileIdentifier = profile?.id || activeProfileId || 'default';
-            console.log(`[Manifest] profilo ${profileIdentifier}: nessun hero selezionato fra gli id correnti — mostro le ${heroCatalogs.length} righe di sistema`);
+            console.log(`[Manifest] profilo ${profileIdentifier}: nessun hero selezionato fra gli id correnti — mostro le ${heroCatalogs.length} righe disponibili`);
             eligibleHeroCatalogs = heroCatalogs;
         }
     }
 
     const activeHeroCatalogs = eligibleHeroCatalogs.filter(c => isCatalogConformant(c, typeSelectors));
 
-    const catalogs = [
-        { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-        { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-        { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
-        { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
-        { id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: [{ name: 'skip' }] },
-        { id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: [{ name: 'skip' }] },
-        { id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: [{ name: 'skip' }] },
-        ...activeHeroCatalogs
-    ];
+    const onlyShelves = Boolean(options?.shelvesOnly || userConfig?.shelvesOnly);
+    const catalogs = onlyShelves
+        ? [...activeHeroCatalogs]
+        : [
+            { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
+            { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
+            { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
+            { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
+            { id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: [{ name: 'skip' }] },
+            { id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: [{ name: 'skip' }] },
+            { id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: [{ name: 'skip' }] },
+            ...activeHeroCatalogs
+        ];
 
     // Tracciamo gli ID già presenti per deduplicare cataloghi custom e di profilo
     // (escludendo yaca_search_standard e yaca_search_ai che compaiono 2 volte per movie e series)

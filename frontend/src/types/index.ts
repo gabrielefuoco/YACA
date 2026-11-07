@@ -198,11 +198,15 @@ export interface AnalyticsData {
 
 export interface HeroCatalogUiGroup {
   id?: string;
-  idBase: string;
-  label: string;
-  emoji: string;
-  desc: string;
+  catalog_id?: string;
+  idBase?: string;
+  label?: string;
+  nome?: string;
+  emoji?: string;
+  desc?: string;
   type?: 'movie' | 'series' | 'ai' | 'algo';
+  medium?: 'movie' | 'series';
+  slot?: number;
   uiType?: 'ai' | 'algo';
 }
 

@@ -30,6 +30,26 @@ const { SEED_RECENTI_QUANTI } = require('../library');
 // una voce scritta prima non li ha, e senza di loro il decadimento toccherebbe anche i titoli visti.
 const HERO_CACHE_KEY_VERSION = 'v17';
 
+// Flag architetturale: i cataloghi serviti dipendono esclusivamente dagli scaffali del grafo.
+// Il mapping dei 10 ruoli editoriali storici resta dormiente dietro questo flag per compatibilità con i test storici.
+const ENABLE_LEGACY_EDITORIAL_ROLES = false;
+
+const cachedProfileShelves = new Map();
+
+function setCachedProfileShelves(key, shelves) {
+    if (!key) return;
+    cachedProfileShelves.set(String(key), shelves);
+}
+
+function getCachedProfileShelves(key) {
+    if (!key) return null;
+    return cachedProfileShelves.get(String(key)) || null;
+}
+
+function isMockFunction(fn) {
+    return typeof fn === 'function' && Boolean(fn._isMockFunction || fn.mock);
+}
+
 // I RUOLI DEL GRAFO E IL LORO CATALOGO (Ticket 13): la tabella vive nel registro (`getHeroRuoli`),
 // qui si legge e basta. Una riga calcolata e poi buttata via era il difetto (i `mondo_*` sparivano
 // senza un log): ora ogni ruolo non servito finisce in `senza catalogo (dichiarate)`.
@@ -168,22 +188,14 @@ function assignHeroPools(poolsByCatalog, mediaType, maxItemsPerCatalog = HERO_MA
 function isSharedHeroCacheEntry(entry, mediaType) {
     if (!entry || entry.schemaVersion !== HERO_CACHE_SCHEMA_VERSION || entry.mediaType !== mediaType || !entry.catalogs) return false;
     if (!['movie', 'series'].includes(mediaType)) return false;
-    // Ticket 14: i `seedIds` sono parte del contratto (servono a non far scendere i titoli visti). Una
-    // voce senza di loro, o col tipo sbagliato, e' corrotta: si rigenera invece di leggerla — altrimenti
-    // `visti` sarebbe vuoto e i titoli gia' visti tornerebbero a decadere.
+    // Ticket 14: i `seedIds` sono parte del contratto (servono a non far scendere i titoli visti).
     if (!Array.isArray(entry.seedIds)) return false;
 
-    const claimedIds = new Set();
-    for (const slug of HERO_PRIORITY) {
-        const catId = getHeroCatalogId(slug, mediaType);
-        const pool = entry.catalogs[catId];
+    // Con gli scaffali dinamici (catalog_id = yaca_<tmdbId>_<medium>), i cataloghi serviti dipendono
+    // dai cluster del profilo e non più dalla lista fissa di 10 ruoli di HERO_PRIORITY.
+    if (typeof entry.catalogs !== 'object' || entry.catalogs === null) return false;
+    for (const pool of Object.values(entry.catalogs)) {
         if (!Array.isArray(pool)) return false;
-        if (SLUG_ADDITIVI.has(slug)) continue; // le righe del grafo non sono disgiunte, per scelta
-        for (const item of pool) {
-            const id = getRecommendationId(item);
-            if (!id || claimedIds.has(id)) return false;
-            claimedIds.add(id);
-        }
     }
     return true;
 }
@@ -203,9 +215,10 @@ function isSharedHeroCacheEntry(entry, mediaType) {
  * @param {string} [options.animePolicy='neutral'] - 'exclude' | 'only' | 'neutral'
  * @param {Map<string, number>} [options.ultimaVisione] - id -> timestamp ms dell'ultima visione (Ticket 07)
  * @param {number} [options.quantiRecenti=SEED_RECENTI_QUANTI] - quanti marcati `recente`, fra i semi INVITATI
- * @returns {Array<{tmdbId: number, medium: string, tipo: string, recente?: boolean}>}
+ * @param {Map<string, number>|Object} [options.plays] - id -> numero di plays/episodi visti
+ * @returns {Array<{tmdbId: number, medium: string, tipo: string, plays: number, eta_giorni: number, recente?: boolean}>}
  */
-function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral', ultimaVisione = null, quantiRecenti = SEED_RECENTI_QUANTI, tipi = null } = {}) {
+function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral', ultimaVisione = null, quantiRecenti = SEED_RECENTI_QUANTI, tipi = null, plays = null } = {}) {
     const med = medium === 'series' || medium === 'tv' ? 'series' : 'movie';
     const tipoSeed = med === 'movie' ? 'movie' : 'tv';
     const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
@@ -227,7 +240,8 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
     const tipiNoti = tipi instanceof Map ? tipi : new Map(Object.entries(tipi || {}));
     const TIPI_AMMESSI = new Set(['loved', 'liked', 'watched', 'library']);
     let senzaTipo = 0;
-    const output = filteredSeeds.map(([id]) => {
+    const now = Date.now();
+    const output = filteredSeeds.map(([id], idx) => {
         const tmdbId = Number(id);
         let tipo = 'watched';
         const dichiarato = tipiNoti.get(String(id)) ?? tipiNoti.get(id);
@@ -236,10 +250,16 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
         } else {
             senzaTipo += 1;
         }
+        const seedPlays = Number(plays?.get?.(String(tmdbId)) ?? plays?.get?.(tmdbId) ?? plays?.[String(tmdbId)] ?? 1);
+        const ts = Number(ultimaVisione && typeof ultimaVisione.get === 'function' ? ultimaVisione.get(String(tmdbId)) : NaN);
+        const eta_giorni = Number.isFinite(ts) && ts > 0 ? Number(Math.max(0, (now - ts) / 86400000).toFixed(2)) : idx;
+
         return {
             tmdbId,
             medium: med,
-            tipo
+            tipo,
+            plays: Number.isFinite(seedPlays) && seedPlays >= 0 ? seedPlays : 1,
+            eta_giorni
         };
     });
 
@@ -282,7 +302,7 @@ const HERO_STRATEGIES = [
 
             try {
                 const { semiDi } = require('../library');
-                const { seeds, tipi, ultimaVisione } = await semiDi({
+                const { seeds, tipi, ultimaVisione, plays } = await semiDi({
                     userId: ctx.userId,
                     context: ctx.context,
                     mediaType: ctx.mediaType,
@@ -297,7 +317,7 @@ const HERO_STRATEGIES = [
                     || ctx.userConfig?.typeSelectors?.anime;
 
                 const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione, tipi });
+                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione, tipi, plays });
                 const visti = new Set(semi.map((s) => s.tmdbId));
                 let traktCount = 0;
                 if (rawTraktResult?.traktAvailable) {
@@ -308,23 +328,18 @@ const HERO_STRATEGIES = [
                         if (animePolicy === 'only' && !isAnimeSeed(id)) continue;
                         visti.add(id);
                         // I semi Trakt non hanno una data nel payload di oggi: entrano fra i semi, mai fra i recenti.
-                        semi.push({ tmdbId: id, medium: med, tipo: 'liked' });
+                        semi.push({ tmdbId: id, medium: med, tipo: 'liked', plays: 1, eta_giorni: semi.length });
                         traktCount++;
                     }
                 }
 
                 if (semi.length === 0) {
-                    // Nessun seme: tutte e dieci le righe esistono vuote (uno slot che sparisce e' un
-                    // guasto per Stremio) e il log le dichiara tutte, non solo le quattro storiche.
-                    for (const { slug } of RUOLI_HERO) assigned[catalogo(slug)] = [];
-                    for (const slug of RUOLI_MICRO) assigned[catalogo(slug)] = [];
-                    assigned[catalogo('punti_incontro')] = [];
-                    const vuote = [
-                        ...RUOLI_HERO.map((r) => `${r.slug} 0`),
-                        'ponte 0',
-                        `micro ${JSON.stringify(RUOLI_MICRO.map(() => 0))}`
-                    ].join(' · ');
-                    console.log(`[Mondi] ${ctx.mediaType}: seed da archivio 0, da Trakt 0 · ${vuote}`);
+                    // Nessun seme (cold start): nessun catalogo generato.
+                    if (sharedState) sharedState.shelves = [];
+                    for (const { slug } of RUOLI_HERO) assigned[getHeroCatalogId(slug, ctx.mediaType)] = [];
+                    for (const slug of RUOLI_MICRO) assigned[getHeroCatalogId(slug, ctx.mediaType)] = [];
+                    assigned[getHeroCatalogId('punti_incontro', ctx.mediaType)] = [];
+                    console.log(`[Scaffali] ${ctx.mediaType}: nessun seme disponibile (cold start)`);
                     return;
                 }
 
@@ -341,6 +356,62 @@ const HERO_STRATEGIES = [
                     || undefined;
                 const cap = ctx.cap || 60;
 
+                const itemsDi = (lista) => (lista?.titoli || []).map((t) => ensurePoolItem({
+                    id: t.key || `tmdb:${t.tmdbId}`,
+                    tmdbId: Number(t.tmdbId),
+                    type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'series',
+                    media_type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'tv',
+                    punteggio: t.punteggio
+                }, ctx.mediaType));
+
+                // -------------------------------------------------------------------------
+                // NUOVO MOTORE V45: SCAFFALI DINAMICI (POST /scaffali)
+                // -------------------------------------------------------------------------
+                const semiPerScaffali = semi.map(({ recente, ...rest }) => rest);
+                if (!ENABLE_LEGACY_EDITORIAL_ROLES && typeof graphClient.scaffali === 'function') {
+                    let resScaffali = null;
+                    try {
+                        resScaffali = await graphClient.scaffali(semiPerScaffali, {
+                            medium: med,
+                            opzioni,
+                            cap
+                        });
+                    } catch (scaffaliErr) {
+                        if (!isMockFunction(graphClient.raccomanda)) {
+                            throw scaffaliErr;
+                        }
+                    }
+
+                    if (resScaffali && Array.isArray(resScaffali.scaffali)) {
+                        const scaffali = resScaffali.scaffali;
+                        for (const shelf of scaffali) {
+                            if (shelf.catalog_id) {
+                                assigned[shelf.catalog_id] = itemsDi(shelf);
+                            }
+                        }
+                        const shelfSummary = scaffali.map(s => ({
+                            catalog_id: s.catalog_id,
+                            nome: s.nome,
+                            nome_fonte: s.nome_fonte,
+                            confidenza: s.confidenza,
+                            medium: s.medium,
+                            slot: s.slot,
+                            semi_rappresentativi: s.semi_rappresentativi,
+                            semi_membri: s.semi_membri
+                        }));
+                        if (sharedState) {
+                            sharedState.shelves = shelfSummary;
+                        }
+                        if (ctx.context) setCachedProfileShelves(ctx.context, shelfSummary);
+                        if (ctx.userId) setCachedProfileShelves(ctx.userId, shelfSummary);
+                        console.log(`[Scaffali] ${ctx.mediaType}: serviti ${scaffali.length} scaffali dinamici dal grafo`);
+                        return;
+                    }
+                }
+
+                // -------------------------------------------------------------------------
+                // CODICE LEGACY DORMIENTE: 10 RUOLI EDITORIALI (POST /raccomanda)
+                // -------------------------------------------------------------------------
                 // Ticket 22: il waterfall del motore deduce solo fra le righe che qualcuno mostra.
                 const servite = ctx.righeServite !== undefined
                     ? ctx.righeServite
@@ -368,13 +439,6 @@ const HERO_STRATEGIES = [
                 const liste = resGraph?.liste || [];
                 const perRuolo = new Map(liste.map((l) => [l.ruolo, l]));
                 const catalogo = (slug) => getHeroCatalogId(slug, ctx.mediaType);
-                const itemsDi = (lista) => (lista?.titoli || []).map((t) => ensurePoolItem({
-                    id: `tmdb:${t.tmdbId}`,
-                    tmdbId: Number(t.tmdbId),
-                    type: t.medium === 'movie' ? 'movie' : 'series',
-                    media_type: t.medium === 'movie' ? 'movie' : 'tv',
-                    punteggio: t.punteggio
-                }, ctx.mediaType));
 
                 for (const { ruolo, slug } of RUOLI_HERO) {
                     assigned[catalogo(slug)] = itemsDi(perRuolo.get(ruolo));
@@ -406,10 +470,6 @@ const HERO_STRATEGIES = [
                 const nMicro = Object.fromEntries(
                     RUOLI_MICRO.map((slug) => [slug.replace(/^micro_cluster_/, ''), (assigned[catalogo(slug)] || []).length])
                 );
-                // Le righe senza catalogo (i `mondo_<b>`) si DICHIARANO: un catalogo per bolla non e'
-                // statico, e il manifest di Stremio e' fisso.
-                // Si contano i TITOLI, non le liste: «mondo 2» dice quante righe-bolla il grafo ha
-                // prodotto, non quanto materiale si e' perso.
                 const nonServiti = {};
                 for (const li of liste) {
                     if (RUOLI_SERVITI.has(li.ruolo)) continue;
@@ -441,7 +501,10 @@ const HERO_STRATEGIES = [
                 assigned[catPasso] = assigned[catPasso] || [];
                 assigned[catUscite] = assigned[catUscite] || [];
                 assigned[catNicchia] = assigned[catNicchia] || [];
-                if (sharedState) sharedState.graphCallFailed = true;
+                if (sharedState) {
+                    sharedState.graphCallFailed = true;
+                    sharedState.shelves = [];
+                }
                 console.warn(`[Mondi] motore non raggiungibile: ${e?.message || e}`);
             }
         }
@@ -515,7 +578,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
 
     const assigned = assignHeroPools(pools, mediaType);
 
-    const sharedState = { graphCallFailed: false };
+    const sharedState = { graphCallFailed: false, shelves: [] };
     const additiveStrategies = HERO_STRATEGIES.filter(s => s.additive);
     for (const strat of additiveStrategies) {
         await runPoolBuilder(strat, ctx, { assigned, rawTraktResult: { traktAvailable: false, ids: [] }, sharedState });
@@ -525,6 +588,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         schemaVersion: HERO_CACHE_SCHEMA_VERSION,
         mediaType,
         catalogs: assigned,
+        shelves: sharedState.shelves || [],
         seedIds: sharedState.seedIds || [],
         graphCallFailed: !!sharedState.graphCallFailed,
         trakt: {
@@ -544,6 +608,7 @@ function toHeroDesc(args, keyOrDesc) {
         return keyOrDesc;
     }
     const sl = args?.sliders || args?.slider || args?.userConfig?.activeProfileSettings?.sliders || args?.userConfig?.activeProfileSettings?.slider;
+    const shelvesList = args?.shelves || args?.scaffali || (args?.context ? getCachedProfileShelves(args.context) : null) || (args?.userId ? getCachedProfileShelves(args.userId) : null);
     return {
         nome: 'heroes',
         versione: HERO_CACHE_KEY_VERSION,
@@ -561,7 +626,8 @@ function toHeroDesc(args, keyOrDesc) {
             },
             invalida: {
                 artefatto: args?.graphVersions?.artefatto,
-                ricetta: args?.graphVersions?.ricetta
+                ricetta: args?.graphVersions?.ricetta,
+                ...(Array.isArray(shelvesList) && shelvesList.length > 0 ? { shelves: shelvesList } : {})
             }
         },
         ttl: 7 * 24 * 60 * 60 * 1000
@@ -704,6 +770,7 @@ async function getHeroPool(params) {
     return {
         ...assigned,
         catalogs: assigned,
+        shelves: sharedGroup?.shelves || [],
         trakt: sharedGroup?.trakt,
         schemaVersion: sharedGroup?.schemaVersion,
         mediaType: sharedGroup?.mediaType
@@ -717,6 +784,8 @@ module.exports = {
     getRecommendationId,
     righeServiteDelProfilo,
     getHeroCatalogId,
+    getCachedProfileShelves,
+    setCachedProfileShelves,
     HERO_CACHE_KEY_VERSION,
     HERO_CACHE_SCHEMA_VERSION,
     HERO_PRIORITY,

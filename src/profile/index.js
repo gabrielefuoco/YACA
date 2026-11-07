@@ -22,7 +22,9 @@ const {
 
 const {
     contestoDi,
-    risolviContesto
+    risolviContesto,
+    ignoraPresetLegacy,
+    LEGACY_HERO_IDS
 } = require('./context');
 
 const {
@@ -79,6 +81,8 @@ module.exports = {
     selettoriEffettivi,
     contestoDi,
     risolviContesto,
+    ignoraPresetLegacy,
+    LEGACY_HERO_IDS,
     risolviProfiloAttivo,
     resolveActiveProfileId,
     defaultGlobalProfile,

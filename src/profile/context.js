@@ -99,7 +99,31 @@ async function contestoDi(input = {}) {
     };
 }
 
+const LEGACY_HERO_IDS = new Set([
+    'yaca_mondi_movies', 'yaca_mondi_series',
+    'yaca_passo_fuori_movies', 'yaca_passo_fuori_series',
+    'yaca_uscite_nuove_movies', 'yaca_uscite_nuove_series',
+    'yaca_nicchia_di_qualita_movies', 'yaca_nicchia_di_qualita_series',
+    'yaca_classici_movies', 'yaca_classici_series',
+    'yaca_ultime_visioni_movies', 'yaca_ultime_visioni_series',
+    'yaca_punti_incontro_movies', 'yaca_punti_incontro_series',
+    'yaca_micro_cluster_1_movies', 'yaca_micro_cluster_1_series',
+    'yaca_micro_cluster_2_movies', 'yaca_micro_cluster_2_series',
+    'yaca_micro_cluster_3_movies', 'yaca_micro_cluster_3_series'
+]);
+
+/**
+ * Filtra silenziosamente i dieci ID hero legacy da un array selectedPresets (Task 6).
+ * Se il profilo contiene solo vecchi ID, non va in crash e non resuscita i ruoli legacy.
+ */
+function ignoraPresetLegacy(presets) {
+    if (!Array.isArray(presets)) return [];
+    return presets.filter(id => typeof id === 'string' && !LEGACY_HERO_IDS.has(id));
+}
+
 module.exports = {
     contestoDi,
-    risolviContesto: contestoDi
+    risolviContesto: contestoDi,
+    ignoraPresetLegacy,
+    LEGACY_HERO_IDS
 };
