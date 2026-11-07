@@ -797,6 +797,8 @@ def scaffali(
     cand_cap: int | None = None,
     weighted_support: bool = True,
     esclusi: Sequence[str] | None = None,
+    tono: float = 0.0,
+    complessita: float = 0.0,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 
@@ -933,7 +935,14 @@ def scaffali(
                 {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
                 for i in cand.seeds_indices
             ]
-            racs = engine.raccomanda(semi_rac, cap=10, medium=cand.medium, esclusi=tutti_esclusi)
+            racs = engine.raccomanda(
+                semi_rac,
+                cap=10,
+                medium=cand.medium,
+                esclusi=tutti_esclusi,
+                tono=tono,
+                complessita=complessita,
+            )
             cand.top10_cands = set(r["key"] for r in racs[:10])
 
     # Step 10: Selezione Greedy Two-Tier per Budget N
@@ -1027,7 +1036,14 @@ def scaffali(
             {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
             for i in sh.seeds_indices
         ]
-        recs = engine.raccomanda(semi_rac, cap=cand_cap, medium=sh.medium, esclusi=tutti_esclusi)
+        recs = engine.raccomanda(
+            semi_rac,
+            cap=cand_cap,
+            medium=sh.medium,
+            esclusi=tutti_esclusi,
+            tono=tono,
+            complessita=complessita,
+        )
         sh.titoli = recs
 
     # GAP 4: Generazione controparti cross-medium con filtro qualità permissivo a tau = 2.5%
@@ -1039,7 +1055,14 @@ def scaffali(
                 {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
                 for i in sh.seeds_indices
             ]
-            recs_c = engine.raccomanda(semi_rac, cap=cand_cap, medium=c_med, esclusi=tutti_esclusi)
+            recs_c = engine.raccomanda(
+                semi_rac,
+                cap=cand_cap,
+                medium=c_med,
+                esclusi=tutti_esclusi,
+                tono=tono,
+                complessita=complessita,
+            )
             top1_p = sh.titoli[0]["punteggio"] if sh.titoli else 0.0
             top1_c = recs_c[0]["punteggio"] if recs_c else 0.0
             ratio = (top1_c / top1_p) if top1_p > 0 else 0.0

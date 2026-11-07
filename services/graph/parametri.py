@@ -333,6 +333,10 @@ SCHEDA = [
      "Le collezioni TMDB esistono solo per i film, quindi la lista «saghe» e' VUOTA per i mondi "
      "televisivi (verificato su due utenti su due). O si costruisce diversamente, o non si propone.",
      "measure/liste.py"),
+    ("PENALITA_ASSE_RETRIEVAL", 0.75, "MISURATO",
+     "Fattore di penalizzazione per i filtri di retrieval su tono e complessità: exp(-gamma * |slider| * dist). "
+     "A slider=0 è una no-op identica a oggi; a slider=+/-1 rimodula del 50-70% la composizione del top-20.",
+     "services/graph/assi.py"),
 
     # ---------------------------------------------------------------- banco (misura, non prodotto)
     ("TAGLIO_TEMPORALE", 0.70, "BANCO",

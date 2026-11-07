@@ -35,6 +35,7 @@ from typing import Any, Iterable
 import numpy as np
 import scipy.sparse as sp
 
+from graph import assi as _assi
 from graph import camminata as _cam
 from graph import canon as K
 from graph import parametri as P
@@ -70,6 +71,8 @@ class Engine:
         self.nep: np.ndarray = np.ones(0, dtype=np.float64)
         self.tmdb_ids: np.ndarray = np.zeros(0, dtype=np.int64)
         self.mediums: np.ndarray = np.empty(0, dtype=object)
+        self.tono: np.ndarray | None = None
+        self.complessita: np.ndarray | None = None
         self.tmdb_to_indices: dict[int, list[int]] = {}
         self.ultimo_scarto: dict[str, int] = {
             "semi_fuori_canone": 0,
@@ -97,12 +100,19 @@ class Engine:
             self.is_tv = np.asarray(canon_is_tv, dtype=bool)
             meta = K.metadati()
             self.nep = np.asarray(meta["NEP"], dtype=np.float64)
+            try:
+                self.tono, self.complessita = _assi.carica_assi()
+            except Exception:
+                self.tono = np.zeros(n, dtype=np.float32)
+                self.complessita = np.zeros(n, dtype=np.float32)
         else:
             # Consente fixture o sottomatrici di test con dimensione diversa
             self.keys = [f"item:{i}" for i in range(n)]
             self.row_of = {k: i for i, k in enumerate(self.keys)}
             self.is_tv = np.zeros(n, dtype=bool)
             self.nep = np.ones(n, dtype=np.float64)
+            self.tono = np.zeros(n, dtype=np.float32)
+            self.complessita = np.zeros(n, dtype=np.float32)
 
         self.tmdb_ids = np.zeros(n, dtype=np.int64)
         self.mediums = np.empty(n, dtype=object)
@@ -488,6 +498,8 @@ class Engine:
         cap: int = DEFAULT_CAP,
         medium: str | None = None,
         esclusi: Iterable[Any] = (),
+        tono: float = 0.0,
+        complessita: float = 0.0,
     ) -> list[dict]:
         """Esegue Personalized PageRank e restituisce i top raccomandati ordinati per punteggio.
 
@@ -520,6 +532,20 @@ class Engine:
                 raise ValueError(
                     f"medium non valido: {medium!r} (ammessi 'movie', 'series', None)"
                 )
+
+        try:
+            tono_val = float(tono) if tono is not None else 0.0
+            if np.isnan(tono_val) or tono_val < -1.0 or tono_val > 1.0:
+                raise ValueError(f"tono non valido: {tono!r} (deve essere compreso tra -1.0 e 1.0)")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"tono non valido: {tono!r} (deve essere compreso tra -1.0 e 1.0)") from exc
+
+        try:
+            comp_val = float(complessita) if complessita is not None else 0.0
+            if np.isnan(comp_val) or comp_val < -1.0 or comp_val > 1.0:
+                raise ValueError(f"complessita non valida: {complessita!r} (deve essere compresa tra -1.0 e 1.0)")
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"complessita non valida: {complessita!r} (deve essere compresa tra -1.0 e 1.0)") from exc
 
         parsed_seeds: list[dict] = []
         semi_fuori_canone = 0
@@ -637,6 +663,17 @@ class Engine:
         if len(valid_idx) == 0:
             return []
 
+        # Applicazione filtro di retrieval su tono e complessità (Ticket Tono/Complessità)
+        if (abs(tono_val) >= 1e-6 or abs(comp_val) >= 1e-6) and self.tono is not None and self.complessita is not None:
+            penalita = _assi.calcola_penalita(
+                valid_idx,
+                tono_req=tono_val,
+                comp_req=comp_val,
+                tono_arr=self.tono,
+                comp_arr=self.complessita,
+            )
+            cand[valid_idx] = cand[valid_idx] * penalita
+
         k = min(cap, len(valid_idx))
         if k < len(valid_idx):
             # argpartition individua i migliori k in tempo O(N)
@@ -654,7 +691,7 @@ class Engine:
                 "key": self.keys[idx],
                 "tmdbId": int(self.tmdb_ids[idx]),
                 "medium": self.mediums[idx],
-                "punteggio": float(r[idx]),
+                "punteggio": float(cand[idx]),
             })
 
         return risultati

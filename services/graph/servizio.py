@@ -68,6 +68,36 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
     if opzioni is not None and not isinstance(opzioni, dict):
         return 400, {"ok": False, "errore": "il campo 'opzioni' deve essere un oggetto"}
 
+    tono_raw = dati.get("tono")
+    if tono_raw is None and opzioni:
+        tono_raw = opzioni.get("tono", opzioni.get("cozy"))
+    if tono_raw is None:
+        tono_raw = dati.get("cozy", 0.0)
+
+    if isinstance(tono_raw, bool):
+        return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
+    try:
+        tono = float(tono_raw)
+        if math.isnan(tono) or tono < -1.0 or tono > 1.0:
+            return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
+    except (ValueError, TypeError):
+        return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
+
+    comp_raw = dati.get("complessita")
+    if comp_raw is None and opzioni:
+        comp_raw = opzioni.get("complessita")
+    if comp_raw is None:
+        comp_raw = 0.0
+
+    if isinstance(comp_raw, bool):
+        return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
+    try:
+        complessita = float(comp_raw)
+        if math.isnan(complessita) or complessita < -1.0 or complessita > 1.0:
+            return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
+    except (ValueError, TypeError):
+        return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
+
     cap_val = dati.get("cap", 60)
     try:
         cap = int(cap_val)
@@ -86,13 +116,25 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
         if not isinstance(s, dict):
             continue
         tmdb_id = s.get("tmdbId") or s.get("tmdb_id")
+        med = s.get("medium", "")
+        if tmdb_id is None and "key" in s and ":" in str(s["key"]):
+            try:
+                pref, id_str = str(s["key"]).split(":", 1)
+                if pref in ("movie", "tv") and id_str.isdigit():
+                    tmdb_id = int(id_str)
+                    if not med:
+                        med = "series" if pref == "tv" else "movie"
+            except Exception:
+                pass
+
         if tmdb_id is None:
             continue
         try:
             tmdb_id = int(tmdb_id)
         except (ValueError, TypeError):
             continue
-        med = s.get("medium", "")
+        if not med:
+            med = s.get("medium", "")
         if med in ("series", "tv"):
             ch = f"tv:{tmdb_id}"
         elif med == "movie":
@@ -121,8 +163,15 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
     esclusi_req = dati.get("esclusi", [])
     tutti_esclusi = set(esclusi_req) | esclusi_semi
 
-    # Esecuzione Personalized PageRank su grafo V45
-    racs = engine.raccomanda(validi_seeds, cap=cap * 2, medium=req_medium, esclusi=tutti_esclusi)
+    # Esecuzione Personalized PageRank su grafo V45 con eventuale filtro di retrieval tono/complessità
+    racs = engine.raccomanda(
+        validi_seeds,
+        cap=cap * 2,
+        medium=req_medium,
+        esclusi=tutti_esclusi,
+        tono=tono,
+        complessita=complessita,
+    )
 
     meta_vot = K.metadati().get("VOT")
 
@@ -274,6 +323,37 @@ def esegui_scaffali(
         for it in esclusi_raw:
             if not isinstance(it, (str, int)):
                 return 400, {"ok": False, "errore": "gli elementi di 'esclusi' devono essere stringhe o interi"}
+
+    opzioni_scaffali = dati.get("opzioni")
+    tono_raw = dati.get("tono")
+    if tono_raw is None and isinstance(opzioni_scaffali, dict):
+        tono_raw = opzioni_scaffali.get("tono", opzioni_scaffali.get("cozy"))
+    if tono_raw is None:
+        tono_raw = dati.get("cozy", 0.0)
+
+    if isinstance(tono_raw, bool):
+        return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
+    try:
+        tono = float(tono_raw)
+        if math.isnan(tono) or tono < -1.0 or tono > 1.0:
+            return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
+    except (ValueError, TypeError):
+        return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
+
+    comp_raw = dati.get("complessita")
+    if comp_raw is None and isinstance(opzioni_scaffali, dict):
+        comp_raw = opzioni_scaffali.get("complessita")
+    if comp_raw is None:
+        comp_raw = 0.0
+
+    if isinstance(comp_raw, bool):
+        return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
+    try:
+        complessita = float(comp_raw)
+        if math.isnan(complessita) or complessita < -1.0 or complessita > 1.0:
+            return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
+    except (ValueError, TypeError):
+        return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
 
     # Risoluzione lazy degli artefatti V45
     if engine is None or W_aff is None:
@@ -449,6 +529,8 @@ def esegui_scaffali(
             W_aff=W_aff,
             cand_cap=cap_candidati,
             esclusi=esclusi_keys,
+            tono=tono,
+            complessita=complessita,
         )
     except Exception as exc:
         return 500, {"ok": False, "errore": f"errore durante la generazione degli scaffali: {exc}"}
