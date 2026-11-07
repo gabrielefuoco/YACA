@@ -11,12 +11,16 @@ import { CatalogLivePreview } from './CatalogLivePreview';
 import { registerHeroCatalogs } from '@/lib/catalogKind';
 
 const FALLBACK_HERO_BASES = [
-  'yaca_true_blend',
-  'yaca_seed_network',
-  'yaca_hidden_gems',
-  'yaca_trakt_filtered',
   'yaca_mondi',
   'yaca_passo_fuori',
+  'yaca_uscite_nuove',
+  'yaca_nicchia_di_qualita',
+  'yaca_classici',
+  'yaca_ultime_visioni',
+  'yaca_punti_incontro',
+  'yaca_micro_cluster_1',
+  'yaca_micro_cluster_2',
+  'yaca_micro_cluster_3',
 ];
 
 const DEFAULT_HERO_CATALOGS_FALLBACK: HeroCatalogUiGroup[] = FALLBACK_HERO_BASES.map(idBase => ({
@@ -81,8 +85,6 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
   const activeSliders: EngineSliders = useMemo(() => {
     const raw = profile?.settings?.sliders ?? profile?.sliders;
     return {
-      largo: typeof raw?.largo === 'number' ? raw.largo : DEFAULT_ENGINE_SLIDERS.largo,
-      lontano: typeof raw?.lontano === 'number' ? raw.lontano : DEFAULT_ENGINE_SLIDERS.lontano,
       cozy: typeof raw?.cozy === 'number' ? raw.cozy : DEFAULT_ENGINE_SLIDERS.cozy,
       canone: typeof raw?.canone === 'number' ? raw.canone : DEFAULT_ENGINE_SLIDERS.canone,
     };
@@ -131,6 +133,51 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
     }
     return DEFAULT_HERO_CATALOGS_FALLBACK;
   }, [analytics?.heroCatalogs]);
+
+  const heroListItems = useMemo(() => {
+    const items: Array<{
+      id: string;
+      idBase: string;
+      label: string;
+      emoji: string;
+      desc: string;
+      type: 'movie' | 'series';
+    }> = [];
+
+    heroCatalogs.forEach((catalog) => {
+      if (catalog.type === 'movie' || catalog.type === 'series') {
+        items.push({
+          id: catalog.id || `${catalog.idBase}_${catalog.type === 'movie' ? 'movies' : 'series'}`,
+          idBase: catalog.idBase,
+          label: catalog.label || catalog.idBase,
+          emoji: catalog.emoji || '✨',
+          desc: catalog.desc || '',
+          type: catalog.type,
+        });
+      } else {
+        items.push(
+          {
+            id: `${catalog.idBase}_movies`,
+            idBase: catalog.idBase,
+            label: catalog.label || catalog.idBase,
+            emoji: catalog.emoji || '✨',
+            desc: catalog.desc || '',
+            type: 'movie',
+          },
+          {
+            id: `${catalog.idBase}_series`,
+            idBase: catalog.idBase,
+            label: catalog.label || catalog.idBase,
+            emoji: catalog.emoji || '✨',
+            desc: catalog.desc || '',
+            type: 'series',
+          }
+        );
+      }
+    });
+
+    return items;
+  }, [heroCatalogs]);
 
   const getDnaName = (vectorKey: string) => {
     const prefix = vectorKey.charAt(0);
@@ -341,68 +388,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
             </div>
 
             <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Slider 1: Largo */}
-              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Ampiezza Esplorazione</span>
-                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(largo)</span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-                    {shownSliders.largo} mondi
-                  </span>
-                </div>
-                <div className="py-1">
-                  <Slider
-                    min={2}
-                    max={8}
-                    step={1}
-                    value={[shownSliders.largo]}
-                    onValueChange={([val]) => handleSliderDraft('largo', val)}
-                    onValueCommit={([val]) => handleSliderChange('largo', val)}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
-                  <span>Resta nel tuo mondo (2)</span>
-                  <span>Default (4)</span>
-                  <span>Esci dal tuo mondo (8)</span>
-                </div>
-                <p className="text-xs text-marrow-light/40 leading-snug">
-                  Modula il numero di mondi e caroselli da accendere (da 2 a 8). Allarga o concentra il portafoglio senza frammentare la coerenza.
-                </p>
-              </div>
-
-              {/* Slider 2: Lontano */}
-              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Distanza Mondi</span>
-                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(lontano)</span>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
-                    {shownSliders.lontano === 0 ? 'Affini (0.0)' : shownSliders.lontano === 1 ? 'Diversi (1.0)' : shownSliders.lontano.toFixed(2)}
-                  </span>
-                </div>
-                <div className="py-1">
-                  <Slider
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={[shownSliders.lontano]}
-                    onValueChange={([val]) => handleSliderDraft('lontano', val)}
-                    onValueCommit={([val]) => handleSliderChange('lontano', val)}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
-                  <span>Mondi più accesi (0.0)</span>
-                  <span>Diversi per fascia/medium (1.0)</span>
-                </div>
-                <p className="text-xs text-marrow-light/40 leading-snug">
-                  Privilegia mondi diversi per fascia di voti e alternanza film/serie. Modula l&apos;angolo di visuale senza tagliare fuori i titoli chiave.
-                </p>
-              </div>
-
-              {/* Slider 3: Cozy / Impegnativo */}
+              {/* Slider 1: Cozy / Impegnativo */}
               <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
@@ -437,7 +423,7 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                 </p>
               </div>
 
-              {/* Slider 4: Canone */}
+              {/* Slider 2: Canone */}
               <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
@@ -474,109 +460,65 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
             </div>
           </div>
 
-          {heroCatalogs.map((catalog) => {
-            const idMovies = `${catalog.idBase}_movies`;
-            const idSeries = `${catalog.idBase}_series`;
-            const movieSwitchId = `${catalog.idBase}-switch-movies`;
-            const seriesSwitchId = `${catalog.idBase}-switch-series`;
-            const selectedPresets = profile.raw_ui_state?.selectedPresets ?? [];
-            const isMoviesEnabled = selectedPresets.includes(idMovies);
-            const isSeriesEnabled = selectedPresets.includes(idSeries);
-
-            const isCatalogDisabled = !isMoviesEnabled && !isSeriesEnabled;
-            
-            // Tolerance Meter logic
-            let toleranceColor = 'bg-primary';
-            let toleranceLabel = 'Bilanciata';
-            let toleranceDesc = 'Mantiene un buon equilibrio tra il tuo DNA e titoli molto popolari.';
-            let activeId = isMoviesEnabled ? idMovies : idSeries;
-
-            if (catalog.idBase.includes('hidden_gems')) {
-              toleranceColor = 'bg-red-500';
-              toleranceLabel = 'Severità Alta (0.3x)';
-              toleranceDesc = 'Scarta quasi tutto ciò che non fa match esatto col tuo DNA. Mostra solo veri "diamanti grezzi".';
-            } else if (catalog.idBase.includes('true_blend')) {
-              toleranceColor = 'bg-orange-500';
-              toleranceLabel = 'Severità Media (0.6x)';
-              toleranceDesc = 'Penalizza i generi che non ti piacciono ma conserva grandi classici e blockbuster affini.';
-            }
+          {heroListItems.map((item) => {
+            const isEnabled = (profile.raw_ui_state?.selectedPresets ?? []).includes(item.id);
+            const switchId = `${item.id}-switch`;
+            const mediumBadge = item.type === 'movie' ? 'Film' : 'Serie';
+            const switchLabel = item.type === 'movie' ? 'FILM' : 'SERIE';
 
             return (
               <div
-                key={catalog.idBase}
+                key={item.id}
                 className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
               >
                 <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{catalog.emoji}</span>
-                      <span className="text-sm font-bold text-marrow-light">{catalog.label || catalog.idBase}</span>
+                      <span className="text-lg">{item.emoji}</span>
+                      <span className="text-sm font-bold text-marrow-light">{item.label || item.idBase}</span>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        {mediumBadge}
+                      </span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <label htmlFor={movieSwitchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
-                        FILM
+                      <label htmlFor={switchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
+                        {switchLabel}
                         <Switch
-                          id={movieSwitchId}
-                          checked={isMoviesEnabled}
-                          onCheckedChange={(checked: boolean) => toggleHeroCatalog(idMovies, checked)}
-                        />
-                      </label>
-                      <label htmlFor={seriesSwitchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
-                        SERIE
-                        <Switch
-                          id={seriesSwitchId}
-                          checked={isSeriesEnabled}
-                          onCheckedChange={(checked: boolean) => toggleHeroCatalog(idSeries, checked)}
+                          id={switchId}
+                          checked={isEnabled}
+                          onCheckedChange={(checked: boolean) => toggleHeroCatalog(item.id, checked)}
                         />
                       </label>
                     </div>
                   </div>
-                  {catalog.desc && (
+                  {item.desc && (
                     <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
-                      {catalog.desc}
+                      {item.desc}
                     </p>
                   )}
                 </div>
                 <div className="p-4 flex-grow flex flex-col gap-4">
-                  {isCatalogDisabled ? (
+                  {!isEnabled ? (
                     <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
                       <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
                       <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
                         Catalogo disattivato
                       </p>
                       <p className="text-xs text-marrow-light/40 mt-1">
-                        Attiva Film o Serie per visualizzare l'anteprima dal vivo.
+                        Attiva il catalogo per visualizzare l&apos;anteprima dal vivo.
                       </p>
                     </div>
                   ) : (
-                    <>
-                      {/* Tolerance Meter */}
-                      <div className="w-full bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2">
-                          <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Filtro Alien Ratio</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded text-white shrink-0 ${toleranceColor}`}>{toleranceLabel}</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-marrow-light/20 rounded-full overflow-hidden mb-2">
-                          <div className={`h-full ${toleranceColor}`} style={{ width: catalog.idBase.includes('hidden_gems') ? '90%' : catalog.idBase.includes('true_blend') ? '50%' : '20%' }} />
-                        </div>
-                        <p className="text-xs text-marrow-light/40">{toleranceDesc}</p>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
                       </div>
-
-                      {/* Live Preview */}
-                      <div className="flex flex-col gap-2">
-                         <div className="flex flex-wrap items-center justify-between gap-1.5">
-                           <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
-                           {isMoviesEnabled && isSeriesEnabled && (
-                             <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">Mostrando: {activeId.includes('movies') ? 'Film' : 'Serie'}</span>
-                           )}
-                         </div>
-                         <CatalogLivePreview 
-                           catalogId={activeId} 
-                           userId={activeUserId!} 
-                           profileId={profile.id} 
-                         />
-                      </div>
-                    </>
+                      <CatalogLivePreview 
+                        catalogId={item.id} 
+                        userId={activeUserId!} 
+                        profileId={profile.id} 
+                      />
+                    </div>
                   )}
                 </div>
               </div>

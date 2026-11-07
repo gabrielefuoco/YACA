@@ -18,20 +18,19 @@ import time
 
 import pytest
 
-from graph import bubbles as B
-from graph import motore as MO
 from graph import parametri as P
+from graph.runtime import Engine
 from graph.servizio import crea_server, esegui_richiesta
 
 
 @pytest.fixture(scope="module")
 def motore():
-    return MO.Motore(silenzioso=True)
+    return Engine.carica_transizione()
 
 
 @pytest.fixture(scope="module")
 def server_http(motore):
-    server, _ = crea_server(host="127.0.0.1", port=0, motore=motore)
+    server, _ = crea_server(host="127.0.0.1", port=0, engine_v45=motore)
     port = server.server_address[1]
     th = threading.Thread(target=server.serve_forever, daemon=True)
     th.start()

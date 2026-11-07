@@ -198,8 +198,6 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
 
   const rawSliders = ((bSettings as Record<string, unknown>).sliders ?? (backendProfile as Record<string, unknown>).sliders ?? {}) as Partial<EngineSliders>;
   const sliders: EngineSliders = {
-    largo: typeof rawSliders.largo === 'number' ? rawSliders.largo : DEFAULT_ENGINE_SLIDERS.largo,
-    lontano: typeof rawSliders.lontano === 'number' ? rawSliders.lontano : DEFAULT_ENGINE_SLIDERS.lontano,
     cozy: typeof rawSliders.cozy === 'number' ? rawSliders.cozy : DEFAULT_ENGINE_SLIDERS.cozy,
     canone: typeof rawSliders.canone === 'number' ? rawSliders.canone : DEFAULT_ENGINE_SLIDERS.canone,
   };

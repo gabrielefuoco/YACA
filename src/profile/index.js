@@ -2,7 +2,7 @@
  * Modulo Profilo (Ticket 21 & Ticket 26)
  *
  * Confine di dominio per il contesto, l'anagrafica profili, le preferenze
- * (selettori, kidsMode, anime policy, slider Ocean), lo stato UI (ProfileUiState)
+ * (selettori, kidsMode, anime policy, slider del motore), lo stato UI (ProfileUiState)
  * e le deduzioni (TasteProfile, staleness).
  *
  * Regole fondamentali del modulo:

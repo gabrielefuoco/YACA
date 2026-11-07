@@ -73,10 +73,9 @@ async function contestoDi(input = {}) {
         rawProfile?.settings?.kidsMode
     );
 
-    // Calcolo slider del motore (preferenze motore salvate nel profilo: largo, lontano, cozy, canone)
+    // Calcolo slider del motore (preferenze motore salvate nel profilo: cozy, canone)
     const slider = rawProfile?.settings?.sliders
         || rawProfile?.settings?.slider
-        || rawProfile?.settings?.oceanSliders
         || rawProfile?.sliders
         || {};
 

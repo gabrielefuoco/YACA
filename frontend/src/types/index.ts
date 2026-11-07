@@ -21,15 +21,11 @@ export interface CatalogKind {
 }
 
 export interface EngineSliders {
-  largo: number;
-  lontano: number;
   cozy: number;
   canone: number;
 }
 
 export const DEFAULT_ENGINE_SLIDERS: EngineSliders = {
-  largo: 4,
-  lontano: 0.0,
   cozy: 0.0,
   canone: 0.0,
 };
@@ -201,11 +197,13 @@ export interface AnalyticsData {
 }
 
 export interface HeroCatalogUiGroup {
+  id?: string;
   idBase: string;
   label: string;
   emoji: string;
   desc: string;
-  type?: 'ai' | 'algo';
+  type?: 'movie' | 'series' | 'ai' | 'algo';
+  uiType?: 'ai' | 'algo';
 }
 
 export interface WatchHistoryItem {
