@@ -38,6 +38,32 @@ from graph.tassonomia import TASSONOMIA_36, TaxonomyEntry, assegna_etichetta_clu
 
 
 # ==============================================================================
+# COSTANTI DI QUALITY-GATING E SOGLIE PROFILO
+# ==============================================================================
+
+# Soglia minima di qualità (ratio tra top-1 controparte e top-1 primario) per ammettere
+# una riga di controparte dell'altro medium (GAP 4).
+# Adottata deliberatamente permissiva (tau = 2.5%): blocca solo ciò che è chiaramente
+# slegato (es. «Classici d'autore -> The Confession Tapes / American Gigolo» a 2.01%),
+# preservando associazioni valide cross-medium come Marvel -> Peacemaker (4.34%),
+# animazione -> Dragons (18.12%), horror -> Ash vs Evil Dead (25.98%).
+# Costo misurato di un eventuale inasprimento futuro:
+#   - a tau = 3.0%: 89 righe totali (invariato rispetto a 2.5% sui 10 profili)
+#   - a tau = 4.5%: si perde Cinecomic -> Peacemaker su warnok (scende a 15 righe su warnok, 88 tot)
+#   - a tau = 5.0%: si perde Cinecomic -> Peacemaker (88 righe tot)
+#   - a tau = 10.0%: si scende a 85 righe tot
+#   - a tau = 20.0%: si scende a 80 righe tot (perdita controparti horror/crime)
+TAU_CONTROPARTE: float = 0.025  # 2.5% permissiva
+
+# Soglia sotto la quale l'intero profilo ha meno semi del floor di scaffali (n=8).
+# In questi profili ultra-corti (GAP 3, es. carverclan con 7 semi o test con singolo seme),
+# un cluster con 1+ semi omogenei per medium può essere servito come riga, purché ogni membro
+# e ogni candidato raccomandato sia rigorosamente di quel medium.
+TINY_PROFILE_FLOOR: int = 8
+
+
+
+# ==============================================================================
 # MODELLO DATI DELLO SCAFFALE
 # ==============================================================================
 
@@ -61,6 +87,8 @@ class Shelf:
     seeds_indices: list[int] = field(default_factory=list, repr=False)
     top10_cands: set[str] = field(default_factory=set, repr=False)
     dom_coll: int | None = field(default=None, repr=False)
+    _other_indices: list[int] = field(default_factory=list, repr=False)
+    _ratio: float = field(default=0.0, repr=False)
 
     def attach_titoli(self, titoli: list[dict[str, Any]]) -> Shelf:
         """Attacca la lista dei titoli raccomandati restituiti dalla camminata."""
@@ -426,15 +454,24 @@ def clusters(
 
     # 2. Micro-clustering
     micros, _ = micro_clustering(S, min_affinity=0.02)
-    if not micros:
-        return []
+    is_tiny_profile = n_seeds < TINY_PROFILE_FLOOR
 
-    # 3. Macro-merge
-    raw_macros = macro_merge(engine, righe_arr, micros, tau=0.03)
+    if not micros:
+        if is_tiny_profile:
+            # Profilo minuscolo (GAP 3, es. test con singolo seme): ciascun seme forma un micro-gruppo
+            raw_macros = [[i] for i in range(n_seeds)]
+        else:
+            return []
+    else:
+        # 3. Macro-merge
+        raw_macros = macro_merge(engine, righe_arr, micros, tau=0.03)
 
     # Conteggio semi clusterizzati per floor adattivo
     clustered_seeds = set(idx for m in raw_macros for idx in m)
     floor = calcola_adaptive_floor(len(clustered_seeds))
+    # Regola GAP 3: quando l'intero profilo ha meno semi del floor di scaffali,
+    # un cluster di 1+ semi omogenei per medium può essere servito come riga.
+    min_cluster_size = 1 if is_tiny_profile else floor
 
     # Carica metadati canone
     meta = K.metadati()
@@ -500,7 +537,7 @@ def clusters(
         nome_base, nome_fonte, conf, matched_entry = assegna_etichetta_cluster(ev)
 
         if nome_fonte == "tassonomia":
-            if sz >= floor:
+            if sz >= min_cluster_size:
                 return [{
                     "seeds": m_indices,
                     "size": sz,
@@ -517,7 +554,7 @@ def clusters(
                 c1, c2 = bisect_cluster(engine, righe_arr, m_indices)
                 return eval_macro(c1) + eval_macro(c2)
             else:
-                if sz >= floor:
+                if sz >= min_cluster_size:
                     return [{
                         "seeds": m_indices,
                         "size": sz,
@@ -542,17 +579,17 @@ def clusters(
         raw_mov = [idx for idx in item["seeds"] if not engine.keys[righe_arr[idx]].startswith("tv:")]
         raw_ser = [idx for idx in item["seeds"] if engine.keys[righe_arr[idx]].startswith("tv:")]
 
-        candidati_media: list[tuple[str, list[int]]] = []
+        candidati_media: list[tuple[str, list[int], list[int]]] = []
         if medium == "movie":
-            candidati_media = [("movie", raw_mov)]
+            candidati_media = [("movie", raw_mov, raw_ser)]
         elif medium == "series":
-            candidati_media = [("series", raw_ser)]
+            candidati_media = [("series", raw_ser, raw_mov)]
         else:
-            # Policy P2 (Conditional): se il cluster possiede semi nel medium e raggiunge il floor
-            candidati_media = [("movie", raw_mov), ("series", raw_ser)]
+            # Policy P2 (Conditional): se il cluster possiede semi nel medium e raggiunge la dimensione minima
+            candidati_media = [("movie", raw_mov, raw_ser), ("series", raw_ser, raw_mov)]
 
-        for m_type, raw_indices in candidati_media:
-            if len(raw_indices) < floor:
+        for m_type, raw_indices, other_indices in candidati_media:
+            if len(raw_indices) < min_cluster_size:
                 continue
 
             m_indices = raw_indices
@@ -573,7 +610,7 @@ def clusters(
                     pruned_indices.append(s_idx)
                 m_indices = pruned_indices
 
-            if len(m_indices) < floor:
+            if len(m_indices) < min_cluster_size:
                 continue
 
             m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
@@ -642,6 +679,7 @@ def clusters(
                 matched_entry=item["matched_entry"],
                 seeds_indices=m_indices,
                 dom_coll=dom_coll,
+                _other_indices=other_indices,
             )
             shelves.append(sh)
 
@@ -755,7 +793,8 @@ def scaffali(
     medium: str | None = None,
     W_aff: sp.csr_matrix | None = None,
     label_merge: bool = False,
-    cap: int = 40,
+    cap: int = 60,
+    cand_cap: int | None = None,
     weighted_support: bool = True,
     esclusi: Sequence[str] | None = None,
 ) -> list[Shelf]:
@@ -764,16 +803,20 @@ def scaffali(
     Args:
         engine: Istanza dell'Engine per calcolo raccomandazioni.
         semi: Lista di semi (possono essere dict TMDB, stringhe key o interi riga).
-        n: Budget massimo di scaffali da servire (default 8).
+        n: Budget massimo di scaffali base da servire (default 8).
         medium: Filtro medium opzionale ("movie", "series").
         W_aff: Matrice non potata opzionale per l'affinità.
         label_merge: Se True, fonde i cluster con la stessa etichetta tassonomica prima del budget step.
-        cap: Cap massimo di semi per scaffale in caso di label_merge (default 40).
+        cap: Cap massimo di candidati per riga servita (default 60, ammessi tra 20 e cap).
+        cand_cap: Alias esplicito per il cap dei candidati per riga (se None, usa cap).
         weighted_support: Se True, la selezione greedy e il rank supporto usano il peso/interazioni dei semi.
+        esclusi: Lista di chiavi escluse dalle raccomandazioni.
 
     Returns:
-        Lista di al più `n` oggetti `Shelf` ordinati per esposizione UI.
+        Lista di oggetti `Shelf` ordinati per esposizione UI (righe primarie + controparti ammesse).
     """
+    if cand_cap is None:
+        cand_cap = cap
     if not semi:
         return []
 
@@ -881,17 +924,17 @@ def scaffali(
         item._r_sup = r_idx + 1
         item.r_comb = round((item._r_rec + item._r_sup) / 2.0, 1)
 
-    # Raccomandazioni lazy evaluate per overlap dedupe
+    # Raccomandazioni lazy evaluate per overlap dedupe (top-10 Jaccard)
+    tutti_esclusi = set(chiavi) | set(esclusi or [])
+
     def ensure_top10(cand: Shelf) -> None:
         if not cand.top10_cands:
             semi_rac = [
                 {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
                 for i in cand.seeds_indices
             ]
-            tutti_esclusi = set(chiavi) | set(esclusi or [])
             racs = engine.raccomanda(semi_rac, cap=10, medium=cand.medium, esclusi=tutti_esclusi)
             cand.top10_cands = set(r["key"] for r in racs[:10])
-            cand.titoli = racs[:10]
 
     # Step 10: Selezione Greedy Two-Tier per Budget N
     # Tier 1: Scaffali con etichetta tassonomica (nome_fonte == "tassonomia")
@@ -974,7 +1017,81 @@ def scaffali(
         rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
         ordered_shelves = [best_freshest] + rem
 
-    for slot_idx, sh in enumerate(ordered_shelves, 1):
+    # GAP 2: Decoupling — riempimento dei candidati per le righe servite fino a cand_cap (tra 20 e 60)
+    meta = K.metadati()
+    titles = meta.get("TIT")
+    years = meta.get("ANNO")
+
+    for sh in ordered_shelves:
+        semi_rac = [
+            {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
+            for i in sh.seeds_indices
+        ]
+        recs = engine.raccomanda(semi_rac, cap=cand_cap, medium=sh.medium, esclusi=tutti_esclusi)
+        sh.titoli = recs
+
+    # GAP 4: Generazione controparti cross-medium con filtro qualità permissivo a tau = 2.5%
+    counterpart_shelves: list[Shelf] = []
+    if medium is None:
+        for sh in ordered_shelves:
+            c_med = "series" if sh.medium == "movie" else "movie"
+            semi_rac = [
+                {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
+                for i in sh.seeds_indices
+            ]
+            recs_c = engine.raccomanda(semi_rac, cap=cand_cap, medium=c_med, esclusi=tutti_esclusi)
+            top1_p = sh.titoli[0]["punteggio"] if sh.titoli else 0.0
+            top1_c = recs_c[0]["punteggio"] if recs_c else 0.0
+            ratio = (top1_c / top1_p) if top1_p > 0 else 0.0
+
+            if ratio >= TAU_CONTROPARTE and recs_c:
+                other_indices = getattr(sh, "_other_indices", [])
+                other_members = []
+                other_rep = []
+                if other_indices:
+                    other_sorted = sorted(other_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+                    for idx in other_sorted:
+                        r = righe_arr[idx]
+                        k_seme = engine.keys[r]
+                        other_members.append({
+                            "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
+                            "medium": c_med,
+                            "titolo": str(titles[r]) if titles is not None else k_seme,
+                            "anno": int(years[r]) if years is not None else 0,
+                        })
+                    for idx in other_sorted[:3]:
+                        r = righe_arr[idx]
+                        k_seme = engine.keys[r]
+                        other_rep.append({
+                            "tmdbId": int(k_seme.split(":")[1]) if ":" in k_seme else r,
+                            "medium": c_med,
+                            "titolo": str(titles[r]) if titles is not None else k_seme,
+                            "anno": int(years[r]) if years is not None else 0,
+                            "plays": float(plays_arr[idx]),
+                            "eta_giorni": float(eta_arr[idx]),
+                        })
+
+                cat_prefix = sh.catalog_id.rsplit("_", 1)[0]
+                sh_c = Shelf(
+                    catalog_id=f"{cat_prefix}_{c_med}",
+                    nome=sh.nome,
+                    nome_fonte=sh.nome_fonte,
+                    confidenza=sh.confidenza,
+                    medium=c_med,
+                    semi_rappresentativi=other_rep,
+                    semi_membri=other_members,
+                    size=len(other_indices),
+                    min_eta=sh.min_eta,
+                    matched_entry=sh.matched_entry,
+                    seeds_indices=other_indices,
+                    dom_coll=sh.dom_coll,
+                    _ratio=ratio,
+                )
+                sh_c.titoli = recs_c
+                counterpart_shelves.append(sh_c)
+
+    all_served = ordered_shelves + counterpart_shelves
+    for slot_idx, sh in enumerate(all_served, 1):
         sh.slot_position = slot_idx
 
-    return ordered_shelves
+    return all_served

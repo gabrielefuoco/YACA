@@ -72,24 +72,24 @@ def sangam456_seeds() -> list[dict[str, Any]]:
 
 
 # ------------------------------------------------------------------------------
-# 1. Profilo lungo -> 200 con 8 scaffali
+# 1. Profilo lungo -> 200 con 16 scaffali (8 base + 8 controparti ammesse)
 # ------------------------------------------------------------------------------
-def test_profilo_lungo_restituisce_200_con_8_scaffali(warnok_seeds):
+def test_profilo_lungo_restituisce_200_con_16_scaffali(warnok_seeds):
     status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
 
     assert status == 200
     assert res["ok"] is True
     assert res["contratto_versione"] == 2
-    assert len(res["scaffali"]) == 8
+    assert len(res["scaffali"]) == 16
 
     stat = res["statistiche"]
     assert stat["semi_totali"] == len(warnok_seeds)
     assert stat["semi_coperti"] > 0
-    assert stat["righe"] == 8
+    assert stat["righe"] == 16
 
-    # Verifica ordinamento slot 1..8
+    # Verifica ordinamento slot 1..16
     slots = [s["slot"] for s in res["scaffali"]]
-    assert slots == list(range(1, 9))
+    assert slots == list(range(1, 17))
 
 
 # ------------------------------------------------------------------------------
@@ -293,17 +293,27 @@ def test_omogeneita_rigorosa_medium_nessuna_eccezione(warnok_seeds):
 
 
 # ------------------------------------------------------------------------------
-# 8. Risoluzione del waiver: cluster sotto floor non serviti (carverclan = 0)
+# 8. GAP 3: Profili minuscoli tornano a servire righe (carverclan = 4 righe)
 # ------------------------------------------------------------------------------
-def test_profilo_corto_sotto_floor_restituisce_zero_scaffali(carverclan_seeds):
+def test_profilo_corto_serve_scaffali(carverclan_seeds):
     status, res = servizio.esegui_scaffali({"semi": carverclan_seeds})
     assert status == 200
     assert res["ok"] is True
     assert res["contratto_versione"] == 2
-    assert len(res["scaffali"]) == 0
+    # carverclan: 2 scaffali base + 2 controparti ammesse
+    assert len(res["scaffali"]) == 4
     assert res["statistiche"]["semi_totali"] == 7
-    assert res["statistiche"]["semi_coperti"] == 0
-    assert res["statistiche"]["righe"] == 0
+    assert res["statistiche"]["semi_coperti"] == 4
+    assert res["statistiche"]["righe"] == 4
+
+    # Verifica omogeneità rigorosa del medium
+    for sh in res["scaffali"]:
+        m_row = sh["medium"]
+        for memb in sh["semi_membri"]:
+            assert memb["medium"] == m_row
+        for cand in sh["titoli"]:
+            assert cand["medium"] == m_row
+        assert 20 <= len(sh["titoli"]) <= 60
 
 
 # ------------------------------------------------------------------------------
@@ -328,5 +338,39 @@ def test_chiamata_http_scaffali_su_socket(sangam456_seeds):
     assert resp.status == 200
     assert data["ok"] is True
     assert data["contratto_versione"] == 2
-    assert len(data["scaffali"]) == 2
+    # sangam456: 2 base + 2 controparti ammesse = 4
+    assert len(data["scaffali"]) == 4
     assert data["statistiche"]["semi_totali"] == 10
+
+
+# ------------------------------------------------------------------------------
+# 10. GAP 2: Ogni riga servita deve restituire tra 20 e cap candidati
+# ------------------------------------------------------------------------------
+def test_candidati_per_riga_tra_20_e_cap(warnok_seeds):
+    # Verifica su profilo lungo con cap di default (60)
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8, "cap": 60})
+    assert status == 200
+    assert len(res["scaffali"]) == 16
+    for sh in res["scaffali"]:
+        assert 20 <= len(sh["titoli"]) <= 60, f"Riga '{sh['nome']}' ({sh['medium']}) ha {len(sh['titoli'])} candidati"
+
+    # Verifica su profilo giustificato da un singolo seme (The Matrix)
+    status_single, res_single = servizio.esegui_scaffali({
+        "semi": [{"key": "movie:603", "plays": 1.0, "eta_giorni": 0.0}],
+        "cap": 60,
+    })
+    assert status_single == 200
+    assert len(res_single["scaffali"]) >= 1
+    for sh in res_single["scaffali"]:
+        assert 20 <= len(sh["titoli"]) <= 60, f"Riga da singolo seme ha {len(sh['titoli'])} candidati"
+
+    # Verifica con cap personalizzato (es. cap = 25)
+    status_custom, res_custom = servizio.esegui_scaffali({
+        "semi": [{"key": "movie:603", "plays": 1.0, "eta_giorni": 0.0}],
+        "cap": 25,
+    })
+    assert status_custom == 200
+    assert len(res_custom["scaffali"]) >= 1
+    for sh in res_custom["scaffali"]:
+        assert 20 <= len(sh["titoli"]) <= 25, f"Riga con cap=25 ha {len(sh['titoli'])} candidati"
+

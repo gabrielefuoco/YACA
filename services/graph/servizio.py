@@ -257,6 +257,16 @@ def esegui_scaffali(
     except (ValueError, TypeError):
         return 400, {"ok": False, "errore": "il campo 'n' deve essere un intero positivo"}
 
+    cap_val = dati.get("cap", 60)
+    if isinstance(cap_val, bool) or not isinstance(cap_val, (int, float)):
+        return 400, {"ok": False, "errore": "il campo 'cap' deve essere un intero positivo"}
+    try:
+        cap_candidati = int(cap_val)
+        if cap_candidati < 1:
+            return 400, {"ok": False, "errore": "il campo 'cap' deve essere un intero positivo"}
+    except (ValueError, TypeError):
+        return 400, {"ok": False, "errore": "il campo 'cap' deve essere un intero positivo"}
+
     esclusi_raw = dati.get("esclusi")
     if esclusi_raw is not None:
         if not isinstance(esclusi_raw, list):
@@ -437,6 +447,7 @@ def esegui_scaffali(
             n=n_scaffali,
             medium=req_medium,
             W_aff=W_aff,
+            cand_cap=cap_candidati,
             esclusi=esclusi_keys,
         )
     except Exception as exc:

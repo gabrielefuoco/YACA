@@ -26,8 +26,8 @@ input densi e gli embedding già materializzati rimangono nella cache locale
 
 ### Endpoint `/raccomanda` (Cutover V45) e `/scaffali` (V45 Standalone)
 
-- **`POST /raccomanda` (contratto versione 1)**: Preserva al 100% la compatibilità a livello di chiavi e tipi con i client YACA (`src/clients/graphClient.js`), producendo `il_tuo_mondo` e `un_passo_fuori`. È servito da `graph.runtime.Engine` (latenza: **p50 = 1,0 ms**, **p95 = 17,4 ms**).
-- **`POST /scaffali` (contratto versione 2)**: Implementa la ricetta congelata di clustering e ranking a due livelli (etichette tassonomiche in testa e fallback «Perché hai visto» in coda) con separazione rigorosa del medium per riga (policy P2).
+- **`POST /raccomanda` (contratto versione 1)**: Preserva al 100% la compatibilità a livello di chiavi e tipi con i client YACA (`src/clients/graphClient.js`), producendo `il_tuo_mondo` e `un_passo_fuori`. È servito da `graph.runtime.Engine` (latenza: **p50 = 1,0 ms**, **p95 = 17,4 ms**). *Nota compatibilità:* questo endpoint è mantenuto temporaneamente per retrocompatibilità fino alla migrazione del lato Node; anche i suoi ruoli `il_tuo_mondo` e `un_passo_fuori` sono da considerarsi legacy (il client cesserà di richiederli passando unicamente a `POST /scaffali`).
+- **`POST /scaffali` (contratto versione 2)**: Implementa la ricetta congelata di clustering e ranking a due livelli (etichette tassonomiche in testa e fallback «Perché hai visto» in coda) con separazione rigorosa del medium per riga (policy P2), ammissione controparti permissive a $\tau = 2.5\%$ e decoupling candidati serviti (tra 20 e 60 per riga).
 
 **Realtà della memoria (misure effettive RSS con V45 standalone, non stime):**
 - **Processo runtime V45 standalone**: con la rimozione totale di V10 (eliminando la matrice densa da ~118 MiB), il server HTTP carica come singleton unicamente `graph.runtime.Engine` (~34 MiB delta) e la matrice compatta `vicini-top100.npz` (~65 MiB delta).
@@ -37,11 +37,12 @@ input densi e gli embedding già materializzati rimangono nella cache locale
   - `/scaffali`: **p50 = 1,525 s**, **p95 = 1,698 s** (ampiamente entro il target <= 3,0 s per 8 scaffali con walk PPR e clustering).
   - `/raccomanda`: **p50 = 1,0 ms**, **p95 = 17,4 ms**.
 
-### Politica del Medium per gli Scaffali (Policy P2)
-Stremio impone cataloghi rigorosamente omogenei per tipologia (`movie` o `series`). Gli archi cross-medium nel grafo vengono preservati (rafforzano la camminata e catturano il gusto), ma le righe esposte applicano la politica **P2 (Conditional)** con omogeneità assoluta:
+### Politica del Medium e Scaffali (Policy P2 e Controparti)
+Stremio impone cataloghi rigorosamente omogenei per tipologia (`movie` o `series`). Gli archi cross-medium nel grafo vengono preservati (rafforzano la camminata e catturano il gusto), ma le righe esposte applicano la politica **P2** con omogeneità assoluta:
 1. **Nessuna commistione**: in ogni riga servita, tutti i semi membri (`semi_membri`), i semi rappresentativi e i candidati raccomandati appartengono al medesimo medium della riga. Non è ammessa alcuna deroga sui cluster piccoli.
-2. **Generazione condizionale**: un cluster produce una controparte dell'altro medium solo se possiede almeno `floor` semi di quel medium nella storia utente. Se un profilo non consuma un medium (es. solo serie in `hammers-lists`), le controparti dell'altro medium vengono soppresse per evitare righe vuote o spurie.
-3. **Risoluzione cluster sotto-floor**: i cluster che non possono essere partizionati in almeno `floor` semi omogenei (es. 1 film e 1 serie su `carverclan`) **non vengono serviti affatto** (0 cataloghi qualificati), proteggendo l'integrità del catalogo da scaffali artificiosi composti da un solo elemento.
+2. **Quality Gate Controparti Permissivo ($\tau = 2.5\%$)**: ciascuno scaffale base genera una riga di controparte dell'altro medium se il rapporto tra lo score top-1 della camminata controparte e quello della camminata primaria soddisfa $\text{ratio} \ge 2.5\%$ (`TAU_CONTROPARTE = 0.025`). La soglia è deliberatamente permissiva («blocca solo ciò che è palesemente slegato»): scarta le aberrazioni come *Classici d'autore* $\rightarrow$ *The Confession Tapes / American Gigolo* (2.01%), preservando connessioni cross-medium desiderate come *Cinecomic* $\rightarrow$ *Peacemaker* (4.34%), *Animazione* $\rightarrow$ *Dragons* (18.12%), *Horror* $\rightarrow$ *Ash vs Evil Dead* (25.98%). Il costo misurato di inasprire la soglia a 4.5% o 5.0% è la perdita di Cinecomic su warnok.
+3. **Profili minuscoli (GAP 3)**: quando l'intero profilo ha meno semi del floor di scaffali (`TINY_PROFILE_FLOOR = 8`, es. `carverclan` con 7 semi o cronologie mono-seme), un cluster di 1+ semi omogenei per medium viene regolarmente servito come riga, a patto che ogni membro e candidato sia del medesimo medium. Negli altri profili resta in vigore la soglia minima ordinaria (`adaptive_floor`).
+4. **Candidati per riga (GAP 2)**: la stima di overlap Jaccard in fase greedy continua a usare i top-10, mentre ogni riga servita finale viene popolata fino a `cap` (default 60 candidati, con $\ge 20$ assicurati anche per scaffali generati da un singolo seme).
 
 ### Transizione potata: l'unico percorso adatto al container
 
