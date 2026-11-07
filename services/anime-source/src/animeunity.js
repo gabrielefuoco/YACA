@@ -6,7 +6,7 @@
 
 const { cleanTitle } = require('./aggregate');
 
-const DEFAULT_BASE_URL = process.env.ANIMEUNITY_BASE_URL || 'https://www.animeunity.so';
+const DEFAULT_BASE_URL = process.env.ANIMEUNITY_BASE_URL || 'https://www.animeunity.co';
 const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
 // Finestra del "chi è in simulcast": due settimane. Misurata il 04/10/2026, sei pagine
