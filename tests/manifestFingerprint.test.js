@@ -88,11 +88,27 @@ describe('buildManifestFingerprint', () => {
         ['active profile', config => { config.activeProfileId = 'profile-b'; }],
         ['custom catalogs', config => config.customCatalogs.push({
             id: 'custom-two', name: 'Custom due', type: 'series'
-        })]
+        })],
+        ['shelf addition', config => {
+            config.profiles[1].shelves = [{ catalog_id: 'yaca_1401_series', nome: 'Western' }];
+        }]
     ])('changes when the manifest input changes: %s', (_label, mutate) => {
         const base = makeConfig();
         const changed = makeConfig();
         mutate(changed);
+
+        expect(buildManifestFingerprint(changed)).not.toBe(buildManifestFingerprint(base));
+    });
+
+    it('changes when a profile shelf name or id changes', () => {
+        const base = makeConfig();
+        base.profiles[1].shelves = [
+            { catalog_id: 'yaca_1401_series', nome: 'Western contemporaneo' }
+        ];
+        const changed = makeConfig();
+        changed.profiles[1].shelves = [
+            { catalog_id: 'yaca_1401_series', nome: 'Frontiera americana' }
+        ];
 
         expect(buildManifestFingerprint(changed)).not.toBe(buildManifestFingerprint(base));
     });

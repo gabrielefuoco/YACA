@@ -15,6 +15,7 @@ const {
     SORT_OPTIONS,
     SORT_MAP
 } = require('../stremio');
+const { resolveProfileShelves } = require('../stremio/shelvesResolver');
 const { traktClient } = require('../clients/trakt');
 const getUserConfig = () => require('../models/UserConfig');
 const AddonConfig = require('../models/AddonConfig');
@@ -186,7 +187,8 @@ router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     try {
         const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
-        const manifest = buildManifest(userConfig, hostUrl, req.params.userHandle);
+        const shelves = await resolveProfileShelves({ userConfig });
+        const manifest = buildManifest(userConfig, hostUrl, req.params.userHandle, { shelves });
         return res.json(manifest);
     } catch (err) {
         console.error("Manifest Error:", err);

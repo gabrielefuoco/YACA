@@ -92,7 +92,9 @@ async function updateStremioAddonCollection(authKey, manifestUrl) {
             const { buildManifest } = require('./manifest');
             const userConfig = await UserConfig.resolveUserConfig(userHandle);
             if (userConfig && typeof buildManifest === 'function') {
-                manifest = buildManifest(userConfig, parsedManifestUrl.origin, userHandle);
+                const { resolveProfileShelves } = require('./shelvesResolver');
+                const shelves = await resolveProfileShelves({ userConfig });
+                manifest = buildManifest(userConfig, parsedManifestUrl.origin, userHandle, { shelves });
             }
         }
     } catch (err) {

@@ -40,9 +40,33 @@ function projectManifestCatalog(catalog) {
     };
 }
 
-function projectManifestProfile(profile) {
+function projectManifestShelf(shelf) {
+    if (!shelf || typeof shelf !== 'object') {
+        return {
+            id: null,
+            name: null
+        };
+    }
+    return {
+        id: shelf.catalog_id || shelf.id || null,
+        name: shelf.nome_display || shelf.nome || shelf.name || shelf.label || null
+    };
+}
+
+function projectManifestProfile(profile, fallbackShelves = null) {
     const rawUiState = profile?.uiState || profile?.raw_ui_state || {};
     const typeSelectors = profile?.settings?.typeSelectors || {};
+
+    let rawShelves = profile?.shelves || profile?.scaffali;
+    if (!rawShelves && profile?.id) {
+        try {
+            const { getCachedProfileShelves } = require('../pool');
+            rawShelves = getCachedProfileShelves(profile.id);
+        } catch (_) {}
+    }
+    if (!rawShelves && fallbackShelves) {
+        rawShelves = fallbackShelves;
+    }
 
     return {
         id: profile?.id ?? null,
@@ -55,6 +79,9 @@ function projectManifestProfile(profile) {
             : [],
         catalogs: Array.isArray(profile?.catalogs)
             ? profile.catalogs.map(projectManifestCatalog)
+            : [],
+        shelves: Array.isArray(rawShelves)
+            ? rawShelves.map(projectManifestShelf)
             : [],
         typeSelectors: {
             film: Boolean(typeSelectors.film),
@@ -174,13 +201,24 @@ function buildManifestFingerprint(userConfig = {}, options = {}) {
     const definitionsSignature = options.definitionsSignature
         || buildManifestDefinitionsSignature(options.heroCatalogs, options.presets);
 
+    const activeProfileId = getEffectiveActiveProfileId(userConfig);
+    const rootShelves = options.shelves
+        || options.scaffali
+        || userConfig.shelves
+        || userConfig.scaffali
+        || null;
+
     const fingerprintInput = {
         schemaVersion: `${FINGERPRINT_SCHEMA_VERSION}:${definitionsSignature}`,
         definitionsSignature,
-        activeProfileId: getEffectiveActiveProfileId(userConfig),
+        activeProfileId,
         // Profile order is not part of the manifest. Catalog order below is.
         profiles: profiles
-            .map(projectManifestProfile)
+            .map(p => {
+                const isCurrentActive = p && String(p.id) === String(activeProfileId);
+                const fallback = isCurrentActive ? rootShelves : null;
+                return projectManifestProfile(p, fallback);
+            })
             .sort((a, b) => {
                 const aId = String(a.id);
                 const bId = String(b.id);

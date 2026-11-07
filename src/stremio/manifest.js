@@ -4,7 +4,7 @@ const {
     getSortByValue
 } = require('../catalog/catalogSorting');
 const { isCatalogConformant } = require('../catalog/catalogKind');
-const { getManifestHeroCatalogs } = require('../catalog/registry');
+const { catalogDefinitionsFromShelves } = require('../catalog/registry');
 
 const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
@@ -87,7 +87,7 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
 
     // Recupero scaffali dinamici del profilo (V45):
     // Opzioni > userConfig > profile > cache RAM per profileId/userId
-    const { catalogDefinitionsFromShelves, getManifestHeroCatalogs } = require('../catalog/registry');
+    const { catalogDefinitionsFromShelves } = require('../catalog/registry');
     const { getCachedProfileShelves } = require('../pool');
     const shelvesList = options?.shelves
         || options?.scaffali
@@ -97,12 +97,9 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
         || profile?.scaffali
         || (profile?.id ? getCachedProfileShelves(profile.id) : null)
         || (userConfig?.userId ? getCachedProfileShelves(userConfig.userId) : null)
-        || null;
+        || [];
 
-    const hasDynamicShelves = Array.isArray(shelvesList);
-    const heroCatalogs = hasDynamicShelves
-        ? catalogDefinitionsFromShelves(shelvesList)
-        : getManifestHeroCatalogs();
+    const heroCatalogs = catalogDefinitionsFromShelves(shelvesList);
 
     const typeSelectors = profile?.settings?.typeSelectors;
 

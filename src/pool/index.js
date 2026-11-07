@@ -39,12 +39,35 @@ const cachedProfileShelves = new Map();
 
 function setCachedProfileShelves(key, shelves) {
     if (!key) return;
-    cachedProfileShelves.set(String(key), shelves);
+    if (!Array.isArray(shelves)) {
+        cachedProfileShelves.set(String(key), shelves);
+        return;
+    }
+    const strKey = String(key);
+    const existing = cachedProfileShelves.get(strKey);
+    if (!Array.isArray(existing) || existing.length === 0) {
+        cachedProfileShelves.set(strKey, shelves);
+        return;
+    }
+    const newMedia = new Set(shelves.map(s => s.medium));
+    // Se shelves contiene già sia movie che series (es. dal resolver), sovrascrive tutto
+    if (newMedia.has('movie') && (newMedia.has('series') || newMedia.has('tv'))) {
+        cachedProfileShelves.set(strKey, shelves);
+        return;
+    }
+    // Altrimenti (es. chiamato dal pool per un solo medium), preserva l'altro medium
+    const preserved = existing.filter(s => !newMedia.has(s.medium));
+    const merged = [...preserved, ...shelves];
+    cachedProfileShelves.set(strKey, merged);
 }
 
 function getCachedProfileShelves(key) {
     if (!key) return null;
     return cachedProfileShelves.get(String(key)) || null;
+}
+
+function clearCachedProfileShelves() {
+    cachedProfileShelves.clear();
 }
 
 function isMockFunction(fn) {
@@ -801,6 +824,7 @@ module.exports = {
     getHeroCatalogId,
     getCachedProfileShelves,
     setCachedProfileShelves,
+    clearCachedProfileShelves,
     HERO_CACHE_KEY_VERSION,
     HERO_CACHE_SCHEMA_VERSION,
     HERO_PRIORITY,

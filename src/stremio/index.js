@@ -25,6 +25,7 @@ module.exports = {
     getSortByValue: manifest.getSortByValue,
     SORT_OPTIONS: manifest.SORT_OPTIONS,
     SORT_MAP: manifest.SORT_MAP,
+    resolveProfileShelves: (...a) => require('./shelvesResolver').resolveProfileShelves(...a),
 
     // Fingerprint
     FINGERPRINT_SCHEMA_VERSION: fingerprint.FINGERPRINT_SCHEMA_VERSION,

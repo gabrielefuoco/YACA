@@ -126,6 +126,71 @@ describe('manifestReconciler', () => {
         expect(updateStremioAddonCollection).not.toHaveBeenCalled();
     });
 
+    test('(shelves) un profilo i cui scaffali cambiano riceve una nuova configVersion e un pending resync', async () => {
+        const initialShelves = [
+            { catalog_id: 'yaca_1401_series', nome: 'Western' },
+            { catalog_id: 'yaca_1401_movie', nome: 'Western' }
+        ];
+        const initialConfig = {
+            activeProfileId: 'profile-shelves-1',
+            profiles: [
+                { id: 'profile-shelves-1', name: 'Profile Shelves', catalogs: [], shelves: initialShelves }
+            ],
+            customCatalogs: []
+        };
+        const initialFingerprint = buildManifestFingerprint(initialConfig);
+
+        const updatedShelves = [
+            { catalog_id: 'yaca_1401_series', nome: 'Western contemporaneo & Frontiera' },
+            { catalog_id: 'yaca_1401_movie', nome: 'Western contemporaneo & Frontiera' }
+        ];
+
+        const mockConfig = {
+            _id: 'db-id-sh',
+            uuid: 'uuid-sh',
+            profiles: [
+                { id: 'profile-shelves-1', name: 'Profile Shelves', catalogs: [], shelves: updatedShelves }
+            ],
+            customCatalogs: [],
+            config: {
+                activeProfileId: 'profile-shelves-1',
+                configVersion: 'old-shelves-version',
+                manifestFingerprint: initialFingerprint,
+                pendingStremioResync: false
+            }
+        };
+
+        AddonConfig.find.mockResolvedValue([mockConfig]);
+        AddonConfig.updateOne.mockResolvedValue({ acknowledged: true });
+        UserAccount.findOne.mockResolvedValue({
+            userId: 'user-sh',
+            addonUuid: 'uuid-sh',
+            apiKeys: { stremio: 'stremio-key-sh' }
+        });
+        updateStremioAddonCollection.mockResolvedValue({ success: true });
+
+        const summary = await reconcileManifests();
+
+        expect(summary.examined).toBe(1);
+        expect(summary.updated).toBe(1);
+        expect(summary.resyncOk).toBe(1);
+
+        expect(AddonConfig.updateOne).toHaveBeenCalledWith(
+            { _id: 'db-id-sh' },
+            expect.objectContaining({
+                $set: expect.objectContaining({
+                    'config.configVersion': 'new-nanoid-ver',
+                    'config.pendingStremioResync': true
+                })
+            })
+        );
+
+        expect(updateStremioAddonCollection).toHaveBeenCalledWith(
+            'stremio-key-sh',
+            'https://yaca.example.com/user-sh/new-nanoid-ver/manifest.json'
+        );
+    });
+
     test('(c) resync fallito -> flag conservato', async () => {
         const mockConfig = {
             _id: 'db-id-3',

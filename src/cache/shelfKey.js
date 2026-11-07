@@ -54,7 +54,7 @@ function buildShelfCacheKey({ semi, medium, opzioni, cap, versioni } = {}) {
     const payload = JSON.stringify({
         v: CHIAVE_VERSIONE,
         g: [versioni && versioni.artefatto, versioni && versioni.ricetta].filter(Boolean).join('|'),
-        med: medium === 'movie' ? 'movie' : 'series',
+        med: medium === 'movie' ? 'movie' : (medium === 'series' || medium === 'tv' ? 'series' : 'all'),
         cap: Number(cap) || 60,
         opt: normalizzaOpzioni(opzioni),
         semi: normalizzaSemi(semi, medium),
