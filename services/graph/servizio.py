@@ -25,7 +25,17 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from graph import canon as K
 from graph import parametri as P
 from graph import interessi as I
+from graph import assi as _assi
+from graph import provenance as _PV
 from graph.runtime import Engine
+
+CMD_RIGENERA_TRANSIZIONE: str = "PYTHONPATH=services python -m graph.runtime.prepara --pota 16"
+CMD_RIGENERA_VICINI: str = "PYTHONPATH=services python -m graph.runtime.prepara --target vicini"
+CMD_RIGENERA_ASSI: str = "PYTHONPATH=services python -m graph.assi --build"
+
+MSG_ERR_TRANSIZIONE: str = f"Artefatto transizione mancante: transizione-pota16.npz. Rigenerare con: {CMD_RIGENERA_TRANSIZIONE}"
+MSG_ERR_VICINI: str = f"Artefatto vicini mancante: vicini-top100.npz. Rigenerare con: {CMD_RIGENERA_VICINI}"
+MSG_ERR_ASSI: str = f"Artefatto assi mancante: assi-canone.npz. Rigenerare con: {CMD_RIGENERA_ASSI}"
 
 # NOTA: motore.py (il motore denso V10) non è più importato né utilizzato da questo servizio,
 # che ora serve esclusivamente il runtime sparso V45 (graph.runtime.Engine).
@@ -47,11 +57,13 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
     if engine is _UNSET:
         try:
             engine = get_engine_v45()
+        except FileNotFoundError as exc:
+            return 503, {"ok": False, "errore": str(exc)}
         except Exception:
-            return 503, {"ok": False, "errore": "motore non pronto o artefatto non caricato"}
+            return 503, {"ok": False, "errore": MSG_ERR_TRANSIZIONE}
 
     if engine is None or getattr(engine, "Tr", None) is None:
-        return 503, {"ok": False, "errore": "motore non pronto o artefatto non caricato"}
+        return 503, {"ok": False, "errore": MSG_ERR_TRANSIZIONE}
 
     semi_raw = dati.get("semi")
     if semi_raw is None or not isinstance(semi_raw, list):
@@ -97,6 +109,16 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
             return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
     except (ValueError, TypeError):
         return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
+
+    if abs(tono) > 1e-6 or abs(complessita) > 1e-6:
+        try:
+            get_assi_canone()
+        except FileNotFoundError as exc:
+            return 503, {"ok": False, "errore": str(exc)}
+        except Exception:
+            return 503, {"ok": False, "errore": MSG_ERR_ASSI}
+        if getattr(engine, "assi_errore", None):
+            return 503, {"ok": False, "errore": MSG_ERR_ASSI}
 
     cap_val = dati.get("cap", 60)
     try:
@@ -236,14 +258,16 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
 
 
 # ==============================================================================
-# ROUTE /scaffali — MOTORE V45 E TOP-100 VICINI (Ticket 08)
+# GESTIONE ARTEFATTI, SINGLETON E STATO DI SALUTE (Ticket Container & Health)
 # ==============================================================================
 
 TRANSIZIONE_PATH: str | Path | None = os.environ.get("V45_TRANSIZIONE_PATH")
 VICINI_PATH: str | Path | None = os.environ.get("V45_VICINI_PATH")
+ASSI_PATH: str | Path | None = os.environ.get("ASSI_CANONE_PATH")
 
 _ENGINE_V45: Engine | None = None
 _W_AFF: sp.csr_matrix | None = None
+_ASSI_CACHE: tuple[np.ndarray, np.ndarray] | None = None
 
 ALLOWED_SEED_KEYS: frozenset[str] = frozenset({
     "key", "tmdbId", "tmdb_id", "medium", "plays", "frazione",
@@ -251,29 +275,203 @@ ALLOWED_SEED_KEYS: frozenset[str] = frozenset({
 })
 
 
+def risolvi_percorso_transizione(path: str | Path | None = None) -> Path:
+    target = path or TRANSIZIONE_PATH or os.environ.get("V45_TRANSIZIONE_PATH")
+    if target is not None:
+        return Path(target)
+    cartella = Path(__file__).resolve().parent / "data" / "v45-transizione"
+    return cartella / "transizione-pota16.npz"
+
+
+def risolvi_percorso_vicini(path: str | Path | None = None) -> Path:
+    target = path or VICINI_PATH or os.environ.get("V45_VICINI_PATH")
+    if target is not None:
+        return Path(target)
+    cartella = Path(__file__).resolve().parent / "data" / "v45-vicini100"
+    return cartella / "vicini-top100.npz"
+
+
+def risolvi_percorso_assi(path: str | Path | None = None) -> Path:
+    target = path or ASSI_PATH or os.environ.get("ASSI_CANONE_PATH")
+    if target is not None:
+        return Path(target)
+    return _assi.percorso_artefatto()
+
+
 def get_engine_v45(path: str | Path | None = None) -> Engine:
     """Ritorna l'istanza singleton di Engine V45, caricata lazily."""
     global _ENGINE_V45
-    target = path or TRANSIZIONE_PATH or os.environ.get("V45_TRANSIZIONE_PATH")
-    if _ENGINE_V45 is None or (target is not None and getattr(_ENGINE_V45, "percorso", None) != str(target)):
-        _ENGINE_V45 = Engine.carica_transizione(target)
+    p = risolvi_percorso_transizione(path)
+    if not p.is_file():
+        raise FileNotFoundError(MSG_ERR_TRANSIZIONE)
+    if _ENGINE_V45 is None or (path is not None and getattr(_ENGINE_V45, "percorso", None) != str(p)):
+        try:
+            _ENGINE_V45 = Engine.carica_transizione(p)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(MSG_ERR_TRANSIZIONE) from exc
     return _ENGINE_V45
 
 
 def get_vicini_affinita(path: str | Path | None = None) -> sp.csr_matrix:
     """Ritorna la matrice singleton top-100 vicini non potati per l'affinità."""
     global _W_AFF
-    target = path or VICINI_PATH or os.environ.get("V45_VICINI_PATH")
+    p = risolvi_percorso_vicini(path)
+    if not p.is_file():
+        raise FileNotFoundError(MSG_ERR_VICINI)
     if _W_AFF is None:
-        _W_AFF = I.carica_matrice_affinita(target)
+        try:
+            _W_AFF = I.carica_matrice_affinita(p)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(MSG_ERR_VICINI) from exc
     return _W_AFF
+
+
+def get_assi_canone(path: str | Path | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Ritorna gli array (tono, complessita) dal singleton precalcolato."""
+    global _ASSI_CACHE
+    p = risolvi_percorso_assi(path)
+    if not p.is_file():
+        raise FileNotFoundError(MSG_ERR_ASSI)
+    if _ASSI_CACHE is None or getattr(_assi, "_CACHED_PATH", None) != str(p):
+        try:
+            _ASSI_CACHE = _assi.carica_assi(p)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(MSG_ERR_ASSI) from exc
+    return _ASSI_CACHE
 
 
 def reset_singletons_v45() -> None:
     """Reset dei singleton V45 per i test."""
-    global _ENGINE_V45, _W_AFF
+    global _ENGINE_V45, _W_AFF, _ASSI_CACHE
     _ENGINE_V45 = None
     _W_AFF = None
+    _ASSI_CACHE = None
+    _assi.reset_cache_assi()
+
+
+def _estrai_sha_da_npz(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        z = np.load(path, allow_pickle=False)
+        if "_provenance" in z.files:
+            prov = json.loads(str(z["_provenance"]))
+            sha = prov.get("sha256")
+            if sha:
+                return str(sha)[:16]
+    except Exception:
+        pass
+    try:
+        return _PV.sha256_file(path)[:16]
+    except Exception:
+        return None
+
+
+def stato_artefatti(engine: Engine | None = None, w_aff: sp.csr_matrix | None = None) -> dict[str, dict[str, Any]]:
+    """Ispeziona lo stato sul disco e in memoria di ciascun artefatto del motore."""
+    # 1. Transizione
+    p_trans = risolvi_percorso_transizione()
+    pres_trans = p_trans.is_file()
+    loaded_trans = (engine is not None and getattr(engine, "Tr", None) is not None) or (_ENGINE_V45 is not None and getattr(_ENGINE_V45, "Tr", None) is not None)
+    sha_trans = None
+    if engine is not None and getattr(engine, "prov", None):
+        sha_trans = str(engine.prov.get("sha256", ""))[:16] or None
+    elif _ENGINE_V45 is not None and getattr(_ENGINE_V45, "prov", None):
+        sha_trans = str(_ENGINE_V45.prov.get("sha256", ""))[:16] or None
+    elif pres_trans:
+        sha_trans = _estrai_sha_da_npz(p_trans)
+
+    # 2. Vicini top-100
+    p_vicini = risolvi_percorso_vicini()
+    pres_vicini = p_vicini.is_file()
+    loaded_vicini = (w_aff is not None) or (_W_AFF is not None)
+    sha_vicini = _estrai_sha_da_npz(p_vicini) if pres_vicini else None
+
+    # 3. Assi tono/complessità
+    p_assi = risolvi_percorso_assi()
+    pres_assi = p_assi.is_file()
+    loaded_assi = (_ASSI_CACHE is not None) or (_assi._CACHED_TONO is not None and _assi._CACHED_COMPLESSITA is not None)
+    sha_assi = _estrai_sha_da_npz(p_assi) if pres_assi else None
+
+    # 4. Grafo V45 grezzo (triangolo originale non potato)
+    p_v45 = Path(__file__).resolve().parent / "data" / "v45" / "bolle-eterogeneo-V45-p1.0-triangolo.npz"
+    pres_v45 = p_v45.is_file()
+    sha_v45 = _estrai_sha_da_npz(p_v45) if pres_v45 else None
+
+    return {
+        "transizione": {
+            "present": pres_trans,
+            "path": str(p_trans).replace("\\", "/"),
+            "sha": sha_trans,
+            "provenance": sha_trans,
+            "loaded": loaded_trans,
+        },
+        "vicini": {
+            "present": pres_vicini,
+            "path": str(p_vicini).replace("\\", "/"),
+            "sha": sha_vicini,
+            "provenance": sha_vicini,
+            "loaded": loaded_vicini,
+        },
+        "assi": {
+            "present": pres_assi,
+            "path": str(p_assi).replace("\\", "/"),
+            "sha": sha_assi,
+            "provenance": sha_assi,
+            "loaded": loaded_assi,
+        },
+        "grafo_v45": {
+            "present": pres_v45,
+            "path": str(p_v45).replace("\\", "/"),
+            "sha": sha_v45,
+            "provenance": sha_v45,
+            "loaded": False,
+            "note": "non letto a runtime (sostituito da transizione-pota16.npz e vicini-top100.npz)",
+        },
+    }
+
+
+def costruisci_health_payload(engine: Engine | None = None, w_aff: sp.csr_matrix | None = None) -> dict[str, Any]:
+    """Costruisce il payload esaustivo per GET /health preservando ok e versioni per i client."""
+    arts = stato_artefatti(engine=engine, w_aff=w_aff)
+    # È "ok" per il client se la transizione è presente e caricata (il core del motore risponde)
+    is_ok = bool(arts["transizione"]["loaded"])
+
+    art_nome = None
+    if engine is not None and getattr(engine, "artefatto", None):
+        art_nome = engine.artefatto
+    elif _ENGINE_V45 is not None and getattr(_ENGINE_V45, "artefatto", None):
+        art_nome = _ENGINE_V45.artefatto
+
+    return {
+        "ok": is_ok,
+        "contratto": 1,
+        "versioni": {
+            "artefatto": art_nome,
+            "ricetta": P.impronta(),
+        },
+        "artefatti": arts,
+    }
+
+
+def verifica_startup_e_avvertimenti(logger_fn=print) -> None:
+    """Logga un warning a startup per ogni artefatto mancante, rendendo il guasto visibile in docker logs."""
+    arts = stato_artefatti()
+    if not arts["transizione"]["present"]:
+        logger_fn(
+            f"WARNING [startup]: {MSG_ERR_TRANSIZIONE} (percorso atteso: {arts['transizione']['path']})",
+            file=sys.stderr,
+        )
+    if not arts["vicini"]["present"]:
+        logger_fn(
+            f"WARNING [startup]: {MSG_ERR_VICINI} (percorso atteso: {arts['vicini']['path']})",
+            file=sys.stderr,
+        )
+    if not arts["assi"]["present"]:
+        logger_fn(
+            f"WARNING [startup]: {MSG_ERR_ASSI} (percorso atteso: {arts['assi']['path']})",
+            file=sys.stderr,
+        )
 
 
 def esegui_scaffali(
@@ -355,26 +553,40 @@ def esegui_scaffali(
     except (ValueError, TypeError):
         return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
 
-    # Risoluzione lazy degli artefatti V45
-    if engine is None or W_aff is None:
+    # 1. Verifica e risoluzione Engine (Transizione)
+    if engine is None:
         try:
-            if engine is None:
-                engine = get_engine_v45()
-            if W_aff is None:
-                W_aff = get_vicini_affinita()
+            engine = get_engine_v45()
         except FileNotFoundError as exc:
-            return 503, {
-                "ok": False,
-                "errore": f"artefatto mancante o non caricato: {exc}",
-            }
-        except Exception as exc:
-            return 503, {
-                "ok": False,
-                "errore": f"motore V45 o vicini non pronti: {exc}",
-            }
+            return 503, {"ok": False, "errore": str(exc)}
+        except Exception:
+            return 503, {"ok": False, "errore": MSG_ERR_TRANSIZIONE}
 
-    if engine is None or engine.Tr is None or W_aff is None:
-        return 503, {"ok": False, "errore": "motore V45 o vicini non pronti o artefatti non caricati"}
+    if engine is None or getattr(engine, "Tr", None) is None:
+        return 503, {"ok": False, "errore": MSG_ERR_TRANSIZIONE}
+
+    # 2. Verifica e risoluzione Matrice Vicini
+    if W_aff is None:
+        try:
+            W_aff = get_vicini_affinita()
+        except FileNotFoundError as exc:
+            return 503, {"ok": False, "errore": str(exc)}
+        except Exception:
+            return 503, {"ok": False, "errore": MSG_ERR_VICINI}
+
+    if W_aff is None:
+        return 503, {"ok": False, "errore": MSG_ERR_VICINI}
+
+    # 3. Verifica e risoluzione Assi (richiesti per /scaffali)
+    try:
+        get_assi_canone()
+    except FileNotFoundError as exc:
+        return 503, {"ok": False, "errore": str(exc)}
+    except Exception:
+        return 503, {"ok": False, "errore": MSG_ERR_ASSI}
+
+    if getattr(engine, "assi_errore", None):
+        return 503, {"ok": False, "errore": MSG_ERR_ASSI}
 
     # Caso speciale: lista semi vuota -> 200 con lista scaffali vuota
     if not semi_raw:
@@ -605,19 +817,15 @@ class ServizioHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            if self.health_payload is None:
-                self.send_response(503)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Connection", "keep-alive")
-                self.end_headers()
-                self.wfile.write(b'{"ok":false,"errore":"motore non pronto o artefatto non caricato"}')
-                return
-            self.send_response(200)
+            payload = costruisci_health_payload(self.engine_v45, self.w_aff)
+            status = 200 if payload["ok"] else 503
+            resp_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(self.health_payload)))
+            self.send_header("Content-Length", str(len(resp_bytes)))
             self.send_header("Connection", "keep-alive")
             self.end_headers()
-            self.wfile.write(self.health_payload)
+            self.wfile.write(resp_bytes)
             return
 
         self.send_response(404)
@@ -676,33 +884,30 @@ class ServizioHandler(BaseHTTPRequestHandler):
 
 def crea_server(host="0.0.0.0", port=7862, engine_v45=None, w_aff=None, carica_motore=True):
     """Fabbrica del server HTTP con motore V45 caricato."""
-    if engine_v45 is None and carica_motore:
-        try:
-            engine_v45 = get_engine_v45()
-        except Exception:
-            engine_v45 = None
+    # Warning visibili in docker logs a startup se manca qualche file
+    verifica_startup_e_avvertimenti()
 
-    if w_aff is None and carica_motore:
-        try:
-            w_aff = get_vicini_affinita()
-        except Exception:
-            w_aff = None
+    if carica_motore:
+        if engine_v45 is None:
+            try:
+                engine_v45 = get_engine_v45()
+            except Exception:
+                engine_v45 = None
 
-    health_payload = {
-        "ok": True,
-        "contratto": 1,
-    }
-    if engine_v45 is not None:
-        health_payload["versioni"] = {
-            "artefatto": engine_v45.artefatto,
-            "ricetta": P.impronta()
-        }
-    health_bytes = json.dumps(health_payload).encode("utf-8")
+        if w_aff is None:
+            try:
+                w_aff = get_vicini_affinita()
+            except Exception:
+                w_aff = None
+
+        try:
+            get_assi_canone()
+        except Exception:
+            pass
 
     class HandlerWithEngine(ServizioHandler):
         pass
 
-    HandlerWithEngine.health_payload = health_bytes
     HandlerWithEngine.engine_v45 = engine_v45
     HandlerWithEngine.w_aff = w_aff
 

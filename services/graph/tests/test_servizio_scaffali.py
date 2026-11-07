@@ -171,30 +171,132 @@ def test_chiave_seme_sconosciuta_restituisce_400():
 
 
 # ------------------------------------------------------------------------------
-# 5. Artefatto mancante -> 503 (monkeypatch)
+# ------------------------------------------------------------------------------
+# 5. Artefatti mancanti -> 503 fail-fast esplicito
 # ------------------------------------------------------------------------------
 def test_artefatto_transizione_mancante_restituisce_503(monkeypatch):
     servizio.reset_singletons_v45()
-    monkeypatch.setattr(servizio, "TRANSIZIONE_PATH", "/percorso/inesistente/transizione.npz")
+    monkeypatch.setattr(servizio, "TRANSIZIONE_PATH", Path("/percorso/inesistente/transizione.npz"))
+    monkeypatch.delenv("V45_TRANSIZIONE_PATH", raising=False)
 
+    # Verifica su /scaffali
     status, res = servizio.esegui_scaffali({
         "semi": [{"key": "movie:603", "plays": 1.0}]
     })
     assert status == 503
     assert res["ok"] is False
-    assert "artefatto mancante" in res["errore"]
+    assert "transizione-pota16.npz" in res["errore"]
+    assert "graph.runtime.prepara --pota 16" in res["errore"]
+
+    # Verifica su /raccomanda (esegui_richiesta)
+    status_r, res_r = servizio.esegui_richiesta({
+        "semi": [{"key": "movie:603", "plays": 1.0}]
+    })
+    assert status_r == 503
+    assert res_r["ok"] is False
+    assert "transizione-pota16.npz" in res_r["errore"]
+    assert "graph.runtime.prepara --pota 16" in res_r["errore"]
 
 
 def test_artefatto_vicini_mancante_restituisce_503(monkeypatch):
     servizio.reset_singletons_v45()
-    monkeypatch.setattr(servizio, "VICINI_PATH", "/percorso/inesistente/vicini.npz")
+    monkeypatch.setattr(servizio, "VICINI_PATH", Path("/percorso/inesistente/vicini.npz"))
+    monkeypatch.delenv("V45_VICINI_PATH", raising=False)
 
     status, res = servizio.esegui_scaffali({
         "semi": [{"key": "movie:603", "plays": 1.0}]
     })
     assert status == 503
     assert res["ok"] is False
-    assert ("artefatto vicini mancante" in res["errore"] or "artefatto mancante" in res["errore"])
+    assert "vicini-top100.npz" in res["errore"]
+    assert "graph.runtime.prepara --target vicini" in res["errore"]
+
+
+def test_artefatto_assi_mancante_restituisce_503(monkeypatch):
+    servizio.reset_singletons_v45()
+    monkeypatch.setattr(servizio, "ASSI_PATH", Path("/percorso/inesistente/assi.npz"))
+    monkeypatch.delenv("ASSI_CANONE_PATH", raising=False)
+
+    status, res = servizio.esegui_scaffali({
+        "semi": [{"key": "movie:603", "plays": 1.0}]
+    })
+    assert status == 503
+    assert res["ok"] is False
+    assert "assi-canone.npz" in res["errore"]
+    assert "graph.assi --build" in res["errore"]
+
+
+def test_health_artefatti_presenti_in_layout_locale():
+    p_trans = servizio.risolvi_percorso_transizione()
+    p_vicini = servizio.risolvi_percorso_vicini()
+    p_assi = servizio.risolvi_percorso_assi()
+
+    if not (p_trans.is_file() and p_vicini.is_file() and p_assi.is_file()):
+        pytest.skip(
+            f"Artefatti non presenti nel layout locale (trans: {p_trans.is_file()}, "
+            f"vicini: {p_vicini.is_file()}, assi: {p_assi.is_file()})"
+        )
+
+    # Carica i singletons
+    eng = servizio.get_engine_v45()
+    w_aff = servizio.get_vicini_affinita()
+    servizio.get_assi_canone()
+
+    payload = servizio.costruisci_health_payload(engine=eng, w_aff=w_aff)
+
+    # 1. Contratto base client
+    assert payload["ok"] is True
+    assert payload["contratto"] == 1
+    assert "versioni" in payload
+    assert isinstance(payload["versioni"]["artefatto"], str)
+    assert isinstance(payload["versioni"]["ricetta"], str)
+
+    # 2. Monitoraggio per-artefatto
+    arts = payload["artefatti"]
+    assert set(arts.keys()) == {"transizione", "vicini", "assi", "grafo_v45"}
+
+    for nome in ("transizione", "vicini", "assi"):
+        entry = arts[nome]
+        assert entry["present"] is True
+        assert entry["loaded"] is True
+        assert isinstance(entry["path"], str)
+        assert len(entry["path"]) > 0
+        assert isinstance(entry["sha"], str)
+        assert 8 <= len(entry["sha"]) <= 16  # short sha
+        assert entry["provenance"] == entry["sha"]
+
+    assert arts["grafo_v45"]["loaded"] is False
+    assert "note" in arts["grafo_v45"]
+
+
+def test_health_chiamata_http_su_socket():
+    p_trans = servizio.risolvi_percorso_transizione()
+    p_vicini = servizio.risolvi_percorso_vicini()
+    p_assi = servizio.risolvi_percorso_assi()
+
+    if not (p_trans.is_file() and p_vicini.is_file() and p_assi.is_file()):
+        pytest.skip("Artefatti non presenti nel layout locale per test socket /health")
+
+    server, _ = servizio.crea_server(host="127.0.0.1", port=0, carica_motore=True)
+    port = server.server_address[1]
+    th = threading.Thread(target=server.serve_forever, daemon=True)
+    th.start()
+
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    conn.request("GET", "/health")
+    resp = conn.getresponse()
+    data = json.loads(resp.read().decode("utf-8"))
+    conn.close()
+
+    server.shutdown()
+    server.server_close()
+
+    assert resp.status == 200
+    assert data["ok"] is True
+    assert "artefatti" in data
+    assert data["artefatti"]["transizione"]["loaded"] is True
+    assert data["artefatti"]["vicini"]["loaded"] is True
+    assert data["artefatti"]["assi"]["loaded"] is True
 
 
 # ------------------------------------------------------------------------------

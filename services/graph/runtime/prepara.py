@@ -259,13 +259,13 @@ def prepara_vicini(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Prepara e salva su disco gli artefatti precalcolati con provenienza (transizione e vicini top-100)."
+        description="Prepara e salva su disco gli artefatti precalcolati con provenienza (transizione, vicini top-100, assi)."
     )
     parser.add_argument(
         "--target",
-        choices=["transizione", "vicini", "entrambi"],
+        choices=["transizione", "vicini", "assi", "entrambi", "tutti"],
         default=None,
-        help="Artefatto da produrre ('transizione', 'vicini', o 'entrambi'). Se omesso, usa transizione o vicini in base ai flag.",
+        help="Artefatto da produrre ('transizione', 'vicini', 'assi', 'entrambi', o 'tutti'). Se omesso, usa transizione o vicini in base ai flag.",
     )
     parser.add_argument(
         "--vicini",
@@ -296,7 +296,7 @@ def main() -> None:
         dest="out_path",
         type=str,
         default=None,
-        help="Percorso o cartella di output (default services/graph/data/v45-transizione/ o v45-vicini100/)",
+        help="Percorso o cartella di output",
     )
     args = parser.parse_args()
 
@@ -308,17 +308,24 @@ def main() -> None:
         else:
             target = "transizione"
 
-    if target in ("transizione", "entrambi"):
+    if target in ("transizione", "entrambi", "tutti"):
         out_trans = args.out_path
-        if out_trans is None and target == "entrambi":
+        if out_trans is None and target in ("entrambi", "tutti"):
             out_trans = "services/graph/data/v45-transizione/"
         prepara_transizione(in_path=args.in_path, out_path=out_trans, pota=args.pota)
 
-    if target in ("vicini", "entrambi"):
+    if target in ("vicini", "entrambi", "tutti"):
         out_vicini = args.out_path
-        if out_vicini is None and target == "entrambi":
+        if out_vicini is None and target in ("entrambi", "tutti"):
             out_vicini = "services/graph/data/v45-vicini100/"
         prepara_vicini(in_path=args.in_path, out_path=out_vicini, top_k=args.top_k)
+
+    if target in ("assi", "tutti"):
+        from graph import assi as _assi
+        out_assi = args.out_path
+        if out_assi is None and target == "tutti":
+            out_assi = "services/graph/data/assi-canone.npz"
+        _assi.costruisci_assi(percorso_out=out_assi)
 
 
 if __name__ == "__main__":

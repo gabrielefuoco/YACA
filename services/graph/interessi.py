@@ -155,12 +155,15 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
                 cand_p = files[0]
             else:
                 raise FileNotFoundError(
-                    f"Artefatto top-100 vicini non trovato in {cartella}. "
-                    "Eseguire prima: 'PYTHONPATH=services py -m graph.runtime.prepara --target vicini'."
+                    "Artefatto vicini mancante: vicini-top100.npz. "
+                    "Rigenerare con: PYTHONPATH=services python -m graph.runtime.prepara --target vicini"
                 )
 
     if not cand_p.is_file():
-        raise FileNotFoundError(f"Artefatto vicini non trovato: {cand_p}")
+        raise FileNotFoundError(
+            "Artefatto vicini mancante: vicini-top100.npz. "
+            "Rigenerare con: PYTHONPATH=services python -m graph.runtime.prepara --target vicini"
+        )
 
     W, prov = _PV.leggi(cand_p)
     if W.shape[0] != 76497:

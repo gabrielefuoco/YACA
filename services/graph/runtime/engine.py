@@ -102,9 +102,11 @@ class Engine:
             self.nep = np.asarray(meta["NEP"], dtype=np.float64)
             try:
                 self.tono, self.complessita = _assi.carica_assi()
-            except Exception:
+                self.assi_errore = None
+            except Exception as exc:
                 self.tono = np.zeros(n, dtype=np.float32)
                 self.complessita = np.zeros(n, dtype=np.float32)
+                self.assi_errore = str(exc)
         else:
             # Consente fixture o sottomatrici di test con dimensione diversa
             self.keys = [f"item:{i}" for i in range(n)]
@@ -217,14 +219,17 @@ class Engine:
                     candidato = files[0]
                 else:
                     raise FileNotFoundError(
-                        f"Nessun artefatto di transizione precalcolato trovato in {cartella}. "
-                        "Eseguire prima 'py -m graph.runtime.prepara --pota 16 --out services/graph/data/v45-transizione/'."
+                        "Artefatto transizione mancante: transizione-pota16.npz. "
+                        "Rigenerare con: PYTHONPATH=services python -m graph.runtime.prepara --pota 16"
                     )
             path = candidato
 
         path = Path(path)
         if not path.is_file():
-            raise FileNotFoundError(f"Artefatto di transizione non trovato: {path}")
+            raise FileNotFoundError(
+                "Artefatto transizione mancante: transizione-pota16.npz. "
+                "Rigenerare con: PYTHONPATH=services python -m graph.runtime.prepara --pota 16"
+            )
 
         M, prov = _PV.leggi(path)
         n = M.shape[0]

@@ -89,12 +89,52 @@ from graph.interessi import carica_matrice_affinita, scaffali
 W_vicini = carica_matrice_affinita()  # carica vicini-top100.npz (~418 ms, ~62 MB RAM)
 ```
 
-Misurazioni scientifiche Resident Set Size (RSS psutil):
-- **Runtime PPR puro (`Engine.carica_transizione`)**: **156,8 MB** peak RSS
-- **Clustering completo `scaffali()` su `warnok` (476 semi)**: **307,1 MB** peak RSS (target <= 400 MB rispettato)
-- **Clustering completo `scaffali()` su `pepsipex` (568 semi, caso peggiore)**: **305,9 MB** peak RSS (target <= 400 MB rispettato)
+### Assi Tono e Complessità: filtro al retrieval
 
-Entrambi i percorsi rientrano stabilmente sotto la soglia di 400 MB con oltre 110 MiB di headroom per il container.
+L'artefatto `assi-canone.npz` (~94 KB compresso, ~612 KB in RAM) contiene due array float32 1D di lunghezza
+pari ai nodi del canone (76.497 titoli), calcolati da evidenze oggettive (TMDB keywords ponderate con polarità
+revisionabile a mano, overview, vote_average, runtime ed episodi):
+- `tono`: leggero (-1.0) ↔ cupo (+1.0);
+- `complessita`: lineare (-1.0) ↔ esigente (+1.0).
+
+Viene applicato come filtro moltiplicativo continuo di retrieval in `Engine.raccomanda` e `interessi.scaffali`:
+
+```bash
+PYTHONPATH=services py -m graph.assi --build
+# oppure
+PYTHONPATH=services py -m graph.runtime.prepara --target assi
+# scrive services/graph/data/assi-canone.npz (94 KB, prov tracciata)
+```
+
+## I Tre Artefatti Preparati di Produzione e Deploy Docker
+
+Il runtime in produzione richiede tre artefatti precalcolati e preparati (nessun calcolo pesante o addestramento nel container):
+
+| Artefatto | Percorso Container | Dimensione File | RAM Impegnata | Comando di Rigenerazione |
+|---|---|---|---|---|
+| **Transizione potata** | `/app/services/graph/data/v45-transizione/transizione-pota16.npz` | ~10 MB | ~34 MB | `PYTHONPATH=services py -m graph.runtime.prepara --pota 16` |
+| **Top-100 vicini** | `/app/services/graph/data/v45-vicini100/vicini-top100.npz` | ~45 MB | ~71 MB | `PYTHONPATH=services py -m graph.runtime.prepara --target vicini` |
+| **Assi Tono/Complessità** | `/app/services/graph/data/assi-canone.npz` | ~94 KB | ~0.6 MB | `PYTHONPATH=services py -m graph.assi --build` |
+
+Tutti e tre possono essere generati in sequenza con:
+```bash
+PYTHONPATH=services py -m graph.runtime.prepara --target tutti
+```
+
+### Mount Docker e Fail-Fast
+- **Mount read-only**: in `docker-compose.yml`, la directory host `/srv/yaca/services/graph/data` è montata read-only in `/app/services/graph/data:ro`. L'immagine Docker esclude rigorosamente `build/`, `recipes/` e `data/` tramite `.dockerignore`.
+- **Avviso loud allo startup**: se uno qualunque dei tre artefatti non è presente su disco all'avvio, il servizio stampa immediatamente un warning in `stderr` (visibile in `docker logs yaca-graph` prima di qualsiasi chiamata).
+- **GET `/health`**: espone il blocco `artefatti` indicando per ciascun file `{present: bool, path: str, sha: str, loaded: bool}` insieme a `versioni` (`artefatto`, `ricetta`) per retrocompatibilità.
+- **Fail-fast mirato**:
+  - `POST /raccomanda` richiede la transizione: se manca `transizione-pota16.npz`, risponde HTTP 503 con il nome del file e il comando di rigenerazione.
+  - `POST /scaffali` richiede transizione + vicini + assi: se manca qualunque artefatto, risponde HTTP 503 indicando chiaramente quale file è assente e come rigenerarlo.
+- **Regola di Rollback**: in caso di rollback a release precedenti di YACA, gli artefatti preparati DEVONO rimanere intatti sul disco dell'host (`/srv/yaca/services/graph/data`). Niente deve cancellarli.
+
+Misurazioni scientifiche Resident Set Size (RSS psutil con TUTTI E TRE gli artefatti):
+- **Server pronto a riposo (3 artefatti caricati)**: **216,95 MB** RSS
+- **Clustering completo `scaffali()` su `warnok` (476 semi, 16 righe)**: **293,51 MB** peak RSS (target <= 400 MB rispettato con **106,49 MB** di margine libero!)
+- **Headroom nel container Docker (mem_limit: 512m)**: **218,49 MB** di margine libero.
+
 È severamente vietato toccare `bolle-eterogeneo-V45-p1.0-triangolo.npz` nel modulo clustering. L'artefatto
 risiede in `services/graph/data/v45-vicini100/`, è gitignored e rigenerabile dal comando documentato.
 

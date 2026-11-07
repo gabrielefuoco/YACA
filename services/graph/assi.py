@@ -419,6 +419,9 @@ def percorso_artefatto(percorso: str | Path | None = None) -> Path:
     """Ritorna il percorso su disco dell'artefatto preparato degli assi."""
     if percorso is not None:
         return Path(percorso)
+    env_p = os.environ.get("ASSI_CANONE_PATH")
+    if env_p:
+        return Path(env_p)
     return K.DATA / ARTEFATTO_NOME
 
 
@@ -580,7 +583,7 @@ _CACHED_COMPLESSITA: np.ndarray | None = None
 _CACHED_PATH: str | None = None
 
 
-def carica_assi(percorso: str | Path | None = None) -> tuple[np.ndarray, np.ndarray]:
+def carica_assi(percorso: str | Path | None = None, consenti_costruzione: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """Carica gli array precalcolati di tono e complessità per i nodi del canone.
 
     Restituisce:
@@ -593,8 +596,13 @@ def carica_assi(percorso: str | Path | None = None) -> tuple[np.ndarray, np.ndar
         return _CACHED_TONO, _CACHED_COMPLESSITA
 
     if not dest.is_file():
-        # Costruisce automaticamente se assente
-        costruisci_assi(dest)
+        if consenti_costruzione:
+            costruisci_assi(dest)
+        else:
+            raise FileNotFoundError(
+                "Artefatto assi mancante: assi-canone.npz. "
+                "Rigenerare con: PYTHONPATH=services python -m graph.assi --build"
+            )
 
     z = np.load(dest, allow_pickle=False)
     if "tono" not in z.files or "complessita" not in z.files:

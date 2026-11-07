@@ -74,8 +74,12 @@ services:
     mem_limit: 512m
     environment:
       - PORT=7862
+      - V45_TRANSIZIONE_PATH=/app/services/graph/data/v45-transizione/transizione-pota16.npz
+      - V45_VICINI_PATH=/app/services/graph/data/v45-vicini100/vicini-top100.npz
+      - ASSI_CANONE_PATH=/app/services/graph/data/assi-canone.npz
     volumes:
-      # L'artefatto letto dal modulo come bind mount read-only dal disco del mate (decisione ticket 07 / 18)
+      # I 3 artefatti preparati V45 (transizione potata, vicini top-100, assi tono/complessità)
+      # e i metadati del canone sono montati come bind mount read-only dal disco del mate
       - /srv/yaca/services/graph/data:/app/services/graph/data:ro
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
