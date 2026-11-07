@@ -49,7 +49,28 @@ function resolveCatalogDefinition(id, userConfig, baseId) {
         if (fromProfile) return fromProfile;
     }
     if (userConfig?.customCatalogs) {
-        return userConfig.customCatalogs.find(c => c.id === id) || null;
+        const fromCustom = userConfig.customCatalogs.find(c => c.id === id);
+        if (fromCustom) return fromCustom;
+    }
+
+    // Scaffali dinamici del profilo (V45): risolve l'identità del catalogo generato
+    const { getCachedProfileShelves } = require('../pool');
+    const shelvesList = userConfig?.shelves
+        || userConfig?.scaffali
+        || activeProfile?.shelves
+        || activeProfile?.scaffali
+        || (activeProfile?.id ? getCachedProfileShelves(activeProfile.id) : null)
+        || (userConfig?.userId ? getCachedProfileShelves(userConfig.userId) : null);
+    if (Array.isArray(shelvesList)) {
+        const shelf = shelvesList.find(s => (s.catalog_id === id || s.catalog_id === baseId || s.id === id || s.id === baseId));
+        if (shelf) {
+            return {
+                id: shelf.catalog_id || shelf.id,
+                name: shelf.nome || shelf.name || shelf.label || 'Scaffale',
+                type: shelf.medium === 'tv' ? 'series' : (shelf.medium || shelf.type || 'movie'),
+                extra: [{ name: 'skip' }]
+            };
+        }
     }
 
     return null;

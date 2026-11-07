@@ -78,6 +78,7 @@ router.post('/anteprima', async (req, res) => {
         };
 
         let targetCatalogId = null;
+        let preset = null;
         let discoverFilters = null;
         let discoverType = customType === 'series' ? 'tv' : 'movie';
         let strategy = 'discovery';
@@ -86,7 +87,7 @@ router.post('/anteprima', async (req, res) => {
         if (id && (id.startsWith('yaca_preset_') || id.startsWith('preset_') || getPresets().some(p => p.id === id))) {
             const presetId = id.startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : id;
             const presets = getPresets();
-            const preset = presets.find(p => p.id === id || p.id === presetId || p.id === `preset_${presetId}`);
+            preset = presets.find(p => p.id === id || p.id === presetId || p.id === `preset_${presetId}`);
             if (!preset) return erroreDominio(res, 404, 'non_trovato', 'Preset catalogo non trovato.');
             targetCatalogId = preset.id;
 
@@ -117,6 +118,11 @@ router.post('/anteprima', async (req, res) => {
             strategy = customFilters.presentation_strategy || customFilters.strategy || 'discovery';
         } else if (id) {
             targetCatalogId = id;
+            if (!customType) {
+                if (id.endsWith('_series') || id.includes('series') || id.endsWith('_tv')) {
+                    discoverType = 'tv';
+                }
+            }
         } else {
             return erroreDominio(res, 400, 'richiesta_non_valida', 'Parametri id, filters o prompt obbligatori.');
         }
@@ -185,7 +191,7 @@ router.post('/anteprima', async (req, res) => {
         };
 
         const payload = formatPreviewResponse({
-            name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null,
+            name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : (preset?.name || previewData?.name || null),
             type: discoverType,
             cards: items,
             diagnosi,

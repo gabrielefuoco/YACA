@@ -67,11 +67,11 @@ export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLive
   }
 
   if (error) {
-    return <div className="text-red-400 text-sm p-4">{error}</div>;
+    return <div className="text-destructive font-semibold text-sm p-4">{error}</div>;
   }
 
   if (items.length === 0) {
-    return <div className="text-marrow-light/50 text-sm p-4">Nessun elemento trovato per il tuo DNA.</div>;
+    return <div className="text-marrow-light/70 text-sm p-4 italic">Nessun elemento trovato per il tuo DNA.</div>;
   }
 
   return (

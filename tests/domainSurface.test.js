@@ -135,7 +135,6 @@ const { getJwtSecret } = require('../src/api/auth/index');
 const profiloRouter = require('../src/api/profilo');
 const configurazioneRouter = require('../src/api/configurazione');
 const ricercaRouter = require('../src/api/ricerca');
-const mondiRouter = require('../src/api/mondi');
 const stremioRoutes = require('../src/api/stremio');
 const {
     stremioAuthHandler,
@@ -191,7 +190,6 @@ beforeAll(async () => {
     app.use('/api/profilo', profiloRouter);
     app.use('/api/configurazione', configurazioneRouter);
     app.use('/api/ricerca', ricercaRouter);
-    app.use('/api/mondi', mondiRouter);
 
     // Auth rotte
     app.post('/api/auth/stremio', stremioAuthHandler);
@@ -239,7 +237,6 @@ describe('Superficie di dominio: autenticazione e forma errore unica', () => {
         ['POST', '/api/configurazione/verifica'],
         ['GET', '/api/configurazione/preset'],
         ['GET', '/api/ricerca?tipo=titolo&q=matrix'],
-        ['POST', '/api/mondi'],
         ['GET', '/api/auth/trakt'],
         ['DELETE', '/api/auth/trakt'],
         ['GET', '/sync-status/utente-test-123']
@@ -383,20 +380,6 @@ describe('GET /api/ricerca (una sola rotta con parametro tipo)', () => {
         const res = await request('GET', '/api/ricerca?tipo=inventato&q=test');
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe('richiesta_non_valida');
-    });
-});
-
-describe('POST /api/mondi', () => {
-    test('POST /api/mondi legge cronologia e restituisce raccomandazioni mondi', async () => {
-        library.cronologiaDi.mockResolvedValueOnce([
-            { tmdbId: 100, type: 'movie', signals: [{ type: 'loved' }] }
-        ]);
-
-        const res = await request('POST', '/api/mondi', { profileId: 'global', quante: 2 });
-        expect(res.status).toBe(200);
-        expect(res.body.ok).toBe(true);
-        expect(res.body.mondi).toBeDefined();
-        expect(res.body.mondi[0].ruolo).toBe('il_tuo_mondo');
     });
 });
 

@@ -4,7 +4,7 @@
 
 Il frontend non nomina mai l'infrastruttura del server:
 - **Nessuna rotta infrastrutturale**: vietati `/api/tmdb/*`, `/api/sync/*`, `/api/validate-*`, `/api/clear-cache`, `/api/profiles/:id/*`.
-- **Rotte di dominio**: tutte le chiamate passano esclusivamente tramite `frontend/src/lib/api.ts` e usano le risorse di dominio (`/api/profilo`, `/api/configurazione`, `/api/ricerca`, `/api/mondi`, `/api/auth/*`).
+- **Rotte di dominio**: tutte le chiamate passano esclusivamente tramite `frontend/src/lib/api.ts` e usano le risorse di dominio (`/api/profilo`, `/api/configurazione`, `/api/ricerca`, `/api/auth/*`).
 - **Nessun `userId`**: l'identità dell'utente è veicolata dal cookie di sessione HttpOnly gestito dal server. Nessun `userId` viaggia in query o body.
 - **Perché**: evitare che il client torni a diventare un orchestratore di servizi esterni o di pipeline complesse. Il client esprime intenzioni di presentazione; il server compone e orchestra i dati.
 

@@ -291,10 +291,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
         <div className="flex items-center justify-between gap-2 sm:gap-3 text-primary">
           <div className="flex items-center gap-2 sm:gap-3">
             <BrainCircuit className="h-5 w-5 sm:h-6 sm:w-6" />
-            <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">DNA Tracker & Editor</h2>
+            <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest text-marrow-deep">DNA Tracker & Editor</h2>
           </div>
         </div>
-        <p className="text-xs text-marrow-light/40 -mt-2">
+        <p className="text-xs text-marrow-light/70 -mt-2 font-medium">
           Il tuo DNA viene calcolato istantaneamente dai preset selezionati e si evolve man mano che guardi film e serie tv.
         </p>
 
@@ -306,8 +306,8 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
             </div>
           </div>
         ) : (
-          <div className="glass-panel p-5 border border-marrow-light/10">
-            <p className="text-xs text-marrow-light/40 italic">DNA non ancora calcolato. Seleziona dei preset e salva il profilo.</p>
+          <div className="glass-card rounded-2xl p-5 border border-marrow-light/10 text-center">
+            <p className="text-xs text-marrow-light/70 italic">DNA non ancora calcolato. Seleziona dei preset e salva il profilo.</p>
           </div>
         )}
 
@@ -318,46 +318,46 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
       <section className="flex flex-col gap-4 sm:gap-6">
         <div className="flex items-center gap-2 sm:gap-3 text-primary">
           <Terminal className="h-5 w-5 sm:h-6 sm:w-6" />
-          <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest">DNA Engine</h2>
+          <h2 className="text-sm sm:text-lg font-black uppercase tracking-widest text-marrow-deep">DNA Engine</h2>
         </div>
 
 
         <div className="flex flex-col gap-4 sm:gap-6">
           {/* ── Manopole del Motore (Assi di Modulazione del Grafo) ── */}
-          <div className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5 border border-marrow-light/10">
-            <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
+          <div className="glass-card rounded-2xl overflow-hidden flex flex-col shadow-sm border border-marrow-light/10">
+            <div className="px-4 py-3 border-b border-marrow-light/10 bg-white/40">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Sliders className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-bold text-marrow-light">Manopole del Motore</span>
-                  <span className="text-xs font-mono uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  <span className="text-sm font-black text-marrow-deep">Manopole del Motore</span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
                     Modulazione Attivazione
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleResetSliders}
-                  className="inline-flex items-center gap-1.5 text-xs font-mono text-marrow-light/70 hover:text-primary transition-colors cursor-pointer px-2 rounded hover:bg-marrow-light/5 min-h-[44px] touch-manipulation"
+                  className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-marrow-light/80 hover:text-primary transition-colors cursor-pointer px-2.5 py-1 rounded-lg hover:bg-white/60 border border-transparent hover:border-marrow-light/10 min-h-[44px] touch-manipulation"
                   title="Ripristina valori predefiniti"
                 >
                   <RotateCcw className="h-3 w-3" />
                   <span>Ripristina Default</span>
                 </button>
               </div>
-              <p className="text-xs text-marrow-light/50 mt-1.5 leading-relaxed">
+              <p className="text-xs text-marrow-light/70 mt-1.5 leading-relaxed font-normal">
                 Gli assi governano la camminata sul grafo e <strong>modulano l&apos;attivazione</strong> dei mondi: circa un terzo dei titoli cambia composizione lungo il percorso, senza svuotare le liste né imporre filtri rigidi.
               </p>
             </div>
 
             <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Slider 1: Cozy / Impegnativo */}
-              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
+              <div className="bg-white/50 border border-marrow-light/10 rounded-xl p-3 sm:p-4 flex flex-col justify-between gap-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Tonalità</span>
-                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(cozy)</span>
+                    <span className="text-xs font-black text-marrow-deep uppercase tracking-wider">Tonalità</span>
+                    <span className="ml-1 text-xs font-mono text-marrow-light/60">(cozy)</span>
                   </div>
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded shrink-0">
                     {shownSliders.cozy < -0.05
                       ? `Impegnativo (${shownSliders.cozy.toFixed(1)})`
                       : shownSliders.cozy > 0.05
@@ -375,28 +375,28 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                     onValueCommit={([val]) => handleSliderChange('cozy', val)}
                   />
                 </div>
-                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
+                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/70 font-medium">
                   <span>Impegnativo (-1.0)</span>
                   <span>Neutro (0.0)</span>
                   <span>Cozy (+1.0)</span>
                 </div>
-                <p className="text-xs text-marrow-light/40 leading-snug">
+                <p className="text-xs text-marrow-light/70 leading-snug">
                   Bilancia il peso verso documentari/storia/guerra (-1) o commedia/famiglia/animazione (+1). Circa un terzo dei titoli modula il tono.
                 </p>
               </div>
 
               {/* Slider 2: Canone */}
-              <div className="bg-marrow-light/5 border border-marrow-light/10 rounded-lg p-3 sm:p-4 flex flex-col justify-between gap-3">
+              <div className="bg-white/50 border border-marrow-light/10 rounded-xl p-3 sm:p-4 flex flex-col justify-between gap-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     {/* «Notorietà» e non «Popolarità»: il cursore non sposta verso i titoli più amati,
                         sposta il baricentro attorno alla mediana dei voti dello storico — da un titolo che
                         conoscono in pochi a uno che conoscono tutti. Il campo resta `canone` ovunque
                         (API, impostazioni, chiavi di cache): cambia solo l'etichetta visibile. */}
-                    <span className="text-xs font-bold text-marrow-light uppercase tracking-wider">Notorietà</span>
-                    <span className="ml-1 text-xs font-mono text-marrow-light/40">(canone)</span>
+                    <span className="text-xs font-black text-marrow-deep uppercase tracking-wider">Notorietà</span>
+                    <span className="ml-1 text-xs font-mono text-marrow-light/60">(canone)</span>
                   </div>
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded shrink-0">
                     {shownSliders.canone < -0.05
                       ? `Poco nota (${shownSliders.canone.toFixed(1)})`
                       : shownSliders.canone > 0.05
@@ -414,12 +414,12 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                     onValueCommit={([val]) => handleSliderChange('canone', val)}
                   />
                 </div>
-                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/50">
+                <div className="flex justify-between items-center text-xs font-mono text-marrow-light/70 font-medium">
                   <span>Poco nota (-1.0)</span>
                   <span>Come da storico (0.0)</span>
                   <span>Molto nota (+1.0)</span>
                 </div>
-                <p className="text-xs text-marrow-light/40 leading-snug">
+                <p className="text-xs text-marrow-light/70 leading-snug">
                   Sposta la finestra attorno al canone dedotto dallo storico (DELTA_FASCIA calibrato a 1.0, ~2.7x di fattore). Modula senza escludere.
                 </p>
               </div>
@@ -427,10 +427,10 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
           </div>
 
           {heroListItems.length === 0 ? (
-            <div className="glass-panel rounded-xl p-6 sm:p-10 border border-marrow-light/10 text-center flex flex-col items-center justify-center gap-3">
+            <div className="glass-card rounded-2xl p-6 sm:p-10 border border-marrow-light/10 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
               <div className="text-3xl">📚</div>
-              <div className="text-sm font-bold text-marrow-light">Nessuno scaffale generato per questo profilo</div>
-              <p className="text-xs text-marrow-light/60 max-w-md leading-relaxed">
+              <div className="text-sm font-black text-marrow-deep">Nessuno scaffale generato per questo profilo</div>
+              <p className="text-xs text-marrow-light/70 max-w-md leading-relaxed font-normal">
                 Gli scaffali del motore nascono dalla tua cronologia e dai tuoi gusti reali. Guarda qualche titolo o sincronizza la tua libreria Stremio/Trakt per far emergere i tuoi primi scaffali tematici.
               </p>
             </div>
@@ -444,19 +444,19 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
               return (
                 <div
                   key={item.id}
-                  className="glass-panel rounded-xl overflow-hidden flex flex-col shadow-lg shadow-marrow-light/5"
+                  className="glass-card rounded-2xl overflow-hidden flex flex-col shadow-sm border border-marrow-light/10"
                 >
-                  <div className="px-4 py-3 border-b border-marrow-light/10 bg-marrow-light/5">
+                  <div className="px-4 py-3 border-b border-marrow-light/10 bg-white/40">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{item.emoji}</span>
-                        <span className="text-sm font-bold text-marrow-light">{item.label || item.idBase}</span>
-                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        <span className="text-sm font-black text-marrow-deep">{item.label || item.idBase}</span>
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
                           {mediumBadge}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <label htmlFor={switchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/60">
+                        <label htmlFor={switchId} className="inline-flex items-center gap-1.5 text-xs font-bold font-mono text-marrow-light/80 cursor-pointer">
                           {switchLabel}
                           <Switch
                             id={switchId}
@@ -467,26 +467,26 @@ export function DnaAndAiPanel({ profile, onUpdateProfile, syncStatus, userId }: 
                       </div>
                     </div>
                     {item.desc && (
-                      <p className="text-xs text-marrow-light/50 mt-1 leading-relaxed">
+                      <p className="text-xs text-marrow-light/70 mt-1 leading-relaxed">
                         {item.desc}
                       </p>
                     )}
                   </div>
                   <div className="p-4 flex-grow flex flex-col gap-4">
                     {!isEnabled ? (
-                      <div className="rounded-lg bg-marrow-light/5 border border-marrow-light/10 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px] flex flex-col items-center justify-center text-center opacity-70">
-                        <EyeOff className="h-8 w-8 text-marrow-light/20 mb-2" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/40">
+                      <div className="rounded-xl bg-white/30 border border-dashed border-marrow-light/20 p-3 sm:p-6 min-h-[80px] sm:min-h-[140px] flex flex-col items-center justify-center text-center">
+                        <EyeOff className="h-8 w-8 text-marrow-light/30 mb-2" />
+                        <p className="text-xs font-bold uppercase tracking-wider text-marrow-light/60">
                           Catalogo disattivato
                         </p>
-                        <p className="text-xs text-marrow-light/40 mt-1">
+                        <p className="text-xs text-marrow-light/60 mt-1">
                           Attiva il catalogo per visualizzare l&apos;anteprima dal vivo.
                         </p>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center justify-between gap-1.5">
-                          <span className="text-xs font-bold text-marrow-light/60 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
+                          <span className="text-xs font-bold text-marrow-light/70 uppercase tracking-widest">Anteprima (DuckDB + VSM)</span>
                         </div>
                         <CatalogLivePreview 
                           catalogId={item.id} 

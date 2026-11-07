@@ -42,7 +42,7 @@ export function DnaBarChart({
 
   if (groups.length === 0) {
     return (
-      <div className="w-full text-center text-sm text-marrow-light/50 py-10 rounded-2xl border border-marrow-light/10 bg-marrow-light/5">
+      <div className="w-full text-center text-sm font-medium text-marrow-light/70 py-10 rounded-2xl border border-marrow-light/10 bg-white/40">
         Dati DNA insufficienti per il grafico.
       </div>
     );
@@ -127,7 +127,7 @@ export function DnaBarChart({
                 ))}
 
                 {group.hiddenCount > 0 && (
-                  <p className="text-xs font-semibold uppercase tracking-wider text-marrow-light/45 pt-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-marrow-light/70 pt-1">
                     + {group.hiddenCount} {group.hiddenCount === 1 ? 'voce minore' : 'voci minori'}
                   </p>
                 )}

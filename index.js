@@ -40,7 +40,6 @@ const registerStaticPostersRoute = require('./src/api/staticPosters');
 const profiloRoutes = require('./src/api/profilo');
 const configurazioneRoutes = require('./src/api/configurazione');
 const ricercaRoutes = require('./src/api/ricerca');
-const mondiRoutes = require('./src/api/mondi');
 
 // Connessione MongoDB
 connectDB();
@@ -179,7 +178,6 @@ const domainLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, standardHeade
 app.use('/api/profilo', cookieParser(), domainLimiter, profiloRoutes);
 app.use('/api/configurazione', cookieParser(), domainLimiter, configurazioneRoutes);
 app.use('/api/ricerca', cookieParser(), domainLimiter, ricercaRoutes);
-app.use('/api/mondi', cookieParser(), domainLimiter, mondiRoutes);
 
 
 
@@ -188,9 +186,6 @@ app.use('/api/mondi', cookieParser(), domainLimiter, mondiRoutes);
 app.use('/api', tmdbRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', catalogRoutes);
-// LA ROTTA DEL GRAFO: il portafoglio dei mondi per un profilo (`POST /api/bolle`).
-// Il calcolo sta nel servizio grafo, raggiunto dalla porta `src/clients`; qui c'e' solo il montaggio — come per tutte le altre.
-app.use('/api', cookieParser(), require('./src/api/bolle'));
 
 app.get('/api/user/:userId', inputSanitizer, async (req, res) => {
     try {

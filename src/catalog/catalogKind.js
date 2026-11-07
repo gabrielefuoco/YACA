@@ -13,7 +13,7 @@
  * }
  */
 
-const { getHeroCatalogKindMap } = require('./registry');
+const { getHeroCatalogKindMap, isHeroCatalogId } = require('./registry');
 
 // Registry esplicito per i 20 cataloghi Hero (Ticket 13: 10 famiglie x 2 medium) e i cataloghi fissi/utility
 const FIXED_CATALOGS_REGISTRY = {
@@ -94,6 +94,16 @@ function getCatalogKind(catalog, options = {}) {
         return {
             mediaSet: [...reg.mediaSet],
             anime: reg.anime
+        };
+    }
+
+    // 1b. Cataloghi Hero e scaffali dinamici del grafo (V45): agnostici sulla dimensione anime
+    if (isHeroCatalogId(id) || isHeroCatalogId(baseId)) {
+        const hid = isHeroCatalogId(id) ? id : baseId;
+        const mediaSet = (hid.endsWith('_movies') || hid.endsWith('_movie')) ? ['film'] : ['serie'];
+        return {
+            mediaSet,
+            anime: 'agnostic'
         };
     }
 

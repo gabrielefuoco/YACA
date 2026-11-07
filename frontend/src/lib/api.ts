@@ -188,8 +188,4 @@ export const api = {
     get(`/api/ricerca?tipo=persona&q=${encodeURIComponent(query)}`),
   searchTmdbMulti: (query: string) =>
     get(`/api/ricerca?tipo=titolo&q=${encodeURIComponent(query)}`),
-
-  // --- MONDI DEL GRAFO ---
-  getMondi: (profileId: string = 'global', quante: number = 4) =>
-    post('/api/mondi', { profileId, quante }),
 };
