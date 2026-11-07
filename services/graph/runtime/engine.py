@@ -804,31 +804,47 @@ class Engine:
         # 5. Esclusioni comuni
         escl_indici, _ = self._parse_esclusi(esclusi)
 
-        # 6. Preparazione matrice restart E (n, B)
+        # 6. Preparazione matrice restart E (n, U) con deduplicazione configurazioni semi identiche
         n = self.n
-        E = np.zeros((n, B), dtype=np.float64)
+        seed_signatures: dict[tuple[tuple[int, ...], tuple[float, ...]], int] = {}
+        query_to_unique: list[int] = []
+        unique_rows_pesi: list[tuple[list[int], list[float]]] = []
         empty_cols: set[int] = set()
 
         for j in range(B):
             seeds_j = semi_list[j]
             if not seeds_j or cap_list[j] <= 0:
                 empty_cols.add(j)
+                query_to_unique.append(-1)
                 continue
 
             f_rows, f_pesi, _ = self._prepara_semi_vettore(seeds_j)
             if not f_rows:
                 empty_cols.add(j)
+                query_to_unique.append(-1)
                 continue
 
-            np.add.at(E[:, j], f_rows, f_pesi)
-            c_sum = float(E[:, j].sum())
-            if c_sum < 1e-12:
-                empty_cols.add(j)
+            sig = (tuple(f_rows), tuple(f_pesi))
+            if sig in seed_signatures:
+                u_idx = seed_signatures[sig]
             else:
-                E[:, j] /= c_sum
+                u_idx = len(unique_rows_pesi)
+                seed_signatures[sig] = u_idx
+                unique_rows_pesi.append((f_rows, f_pesi))
+            query_to_unique.append(u_idx)
 
-        if len(empty_cols) == B:
+        U = len(unique_rows_pesi)
+        if U == 0:
             return [[] for _ in range(B)]
+
+        dtype = self.Tr.dtype
+        E = np.zeros((n, U), dtype=dtype)
+        for u in range(U):
+            f_rows, f_pesi = unique_rows_pesi[u]
+            np.add.at(E[:, u], f_rows, f_pesi)
+            c_sum = float(E[:, u].sum())
+            if c_sum >= 1e-12:
+                E[:, u] /= c_sum
 
         # 7. PageRank personalizzato batched con early stopping e kernel trasposto
         R = _cam.ppr_multi(
@@ -844,11 +860,12 @@ class Engine:
         # 8. Slicing e selezione candidati per ciascuna query
         risultati_batch: list[list[dict]] = []
         for j in range(B):
-            if j in empty_cols:
+            u_idx = query_to_unique[j]
+            if u_idx < 0:
                 risultati_batch.append([])
                 continue
 
-            cand = R[:, j].copy()
+            cand = R[:, u_idx].copy()
             med_j = med_list[j]
             if med_j == "movie":
                 cand[self.is_tv] = -np.inf

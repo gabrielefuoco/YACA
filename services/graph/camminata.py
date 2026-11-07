@@ -208,47 +208,20 @@ def pesi_semi(righe, plays, NEP, tipi=None):
 def ppr(Tr, seme, pesi=None, alpha=None, iters=None, normalizza=False, tol=None):
     """PageRank personalizzato su una matrice di transizione GIA' PRONTA (vedi `transizione`).
 
-    **L'unico posto dove sta il ciclo.** Prima era riscritto in NOVE arbitri (`alfa`, `cache`,
-    `diffusione`, `freddo`, `lettura`, `liste`, `pesi`, `ricetta`, `soglia`), ognuno col suo. Il nucleo
-    era identico parola per parola (`r = alpha*e + (1-alpha)*(r @ P)`), ma il giorno che uno di quelli
-    avesse cambiato una riga, quel banco avrebbe misurato una VARIANTE del motore credendo di misurare
-    il motore — la classe di errore che questo modulo ha gia' pagato piu' volte.
-
-    Le tre varianti che gli arbitri usavano davvero, e che qui sono parametri invece che copie:
-      · `pesi=None` -> seme **uniforme** (1/len). Serve a `diffusione.py`, che vuole il comportamento di
-        un seme scelto a caso;
-      · `normalizza=True` -> `r / r.sum()` in uscita, come faceva `ricetta.py` (e `diffondi`);
-      · `alpha=None` -> `parametri.ALPHA`, ma gli arbitri passano il LORO valore, perche' alcuni lo
-        leggono da una variabile d'ambiente (`ALPHA=0.9 python graph/measure/freddo.py`);
-      · `tol=None` -> early stopping sulla variazione L1 tra iterazioni successive (default `parametri.PPR_TOL`).
+    Delega a `ppr_multi` con colonna singola per garantire identità matematica di calcolo,
+    early stopping e gestione del dtype (`Tr.dtype`).
     """
-    alpha = P.ALPHA if alpha is None else float(alpha)
-    max_iters = P.ITER if iters is None else min(int(iters), P.ITER)
-    tol_val = getattr(P, "PPR_TOL", 1e-5) if tol is None else float(tol)
-
-    e = np.zeros(Tr.shape[0], np.float64)
-    # `np.add.at` INVECE DI `e[seme] = ...`. Con un indice duplicato l'assegnamento indicizzato di NumPy
-    # SOVRASCRIVE, non somma: `e[[i,i]] = [3,7]` da' 7, non 10 — e la massa delle occorrenze precedenti
-    # sparisce. Oggi le storie non hanno duplicati (verificato: zero su 60 utenti e 19.218 righe), quindi
-    # e' un difetto LATENTE — ma e' il tipo che si accende il giorno che una storia arriva da un'altra
-    # strada (un `--file` costruito a mano, un merge di liste, un tipo di segnale doppio) e che allora
-    # produce pesi arbitrari invece che sbagliati in modo visibile.
+    dtype = Tr.dtype
+    E = np.zeros((Tr.shape[0], 1), dtype=dtype)
     if pesi is None:
-        np.add.at(e, seme, 1.0)
+        np.add.at(E[:, 0], seme, dtype.type(1.0))
     else:
-        np.add.at(e, seme, np.asarray(pesi, np.float64))
-    e /= max(float(e.sum()), 1e-12)
-    r = e.copy()
-    for _ in range(max_iters):
-        r_next = alpha * e + (1.0 - alpha) * (r @ Tr)
-        if tol_val > 0.0:
-            delta = float(np.sum(np.abs(r_next - r)))
-            r = r_next
-            if delta < tol_val:
-                break
-        else:
-            r = r_next
-    return r / r.sum() if normalizza else r
+        np.add.at(E[:, 0], seme, np.asarray(pesi, dtype))
+    e_sum = float(E[:, 0].sum())
+    if e_sum >= 1e-12:
+        E[:, 0] /= e_sum
+    R = ppr_multi(Tr, E, alpha=alpha, iters=iters, normalizza=normalizza, tol=tol)
+    return R[:, 0]
 
 
 def ppr_multi(Tr, E, alpha=None, iters=None, normalizza=False, tol=None, TrT=None):
@@ -270,28 +243,51 @@ def ppr_multi(Tr, E, alpha=None, iters=None, normalizza=False, tol=None, TrT=Non
     max_iters = P.ITER if iters is None else min(int(iters), P.ITER)
     tol_val = getattr(P, "PPR_TOL", 1e-5) if tol is None else float(tol)
 
+    dtype = Tr.dtype
+    if E.dtype != dtype:
+        E = E.astype(dtype, copy=False)
+
     if TrT is None:
         TrT = Tr.T.tocsr()
+    elif TrT.dtype != dtype:
+        TrT = TrT.astype(dtype, copy=False)
 
     B = E.shape[1]
+    if B == 0:
+        return E.copy()
+
+    alpha_val = dtype.type(alpha)
+    beta_val = dtype.type(1.0 - alpha)
+    alpha_E = alpha_val * E
+
     R = E.copy()
-    if tol_val > 0.0 and B > 0:
+    if tol_val > 0.0:
         active = np.ones(B, dtype=bool)
+        diff = np.empty_like(R)
         for _ in range(max_iters):
-            R_next = alpha * E + (1.0 - alpha) * (TrT @ R)
-            deltas = np.sum(np.abs(R_next - R), axis=0)
+            R_next = TrT @ R
+            R_next *= beta_val
+            R_next += alpha_E
+
+            np.subtract(R_next, R, out=diff)
+            np.abs(diff, out=diff)
+            deltas = np.sum(diff, axis=0)
+
             R[:, active] = R_next[:, active]
             active[active] = deltas[active] >= tol_val
             if not active.any():
                 break
     else:
         for _ in range(max_iters):
-            R = alpha * E + (1.0 - alpha) * (TrT @ R)
+            R_next = TrT @ R
+            R_next *= beta_val
+            R_next += alpha_E
+            R = R_next
 
-    if normalizza and B > 0:
-        col_sums = R.sum(axis=0)
+    if normalizza:
+        col_sums = np.sum(R, axis=0, dtype=np.float64)
         col_sums[col_sums < 1e-12] = 1.0
-        R /= col_sums
+        R = (R / col_sums).astype(dtype, copy=False)
 
     return R
 

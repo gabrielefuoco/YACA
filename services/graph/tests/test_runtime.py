@@ -740,6 +740,58 @@ def test_early_stopping_convergenza_tolleranza(engine):
     assert [x["key"] for x in res_early] == [x["key"] for x in res_fixed20]
 
 
+def test_raccomanda_multi_deduplicazione_semi_identici(engine):
+    """Verifica che raccomanda_multi deduplichi internamente i vettori di restart
+    quando query multiple condividono lo stesso set di semi (es. primario e controparte).
+    """
+    semi_base = [{"key": "movie:603", "plays": 2.0}, {"key": "tv:1396", "plays": 1.0}]
+
+    # 4 query: 2 per semi_base (movie, series) e 2 per semi_altri (movie, series)
+    semi_altri = [{"key": "movie:550", "plays": 3.0}]
+
+    queries = [semi_base, semi_base, semi_altri, semi_altri]
+    mediums = ["movie", "series", "movie", "series"]
+
+    batch_res = engine.raccomanda_multi(queries, cap=20, medium=mediums)
+
+    assert len(batch_res) == 4
+    for j in range(4):
+        single_res = engine.raccomanda(queries[j], cap=20, medium=mediums[j])
+        assert [x["key"] for x in batch_res[j]] == [x["key"] for x in single_res]
+        d = np.max(np.abs(np.array([x["punteggio"] for x in batch_res[j]]) - np.array([x["punteggio"] for x in single_res])))
+        assert d <= 1e-10
+
+
+def test_scaffali_singolo_batched_walk_zero_chiamate_singole(engine):
+    """Verifica che durante scaffali() non venga eseguita nessuna chiamata singola
+    a engine.raccomanda (tutto collassato nel singolo batched PPR).
+    """
+    from graph import canon as K
+    from graph import interessi as I
+
+    chiavi, _, plays, eta = K.storia_trakt("warnok", ordine="recente")
+    semi = [{"key": str(k), "plays": float(pl), "eta_giorni": float(et)} for k, pl, et in zip(chiavi, plays, eta)]
+
+    w_aff = I.carica_matrice_affinita()
+
+    single_calls = [0]
+    orig_raccomanda = engine.raccomanda
+
+    def forbidden_raccomanda(*args, **kwargs):
+        single_calls[0] += 1
+        return orig_raccomanda(*args, **kwargs)
+
+    engine.raccomanda = forbidden_raccomanda
+    try:
+        shs = I.scaffali(engine, semi, n=8, cap=60, W_aff=w_aff)
+    finally:
+        engine.raccomanda = orig_raccomanda
+
+    assert single_calls[0] == 0, f"scaffali() ha effettuato {single_calls[0]} chiamate singole invece di 0!"
+    assert len(shs) == 16
+    assert all(len(sh.titoli) > 0 for sh in shs)
+
+
 @pytest.mark.skipif(
     os.environ.get("YACA_SLOW") != "1",
     reason="Il test a grafo intero (pota=None) richiede YACA_SLOW=1 (salta di default)",

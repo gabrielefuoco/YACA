@@ -934,24 +934,58 @@ def scaffali(
         item._r_sup = r_idx + 1
         item.r_comb = round((item._r_rec + item._r_sup) / 2.0, 1)
 
-    # Raccomandazioni lazy evaluate per overlap dedupe (top-10 Jaccard)
+    # Restringi ai candidati top-K per massa (proxy con catalogo identico verificato per budget n)
+    K_tax = max(16, 2 * n)
+    K_perche = max(8, n)
+    tax_cands = [s for s in eligible if s.nome_fonte == "tassonomia"][:K_tax]
+    perche_cands = [s for s in eligible if s.nome_fonte == "perche_hai_visto"][:K_perche]
+    eligible_cands = tax_cands + perche_cands
+
     tutti_esclusi = set(chiavi) | set(esclusi or [])
 
-    def ensure_top10(cand: Shelf) -> None:
-        if not cand.top10_cands:
-            semi_rac = [
+    # ONE BATCHED WALK: prepara semi per tutti i candidati ammissibili (primari + controparti)
+    # prima della selezione greedy, così top10_cands e titoli finali derivano dalla stessa camminata.
+    batch_semi_primaries = [
+        [
+            {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
+            for i in sh.seeds_indices
+        ]
+        for sh in eligible_cands
+    ]
+    batch_medium_primaries = [sh.medium for sh in eligible_cands]
+
+    m_cands = len(eligible_cands)
+    if medium is None:
+        batch_semi_counterparts = [
+            [
                 {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
-                for i in cand.seeds_indices
+                for i in sh.seeds_indices
             ]
-            racs = engine.raccomanda(
-                semi_rac,
-                cap=10,
-                medium=cand.medium,
-                esclusi=tutti_esclusi,
-                tono=tono,
-                complessita=complessita,
-            )
-            cand.top10_cands = set(r["key"] for r in racs[:10])
+            for sh in eligible_cands
+        ]
+        batch_medium_counterparts = ["series" if sh.medium == "movie" else "movie" for sh in eligible_cands]
+        all_batch_semi = batch_semi_primaries + batch_semi_counterparts
+        all_batch_medium = batch_medium_primaries + batch_medium_counterparts
+    else:
+        all_batch_semi = batch_semi_primaries
+        all_batch_medium = batch_medium_primaries
+
+    # UNA sola esecuzione PPR batched per tutti i candidati ammissibili
+    all_recs = engine.raccomanda_multi(
+        all_batch_semi,
+        cap=cand_cap,
+        medium=all_batch_medium,
+        esclusi=tutti_esclusi,
+        tono=tono,
+        complessita=complessita,
+    )
+
+    # Assegna titoli e top10_cands ai candidati direttamente dall'unico batched PPR
+    for i, sh in enumerate(eligible_cands):
+        sh.titoli = all_recs[i]
+        sh.top10_cands = set(r["key"] for r in sh.titoli[:10])
+        if medium is None:
+            sh._recs_counterpart = all_recs[m_cands + i]
 
     # Step 10: Selezione Greedy Two-Tier per Budget N
     # Tier 1: Scaffali con etichetta tassonomica (nome_fonte == "tassonomia")
@@ -969,7 +1003,7 @@ def scaffali(
             best_cand: Shelf | None = None
             best_key: tuple[float, float, float] | None = None
 
-            for cand in eligible:
+            for cand in eligible_cands:
                 if cand.nome_fonte != tier_source:
                     continue
                 if any(c is cand for c in chosen):
@@ -994,8 +1028,7 @@ def scaffali(
                 if best_cand is not None and cand_key <= best_key:
                     continue
 
-                # (c) Overlap dedupe lazy (solo per candidati che superano il seed-coverage test)
-                ensure_top10(cand)
+                # (c) Overlap dedupe immediato sui top10_cands già materializzati
                 if any(jaccard(cand.top10_cands, s.top10_cands) >= 0.5 for s in chosen):
                     continue
 
@@ -1005,7 +1038,6 @@ def scaffali(
             if best_cand is None:
                 break
 
-            ensure_top10(best_cand)
             chosen.append(best_cand)
             covered_seeds.update(best_cand.seeds_indices)
             if best_cand.nome_fonte == "tassonomia":
@@ -1034,54 +1066,15 @@ def scaffali(
         rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
         ordered_shelves = [best_freshest] + rem
 
-    # GAP 2 & PERFORMANCE: Materializzazione candidati per le righe servite tramite un'unica chiamata batched raccomanda_multi
     meta = K.metadati()
     titles = meta.get("TIT")
     years = meta.get("ANNO")
 
-    n_ord = len(ordered_shelves)
-    if n_ord == 0:
-        return []
-
-    # Preparazione batch semi per i primari
-    batch_semi_primaries = [
-        [
-            {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
-            for i in sh.seeds_indices
-        ]
-        for sh in ordered_shelves
-    ]
-    batch_medium_primaries = [sh.medium for sh in ordered_shelves]
-
     all_served: list[Shelf] = []
     if medium is None:
-        # Quando medium è None serviamo primari e controparti: eseguiamo un unico batched PPR (fino a 16 righe)
-        batch_semi_counterparts = [
-            [
-                {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
-                for i in sh.seeds_indices
-            ]
-            for sh in ordered_shelves
-        ]
-        batch_medium_counterparts = ["series" if sh.medium == "movie" else "movie" for sh in ordered_shelves]
-
-        all_batch_semi = batch_semi_primaries + batch_semi_counterparts
-        all_batch_medium = batch_medium_primaries + batch_medium_counterparts
-
-        # UNA sola esecuzione PPR batched per tutti i candidati (primari + controparti)
-        all_recs = engine.raccomanda_multi(
-            all_batch_semi,
-            cap=cand_cap,
-            medium=all_batch_medium,
-            esclusi=tutti_esclusi,
-            tono=tono,
-            complessita=complessita,
-        )
-
-        for i, sh in enumerate(ordered_shelves):
-            sh.titoli = all_recs[i]
-            recs_c = all_recs[n_ord + i]
-            c_med = batch_medium_counterparts[i]
+        for sh in ordered_shelves:
+            recs_c = getattr(sh, "_recs_counterpart", [])
+            c_med = "series" if sh.medium == "movie" else "movie"
 
             top1_p = sh.titoli[0]["punteggio"] if sh.titoli else 0.0
             top1_c = recs_c[0]["punteggio"] if recs_c else 0.0
@@ -1144,17 +1137,8 @@ def scaffali(
                 sh.nome_display = sh.nome
                 all_served.append(sh)
     else:
-        # Filtro medium specifico: solo primari batched
-        prim_recs = engine.raccomanda_multi(
-            batch_semi_primaries,
-            cap=cand_cap,
-            medium=batch_medium_primaries,
-            esclusi=tutti_esclusi,
-            tono=tono,
-            complessita=complessita,
-        )
-        for i, sh in enumerate(ordered_shelves):
-            sh.titoli = prim_recs[i]
+        # Filtro medium specifico: solo primari già materializzati
+        for sh in ordered_shelves:
             sh.nome_display = sh.nome
             all_served.append(sh)
 
