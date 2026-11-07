@@ -19,13 +19,21 @@ input densi e gli embedding già materializzati rimangono nella cache locale
 
 ## Runtime
 
-- `servizio.py` mantiene per ora l'API `/raccomanda` e il runtime bubble V10: è la versione servita
-  mentre si progetta e valida il cutover.
+- `servizio.py` espone l'API storica `/raccomanda` (alimentata dal runtime bubble V10) e la nuova rotta `POST /scaffali` (alimentata dal runtime V45).
 - `runtime/` contiene il motore sparse V45 (`Engine`, PageRank personalizzato) e il banco di misura.
-- Il contratto di scaffali e i cluster per profilo non sono ancora implementati: la migrazione
-  end-to-end, per Stremio e API web, è tracciata in `.scratch/v45-raccomandazioni-yaca/map.md`.
 - L'immagine Docker è runtime-only: `.dockerignore` esclude `build/`; gli artefatti si promuovono
   offline e il volume dati resta read-only.
+
+### Endpoint `/scaffali` e realtà della memoria a doppio motore
+
+L'endpoint `POST /scaffali` implementa il contratto congelato (Ticket 08 / V45, contratto versione 2) restituendo fino a 8 scaffali qualificati per profilo spendendo il budget per copertura semi (two-tier: etichette tassonomiche in testa e fallback «Perché hai visto» in coda). L'endpoint è integrato direttamente in `servizio.py` e carica lazily come singleton di modulo l'engine sparso V45 (`graph.runtime.Engine`, ~34 MiB delta) e la matrice compatta top-100 vicini (`vicini-top100.npz`, ~65 MiB delta). Se gli artefatti sono assenti restituisce HTTP 503 con messaggio esplicito.
+
+**Realtà della memoria (misure effettive RSS, non stime):**
+- **Processo standalone V45** (`Engine` pota16 + `vicini-top100` + clustering): **317,7 MiB** di picco RSS dopo 30 richieste sequenziali su `warnok`.
+- **Processo doppio motore** (`motore.Motore` V10 a 135,9 MiB + `Engine` V45 a 169,9 MiB + `vicini-top100` a 235,2 MiB + working set clustering su `warnok`): **312,3 MiB** alla prima richiesta e **353,6 MiB** di picco RSS stabile dopo 30 richieste sequenziali su `warnok` (476 semi).
+- **Latenza misurata su 30 richieste sequenziali warm**: **p50 = 1,34 s**, **p95 = 1,47 s** (ampiamente entro il target <= 3,0 s).
+
+Il doppio motore si colloca a 353,6 MiB, al di sotto del vincolo di 400 MB (lasciando ~158 MiB di headroom nel container da 512 MiB); tuttavia, la coesistenza in shadow di V10 e V45 riduce il margine di sicurezza rispetto al cutover definitivo a V45 standalone. Fino al cutover, `/raccomanda` utilizza V10 mentre `/scaffali` utilizza V45.
 
 ### Transizione potata: l'unico percorso adatto al container
 

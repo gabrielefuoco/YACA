@@ -152,11 +152,14 @@ class Motore:
         # su maschere lunghe a ogni chiamata di `modula()`, e `B.IS_TV[self.MEM == cb].mean()` in
         # `scegli_mondi` e in `lista` ricostruiva ogni volta una maschera booleana su 66.259 elementi.
         # `np.bincount` fa la stessa cosa — la stessa, elemento per elemento — una volta sola.
-        self.QUOTA_TV = np.bincount(self.MEM, weights=B.IS_TV.astype(float),
+        w_tv = B.IS_TV[:len(self.MEM)].astype(float)
+        w_cozy = self.COZY[:len(self.MEM)].astype(float)
+        w_imp = self.IMP[:len(self.MEM)].astype(float)
+        self.QUOTA_TV = np.bincount(self.MEM, weights=w_tv,
                                     minlength=self.NB) / np.maximum(self.SZ, 1)
-        self.QUOTA_COZY = np.bincount(self.MEM, weights=self.COZY.astype(float),
+        self.QUOTA_COZY = np.bincount(self.MEM, weights=w_cozy,
                                       minlength=self.NB) / np.maximum(self.SZ, 1)
-        self.QUOTA_IMP = np.bincount(self.MEM, weights=self.IMP.astype(float),
+        self.QUOTA_IMP = np.bincount(self.MEM, weights=w_imp,
                                      minlength=self.NB) / np.maximum(self.SZ, 1)
         self._generi = {int(x) for x in P.ASSE_COZY_GENERI.split(",")}
         self._generi_imp = {int(x) for x in P.ASSE_IMPEGNATIVO_GENERI.split(",")}
@@ -169,10 +172,18 @@ class Motore:
             vb_pos = vb[vb > 0]
             self.VAVEMEAN[b] = float(np.mean(vb_pos)) if len(vb_pos) > 0 else float(getattr(P, "NICCHIA_VAVE_MIN_FILM", 6.8))
         # la componente LISTE di Trakt: corroborazione per la nicchia di qualita'
-        z = np.load(K.A("nuovo-LIST.npz"))
-        n = len(z["indptr"]) - 1
-        self.LISTDEG = np.asarray((sp.csr_matrix((z["data"], z["indices"], z["indptr"]),
-                                                  shape=(n, n)) > 0).sum(1)).ravel().astype(float)
+        if K.esiste("nuovo-LIST.npz"):
+            z = np.load(K.A("nuovo-LIST.npz"))
+            n = len(z["indptr"]) - 1
+            self.LISTDEG = np.asarray((sp.csr_matrix((z["data"], z["indices"], z["indptr"]),
+                                                      shape=(n, n)) > 0).sum(1)).ravel().astype(float)
+        elif K.esiste("tipi/LIST.npz"):
+            z = np.load(K.A("tipi/LIST.npz"))
+            n = len(z["indptr"]) - 1
+            self.LISTDEG = np.asarray((sp.csr_matrix((z["data"], z["indices"], z["indptr"]),
+                                                      shape=(n, n)) > 0).sum(1)).ravel().astype(float)
+        else:
+            self.LISTDEG = np.zeros(self.N, dtype=float)
         # TICKET 10: la cache delle uscite collocate. Se manca non si parte meno: la riga lo dira'.
         self.USCITE = U.carica()
         if not silenzioso:

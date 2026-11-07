@@ -10,17 +10,23 @@ Un solo processo, un solo worker: nessun sottoprocesso né thread pool.
 import argparse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
+import math
 import os
 import pathlib
+from pathlib import Path
 import sys
 import time
+from typing import Any
 
 import numpy as np
+import scipy.sparse as sp
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from graph import bubbles as B
+from graph import interessi as I
 from graph import motore as MO
 from graph import parametri as P
+from graph.runtime import Engine
 
 
 def _statistiche_riga(motore: MO.Motore, titoli: list, li: dict):
@@ -392,10 +398,325 @@ def esegui_richiesta(dati: dict, motore: MO.Motore) -> tuple[int, dict]:
     return 200, risposta
 
 
+# ==============================================================================
+# ROUTE /scaffali — MOTORE V45 E TOP-100 VICINI (Ticket 08)
+# ==============================================================================
+
+TRANSIZIONE_PATH: str | Path | None = os.environ.get("V45_TRANSIZIONE_PATH")
+VICINI_PATH: str | Path | None = os.environ.get("V45_VICINI_PATH")
+
+_ENGINE_V45: Engine | None = None
+_W_AFF: sp.csr_matrix | None = None
+
+ALLOWED_SEED_KEYS: frozenset[str] = frozenset({
+    "key", "tmdbId", "tmdb_id", "medium", "plays", "frazione",
+    "tipo", "tipi", "eta_giorni", "watched", "library_only"
+})
+
+
+def get_engine_v45(path: str | Path | None = None) -> Engine:
+    """Ritorna l'istanza singleton di Engine V45, caricata lazily."""
+    global _ENGINE_V45
+    target = path or TRANSIZIONE_PATH or os.environ.get("V45_TRANSIZIONE_PATH")
+    if _ENGINE_V45 is None or (target is not None and getattr(_ENGINE_V45, "percorso", None) != str(target)):
+        _ENGINE_V45 = Engine.carica_transizione(target)
+    return _ENGINE_V45
+
+
+def get_vicini_affinita(path: str | Path | None = None) -> sp.csr_matrix:
+    """Ritorna la matrice singleton top-100 vicini non potati per l'affinità."""
+    global _W_AFF
+    target = path or VICINI_PATH or os.environ.get("V45_VICINI_PATH")
+    if _W_AFF is None:
+        _W_AFF = I.carica_matrice_affinita(target)
+    return _W_AFF
+
+
+def reset_singletons_v45() -> None:
+    """Reset dei singleton V45 per i test."""
+    global _ENGINE_V45, _W_AFF
+    _ENGINE_V45 = None
+    _W_AFF = None
+
+
+def esegui_scaffali(
+    dati: dict,
+    engine: Engine | None = None,
+    W_aff: sp.csr_matrix | None = None,
+) -> tuple[int, dict]:
+    """Valida la richiesta e genera gli scaffali usando l'Engine V45 e la matrice top-100 vicini."""
+    if not isinstance(dati, dict):
+        return 400, {"ok": False, "errore": "il corpo della richiesta deve essere un oggetto JSON"}
+
+    semi_raw = dati.get("semi")
+    if semi_raw is None or not isinstance(semi_raw, list):
+        return 400, {"ok": False, "errore": "il campo 'semi' deve essere una lista"}
+
+    req_medium = dati.get("medium")
+    if req_medium is not None:
+        if req_medium == "tv":
+            req_medium = "series"
+        elif req_medium not in ("movie", "series"):
+            return 400, {"ok": False, "errore": f"medium non valido: {req_medium} (ammessi 'movie' o 'series')"}
+
+    n_val = dati.get("n", 8)
+    if isinstance(n_val, bool) or not isinstance(n_val, (int, float)):
+        return 400, {"ok": False, "errore": "il campo 'n' deve essere un intero positivo"}
+    try:
+        n_scaffali = int(n_val)
+        if n_scaffali < 1:
+            return 400, {"ok": False, "errore": "il campo 'n' deve essere un intero positivo"}
+    except (ValueError, TypeError):
+        return 400, {"ok": False, "errore": "il campo 'n' deve essere un intero positivo"}
+
+    esclusi_raw = dati.get("esclusi")
+    if esclusi_raw is not None:
+        if not isinstance(esclusi_raw, list):
+            return 400, {"ok": False, "errore": "il campo 'esclusi' deve essere una lista"}
+        for it in esclusi_raw:
+            if not isinstance(it, (str, int)):
+                return 400, {"ok": False, "errore": "gli elementi di 'esclusi' devono essere stringhe o interi"}
+
+    # Risoluzione lazy degli artefatti V45
+    if engine is None or W_aff is None:
+        try:
+            if engine is None:
+                engine = get_engine_v45()
+            if W_aff is None:
+                W_aff = get_vicini_affinita()
+        except FileNotFoundError as exc:
+            return 503, {
+                "ok": False,
+                "errore": f"artefatto mancante o non caricato: {exc}",
+            }
+        except Exception as exc:
+            return 503, {
+                "ok": False,
+                "errore": f"motore V45 o vicini non pronti: {exc}",
+            }
+
+    if engine is None or engine.Tr is None or W_aff is None:
+        return 503, {"ok": False, "errore": "motore V45 o vicini non pronti o artefatti non caricati"}
+
+    # Caso speciale: lista semi vuota -> 200 con lista scaffali vuota
+    if not semi_raw:
+        return 200, {
+            "ok": True,
+            "contratto_versione": 2,
+            "scaffali": [],
+            "statistiche": {
+                "semi_totali": 0,
+                "semi_coperti": 0,
+                "righe": 0,
+            },
+        }
+
+    # Validazione rigorosa di ciascun seme (nessuna chiave sconosciuta tollerata)
+    semi_preparati = []
+    for idx, s in enumerate(semi_raw):
+        if not isinstance(s, dict):
+            return 400, {"ok": False, "errore": "ogni elemento di 'semi' deve essere un oggetto"}
+
+        sconosciute = set(s.keys()) - ALLOWED_SEED_KEYS
+        if sconosciute:
+            chiave_ignota = sorted(sconosciute)[0]
+            return 400, {"ok": False, "errore": f"chiave non riconosciuta nel seme: '{chiave_ignota}'"}
+
+        k = s.get("key")
+        tid = s.get("tmdbId") if "tmdbId" in s else s.get("tmdb_id")
+
+        if not k and tid is None:
+            return 400, {"ok": False, "errore": "ogni seme deve specificare 'key' o 'tmdbId'"}
+
+        if k is not None:
+            if not isinstance(k, str) or ":" not in k:
+                return 400, {"ok": False, "errore": f"chiave seme non valida: {k!r}"}
+            pref, id_str = k.split(":", 1)
+            if pref not in ("movie", "tv") or not id_str.isdigit():
+                return 400, {"ok": False, "errore": f"formato chiave seme non valido: {k!r} (atteso 'movie:<id>' o 'tv:<id>')"}
+
+        if tid is not None:
+            if isinstance(tid, bool):
+                return 400, {"ok": False, "errore": f"tmdbId non valido: {tid!r}"}
+            try:
+                tid_int = int(tid)
+                if tid_int < 0:
+                    return 400, {"ok": False, "errore": f"tmdbId non valido: {tid!r}"}
+            except (ValueError, TypeError):
+                return 400, {"ok": False, "errore": f"tmdbId non valido: {tid!r}"}
+
+            if not k:
+                m_val = s.get("medium")
+                if not m_val:
+                    return 400, {"ok": False, "errore": "il campo 'medium' è obbligatorio quando si specifica 'tmdbId' senza 'key'"}
+                if m_val == "tv":
+                    m_val = "series"
+                elif m_val not in ("movie", "series"):
+                    return 400, {"ok": False, "errore": f"medium seme non valido: {m_val!r} (ammessi 'movie' o 'series')"}
+                pref = "tv" if m_val == "series" else "movie"
+                k = f"{pref}:{tid_int}"
+
+        if "medium" in s:
+            m_val = s["medium"]
+            if m_val not in ("movie", "series", "tv"):
+                return 400, {"ok": False, "errore": f"medium seme non valido: {m_val!r} (ammessi 'movie' o 'series')"}
+
+        if "plays" in s:
+            if isinstance(s["plays"], bool):
+                return 400, {"ok": False, "errore": "il campo 'plays' deve essere un numero >= 0"}
+            try:
+                pl = float(s["plays"])
+                if math.isnan(pl) or pl < 0:
+                    return 400, {"ok": False, "errore": "il campo 'plays' deve essere un numero >= 0"}
+            except (ValueError, TypeError):
+                return 400, {"ok": False, "errore": "il campo 'plays' deve essere un numero >= 0"}
+
+        if "frazione" in s:
+            if isinstance(s["frazione"], bool):
+                return 400, {"ok": False, "errore": "il campo 'frazione' deve essere compreso tra 0.0 e 1.0"}
+            try:
+                fr = float(s["frazione"])
+                if math.isnan(fr) or fr < 0.0 or fr > 1.0:
+                    return 400, {"ok": False, "errore": "il campo 'frazione' deve essere compreso tra 0.0 e 1.0"}
+            except (ValueError, TypeError):
+                return 400, {"ok": False, "errore": "il campo 'frazione' deve essere compreso tra 0.0 e 1.0"}
+
+        if "eta_giorni" in s:
+            if isinstance(s["eta_giorni"], bool):
+                return 400, {"ok": False, "errore": "il campo 'eta_giorni' deve essere un numero >= 0"}
+            try:
+                eg = float(s["eta_giorni"])
+                if math.isnan(eg) or eg < 0:
+                    return 400, {"ok": False, "errore": "il campo 'eta_giorni' deve essere un numero >= 0"}
+            except (ValueError, TypeError):
+                return 400, {"ok": False, "errore": "il campo 'eta_giorni' deve essere un numero >= 0"}
+
+        if "watched" in s and not isinstance(s["watched"], bool):
+            return 400, {"ok": False, "errore": "il campo 'watched' deve essere un booleano"}
+
+        if "library_only" in s and not isinstance(s["library_only"], bool):
+            return 400, {"ok": False, "errore": "il campo 'library_only' deve essere un booleano"}
+
+        if "tipo" in s and not isinstance(s["tipo"], str):
+            return 400, {"ok": False, "errore": "il campo 'tipo' deve essere una stringa"}
+
+        if "tipi" in s and not isinstance(s["tipi"], (list, str)):
+            return 400, {"ok": False, "errore": "il campo 'tipi' deve essere una lista o stringa"}
+
+        nep = 1.0
+        r_idx = engine.row_of.get(k)
+        if r_idx is not None and len(engine.nep) > r_idx:
+            nep = float(engine.nep[r_idx])
+
+        if "plays" in s:
+            p_calc = float(s["plays"])
+        elif "frazione" in s:
+            p_calc = float(s["frazione"]) * nep
+        else:
+            p_calc = 1.0
+
+        eta = float(s.get("eta_giorni", idx))
+
+        seme_prep = {
+            "key": k,
+            "plays": p_calc,
+            "eta_giorni": eta,
+        }
+        if "tipo" in s:
+            seme_prep["tipo"] = s["tipo"]
+        if "tipi" in s:
+            seme_prep["tipi"] = s["tipi"]
+        if "watched" in s:
+            seme_prep["watched"] = s["watched"]
+        if "library_only" in s:
+            seme_prep["library_only"] = s["library_only"]
+
+        semi_preparati.append(seme_prep)
+
+    esclusi_keys = []
+    if esclusi_raw:
+        for it in esclusi_raw:
+            if isinstance(it, int):
+                esclusi_keys.append(f"movie:{it}")
+                esclusi_keys.append(f"tv:{it}")
+            else:
+                esclusi_keys.append(str(it))
+
+    try:
+        shelves = I.scaffali(
+            engine=engine,
+            semi=semi_preparati,
+            n=n_scaffali,
+            medium=req_medium,
+            W_aff=W_aff,
+            esclusi=esclusi_keys,
+        )
+    except Exception as exc:
+        return 500, {"ok": False, "errore": f"errore durante la generazione degli scaffali: {exc}"}
+
+    scaffali_out = []
+    covered_seeds = set()
+    for sh in shelves:
+        covered_seeds.update(sh.seeds_indices)
+        semi_rappresentativi_out = [
+            {
+                "titolo": str(sr["titolo"]),
+                "anno": int(sr["anno"]),
+                "tmdbId": int(sr["tmdbId"]),
+                "plays": float(sr["plays"]),
+                "eta_giorni": float(sr["eta_giorni"]),
+            }
+            for sr in sh.semi_rappresentativi
+        ]
+        semi_membri_out = [
+            {
+                "titolo": str(sm["titolo"]),
+                "anno": int(sm["anno"]),
+                "tmdbId": int(sm["tmdbId"]),
+                "medium": str(sm.get("medium", "movie")),
+            }
+            for sm in sh.semi_membri
+        ]
+        titoli_out = [
+            {
+                "key": str(t["key"]),
+                "tmdbId": int(t["tmdbId"]),
+                "medium": str(t["medium"]),
+                "punteggio": round(float(t["punteggio"]), 6),
+            }
+            for t in sh.titoli
+        ]
+        scaffali_out.append({
+            "catalog_id": str(sh.catalog_id),
+            "nome": str(sh.nome),
+            "nome_fonte": str(sh.nome_fonte),
+            "confidenza": round(float(sh.confidenza), 3),
+            "medium": str(sh.medium),
+            "slot": int(sh.slot_position),
+            "semi_rappresentativi": semi_rappresentativi_out,
+            "semi_membri": semi_membri_out,
+            "titoli": titoli_out,
+        })
+
+    risposta = {
+        "ok": True,
+        "contratto_versione": 2,
+        "scaffali": scaffali_out,
+        "statistiche": {
+            "semi_totali": int(len(semi_raw)),
+            "semi_coperti": int(len(covered_seeds)),
+            "righe": int(len(scaffali_out)),
+        },
+    }
+    return 200, risposta
+
+
 class ServizioHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     motore: MO.Motore = None
     health_payload: bytes = None
+    engine_v45: Engine = None
+    w_aff: sp.csr_matrix = None
 
     def log_message(self, format, *args):
         # Silenzioso nei log standard
@@ -445,31 +766,59 @@ class ServizioHandler(BaseHTTPRequestHandler):
             self.wfile.write(resp_bytes)
             return
 
+        if self.path == "/scaffali":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length)
+                dati = json.loads(body.decode("utf-8"))
+            except Exception as e:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "errore": f"richiesta malformata: {e}"}).encode("utf-8"))
+                return
+
+            status, resp = esegui_scaffali(dati, engine=self.engine_v45, W_aff=self.w_aff)
+            resp_bytes = json.dumps(resp, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(resp_bytes)))
+            self.end_headers()
+            self.wfile.write(resp_bytes)
+            return
+
         self.send_response(404)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
         self.wfile.write(b'{"ok":false,"errore":"not found"}')
 
 
-def crea_server(host="0.0.0.0", port=7862, motore=None):
+def crea_server(host="0.0.0.0", port=7862, motore=None, carica_motore=True, engine_v45=None, w_aff=None):
     """Fabbrica del server HTTP con motore caricato."""
-    if motore is None:
-        motore = MO.Motore(silenzioso=True)
+    if motore is None and carica_motore:
+        try:
+            motore = MO.Motore(silenzioso=True)
+        except Exception:
+            motore = None
 
-    health_bytes = json.dumps({
+    health_payload = {
         "ok": True,
         "contratto": 1,
-        "versioni": {
+    }
+    if motore is not None:
+        health_payload["versioni"] = {
             "artefatto": motore.artefatto,
             "ricetta": P.impronta()
         }
-    }).encode("utf-8")
+    health_bytes = json.dumps(health_payload).encode("utf-8")
 
     class HandlerWithMotore(ServizioHandler):
         pass
 
     HandlerWithMotore.motore = motore
     HandlerWithMotore.health_payload = health_bytes
+    HandlerWithMotore.engine_v45 = engine_v45
+    HandlerWithMotore.w_aff = w_aff
 
     server = HTTPServer((host, port), HandlerWithMotore)
     return server, motore

@@ -388,8 +388,9 @@ def da_canone(anno, mem, is_tv, vot, r, bacino, medium, visti, dal=None):
     """
     dal = int(P.USCITE_NUOVE_DAL if dal is None else dal)
     bacino = set(int(b) for b in bacino)
+    lim = min(len(mem), len(r))
     nuove = [int(x) for x in np.nonzero(np.asarray(anno) >= dal)[0]
-             if int(mem[x]) in bacino and int(x) not in visti]
+             if x < lim and int(mem[x]) in bacino and int(x) not in visti]
     if medium == "series":
         nuove = [x for x in nuove if bool(is_tv[x])]
     elif medium == "movie":

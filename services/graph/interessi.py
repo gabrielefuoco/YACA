@@ -712,6 +712,7 @@ def scaffali(
     label_merge: bool = False,
     cap: int = 40,
     weighted_support: bool = True,
+    esclusi: Sequence[str] | None = None,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 
@@ -842,7 +843,8 @@ def scaffali(
                 {"key": chiavi[i], "tipo": "watched", "peso": float(seed_weights[i]) if weighted_support else 1.0}
                 for i in cand.seeds_indices
             ]
-            racs = engine.raccomanda(semi_rac, cap=10, medium=cand.medium, esclusi=chiavi)
+            tutti_esclusi = set(chiavi) | set(esclusi or [])
+            racs = engine.raccomanda(semi_rac, cap=10, medium=cand.medium, esclusi=tutti_esclusi)
             cand.top10_cands = set(r["key"] for r in racs[:10])
             cand.titoli = racs[:10]
 
