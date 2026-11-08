@@ -253,7 +253,7 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
 
     const filteredSeeds = rawSeeds.filter(([id]) => {
         if (animePolicy === 'exclude') return !isAnimeSeed(id);
-        if (animePolicy === 'only') return isAnimeSeed(id);
+        // Ticket 11: tutta la storia entra fra i semi, anche con animePolicy === 'only'
         return true;
     });
 
@@ -349,7 +349,7 @@ const HERO_STRATEGIES = [
                         const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
                         if (!Number.isFinite(id) || visti.has(id)) continue;
                         if (animePolicy === 'exclude' && isAnimeSeed(id)) continue;
-                        if (animePolicy === 'only' && !isAnimeSeed(id)) continue;
+                        // Ticket 11: i semi Trakt non vengono potati per animePolicy === 'only'
                         visti.add(id);
                         // I semi Trakt non hanno una data nel payload di oggi: entrano fra i semi, mai fra i recenti.
                         semi.push({ tmdbId: id, medium: med, tipo: 'liked', plays: 1, eta_giorni: semi.length });

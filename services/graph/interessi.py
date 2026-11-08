@@ -992,6 +992,31 @@ def scaffali(
 
     tutti_esclusi = set(chiavi) | set(esclusi or [])
 
+    meta = K.metadati()
+    titles = meta.get("TIT")
+    years = meta.get("ANNO")
+    anime_flags = meta.get("ANIME")
+
+    def _calcola_anime(shelf: Shelf, parent_shelf: Shelf | None = None) -> bool:
+        """Calcola se uno scaffale è a prevalenza schiacciante Anime (>= ANIME_SHELF_THRESHOLD).
+        
+        Usa il flag canon.metadati()['ANIME'] indicizzato per riga canonica.
+        Se la controparte non possiede membri propri (in quanto generata direttamente dalla camminata
+        dei semi primari), eredita lo stato anime dal primario generatore.
+        """
+        if shelf.semi_membri and anime_flags is not None:
+            n_a = 0
+            for sm in shelf.semi_membri:
+                pref = "tv" if sm.get("medium") in ("tv", "series") else "movie"
+                k = f"{pref}:{sm.get('tmdbId')}"
+                r = engine.row_of.get(k)
+                if r is not None and 0 <= r < len(anime_flags) and anime_flags[r]:
+                    n_a += 1
+            return (n_a / len(shelf.semi_membri)) >= ANIME_SHELF_THRESHOLD
+        elif parent_shelf is not None:
+            return bool(parent_shelf.anime)
+        return False
+
     # ONE BATCHED WALK: prepara semi per tutti i candidati ammissibili (primari + controparti)
     # prima della selezione greedy, così top10_cands e titoli finali derivano dalla stessa camminata.
     batch_semi_primaries = [
@@ -1002,6 +1027,7 @@ def scaffali(
         for sh in eligible_cands
     ]
     batch_medium_primaries = [sh.medium for sh in eligible_cands]
+    batch_anime_primaries = [_calcola_anime(sh) for sh in eligible_cands]
 
     m_cands = len(eligible_cands)
     if medium is None:
@@ -1013,11 +1039,14 @@ def scaffali(
             for sh in eligible_cands
         ]
         batch_medium_counterparts = ["series" if sh.medium == "movie" else "movie" for sh in eligible_cands]
+        batch_anime_counterparts = [_calcola_anime(sh) for sh in eligible_cands]
         all_batch_semi = batch_semi_primaries + batch_semi_counterparts
         all_batch_medium = batch_medium_primaries + batch_medium_counterparts
+        all_batch_anime = batch_anime_primaries + batch_anime_counterparts
     else:
         all_batch_semi = batch_semi_primaries
         all_batch_medium = batch_medium_primaries
+        all_batch_anime = batch_anime_primaries
 
     # UNA sola esecuzione PPR batched per tutti i candidati ammissibili
     all_recs = engine.raccomanda_multi(
@@ -1027,6 +1056,7 @@ def scaffali(
         esclusi=tutti_esclusi,
         tono=tono,
         complessita=complessita,
+        anime=all_batch_anime,
     )
 
     # Assegna titoli e top10_cands ai candidati direttamente dall'unico batched PPR
@@ -1114,31 +1144,6 @@ def scaffali(
         rem = [c for c in unnamed_shelves if c is not best_freshest]
         rem.sort(key=lambda x: (x.r_comb, -x.consistenza, -x.size))
         ordered_shelves = [best_freshest] + rem
-
-    meta = K.metadati()
-    titles = meta.get("TIT")
-    years = meta.get("ANNO")
-    anime_flags = meta.get("ANIME")
-
-    def _calcola_anime(shelf: Shelf, parent_shelf: Shelf | None = None) -> bool:
-        """Calcola se uno scaffale è a prevalenza schiacciante Anime (>= ANIME_SHELF_THRESHOLD).
-        
-        Usa il flag canon.metadati()['ANIME'] indicizzato per riga canonica.
-        Se la controparte non possiede membri propri (in quanto generata direttamente dalla camminata
-        dei semi primari), eredita lo stato anime dal primario generatore.
-        """
-        if shelf.semi_membri and anime_flags is not None:
-            n_a = 0
-            for sm in shelf.semi_membri:
-                pref = "tv" if sm.get("medium") in ("tv", "series") else "movie"
-                k = f"{pref}:{sm.get('tmdbId')}"
-                r = engine.row_of.get(k)
-                if r is not None and 0 <= r < len(anime_flags) and anime_flags[r]:
-                    n_a += 1
-            return (n_a / len(shelf.semi_membri)) >= ANIME_SHELF_THRESHOLD
-        elif parent_shelf is not None:
-            return bool(parent_shelf.anime)
-        return False
 
     all_served: list[Shelf] = []
     if medium is None:

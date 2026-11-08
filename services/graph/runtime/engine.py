@@ -108,6 +108,7 @@ class Engine:
             self.is_tv = np.asarray(canon_is_tv, dtype=bool)
             meta = K.metadati()
             self.nep = np.asarray(meta["NEP"], dtype=np.float64)
+            self.anime = np.asarray(meta["ANIME"], dtype=bool) if ("ANIME" in meta and meta["ANIME"] is not None) else np.zeros(n, dtype=bool)
             try:
                 self.tono, self.complessita = _assi.carica_assi()
                 self.assi_errore = None
@@ -121,6 +122,7 @@ class Engine:
             self.row_of = {k: i for i, k in enumerate(self.keys)}
             self.is_tv = np.zeros(n, dtype=bool)
             self.nep = np.ones(n, dtype=np.float64)
+            self.anime = np.zeros(n, dtype=bool)
             self.tono = np.zeros(n, dtype=np.float32)
             self.complessita = np.zeros(n, dtype=np.float32)
 
@@ -600,6 +602,7 @@ class Engine:
         esclusi: Iterable[Any] = (),
         tono: float = 0.0,
         complessita: float = 0.0,
+        anime: bool | str | None = None,
     ) -> list[dict]:
         """Esegue Personalized PageRank e restituisce i top raccomandati ordinati per punteggio.
 
@@ -681,6 +684,12 @@ class Engine:
         if escl_indici:
             cand[list(escl_indici)] = -np.inf
 
+        # Applicazione filtro anime prima del cap (Ticket 11)
+        if (anime is True or anime == "only") and getattr(self, "anime", None) is not None:
+            cand[~self.anime] = -np.inf
+        elif anime == "exclude" and getattr(self, "anime", None) is not None:
+            cand[self.anime] = -np.inf
+
         valid_idx = np.flatnonzero(cand > -np.inf)
         if len(valid_idx) == 0:
             return []
@@ -726,6 +735,7 @@ class Engine:
         esclusi: Iterable[Any] = (),
         tono: float | Sequence[float] = 0.0,
         complessita: float | Sequence[float] = 0.0,
+        anime: bool | str | Sequence[bool | str | None] | None = None,
     ) -> list[list[dict]]:
         """Esegue una camminata Personalized PageRank batched per B liste di semi.
 
@@ -801,6 +811,14 @@ class Engine:
             if np.isnan(c) or c < -1.0 or c > 1.0:
                 raise ValueError(f"complessita non valida: {c!r} (deve essere compresa tra -1.0 e 1.0)")
 
+        # 4b. Risoluzione anime per colonna
+        if isinstance(anime, (list, tuple, np.ndarray)):
+            if len(anime) != B:
+                raise ValueError(f"Lunghezza lista anime ({len(anime)}) != numero query ({B})")
+            anime_list = [a for a in anime]
+        else:
+            anime_list = [anime] * B
+
         # 5. Esclusioni comuni
         escl_indici, _ = self._parse_esclusi(esclusi)
 
@@ -874,6 +892,12 @@ class Engine:
 
             if escl_indici:
                 cand[list(escl_indici)] = -np.inf
+
+            a_j = anime_list[j]
+            if (a_j is True or a_j == "only") and getattr(self, "anime", None) is not None:
+                cand[~self.anime] = -np.inf
+            elif a_j == "exclude" and getattr(self, "anime", None) is not None:
+                cand[self.anime] = -np.inf
 
             valid_idx = np.flatnonzero(cand > -np.inf)
             if len(valid_idx) == 0:
