@@ -301,7 +301,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
             variant="outline"
             size="sm"
             onClick={() => setIsSyncModalOpen(true)}
-            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20 min-h-[44px] h-11 touch-manipulation"
+            className="text-xs font-bold text-white border-primary/20 bg-primary hover:bg-primary/90 shadow-sm shadow-primary/20 min-h-[44px] h-11 rounded-xl touch-manipulation"
           >
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> 
             Converti in YACA
@@ -311,7 +311,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
             size="sm"
             disabled={isRemovingWatched}
             onClick={handleRemoveWatched}
-            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[44px] h-11 touch-manipulation"
+            className="text-xs font-bold text-marrow-deep border border-marrow-light/10 bg-white/40 hover:bg-white/70 min-h-[44px] h-11 rounded-xl touch-manipulation"
           >
             {isRemovingWatched
               ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -327,7 +327,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
               if (s === 'name_asc') return 'date_asc';
               return 'custom';
             })}
-            className="text-xs font-bold text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white min-h-[44px] h-11 touch-manipulation"
+            className="text-xs font-bold text-marrow-deep border border-marrow-light/10 bg-white/40 hover:bg-white/70 min-h-[44px] h-11 rounded-xl touch-manipulation"
           >
             <ArrowUpDown className="h-4 w-4 mr-1" />
             Ordina: {sortMode === 'custom' ? 'Personalizzato' : sortMode === 'date_desc' ? 'Più Recenti' : sortMode === 'name_asc' ? 'A-Z' : 'Meno Recenti'}
@@ -339,7 +339,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
               setIsSelectionMode(!isSelectionMode);
               if (isSelectionMode) setSelectedIds(new Set());
             }}
-            className={`text-xs font-bold min-h-[44px] h-11 touch-manipulation ${isSelectionMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
+            className={`text-xs font-bold min-h-[44px] h-11 rounded-xl touch-manipulation ${isSelectionMode ? 'bg-primary text-white' : 'text-marrow-deep border border-marrow-light/10 bg-white/40 hover:bg-white/70'}`}
           >
             {isSelectionMode ? 'Annulla Selezione' : 'Seleziona Elementi'}
           </Button>
@@ -351,7 +351,7 @@ export function UserLibraryPanel({ profileId, userId, profile, onUpdateProfile, 
               if (isSelectionMode) setIsSelectionMode(false);
               setSelectedIds(new Set());
             }}
-            className={`text-xs font-bold min-h-[44px] h-11 touch-manipulation col-span-2 sm:col-span-1 ${isReorderMode ? '' : 'text-marrow-deep border-marrow-light/30 bg-white/80 hover:bg-white'}`}
+            className={`text-xs font-bold min-h-[44px] h-11 rounded-xl touch-manipulation col-span-2 sm:col-span-1 ${isReorderMode ? 'bg-primary text-white' : 'text-marrow-deep border border-marrow-light/10 bg-white/40 hover:bg-white/70'}`}
           >
             <ListOrdered className="h-4 w-4 mr-1" />
             {isReorderMode ? 'Fine ordine' : 'Ordina'}

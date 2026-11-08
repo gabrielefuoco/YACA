@@ -1,69 +1,26 @@
 'use client';
 import { useState } from 'react';
-import { Profile, Catalog, Preset } from '@/types';
+import { CatalogoEsploraVoce } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
-import { Layers, Info, EyeOff } from 'lucide-react';
-import { isCatalogConformant, getIncompatibilityReason } from '@/lib/catalogKind';
+import { Layers, Info, Compass } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ActiveCatalogsPanelProps {
-  profile: Profile;
-  onReorder: (catalogs: Catalog[]) => void;
-  onRemove: (catalogId: string) => void;
-  presets: Preset[];
-  myLists: Catalog[];
-  onRemoveMyList: (id: string) => void;
-  onEdit: (catalog: Catalog) => void;
-  onDuplicate: (catalog: Catalog) => void;
+  catalogs: CatalogoEsploraVoce[];
+  onReorder: (ids: string[]) => void;
+  onToggleActive: (id: string, attivo: boolean) => void;
+  onEditCatalog?: (catalog: any) => void;
+  onGoToExplore?: () => void;
 }
 
 export function ActiveCatalogsPanel({
-  profile,
+  catalogs,
   onReorder,
-  onRemove,
-  presets,
-  myLists,
-  onRemoveMyList,
-  onEdit,
-  onDuplicate,
+  onToggleActive,
+  onEditCatalog,
+  onGoToExplore,
 }: ActiveCatalogsPanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-
-  const presetMap = new Map(presets.map((preset) => [preset.id, preset]));
-  const presetCatalogs: Catalog[] = profile.raw_ui_state.selectedPresets
-    .map((presetId) => presetMap.get(presetId))
-    .filter((preset): preset is Preset => Boolean(preset))
-    .map((preset) => {
-      let filters = preset.filters;
-      const queries = preset.queries;
-      if (!filters && queries) {
-        if (queries.length > 1) {
-          filters = { queries };
-        } else if (queries.length === 1) {
-          filters = queries[0];
-        }
-      }
-      return {
-        id: preset.id,
-        name: preset.name,
-        type: preset.type === 'series' ? 'series' : 'movie',
-        source: 'preset',
-        filters,
-        queries,
-        emoji: preset.emoji,
-        isAnime: preset.isAnime,
-      };
-    });
-  const allCatalogs = [...profile.existingCatalogs, ...presetCatalogs];
-  const orderMap = new Map((profile.raw_ui_state.catalogOrder ?? []).map((id, i) => [id, i]));
-  const catalogs = [...allCatalogs].sort((a, b) => {
-    const aOrder = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
-    const bOrder = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
-    return aOrder - bOrder;
-  });
-
-  const hiddenCatalogsCount = catalogs.filter(
-    (c) => !isCatalogConformant(c, profile.settings?.typeSelectors)
-  ).length;
 
   const handleDragStart = (index: number) => {
     setDragIndex(index);
@@ -74,8 +31,8 @@ export function ActiveCatalogsPanel({
     const reordered = [...catalogs];
     const [moved] = reordered.splice(dragIndex, 1);
     reordered.splice(targetIndex, 0, moved);
-    onReorder(reordered);
     setDragIndex(null);
+    onReorder(reordered.map(c => c.id));
   };
 
   const handleMoveCatalog = (fromIndex: number, direction: 'up' | 'down') => {
@@ -84,67 +41,79 @@ export function ActiveCatalogsPanel({
     const reordered = [...catalogs];
     const [moved] = reordered.splice(fromIndex, 1);
     reordered.splice(targetIndex, 0, moved);
-    onReorder(reordered);
+    onReorder(reordered.map(c => c.id));
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4">
         <div className="flex flex-col">
-          <h3 className="text-base sm:text-xl font-black text-marrow-deep tracking-tight">
-            I tuoi Cataloghi <span className="text-primary/40 ml-1">({catalogs.length})</span>
-          </h3>
-          <p className="text-xs text-marrow-light/60 font-bold uppercase tracking-widest mt-0.5 sm:mt-1">Gestisci e ordina la tua esperienza</p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base sm:text-xl font-black text-marrow-deep tracking-tight">
+              Cataloghi Attivi
+            </h3>
+            <span className="text-xs font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">
+              {catalogs.length}
+            </span>
+          </div>
+          <p className="text-xs text-marrow-light font-medium mt-0.5">
+            L&apos;elenco effettivo dichiarato a Stremio per la modalità corrente. Trascina o usa le frecce per riordinare.
+          </p>
         </div>
-        
+
         {catalogs.length > 1 && (
-           <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/40 rounded-xl sm:rounded-2xl border border-marrow-light/10 shadow-sm shrink-0">
-             <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0" />
-             <p className="text-xs text-marrow-light font-black uppercase tracking-wider">
-               <span className="sm:hidden">Frecce per riordinare</span>
-               <span className="hidden sm:inline">Trascina per riordinare</span>
-             </p>
-           </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/40 rounded-xl border border-marrow-light/10 shrink-0">
+            <Info className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-xs text-marrow-light font-bold">
+              <span className="sm:hidden">Frecce per riordinare</span>
+              <span className="hidden sm:inline">Trascina per riordinare</span>
+            </p>
+          </div>
         )}
       </div>
 
-      {hiddenCatalogsCount > 0 && (
-        <div className="p-3 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3 text-amber-900 shadow-sm animate-in fade-in duration-200">
-          <EyeOff className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 shrink-0" />
-          <div className="flex flex-col">
-            <p className="text-xs sm:text-sm font-bold">
-              {hiddenCatalogsCount} {hiddenCatalogsCount === 1 ? 'catalogo attivo è nascosto' : 'cataloghi attivi sono nascosti'} nel manifest di Stremio
-            </p>
-            <p className="text-xs text-amber-800/80 font-medium">
-              A causa dei selettori di tipo impostati sul profilo. I cataloghi restano salvati nel profilo e rimangono riordinabili e rimovibili.
-            </p>
-          </div>
-        </div>
-      )}
-
       {catalogs.length === 0 ? (
-        <div className="rounded-[2.5rem] border-2 border-dashed border-marrow-light/20 p-8 sm:p-16 text-center bg-white/40 shadow-inner">
-          <div className="size-20 bg-marrow-light/5 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Layers className="h-10 w-10 text-marrow-light/20" />
+        <div className="rounded-2xl border border-dashed border-marrow-light/20 p-8 sm:p-12 text-center bg-white/30">
+          <div className="size-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Layers className="h-8 w-8 text-primary/40" />
           </div>
-          <p className="text-xl font-black text-marrow-deep">Nessun catalogo attivo</p>
-          <p className="text-sm text-marrow-light/70 font-medium mt-3 max-w-xs mx-auto">Aggiungi cataloghi dalla sezione Esplora o creane uno nuovo per iniziare.</p>
+          <p className="text-base font-black text-marrow-deep">Nessun catalogo attivo nella modalità corrente</p>
+          <p className="text-xs text-marrow-light font-medium mt-1 max-w-sm mx-auto">
+            I cataloghi attivi determinano cosa vedrai su Stremio. Attiva i cataloghi che desideri da Esplora.
+          </p>
+          {onGoToExplore && (
+            <Button
+              onClick={onGoToExplore}
+              className="mt-4 text-xs font-bold bg-primary text-white hover:bg-primary-dark rounded-xl h-10 px-4 gap-1.5"
+            >
+              <Compass className="h-4 w-4" />
+              Vai a Esplora
+            </Button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3 sm:gap-4 w-full">
           {catalogs.map((catalog, index) => {
-            const isHidden = !isCatalogConformant(catalog, profile.settings?.typeSelectors);
-            const hiddenReason = isHidden ? (getIncompatibilityReason(catalog, profile.settings?.typeSelectors) ?? undefined) : undefined;
+            const cardData = {
+              id: catalog.id,
+              name: catalog.nome,
+              type: (catalog.tipo === 'serie' ? 'series' : 'movie') as 'movie' | 'series',
+              tipo: catalog.tipo,
+              fonte: catalog.fonte,
+              attivo: catalog.attivo,
+              ordine: catalog.ordine,
+              emoji: catalog.emoji,
+              description: catalog.description,
+              isAnime: catalog.tipo === 'anime',
+            };
+
             return (
               <CatalogItem
                 key={catalog.id}
-                catalog={catalog}
-                isHiddenBySelectors={isHidden}
-                hiddenReason={hiddenReason}
+                catalog={cardData}
                 isDragging={dragIndex === index}
-                onRemove={() => onRemove(catalog.id)}
-                onEdit={() => onEdit(catalog)}
-                onDuplicate={() => onDuplicate(catalog)}
+                onToggleActive={(attivo) => onToggleActive(catalog.id, attivo)}
+                onEdit={catalog.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(catalog) : undefined}
                 onMoveUp={() => handleMoveCatalog(index, 'up')}
                 onMoveDown={() => handleMoveCatalog(index, 'down')}
                 canMoveUp={index > 0}
@@ -156,28 +125,6 @@ export function ActiveCatalogsPanel({
               />
             );
           })}
-        </div>
-      )}
-
-      {/* My Lists Section (Refined) */}
-      {myLists.length > 0 && (
-        <div className="pt-10 border-t-2 border-marrow-light/10 mt-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1.5 h-6 bg-primary rounded-full" />
-            <h3 className="text-xl font-black text-marrow-deep tracking-tight">
-              Le Mie Liste <span className="text-primary/40 ml-1">({myLists.length})</span>
-            </h3>
-          </div>
-          
-          <div className="flex flex-col gap-4 w-full">
-            {myLists.map((catalog) => (
-              <CatalogItem
-                key={catalog.id}
-                catalog={catalog}
-                onRemove={() => onRemoveMyList(catalog.id)}
-              />
-            ))}
-          </div>
         </div>
       )}
     </div>

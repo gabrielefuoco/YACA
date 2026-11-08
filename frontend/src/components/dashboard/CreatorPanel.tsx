@@ -944,7 +944,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO CARD: Name + Type + Presentation Strategy – all in one place */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-white/60 to-primary/5 p-3 sm:p-5 space-y-3 sm:space-y-4 shadow-lg shadow-primary/5">
+      <section className="rounded-2xl border border-marrow-light/10 bg-white/40 p-3 sm:p-5 space-y-3 sm:space-y-4">
         {/* Row 1: Name input + Type toggle */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
@@ -1028,8 +1028,8 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="sticky bottom-0 z-30 pt-3 pb-2 bg-gradient-to-t from-background-light via-background-light/95 to-transparent mt-6 sm:mt-10">
-        <div className="glass-panel p-2 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-white/95 backdrop-blur-md shadow-lg border border-marrow-light/20 rounded-2xl mx-auto max-w-2xl">
+      <div className="sticky bottom-0 z-30 pt-3 pb-2 mt-6 sm:mt-10">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 mx-auto max-w-2xl">
           {onCancel && (
             <Button
               variant="outline"

@@ -10,6 +10,7 @@ import { Header } from '@/components/layout/Header';
 import { TabNav } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
+import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { MyList, StremioAuth, Profile, Catalog, ProfileTemplate, DEFAULT_ENGINE_SLIDERS } from '@/types';
@@ -55,7 +56,7 @@ export default function Home() {
   } = useAuth();
 
   const [traktExpiresAt, setTraktExpiresAt] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'explore' | 'settings'>('dashboard');
   const [myLists, setMyLists] = useState<MyList[]>([]);
   const [customCatalogs, setCustomCatalogs] = useState<Catalog[]>([]);
   const [configVersion, setConfigVersion] = useState<string | undefined>();
@@ -583,6 +584,14 @@ export default function Home() {
                   onTemplateApplied={handleTemplateApplied}
                   syncStatus={syncStatus}
                   userId={userId ?? undefined}
+                  onGoToExplore={() => setActiveTab('explore')}
+                  onConfigChanged={(ver) => setConfigVersion(ver)}
+                />
+              )}
+
+              {activeTab === 'explore' && (
+                <ExplorePanel
+                  onConfigChanged={(ver) => setConfigVersion(ver)}
                 />
               )}
 

@@ -1,10 +1,10 @@
 'use client';
 import { ReactNode, DragEventHandler } from 'react';
 import { CatalogCardData } from '@/types';
-import { countCatalogFilters } from '@/lib/utils';
 import { getFrontendCatalogKind } from '@/lib/catalogKind';
 import { PosterRow } from '@/components/shared/PosterRow';
-import { GripVertical, Trash2, Copy, Pencil, ChevronUp, ChevronDown, Sparkles, List, Wand2, EyeOff, Film, Tv } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { GripVertical, Trash2, Pencil, ChevronUp, ChevronDown, Sparkles, List, Wand2, EyeOff, Film, Tv } from 'lucide-react';
 import { useFinePointer } from '@/hooks/useFinePointer';
 
 interface CatalogItemProps {
@@ -14,7 +14,8 @@ interface CatalogItemProps {
   description?: string;
   onRemove?: () => void;
   onEdit?: () => void;
-  onDuplicate?: () => void;
+  onToggleActive?: (attivo: boolean) => void;
+  isAttivo?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   canMoveUp?: boolean;
@@ -36,7 +37,8 @@ export function CatalogItem({
   description,
   onRemove,
   onEdit,
-  onDuplicate,
+  onToggleActive,
+  isAttivo,
   onMoveUp,
   onMoveDown,
   canMoveUp = false,
@@ -50,14 +52,23 @@ export function CatalogItem({
   onDrop,
   onDragEnd,
 }: CatalogItemProps) {
-
   const finePointer = useFinePointer();
-  const filterCount = countCatalogFilters(catalog);
   const mediaSet = getFrontendCatalogKind(catalog).mediaSet;
 
-  const isPreset = catalog.source === 'preset' || !catalog.source;
-  const sourceLabel = catalog.source === 'preset' ? 'Preset' : (catalog.source === 'mylist' ? 'Mia Lista' : 'Creato');
-  const SourceIcon = catalog.source === 'preset' ? Sparkles : (catalog.source === 'mylist' ? List : Wand2);
+  const isPreset = catalog.source === 'preset' || catalog.fonte === 'preset' || (!catalog.source && !catalog.fonte);
+  const fonte = catalog.fonte || catalog.source;
+  const sourceLabel = fonte === 'preset' ? 'Preset' : (fonte === 'watchlist' ? 'Watchlist' : (fonte === 'grafo' ? 'Suggerito' : (fonte === 'mylist' ? 'Mia Lista' : 'Creato')));
+  const SourceIcon = (fonte === 'preset' || fonte === 'grafo') ? Sparkles : (fonte === 'watchlist' || fonte === 'mylist' ? List : Wand2);
+
+  const activeState = Boolean(catalog.attivo ?? isAttivo);
+
+  // Determina tipo effettivo (film/serie/anime/bambini)
+  const tipoEffettivo = catalog.tipo || (catalog.isAnime ? 'anime' : (catalog.type === 'series' ? 'serie' : (catalog.type === 'movie' ? 'film' : null)));
+
+  // Filtra la dicitura generica del preset (ticket 06: via dicitura fissa)
+  const rawDesc = description || catalog.description || catalog.raw_prompt;
+  const isGenericDesc = rawDesc && /catalogo tematico preconfigurato/i.test(rawDesc);
+  const effectiveDescription = isGenericDesc ? null : rawDesc;
 
   return (
     <div
@@ -113,26 +124,41 @@ export function CatalogItem({
                 )}
               </div>
             )}
-            <div className="size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep">
-              <span className="text-lg sm:text-2xl">{catalog.emoji ?? '📋'}</span>
+            <div className="size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep shrink-0">
+              <span className="text-lg sm:text-2xl">{catalog.emoji ?? (tipoEffettivo === 'anime' ? '🏮' : (tipoEffettivo === 'bambini' ? '🧸' : '📋'))}</span>
             </div>
           </div>
           <div className="min-w-0">
             <h3 className="font-black text-marrow-deep text-sm sm:text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">{catalog.name}</h3>
+            {/* Ticket 06: Il badge film/serie/anime sale accanto a preset e anime */}
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
-              {catalog.source && (
-                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
-                  <SourceIcon className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{sourceLabel}</span>
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
+                <SourceIcon className="h-3 w-3 shrink-0" />
+                <span className="truncate">{sourceLabel}</span>
+              </span>
+
+              {/* Badge del tipo (Film / Serie / Anime / Bambini) */}
+              {tipoEffettivo === 'bambini' && (
+                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-700 text-xs font-black uppercase tracking-wider border border-purple-500/20">
+                  <span>🧸</span>
+                  <span>Bambini</span>
                 </span>
               )}
-              {badges}
-              {(catalog.isAnime || (catalog.filters as any)?.isAnime) && (
+              {(tipoEffettivo === 'anime' || catalog.isAnime || (catalog.filters as any)?.isAnime) && (
                 <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 text-xs font-black uppercase tracking-wider border border-amber-500/20">
                   <span>🏮</span>
                   <span>Anime</span>
                 </span>
               )}
+              {tipoEffettivo !== 'anime' && tipoEffettivo !== 'bambini' && mediaSet.map((media, i) => (
+                <span key={media} className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
+                  {media === 'film' ? <Film className="h-3 w-3 shrink-0" /> : <Tv className="h-3 w-3 shrink-0" />}
+                  <span>{media === 'film' ? 'Film' : 'Serie'}</span>
+                </span>
+              ))}
+
+              {badges}
+
               {isHiddenBySelectors && (
                 <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-800 text-xs font-black uppercase tracking-wider border border-amber-500/30">
                   <EyeOff className="h-3 w-3 shrink-0" />
@@ -143,75 +169,55 @@ export function CatalogItem({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0 ml-2 sm:ml-4">
-          {actions}
-          {onDuplicate && (
+        <div className="flex items-center gap-2 shrink-0 ml-2 sm:ml-4">
+          {onToggleActive && (
+            <div className="flex items-center gap-2 mr-1">
+              <span className={`text-xs font-bold uppercase tracking-wider hidden sm:inline ${activeState ? 'text-primary font-black' : 'text-marrow-light/50'}`}>
+                {activeState ? 'Attivo' : 'Spento'}
+              </span>
+              <Switch
+                checked={activeState}
+                onCheckedChange={(checked) => onToggleActive(checked)}
+                aria-label={`Attiva ${catalog.name}`}
+              />
+            </div>
+          )}
+          {onEdit && (
             <button
-              onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-              className="p-2 rounded-xl text-marrow-light/40 hover:text-primary hover:bg-primary/5 transition-all group/btn size-11 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-              title="Duplica catalogo"
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="p-2 rounded-xl text-marrow-light/60 hover:text-primary hover:bg-primary/5 transition-all size-11 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+              title="Modifica"
             >
-              <Copy className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
+              <Pencil className="h-4 w-4" />
             </button>
           )}
           {onRemove && (
             <button
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="p-2 rounded-xl text-marrow-light/40 hover:text-destructive hover:bg-destructive/5 transition-all group/btn size-11 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+              className="p-2 rounded-xl text-marrow-light/60 hover:text-destructive hover:bg-destructive/5 transition-all size-11 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
               title="Rimuovi"
             >
-              <Trash2 className="h-4.5 w-4.5 group-hover/btn:scale-110 transition-transform" />
+              <Trash2 className="h-4 w-4" />
             </button>
           )}
+          {actions}
         </div>
       </div>
 
-      <p className="text-xs sm:text-sm text-marrow-light/80 font-medium line-clamp-1 mb-2 sm:mb-4 relative z-10 px-1">
-        {description || catalog.description || catalog.raw_prompt || (isPreset ? 'Catalogo tematico preconfigurato e costantemente aggiornato.' : 'Catalogo basato su filtri e preferenze personalizzate.')}
-      </p>
+      {effectiveDescription && (
+        <p className="text-xs sm:text-sm text-marrow-light/80 font-medium line-clamp-1 mb-2 sm:mb-4 relative z-10 px-1">
+          {effectiveDescription}
+        </p>
+      )}
 
-      <div className="-mx-1 sm:-mx-2 mb-2 sm:mb-4 relative z-10 group/row">
-         {/* Alone decorativo: si accende passando il mouse sulla riga. Il gruppo di riferimento è
-             `group/row` (l'antenato reale): prima puntava a `group/poster`, che qui non esiste, quindi
-             su desktop non si è mai acceso e su touch restava acceso per sempre. */}
-         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/row:opacity-100 transition-opacity rounded-2xl -z-10" />
+      <div className="-mx-1 sm:-mx-2 relative z-10 group/row">
+        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/row:opacity-100 transition-opacity rounded-2xl -z-10" />
         <PosterRow
-          presetId={isPreset ? (catalog.id.startsWith('yaca_preset_') ? catalog.id : `yaca_preset_${catalog.id}`) : undefined}
-          type={catalog.type}
+          presetId={isPreset ? (catalog.id.startsWith('yaca_preset_') ? catalog.id : `yaca_preset_${catalog.id}`) : catalog.id}
+          type={catalog.type === 'both' ? 'movie' : (catalog.type || (tipoEffettivo === 'serie' ? 'series' : 'movie'))}
           filters={catalog.filters}
           prompt={catalog.raw_prompt}
         />
-      </div>
-
-      <div className="mt-auto pt-2 sm:pt-4 border-t border-marrow-light/10 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Il tipo (film / serie / entrambi) viene dalla stessa logica di dominio che indicizza i
-              cataloghi: 'both' non è un ramo duplicato qui, è `mediaSet` di due elementi. */}
-          <div className="flex items-center gap-1 sm:gap-1.5 text-xs font-black text-marrow-deep/70">
-            {mediaSet.map((media, i) => (
-              <span key={media} className="flex items-center gap-1 sm:gap-1.5">
-                {i > 0 && <span className="text-marrow-light/30">/</span>}
-                {media === 'film' ? <Film className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <Tv className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-                <span className="uppercase tracking-tight">{media === 'film' ? 'Film' : 'Serie'}</span>
-              </span>
-            ))}
-          </div>
-          <div className="w-1 h-1 rounded-full bg-marrow-light/20" />
-          {!isPreset && onEdit ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(); }}
-              className="flex items-center gap-1 text-xs font-bold text-marrow-light/60 hover:text-primary hover:bg-primary/5 px-2.5 py-1.5 rounded-md transition-all group/edit-btn cursor-pointer touch-manipulation min-h-[44px] h-11"
-              title="Modifica filtri"
-            >
-              <span>{filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}</span>
-              <Pencil className="h-3 w-3 text-marrow-light/40 group-hover/edit-btn:text-primary transition-colors shrink-0" />
-            </button>
-          ) : (
-            <div className="text-xs font-bold text-marrow-light/60 py-1">
-              {filterCount} Filtr{filterCount !== 1 ? 'i' : 'o'}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

@@ -142,6 +142,16 @@ export const api = {
   // --- PROFILO & LIBRERIA ---
   getProfile: () =>
     get('/api/profilo'),
+  getModi: () =>
+    get('/api/profilo/modi'),
+  attivaModo: (modo: string) =>
+    post('/api/profilo/modi/attiva', { modo }),
+  getCataloghi: () =>
+    get('/api/profilo/cataloghi'),
+  attivaCatalogo: (id: string, attivo: boolean) =>
+    post('/api/profilo/cataloghi/attiva', { id, attivo }),
+  riordinaCataloghi: (ids: string[]) =>
+    post('/api/profilo/cataloghi/ordine', { ids }),
   checkUser: (_authKey?: string, _email?: string) =>
     get('/api/profilo'),
   getProfileAnalytics: (profileId?: string, _userId?: string) =>

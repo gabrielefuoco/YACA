@@ -105,6 +105,48 @@ export interface CatalogCardData {
   filters?: Record<string, unknown>;
   queries?: QueryBlock[];
   isAnime?: boolean;
+  tipo?: 'film' | 'serie' | 'anime' | 'bambini';
+  fonte?: 'grafo' | 'watchlist' | 'creazione' | 'preset';
+  attivo?: boolean;
+  ordine?: number | null;
+}
+
+export type ModoId = 'generale' | 'film' | 'serie' | 'anime' | 'bambini';
+
+export interface ModoInfo {
+  modo: ModoId;
+  nome: string;
+  emoji: string;
+  attivo: boolean;
+  leve?: {
+    medium: 'movie' | 'series' | null;
+    anime: 'only' | 'exclude' | 'allow';
+    kids: boolean;
+  };
+}
+
+export interface CatalogoEsploraVoce {
+  id: string;
+  nome: string;
+  tipo: 'film' | 'serie' | 'anime' | 'bambini';
+  fonte: 'grafo' | 'watchlist' | 'creazione' | 'preset';
+  attivo: boolean;
+  ordine: number | null;
+  emoji?: string;
+  description?: string;
+}
+
+export interface CataloghiEsploraGruppi {
+  suggerimenti?: CatalogoEsploraVoce[];
+  watchlist?: CatalogoEsploraVoce[];
+  creazioni?: CatalogoEsploraVoce[];
+  tutti?: CatalogoEsploraVoce[];
+}
+
+export interface CataloghiEsploraResponse {
+  modo: ModoId;
+  gruppi: CataloghiEsploraGruppi;
+  configVersion?: string | null;
 }
 
 export interface Profile {

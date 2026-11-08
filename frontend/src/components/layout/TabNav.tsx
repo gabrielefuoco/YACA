@@ -2,18 +2,19 @@
 import { cn } from '@/lib/utils';
 
 interface TabNavProps {
-  activeTab: 'dashboard' | 'settings';
-  onTabChange: (tab: 'dashboard' | 'settings') => void;
+  activeTab: 'dashboard' | 'explore' | 'settings';
+  onTabChange: (tab: 'dashboard' | 'explore' | 'settings') => void;
 }
 
 export function TabNav({ activeTab, onTabChange }: TabNavProps) {
   const tabs = [
     { id: 'dashboard' as const, label: 'Dashboard' },
+    { id: 'explore' as const, label: 'Esplora' },
     { id: 'settings' as const, label: 'Impostazioni' },
   ];
 
   return (
-    <nav className="flex items-center gap-1 sm:gap-6 overflow-x-auto no-scrollbar">
+    <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
       {tabs.map(({ id, label }) => (
         <button
           key={id}
