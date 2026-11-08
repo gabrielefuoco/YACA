@@ -3,58 +3,69 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { PosterCard } from '@/components/shared/PosterCard';
+import { EngineSliders } from '@/types';
 
 interface CatalogLivePreviewProps {
   catalogId: string;
   userId: string;
   profileId: string;
+  sliders?: EngineSliders;
 }
 
-export function CatalogLivePreview({ catalogId, userId, profileId }: CatalogLivePreviewProps) {
+export function CatalogLivePreview({ catalogId, userId, profileId, sliders }: CatalogLivePreviewProps) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    const abortController = new AbortController();
     
     async function fetchPreview() {
       setLoading(true);
+      setError(null);
       try {
-        // Fetch dal manifest locale di Stremio (la dashboard può chiamare le API relative se in locale,
-        // ma essendo un'app separata usa `api.get` tramite proxy/backend).
-        // Il manifest endpoint è /:userId/:configVersion/catalog/movie/:catalogId.json
-        // Usiamo v1 come placeholder o recuperiamo la versione, ma proviamo a usare un endpoint API ad hoc.
-        // Se non c'è, possiamo chiamare direttamente il formato manifest
+        const quantizedSliders = sliders ? {
+          cozy: Math.round(sliders.cozy * 10) / 10,
+          canone: Math.round(sliders.canone * 10) / 10,
+        } : undefined;
+
         const res = await api.previewCatalog({ 
           profileId, 
           id: catalogId,
-          type: catalogId.includes('series') ? 'series' : 'movie'
-        });
+          type: catalogId.includes('series') ? 'series' : 'movie',
+          sliders: quantizedSliders,
+        }, { signal: abortController.signal });
         
-        if (mounted) {
-          const fetchedItems = res.metas || res.items || res.results;
+        if (mounted && !abortController.signal.aborted) {
+          const fetchedItems = res?.metas || res?.cards || res?.items || res?.results;
           if (fetchedItems) {
             setItems(fetchedItems.slice(0, 20));
           } else {
             setItems([]);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError' || abortController.signal.aborted) {
+          return;
+        }
         if (mounted) {
-          console.error(err);
+          console.error('[CatalogLivePreview] Errore caricamento preview:', err);
           setError('Impossibile caricare la preview');
         }
       } finally {
-        if (mounted) {
+        if (mounted && !abortController.signal.aborted) {
           setLoading(false);
         }
       }
     }
 
     fetchPreview();
-    return () => { mounted = false; };
-  }, [catalogId, userId, profileId]);
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, [catalogId, userId, profileId, sliders?.cozy, sliders?.canone]);
 
   if (loading) {
     return (

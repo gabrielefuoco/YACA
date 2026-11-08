@@ -196,6 +196,24 @@ export interface AnalyticsData {
   heroCatalogs?: HeroCatalogUiGroup[];
 }
 
+export interface ShelfMemberSeed {
+  titolo: string;
+  anno?: number;
+  tmdbId?: number;
+  medium?: string;
+  plays?: number;
+  eta_giorni?: number;
+}
+
+export interface ShelfRepresentativeSeed {
+  titolo: string;
+  anno?: number;
+  tmdbId?: number;
+  medium?: string;
+  plays?: number;
+  eta_giorni?: number;
+}
+
 export interface HeroCatalogUiGroup {
   id?: string;
   catalog_id?: string;
@@ -208,6 +226,11 @@ export interface HeroCatalogUiGroup {
   medium?: 'movie' | 'series';
   slot?: number;
   uiType?: 'ai' | 'algo';
+  anime?: boolean;
+  nome_fonte?: string;
+  confidenza?: number | null;
+  semi_membri?: ShelfMemberSeed[];
+  semi_rappresentativi?: ShelfRepresentativeSeed[];
 }
 
 export interface WatchHistoryItem {

@@ -61,15 +61,21 @@ router.post('/anteprima', async (req, res) => {
             userId: req.utenteId,
             profileId: req.body.profileId || user.activeProfileId,
             addonUuid: user.addonUuid,
+            richiesta: req.body,
             user
         });
         const activeProfileId = profileContext.profileId;
         const kidsMode = profileContext.kidsMode;
+        const effectiveSliders = req.body?.sliders || profileContext.sliders;
 
         const fullUserConfig = {
             ...user,
             activeProfileId,
             context: profileContext,
+            activeProfileSettings: {
+                ...(user.activeProfileSettings || {}),
+                sliders: effectiveSliders
+            },
             apiKeys: {
                 ...user.apiKeys,
                 tmdb: tmdbKey,

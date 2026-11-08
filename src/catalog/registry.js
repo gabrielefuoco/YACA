@@ -390,15 +390,20 @@ function getHeroUiGroups(shelves = null) {
             id: s.catalog_id || s.id,
             catalog_id: s.catalog_id || s.id,
             idBase: s.catalog_id || s.id,
-            label: s.nome || s.name || s.label || 'Scaffale',
-            nome: s.nome || s.name || s.label || 'Scaffale',
+            label: s.nome_display || s.nome || s.name || s.label || 'Scaffale',
+            nome: s.nome_display || s.nome || s.name || s.label || 'Scaffale',
             emoji: (s.medium === 'movie' || s.type === 'movie') ? '🎬' : '📺',
             desc: s.desc || (Array.isArray(s.semi_rappresentativi) && s.semi_rappresentativi.length > 0
                 ? `Ispirato da: ${s.semi_rappresentativi.map(sr => sr.titolo).slice(0, 3).join(', ')}`
                 : ''),
             type: s.medium === 'tv' ? 'series' : (s.medium || s.type || 'movie'),
             medium: s.medium === 'tv' ? 'series' : (s.medium || s.type || 'movie'),
-            slot: s.slot !== undefined ? Number(s.slot) : (idx + 1)
+            slot: s.slot !== undefined ? Number(s.slot) : (idx + 1),
+            nome_fonte: s.nome_fonte || null,
+            confidenza: s.confidenza !== undefined ? s.confidenza : null,
+            anime: Boolean(s.anime),
+            semi_membri: Array.isArray(s.semi_membri) ? s.semi_membri : [],
+            semi_rappresentativi: Array.isArray(s.semi_rappresentativi) ? s.semi_rappresentativi : []
         }));
     }
 

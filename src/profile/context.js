@@ -74,7 +74,9 @@ async function contestoDi(input = {}) {
     );
 
     // Calcolo slider del motore (preferenze motore salvate nel profilo: cozy, canone)
-    const slider = rawProfile?.settings?.sliders
+    const slider = richiesta?.sliders
+        || richiesta?.slider
+        || rawProfile?.settings?.sliders
         || rawProfile?.settings?.slider
         || rawProfile?.sliders
         || {};

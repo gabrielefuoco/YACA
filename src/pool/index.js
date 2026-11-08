@@ -434,6 +434,7 @@ const HERO_STRATEGIES = [
                             confidenza: s.confidenza,
                             medium: s.medium,
                             slot: s.slot,
+                            anime: Boolean(s.anime),
                             semi_rappresentativi: s.semi_rappresentativi,
                             semi_membri: s.semi_membri
                         }));

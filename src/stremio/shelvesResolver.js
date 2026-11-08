@@ -128,6 +128,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
                     confidenza: s.confidenza,
                     medium: s.medium || med,
                     slot: s.slot,
+                    anime: Boolean(s.anime),
                     semi_rappresentativi: s.semi_rappresentativi,
                     semi_membri: s.semi_membri
                 }));

@@ -45,6 +45,11 @@ module.exports = {
     // Reconciler
     reconcileManifests: reconciler.reconcileManifests,
 
+    // Presentation
+    getShelfBadge: (...a) => require('./shelfPresentation').getShelfBadge(...a),
+    formatShelfSeeds: (...a) => require('./shelfPresentation').formatShelfSeeds(...a),
+    quantizeSliderValue: (...a) => require('./shelfPresentation').quantizeSliderValue(...a),
+
     // Serving
     get catalogHandler() { return require('./catalogHandler').catalogHandler; },
     get metaHandler() { return require('./meta').metaHandler; },

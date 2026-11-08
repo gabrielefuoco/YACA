@@ -47,13 +47,19 @@ router.get('/', async (req, res) => {
         };
 
         const { getCachedProfileShelves } = require('../pool');
-        const activeProfId = user.activeProfileId || 'global';
+        const { resolveProfileShelves } = require('../stremio');
+        const activeProfId = (req.query.profileId && String(req.query.profileId).trim())
+            || user.activeProfileId
+            || 'global';
         const profileObj = (user.profiles || []).find(p => p.id === activeProfId);
-        const profileShelves = profileObj?.shelves
+        let profileShelves = profileObj?.shelves
             || profileObj?.scaffali
             || getCachedProfileShelves(activeProfId)
-            || getCachedProfileShelves(user.userId)
-            || [];
+            || getCachedProfileShelves(user.userId);
+
+        if (!profileShelves || profileShelves.length === 0) {
+            profileShelves = await resolveProfileShelves({ userConfig: user, profileId: activeProfId });
+        }
 
         return res.json({
             userId: user.userId,

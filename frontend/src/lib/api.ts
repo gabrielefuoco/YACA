@@ -51,7 +51,7 @@ async function handleResponse(res: Response) {
   return res.json();
 }
 
-async function post(url: string, body?: object) {
+async function post(url: string, body?: object, options?: { signal?: AbortSignal }) {
   const csrfToken = getCsrfTokenFromCookie();
   const headers = csrfToken
     ? { ...JSON_HEADERS, 'X-CSRF-Token': csrfToken }
@@ -61,6 +61,7 @@ async function post(url: string, body?: object) {
     headers,
     credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
+    signal: options?.signal,
   });
   return handleResponse(res);
 }
@@ -121,9 +122,9 @@ export const api = {
   // --- CONFIGURAZIONE ---
   getPresets: () =>
     get('/api/configurazione/preset'),
-  previewCatalog: (body: any) => {
-    const { userId: _unused, ...clean } = body || {};
-    return post('/api/configurazione/anteprima', clean);
+  previewCatalog: (body: any, options?: { signal?: AbortSignal }) => {
+    const { userId: _unused, signal, ...clean } = body || {};
+    return post('/api/configurazione/anteprima', clean, { signal: options?.signal || signal });
   },
   configure: (body: any) => {
     const { userId: _unused, ...clean } = body || {};
@@ -143,8 +144,8 @@ export const api = {
     get('/api/profilo'),
   checkUser: (_authKey?: string, _email?: string) =>
     get('/api/profilo'),
-  getProfileAnalytics: (_profileId?: string, _userId?: string) =>
-    get('/api/profilo'),
+  getProfileAnalytics: (profileId?: string, _userId?: string) =>
+    get(profileId ? `/api/profilo?profileId=${encodeURIComponent(profileId)}` : '/api/profilo'),
   getSyncStatus: (profileId: string = 'global', _userId?: string) =>
     get(`/api/profilo/sincronizzazione?profileId=${encodeURIComponent(profileId)}`),
   refreshSync: (profileId: string = 'global', _userId?: string) =>
