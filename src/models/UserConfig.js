@@ -371,6 +371,9 @@ const UserConfig = {
             resolved.activeModo = addonConfig?.config?.activeModo || null;
             resolved.cataloghi = addonConfig?.config?.cataloghi || null;
             resolved.sliders = addonConfig?.config?.sliders || null;
+            // L'impronta persistita serve a chi scrive i cataloghi per sapere se
+            // il manifest cambia davvero (src/profile/cataloghiEsplora.js).
+            resolved.manifestFingerprint = addonConfig?.config?.manifestFingerprint || null;
             // Il DNA è dell'account (ticket 02): viaggia col documento risolto,
             // purché sia già stato calcolato. Nessun calcolo in lettura.
             if (addonConfig?.dna) resolved.dna = addonConfig.dna;

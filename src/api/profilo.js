@@ -125,15 +125,7 @@ router.post('/modi/attiva', async (req, res) => {
 
         // Propagazione a Stremio (ticket 04): stessa catena della dashboard, con
         // l'URL che porta il nuovo configVersion. Il client vede al prossimo avvio.
-        if (risultato.manifestChanged) {
-            const account = await accountDi(req.utenteId).catch(() => null);
-            if (account?.apiKeys?.stremio) {
-                const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
-                const manifestUrl = `${hostUrl}/${req.utenteId}/${risultato.configVersion}/manifest.json`;
-                updateStremioAddonCollection(account.apiKeys.stremio, manifestUrl)
-                    .catch(error => console.error('[ProfiloAPI] Aggiornamento Stremio dopo il cambio modo fallito:', error.message));
-            }
-        }
+        await propagaAStremio(req, risultato);
 
         return res.json(risultato);
     } catch (err) {
@@ -141,6 +133,102 @@ router.post('/modi/attiva', async (req, res) => {
         const code = err.code || (status === 400 ? 'richiesta_non_valida' : 'non_disponibile');
         if (status >= 500) console.error('[ProfiloAPI] Errore attivazione modalità:', err.message);
         return erroreDominio(res, status, code, err.message || 'Impossibile attivare la modalità.');
+    }
+});
+
+/**
+ * Propagazione a Stremio (ticket 04): un cambio di manifest scrive la nuova
+ * collezione con l'URL che porta il nuovo `configVersion`. Fire-and-forget: la
+ * risposta HTTP non aspetta Stremio Cloud, il client vede al prossimo avvio.
+ */
+async function propagaAStremio(req, risultato) {
+    if (!risultato?.manifestChanged) return;
+    try {
+        const account = await accountDi(req.utenteId).catch(() => null);
+        if (!account?.apiKeys?.stremio) return;
+        const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+        const manifestUrl = `${hostUrl}/${req.utenteId}/${risultato.configVersion}/manifest.json`;
+        updateStremioAddonCollection(account.apiKeys.stremio, manifestUrl)
+            .catch(error => console.error('[ProfiloAPI] Aggiornamento Stremio fallito:', error.message));
+    } catch (error) {
+        console.error('[ProfiloAPI] Aggiornamento Stremio fallito:', error.message);
+    }
+}
+
+/** Forma d'errore unica per le rotte di dominio (400 dichiarato, mai un default). */
+function rispostaErroreDominio(res, err, etichetta) {
+    const status = err.status || 500;
+    const code = err.code || (status === 400 ? 'richiesta_non_valida' : 'non_disponibile');
+    if (status >= 500) console.error(`[ProfiloAPI] ${etichetta}:`, err.message);
+    return erroreDominio(res, status, code, err.message || etichetta);
+}
+
+/**
+ * GET /api/profilo/cataloghi
+ * Tutto ciò che Esplora disegna per la modalità attiva: suggerimenti del grafo
+ * (stesso resolver del manifest), watchlist, creazioni e «Tutti».
+ * I gruppi vuoti sono omessi, non restituiti come `[]`.
+ */
+router.get('/cataloghi', async (req, res) => {
+    const { modiAbilitati } = require('../profile/modo');
+    if (!modiAbilitati()) {
+        return erroreDominio(res, 404, 'non_disponibile', 'Le modalità non sono abilitate su questa istanza.');
+    }
+    try {
+        const { elencaEsplora } = require('../profile/cataloghiEsplora');
+        const user = await UserConfig.resolveUserConfig(req.utenteId);
+        if (!user) {
+            return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
+        }
+        return res.json(await elencaEsplora(user));
+    } catch (err) {
+        return rispostaErroreDominio(res, err, 'Impossibile caricare i cataloghi');
+    }
+});
+
+/**
+ * POST /api/profilo/cataloghi/attiva
+ * Body: { id: string, attivo: boolean } — idempotente, in coda all'attivazione.
+ */
+router.post('/cataloghi/attiva', async (req, res) => {
+    const { modiAbilitati } = require('../profile/modo');
+    if (!modiAbilitati()) {
+        return erroreDominio(res, 404, 'non_disponibile', 'Le modalità non sono abilitate su questa istanza.');
+    }
+    try {
+        const { attivaCatalogo } = require('../profile/cataloghiEsplora');
+        const user = await UserConfig.resolveUserConfig(req.utenteId);
+        if (!user) {
+            return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
+        }
+        const risultato = await attivaCatalogo({ userConfig: user, id: req.body?.id, attivo: req.body?.attivo });
+        await propagaAStremio(req, risultato);
+        return res.json(risultato);
+    } catch (err) {
+        return rispostaErroreDominio(res, err, 'Impossibile attivare il catalogo');
+    }
+});
+
+/**
+ * POST /api/profilo/cataloghi/ordine
+ * Body: { ids: string[] } — permutazione esatta dei cataloghi attivi della modalità.
+ */
+router.post('/cataloghi/ordine', async (req, res) => {
+    const { modiAbilitati } = require('../profile/modo');
+    if (!modiAbilitati()) {
+        return erroreDominio(res, 404, 'non_disponibile', 'Le modalità non sono abilitate su questa istanza.');
+    }
+    try {
+        const { riordinaCataloghi } = require('../profile/cataloghiEsplora');
+        const user = await UserConfig.resolveUserConfig(req.utenteId);
+        if (!user) {
+            return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
+        }
+        const risultato = await riordinaCataloghi({ userConfig: user, ids: req.body?.ids });
+        await propagaAStremio(req, risultato);
+        return res.json(risultato);
+    } catch (err) {
+        return rispostaErroreDominio(res, err, 'Impossibile riordinare i cataloghi');
     }
 });
 

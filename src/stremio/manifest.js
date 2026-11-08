@@ -10,6 +10,18 @@ const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
 const searchExtra = [{ name: 'search', isRequired: true }];
 
+/**
+ * Le tre righe della libreria personale. Estratte qui perché sono una sola verità
+ * condivisa: il manifest le dichiara e `src/profile/cataloghiEsplora.js` le elenca
+ * in Esplora con gli stessi id e nomi. Con il flag acceso il loro contenuto è
+ * filtrato dalla modalità; la riga resta quella della persona.
+ */
+const WATCHLIST_CATALOGS = Object.freeze([
+    Object.freeze({ id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: defaultExtra }),
+    Object.freeze({ id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: defaultExtra }),
+    Object.freeze({ id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: defaultExtra })
+]);
+
 let canonicalPresetsMap = null;
 function getCanonicalPresetsMap() {
     if (!canonicalPresetsMap) {
@@ -153,9 +165,7 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
             { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
             { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
             { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
-            { id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: [{ name: 'skip' }] },
-            { id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: [{ name: 'skip' }] },
-            { id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: [{ name: 'skip' }] },
+            ...WATCHLIST_CATALOGS.map(c => ({ ...c })),
             ...activeHeroCatalogs
         ];
 
@@ -247,6 +257,7 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
 }
 
 module.exports = {
+    WATCHLIST_CATALOGS,
     buildManifest,
     buildRootManifest,
     resolveCatalogType,
