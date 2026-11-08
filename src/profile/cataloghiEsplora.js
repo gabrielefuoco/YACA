@@ -187,6 +187,29 @@ async function contestoEsplora(userConfig) {
     return { userConfig, modo, leve, shelves, definizioniGrafo, presetMap, attive };
 }
 
+/**
+ * Il medium effettivo di un catalogo, separato dal tipo mostrato.
+ *
+ * `tipo` risponde a «in che gruppo lo metto» (film / serie / anime / bambini),
+ * ma `anime` e `bambini` non sono medium: una riga anime può essere fatta di
+ * serie o di film. Senza questo campo l'interfaccia indovina «film» e sbaglia
+ * icona, tipo dichiarato e anteprima.
+ *
+ * @returns {'movie'|'series'|null} null quando il catalogo contiene entrambi
+ */
+function mediaDi(definizione) {
+    if (!definizione) return 'movie';
+    if (definizione.type === 'movie' || definizione.type === 'series') return definizione.type;
+    const kind = getCatalogKind(definizione);
+    const mediaSet = Array.isArray(kind?.mediaSet) ? kind.mediaSet : [];
+    const film = mediaSet.includes('film');
+    const serie = mediaSet.includes('serie');
+    if (film && !serie) return 'movie';
+    if (serie && !film) return 'series';
+    if (film && serie) return null;
+    return definizione.isAnime === true ? null : 'movie';
+}
+
 function voceDi(definizione, fonte, contesto) {
     const id = String(definizione.id);
     const ordine = contesto.attive.has(id) ? contesto.attive.get(id) : null;
@@ -194,6 +217,7 @@ function voceDi(definizione, fonte, contesto) {
         id,
         nome: definizione.name || definizione.nome || id,
         tipo: tipoDi(definizione, contesto.presetMap),
+        media: mediaDi(definizione),
         fonte,
         attivo: contesto.attive.has(id),
         ordine
@@ -433,6 +457,7 @@ module.exports = {
     ORDINE_TIPI,
     modoAttivoStretto,
     tipoDi,
+    mediaDi,
     ePerBambini,
     servibileNelModo,
     servibileWatchlist,

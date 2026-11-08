@@ -86,23 +86,20 @@ describe('U-02: fail-closed kidsMode nella watchlist', () => {
             { kidsMode: true }
         );
 
-        expect(querySpy).toHaveBeenCalledWith('SELECT * FROM movies WHERE id IN (550,862)');
-        expect(metas[0]).toEqual(expect.objectContaining({
-            id: 'tt0137523',
-            genre_ids: [18, 53],
-            keywords: [{ id: 818, name: 'based on novel or book' }],
-            rawTMDB: expect.objectContaining({
-                genres: expect.arrayContaining([expect.objectContaining({ id: 53 })])
-            })
-        }));
-        expect(metas[1]).toEqual(expect.objectContaining({
+        // Il provider filtra PRIMA del taglio: Fight Club non arriva nemmeno
+        // alla pagina, invece di essere potato dopo (ticket 11, sito 4).
+        const ids = metas.map(meta => meta.id);
+        expect(ids).toContain('tt0111161');
+        expect(ids).not.toContain('tt0137523');
+
+        const toy = metas.find(meta => meta.id === 'tt0111161');
+        expect(toy).toEqual(expect.objectContaining({
             genre_ids: [16, 10751],
             keywords: [{ id: 155276, name: 'one year old' }]
         }));
-        expect(metas[2].genre_ids).toBeUndefined();
 
-        const safeMetas = applyKidsMode(metas);
-        expect(safeMetas.map(meta => meta.id)).toEqual(['tt0111161']);
+        // applyKidsMode resta idempotente su una pagina già filtrata.
+        expect(applyKidsMode(metas).map(meta => meta.id)).toEqual(['tt0111161']);
     });
 
     test('il filtro dichiara non sicuri item e segnali metadata mancanti', () => {

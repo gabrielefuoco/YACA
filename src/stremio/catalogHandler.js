@@ -16,7 +16,7 @@ const { getCacheConfig } = require('../cache/CacheManager');
 const { getPresets } = require('../catalog/presets');
 const { EPISODE_CATALOG_IDS } = require('./constants');
 
-const { routeCatalogRequest } = require('./CatalogRouter');
+const CatalogRouter = require('./CatalogRouter');
 const { hydrateEpisodeBadgesFromCache } = require('../stremio/processors/MetadataHydrator');
 const { formatStremioCatalog } = require('../stremio/formatters/StremioFormatter');
 const {
@@ -25,7 +25,7 @@ const {
     isItemAnime
 } = require('../anime');
 const { isCatalogConformant, isAlwaysVisible } = require('../catalog/catalogKind');
-const { applyKidsMode } = require('../catalog/kidsModeFilters');
+const { applyKidsMode, isItemInappropriateForKids } = require('../catalog/kidsModeFilters');
 const {
     BADGE_CATALOG_VERSION,
     canonicalCatalogDefinition,
@@ -139,56 +139,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
         try {
             const routerArgs = { ...args, extra: { ...extra, hostUrl } };
 
-            // 1. ROUTING: Determina il catalogo grezzo passando attraverso il Router (punto unico di invocazione)
-            let results = await routeCatalogRequest(routerArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
-
-            // Boundary unico per i cataloghi: prima di selettori, kids e badge
-            // ogni item espone un boolean, calcolato dal resolver condiviso.
-            results = (results || []).map(item => {
-                normalizeAnimeMarker(item);
-                return item;
-            });
-
-            if (!results || results.length === 0) {
-                return { metas: [] };
-            }
-
-            // 2. FILTRAGGIO POST-FETCH: Nasconde tipo sbagliato
-            if (type === 'movie' || type === 'series') {
-                results = results.filter(i => {
-                    const medium = i.media_type || (i.type === 'series' ? 'tv' : i.type);
-                    if (medium) {
-                        const expectedType = type === 'series' ? 'tv' : 'movie';
-                        const accettati = expectedType === 'tv' ? ['tv', 'series'] : ['movie'];
-                        return accettati.includes(medium) || medium === 'person';
-                    }
-                    return true;
-                });
-            }
-
-            // 2.5 FILTRAGGIO POST-FETCH: guardia unica per genere + keyword.
-            if (activeProfileSettings?.kidsMode) {
-                results = applyKidsMode(results);
-            }
-
-            // 2.6 FILTRAGGIO POST-FETCH: Filtro Contenuti Anime (Ticket 13 / Spec 06 Sezione 6)
-            // Perimetro: cataloghi di suggerimento (preset utente, 20 hero, custom/merged).
-            // Le ricerche e la libreria personale (3 watchlist) non vengono filtrate.
+            const isKidsMode = Boolean(activeProfileSettings?.kidsMode);
             const animeSelector = activeProfileSettings?.typeSelectors?.anime;
             const isSubjectCatalog = !isAlwaysVisible(id) && !isAlwaysVisible(baseId) && !extra?.search;
-            if (isSubjectCatalog && (animeSelector === 'exclude' || animeSelector === 'only')) {
-                results = results.filter(item => {
-                    const isAnime = isItemAnime(item);
-                    if (animeSelector === 'exclude') {
-                        return !isAnime;
-                    }
-                    if (animeSelector === 'only') {
-                        return isAnime;
-                    }
-                    return true;
-                });
-            }
-
             const isAnimeCatalog = Boolean(
                 catalogMeta?.isAnime ||
                 targetCatalog?.isAnime ||
@@ -196,26 +149,104 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 directFilters?.isAnime ||
                 directFilters?.filters?.isAnime
             );
-            if (isAnimeCatalog) {
-                results = results.filter(item => isItemAnime(item));
+            const hasPostFetchFilter = isKidsMode || (isSubjectCatalog && (animeSelector === 'exclude' || animeSelector === 'only')) || isAnimeCatalog;
+
+            function matchesFilters(item) {
+                if (!item) return false;
+                if (type === 'movie' || type === 'series') {
+                    const medium = item.media_type || (item.type === 'series' ? 'tv' : item.type);
+                    if (medium) {
+                        const expectedType = type === 'series' ? 'tv' : 'movie';
+                        const accettati = expectedType === 'tv' ? ['tv', 'series'] : ['movie'];
+                        if (!accettati.includes(medium) && medium !== 'person') return false;
+                    }
+                }
+                if (isKidsMode && isItemInappropriateForKids(item)) {
+                    return false;
+                }
+                if (isSubjectCatalog && (animeSelector === 'exclude' || animeSelector === 'only')) {
+                    const isAnime = isItemAnime(item);
+                    if (animeSelector === 'exclude' && isAnime) return false;
+                    if (animeSelector === 'only' && !isAnime) return false;
+                }
+                if (isAnimeCatalog && !isItemAnime(item)) {
+                    return false;
+                }
+                return true;
             }
 
-            // DEDUPLICAZIONE DI SICUREZZA
+            const TARGET_PAGE_SIZE = 20;
+            const MAX_PAGES = 5; // Paginazione delimitata (max 5 fetch / 100 elementi) per riempire la pagina
             const seenIds = new Set();
             const deduplicatedResults = [];
-            for (const item of results) {
-                const uniqueKey = item.id || (item.rawTMDB && item.rawTMDB.id);
-                if (uniqueKey) {
-                    if (!seenIds.has(uniqueKey)) {
-                        seenIds.add(uniqueKey);
+
+            if (!hasPostFetchFilter) {
+                // Percorso deterministico invariato per richieste ordinarie (senza kids / selettori anime)
+                let results = await CatalogRouter.routeCatalogRequest(routerArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
+                results = (results || []).map(item => {
+                    normalizeAnimeMarker(item);
+                    return item;
+                });
+                if (type === 'movie' || type === 'series') {
+                    results = results.filter(i => {
+                        const medium = i.media_type || (i.type === 'series' ? 'tv' : i.type);
+                        if (medium) {
+                            const expectedType = type === 'series' ? 'tv' : 'movie';
+                            const accettati = expectedType === 'tv' ? ['tv', 'series'] : ['movie'];
+                            return accettati.includes(medium) || medium === 'person';
+                        }
+                        return true;
+                    });
+                }
+                for (const item of results) {
+                    const uniqueKey = item.id || (item.rawTMDB && item.rawTMDB.id);
+                    if (uniqueKey) {
+                        if (!seenIds.has(uniqueKey)) {
+                            seenIds.add(uniqueKey);
+                            deduplicatedResults.push(item);
+                        }
+                    } else {
                         deduplicatedResults.push(item);
                     }
-                } else {
-                    deduplicatedResults.push(item);
+                }
+            } else {
+                // I filtri agiscono PRIMA del taglio: paginazione a monte finché la pagina non è piena o la fonte è esausta
+                let currentSkip = skip;
+                let pagesFetched = 0;
+
+                while (deduplicatedResults.length < TARGET_PAGE_SIZE && pagesFetched < MAX_PAGES) {
+                    pagesFetched++;
+                    const pageArgs = { ...args, extra: { ...extra, skip: currentSkip, hostUrl } };
+                    let batch = await CatalogRouter.routeCatalogRequest(pageArgs, userConfig, tmdbClient, tmdbApiKey, activeProfileSettings, tmdbFetchOptions, catalogMeta);
+                    if (!Array.isArray(batch) || batch.length === 0) break;
+
+                    for (const rawItem of batch) {
+                        normalizeAnimeMarker(rawItem);
+                        if (matchesFilters(rawItem)) {
+                            const uniqueKey = rawItem.id || (rawItem.rawTMDB && rawItem.rawTMDB.id);
+                            if (uniqueKey) {
+                                if (!seenIds.has(uniqueKey)) {
+                                    seenIds.add(uniqueKey);
+                                    deduplicatedResults.push(rawItem);
+                                }
+                            } else {
+                                deduplicatedResults.push(rawItem);
+                            }
+                            if (deduplicatedResults.length >= TARGET_PAGE_SIZE) break;
+                        }
+                    }
+
+                    if (deduplicatedResults.length >= TARGET_PAGE_SIZE) break;
+                    if (batch.length < TARGET_PAGE_SIZE) break;
+                    currentSkip += batch.length;
                 }
             }
 
-            let finalResults = deduplicatedResults;
+            if (deduplicatedResults.length === 0) {
+                return { metas: [] };
+            }
+
+            let finalResults = deduplicatedResults.slice(0, TARGET_PAGE_SIZE);
 
             // 3. IDRATAZIONE BADGE EPISODI DALLA CACHE
             const shouldBadge = type === 'series' && (catalogMeta?.showEpisodeBadge === true || EPISODE_CATALOG_IDS.has(baseId));

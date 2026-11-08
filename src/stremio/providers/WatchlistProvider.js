@@ -4,6 +4,7 @@ const { accountPerAddonUuid } = require('../../configurazione');
 const AddonConfig = require('../../models/AddonConfig');
 const { mapDuckDbRowToMeta, queryRaw } = require('../../indice');
 const { normalizeLegacyPosterHost } = require('../../library');
+const { isItemInappropriateForKids } = require('../../catalog/kidsModeFilters');
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -119,56 +120,82 @@ async function enrichWatchlistItemsWithTmdbMetadata(items) {
     });
 }
 
+function transformWatchlistItemToMeta(item) {
+    const effectiveId = item.itemId || item._id;
+    return {
+        id: effectiveId,
+        type: item.type,
+        name: item.name || 'Unknown',
+        poster: normalizeLegacyPosterHost(item.poster, process.env.HOST_URL),
+        posterShape: item.posterShape || 'poster',
+        background: item.background,
+        logo: item.logo,
+        year: item.year,
+        releaseInfo: item.year ? String(item.year) : item.year,
+        genres: item.genres,
+        genre_ids: item.genre_ids,
+        keywords: item.keywords,
+        rawTMDB: item.rawTMDB
+    };
+}
+
 async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSettings) {
     const uuid = userConfig.addonUuid || userConfig.uuid;
 
     // 1. Fire async sync if interval passed
     triggerSyncIfNeeded(uuid);
 
-    // 2. Query library reading port
-    const items = await leggiWatchlist({
-        addonUuid: uuid,
-        catalogId: id,
-        skip,
-        limit: WATCHLIST_PAGE_SIZE
-    });
+    if (!activeProfileSettings?.kidsMode) {
+        // 2. Query library reading port (percorso deterministico standard)
+        const items = await leggiWatchlist({
+            addonUuid: uuid,
+            catalogId: id,
+            skip,
+            limit: WATCHLIST_PAGE_SIZE
+        });
 
-    if (!items || items.length === 0) {
-        return [];
+        if (!items || items.length === 0) {
+            return [];
+        }
+
+        return items.map(transformWatchlistItemToMeta);
     }
 
-    // 4. Transform to Stremio meta objects. In kids mode, enrich the bare
-    // library rows before catalogHandler applies the hard safety filter.
-    const enrichedItems = activeProfileSettings?.kidsMode
-        ? await enrichWatchlistItemsWithTmdbMetadata(items)
-        : items;
-    const catalog = [];
-    
-    for (const item of enrichedItems) {
-        // If it's a native Stremio item, it already has poster, name, etc.
-        // We can just return it mostly as is, or try to enrich it.
-        // For watchlist, Stremio client usually just needs standard meta preview.
-        const effectiveId = item.itemId || item._id;
-        let metaItem = {
-            id: effectiveId,
-            type: item.type,
-            name: item.name || 'Unknown',
-            poster: normalizeLegacyPosterHost(item.poster, process.env.HOST_URL),
-            posterShape: item.posterShape || 'poster',
-            background: item.background,
-            logo: item.logo,
-            year: item.year,
-            releaseInfo: item.year ? String(item.year) : item.year,
-            genres: item.genres,
-            genre_ids: item.genre_ids,
-            keywords: item.keywords,
-            rawTMDB: item.rawTMDB
-        };
+    // Modalità Bambini: i filtri agiscono PRIMA del taglio.
+    // Paginazione a monte da MongoDB con arricchimento progressivo finché la pagina non è piena o la libreria è esausta.
+    const targetCount = (Number(skip) || 0) + WATCHLIST_PAGE_SIZE;
+    const safeCatalog = [];
+    const BATCH_SIZE = WATCHLIST_PAGE_SIZE;
+    const MAX_WATCHLIST_PAGES = 5; // Limite: max 5 batch (100 elementi)
+    let currentMongoSkip = 0;
+    let pagesFetched = 0;
 
-        catalog.push(metaItem);
+    while (safeCatalog.length < targetCount && pagesFetched < MAX_WATCHLIST_PAGES) {
+        pagesFetched++;
+        const batch = await leggiWatchlist({
+            addonUuid: uuid,
+            catalogId: id,
+            skip: currentMongoSkip,
+            limit: BATCH_SIZE
+        });
+        if (!batch || batch.length === 0) break;
+
+        const enrichedBatch = await enrichWatchlistItemsWithTmdbMetadata(batch);
+        for (const item of enrichedBatch) {
+            const metaItem = transformWatchlistItemToMeta(item);
+            if (!isItemInappropriateForKids(metaItem)) {
+                safeCatalog.push(metaItem);
+                if (safeCatalog.length >= targetCount) break;
+            }
+        }
+
+        if (safeCatalog.length >= targetCount) break;
+        if (batch.length < BATCH_SIZE) break;
+        currentMongoSkip += batch.length;
     }
 
-    return catalog;
+    const safeSkip = Number(skip) || 0;
+    return safeCatalog.slice(safeSkip, safeSkip + WATCHLIST_PAGE_SIZE);
 }
 
 module.exports = {

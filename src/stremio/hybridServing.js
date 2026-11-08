@@ -130,7 +130,7 @@ async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userI
         }
 
         if (!Array.isArray(recommendationIds) || recommendationIds.length === 0) {
-            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode);
+            recommendationIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, effectiveTypeSelectors);
             if (recommendationIds.length > 0) {
                 await cache.scrivi(recDesc, { ids: recommendationIds });
             }
@@ -141,7 +141,7 @@ async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userI
         return [];
     }
 
-    const pageResults = await idrataEImpaginaCandidati({
+    let pageResults = await idrataEImpaginaCandidati({
         recommendationIds,
         skip,
         limit: ITEMS_PER_PAGE,
@@ -150,6 +150,26 @@ async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userI
         isKidsMode,
         effectiveTypeSelectors
     });
+
+    if (pageResults.length < ITEMS_PER_PAGE) {
+        const needed = ITEMS_PER_PAGE - pageResults.length;
+        const fallbackIds = await fetchPopularFallbackIds(tmdbApiKey, mediaType, 160, isKidsMode, effectiveTypeSelectors);
+        const seenCandidateKeys = new Set(recommendationIds.map(r => String(typeof r === 'object' && r !== null ? (r.tmdbId ?? r.id) : r)));
+        pageResults.forEach(p => seenCandidateKeys.add(String(p.id).replace(/^tmdb:/, '')));
+        const extraCandidateIds = fallbackIds.filter(id => !seenCandidateKeys.has(String(id)));
+        if (extraCandidateIds.length > 0) {
+            const extraCards = await idrataEImpaginaCandidati({
+                recommendationIds: extraCandidateIds,
+                skip: 0,
+                limit: needed,
+                tmdbApiKey,
+                mediaType,
+                isKidsMode,
+                effectiveTypeSelectors
+            });
+            pageResults = [...pageResults, ...extraCards];
+        }
+    }
 
     if (skip === 0 && pageResults.length > 0) {
         registraImpressioni(userId, context, catalogId, pageResults);

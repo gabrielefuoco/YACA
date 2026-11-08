@@ -157,7 +157,7 @@ async function idrataEImpaginaCandidati({
         processedIndex = i + chunk.length;
         const resolved = await rateLimitedMap(
             chunk,
-            recItem => resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder),
+            recItem => module.exports.resolveCardDetails(recItem, tmdbApiKey, mediaType, tmdbClientHolder),
             { batchSize: 3, delayMs: 150 }
         );
         for (const card of resolved) {

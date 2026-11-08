@@ -75,6 +75,17 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
         || userConfig?.graphOptions
         || undefined;
 
+    const isKids = Boolean(profile?.settings?.kidsMode ?? userConfig?.activeProfileSettings?.kidsMode ?? userConfig?.kidsMode);
+    const filtri = {
+        anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
+        kids: isKids
+    };
+    const opzioniScaffali = {
+        ...(opzioni || {}),
+        ...(filtri.anime || filtri.kids ? { filtri } : {}),
+        ...(filtri.kids ? { kids: true } : {})
+    };
+
     const cap = 60;
 
     async function fetchShelvesForMedia(med) {
@@ -106,7 +117,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
             const chiaveScaffali = buildShelfCacheKey({
                 semi: semiPerScaffali,
                 medium: med,
-                opzioni,
+                opzioni: opzioniScaffali,
                 cap,
                 versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
                     ? graphClient.getGraphHealthVersionsCached()
@@ -115,7 +126,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
 
             const resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
                 medium: med,
-                opzioni,
+                opzioni: opzioniScaffali,
                 cap
             }));
 

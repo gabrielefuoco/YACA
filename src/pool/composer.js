@@ -54,21 +54,52 @@ async function fetchFallbackRows(filters, type, limit, isKidsMode, typeSelectors
     if (type === 'movie') {
         effectiveFilters['with_runtime.gte'] = 60;
     }
-    let pending;
-    try {
-        pending = indice.getCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
-    } catch (_error) {
-        return [];
+
+    const hasFilters = Boolean(isKidsMode || typeSelectors?.anime === 'only' || typeSelectors?.anime === 'exclude');
+    if (!hasFilters) {
+        let pending;
+        try {
+            pending = indice.getCatalogFromFilters(effectiveFilters, type, 0, fetchLimit, {});
+        } catch (_error) {
+            return [];
+        }
+        const results = await Promise.resolve(pending).catch(() => []);
+        return Array.isArray(results) ? results : [];
     }
-    const results = await Promise.resolve(pending).catch(() => []);
-    if (!Array.isArray(results)) return [];
-    let processed = isKidsMode ? applyKidsMode(results) : results;
+
+    // Filtri prima del taglio: paginazione da DuckDB fino al raggiungimento di limit o esaurimento
+    const targetLimit = Number(limit) || 40;
     const tipo = type === 'movie' ? 'movie' : 'tv';
-    if (typeSelectors?.anime === 'only') {
-        processed = processed.filter(item => isItemAnime(item, tipo));
-    } else if (typeSelectors?.anime === 'exclude') {
-        processed = processed.filter(item => !isItemAnime(item, tipo));
+    const batchSize = Math.max(40, Math.min(fetchLimit, 80));
+    let offset = 0;
+    const processed = [];
+
+    while (processed.length < targetLimit && offset < MAX_HERO_FALLBACK_FETCH) {
+        let batch;
+        try {
+            batch = await indice.getCatalogFromFilters(effectiveFilters, type, offset, batchSize, {});
+        } catch (_error) {
+            break;
+        }
+        if (!Array.isArray(batch) || batch.length === 0) break;
+
+        let filteredBatch = isKidsMode ? applyKidsMode(batch) : batch;
+        if (typeSelectors?.anime === 'only') {
+            filteredBatch = filteredBatch.filter(item => isItemAnime(item, tipo));
+        } else if (typeSelectors?.anime === 'exclude') {
+            filteredBatch = filteredBatch.filter(item => !isItemAnime(item, tipo));
+        }
+
+        for (const item of filteredBatch) {
+            processed.push(item);
+            if (processed.length >= targetLimit) break;
+        }
+
+        if (processed.length >= targetLimit) break;
+        if (batch.length < batchSize) break;
+        offset += batch.length;
     }
+
     return processed;
 }
 
