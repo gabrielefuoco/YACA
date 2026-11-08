@@ -818,6 +818,7 @@ def esegui_scaffali(
             "nome_fonte": str(sh.nome_fonte),
             "confidenza": round(float(sh.confidenza), 3),
             "medium": str(sh.medium),
+            "anime": bool(getattr(sh, "anime", False)),
             "slot": int(sh.slot_position),
             "semi_rappresentativi": semi_rappresentativi_out,
             "semi_membri": semi_membri_out,

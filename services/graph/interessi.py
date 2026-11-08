@@ -62,6 +62,12 @@ TAU_CONTROPARTE: float = 0.025  # 2.5% permissiva
 # e ogni candidato raccomandato sia rigorosamente di quel medium.
 TINY_PROFILE_FLOOR: int = 8
 
+# Soglia minima di membri per considerare uno scaffale «Anime» (Task 1 & 2).
+# Misurata sulla distribuzione empirica dei 10 profili Trakt: a 70%, 80%, 90% flippano
+# esattamente gli stessi 4 scaffali serie e 4 scaffali film (tutti >= 95.7% anime).
+# La soglia 80% garantisce che cluster misti (es. animazione per adulti al 5.3% o
+# ipotetici scaffali ibridi al 50-60%) non vengano mai classificati anime.
+ANIME_SHELF_THRESHOLD: float = 0.80
 
 
 # ==============================================================================
@@ -81,6 +87,7 @@ class Shelf:
     titoli: list[dict[str, Any]] = field(default_factory=list)
     nome_display: str | None = None
     slot_position: int = 0
+    anime: bool = False
     min_eta: float = 0.0
     r_comb: float = 0.0
     consistenza: float = 0.0
@@ -1111,10 +1118,32 @@ def scaffali(
     meta = K.metadati()
     titles = meta.get("TIT")
     years = meta.get("ANNO")
+    anime_flags = meta.get("ANIME")
+
+    def _calcola_anime(shelf: Shelf, parent_shelf: Shelf | None = None) -> bool:
+        """Calcola se uno scaffale è a prevalenza schiacciante Anime (>= ANIME_SHELF_THRESHOLD).
+        
+        Usa il flag canon.metadati()['ANIME'] indicizzato per riga canonica.
+        Se la controparte non possiede membri propri (in quanto generata direttamente dalla camminata
+        dei semi primari), eredita lo stato anime dal primario generatore.
+        """
+        if shelf.semi_membri and anime_flags is not None:
+            n_a = 0
+            for sm in shelf.semi_membri:
+                pref = "tv" if sm.get("medium") in ("tv", "series") else "movie"
+                k = f"{pref}:{sm.get('tmdbId')}"
+                r = engine.row_of.get(k)
+                if r is not None and 0 <= r < len(anime_flags) and anime_flags[r]:
+                    n_a += 1
+            return (n_a / len(shelf.semi_membri)) >= ANIME_SHELF_THRESHOLD
+        elif parent_shelf is not None:
+            return bool(parent_shelf.anime)
+        return False
 
     all_served: list[Shelf] = []
     if medium is None:
         for sh in ordered_shelves:
+            sh.anime = _calcola_anime(sh)
             recs_c = getattr(sh, "_recs_counterpart", [])
             c_med = "series" if sh.medium == "movie" else "movie"
 
@@ -1166,6 +1195,7 @@ def scaffali(
                     _ratio=ratio,
                 )
                 sh_c.titoli = recs_c
+                sh_c.anime = _calcola_anime(sh_c, parent_shelf=sh)
 
                 # DEFECT 2: Il suffisso medium viene aggiunto SOLO quando la controparte esiste nel set servito
                 sh.nome_display = f"{sh.nome} ({'film' if sh.medium == 'movie' else 'serie'})"
@@ -1181,6 +1211,7 @@ def scaffali(
     else:
         # Filtro medium specifico: solo primari già materializzati
         for sh in ordered_shelves:
+            sh.anime = _calcola_anime(sh)
             sh.nome_display = sh.nome
             all_served.append(sh)
 

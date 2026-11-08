@@ -581,3 +581,21 @@ def test_unisci_cluster_tassonomia_identici_syntetic():
     assert sh_anime_60.size == 45
     assert len(sh_anime_60.seeds_indices) == 45
     assert sh_anime_40.min_eta == 0.0
+
+
+def test_shelf_anime_attribute_and_threshold():
+    """Verifica che la dataclass Shelf possieda il campo anime: bool e che ANIME_SHELF_THRESHOLD sia 0.80."""
+    from graph.interessi import ANIME_SHELF_THRESHOLD, Shelf
+    assert ANIME_SHELF_THRESHOLD == 0.80
+    sh = Shelf(
+        catalog_id="test_id",
+        nome="Anime",
+        nome_fonte="tassonomia",
+        confidenza=1.0,
+        medium="series",
+        semi_rappresentativi=[],
+        semi_membri=[],
+        anime=True,
+    )
+    assert sh.anime is True
+

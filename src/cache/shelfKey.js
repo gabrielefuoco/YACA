@@ -18,6 +18,12 @@
  *
  * `eta_giorni` entra nella chiave perche' cambia il ranking di freschezza: cambia una volta
  * al giorno per utente, e questo di fatto limita la validita' della cache a un giorno.
+ *
+ * NOTA SUL FLAG `anime`:
+ * Il flag booleano `anime` emesso nella risposta di POST /scaffali NON deve entrare nella chiave
+ * di cache. `anime` non è un parametro di input né varia indipendentemente dagli altri input:
+ * è un dato puramente derivato dalla composizione dei membri dello scaffale e dai metadati del
+ * canone (congelati nell'artefatto del grafo). Includerlo nella chiave sarebbe ridondante ed errato.
  */
 const crypto = require('crypto');
 

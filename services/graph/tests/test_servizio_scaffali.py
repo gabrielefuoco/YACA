@@ -366,6 +366,7 @@ def test_schema_risposta_esatto(sangam456_seeds):
         "nome_fonte",
         "confidenza",
         "medium",
+        "anime",
         "slot",
         "semi_rappresentativi",
         "semi_membri",
@@ -383,6 +384,7 @@ def test_schema_risposta_esatto(sangam456_seeds):
         assert isinstance(sh["nome_fonte"], str)
         assert isinstance(sh["confidenza"], float)
         assert isinstance(sh["medium"], str)
+        assert isinstance(sh["anime"], bool)
         assert isinstance(sh["slot"], int)
         assert isinstance(sh["semi_rappresentativi"], list)
         assert isinstance(sh["semi_membri"], list)
@@ -552,5 +554,63 @@ def test_adiacenza_controparti_e_nome_display(warnok_seeds):
         assert sh["nome_display"] == sh["nome"]
         assert not sh["nome_display"].endswith("(film)")
         assert not sh["nome_display"].endswith("(serie)")
+
+
+# ------------------------------------------------------------------------------
+# 13. Classificazione Anime e completezza campi semi (Task Anime Medium Subtype)
+# ------------------------------------------------------------------------------
+def test_classificazione_anime_scaffali(warnok_seeds):
+    """Verifica che gli scaffali composti in modo schiacciante da anime abbiano anime: True,
+    sia per il medium series sia per il medium movie, e che i cluster non anime o ibridi
+    rimangano anime: False.
+    """
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
+    assert status == 200
+    scaffali = res["scaffali"]
+
+    # Anime shonen (serie) deve avere anime=True (39/39 anime)
+    sh_anime_ser = next((s for s in scaffali if "Anime shōnen" in s["nome"] and s["medium"] == "series"), None)
+    assert sh_anime_ser is not None, "Scaffale Anime shōnen (serie) non trovato"
+    assert sh_anime_ser["anime"] is True
+    assert sh_anime_ser["medium"] == "series"
+
+    # Anime shonen (film) controparte deve avere anime=True (Suzume 100% anime)
+    sh_anime_mov = next((s for s in scaffali if "Anime shōnen" in s["nome"] and s["medium"] == "movie"), None)
+    assert sh_anime_mov is not None, "Scaffale Anime shōnen (film) non trovato"
+    assert sh_anime_mov["anime"] is True
+    assert sh_anime_mov["medium"] == "movie"
+
+    # Animazione per adulti (serie) ha 1 solo anime su 19 (5.3%): NON deve flippare
+    sh_anim_adult = next((s for s in scaffali if "Animazione per adulti" in s["nome"] and s["medium"] == "series"), None)
+    assert sh_anim_adult is not None, "Scaffale Animazione per adulti non trovato"
+    assert sh_anim_adult["anime"] is False
+
+    # Scaffali live-action (Western, Space opera, Cinecomic, ecc.) devono avere anime=False
+    for sh in scaffali:
+        if "Anime shōnen" not in sh["nome"]:
+            assert sh["anime"] is False, f"Scaffale {sh['nome_display']} non dovrebbe essere anime"
+
+
+def test_completezza_semi_membri_e_rappresentativi(warnok_seeds):
+    """Verifica che semi_membri contenga (titolo, anno, tmdbId, medium) per ogni membro,
+    e che semi_rappresentativi conservi plays ed eta_giorni.
+    """
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
+    assert status == 200
+    for sh in res["scaffali"]:
+        # semi_membri
+        for sm in sh["semi_membri"]:
+            assert "titolo" in sm and isinstance(sm["titolo"], str)
+            assert "anno" in sm and isinstance(sm["anno"], int)
+            assert "tmdbId" in sm and isinstance(sm["tmdbId"], int)
+            assert "medium" in sm and sm["medium"] in ("movie", "series")
+        # semi_rappresentativi
+        for sr in sh["semi_rappresentativi"]:
+            assert "titolo" in sr and isinstance(sr["titolo"], str)
+            assert "anno" in sr and isinstance(sr["anno"], int)
+            assert "tmdbId" in sr and isinstance(sr["tmdbId"], int)
+            assert "plays" in sr and isinstance(sr["plays"], float)
+            assert "eta_giorni" in sr and isinstance(sr["eta_giorni"], float)
+
 
 

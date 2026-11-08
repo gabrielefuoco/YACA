@@ -354,6 +354,7 @@ function catalogDefinitionsFromShelves(shelves = []) {
         id: s.catalog_id || s.id,
         type: s.medium === 'tv' ? 'series' : (s.medium || s.type || 'movie'),
         name: s.nome || s.name || s.label || 'Scaffale',
+        anime: Boolean(s.anime),
         slot: s.slot !== undefined ? Number(s.slot) : (idx + 1),
         extra: [{ name: 'skip' }]
     }));
