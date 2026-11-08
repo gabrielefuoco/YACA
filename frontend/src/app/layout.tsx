@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 
 export const metadata: Metadata = {
   title: "YACA - Yet Another Catalog Addon",
@@ -20,7 +21,8 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className="antialiased font-display bg-background text-foreground min-h-dvh">
-        <div className="relative flex h-auto min-h-dvh w-full flex-col">
+        <AnimatedBackground />
+        <div className="relative z-10 flex h-auto min-h-dvh w-full flex-col">
           <div className="layout-container flex h-full grow flex-col">
             {children}
           </div>
