@@ -12,15 +12,46 @@
  * 5. Se il grafo è offline o non ci sono semi (cold start), degrada silenziosamente restituendo [] senza mai lanciare eccezioni o 500.
  */
 
-const { getCachedProfileShelves, setCachedProfileShelves, convertiSemiPerGrafo } = require('../pool');
-const { semiDi } = require('../library');
+const {
+    getCachedProfileShelves,
+    setCachedProfileShelves,
+    convertiSemiPerGrafo,
+    modoDelPool,
+    slidersDelPool
+} = require('../pool');
+const library = require('../library');
 const { graphClient } = require('../clients');
 const { shelvesCache } = require('../cache/cacheInstances');
 const { buildShelfCacheKey } = require('../cache/shelfKey');
 const { risolviProfiloAttivo } = require('../profile');
 
 /**
+ * Fonde due liste di scaffali (film e serie) assegnando slot progressivi e deterministici (1..N).
+ */
+function mergeShelves(movieList = [], seriesList = []) {
+    const merged = [];
+    const seen = new Set();
+    let currentSlot = 1;
+
+    for (const shelf of [...(movieList || []), ...(seriesList || [])]) {
+        const cid = shelf?.catalog_id || shelf?.id;
+        if (cid && !seen.has(cid)) {
+            seen.add(cid);
+            merged.push({
+                ...shelf,
+                slot: currentSlot++
+            });
+        }
+    }
+    return merged;
+}
+
+/**
  * Risolve la lista degli scaffali per il profilo attivo del userConfig.
+ *
+ * Invariante (Ticket V45): la cache mantiene al più una voce per (profilo, medium)
+ * e il resolver restituisce sempre entrambi i media quando entrambi hanno scaffali.
+ * Una cache parziale per un medium non cortocircuita mai il calcolo dell'altro.
  *
  * @param {object} params
  * @param {object} params.userConfig configurazione utente (risolta da resolveUserConfig)
@@ -51,31 +82,47 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
     const idProfilo = profile?.id || activeProfileId || 'global';
     const userId = userConfig?.userId || userConfig?.owner;
 
-    // 2. Controllo cache RAM in-memory del pool (gratuito)
-    const cached = (idProfilo ? getCachedProfileShelves(idProfilo) : null)
-        || (userId ? getCachedProfileShelves(userId) : null);
-    if (Array.isArray(cached) && cached.length > 0) {
-        return cached;
+    // 2. Controllo cache RAM in-memory del pool per medium
+    const cachedMovie = (idProfilo ? getCachedProfileShelves(idProfilo, 'movie') : null)
+        || (userId ? getCachedProfileShelves(userId, 'movie') : null);
+    const cachedSeries = (idProfilo ? getCachedProfileShelves(idProfilo, 'series') : null)
+        || (userId ? getCachedProfileShelves(userId, 'series') : null);
+
+    const hasCachedMovie = Array.isArray(cachedMovie) && cachedMovie.length > 0;
+    const hasCachedSeries = Array.isArray(cachedSeries) && cachedSeries.length > 0;
+
+    // Se entrambi i media sono già in cache, restituisce subito la fusione completa (0 chiamate esterne)
+    if (hasCachedMovie && hasCachedSeries) {
+        return mergeShelves(cachedMovie, cachedSeries);
     }
 
-    // 3. Risoluzione parametri motore e anime policy
-    const animePolicy = profile?.settings?.typeSelectors?.anime
-        || userConfig?.activeProfileSettings?.typeSelectors?.anime
-        || userConfig?.typeSelectors?.anime
-        || 'neutral';
+    // 3. Risoluzione parametri motore e anime policy dalla modalità attiva (derivaLeve) o fallback legacy
+    const modoPool = modoDelPool(userConfig);
 
-    const opzioni = profile?.settings?.sliders
-        || profile?.settings?.slider
-        || profile?.sliders
-        || userConfig?.activeProfileSettings?.sliders
-        || userConfig?.activeProfileSettings?.slider
-        || userConfig?.context?.sliders
-        || userConfig?.context?.slider
-        || userConfig?.activeProfileSettings?.graphOptions
-        || userConfig?.graphOptions
-        || undefined;
+    const animePolicy = modoPool
+        ? (modoPool.selettori?.anime || 'neutral')
+        : (profile?.settings?.typeSelectors?.anime
+            || userConfig?.activeProfileSettings?.typeSelectors?.anime
+            || userConfig?.typeSelectors?.anime
+            || 'neutral');
 
-    const isKids = Boolean(profile?.settings?.kidsMode ?? userConfig?.activeProfileSettings?.kidsMode ?? userConfig?.kidsMode);
+    const opzioni = modoPool
+        ? slidersDelPool({ userConfig })
+        : (profile?.settings?.sliders
+            || profile?.settings?.slider
+            || profile?.sliders
+            || userConfig?.activeProfileSettings?.sliders
+            || userConfig?.activeProfileSettings?.slider
+            || userConfig?.context?.sliders
+            || userConfig?.context?.slider
+            || userConfig?.activeProfileSettings?.graphOptions
+            || userConfig?.graphOptions
+            || undefined);
+
+    const isKids = modoPool
+        ? Boolean(modoPool.kids)
+        : Boolean(profile?.settings?.kidsMode ?? userConfig?.activeProfileSettings?.kidsMode ?? userConfig?.kidsMode);
+
     const filtri = {
         anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
         kids: isKids
@@ -90,7 +137,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
 
     async function fetchShelvesForMedia(med) {
         try {
-            const { seeds, tipi, ultimaVisione, plays } = await semiDi({
+            const { seeds, tipi, ultimaVisione, plays } = await library.semiDi({
                 userId,
                 context: idProfilo,
                 mediaType: med,
@@ -152,29 +199,32 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
     }
 
     try {
+        const moviePromise = hasCachedMovie
+            ? Promise.resolve(cachedMovie)
+            : fetchShelvesForMedia('movie');
+
+        const seriesPromise = hasCachedSeries
+            ? Promise.resolve(cachedSeries)
+            : fetchShelvesForMedia('series');
+
         const [movieShelves, seriesShelves] = await Promise.all([
-            fetchShelvesForMedia('movie'),
-            fetchShelvesForMedia('series')
+            moviePromise,
+            seriesPromise
         ]);
 
-        const merged = [];
-        const seen = new Set();
-        let currentSlot = 1;
+        const merged = mergeShelves(movieShelves, seriesShelves);
 
-        for (const shelf of [...movieShelves, ...seriesShelves]) {
-            const cid = shelf.catalog_id || shelf.id;
-            if (cid && !seen.has(cid)) {
-                seen.add(cid);
-                merged.push({
-                    ...shelf,
-                    slot: currentSlot++
-                });
-            }
+        // Invariante: aggiorna la cache per medium solo per i risultati calcolati ex-novo
+        if (!hasCachedMovie && movieShelves.length > 0) {
+            if (idProfilo) setCachedProfileShelves(idProfilo, movieShelves, 'movie');
+            if (userId) setCachedProfileShelves(userId, movieShelves, 'movie');
+        }
+        if (!hasCachedSeries && seriesShelves.length > 0) {
+            if (idProfilo) setCachedProfileShelves(idProfilo, seriesShelves, 'series');
+            if (userId) setCachedProfileShelves(userId, seriesShelves, 'series');
         }
 
         if (merged.length > 0) {
-            if (idProfilo) setCachedProfileShelves(idProfilo, merged);
-            if (userId) setCachedProfileShelves(userId, merged);
             console.log(`[resolveProfileShelves] Profilo ${idProfilo} (${userId}): ${merged.length} scaffali dinamici risolti (${movieShelves.length} film, ${seriesShelves.length} serie)`);
         } else {
             console.warn(`[resolveProfileShelves] Profilo ${idProfilo} (${userId}): nessun scaffale disponibile (cold start o grafo non raggiungibile)`);

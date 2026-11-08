@@ -42,39 +42,87 @@ const HERO_CACHE_KEY_VERSION = 'v17';
 // Il mapping dei 10 ruoli editoriali storici resta dormiente dietro questo flag per compatibilità con i test storici.
 const ENABLE_LEGACY_EDITORIAL_ROLES = false;
 
+// Invariante (Ticket V45): la cache degli scaffali dinamici mantiene al più una voce
+// per (profilo, medium). La scrittura di un medium preserva sempre l'altro.
 const cachedProfileShelves = new Map();
 
-function setCachedProfileShelves(key, shelves) {
+function normalizeShelfMedium(medium, catalogId = null) {
+    if (medium) {
+        const m = String(medium).toLowerCase();
+        if (m === 'series' || m === 'tv') return 'series';
+        if (m === 'movie' || m === 'film') return 'movie';
+    }
+    if (catalogId && typeof catalogId === 'string') {
+        if (catalogId.endsWith('_series') || catalogId.endsWith('_tv')) return 'series';
+        if (catalogId.endsWith('_movie') || catalogId.endsWith('_film')) return 'movie';
+    }
+    return 'movie';
+}
+
+function setCachedProfileShelves(key, shelves, explicitMedium = null) {
     if (!key) return;
-    if (!Array.isArray(shelves)) {
-        cachedProfileShelves.set(String(key), shelves);
-        return;
-    }
     const strKey = String(key);
-    const existing = cachedProfileShelves.get(strKey);
-    if (!Array.isArray(existing) || existing.length === 0) {
-        cachedProfileShelves.set(strKey, shelves);
+    let mediumMap = cachedProfileShelves.get(strKey);
+    if (!mediumMap || !(mediumMap instanceof Map)) {
+        mediumMap = new Map();
+        cachedProfileShelves.set(strKey, mediumMap);
+    }
+
+    if (!Array.isArray(shelves)) {
+        if (explicitMedium) {
+            mediumMap.delete(normalizeShelfMedium(explicitMedium));
+        } else {
+            cachedProfileShelves.delete(strKey);
+        }
         return;
     }
-    const newMedia = new Set(shelves.map(s => s.medium));
-    // Se shelves contiene già sia movie che series (es. dal resolver), sovrascrive tutto
-    if (newMedia.has('movie') && (newMedia.has('series') || newMedia.has('tv'))) {
-        cachedProfileShelves.set(strKey, shelves);
+
+    if (explicitMedium) {
+        const med = normalizeShelfMedium(explicitMedium);
+        mediumMap.set(med, shelves);
         return;
     }
-    // Altrimenti (es. chiamato dal pool per un solo medium), preserva l'altro medium
-    const preserved = existing.filter(s => !newMedia.has(s.medium));
-    const merged = [...preserved, ...shelves];
-    cachedProfileShelves.set(strKey, merged);
+
+    if (shelves.length === 0) {
+        return;
+    }
+
+    const byMedium = new Map();
+    for (const shelf of shelves) {
+        const med = normalizeShelfMedium(shelf?.medium, shelf?.catalog_id || shelf?.id);
+        if (!byMedium.has(med)) byMedium.set(med, []);
+        byMedium.get(med).push(shelf);
+    }
+
+    for (const [med, grouped] of byMedium.entries()) {
+        mediumMap.set(med, grouped);
+    }
 }
 
-function getCachedProfileShelves(key) {
+function getCachedProfileShelves(key, medium = null) {
     if (!key) return null;
-    return cachedProfileShelves.get(String(key)) || null;
+    const strKey = String(key);
+    const mediumMap = cachedProfileShelves.get(strKey);
+    if (!mediumMap || !(mediumMap instanceof Map)) return null;
+
+    if (medium) {
+        const med = normalizeShelfMedium(medium);
+        const list = mediumMap.get(med);
+        return Array.isArray(list) ? list : null;
+    }
+
+    const movie = mediumMap.get('movie') || [];
+    const series = mediumMap.get('series') || [];
+    const merged = [...movie, ...series];
+    return merged.length > 0 ? merged : null;
 }
 
-function clearCachedProfileShelves() {
-    cachedProfileShelves.clear();
+function clearCachedProfileShelves(key = null) {
+    if (key) {
+        cachedProfileShelves.delete(String(key));
+    } else {
+        cachedProfileShelves.clear();
+    }
 }
 
 function isMockFunction(fn) {
@@ -481,7 +529,7 @@ const HERO_STRATEGIES = [
                             nome: s.nome,
                             nome_fonte: s.nome_fonte,
                             confidenza: s.confidenza,
-                            medium: s.medium,
+                            medium: s.medium || ctx.mediaType,
                             slot: s.slot,
                             anime: Boolean(s.anime),
                             semi_rappresentativi: s.semi_rappresentativi,
@@ -490,8 +538,8 @@ const HERO_STRATEGIES = [
                         if (sharedState) {
                             sharedState.shelves = shelfSummary;
                         }
-                        if (ctx.context) setCachedProfileShelves(ctx.context, shelfSummary);
-                        if (ctx.userId) setCachedProfileShelves(ctx.userId, shelfSummary);
+                        if (ctx.context) setCachedProfileShelves(ctx.context, shelfSummary, ctx.mediaType);
+                        if (ctx.userId) setCachedProfileShelves(ctx.userId, shelfSummary, ctx.mediaType);
                         console.log(`[Scaffali] ${ctx.mediaType}: serviti ${scaffali.length} scaffali dinamici dal grafo`);
                         return;
                     }
@@ -895,6 +943,8 @@ module.exports = {
     getCachedProfileShelves,
     setCachedProfileShelves,
     clearCachedProfileShelves,
+    modoDelPool,
+    slidersDelPool,
     HERO_CACHE_KEY_VERSION,
     HERO_CACHE_SCHEMA_VERSION,
     HERO_PRIORITY,
