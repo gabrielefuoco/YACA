@@ -10,9 +10,10 @@ interface CatalogLivePreviewProps {
   userId: string;
   profileId: string;
   sliders?: EngineSliders;
+  type?: 'movie' | 'series';
 }
 
-export function CatalogLivePreview({ catalogId, userId, profileId, sliders }: CatalogLivePreviewProps) {
+export function CatalogLivePreview({ catalogId, userId, profileId, sliders, type }: CatalogLivePreviewProps) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,15 +26,19 @@ export function CatalogLivePreview({ catalogId, userId, profileId, sliders }: Ca
       setLoading(true);
       setError(null);
       try {
+        const valTonalita = sliders?.tonalita ?? sliders?.cozy ?? 0;
+        const valNotorieta = sliders?.notorieta ?? sliders?.canone ?? 0;
         const quantizedSliders = sliders ? {
-          cozy: Math.round(sliders.cozy * 10) / 10,
-          canone: Math.round(sliders.canone * 10) / 10,
+          tonalita: Math.round(valTonalita * 10) / 10,
+          notorieta: Math.round(valNotorieta * 10) / 10,
+          cozy: Math.round(valTonalita * 10) / 10,
+          canone: Math.round(valNotorieta * 10) / 10,
         } : undefined;
 
         const res = await api.previewCatalog({ 
           profileId, 
           id: catalogId,
-          type: catalogId.includes('series') ? 'series' : 'movie',
+          type: type || (catalogId.includes('series') ? 'series' : 'movie'),
           sliders: quantizedSliders,
         }, { signal: abortController.signal });
         
@@ -65,7 +70,7 @@ export function CatalogLivePreview({ catalogId, userId, profileId, sliders }: Ca
       mounted = false;
       abortController.abort();
     };
-  }, [catalogId, userId, profileId, sliders?.cozy, sliders?.canone]);
+  }, [catalogId, userId, profileId, sliders?.tonalita, sliders?.notorieta, sliders?.cozy, sliders?.canone, type]);
 
   if (loading) {
     return (

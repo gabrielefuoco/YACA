@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { Profile, Catalog, MyList, ModoInfo, ModoId, CatalogoEsploraVoce, CataloghiEsploraResponse } from '@/types';
 import { api } from '@/lib/api';
+import { TIPI_CATALOGO_MAP } from '@/lib/catalogPresentation';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
 import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { UserLibraryPanel } from '@/components/dashboard/UserLibraryPanel';
@@ -16,15 +17,7 @@ interface DashboardPageProps {
   profiles: Profile[];
   editingProfileId: string;
   activeProfileId: string;
-  presets?: any[];
-  categories?: string[];
-  profileTemplates?: any[];
-  myLists?: MyList[];
   customCatalogs?: Catalog[];
-  onSelectEditing?: (id: string) => void;
-  onSetActive?: (id: string) => void;
-  onAddProfile?: (name: string) => Profile;
-  onRemoveProfile?: (id: string) => void;
   onTogglePreset?: (profileId: string, presetId: string) => void;
   onReorderCatalogs?: (profileId: string, catalogs: Catalog[]) => void;
   onRemoveCatalog?: (profileId: string, catalogId: string) => void;
@@ -38,6 +31,14 @@ interface DashboardPageProps {
   userId?: string;
   onGoToExplore?: () => void;
   onConfigChanged?: (configVersion: string) => void;
+  // Shared modo and catalog state from hook layer (S2)
+  cataloghiData: CataloghiEsploraResponse | null;
+  modi: ModoInfo[];
+  activeModo: ModoId;
+  isSwitchingModo: boolean;
+  propagationMessage: string | null;
+  onSelectModo: (modo: ModoId) => Promise<any>;
+  onReorderActiveCatalogs: (newIds: string[]) => Promise<any>;
 }
 
 const DEFAULT_MODI: { modo: ModoId; nome: string; emoji: string }[] = [
@@ -61,105 +62,31 @@ export function DashboardPage({
   userId,
   onGoToExplore,
   onConfigChanged,
+  cataloghiData,
+  modi,
+  activeModo,
+  isSwitchingModo,
+  propagationMessage,
+  onSelectModo,
+  onReorderActiveCatalogs,
 }: DashboardPageProps) {
-  // Modalità
-  const [modi, setModi] = useState<ModoInfo[]>([]);
-  const [activeModo, setActiveModo] = useState<ModoId>('generale');
-  const [isSwitchingModo, setIsSwitchingModo] = useState(false);
-  const [propagationMessage, setPropagationMessage] = useState<string | null>(null);
-
-  // Cataloghi per la modalità attiva (da GET /api/profilo/cataloghi)
-  const [cataloghiData, setCataloghiData] = useState<CataloghiEsploraResponse | null>(null);
-
-  // Cursori (Tonalità e Notorietà) — unici per account
+  // Cursori (Tonalità e Notorietà) — unici per account (S1)
   const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
-  const initialSliders = activeProfile?.settings?.sliders || activeProfile?.sliders || { cozy: 0, canone: 0 };
-  const [cozy, setCozy] = useState<number>(initialSliders.cozy ?? 0);
-  const [canone, setCanone] = useState<number>(initialSliders.canone ?? 0);
+  const initialSliders = activeProfile?.settings?.sliders || activeProfile?.sliders || { tonalita: 0, notorieta: 0 };
+  const [tonalita, setTonalita] = useState<number>(initialSliders.tonalita ?? initialSliders.cozy ?? 0);
+  const [notorieta, setNotorieta] = useState<number>(initialSliders.notorieta ?? initialSliders.canone ?? 0);
   const sliderTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Caricamento modalità
-  const fetchModi = useCallback(async () => {
-    try {
-      const data = await api.getModi();
-      if (data && Array.isArray(data.modi)) {
-        setModi(data.modi);
-        if (data.attivo) {
-          setActiveModo(data.attivo as ModoId);
-        }
-      }
-    } catch (err) {
-      console.warn('[DashboardPage] Errore caricamento modalità:', err);
-    }
-  }, []);
-
-  // Caricamento cataloghi della modalità attiva
-  const fetchCataloghi = useCallback(async () => {
-    try {
-      const data = await api.getCataloghi();
-      if (data) {
-        setCataloghiData(data);
-      }
-    } catch (err) {
-      console.warn('[DashboardPage] Errore caricamento cataloghi:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchModi();
-  }, [fetchModi]);
-
-  useEffect(() => {
-    fetchCataloghi();
-  }, [fetchCataloghi, activeModo]);
-
-  // Cambio modalità
-  const handleSelectModo = async (nuovoModo: ModoId) => {
-    if (nuovoModo === activeModo || isSwitchingModo) return;
-    setIsSwitchingModo(true);
-    try {
-      const res = await api.attivaModo(nuovoModo);
-      setActiveModo(nuovoModo);
-      if (res?.propagazione) {
-        setPropagationMessage(res.propagazione);
-      } else {
-        setPropagationMessage(
-          'Modalità attivata. I cataloghi su Stremio si aggiorneranno alla prossima apertura dell\'app; se Stremio è già aperta, ricarica la pagina o riavviala.'
-        );
-      }
-      if (res?.configVersion && onConfigChanged) {
-        onConfigChanged(res.configVersion);
-      }
-      // Ricarica cataloghi per il nuovo modo
-      await fetchCataloghi();
-      await fetchModi();
-    } catch (err) {
-      console.error('[DashboardPage] Errore cambio modalità:', err);
-    } finally {
-      setIsSwitchingModo(false);
-    }
-  };
-
-  // Debounced auto-save per i cursori Tonalità e Notorietà
-  const handleSliderChange = (newCozy: number, newCanone: number) => {
-    setCozy(newCozy);
-    setCanone(newCanone);
+  // Debounced auto-save per i cursori Tonalità e Notorietà: un solo percorso di scrittura (S1)
+  const handleSliderChange = (newTonalita: number, newNotorieta: number) => {
+    setTonalita(newTonalita);
+    setNotorieta(newNotorieta);
 
     if (sliderTimerRef.current) clearTimeout(sliderTimerRef.current);
     sliderTimerRef.current = setTimeout(async () => {
       try {
-        const slidersPayload = { cozy: newCozy, canone: newCanone };
-        if (activeProfile) {
-          onUpdateProfile(activeProfile.id, {
-            sliders: slidersPayload,
-            settings: {
-              ...activeProfile.settings,
-              sliders: slidersPayload,
-            }
-          });
-        }
         const res = await api.configure({
-          sliders: { tonalita: newCozy, notorieta: newCanone }
+          sliders: { tonalita: newTonalita, notorieta: newNotorieta }
         });
         if (res?.configVersion && onConfigChanged) {
           onConfigChanged(res.configVersion);
@@ -168,34 +95,6 @@ export function DashboardPage({
         console.warn('[DashboardPage] Errore salvataggio cursori:', err);
       }
     }, 500);
-  };
-
-  // Reorder cataloghi attivi
-  const handleReorderActiveCatalogs = async (newIds: string[]) => {
-    try {
-      const res = await api.riordinaCataloghi(newIds);
-      if (res?.configVersion && onConfigChanged) {
-        onConfigChanged(res.configVersion);
-      }
-      await fetchCataloghi();
-    } catch (err) {
-      console.error('[DashboardPage] Errore riordino cataloghi:', err);
-      await fetchCataloghi();
-    }
-  };
-
-  // Toggle catalogo attivo
-  const handleToggleActiveCatalog = async (id: string, attivo: boolean) => {
-    try {
-      const res = await api.attivaCatalogo(id, attivo);
-      if (res?.configVersion && onConfigChanged) {
-        onConfigChanged(res.configVersion);
-      }
-      await fetchCataloghi();
-    } catch (err) {
-      console.error('[DashboardPage] Errore attivazione catalogo:', err);
-      await fetchCataloghi();
-    }
   };
 
   // Cataloghi attivi per la modalità corrente
@@ -215,8 +114,11 @@ export function DashboardPage({
   // Scaffali di suggerimento per la modalità attiva (da gruppi.suggerimenti)
   const suggerimentiScaffali = cataloghiData?.gruppi?.suggerimenti || [];
 
-  // Primo catalogo per anteprima live
-  const previewCatalogId = suggerimentiScaffali[0]?.id || 'yaca_mondi_movies';
+  // Primo catalogo per anteprima live della modalità corrente (P3)
+  // Non ricade su 'yaca_mondi_movies': se non c'è catalogo per il modo attivo, non renderizza
+  const previewCatalog = suggerimentiScaffali[0] || cataloghiAttivi[0] || null;
+  const previewCatalogId = previewCatalog?.id || null;
+  const previewMediaType = previewCatalog?.media === 'series' ? 'series' : 'movie';
 
   return (
     <div className="flex flex-col w-full gap-8 sm:gap-12 min-w-0">
@@ -246,21 +148,22 @@ export function DashboardPage({
               <button
                 key={modo}
                 type="button"
-                onClick={() => handleSelectModo(modo)}
+                onClick={() => onSelectModo(modo)}
                 disabled={isSwitchingModo}
-                className={`flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl transition-all duration-300 min-h-[88px] sm:min-h-[104px] touch-manipulation text-center ${
+                className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[90px] sm:min-h-[108px] ${
                   isAttivo
-                    ? 'bg-primary text-white shadow-lg shadow-primary/30 ring-2 ring-primary/20 scale-[1.02]'
-                    : 'glass-card bg-white/40 text-marrow-deep hover:bg-white/80 border border-marrow-light/10'
-                }`}
+                    ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02]'
+                    : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40'
+                } ${isSwitchingModo ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
               >
                 <span className="text-2xl sm:text-3xl mb-1 select-none">{emoji}</span>
                 <span className={`text-xs sm:text-sm font-black tracking-tight ${isAttivo ? 'text-white' : 'text-marrow-deep'}`}>
                   {nome}
                 </span>
                 {isAttivo && (
-                  <span className="mt-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/20 text-white">
-                    Attivo
+                  <span className="absolute top-2 right-2 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                   </span>
                 )}
               </button>
@@ -268,29 +171,30 @@ export function DashboardPage({
           })}
         </div>
 
-        {/* Frase di propagazione honesta su Stremio */}
+        {/* Feedback di propagazione verso Stremio */}
         {propagationMessage && (
-          <div className="flex items-start gap-2.5 p-3 sm:p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 shadow-sm animate-in fade-in duration-200">
-            <Info className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-medium leading-relaxed">
-                {propagationMessage}
-              </p>
+          <div className="flex items-start gap-2.5 p-3 sm:p-3.5 bg-primary/5 border border-primary/20 rounded-xl text-xs sm:text-sm text-marrow-deep font-medium">
+            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <span className="font-bold text-primary block">Stato sincronizzazione Stremio</span>
+              <p className="text-marrow-light leading-relaxed">{propagationMessage}</p>
             </div>
           </div>
         )}
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 3. I DUE CURSORI: Tonalità e Notorietà (Ticket 07)                  */}
+      {/* 3. CURSORI (TONALITÀ E NOTORIETÀ) + ANTEPRIMA LIVE                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="glass-panel p-4 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-marrow-light/10 pb-3">
+      <section className="space-y-4 glass-panel p-4 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10">
+        <div className="flex items-center justify-between border-b border-marrow-light/10 pb-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-black text-marrow-deep tracking-tight flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Sliders className="h-5 w-5 text-primary" />
-              Tonalità & Notorietà
-            </h2>
+              <h2 className="text-lg sm:text-xl font-black text-marrow-deep tracking-tight">
+                Cursori Raccomandazione
+              </h2>
+            </div>
             <p className="text-xs text-marrow-light font-medium mt-0.5">
               Cursori unici per l&apos;account: regolano l&apos;atmosfera e la rarità delle raccomandazioni generate
             </p>
@@ -303,15 +207,15 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-xs">
               <span className="font-black uppercase tracking-wider text-marrow-deep">Tonalità</span>
               <span className="font-bold text-primary">
-                {cozy < -0.2 ? 'Cupa / Intensa' : (cozy > 0.2 ? 'Leggera / Cozy' : 'Bilanciata')} ({cozy.toFixed(1)})
+                {tonalita < -0.2 ? 'Cupa / Intensa' : (tonalita > 0.2 ? 'Leggera / Cozy' : 'Bilanciata')} ({tonalita.toFixed(1)})
               </span>
             </div>
             <Slider
-              value={[cozy]}
+              value={[tonalita]}
               min={-1}
               max={1}
               step={0.1}
-              onValueChange={([val]) => handleSliderChange(val, canone)}
+              onValueChange={([val]) => handleSliderChange(val, notorieta)}
             />
             <div className="flex justify-between text-[11px] text-marrow-light/70 font-semibold px-0.5">
               <span>Cupa / Tesa</span>
@@ -325,15 +229,15 @@ export function DashboardPage({
             <div className="flex justify-between items-center text-xs">
               <span className="font-black uppercase tracking-wider text-marrow-deep">Notorietà</span>
               <span className="font-bold text-primary">
-                {canone < -0.2 ? 'Di nicchia / Raro' : (canone > 0.2 ? 'Mainstream / Popolare' : 'Bilanciata')} ({canone.toFixed(1)})
+                {notorieta < -0.2 ? 'Di nicchia / Raro' : (notorieta > 0.2 ? 'Mainstream / Popolare' : 'Bilanciata')} ({notorieta.toFixed(1)})
               </span>
             </div>
             <Slider
-              value={[canone]}
+              value={[notorieta]}
               min={-1}
               max={1}
               step={0.1}
-              onValueChange={([val]) => handleSliderChange(cozy, val)}
+              onValueChange={([val]) => handleSliderChange(tonalita, val)}
             />
             <div className="flex justify-between text-[11px] text-marrow-light/70 font-semibold px-0.5">
               <span>Di nicchia / Cult</span>
@@ -343,21 +247,24 @@ export function DashboardPage({
           </div>
         </div>
 
-        {/* Anteprima che reagisce ai cursori */}
-        <div className="pt-2">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-bold text-marrow-deep uppercase tracking-wider">Anteprima in tempo reale</span>
+        {/* Anteprima che reagisce ai cursori (P3: renderizza solo se c'è catalogo nel modo corrente) */}
+        {previewCatalogId && (
+          <div className="pt-2">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-bold text-marrow-deep uppercase tracking-wider">Anteprima in tempo reale</span>
+            </div>
+            <div className="rounded-xl border border-marrow-light/10 bg-white/30 p-2 overflow-hidden">
+              <CatalogLivePreview
+                catalogId={previewCatalogId}
+                userId={userId || 'global'}
+                profileId={activeProfile?.id || 'global'}
+                sliders={{ tonalita, notorieta }}
+                type={previewMediaType}
+              />
+            </div>
           </div>
-          <div className="rounded-xl border border-marrow-light/10 bg-white/30 p-2 overflow-hidden">
-            <CatalogLivePreview
-              catalogId={previewCatalogId}
-              userId={userId || 'global'}
-              profileId={activeProfile?.id || 'global'}
-              sliders={{ cozy, canone }}
-            />
-          </div>
-        </div>
+        )}
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -375,7 +282,7 @@ export function DashboardPage({
               </span>
             </div>
             <p className="text-xs sm:text-sm text-marrow-light font-medium mt-0.5">
-              Scaffali calcolati dal grafo per la modalità attiva. I suggerimenti si attivano esclusivamente in Esplora.
+              Generati dal grafo sulla base della cronologia. Per accenderli o spegnerli in Stremio usa la scheda Esplora.
             </p>
           </div>
           {onGoToExplore && (
@@ -400,8 +307,8 @@ export function DashboardPage({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {suggerimentiScaffali.map((shelf) => {
-              const tipoIcon = shelf.tipo === 'serie' ? <Tv className="h-3 w-3" /> : <Film className="h-3 w-3" />;
-              const tipoLabel = shelf.tipo === 'serie' ? 'Serie' : (shelf.tipo === 'film' ? 'Film' : (shelf.tipo === 'anime' ? 'Anime' : 'Bambini'));
+              const mediaIcon = shelf.media === 'series' ? <Tv className="h-3 w-3" /> : <Film className="h-3 w-3" />;
+              const tipoLabel = TIPI_CATALOGO_MAP[shelf.tipo]?.badgeLabel || TIPI_CATALOGO_MAP[shelf.tipo]?.label || shelf.tipo;
 
               return (
                 <div
@@ -415,7 +322,7 @@ export function DashboardPage({
                       </h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-primary/5 text-primary text-[11px] font-black uppercase tracking-wider border border-primary/10">
-                          {tipoIcon}
+                          {mediaIcon}
                           <span>{tipoLabel}</span>
                         </span>
                         {shelf.attivo && (
@@ -429,7 +336,7 @@ export function DashboardPage({
 
                   {/* Locandine di anteprima */}
                   <div className="overflow-hidden pt-1">
-                    <PosterRow presetId={shelf.id} type={shelf.tipo === 'serie' ? 'series' : 'movie'} />
+                    <PosterRow presetId={shelf.id} type={shelf.media === 'series' ? 'series' : 'movie'} />
                   </div>
                 </div>
               );
@@ -517,8 +424,7 @@ export function DashboardPage({
         <div className="glass-panel p-3 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10">
           <ActiveCatalogsPanel
             catalogs={cataloghiAttivi}
-            onReorder={handleReorderActiveCatalogs}
-            onToggleActive={handleToggleActiveCatalog}
+            onReorder={onReorderActiveCatalogs}
             onGoToExplore={onGoToExplore}
           />
         </div>

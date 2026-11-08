@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { CatalogoEsploraVoce } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
+import { catalogoVoceToCard } from '@/lib/catalogPresentation';
 import { Layers, Info, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ActiveCatalogsPanelProps {
   catalogs: CatalogoEsploraVoce[];
   onReorder: (ids: string[]) => void;
-  onToggleActive: (id: string, attivo: boolean) => void;
   onEditCatalog?: (catalog: any) => void;
   onGoToExplore?: () => void;
 }
@@ -16,7 +16,6 @@ interface ActiveCatalogsPanelProps {
 export function ActiveCatalogsPanel({
   catalogs,
   onReorder,
-  onToggleActive,
   onEditCatalog,
   onGoToExplore,
 }: ActiveCatalogsPanelProps) {
@@ -94,25 +93,13 @@ export function ActiveCatalogsPanel({
       ) : (
         <div className="flex flex-col gap-3 sm:gap-4 w-full">
           {catalogs.map((catalog, index) => {
-            const cardData = {
-              id: catalog.id,
-              name: catalog.nome,
-              type: (catalog.tipo === 'serie' ? 'series' : 'movie') as 'movie' | 'series',
-              tipo: catalog.tipo,
-              fonte: catalog.fonte,
-              attivo: catalog.attivo,
-              ordine: catalog.ordine,
-              emoji: catalog.emoji,
-              description: catalog.description,
-              isAnime: catalog.tipo === 'anime',
-            };
+            const cardData = catalogoVoceToCard(catalog);
 
             return (
               <CatalogItem
                 key={catalog.id}
                 catalog={cardData}
                 isDragging={dragIndex === index}
-                onToggleActive={(attivo) => onToggleActive(catalog.id, attivo)}
                 onEdit={catalog.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(catalog) : undefined}
                 onMoveUp={() => handleMoveCatalog(index, 'up')}
                 onMoveDown={() => handleMoveCatalog(index, 'down')}

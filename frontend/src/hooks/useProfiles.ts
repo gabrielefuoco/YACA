@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS, HERO_PRESET_IDS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 
 import { generateId, resolveHydratedActiveProfile } from '@/lib/utils';
+export { useModoCatalogs } from './useModoCatalogs';
 
 function createGlobalProfile(): Profile {
   return {

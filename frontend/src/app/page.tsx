@@ -4,6 +4,7 @@ import { mapBackendProfile, profilesToApiPayload, BackendProfile } from '@/lib/u
 import { useConfig } from '@/hooks/useConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfiles } from '@/hooks/useProfiles';
+import { useModoCatalogs } from '@/hooks/useModoCatalogs';
 import { usePresets } from '@/hooks/usePresets';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { Header } from '@/components/layout/Header';
@@ -191,6 +192,20 @@ export default function Home() {
   } = useProfiles(initialProfiles, initialActiveProfileId);
 
   const { presets, profileTemplates, categories } = usePresets();
+
+  const {
+    modi,
+    activeModo,
+    isSwitchingModo,
+    propagationMessage,
+    cataloghiData,
+    cataloghiLoading,
+    selectModo,
+    toggleCatalogActive,
+    reorderActiveCatalogs,
+  } = useModoCatalogs({
+    onConfigChanged: (ver) => setConfigVersion(ver),
+  });
 
   // Remove manual sessionStorage restoration since it's handled by useProfiles constructor/effect
 
@@ -564,15 +579,7 @@ export default function Home() {
                   profiles={profiles}
                   editingProfileId={editingProfileId}
                   activeProfileId={activeProfileId}
-                  presets={presets}
-                  categories={categories}
-                  profileTemplates={profileTemplates}
-                  myLists={myLists}
                   customCatalogs={customCatalogs}
-                  onSelectEditing={setEditingProfileId}
-                  onSetActive={handleSetActiveProfile}
-                  onAddProfile={addProfile}
-                  onRemoveProfile={removeProfile}
                   onTogglePreset={togglePreset}
                   onReorderCatalogs={reorderCatalogs}
                   onRemoveCatalog={removeCatalog}
@@ -586,11 +593,22 @@ export default function Home() {
                   userId={userId ?? undefined}
                   onGoToExplore={() => setActiveTab('explore')}
                   onConfigChanged={(ver) => setConfigVersion(ver)}
+                  cataloghiData={cataloghiData}
+                  modi={modi}
+                  activeModo={activeModo}
+                  isSwitchingModo={isSwitchingModo}
+                  propagationMessage={propagationMessage}
+                  onSelectModo={selectModo}
+                  onReorderActiveCatalogs={reorderActiveCatalogs}
                 />
               )}
 
               {activeTab === 'explore' && (
                 <ExplorePanel
+                  data={cataloghiData}
+                  loading={cataloghiLoading}
+                  activeModo={activeModo}
+                  onToggleActive={toggleCatalogActive}
                   onConfigChanged={(ver) => setConfigVersion(ver)}
                 />
               )}

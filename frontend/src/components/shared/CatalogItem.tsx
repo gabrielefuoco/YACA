@@ -2,6 +2,7 @@
 import { ReactNode, DragEventHandler } from 'react';
 import { CatalogCardData } from '@/types';
 import { getFrontendCatalogKind } from '@/lib/catalogKind';
+import { TIPI_CATALOGO_MAP, FONTI_CATALOGO_MAP, TipoFamiglia } from '@/lib/catalogPresentation';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Switch } from '@/components/ui/switch';
 import { GripVertical, Trash2, Pencil, ChevronUp, ChevronDown, Sparkles, List, Wand2, EyeOff, Film, Tv } from 'lucide-react';
@@ -57,13 +58,13 @@ export function CatalogItem({
 
   const isPreset = catalog.source === 'preset' || catalog.fonte === 'preset' || (!catalog.source && !catalog.fonte);
   const fonte = catalog.fonte || catalog.source;
-  const sourceLabel = fonte === 'preset' ? 'Preset' : (fonte === 'watchlist' ? 'Watchlist' : (fonte === 'grafo' ? 'Suggerito' : (fonte === 'mylist' ? 'Mia Lista' : 'Creato')));
+  const sourceLabel = FONTI_CATALOGO_MAP[fonte || '']?.label || (isPreset ? 'Preset' : 'Creato');
   const SourceIcon = (fonte === 'preset' || fonte === 'grafo') ? Sparkles : (fonte === 'watchlist' || fonte === 'mylist' ? List : Wand2);
 
   const activeState = Boolean(catalog.attivo ?? isAttivo);
 
   // Determina tipo effettivo (film/serie/anime/bambini)
-  const tipoEffettivo = catalog.tipo || (catalog.isAnime ? 'anime' : (catalog.type === 'series' ? 'serie' : (catalog.type === 'movie' ? 'film' : null)));
+  const tipoEffettivo = (catalog.tipo || (catalog.isAnime ? 'anime' : (catalog.type === 'series' ? 'serie' : (catalog.type === 'movie' ? 'film' : null)))) as TipoFamiglia | null;
 
   // Filtra la dicitura generica del preset (ticket 06: via dicitura fissa)
   const rawDesc = description || catalog.description || catalog.raw_prompt;
@@ -125,7 +126,7 @@ export function CatalogItem({
               </div>
             )}
             <div className="size-9 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all bg-white shadow-inner text-marrow-deep shrink-0">
-              <span className="text-lg sm:text-2xl">{catalog.emoji ?? (tipoEffettivo === 'anime' ? '🏮' : (tipoEffettivo === 'bambini' ? '🧸' : '📋'))}</span>
+              <span className="text-lg sm:text-2xl">{catalog.emoji ?? (tipoEffettivo && TIPI_CATALOGO_MAP[tipoEffettivo] ? TIPI_CATALOGO_MAP[tipoEffettivo].icon : '📋')}</span>
             </div>
           </div>
           <div className="min-w-0">
@@ -138,19 +139,49 @@ export function CatalogItem({
               </span>
 
               {/* Badge del tipo (Film / Serie / Anime / Bambini) */}
-              {tipoEffettivo === 'bambini' && (
-                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-700 text-xs font-black uppercase tracking-wider border border-purple-500/20">
-                  <span>🧸</span>
-                  <span>Bambini</span>
+              {tipoEffettivo && TIPI_CATALOGO_MAP[tipoEffettivo] && (
+                <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider border ${
+                  tipoEffettivo === 'bambini'
+                    ? 'bg-purple-500/10 text-purple-700 border-purple-500/20'
+                    : tipoEffettivo === 'anime'
+                    ? 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                    : 'bg-primary/5 text-primary border-primary/10'
+                }`}>
+                  <span>{TIPI_CATALOGO_MAP[tipoEffettivo].icon}</span>
+                  <span>{TIPI_CATALOGO_MAP[tipoEffettivo].badgeLabel}</span>
                 </span>
               )}
-              {(tipoEffettivo === 'anime' || catalog.isAnime || (catalog.filters as any)?.isAnime) && (
-                <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 text-xs font-black uppercase tracking-wider border border-amber-500/20">
-                  <span>🏮</span>
-                  <span>Anime</span>
-                </span>
-              )}
-              {tipoEffettivo !== 'anime' && tipoEffettivo !== 'bambini' && mediaSet.map((media, i) => (
+
+              {/* Medium (Film / Serie) basato su `media` (o `type`), NON su `tipo` */}
+              {/* Un catalogo tipo: 'anime' con media: 'series' mostra Serie */}
+              {(() => {
+                const isSeries = catalog.media === 'series' || (!catalog.media && catalog.type === 'series');
+                const isMovie = catalog.media === 'movie' || (!catalog.media && catalog.type === 'movie');
+
+                if (tipoEffettivo === 'film' || tipoEffettivo === 'serie') {
+                  return null;
+                }
+
+                if (isSeries) {
+                  return (
+                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
+                      <Tv className="h-3 w-3 shrink-0" />
+                      <span>Serie</span>
+                    </span>
+                  );
+                }
+                if (isMovie) {
+                  return (
+                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
+                      <Film className="h-3 w-3 shrink-0" />
+                      <span>Film</span>
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+
+              {!tipoEffettivo && mediaSet.map((media) => (
                 <span key={media} className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-primary/5 text-primary text-xs font-black uppercase tracking-wider border border-primary/10">
                   {media === 'film' ? <Film className="h-3 w-3 shrink-0" /> : <Tv className="h-3 w-3 shrink-0" />}
                   <span>{media === 'film' ? 'Film' : 'Serie'}</span>

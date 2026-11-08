@@ -21,11 +21,15 @@ export interface CatalogKind {
 }
 
 export interface EngineSliders {
-  cozy: number;
-  canone: number;
+  tonalita?: number;
+  notorieta?: number;
+  cozy?: number;
+  canone?: number;
 }
 
 export const DEFAULT_ENGINE_SLIDERS: EngineSliders = {
+  tonalita: 0.0,
+  notorieta: 0.0,
   cozy: 0.0,
   canone: 0.0,
 };
@@ -98,6 +102,7 @@ export interface CatalogCardData {
   id: string;
   name: string;
   type: 'movie' | 'series' | 'both';
+  media?: 'movie' | 'series' | null;
   emoji?: string;
   source?: string;
   raw_prompt?: string;
@@ -129,6 +134,7 @@ export interface CatalogoEsploraVoce {
   id: string;
   nome: string;
   tipo: 'film' | 'serie' | 'anime' | 'bambini';
+  media?: 'movie' | 'series' | null;
   fonte: 'grafo' | 'watchlist' | 'creazione' | 'preset';
   attivo: boolean;
   ordine: number | null;
