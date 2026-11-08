@@ -26,6 +26,7 @@ from graph import canon as K
 from graph import parametri as P
 from graph import interessi as I
 from graph import assi as _assi
+from graph import kids as _kids
 from graph import provenance as _PV
 from graph.runtime import Engine
 
@@ -33,6 +34,7 @@ CMD_RIGENERA_TRANSIZIONE: str = "PYTHONPATH=services python -m graph.runtime.pre
 CMD_RIGENERA_VICINI: str = "PYTHONPATH=services python -m graph.runtime.prepara --target vicini"
 CMD_RIGENERA_ASSI: str = "PYTHONPATH=services python -m graph.assi --build"
 CMD_RIGENERA_KW_TFIDF: str = "PYTHONPATH=. py .scratch/distillazione-grafo/tfidf-v2.py"
+CMD_RIGENERA_BLACKLIST: str = _kids.CMD_RIGENERA_BLACKLIST
 
 MSG_ERR_TRANSIZIONE: str = f"Artefatto transizione mancante: transizione-pota16.npz. Rigenerare con: {CMD_RIGENERA_TRANSIZIONE}"
 MSG_ERR_VICINI: str = f"Artefatto vicini mancante: vicini-top100.npz. Rigenerare con: {CMD_RIGENERA_VICINI}"
@@ -42,6 +44,7 @@ MSG_WARN_KW_TFIDF: str = (
     "nessuno scaffale riceve un nome: tutti ricadono su “Perché hai visto”. "
     f"Rigenerare con: {CMD_RIGENERA_KW_TFIDF}"
 )
+MSG_ERR_BLACKLIST: str = _kids.MSG_ERR_BLACKLIST
 
 # NOTA: motore.py (il motore denso V10) non è più importato né utilizzato da questo servizio,
 # che ora serve esclusivamente il runtime sparso V45 (graph.runtime.Engine).
@@ -49,6 +52,26 @@ MSG_WARN_KW_TFIDF: str = (
 
 
 _UNSET = object()
+
+
+def _estrai_kids_param(dati: dict, opzioni: dict | None = None) -> bool:
+    """Estrae il flag booleano kids da dati o opzioni.
+
+    Un valore assente o sconosciuto corrisponde a False (off).
+    """
+    kids_raw = dati.get("kids")
+    if kids_raw is None and opzioni and isinstance(opzioni, dict):
+        kids_raw = opzioni.get("kids")
+        if kids_raw is None and isinstance(opzioni.get("filtri"), dict):
+            kids_raw = opzioni["filtri"].get("kids")
+    if kids_raw is None and isinstance(dati.get("filtri"), dict):
+        kids_raw = dati["filtri"].get("kids")
+
+    if isinstance(kids_raw, bool):
+        return kids_raw
+    if isinstance(kids_raw, str) and kids_raw.strip().lower() in ("true", "1", "yes"):
+        return True
+    return False
 
 
 def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> tuple[int, dict]:
@@ -126,6 +149,11 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
         if getattr(engine, "assi_errore", None):
             return 503, {"ok": False, "errore": MSG_ERR_ASSI}
 
+    kids = _estrai_kids_param(dati, opzioni)
+    if kids:
+        if getattr(engine, "kids_ok", None) is None:
+            return 503, {"ok": False, "errore": getattr(engine, "kids_errore", None) or MSG_ERR_BLACKLIST}
+
     cap_val = dati.get("cap", 60)
     try:
         cap = int(cap_val)
@@ -199,6 +227,7 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
         esclusi=tutti_esclusi,
         tono=tono,
         complessita=complessita,
+        kids=kids,
     )
 
     meta_vot = K.metadati().get("VOT")
@@ -271,6 +300,7 @@ TRANSIZIONE_PATH: str | Path | None = os.environ.get("V45_TRANSIZIONE_PATH")
 VICINI_PATH: str | Path | None = os.environ.get("V45_VICINI_PATH")
 ASSI_PATH: str | Path | None = os.environ.get("ASSI_CANONE_PATH")
 KW_TFIDF_PATH: str | Path | None = os.environ.get("KW_TFIDF_DIR")
+BLACKLIST_PATH: str | Path | None = os.environ.get("BLACKLIST_BAMBINI_PATH") or os.environ.get("BLACKLIST_PATH")
 
 _ENGINE_V45: Engine | None = None
 _W_AFF: sp.csr_matrix | None = None
@@ -308,6 +338,11 @@ def risolvi_percorso_assi(path: str | Path | None = None) -> Path:
 def risolvi_percorso_kw_tfidf(path: str | Path | None = None) -> tuple[Path, Path]:
     target = path or KW_TFIDF_PATH or os.environ.get("KW_TFIDF_DIR")
     return I.percorso_kw_tfidf(target)
+
+
+def risolvi_percorso_blacklist(path: str | Path | None = None) -> Path:
+    target = path or BLACKLIST_PATH or os.environ.get("BLACKLIST_BAMBINI_PATH") or os.environ.get("BLACKLIST_PATH")
+    return _kids.risolvi_percorso_blacklist(target)
 
 
 def get_engine_v45(path: str | Path | None = None) -> Engine:
@@ -360,6 +395,7 @@ def reset_singletons_v45() -> None:
     _ASSI_CACHE = None
     _assi.reset_cache_assi()
     I.reset_cache_tfidf_keywords()
+    _kids.reset_cache_kids()
 
 
 def _estrai_sha_da_npz(path: Path) -> str | None:
@@ -417,6 +453,12 @@ def stato_artefatti(engine: Engine | None = None, w_aff: sp.csr_matrix | None = 
     loaded_tass = (I._TFIDF_KW_CACHE is not None)
     sha_tass = _estrai_sha_da_npz(p_tfidf) if p_tfidf.is_file() else None
 
+    # 6. Blacklist bambini
+    p_bl = risolvi_percorso_blacklist()
+    pres_bl = p_bl.is_file()
+    loaded_bl = (engine is not None and getattr(engine, "kids_ok", None) is not None) or (_ENGINE_V45 is not None and getattr(_ENGINE_V45, "kids_ok", None) is not None)
+    sha_bl = _kids.estrai_sha_blacklist(p_bl) if pres_bl else None
+
     return {
         "transizione": {
             "present": pres_trans,
@@ -446,6 +488,13 @@ def stato_artefatti(engine: Engine | None = None, w_aff: sp.csr_matrix | None = 
             "provenance": sha_tass,
             "loaded": loaded_tass,
             "vocab_path": str(p_vocab).replace("\\", "/"),
+        },
+        "blacklist": {
+            "present": pres_bl,
+            "path": str(p_bl).replace("\\", "/"),
+            "sha": sha_bl,
+            "provenance": sha_bl,
+            "loaded": loaded_bl,
         },
         "grafo_v45": {
             "present": pres_v45,
@@ -502,6 +551,11 @@ def verifica_startup_e_avvertimenti(logger_fn=print) -> None:
     if not arts["tassonomia"]["present"]:
         logger_fn(
             f"WARNING [startup]: {MSG_WARN_KW_TFIDF} (percorso atteso: {arts['tassonomia']['path']})",
+            file=sys.stderr,
+        )
+    if not arts["blacklist"]["present"]:
+        logger_fn(
+            f"WARNING [startup]: {MSG_ERR_BLACKLIST} (percorso atteso: {arts['blacklist']['path']})",
             file=sys.stderr,
         )
 
@@ -619,6 +673,11 @@ def esegui_scaffali(
 
     if getattr(engine, "assi_errore", None):
         return 503, {"ok": False, "errore": MSG_ERR_ASSI}
+
+    kids = _estrai_kids_param(dati, opzioni_scaffali)
+    if kids:
+        if getattr(engine, "kids_ok", None) is None:
+            return 503, {"ok": False, "errore": getattr(engine, "kids_errore", None) or MSG_ERR_BLACKLIST}
 
     # Caso speciale: lista semi vuota -> 200 con lista scaffali vuota
     if not semi_raw:
@@ -775,6 +834,7 @@ def esegui_scaffali(
             esclusi=esclusi_keys,
             tono=tono,
             complessita=complessita,
+            kids=kids,
         )
     except Exception as exc:
         return 500, {"ok": False, "errore": f"errore durante la generazione degli scaffali: {exc}"}

@@ -391,6 +391,16 @@ const HERO_STRATEGIES = [
                 // -------------------------------------------------------------------------
                 // NUOVO MOTORE V45: SCAFFALI DINAMICI (POST /scaffali)
                 // -------------------------------------------------------------------------
+                // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
+                const filtri = {
+                    anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
+                    kids: Boolean(ctx.kidsMode)
+                };
+                const opzioniScaffali = {
+                    ...(opzioni || {}),
+                    ...(filtri.anime || filtri.kids ? { filtri } : {}),
+                    ...(filtri.kids ? { kids: true } : {})
+                };
                 const semiPerScaffali = semi.map(({ recente, ...rest }) => rest);
                 if (!ENABLE_LEGACY_EDITORIAL_ROLES && typeof graphClient.scaffali === 'function') {
                     let resScaffali = null;
@@ -400,7 +410,7 @@ const HERO_STRATEGIES = [
                     const chiaveScaffali = buildShelfCacheKey({
                         semi: semiPerScaffali,
                         medium: med,
-                        opzioni,
+                        opzioni: opzioniScaffali,
                         cap,
                         // Se il client non espone le versioni (mock, client vecchio) la chiave resta
                         // valida ma senza l'impronta del grafo: il TTL breve copre quel caso.
@@ -411,7 +421,7 @@ const HERO_STRATEGIES = [
                     try {
                         resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
                             medium: med,
-                            opzioni,
+                            opzioni: opzioniScaffali,
                             cap
                         }));
                     } catch (scaffaliErr) {
@@ -457,15 +467,12 @@ const HERO_STRATEGIES = [
                     : righeServiteDelProfilo({ userConfig: ctx.userConfig, context: ctx.context, mediaType: med });
                 // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
                 // (a valle si butta via la pagina: se i primi 20 sono 15 non idonei, la riga ne serve 5).
-                const filtri = {
-                    anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
-                    kids: Boolean(ctx.kidsMode)
-                };
                 // `opzioni` resta `undefined` quando non c'e' niente da aggiungere: se lo si manda vuoto,
                 // i default del motore non valgono piu' (Ticket 41 lo fissa, ed e' giusto).
                 const extra = {
                     ...(servite ? { righe_servite: servite } : {}),
-                    ...(filtri.anime || filtri.kids ? { filtri } : {})
+                    ...(filtri.anime || filtri.kids ? { filtri } : {}),
+                    ...(filtri.kids ? { kids: true } : {})
                 };
                 const opzioniMotore = Object.keys(extra).length > 0 ? { ...(opzioni || {}), ...extra } : opzioni;
                 const resGraph = await graphClient.raccomanda({

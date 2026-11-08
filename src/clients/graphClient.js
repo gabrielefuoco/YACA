@@ -162,7 +162,8 @@ async function scaffali(semiOrPayload = [], opts = {}, conf = {}) {
             ...(o.n !== undefined ? { n: Number(o.n) || 8 } : {}),
             ...(Array.isArray(o.esclusi) ? { esclusi: o.esclusi } : {}),
             ...(o.tono !== undefined ? { tono: Number(o.tono) } : {}),
-            ...(o.complessita !== undefined ? { complessita: Number(o.complessita) } : {})
+            ...(o.complessita !== undefined ? { complessita: Number(o.complessita) } : {}),
+            ...(o.kids !== undefined ? { kids: Boolean(o.kids) } : (optionsMotore && optionsMotore.kids !== undefined ? { kids: Boolean(optionsMotore.kids) } : {}))
         };
         config = conf && (conf.baseUrl || conf.timeout) ? conf : (o.baseUrl || o.timeout ? o : {});
     } else {
@@ -177,7 +178,8 @@ async function scaffali(semiOrPayload = [], opts = {}, conf = {}) {
             ...(p.n !== undefined ? { n: Number(p.n) || 8 } : (opts.n !== undefined ? { n: Number(opts.n) || 8 } : {})),
             ...(Array.isArray(p.esclusi) ? { esclusi: p.esclusi } : (Array.isArray(opts.esclusi) ? { esclusi: opts.esclusi } : {})),
             ...(p.tono !== undefined ? { tono: Number(p.tono) } : (opts.tono !== undefined ? { tono: Number(opts.tono) } : {})),
-            ...(p.complessita !== undefined ? { complessita: Number(p.complessita) } : (opts.complessita !== undefined ? { complessita: Number(opts.complessita) } : {}))
+            ...(p.complessita !== undefined ? { complessita: Number(p.complessita) } : (opts.complessita !== undefined ? { complessita: Number(opts.complessita) } : {})),
+            ...(p.kids !== undefined ? { kids: Boolean(p.kids) } : (opts.kids !== undefined ? { kids: Boolean(opts.kids) } : (o && o.kids !== undefined ? { kids: Boolean(o.kids) } : {})))
         };
         config = opts && (opts.baseUrl || opts.timeout) ? opts : conf;
     }

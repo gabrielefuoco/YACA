@@ -291,9 +291,9 @@ def test_health_artefatti_presenti_in_layout_locale():
 
     # 2. Monitoraggio per-artefatto
     arts = payload["artefatti"]
-    assert set(arts.keys()) == {"transizione", "vicini", "assi", "grafo_v45", "tassonomia"}
+    assert set(arts.keys()) == {"transizione", "vicini", "assi", "grafo_v45", "tassonomia", "blacklist"}
 
-    for nome in ("transizione", "vicini", "assi", "tassonomia"):
+    for nome in ("transizione", "vicini", "assi", "tassonomia", "blacklist"):
         entry = arts[nome]
         assert entry["present"] is True
         assert entry["loaded"] is True

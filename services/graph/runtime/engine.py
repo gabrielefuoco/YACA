@@ -38,6 +38,7 @@ import scipy.sparse as sp
 from graph import assi as _assi
 from graph import camminata as _cam
 from graph import canon as K
+from graph import kids as _kids
 from graph import parametri as P
 from graph import provenance as _PV
 
@@ -74,6 +75,8 @@ class Engine:
         self.mediums: np.ndarray = np.empty(0, dtype=object)
         self.tono: np.ndarray | None = None
         self.complessita: np.ndarray | None = None
+        self.kids_ok: np.ndarray | None = None
+        self.kids_errore: str | None = None
         self.tmdb_to_indices: dict[int, list[int]] = {}
         self.ultimo_scarto: dict[str, int] = {
             "semi_fuori_canone": 0,
@@ -116,6 +119,9 @@ class Engine:
                 self.tono = np.zeros(n, dtype=np.float32)
                 self.complessita = np.zeros(n, dtype=np.float32)
                 self.assi_errore = str(exc)
+            kok, kerr = _kids.carica_kids_ok(n)
+            self.kids_ok = kok
+            self.kids_errore = kerr
         else:
             # Consente fixture o sottomatrici di test con dimensione diversa
             self.keys = [f"item:{i}" for i in range(n)]
@@ -125,6 +131,8 @@ class Engine:
             self.anime = np.zeros(n, dtype=bool)
             self.tono = np.zeros(n, dtype=np.float32)
             self.complessita = np.zeros(n, dtype=np.float32)
+            self.kids_ok = np.ones(n, dtype=bool)
+            self.kids_errore = None
 
         self.tmdb_ids = np.zeros(n, dtype=np.int64)
         self.mediums = np.empty(n, dtype=object)
@@ -603,6 +611,7 @@ class Engine:
         tono: float = 0.0,
         complessita: float = 0.0,
         anime: bool | str | None = None,
+        kids: bool = False,
     ) -> list[dict]:
         """Esegue Personalized PageRank e restituisce i top raccomandati ordinati per punteggio.
 
@@ -690,6 +699,15 @@ class Engine:
         elif anime == "exclude" and getattr(self, "anime", None) is not None:
             cand[self.anime] = -np.inf
 
+        # Applicazione filtro kids prima del cap (Ticket 11)
+        if kids:
+            if getattr(self, "kids_ok", None) is None:
+                raise RuntimeError(
+                    getattr(self, "kids_errore", None)
+                    or "Filtro kids non disponibile: artefatto blacklist mancante."
+                )
+            cand[~self.kids_ok] = -np.inf
+
         valid_idx = np.flatnonzero(cand > -np.inf)
         if len(valid_idx) == 0:
             return []
@@ -736,6 +754,7 @@ class Engine:
         tono: float | Sequence[float] = 0.0,
         complessita: float | Sequence[float] = 0.0,
         anime: bool | str | Sequence[bool | str | None] | None = None,
+        kids: bool | Sequence[bool] = False,
     ) -> list[list[dict]]:
         """Esegue una camminata Personalized PageRank batched per B liste di semi.
 
@@ -819,6 +838,20 @@ class Engine:
         else:
             anime_list = [anime] * B
 
+        # 4c. Risoluzione kids per colonna
+        if isinstance(kids, (list, tuple, np.ndarray)):
+            if len(kids) != B:
+                raise ValueError(f"Lunghezza lista kids ({len(kids)}) != numero query ({B})")
+            kids_list = [bool(k) for k in kids]
+        else:
+            kids_list = [bool(kids)] * B
+
+        if any(kids_list) and getattr(self, "kids_ok", None) is None:
+            raise RuntimeError(
+                getattr(self, "kids_errore", None)
+                or "Filtro kids non disponibile: artefatto blacklist mancante."
+            )
+
         # 5. Esclusioni comuni
         escl_indici, _ = self._parse_esclusi(esclusi)
 
@@ -898,6 +931,9 @@ class Engine:
                 cand[~self.anime] = -np.inf
             elif a_j == "exclude" and getattr(self, "anime", None) is not None:
                 cand[self.anime] = -np.inf
+
+            if kids_list[j] and getattr(self, "kids_ok", None) is not None:
+                cand[~self.kids_ok] = -np.inf
 
             valid_idx = np.flatnonzero(cand > -np.inf)
             if len(valid_idx) == 0:

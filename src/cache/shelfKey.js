@@ -53,6 +53,8 @@ function normalizzaOpzioni(opzioni) {
         const v = Number(opzioni[chiave]);
         if (Number.isFinite(v) && v !== 0) out[chiave] = Math.round(v * 100) / 100;
     }
+    const kids = opzioni.kids !== undefined ? Boolean(opzioni.kids) : (opzioni.filtri?.kids !== undefined ? Boolean(opzioni.filtri.kids) : undefined);
+    if (kids) out.kids = true;
     return Object.keys(out).length ? out : null;
 }
 

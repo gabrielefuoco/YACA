@@ -856,6 +856,7 @@ def scaffali(
     esclusi: Sequence[str] | None = None,
     tono: float = 0.0,
     complessita: float = 0.0,
+    kids: bool = False,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 
@@ -1057,6 +1058,7 @@ def scaffali(
         tono=tono,
         complessita=complessita,
         anime=all_batch_anime,
+        kids=kids,
     )
 
     # Assegna titoli e top10_cands ai candidati direttamente dall'unico batched PPR
