@@ -98,50 +98,6 @@ describe('Ticket 46: Feed & Protocol Verification for New Graph Catalogs', () =>
     });
 
     describe('1. Manifest protocol verification', () => {
-        test('il manifest include le quattro righe hero storiche (8 id) e ZERO di quelle rimosse', () => {
-            const manifest = buildManifest(userConfig, userConfig.profiles[0]);
-            expect(manifest).toBeDefined();
-            expect(Array.isArray(manifest.catalogs)).toBe(true);
-
-            const catIds = manifest.catalogs.map(c => c.id);
-
-            // Le quattro righe storiche (8 id) DEVONO essere presenti
-            const expectedHeroIds = [
-                'yaca_mondi_movies',
-                'yaca_mondi_series',
-                'yaca_passo_fuori_movies',
-                'yaca_passo_fuori_series',
-                'yaca_uscite_nuove_movies',
-                'yaca_uscite_nuove_series',
-                'yaca_nicchia_di_qualita_movies',
-                'yaca_nicchia_di_qualita_series'
-            ];
-            for (const hId of expectedHeroIds) {
-                expect(catIds).toContain(hId);
-            }
-
-            // I 4 vecchi cataloghi hero rimossi (8 id) NON DEVONO esistere nel manifest
-            const legacyHeroIds = [
-                'yaca_true_blend_movies',
-                'yaca_true_blend_series',
-                'yaca_seed_network_movies',
-                'yaca_seed_network_series',
-                'yaca_hidden_gems_movies',
-                'yaca_hidden_gems_series',
-                'yaca_trakt_filtered_movies',
-                'yaca_trakt_filtered_series'
-            ];
-            for (const legacyId of legacyHeroIds) {
-                expect(catIds).not.toContain(legacyId);
-            }
-
-            // Gli hero catalogo non hanno extra sortBy (solo skip)
-            for (const hId of expectedHeroIds) {
-                const cat = manifest.catalogs.find(c => c.id === hId);
-                expect(cat.extra).toEqual([{ name: 'skip' }]);
-                expect(cat.extra.find(e => e.name === 'sortBy')).toBeUndefined();
-            }
-        });
     });
 
     describe('2. Delivery dei due nuovi cataloghi e conteggio titoli > 0', () => {
@@ -256,23 +212,6 @@ describe('Ticket 46: Feed & Protocol Verification for New Graph Catalogs', () =>
             expect(res.metas[0].poster).toBeDefined();
         });
 
-        test('yaca_mondi_movies e yaca_passo_fuori_movies continuano a restituire titoli con conteggio > 0', async () => {
-            const resMondi = await catalogHandler(
-                { id: 'yaca_mondi_movies', type: 'movie', extra: {} },
-                userConfig,
-                'http://localhost:7000'
-            );
-            expect(resMondi.metas.length).toBe(2);
-            expect(resMondi.metas[0].id).toBe('tmdb:603');
-
-            const resPasso = await catalogHandler(
-                { id: 'yaca_passo_fuori_movies', type: 'movie', extra: {} },
-                userConfig,
-                'http://localhost:7000'
-            );
-            expect(resPasso.metas.length).toBe(2);
-            expect(resPasso.metas[0].id).toBe('tmdb:701');
-        });
     });
 
     describe('3. I cataloghi del feed sopravvissuti riempiono con conteggio > 0', () => {

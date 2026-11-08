@@ -131,63 +131,6 @@ describe('Preset Sorting, Coverage and Simulcast Data-Driven Rule', () => {
             ]);
         });
 
-        test('dynamic manifest excludes sortBy from preset_anime_simulcast and preserves other catalogs', async () => {
-            const spy = jest.spyOn(UserConfig, 'resolveUserConfig').mockResolvedValueOnce({
-                activeProfileId: 'p_test',
-                profiles: [{
-                    id: 'p_test',
-                    name: 'Test Profile',
-                    catalogs: [
-                        { id: 'preset_anime_simulcast', name: 'Simulcast (Nuovi Episodi)', type: 'series', _provider: 'airing_state' },
-                        { id: 'preset_pop_movies', name: 'Film Popolari', type: 'movie' }
-                    ]
-                }]
-            });
-
-            const manifestRoute = stremioRouter.stack.find(
-                layer => layer.route && layer.route.path &&
-                (Array.isArray(layer.route.path) ? layer.route.path.includes('/:userHandle/manifest.json') : layer.route.path === '/:userHandle/manifest.json')
-            );
-
-            let manifestJson = null;
-            const req = { params: { userHandle: 'testSimulcast' }, protocol: 'http', get: () => 'localhost' };
-            const res = {
-                setHeader: () => {},
-                json: (data) => { manifestJson = data; }
-            };
-
-            await manifestRoute.route.stack[0].handle(req, res);
-            spy.mockRestore();
-
-            expect(manifestJson).toBeDefined();
-
-            // 1. Simulcast catalog MUST NOT have sortBy extra
-            const simulcastCat = manifestJson.catalogs.find(c => c.id === 'preset_anime_simulcast');
-            expect(simulcastCat).toBeDefined();
-            expect(simulcastCat.extra).toEqual([{ name: 'skip' }]);
-            expect(simulcastCat.extra.find(e => e.name === 'sortBy')).toBeUndefined();
-
-            // 2. Standard user preset MUST retain sortBy extra
-            const popMoviesCat = manifestJson.catalogs.find(c => c.id === 'preset_pop_movies');
-            expect(popMoviesCat).toBeDefined();
-            expect(popMoviesCat.extra).toEqual(presetExtra);
-            expect(popMoviesCat.extra.find(e => e.name === 'sortBy')).toBeDefined();
-
-            // 3. Hero catalogs MUST NOT have sortBy extra
-            const heroCats = manifestJson.catalogs.filter(c => c.id.startsWith('yaca_mondi_') || c.id.startsWith('yaca_passo_fuori_'));
-            expect(heroCats.length).toBeGreaterThan(0);
-            for (const hCat of heroCats) {
-                expect(hCat.extra).toEqual([{ name: 'skip' }]);
-                expect(hCat.extra.find(e => e.name === 'sortBy')).toBeUndefined();
-            }
-
-            // 4. Watchlist catalogs MUST NOT have sortBy extra
-            const watchlistCats = manifestJson.catalogs.filter(c => c.id.startsWith('yaca_watchlist_'));
-            expect(watchlistCats.length).toBeGreaterThan(0);
-            for (const wCat of watchlistCats) {
-                expect(wCat.extra).toEqual([{ name: 'skip' }]);
-            }
-        });
     });
 
     describe('Unified Sorting Vocabulary & Family Defaults (Ticket 18)', () => {

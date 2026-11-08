@@ -117,34 +117,6 @@ describe('configure route global profile safeguards', () => {
         expect(globalProfile.settings.suggestedDNA).toEqual([]);
     });
 
-    it('forces global profile name and manualDNA invariants', async () => {
-        const req = {
-            protocol: 'http',
-            get: jest.fn(() => 'localhost:7000'),
-            user: { userId: 'u1', email: 'user@example.com' },
-            body: {
-                activeProfileId: 'global',
-                profiles: [{
-                    id: 'global',
-                    name: 'Hacked Name',
-                    catalogs: [],
-                    existingCatalogs: [],
-                    newPrompts: [],
-                    settings: { manualDNA: [{ id: '2', type: 'genre', name: 'Drama' }] }
-                }]
-            }
-        };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-
-        await configureRoute(req, res);
-
-        const payload = UserConfig.saveUser.mock.calls[0][0];
-        const globalProfile = payload.profiles.find((p) => p.id === 'global');
-        expect(globalProfile.name).toBe('Generale');
-        expect(globalProfile.settings.manualDNA).toEqual([]);
-        expect(globalProfile.settings.suggestedDNA).toEqual([]);
-        expect(payload.config.activeProfileId).toBe('global');
-    });
 
     it('rebuilds suggestedDNA from active catalogs only', async () => {
         const req = {

@@ -21,17 +21,15 @@ jest.mock('../src/stremio/providers/AiDiscoveryProvider', () => ({
 describe('Ticket 14: Fix Cataloghi & Manifest', () => {
 
     describe('1. BUG-03-A & BUG-03-H: Manifest Catalogs Dedup & Anime Type', () => {
-        test('Deduplica i cataloghi custom presenti sia in profile.catalogs che in userConfig.customCatalogs (precedenza profilo)', () => {
+        test('un catalogo custom attivo compare una volta sola nel manifest', () => {
+            // Con i modi accesi la lista attiva è `config.cataloghi[modo]`: `profiles[].catalogs`
+            // non è più una sorgente, quindi la deduplica si misura lì.
             const userConfig = {
-                activeProfileId: 'p1',
-                profiles: [{
-                    id: 'p1',
-                    name: 'Test Profile',
-                    catalogs: [
-                        { id: 'custom_matchmaker_1', name: 'Profile Version Matchmaker', type: 'movie' },
-                        { id: 'profile_anime_cat', name: 'Anime Dal Profilo', type: 'anime' }
-                    ]
-                }],
+                config: { activeModo: 'generale', cataloghi: { generale: [
+                    { id: 'custom_matchmaker_1', ordine: 0 },
+                    { id: 'custom_unique_2', ordine: 1 }
+                ] } },
+                profiles: [{ id: 'p1', modo: 'generale' }],
                 customCatalogs: [
                     { id: 'custom_matchmaker_1', name: 'UserConfig Version Matchmaker', type: 'movie' },
                     { id: 'custom_unique_2', name: 'Unique Custom', type: 'series' }
@@ -40,16 +38,13 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
 
             const manifest = stremioRouter.buildManifest(userConfig, 'http://localhost:7000', 'testHandle');
 
-            // Trova tutte le occorrenze di custom_matchmaker_1
             const matchmakerOccurrences = manifest.catalogs.filter(c => c.id === 'custom_matchmaker_1');
             expect(matchmakerOccurrences.length).toBe(1);
-            expect(matchmakerOccurrences[0].name).toBe('Profile Version Matchmaker');
+            expect(matchmakerOccurrences[0].name).toBe('UserConfig Version Matchmaker');
 
-            // Verifica che il custom univoco sia presente
             const uniqueOccurrences = manifest.catalogs.filter(c => c.id === 'custom_unique_2');
             expect(uniqueOccurrences.length).toBe(1);
 
-            // Verifica che yaca_search_standard e yaca_search_ai compaiano ESATTAMENTE 2 volte (movie e series)
             const searchStandardOccurrences = manifest.catalogs.filter(c => c.id === 'yaca_search_standard');
             expect(searchStandardOccurrences.length).toBe(2);
             expect(searchStandardOccurrences.map(c => c.type).sort()).toEqual(['movie', 'series']);
@@ -59,18 +54,22 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
             expect(searchAiOccurrences.map(c => c.type).sort()).toEqual(['movie', 'series']);
         });
 
-        test('BUG-03-H: non appiattisce il tipo anime a movie nei cataloghi di profilo', () => {
+        test('BUG-03-H: non appiattisce il tipo anime a movie nei cataloghi attivi', () => {
+            const attive = { generale: [
+                { id: 'cat_anime_1', ordine: 0 },
+                { id: 'cat_anime_2', ordine: 1 },
+                { id: 'cat_series_1', ordine: 2 },
+                { id: 'cat_movie_1', ordine: 3 }
+            ] };
             const userConfig = {
-                activeProfileId: 'p1',
-                profiles: [{
-                    id: 'p1',
-                    catalogs: [
-                        { id: 'cat_anime_1', name: 'Catalogo Anime Type', type: 'anime' },
-                        { id: 'cat_anime_2', name: 'Catalogo Anime Kind', kind: 'anime' },
-                        { id: 'cat_series_1', name: 'Catalogo Serie', type: 'series' },
-                        { id: 'cat_movie_1', name: 'Catalogo Film', type: 'movie' }
-                    ]
-                }]
+                config: { activeModo: 'generale', cataloghi: attive },
+                profiles: [{ id: 'p1', modo: 'generale' }],
+                customCatalogs: [
+                    { id: 'cat_anime_1', name: 'Catalogo Anime Type', type: 'anime' },
+                    { id: 'cat_anime_2', name: 'Catalogo Anime Kind', kind: 'anime' },
+                    { id: 'cat_series_1', name: 'Catalogo Serie', type: 'series' },
+                    { id: 'cat_movie_1', name: 'Catalogo Film', type: 'movie' }
+                ]
             };
 
             const manifest = stremioRouter.buildManifest(userConfig);

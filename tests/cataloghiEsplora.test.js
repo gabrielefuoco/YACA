@@ -299,3 +299,20 @@ describe('POST ordine: solo la permutazione esatta degli attivi', () => {
             .rejects.toMatchObject({ status: 400, code: 'ordine_non_valido' });
     });
 });
+
+describe('media separato dal tipo (review spec)', () => {
+    const { mediaDi } = require('../src/profile/cataloghiEsplora');
+
+    test('un catalogo anime di serie tiene il suo medium', () => {
+        const voce = { mediaSet: ['serie'], anime: 'yes' };
+        expect(mediaDi(voce)).toBe('series');
+    });
+
+    test('un catalogo anime di film tiene il suo medium', () => {
+        expect(mediaDi({ mediaSet: ['film'], anime: 'yes' })).toBe('movie');
+    });
+
+    test('un contenitore che copre entrambi i media non finge di essere film', () => {
+        expect(mediaDi({ mediaSet: ['film', 'serie'], anime: 'yes' })).toBeNull();
+    });
+});

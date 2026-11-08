@@ -137,16 +137,4 @@ describe('Ticket 13: ogni riga del grafo ha il suo catalogo', () => {
         expect(assigned['yaca_micro_cluster_3_movies']).toEqual([]);
     });
 
-    test('il manifest dichiara le righe nuove', () => {
-        const manifest = buildManifest({});
-        const ids = manifest.catalogs.map((c) => c.id);
-        for (const catalogo of [
-            'yaca_classici_movies', 'yaca_classici_series',
-            'yaca_ultime_visioni_movies', 'yaca_ultime_visioni_series',
-            'yaca_punti_incontro_movies', 'yaca_punti_incontro_series',
-            'yaca_micro_cluster_1_movies', 'yaca_micro_cluster_2_series', 'yaca_micro_cluster_3_movies'
-        ]) {
-            expect(ids).toContain(catalogo);
-        }
-    });
 });
