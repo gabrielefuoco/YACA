@@ -13,6 +13,14 @@
 const { accountDi, accountPerAddonUuid } = require('../configurazione');
 const { profiloDi, risolviProfiloAttivo } = require('./door');
 const { selettoriEffettivi } = require('./selettoriEffettivi');
+const {
+    modiAbilitati,
+    leggiModoAttivo,
+    derivaLeve,
+    selettoriDaLeve,
+    opzioniGrafoDi,
+    isModoValido
+} = require('./modo');
 
 /**
  * Risolve il contesto completo del profilo.
@@ -66,26 +74,41 @@ async function contestoDi(input = {}) {
         || rawProfile?.id
         || 'global';
 
-    // Calcolo kidsMode (la richiesta specifica sovrascrive il profilo)
-    const kidsMode = Boolean(
-        richiesta?.kidsMode !== undefined ? richiesta.kidsMode :
-        richiesta?.isKidsMode !== undefined ? richiesta.isKidsMode :
-        rawProfile?.settings?.kidsMode
-    );
+    // Con `MODI_ABILITATI` acceso le leve NON si leggono più dalle impostazioni del
+    // profilo: sono uscite di `derivaLeve(modo)`. La richiesta non può sovrascriverle
+    // (un `kidsMode` di query sarebbe una seconda fonte di verità).
+    const modoAttivo = modiAbilitati()
+        ? (user
+            ? leggiModoAttivo(user)
+            : (isModoValido(rawProfile?.modo) ? rawProfile.modo : leggiModoAttivo(rawProfile)))
+        : null;
+    const leve = modoAttivo ? derivaLeve(modoAttivo) : null;
 
-    // Calcolo slider del motore (preferenze motore salvate nel profilo: cozy, canone)
-    const slider = richiesta?.sliders
-        || richiesta?.slider
+    // Calcolo kidsMode (con il flag acceso vince la modalità)
+    const kidsMode = leve
+        ? leve.kids
+        : Boolean(
+            richiesta?.kidsMode !== undefined ? richiesta.kidsMode :
+            richiesta?.isKidsMode !== undefined ? richiesta.isKidsMode :
+            rawProfile?.settings?.kidsMode
+        );
+
+    // Calcolo slider del motore: la richiesta (anteprima) resta sovrana, poi i
+    // cursori d'account, poi le preferenze salvate nel profilo.
+    const slider = (richiesta?.sliders || richiesta?.slider)
+        || (modoAttivo ? opzioniGrafoDi(user || rawProfile, rawProfile) : null)
         || rawProfile?.settings?.sliders
         || rawProfile?.settings?.slider
         || rawProfile?.sliders
         || {};
 
     // Calcolo dei selettori effettivi tramite funzione pura del modulo
-    const resolvedSelectors = selettoriEffettivi(rawProfile, {
-        ...(richiesta || {}),
-        kidsMode
-    });
+    const resolvedSelectors = leve
+        ? selettoriDaLeve(leve)
+        : selettoriEffettivi(rawProfile, {
+            ...(richiesta || {}),
+            kidsMode
+        });
 
     return {
         userId: resolvedUserId,
@@ -97,7 +120,10 @@ async function contestoDi(input = {}) {
         // salvati col nome vecchio devono continuare a funzionare), ma esporne due in uscita
         // significa lasciare al chiamante la scelta di quale leggere — ed e' come si crea la
         // catena `ctx.sliders || ctx.slider` che trovi nei consumatori.
-        sliders: slider
+        sliders: slider,
+        // La modalità viaggia nel contesto solo con il flag acceso: il resto dei
+        // consumatori non la conosce (e con il flag spento l'oggetto è identico a prima).
+        ...(modoAttivo ? { modo: modoAttivo, leve } : {})
     };
 }
 

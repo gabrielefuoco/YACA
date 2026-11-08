@@ -15,6 +15,11 @@ const { nanoid } = require('nanoid');
 const AddonConfig = require('../models/AddonConfig');
 const ProfileUiState = require('./models/ProfileUiState');
 const { accountDi } = require('../configurazione');
+const {
+    modiAbilitati,
+    leggiModoAttivo,
+    profiloDelModo
+} = require('./modo');
 
 function defaultGlobalProfile() {
     return {
@@ -32,11 +37,25 @@ function defaultGlobalProfile() {
 /**
  * Risolve in modo centralizzato il profilo attivo eliminando le copie di `|| 'global'`.
  *
+ * Con `MODI_ABILITATI` acceso il profilo attivo è la casella della modalità
+ * attiva: la modalità vince su `requested`/`previous`, perché è l'unica fonte
+ * di verità del ticket 01. Se la casella non esiste ancora (documento legacy,
+ * migrazione non eseguita) si ricade sulla risoluzione storica, senza inventare
+ * un profilo.
+ *
  * @param {object} [input]
  * @returns {string} ID del profilo attivo (sempre una stringa valida, mai undefined/null)
  */
 function risolviProfiloAttivo(input = {}) {
     if (!input || typeof input !== 'object') return 'global';
+
+    if (modiAbilitati()) {
+        const documento = input.addonConfig || input.userConfig || input;
+        const profiloModo = profiloDelModo(documento, leggiModoAttivo(documento));
+        if (profiloModo && profiloModo.id !== undefined && profiloModo.id !== null && String(profiloModo.id).trim()) {
+            return String(profiloModo.id);
+        }
+    }
 
     const requested = input.requested || input.requestedProfileId || input.activeProfileId || input.profileId;
     const previous = input.previous;
@@ -252,19 +271,28 @@ async function profiloDi({ userId, profileId, addonUuid } = {}) {
 
         const found = profiles.find(p => (p.id || p._id?.toString()) === targetId);
         if (found) {
-            return {
+            const vista = {
                 ...found,
                 id: found.id || found._id?.toString()
             };
+            // Con il flag acceso il profilo restituito È la modalità attiva: il
+            // campo `modo` calcolato qui evita che ogni consumatore rilegga il
+            // documento per derivare le leve. Senza flag non si tocca niente.
+            if (modiAbilitati()) {
+                vista.modo = leggiModoAttivo(addonConfig);
+            }
+            return vista;
         }
 
         // Se non trovato per ID, prendi il primo o fallback a global
         if (profiles.length > 0) {
             const first = profiles[0];
-            return {
+            const vista = {
                 ...first,
                 id: first.id || first._id?.toString()
             };
+            if (modiAbilitati()) vista.modo = leggiModoAttivo(addonConfig);
+            return vista;
         }
 
         return defaultGlobalProfile();

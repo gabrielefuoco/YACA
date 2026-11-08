@@ -229,9 +229,12 @@ router.get([
 
     try {
         const { contestoDi } = require('../profile');
+        const { modiAbilitati } = require('../profile/modo');
         userConfig.context = await contestoDi({
             userId: userConfig.userId,
-            profileId: userConfig.activeProfileId,
+            // Con il flag acceso il profilo lo decide la modalità attiva (la porta);
+            // senza il flag resta l'id esplicito di sempre.
+            profileId: modiAbilitati() ? undefined : userConfig.activeProfileId,
             addonUuid: userConfig.addonUuid,
             user: userConfig
         });

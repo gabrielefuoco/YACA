@@ -17,10 +17,36 @@
  *
  * La regola di immutabilità del modo vive qui (`applicaImmutabilitaModo`) e
  * viene applicata dal percorso di update in `src/models/UserConfig.js`.
+ *
+ * CABLE (feature flag `MODI_ABILITATI`, spento di default): questo file è anche
+ * l'unico posto in cui si legge il flag. Con il flag spento nessuna delle funzioni
+ * "di cablaggio" (`leggiModoAttivo`, `opzioniGrafoDi`, `conformeAlModo`, …) viene
+ * chiamata dai percorsi vivi, quindi il comportamento resta quello di prima.
  */
 
 const MODI = Object.freeze(['generale', 'film', 'serie', 'anime', 'bambini']);
 const MODI_SET = new Set(MODI);
+
+/**
+ * Nome della variabile d'ambiente che accende il cablaggio delle modalità.
+ * Spenta di default: `MODI_ABILITATI` assente, vuota o `0` = comportamento storico.
+ */
+const FLAG_MODI_ENV = 'MODI_ABILITATI';
+const VALORI_FLAG_ACCESO = new Set(['1', 'true', 'on', 'yes', 'si', 'sì']);
+
+/**
+ * Il flag si legge a ogni chiamata (non una volta al caricamento del modulo):
+ * così i test possono accenderlo e spegnerlo senza riavviare il processo, e un
+ * riavvio non è necessario per tornare al comportamento storico.
+ *
+ * @param {object} [env] sorgente delle variabili (default `process.env`)
+ * @returns {boolean}
+ */
+function modiAbilitati(env = process.env) {
+    const raw = env ? env[FLAG_MODI_ENV] : undefined;
+    if (raw === undefined || raw === null || raw === '') return false;
+    return VALORI_FLAG_ACCESO.has(String(raw).trim().toLowerCase());
+}
 
 /** Nome fisso della modalità: la sola cosa personalizzabile è l'emoji. */
 const NOMI_MODI = Object.freeze({
@@ -52,6 +78,23 @@ function isModoValido(modo) {
 
 function normalizzaModo(modo) {
     return typeof modo === 'string' ? modo.trim().toLowerCase() : modo;
+}
+
+/**
+ * Traduce le leve tecniche nella forma che i consumatori storici leggono
+ * (`typeSelectors.film/serie/anime`). Serve solo a non duplicare la traduzione:
+ * le leve restano l'uscita di `derivaLeve`, i selettori sono una sua proiezione.
+ *
+ * @param {{medium: 'movie'|'series'|null, anime: string, kids: boolean}} leve
+ * @returns {{film: boolean, serie: boolean, anime: string}}
+ */
+function selettoriDaLeve(leve) {
+    const medium = leve?.medium === 'movie' || leve?.medium === 'series' ? leve.medium : null;
+    return {
+        film: medium === null || medium === 'movie',
+        serie: medium === null || medium === 'series',
+        anime: leve?.anime || 'neutral'
+    };
 }
 
 /**
@@ -203,6 +246,146 @@ function profiloAttivoDi(addonConfig) {
 }
 
 /**
+ * La modalità attiva dell'account (flag `MODI_ABILITATI`).
+ *
+ * Ordine di risoluzione, nell'ordine deciso dal ticket 01:
+ *   1. `config.activeModo`, se è uno dei cinque;
+ *   2. il `modo` del profilo puntato da `config.activeProfileId`;
+ *   3. per i documenti legacy senza `modo`, il ponte `modoDaSelettori` sui
+ *      selettori salvati (stessa tabella, nessuna seconda verità);
+ *   4. `generale`.
+ *
+ * Non scrive niente: la materializzazione persistente è della migrazione.
+ *
+ * @param {object|null} addonConfig
+ * @returns {'generale'|'film'|'serie'|'anime'|'bambini'}
+ */
+function leggiModoAttivo(addonConfig) {
+    const config = addonConfig?.config && typeof addonConfig.config === 'object'
+        ? addonConfig.config
+        : (addonConfig && typeof addonConfig === 'object' ? addonConfig : {});
+
+    const dichiarato = normalizzaModo(config.activeModo);
+    if (isModoValido(dichiarato)) return dichiarato;
+
+    const profili = profiliDi(addonConfig);
+    const activeProfileId = config.activeProfileId || addonConfig?.activeProfileId;
+    const profilo = profili.find(p => p && p.id !== undefined && p.id !== null
+        && String(p.id) === String(activeProfileId));
+
+    if (isModoValido(profilo?.modo)) return normalizzaModo(profilo.modo);
+    if (profilo) return modoDaSelettori(profilo.settings?.typeSelectors, profilo.settings?.kidsMode);
+
+    const generale = profili.find(p => p?.modo === 'generale');
+    if (generale) return 'generale';
+    return 'generale';
+}
+
+/**
+ * La casella (profilo) di una modalità, o `null` se non è ancora stata
+ * materializzata. Nessuna creazione implicita nel percorso di lettura.
+ *
+ * @param {object|null} addonConfig
+ * @param {string} [modo]
+ * @returns {object|null}
+ */
+function profiloDelModo(addonConfig, modo = null) {
+    const cercato = isModoValido(modo) ? normalizzaModo(modo) : leggiModoAttivo(addonConfig);
+    return profiliDi(addonConfig).find(p => p && normalizzaModo(p.modo) === cercato) || null;
+}
+
+/**
+ * I cataloghi attivi di una modalità, nell'ordine dichiarato (`ordine`), dalla
+ * forma d'account `config.cataloghi[modo]`.
+ *
+ * Il sort è totale: a parità di `ordine` decide l'indice originale, così due
+ * letture identiche danno lo stesso elenco (l'impronta del manifest è
+ * deterministica per costruzione).
+ *
+ * @param {object|null} addonConfig
+ * @param {string} [modo]
+ * @returns {Array<{id: string, ordine: number}>}
+ */
+function cataloghiDelModo(addonConfig, modo = null) {
+    const cercato = isModoValido(modo) ? normalizzaModo(modo) : leggiModoAttivo(addonConfig);
+    const mappa = addonConfig?.config?.cataloghi || addonConfig?.cataloghi || null;
+    const lista = Array.isArray(mappa?.[cercato]) ? mappa[cercato] : [];
+
+    return lista
+        .map((voce, idx) => {
+            const id = voce && voce.id !== undefined && voce.id !== null ? String(voce.id) : '';
+            if (!id) return null;
+            const ordine = Number(voce.ordine);
+            return { id, ordine: Number.isFinite(ordine) ? ordine : idx, _idx: idx };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (a.ordine - b.ordine) || (a._idx - b._idx))
+        .map(({ id, ordine }) => ({ id, ordine }));
+}
+
+/**
+ * Un catalogo è servibile in una modalità? La regola è la congiunzione di:
+ *   · la conformità anime già esistente (`isCatalogConformant`), e
+ *   · il medium della modalità, che i vecchi selettori non filtravano (ticket 15/16).
+ * Con `leve.medium === null` (Generale, Anime, Bambini) non c'è filtro di medium.
+ *
+ * @param {object|string|null} catalog
+ * @param {{medium: 'movie'|'series'|null, anime: string, kids: boolean}|null} leve
+ * @returns {boolean}
+ */
+function conformeAlModo(catalog, leve) {
+    if (!leve) return true;
+    // require pigro: `catalogKind` tira il registro e la cache, e questo modulo
+    // deve restare caricabile da solo (è importato dalla porta del profilo).
+    const { isCatalogConformant, getCatalogKind } = require('../catalog/catalogKind');
+    if (!isCatalogConformant(catalog, { anime: leve.anime })) return false;
+    if (!leve.medium) return true;
+
+    const voluto = leve.medium === 'movie' ? 'film' : 'serie';
+    try {
+        const kind = getCatalogKind(catalog);
+        return Array.isArray(kind?.mediaSet) && kind.mediaSet.includes(voluto);
+    } catch (_err) {
+        return false;
+    }
+}
+
+/**
+ * Le `opzioni` che la richiesta al grafo porta oggi, con i cursori presi
+ * dall'account quando ci sono. Le chiavi restano `cozy`/`canone`: sono le stesse
+ * che il servizio legge oggi (`opzioni.tono ?? opzioni.cozy`), quindi tono e
+ * complessità arrivano al motore con gli stessi valori di prima.
+ *
+ * Gli assi che l'account non possiede (`largo`, `lontano`, se presenti nel
+ * profilo) restano dove sono: qui si sostituiscono solo i due cursori d'account.
+ *
+ * @param {object|null} addonConfig
+ * @param {object|null} [profiloRipiego] profilo da usare se il documento non ne espone
+ * @returns {object}
+ */
+function opzioniGrafoDi(addonConfig, profiloRipiego = null) {
+    const profilo = profiloAttivoDi(addonConfig) || profiloRipiego || null;
+    const base = profilo?.settings?.sliders
+        || profilo?.settings?.slider
+        || profilo?.sliders
+        || profilo?.slider
+        || {};
+    const uscita = base && typeof base === 'object' ? { ...base } : {};
+
+    const account = addonConfig?.config?.sliders || addonConfig?.sliders;
+    if (!account || typeof account !== 'object') return uscita;
+
+    const { tonalita, notorieta } = leggiSliders(addonConfig);
+    delete uscita.tono;
+    delete uscita.complessita;
+    delete uscita.tonalita;
+    delete uscita.notorieta;
+    uscita.cozy = tonalita;
+    uscita.canone = notorieta;
+    return uscita;
+}
+
+/**
  * Valori dei cursori ancora salvati sul profilo attivo, nella forma d'account.
  * Accetta sia i nomi nuovi (`tonalita`/`notorieta`) sia quelli oggi salvati
  * dalla dashboard (`cozy`/`canone`).
@@ -289,8 +472,17 @@ module.exports = {
     NOMI_MODI,
     PREFISSO_ID_MODO,
     LEVE_PER_MODO,
+    FLAG_MODI_ENV,
+    modiAbilitati,
     isModoValido,
+    normalizzaModo,
     derivaLeve,
+    selettoriDaLeve,
+    leggiModoAttivo,
+    profiloDelModo,
+    cataloghiDelModo,
+    conformeAlModo,
+    opzioniGrafoDi,
     modoDaSelettori,
     leveDaSelettori,
     materializzaModi,

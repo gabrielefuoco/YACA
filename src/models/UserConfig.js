@@ -13,7 +13,7 @@ const { nanoid } = require('nanoid');
 const AddonConfig = require('./AddonConfig');
 const UserAccount = require('./UserAccount');
 const { buildManifestFingerprint } = require('../stremio');
-const { applicaImmutabilitaModo } = require('../profile/modo');
+const { applicaImmutabilitaModo, modiAbilitati } = require('../profile/modo');
 const UserConfig = {
     _decryptApiKeys(apiKeysObj) {
         if (!apiKeysObj) return {};
@@ -176,6 +176,8 @@ const UserConfig = {
                     : (existingConfig?.customCatalogs || []);
                 const nextManifestFingerprint = buildManifestFingerprint({
                     activeProfileId: localData.config.activeProfileId,
+                    activeModo: localData.config.activeModo,
+                    cataloghi: localData.config.cataloghi,
                     profiles: finalizedProfiles,
                     customCatalogs: finalizedCustomCatalogs
                 });
@@ -184,6 +186,8 @@ const UserConfig = {
                     : (existingConfig
                         ? buildManifestFingerprint({
                             activeProfileId: existingConfig.config?.activeProfileId,
+                            activeModo: existingConfig.config?.activeModo,
+                            cataloghi: existingConfig.config?.cataloghi,
                             profiles: existingConfig.profiles || [],
                             customCatalogs: existingConfig.customCatalogs || []
                         })
@@ -344,7 +348,7 @@ const UserConfig = {
             id: p.id || p._id?.toString()
         }));
 
-        return {
+        const resolved = {
             userId: account?.userId || null,
             addonUuid: addonConfig?.uuid || account?.addonUuid || null,
             apiKeys: this._decryptApiKeys(account?.apiKeys?.toObject?.() || account?.apiKeys || {}),
@@ -360,6 +364,19 @@ const UserConfig = {
                 : null,
             syncStatus: addonConfig?.syncStatus
         };
+
+        // Con il flag spento questi campi non entrano nell'oggetto risolto: il
+        // percorso di lettura resta quello di sempre, byte per byte.
+        if (modiAbilitati()) {
+            resolved.activeModo = addonConfig?.config?.activeModo || null;
+            resolved.cataloghi = addonConfig?.config?.cataloghi || null;
+            resolved.sliders = addonConfig?.config?.sliders || null;
+            // Il DNA è dell'account (ticket 02): viaggia col documento risolto,
+            // purché sia già stato calcolato. Nessun calcolo in lettura.
+            if (addonConfig?.dna) resolved.dna = addonConfig.dna;
+        }
+
+        return resolved;
     },
 
     /**

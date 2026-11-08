@@ -35,6 +35,10 @@ async function reconcileManifests() {
 
                 const currentFingerprint = buildManifestFingerprint({
                     activeProfileId: configObj.activeProfileId,
+                    // Ticket 04: con il flag acceso anche modalità e cataloghi per
+                    // modalità entrano nell'impronta (il flag è letto dentro).
+                    activeModo: configObj.activeModo,
+                    cataloghi: configObj.cataloghi,
                     profiles: configDoc.profiles || [],
                     customCatalogs: configDoc.customCatalogs || []
                 });

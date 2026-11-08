@@ -19,6 +19,13 @@ const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec, getHeroRuoli } = require('../catalog/registry');
 const { applicaDecadimento } = require('./impressioni');
 const { fetchProfileContext, selectedPresetsDi } = require('../profile');
+const {
+    modiAbilitati,
+    leggiModoAttivo,
+    derivaLeve,
+    selettoriDaLeve,
+    opzioniGrafoDi
+} = require('../profile/modo');
 
 const { heroPriority: HERO_PRIORITY, slugAdditivi: SLUG_ADDITIVI } = getHeroPoolSpec();
 const { graphClient } = require('../clients');
@@ -123,7 +130,33 @@ function getHeroCatalogId(slug, mediaType) {
     return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders, righeServite }) {
+/**
+ * Con `MODI_ABILITATI` acceso le leve del pool sono quelle della modalità attiva
+ * (`derivaLeve`), non più i selettori salvati nel profilo. Con il flag spento
+ * restituisce `null` e i chiamanti usano la catena storica.
+ *
+ * @param {object|null} userConfig
+ * @returns {{modo: string, leve: object, selettori: object, kids: boolean}|null}
+ */
+function modoDelPool(userConfig) {
+    if (!modiAbilitati()) return null;
+    const modo = leggiModoAttivo(userConfig);
+    const leve = derivaLeve(modo);
+    return { modo, leve, selettori: selettoriDaLeve(leve), kids: leve.kids };
+}
+
+/**
+ * I cursori del pool: con il flag acceso l'account è la fonte, ma un valore
+ * esplicito (anteprima in dashboard) resta sovrano.
+ */
+function slidersDelPool({ userConfig = null, sliders = null, slider = null } = {}) {
+    const espliciti = slider || sliders || null;
+    if (espliciti) return espliciti;
+    if (modiAbilitati()) return opzioniGrafoDi(userConfig);
+    return undefined;
+}
+
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders, righeServite, modo }) {
     const versions = graphVersions !== undefined ? graphVersions : graphClient.getGraphHealthVersionsCached();
     const sl = sliders || slider;
     const { chiave } = cache.deriva({
@@ -136,6 +169,9 @@ function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSel
                 media: mediaType,
                 kids: kidsMode,
                 selettori: typeSelectors,
+                // Due modalità non devono condividere le righe (stessa ragione della
+                // chiave degli scaffali). Inserito solo con il flag acceso.
+                ...(modo ? { modo } : {}),
                 ...(sl ? { slider: sl } : {}),
                 // Ticket 22: il motore deduce solo fra le righe servite, quindi la risposta dipende da
                 // questo insieme. Senza, il profilo A erediterebbe le righe del profilo B.
@@ -412,6 +448,9 @@ const HERO_STRATEGIES = [
                         medium: med,
                         opzioni: opzioniScaffali,
                         cap,
+                        // La modalità entra nella chiave con il flag acceso: due modi
+                        // non devono scambiarsi le righe (spec §9).
+                        modo: ctx.modo,
                         // Se il client non espone le versioni (mock, client vecchio) la chiave resta
                         // valida ma senza l'impronta del grafo: il TTL breve copre quel caso.
                         versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
@@ -578,26 +617,36 @@ async function runPoolBuilder(strat, ctx, args) {
  */
 async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders, righeServite = null }) {
     const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
-    const effectiveSelectors = (context && typeof context === 'object' && context.selettoriEffettivi)
-        ? context.selettoriEffettivi
-        : (typeSelectors || (context && typeof context === 'object' && context.typeSelectors) || {});
+    // Con `MODI_ABILITATI` acceso le leve sono quelle della modalità attiva: i
+    // selettori e il kids-mode del profilo non sono più input (ticket 01).
+    // Stessa fonte della chiave in `getHeroPool` (`userConfig`): chiave e
+    // contenuto non possono divergere.
+    const modoPool = modoDelPool(userConfig);
+    const effectiveSelectors = modoPool
+        ? modoPool.selettori
+        : ((context && typeof context === 'object' && context.selettoriEffettivi)
+            ? context.selettoriEffettivi
+            : (typeSelectors || (context && typeof context === 'object' && context.typeSelectors) || {}));
     const animePolicy = effectiveSelectors?.anime || 'neutral';
     const isTightContext = (animePolicy === 'only' || effectiveSelectors?.anime === 'only');
     const heroCandidateLimit = isTightContext ? 250 : 160;
+    const kidsModeEffettivo = modoPool ? modoPool.kids : kidsMode;
 
-    const resolvedSliders = slider
-        || sliders
-        || userConfig?.activeProfileSettings?.sliders
-        || userConfig?.activeProfileSettings?.slider
-        || userConfig?.context?.sliders
-        || userConfig?.context?.slider
-        || userConfig?.profiles?.find(p => p.id === (context || userConfig.activeProfileId))?.settings?.sliders
-        || userConfig?.profiles?.find(p => p.id === (context || userConfig.activeProfileId))?.settings?.slider
-        || user?.profiles?.find(p => p.id === context)?.settings?.sliders
-        || user?.profiles?.find(p => p.id === context)?.settings?.slider
-        || profile?.settings?.sliders
-        || profile?.settings?.slider
-        || undefined;
+    const resolvedSliders = modoPool
+        ? slidersDelPool({ userConfig, sliders, slider })
+        : (slider
+            || sliders
+            || userConfig?.activeProfileSettings?.sliders
+            || userConfig?.activeProfileSettings?.slider
+            || userConfig?.context?.sliders
+            || userConfig?.context?.slider
+            || userConfig?.profiles?.find(p => p.id === (context || userConfig.activeProfileId))?.settings?.sliders
+            || userConfig?.profiles?.find(p => p.id === (context || userConfig.activeProfileId))?.settings?.slider
+            || user?.profiles?.find(p => p.id === context)?.settings?.sliders
+            || user?.profiles?.find(p => p.id === context)?.settings?.slider
+            || profile?.settings?.sliders
+            || profile?.settings?.slider
+            || undefined);
 
     const ctx = {
         userId,
@@ -605,7 +654,7 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         mediaType,
         traktToken,
         tmdbApiKey,
-        kidsMode,
+        kidsMode: kidsModeEffettivo,
         userConfig,
         effectiveSelectors,
         animePolicy,
@@ -614,7 +663,8 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         slider: resolvedSliders,
         tasteProfile: profile || null,
         profile: profile || null,
-        righeServite
+        righeServite,
+        ...(modoPool ? { modo: modoPool.modo, leve: modoPool.leve } : {})
     };
 
     const pools = {};
@@ -653,7 +703,11 @@ function toHeroDesc(args, keyOrDesc) {
     if (keyOrDesc && typeof keyOrDesc === 'object' && keyOrDesc.nome) {
         return keyOrDesc;
     }
-    const sl = args?.sliders || args?.slider || args?.userConfig?.activeProfileSettings?.sliders || args?.userConfig?.activeProfileSettings?.slider;
+    const sl = args?.sliders
+        || args?.slider
+        || (modiAbilitati() ? slidersDelPool({ userConfig: args?.userConfig }) : null)
+        || args?.userConfig?.activeProfileSettings?.sliders
+        || args?.userConfig?.activeProfileSettings?.slider;
     const shelvesList = args?.shelves || args?.scaffali || (args?.context ? getCachedProfileShelves(args.context) : null) || (args?.userId ? getCachedProfileShelves(args.userId) : null);
     return {
         nome: 'heroes',
@@ -665,6 +719,7 @@ function toHeroDesc(args, keyOrDesc) {
                 media: args?.mediaType,
                 kids: args?.kidsMode,
                 selettori: args?.typeSelectors,
+                ...(args?.modo ? { modo: args.modo } : {}),
                 ...(sl ? { slider: sl } : {}),
                 ...(Array.isArray(args?.righeServite) && args.righeServite.length > 0
                     ? { righeServite: [...args.righeServite].sort() }
@@ -744,15 +799,21 @@ async function getHeroPool(params) {
         sliders = null
     } = params;
 
-    const resolvedSliders = slider
-        || sliders
-        || userConfig?.activeProfileSettings?.sliders
-        || userConfig?.activeProfileSettings?.slider
-        || userConfig?.context?.sliders
-        || userConfig?.context?.slider
-        || userConfig?.profiles?.find(p => p.id === (context || userConfig?.activeProfileId))?.settings?.sliders
-        || userConfig?.profiles?.find(p => p.id === (context || userConfig?.activeProfileId))?.settings?.slider
-        || undefined;
+    // Con `MODI_ABILITATI` acceso le leve (medium, anime, kids) vengono da
+    // `derivaLeve(modo)`, non dai selettori del profilo.
+    const modoPool = modoDelPool(userConfig);
+
+    const resolvedSliders = modoPool
+        ? slidersDelPool({ userConfig, sliders, slider })
+        : (slider
+            || sliders
+            || userConfig?.activeProfileSettings?.sliders
+            || userConfig?.activeProfileSettings?.slider
+            || userConfig?.context?.sliders
+            || userConfig?.context?.slider
+            || userConfig?.profiles?.find(p => p.id === (context || userConfig?.activeProfileId))?.settings?.sliders
+            || userConfig?.profiles?.find(p => p.id === (context || userConfig?.activeProfileId))?.settings?.slider
+            || undefined);
 
     const graphVersions = await graphClient.getGraphHealthVersions();
     // Ticket 22: le righe accese per questo profilo entrano nella chiave (il motore deduce solo fra
@@ -762,12 +823,13 @@ async function getHeroPool(params) {
         userId,
         context,
         mediaType,
-        kidsMode,
-        typeSelectors,
+        kidsMode: modoPool ? modoPool.kids : kidsMode,
+        typeSelectors: modoPool ? modoPool.selettori : typeSelectors,
         graphVersions,
         sliders: resolvedSliders,
         slider: resolvedSliders,
-        righeServite
+        righeServite,
+        ...(modoPool ? { modo: modoPool.modo } : {})
     });
     const sharedGroup = await getSharedHeroCatalogs({
         userId,
@@ -775,9 +837,9 @@ async function getHeroPool(params) {
         mediaType,
         traktToken,
         tmdbApiKey,
-        kidsMode,
+        kidsMode: modoPool ? modoPool.kids : kidsMode,
         userConfig,
-        typeSelectors,
+        typeSelectors: modoPool ? modoPool.selettori : typeSelectors,
         graphVersions,
         sliders: resolvedSliders,
         slider: resolvedSliders,

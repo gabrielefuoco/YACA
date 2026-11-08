@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { modiAbilitati, leggiModoAttivo, cataloghiDelModo } = require('../profile/modo');
 
 const FINGERPRINT_SCHEMA_VERSION = 1;
 
@@ -228,6 +229,18 @@ function buildManifestFingerprint(userConfig = {}, options = {}) {
             ? userConfig.customCatalogs.map(projectManifestCatalog)
             : []
     };
+
+    // Ticket 04: la modalità attiva entra nell'impronta, altrimenti il cambio non
+    // bussa mai a `configVersion` e Stremio non vede il nuovo manifest. Con il
+    // flag spento l'oggetto è identico a prima (l'impronta non cambia).
+    if (modiAbilitati()) {
+        const activeModo = leggiModoAttivo(userConfig);
+        fingerprintInput.activeModo = activeModo;
+        // Anche l'elenco attivo del modo: cambiare i cataloghi attivi di una
+        // modalità è un cambio di manifest e deve propagarsi.
+        fingerprintInput.cataloghi = cataloghiDelModo(userConfig, activeModo)
+            .map(voce => ({ id: voce.id, ordine: voce.ordine }));
+    }
 
     const canonicalJson = JSON.stringify(normalizeForJson(fingerprintInput));
     return crypto.createHash('sha256').update(canonicalJson).digest('hex');

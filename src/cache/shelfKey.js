@@ -26,8 +26,19 @@
  * canone (congelati nell'artefatto del grafo). Includerlo nella chiave sarebbe ridondante ed errato.
  */
 const crypto = require('crypto');
+const { modiAbilitati, isModoValido, normalizzaModo } = require('../profile/modo');
 
 const CHIAVE_VERSIONE = 1;
+
+/**
+ * La modalità entra nella chiave solo con `MODI_ABILITATI` acceso e solo se è
+ * una delle cinque: due modalità diverse non devono scambiarsi le righe
+ * (ticket 11 / spec §9). Con il flag spento la chiave è identica a prima.
+ */
+function modoPerChiave(modo) {
+    if (!modiAbilitati() || !isModoValido(modo)) return null;
+    return normalizzaModo(modo);
+}
 
 function normalizzaSemi(semi, mediumRichiesto) {
     return (Array.isArray(semi) ? semi : [])
@@ -58,12 +69,15 @@ function normalizzaOpzioni(opzioni) {
     return Object.keys(out).length ? out : null;
 }
 
-function buildShelfCacheKey({ semi, medium, opzioni, cap, versioni } = {}) {
+function buildShelfCacheKey({ semi, medium, opzioni, cap, versioni, modo } = {}) {
+    const modoChiave = modoPerChiave(modo);
     const payload = JSON.stringify({
         v: CHIAVE_VERSIONE,
         g: [versioni && versioni.artefatto, versioni && versioni.ricetta].filter(Boolean).join('|'),
         med: medium === 'movie' ? 'movie' : (medium === 'series' || medium === 'tv' ? 'series' : 'all'),
         cap: Number(cap) || 60,
+        // Inserito DOPO `cap`: a flag spento la stringa canonica non cambia.
+        ...(modoChiave ? { modo: modoChiave } : {}),
         opt: normalizzaOpzioni(opzioni),
         semi: normalizzaSemi(semi, medium),
     });

@@ -79,8 +79,21 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
     const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
 
     const { risolviProfiloAttivo } = require('../profile');
+    const {
+        modiAbilitati,
+        leggiModoAttivo,
+        derivaLeve,
+        selettoriDaLeve,
+        conformeAlModo,
+        cataloghiDelModo
+    } = require('../profile/modo');
     const activeProfileId = risolviProfiloAttivo(userConfig);
     const profile = userConfig?.profiles?.find(p => p.id === activeProfileId) || (userConfig?.profiles?.[0]);
+
+    // Con il flag acceso la modalità attiva decide cosa il manifest dichiara.
+    // Con il flag spento `modo`/`leve` restano null e si usano i selettori del profilo.
+    const modo = modiAbilitati() ? leggiModoAttivo(userConfig) : null;
+    const leve = modo ? derivaLeve(modo) : null;
 
     const rawPresets = profile?.uiState?.selectedPresets || profile?.raw_ui_state?.selectedPresets;
     const selectedPresets = Array.isArray(rawPresets) ? rawPresets : null;
@@ -101,7 +114,12 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
 
     const heroCatalogs = catalogDefinitionsFromShelves(shelvesList);
 
-    const typeSelectors = profile?.settings?.typeSelectors;
+    const typeSelectors = leve ? selettoriDaLeve(leve) : profile?.settings?.typeSelectors;
+    // Un solo predicato di conformità per tutto il manifest: con il flag acceso
+    // è la modalità (anime + medium), altrimenti sono i selettori del profilo.
+    const conforme = (catalogo) => (leve
+        ? conformeAlModo(catalogo, leve)
+        : isCatalogConformant(catalogo, typeSelectors));
 
     // Filter: only show hero catalogs if they are enabled in the active profile's selectedPresets
     // and conformant to typeSelectors.
@@ -125,7 +143,7 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
         }
     }
 
-    const activeHeroCatalogs = eligibleHeroCatalogs.filter(c => isCatalogConformant(c, typeSelectors));
+    const activeHeroCatalogs = eligibleHeroCatalogs.filter(conforme);
 
     const onlyShelves = Boolean(options?.shelvesOnly || userConfig?.shelvesOnly);
     const catalogs = onlyShelves
@@ -150,7 +168,29 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
     );
 
     // Add User Presets
-    if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
+    if (leve) {
+        // Ticket 01/06: i cataloghi attivi sono quelli della modalità
+        // (`config.cataloghi[modo]`), nell'ordine dichiarato. La definizione si
+        // risolve da preset/custom/scaffali come oggi: qui non si ridisegna Esplora.
+        const { resolveCatalogDefinition } = require('../catalog/catalogDefinition');
+        for (const voce of cataloghiDelModo(userConfig, modo)) {
+            if (seenCatalogIds.has(voce.id)) continue;
+            const base = voce.id.startsWith('yaca_preset_') ? voce.id.replace('yaca_preset_', '') : voce.id;
+            const definizione = resolveCatalogDefinition(voce.id, userConfig, base);
+            if (!definizione) {
+                console.warn(`[Manifest] modalità ${modo}: catalogo attivo non risolvibile (${voce.id}) — non dichiarato`);
+                continue;
+            }
+            if (!conforme(definizione)) continue;
+            seenCatalogIds.add(voce.id);
+            catalogs.push({
+                id: definizione.id,
+                type: resolveCatalogType(definizione),
+                name: definizione.name,
+                extra: getCatalogExtra(definizione)
+            });
+        }
+    } else if (profile && profile.catalogs && Array.isArray(profile.catalogs)) {
         profile.catalogs.forEach(p => {
             if (p.isActive !== false && p.id && !seenCatalogIds.has(p.id)) {
                 if (isCatalogConformant(p, typeSelectors)) {
@@ -170,7 +210,7 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
     if (userConfig?.customCatalogs && Array.isArray(userConfig.customCatalogs)) {
         userConfig.customCatalogs.forEach(c => {
             if (c.isActive !== false && c.id && !seenCatalogIds.has(c.id)) {
-                if (isCatalogConformant(c, typeSelectors)) {
+                if (conforme(c)) {
                     seenCatalogIds.add(c.id);
                     catalogs.push({
                         id: c.id,

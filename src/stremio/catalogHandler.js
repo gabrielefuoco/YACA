@@ -81,6 +81,19 @@ async function catalogHandler(args, userConfig, hostUrl) {
 
     const catalogMeta = resolveCatalogDefinition(id, userConfig, baseId);
 
+    // GUARDIA MODALITÀ (flag `MODI_ABILITATI`): in una modalità un catalogo fuori
+    // medium/anime non esiste — `{ metas: [] }`, mai una riga vuota con contenuti
+    // sbagliati. Con il flag spento `modoAttivo` è null e resta la guardia storica.
+    const modoAttivo = userConfig?.context?.modo || null;
+    if (modoAttivo) {
+        const { derivaLeve, conformeAlModo } = require('../profile/modo');
+        const leve = userConfig?.context?.leve || derivaLeve(modoAttivo);
+        const daValutare = catalogMeta || { id, type };
+        if (!conformeAlModo(daValutare, leve)) {
+            return { metas: [] };
+        }
+    }
+
     // GUARDIA SELETTORI DI TIPO:
     // Se il catalogo richiesto è un suggerimento non conforme ai selettori del profilo attivo -> { metas: [] }
     const targetCatalog = catalogMeta || { id, type };

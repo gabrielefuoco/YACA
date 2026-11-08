@@ -22,7 +22,7 @@ const {
     LibraryConverterService,
     LibrarySyncService
 } = require('../library');
-const { syncAllStremioData } = require('../stremio');
+const { syncAllStremioData, updateStremioAddonCollection } = require('../stremio');
 const { hybridRecommendationsCache, aiDiscoveryCache } = require('../cache/cacheInstances');
 
 /**
@@ -76,6 +76,71 @@ router.get('/', async (req, res) => {
     } catch (err) {
         console.error('[ProfiloAPI] Errore lettura profilo:', err.message);
         return erroreDominio(res, 500, 'non_disponibile', 'Impossibile caricare il profilo.');
+    }
+});
+
+/**
+ * GET /api/profilo/modi
+ * Le cinque modalità dell'account: nome fisso, emoji, chi è attiva, leve derivate.
+ * Rotta spenta con `MODI_ABILITATI` off: il prodotto senza modalità non la espone.
+ */
+router.get('/modi', async (req, res) => {
+    const { modiAbilitati } = require('../profile/modo');
+    if (!modiAbilitati()) {
+        return erroreDominio(res, 404, 'non_disponibile', 'Le modalità non sono abilitate su questa istanza.');
+    }
+    try {
+        const { elencaModi } = require('../profile/attivazioneModi');
+        const user = await UserConfig.resolveUserConfig(req.utenteId);
+        if (!user) {
+            return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
+        }
+        const addon = user.addonUuid ? await AddonConfig.findOne({ uuid: user.addonUuid }).lean() : null;
+        return res.json({
+            ...elencaModi(addon || { profiles: user.profiles }),
+            configVersion: addon?.config?.configVersion || user.configVersion || null
+        });
+    } catch (err) {
+        console.error('[ProfiloAPI] Errore lettura modalità:', err.message);
+        return erroreDominio(res, 500, 'non_disponibile', 'Impossibile caricare le modalità.');
+    }
+});
+
+/**
+ * POST /api/profilo/modi/attiva
+ * Body: { modo: 'generale'|'film'|'serie'|'anime'|'bambini' }
+ * Mutuamente esclusivo; un modo sconosciuto è 400, mai un default silenzioso.
+ */
+router.post('/modi/attiva', async (req, res) => {
+    const { modiAbilitati } = require('../profile/modo');
+    if (!modiAbilitati()) {
+        return erroreDominio(res, 404, 'non_disponibile', 'Le modalità non sono abilitate su questa istanza.');
+    }
+    try {
+        const { attivaModo } = require('../profile/attivazioneModi');
+        const risultato = await attivaModo({
+            userId: req.utenteId,
+            modo: req.body?.modo
+        });
+
+        // Propagazione a Stremio (ticket 04): stessa catena della dashboard, con
+        // l'URL che porta il nuovo configVersion. Il client vede al prossimo avvio.
+        if (risultato.manifestChanged) {
+            const account = await accountDi(req.utenteId).catch(() => null);
+            if (account?.apiKeys?.stremio) {
+                const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+                const manifestUrl = `${hostUrl}/${req.utenteId}/${risultato.configVersion}/manifest.json`;
+                updateStremioAddonCollection(account.apiKeys.stremio, manifestUrl)
+                    .catch(error => console.error('[ProfiloAPI] Aggiornamento Stremio dopo il cambio modo fallito:', error.message));
+            }
+        }
+
+        return res.json(risultato);
+    } catch (err) {
+        const status = err.status || 500;
+        const code = err.code || (status === 400 ? 'richiesta_non_valida' : 'non_disponibile');
+        if (status >= 500) console.error('[ProfiloAPI] Errore attivazione modalità:', err.message);
+        return erroreDominio(res, status, code, err.message || 'Impossibile attivare la modalità.');
     }
 });
 

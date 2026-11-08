@@ -36,6 +36,23 @@ const catalogSchema = new mongoose.Schema({
 const MODI = ['generale', 'film', 'serie', 'anime', 'bambini'];
 
 /**
+ * Voce dei cataloghi attivi di una modalità (ticket 01/06): l'ID del catalogo e
+ * la sua posizione nell'ordine. La definizione del catalogo non si duplica qui.
+ */
+const voceCatalogoModoSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    ordine: { type: Number, default: 0 }
+}, { _id: false });
+
+function cataloghiPerModoSchema() {
+    const forma = {};
+    for (const modo of MODI) {
+        forma[modo] = [voceCatalogoModoSchema];
+    }
+    return forma;
+}
+
+/**
  * DNA: stessi campi sia sul profilo legacy sia a livello account (ticket 02).
  * La funzione evita di condividere lo stesso oggetto schema fra i due path.
  */
@@ -104,6 +121,17 @@ const addonConfigSchema = new mongoose.Schema({
     customCatalogs: [catalogSchema],
     config: {
         activeProfileId: String,
+        /**
+         * Modalità attiva (ticket 01): con `MODI_ABILITATI` acceso è questa la
+         * verità, e `activeProfileId` resta la casella corrispondente. I documenti
+         * legacy non ce l'hanno: la lettura ricade sul `modo` del profilo attivo.
+         */
+        activeModo: { type: String, enum: MODI },
+        /**
+         * Cataloghi attivi per modalità (ticket 01/06): ogni modo ha il suo elenco
+         * e il suo ordine, così un catalogo incompatibile non può esistere.
+         */
+        cataloghi: cataloghiPerModoSchema(),
         /**
          * Cursori d'account (ticket 01/02): unici per account, non per profilo.
          * Assenti nei documenti legacy; la lettura ricade sui valori del profilo
