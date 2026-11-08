@@ -124,6 +124,10 @@ function riassuntoPiano(uuid, piano) {
         profiloAttivo: piano.activeProfileId,
         cataloghiAttiviPrima: contenuto(piano.cataloghiPrima),
         cataloghiAttiviDopo: 0,
+        // Il dato che conta: le attivazioni che vivono nei profili esistenti e che
+        // questa migrazione scarta. Senza, il piano direbbe «0» e sembrerebbe innocuo.
+        cataloghiNeiProfiliScartati: (piano.profiliPrima || [])
+            .reduce((n, p) => n + (Array.isArray(p.catalogs) ? p.catalogs.length : 0), 0),
         profiliConCursoriDaAzzerare: piano.profiliPrima.filter(p =>
             p.sliders || p.slider || p.settings?.sliders || p.settings?.slider
         ).length,
