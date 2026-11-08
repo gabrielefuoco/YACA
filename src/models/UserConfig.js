@@ -13,6 +13,7 @@ const { nanoid } = require('nanoid');
 const AddonConfig = require('./AddonConfig');
 const UserAccount = require('./UserAccount');
 const { buildManifestFingerprint } = require('../stremio');
+const { applicaImmutabilitaModo } = require('../profile/modo');
 const UserConfig = {
     _decryptApiKeys(apiKeysObj) {
         if (!apiKeysObj) return {};
@@ -144,7 +145,7 @@ const UserConfig = {
                             mergedRawUi.libraryOrder = [...new Set(mergedRawUi.libraryOrder)];
                         }
 
-                        return { 
+                        const mergedProfile = {
                             ...existing, 
                             ...incoming, 
                             catalogs: finalCatalogs,
@@ -153,6 +154,10 @@ const UserConfig = {
                             // CRITICAL: Always preserve DNA scores (server-calculated)
                             dna: existing.dna || incoming.dna 
                         };
+
+                        // Il modo è immutabile: un valore già persistito vince su
+                        // qualsiasi payload, anche se il client non lo conosce.
+                        return applicaImmutabilitaModo(existing, mergedProfile);
                     });
                 }
 

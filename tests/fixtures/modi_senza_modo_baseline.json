@@ -1,0 +1,188 @@
+{
+  "config": {
+    "userId": "characterisation-user",
+    "activeProfileId": "profile-a",
+    "profiles": [
+      {
+        "id": "global",
+        "name": "Generale",
+        "catalogs": [],
+        "raw_ui_state": {
+          "selectedPresets": [],
+          "catalogOrder": []
+        },
+        "settings": {
+          "typeSelectors": {
+            "film": false,
+            "serie": false,
+            "anime": null
+          },
+          "kidsMode": false,
+          "sliders": {
+            "cozy": 0,
+            "canone": 0
+          }
+        }
+      },
+      {
+        "id": "profile-a",
+        "name": "Profilo A",
+        "catalogs": [
+          {
+            "id": "movie-one",
+            "name": "Film uno",
+            "type": "movie",
+            "isAnime": false
+          }
+        ],
+        "raw_ui_state": {
+          "selectedPresets": [
+            "preset_pop_movies",
+            "preset_top_rated_series"
+          ],
+          "catalogOrder": [
+            "movie-one"
+          ]
+        },
+        "settings": {
+          "typeSelectors": {
+            "film": true,
+            "serie": true,
+            "anime": null
+          },
+          "kidsMode": false,
+          "sliders": {
+            "cozy": 0.3,
+            "canone": -0.2
+          }
+        }
+      }
+    ],
+    "customCatalogs": []
+  },
+  "fingerprint": "110ffe855e17ec3cde2125435c3bf48e5e67632a222d7bafcea3baa4b8b2a31f",
+  "manifest": {
+    "id": "org.stremio.yaca.catalog",
+    "version": "1.0.4",
+    "name": "YACA 🇮🇹 (Yet Another Catalog Addon)",
+    "description": "Catalogo Intelligente Potenziato da AI",
+    "logo": "http://localhost:7000/fiamma_yaca.png",
+    "resources": [
+      "catalog",
+      "meta"
+    ],
+    "types": [
+      "movie",
+      "series",
+      "anime",
+      "other"
+    ],
+    "catalogs": [
+      {
+        "id": "yaca_search_standard",
+        "type": "movie",
+        "name": "YACA: Ricerca Veloce TMDB",
+        "extra": [
+          {
+            "name": "search",
+            "isRequired": true
+          }
+        ]
+      },
+      {
+        "id": "yaca_search_standard",
+        "type": "series",
+        "name": "YACA: Ricerca Veloce TMDB",
+        "extra": [
+          {
+            "name": "search",
+            "isRequired": true
+          }
+        ]
+      },
+      {
+        "id": "yaca_search_ai",
+        "type": "movie",
+        "name": "YACA: Deep AI Search",
+        "extra": [
+          {
+            "name": "search",
+            "isRequired": true
+          }
+        ]
+      },
+      {
+        "id": "yaca_search_ai",
+        "type": "series",
+        "name": "YACA: Deep AI Search",
+        "extra": [
+          {
+            "name": "search",
+            "isRequired": true
+          }
+        ]
+      },
+      {
+        "id": "yaca_watchlist_movies",
+        "type": "movie",
+        "name": "🎬 I Film della tua Watchlist",
+        "extra": [
+          {
+            "name": "skip"
+          }
+        ]
+      },
+      {
+        "id": "yaca_watchlist_series",
+        "type": "series",
+        "name": "📺 Le Serie della tua Watchlist",
+        "extra": [
+          {
+            "name": "skip"
+          }
+        ]
+      },
+      {
+        "id": "yaca_watchlist_anime",
+        "type": "anime",
+        "name": "🎌 Gli Anime della tua Watchlist",
+        "extra": [
+          {
+            "name": "skip"
+          }
+        ]
+      },
+      {
+        "id": "movie-one",
+        "type": "movie",
+        "name": "Film uno",
+        "extra": [
+          {
+            "name": "sortBy",
+            "isRequired": false,
+            "options": [
+              "Popolarità",
+              "Voto Medio",
+              "Data di Uscita",
+              "Incassi"
+            ]
+          },
+          {
+            "name": "skip"
+          }
+        ]
+      }
+    ],
+    "idPrefixes": [
+      "tt",
+      "tmdb:",
+      "kitsu:"
+    ],
+    "behaviorHints": {
+      "configurable": true,
+      "configurationRequired": false
+    },
+    "contactEmail": "yaca.addon@proton.me",
+    "configurationURL": "http://localhost:7000/characterisation-user/configure"
+  }
+}

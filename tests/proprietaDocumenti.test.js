@@ -81,6 +81,8 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
             'src/profile/context.js',
             'src/profile/ProfileBuilder.js',
             'src/profile/ProfileScorer.js',
+            'src/profile/modo.js',
+            'src/profile/dnaAccount.js',
             'src/profile/models/ProfileUiState.js',
 
             // Definizione del modello schema AddonConfig
@@ -102,6 +104,11 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
             'src/stremio/manifest.js',
             'src/stremio/fingerprint.js',
             'src/stremio/reconciler.js',
+
+            // Il resolver degli scaffali legge i segnali del profilo attivo (stessa lettura di
+            // manifest.js) per dire al grafo quali semi usare quando il manifest viene costruito
+            // senza una richiesta di catalogo che li abbia già calcolati.
+            'src/stremio/shelvesResolver.js',
 
             // Motori e cataloghi: lettura del contesto profilo attivo (activeProfileId)
             'src/stremio/catalogHandler.js',

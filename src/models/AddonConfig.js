@@ -28,6 +28,25 @@ const catalogSchema = new mongoose.Schema({
     isAnime: Boolean
 }, { _id: false });
 
+/**
+ * I cinque modi del ticket 01. Il modello non importa `src/profile/modo.js`
+ * per non invertire la dipendenza modello -> profilo: l'elenco qui è la
+ * dichiarazione di persistenza, la derivazione delle leve vive nel profilo.
+ */
+const MODI = ['generale', 'film', 'serie', 'anime', 'bambini'];
+
+/**
+ * DNA: stessi campi sia sul profilo legacy sia a livello account (ticket 02).
+ * La funzione evita di condividere lo stesso oggetto schema fra i due path.
+ */
+function dnaFields() {
+    return {
+        genres: { type: Map, of: Number },
+        keywords: { type: Map, of: Number },
+        networks: { type: Map, of: Number }
+    };
+}
+
 const addonConfigSchema = new mongoose.Schema({
     uuid: { type: String, required: true, unique: true, index: true },
     // REMOVED: userId — this document must remain 100% anonymous.
@@ -38,6 +57,13 @@ const addonConfigSchema = new mongoose.Schema({
         name: { type: String, required: true },
         /** Emoji scelta dall'utente, separata dal nome: sopravvive al rename. */
         emoji: String,
+        /**
+         * Modalità del profilo (ticket 01). Non è `required`: i documenti già
+         * salvati non hanno il campo e devono continuare a essere validi. Quando
+         * è presente deve essere uno dei cinque valori, e il percorso di update
+         * lo rende immutabile (src/models/UserConfig.js).
+         */
+        modo: { type: String, enum: MODI },
         // Catalogs are objects created by profileProcessor: { id, name, type }
         catalogs: {
             type: [catalogSchema],
@@ -73,15 +99,20 @@ const addonConfigSchema = new mongoose.Schema({
 
         // DNA: Inferred taste traits from ProfileBuilder.
         // Uses Map<String, Number> so Mongoose validates that all scores are numeric.
-        dna: {
-            genres: { type: Map, of: Number },
-            keywords: { type: Map, of: Number },
-            networks: { type: Map, of: Number },
-        }
+        dna: dnaFields()
     }],
     customCatalogs: [catalogSchema],
     config: {
         activeProfileId: String,
+        /**
+         * Cursori d'account (ticket 01/02): unici per account, non per profilo.
+         * Assenti nei documenti legacy; la lettura ricade sui valori del profilo
+         * attivo (src/profile/modo.js: leggiSliders).
+         */
+        sliders: {
+            tonalita: Number,
+            notorieta: Number
+        },
         configVersion: String,
         manifestFingerprint: String,
         pendingStremioResync: { type: Boolean, default: false },
@@ -91,6 +122,12 @@ const addonConfigSchema = new mongoose.Schema({
         lastStremioSync: Date,
         nextSyncInterval: Number
     },
+    /**
+     * DNA dell'account (ticket 02): uno solo, calcolato su tutta la storia.
+     * Stessa forma del DNA che i profili portavano prima. Nessun consumatore lo
+     * legge ancora; `calcolaDnaAccount` è in dry-run per default.
+     */
+    dna: dnaFields(),
     syncStatus: {
         isSyncing: { type: Boolean, default: false },
         total: { type: Number, default: 0 },

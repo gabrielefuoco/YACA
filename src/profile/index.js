@@ -74,6 +74,11 @@ const { fetchProfileContext, getTasteProfile, touchTasteProfile } = require('./p
 // Impressioni delle raccomandazioni (Ticket 41 - Step 6)
 const { recordRecommendationImpressions, registraImpressioni } = require('./impressions');
 
+// Modalità del profilo (ticket 01) e DNA d'account (ticket 02).
+// Fondamenta additive: nessun consumatore vivo le legge ancora.
+const modo = require('./modo');
+const dnaAccount = require('./dnaAccount');
+
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
     profiliDi,
@@ -120,6 +125,23 @@ module.exports = {
     ProfileBuilder,
     ProfileScorer,
     studioProfile,
+
+    // Modalità e leve (ticket 01)
+    MODI: modo.MODI,
+    NOMI_MODI: modo.NOMI_MODI,
+    isModoValido: modo.isModoValido,
+    derivaLeve: modo.derivaLeve,
+    modoDaSelettori: modo.modoDaSelettori,
+    leveDaSelettori: modo.leveDaSelettori,
+    materializzaModi: modo.materializzaModi,
+    applicaImmutabilitaModo: modo.applicaImmutabilitaModo,
+    leggiSliders: modo.leggiSliders,
+    scriviSliders: modo.scriviSliders,
+    slidersDelProfiloAttivo: modo.slidersDelProfiloAttivo,
+
+    // DNA d'account (ticket 02)
+    calcolaDnaAccount: dnaAccount.calcolaDnaAccount,
+    dnaMapsDaVettore: dnaAccount.dnaMapsDaVettore,
 
     // Motore DNA (Ticket 49)
     dnaEngine,

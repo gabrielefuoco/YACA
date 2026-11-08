@@ -34,7 +34,9 @@ describe('Resync della collezione Stremio', () => {
         const result = await updateStremioAddonCollection('auth-key', MANIFEST_URL);
 
         expect(result.success).toBe(true);
-        expect(buildManifest).toHaveBeenCalledWith(expect.anything(), HOST, 'REOUSER');
+        // La quarta posizione porta gli scaffali del profilo: senza, il manifest dichiara i
+        // cataloghi vecchi e Stremio non chiede mai quelli nuovi.
+        expect(buildManifest).toHaveBeenCalledWith(expect.anything(), HOST, 'REOUSER', expect.objectContaining({ shelves: expect.any(Array) }));
         // Nessun download del manifest: era la causa del fallimento in produzione
         expect(stremioClient.get).not.toHaveBeenCalled();
 

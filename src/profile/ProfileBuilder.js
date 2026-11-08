@@ -210,8 +210,15 @@ class ProfileBuilder {
     /**
      * Ricalcola V_active e V_final dai segnali reali (WatchHistory + UserLibraryItem).
      * Pesi: loved 4, liked 3, visto 2, libreria 1.
+     *
+     * `options.scrivi === false` è il percorso dry-run usato dal DNA d'account
+     * (ticket 02): calcola e restituisce i vettori senza aggiornare TasteProfile.
+     * Il default resta la scrittura, quindi nessun chiamante esistente cambia.
+     *
+     * @returns {Promise<{vActive: object, vFinal: object, flatnessMetrics: object|null, scritto: boolean}|undefined>}
      */
-    static async recomputeVectorsForUser(owner, context) {
+    static async recomputeVectorsForUser(owner, context, options = {}) {
+        const scrivi = options?.scrivi !== false;
         if (!owner || !context) return;
         const profile = await TasteProfile.findOne({ owner, context }).lean();
         if (!profile) return;
@@ -269,7 +276,14 @@ class ProfileBuilder {
         }
 
         const items = Array.from(itemMap.values());
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return {
+                vActive: profile.compiledVectors?.V_active || {},
+                vFinal: profile.compiledVectors?.V_final || {},
+                flatnessMetrics: profile.flatnessMetrics || null,
+                scritto: false
+            };
+        }
 
         // 3. Estrae metadati da DuckDB locale
         const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
@@ -317,6 +331,10 @@ class ProfileBuilder {
             };
         }
 
+        if (!scrivi) {
+            return { vActive, vFinal, flatnessMetrics, scritto: false };
+        }
+
         await TasteProfile.updateOne(
             { owner, context },
             {
@@ -330,6 +348,8 @@ class ProfileBuilder {
             },
             { upsert: true }
         );
+
+        return { vActive, vFinal, flatnessMetrics, scritto: true };
     }
 
     /**
