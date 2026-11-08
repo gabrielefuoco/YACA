@@ -38,6 +38,10 @@ services:
       # lo legge da qui. Senza questo mount l'app non lo vede e i cataloghi anime degradano
       # in silenzio (verificato sul mate il 18/10/2026, ticket 30).
       - ANIME_MAPPING_PATH=/data/anime-source/anime-mappings.json
+      # Il profilo è una modalità dell'account (ticket 01): cinque modalità
+      # predefinite, cursori e cataloghi attivi d'account. Spento riporta al
+      # vecchio modello senza toccare i dati.
+      - MODI_ABILITATI=1
     volumes:
       - yaca_tmdb:/data/tmdb
       - yaca_badges:/data/badges
