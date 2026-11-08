@@ -50,11 +50,11 @@ void main(){
   float light=smoothstep(.34,.60,cloud*.62+haze*.38);
   float breath=.5+.5*sin(t*.31+cloud*5.0+haze*3.0);
   float topRight=1.0-smoothstep(.12,1.55,length((uv-vec2(.78,.88))*vec2(res.x/res.y,1.0)));
-  float cream=clamp(.03 + .88*light + .13*topRight + .18*breath*light, 0.0, .98);
-  float warm=clamp(.03 + .34*(1.0-light)*haze + .26*(1.0-uv.y)*cloud, 0.0, .50);
+  float cream=clamp(.03 + .72*light + .13*topRight + .18*breath*light, 0.0, .92);
+  float warm=clamp(.03 + .20*(1.0-light)*haze + .14*(1.0-uv.y)*cloud, 0.0, .24);
   vec3 base=vec3(238.,217.,185.)/255.;
-  vec3 ivory=vec3(253.,250.,245.)/255.;
-  vec3 terracotta=vec3(213.,62.,15.)/255.;
+  vec3 ivory=vec3(248.,232.,203.)/255.;
+  vec3 terracotta=vec3(110.,45.,22.)/255.;
   vec3 color=mix(base,ivory,cream);
   color=mix(color,terracotta,warm);
   gl_FragColor=vec4(color,1.);
