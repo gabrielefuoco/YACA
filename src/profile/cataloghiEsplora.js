@@ -136,6 +136,13 @@ function tipoDi(definizione, presetMap) {
 function servibileNelModo(definizione, fonte, leve, presetMap) {
     if (!definizione) return false;
     if (!conformeAlModo(definizione, leve)) return false;
+    // Il medium della modalità vale anche qui, non solo al serving. In Film il gestore
+    // risponde `serie:false`: elencare comunque gli scaffali di serie produceva cataloghi
+    // promessi e mai servibili — l'anteprima tornava vuota e sembrava un guasto.
+    if (leve.medium) {
+        const media = mediaDi(definizione);
+        if ((media === 'movie' || media === 'series') && media !== leve.medium) return false;
+    }
     if (!leve.kids) return true;
     if (fonte === 'grafo' || fonte === 'watchlist') return true;
     return ePerBambini(definizione, presetMap);

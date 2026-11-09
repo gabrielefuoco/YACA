@@ -150,6 +150,31 @@ describe('GET: gruppi per modalità', () => {
     });
 });
 
+describe("Il medium della modalità vale anche nell'elenco", () => {
+    // In Film il gestore risponde `serie:false`: elencare gli scaffali di serie
+    // produceva cataloghi promessi e mai servibili (anteprima sempre vuota).
+    it('in Film non compare uno scaffale di serie', async () => {
+        resolveProfileShelves.mockResolvedValue([
+            { catalog_id: 'yaca_1_movie', nome: 'Film', medium: 'movie', slot: 1, anime: false },
+            { catalog_id: 'yaca_2_series', nome: 'Serie', medium: 'series', slot: 2, anime: false }
+        ]);
+        const risultato = await elencaEsplora(utente({ modo: 'film' }));
+        const ids = Object.values(risultato.gruppi).flat().map(v => v.id);
+        expect(ids).toContain('yaca_1_movie');
+        expect(ids).not.toContain('yaca_2_series');
+    });
+
+    it('in Generale compaiono entrambi, perché il medium non è fissato', async () => {
+        resolveProfileShelves.mockResolvedValue([
+            { catalog_id: 'yaca_1_movie', nome: 'Film', medium: 'movie', slot: 1, anime: false },
+            { catalog_id: 'yaca_2_series', nome: 'Serie', medium: 'series', slot: 2, anime: false }
+        ]);
+        const risultato = await elencaEsplora(utente({ modo: 'generale' }));
+        const ids = Object.values(risultato.gruppi).flat().map(v => v.id);
+        expect(ids).toEqual(expect.arrayContaining(['yaca_1_movie', 'yaca_2_series']));
+    });
+});
+
 describe('POST attiva: idempotenza e coda', () => {
     it('attiva in coda e riscrive cataloghi[modo] con l\'ordine progressivo', async () => {
         const user = utente({ modo: 'film', cataloghi: { film: voci('preset_pop_series', 'preset_top_rated_series') } });

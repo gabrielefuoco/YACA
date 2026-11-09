@@ -182,6 +182,12 @@ describe('GET /api/profilo/cataloghi', () => {
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe('modo_non_valido');
     });
+
+    it('accetta query param ?modo=<modo> esplicito diverso da quello attivo', async () => {
+        const res = await request('GET', '/api/profilo/cataloghi?modo=serie');
+        expect(res.status).toBe(200);
+        expect(res.body.modo).toBe('serie');
+    });
 });
 
 describe('POST /api/profilo/cataloghi/attiva', () => {
@@ -198,6 +204,23 @@ describe('POST /api/profilo/cataloghi/attiva', () => {
         // la propagazione è fire-and-forget: un tick basta a vederla partire
         await new Promise(resolve => setTimeout(resolve, 10));
         expect(updateStremioAddonCollection).toHaveBeenCalled();
+    });
+
+    it('attiva in un modo non attivo: persiste senza invalidare il manifest né spingere a Stremio', async () => {
+        const res = await request('POST', '/api/profilo/cataloghi/attiva', {
+            id: 'preset_pop_series',
+            attivo: true,
+            modo: 'serie'
+        });
+
+        expect(res.status).toBe(200);
+        expect(res.body.attivo).toBe(true);
+        expect(res.body.manifestChanged).toBe(false);
+        const set = AddonConfig.updateOne.mock.calls[0][1].$set;
+        expect(set['config.cataloghi'].serie).toEqual([{ id: 'preset_pop_series', ordine: 0 }]);
+        expect(set['config.pendingStremioResync']).toBeUndefined();
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(updateStremioAddonCollection).not.toHaveBeenCalled();
     });
 
     it('è idempotente: doppio click, una sola scrittura', async () => {
@@ -245,6 +268,24 @@ describe('POST /api/profilo/cataloghi/ordine', () => {
         expect(set['config.cataloghi'].film).toEqual([
             { id: 'preset_top_rated_movies', ordine: 0 },
             { id: 'preset_pop_movies', ordine: 1 }
+        ]);
+    });
+
+    it('riordina in un modo non attivo: persiste senza invalidare il manifest', async () => {
+        UserConfig.resolveUserConfig.mockResolvedValue(utente({
+            cataloghi: { serie: [{ id: 'preset_pop_series', ordine: 0 }, { id: 'preset_top_rated_series', ordine: 1 }] }
+        }));
+        const res = await request('POST', '/api/profilo/cataloghi/ordine', {
+            ids: ['preset_top_rated_series', 'preset_pop_series'],
+            modo: 'serie'
+        });
+
+        expect(res.status).toBe(200);
+        expect(res.body.manifestChanged).toBe(false);
+        const set = AddonConfig.updateOne.mock.calls[0][1].$set;
+        expect(set['config.cataloghi'].serie).toEqual([
+            { id: 'preset_top_rated_series', ordine: 0 },
+            { id: 'preset_pop_series', ordine: 1 }
         ]);
     });
 
