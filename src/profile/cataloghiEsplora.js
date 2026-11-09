@@ -235,10 +235,12 @@ function voceDi(definizione, fonte, contesto) {
         nome: definizione.name || definizione.nome || id,
         tipo,
         media,
-        // Il tipo che il manifest dichiara a Stremio. La watchlist anime è dichiarata `anime`,
-        // non `movie`: senza questo campo l'interfaccia chiede il catalogo col tipo sbagliato
-        // e mostra «nessun risultato» su un catalogo che ha 18 titoli.
-        stremioType: tipo === 'anime' ? 'anime' : (media || 'movie'),
+        // Il tipo che il manifest dichiara a Stremio. Solo la WATCHLIST anime è dichiarata
+        // `anime`; uno scaffale del grafo resta del suo medium, anche quando il badge dice
+        // «anime». Derivare il tipo dal badge mandava l'interfaccia a chiedere
+        // `catalog/anime/yaca_xxx_series`, che il manifest dichiara `series`: anteprima vuota
+        // su uno scaffale che ha venti titoli.
+        stremioType: (fonte === 'watchlist' && tipo === 'anime') ? 'anime' : (media || 'movie'),
         fonte,
         attivo: contesto.attive.has(id),
         ordine,

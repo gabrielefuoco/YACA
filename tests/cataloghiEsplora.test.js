@@ -175,6 +175,28 @@ describe("Il medium della modalità vale anche nell'elenco", () => {
     });
 });
 
+describe('Il tipo con cui si chiede il catalogo', () => {
+    // Il manifest dichiara `series` uno scaffale anime di serie: chiedere `anime` all'anteprima
+    // significava ricevere zero titoli su uno scaffale che ne ha venti.
+    it('uno scaffale del grafo tiene il suo medium, anche col badge anime', async () => {
+        resolveProfileShelves.mockResolvedValue([
+            { catalog_id: 'yaca_30669_series', nome: 'Anime shonen', medium: 'series', slot: 1, anime: true }
+        ]);
+        const risultato = await elencaEsplora(utente({ modo: 'anime' }));
+        const voce = Object.values(risultato.gruppi).flat().find(v => v.id === 'yaca_30669_series');
+        expect(voce.tipo).toBe('anime');
+        expect(voce.stremioType).toBe('series');
+    });
+
+    it('la watchlist anime invece è dichiarata anime, come fa il manifest', async () => {
+        const risultato = await elencaEsplora(utente({ modo: 'anime' }));
+        const watch = (risultato.gruppi.watchlist || []).filter(v => v.fonte === 'watchlist');
+        for (const voce of watch) {
+            expect(voce.stremioType).toBe('anime');
+        }
+    });
+});
+
 describe('POST attiva: idempotenza e coda', () => {
     it('attiva in coda e riscrive cataloghi[modo] con l\'ordine progressivo', async () => {
         const user = utente({ modo: 'film', cataloghi: { film: voci('preset_pop_series', 'preset_top_rated_series') } });
