@@ -1,10 +1,3 @@
-export interface DNAItem {
-  type: 'genre' | 'keyword' | 'country';
-  id: string;
-  name: string;
-  score?: number;
-}
-
 /**
  * Selettori di tipo del profilo.
  *
@@ -40,8 +33,6 @@ export interface ProfileSettings {
   kidsMode?: boolean;
   animeIdMode?: 'kitsu' | 'imdb';
   erdbConfig?: string;
-  manualDNA?: DNAItem[];
-  suggestedDNA?: DNAItem[];
   typeSelectors?: TypeSelectors;
   sliders?: EngineSliders;
 }
@@ -229,17 +220,8 @@ export interface MyList {
 }
 
 export interface AnalyticsData {
-  compiledVectors?: {
-    V_final: Record<string, number>;
-    V_active?: Record<string, number>;
-    V_static?: Record<string, number>;
-  };
   aiLogs: Record<string, unknown[]>;
-  baseDnaParams?: {
-    labels?: Record<string, string>;
-    [key: string]: any;
-  };
-  /** Studi di produzione della libreria (sezione STUDI del DNA, fuori dal vettore DNA). */
+  /** Studi di produzione della libreria (sezione STUDI, fuori dal vettore). */
   studios?: Array<{ id: string; name: string; weight: number; type?: string }>;
   heroCatalogs?: HeroCatalogUiGroup[];
 }
@@ -290,10 +272,7 @@ export interface WatchHistoryItem {
 
 export interface RawProfileData {
   history: WatchHistoryItem[];
-  manualDNA: DNAItem[];
   activeCatalogs: Catalog[];
-  globalVectors: CompiledVector | null;
-  subProfileVectors: Array<{ profileId: string; vectors: CompiledVector }>;
   excludedProfileIds: string[];
 }
 
@@ -302,7 +281,6 @@ export interface SyncStatus {
   total: number;
   current: number;
   phase: string;
-  compiledVectors?: CompiledVector;
 }
 
 export interface TmdbMetadata {
@@ -322,9 +300,3 @@ export interface TmdbMetadata {
 }
 
 export type TmdbMetadataMap = Record<number, TmdbMetadata>;
-
-export interface CompiledVector {
-  V_final: Record<string, number>;
-  V_active?: Record<string, number>;
-  V_static?: Record<string, number>;
-}

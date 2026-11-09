@@ -43,89 +43,26 @@ describe('Anime Policy (Ticket 26)', () => {
         });
     });
 
-    describe('Calcolo Quota da V_final e fallbacks', () => {
-        it('calcola quota g:16 su totale g:* con V_final oggetto', () => {
-            const profile = {
-                compiledVectors: {
-                    V_final: {
-                        'g:16': 10,
-                        'g:28': 30,
-                        'g:12': 10,
-                        'k:1234': 50 // le keyword non devono entrare nel totale generi
-                    }
-                }
-            };
-            // 10 / (10 + 30 + 10) = 10 / 50 = 0.20 -> neutral
-            const quota = getProfileAnimationQuota(profile);
-            expect(quota).toBeCloseTo(0.20, 4);
-            expect(resolveAnimePolicy(profile)).toBe(ANIME_POLICY_MODES.NEUTRAL);
+    describe('Comportamento di default e Override Manuale (typeSelectors)', () => {
+        it('in assenza di override la politica di default è neutral', () => {
+            expect(resolveAnimePolicy({})).toBe(ANIME_POLICY_MODES.NEUTRAL);
+            expect(resolveAnimePolicy(null)).toBe(ANIME_POLICY_MODES.NEUTRAL);
         });
 
-        it('calcola quota con V_final Map', () => {
-            const map = new Map([
-                ['g:16', 83],
-                ['g:35', 17],
-                ['d:999', 10]
-            ]);
-            const profile = { compiledVectors: { V_final: map } };
-            // 83 / 100 = 0.83 -> only (Otaku 1c1da0af)
-            const quota = getProfileAnimationQuota(profile);
-            expect(quota).toBeCloseTo(0.83, 4);
-            expect(resolveAnimePolicy(profile)).toBe(ANIME_POLICY_MODES.ONLY);
-        });
-
-        it('classifica profilo 0465f104 (serie TV, 6.6% animazione) come exclude', () => {
-            const profile = {
-                compiledVectors: {
-                    V_final: {
-                        'g:16': 0.5513,
-                        'g:18': 4.5,
-                        'g:80': 3.2578
-                    }
-                }
-            };
-            const quota = getProfileAnimationQuota(profile);
-            expect(quota).toBeLessThan(0.10);
-            expect(resolveAnimePolicy(profile)).toBe(ANIME_POLICY_MODES.EXCLUDE);
-        });
-
-        it('supporta profili legacy con genreScores', () => {
-            const profile = {
-                genreScores: {
-                    '16': 30,
-                    '28': 70
-                }
-            };
-            // 30 / 100 = 0.30 -> favored
-            expect(resolveAnimePolicy(profile)).toBe(ANIME_POLICY_MODES.FAVORED);
-        });
-    });
-
-    describe('Override Manuale (typeSelectors)', () => {
-        it('typeSelectors.anime manuale vince sempre sulla quota DNA', () => {
-            // Otaku (DNA 83%) con override manuale exclude
-            const otakuProfile = {
-                compiledVectors: { V_final: { 'g:16': 83, 'g:35': 17 } }
-            };
-            expect(resolveAnimePolicy(otakuProfile, { anime: 'exclude' })).toBe(ANIME_POLICY_MODES.EXCLUDE);
-
-            // Serie TV (DNA 6.6%) con override manuale only
-            const serieProfile = {
-                compiledVectors: { V_final: { 'g:16': 0.55, 'g:18': 8.0 } }
-            };
-            expect(resolveAnimePolicy(serieProfile, { anime: 'only' })).toBe(ANIME_POLICY_MODES.ONLY);
+        it('rispetta typeSelectors.anime passato nella richiesta', () => {
+            expect(resolveAnimePolicy({}, { anime: 'exclude' })).toBe(ANIME_POLICY_MODES.EXCLUDE);
+            expect(resolveAnimePolicy({}, { anime: 'only' })).toBe(ANIME_POLICY_MODES.ONLY);
         });
 
         it('rispetta profile.settings.typeSelectors.anime', () => {
             const profileWithSetting = {
-                compiledVectors: { V_final: { 'g:16': 0.05, 'g:18': 0.95 } },
                 settings: { typeSelectors: { anime: 'only' } }
             };
             expect(resolveAnimePolicy(profileWithSetting)).toBe(ANIME_POLICY_MODES.ONLY);
         });
 
         it('getEffectiveTypeSelectors produce l\'oggetto typeSelectors arricchito', () => {
-            const profile = { compiledVectors: { V_final: { 'g:16': 80, 'g:28': 20 } } };
+            const profile = { settings: { typeSelectors: { anime: 'only' } } };
             const effective = getEffectiveTypeSelectors(profile, { customFilter: 'foo' });
             expect(effective).toEqual({
                 customFilter: 'foo',
@@ -198,12 +135,12 @@ describe('Anime Policy (Ticket 26)', () => {
             const excludeProfile = {
                 tmdbWeight: 1,
                 traktWeight: 1,
-                compiledVectors: {
-                    V_final: { 'g:18': 10, 'g:80': 10, 'g:16': 0.1 } // quota < 10%
+                settings: {
+                    typeSelectors: { anime: 'exclude' }
                 }
             };
             const neutralContext = { animePolicy: 'neutral' };
-            const excludeContext = {}; // deduce exclude da V_final
+            const excludeContext = {}; // deduce exclude da profile settings
 
             const scoreNeutral = ProfileScorer.calculateItemMatch(animeMovie, excludeProfile, neutralContext);
             const scoreExclude = ProfileScorer.calculateItemMatch(animeMovie, excludeProfile, excludeContext);
@@ -215,8 +152,8 @@ describe('Anime Policy (Ticket 26)', () => {
             const onlyProfile = {
                 tmdbWeight: 1,
                 traktWeight: 1,
-                compiledVectors: {
-                    V_final: { 'g:16': 10, 'g:18': 1 } // quota >= 60%
+                settings: {
+                    typeSelectors: { anime: 'only' }
                 }
             };
             // Usiamo un item con punteggio non saturato a 10

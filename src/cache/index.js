@@ -34,8 +34,6 @@ function getCacheInstanceForNome(nome) {
             return cacheInstances.aiPromptCache;
         case 'ai_discovery':
             return cacheInstances.aiDiscoveryCache;
-        case 'dna_names':
-            return cacheInstances.dnaNamesCache;
         default:
             return defaultCache;
     }

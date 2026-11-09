@@ -48,12 +48,6 @@ const simulcastDatesCache = new CacheManager('simulcast_dates', {
     swrMs: ONE_HOUR_MS * 6
 });
 
-const dnaNamesCache = new CacheManager('dna_names', {
-    ramMax: 500,
-    ramTtlMs: ONE_DAY_MS,
-    redisTtlMs: ONE_DAY_MS * 14
-});
-
 /**
  * Scaffali del profilo (`POST /scaffali` sul servizio del grafo).
  *
@@ -80,6 +74,5 @@ module.exports = {
     catalogFallbackCache,
     catalogRequestCache,
     simulcastDatesCache,
-    dnaNamesCache,
     shelvesCache
 };

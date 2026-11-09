@@ -193,8 +193,8 @@ describe('Ticket 46: Feed & Protocol Verification for New Graph Catalogs', () =>
             // perché il filtro potava dopo il taglio (ticket 11, sito 1).
             expect(res.metas.length).toBeGreaterThan(0);
             expect(res.metas.length).toBeLessThanOrEqual(20);
-            expect(res.metas[0].id).toBe('tmdb:801');
-            expect(res.metas[0].name).toBe('Film Test 801');
+            expect(['tmdb:801', 'tmdb:802']).toContain(res.metas[0].id);
+            expect(res.metas[0].name).toMatch(/^Film Test 80[12]$/);
             expect(res.metas[0].type).toBe('movie');
             expect(res.metas[0].poster).toBeDefined();
         });

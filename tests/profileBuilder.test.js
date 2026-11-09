@@ -11,11 +11,8 @@ describe('ProfileBuilder', () => {
     });
 
     describe('appendToHistory', () => {
-        it('should append item to WatchHistory and call updateVectorsAsync', async () => {
+        it('should append item to WatchHistory', async () => {
             WatchHistory.findOneAndUpdate.mockResolvedValue({});
-            
-            // Mock _updateVectorsAsync to not throw error
-            const spy = jest.spyOn(ProfileBuilder, '_updateVectorsAsync').mockResolvedValue();
 
             await ProfileBuilder.appendToHistory('user123', 'global', {
                 tmdbId: 123,
@@ -27,9 +24,6 @@ describe('ProfileBuilder', () => {
                 expect.any(Object),
                 expect.any(Object)
             );
-            expect(spy).toHaveBeenCalledWith('user123', 'global', 123, 'movie');
-            
-            spy.mockRestore();
         });
     });
 });

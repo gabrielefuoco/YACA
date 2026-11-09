@@ -59,13 +59,13 @@ const FAMILY_SORT_DEFAULTS = Object.freeze({
         family: 'hero',
         sort: 'affinity_score',
         sortable: false,
-        description: 'Score di affinità vettoriale DNA (reranker interno, non esposto)'
+        description: 'Score raccomandazioni (reranker interno, non esposto)'
     })
 });
 
 /**
  * Vocabolario utente Stremio (visibile nelle UI e nel manifest dei cataloghi ordinabili).
- * Il DNA resta un reranker interno: niente "Per te".
+ * Le righe hero restano un ordinamento interno: niente "Per te".
  */
 const SORT_OPTIONS = Object.freeze([
     'Popolarità',

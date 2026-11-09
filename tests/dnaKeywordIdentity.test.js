@@ -35,12 +35,6 @@ const {
     keywordIdForName,
     isRetiredTmdbKeywordId
 } = require('../src/indice/keywordIds');
-const {
-    extractStaticDNAFromQueries,
-    setGlobalDfCache,
-    getSoftRarityMultiplier,
-    computeTopKeywords
-} = require('../src/profile');
 
 // Keyword reale del grafo: da sola produce k:10364, k:mission e la catena L1–L5.
 const MISSION = { id: 10364, name: 'mission' };
@@ -63,7 +57,6 @@ const withoutNameMap = () => {
 
 afterEach(() => {
     withoutNameMap();
-    setGlobalDfCache(null);
 });
 
 describe('mappa id <-> nome', () => {
@@ -132,66 +125,3 @@ describe('vectorizeKeywords: la forma dell\'input non cambia il risultato', () =
     });
 });
 
-describe('il DNA del profilo incontra le chiavi dell\'item', () => {
-    test('un preset con id numerici produce chiavi a nome e gerarchiche', () => {
-        withNameMap();
-        const vStatic = extractStaticDNAFromQueries([{ with_keywords: '10364', with_genres: '27' }]);
-        const keys = keysOf(vStatic);
-
-        expect(keys).toContain('k:10364');
-        expect(keys).toContain('k:mission');
-        expect(keys.filter(k => LEVEL_KEY.test(k)).length).toBeGreaterThan(0);
-    });
-
-    test('l\'intersezione profilo/item non è vuota (era il difetto)', () => {
-        withNameMap();
-        const profile = extractStaticDNAFromQueries([{ with_keywords: '10364' }]);
-        const item = HierarchicalGraph.vectorizeKeywords([MISSION]);
-
-        const shared = keysOf(item).filter(key => profile[key] !== undefined);
-        expect(shared).toContain('k:mission');
-        expect(shared.some(key => LEVEL_KEY.test(key))).toBe(true);
-    });
-
-    test('senza mappa l\'intersezione si riduce al solo id numerico', () => {
-        withoutNameMap();
-        const profile = extractStaticDNAFromQueries([{ with_keywords: '10364' }]);
-        const item = HierarchicalGraph.vectorizeKeywords([MISSION]);
-
-        const shared = keysOf(item).filter(key => profile[key] !== undefined);
-        expect(shared).toEqual(['k:10364']);
-    });
-});
-
-describe('computeTopKeywords resta una lista di ID', () => {
-    test('scarta i nomi, deduplica e tiene il peso maggiore', () => {
-        withNameMap();
-        const profile = {
-            compiledVectors: {
-                V_final: { 'g:27': 10, 'k:10364': 5, 'k:mission': 3, 'k:sconosciuta': 9 }
-            }
-        };
-        expect(computeTopKeywords(profile, 5)).toEqual(['10364']);
-    });
-
-    test('senza mappa un nome non risolvibile non diventa un id fasullo', () => {
-        withoutNameMap();
-        const profile = { compiledVectors: { V_final: { 'k:mission': 5, 'g:27': 1 } } };
-        expect(computeTopKeywords(profile, 5)).toEqual([]);
-    });
-});
-
-describe('rarità dolce: le due forme della stessa keyword pesano uguale', () => {
-    test('con la mappa del dump in cache, id e nome hanno lo stesso moltiplicatore', () => {
-        withNameMap();
-        setGlobalDfCache(new Map([['k:10364', 4200], ['k:mission', 4200]]));
-        expect(getSoftRarityMultiplier('k:mission')).toBeCloseTo(getSoftRarityMultiplier('k:10364'), 10);
-    });
-
-    test('se il dump indicizza solo gli id, il nome ricade sulla stima e il peso cambia', () => {
-        withNameMap();
-        setGlobalDfCache(new Map([['k:10364', 4200]]));
-        // È il motivo per cui `buildDfCache` deve scrivere entrambe le forme.
-        expect(getSoftRarityMultiplier('k:mission')).not.toBeCloseTo(getSoftRarityMultiplier('k:10364'), 4);
-    });
-});

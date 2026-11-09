@@ -53,7 +53,6 @@ const DECLARED_TTLS = Object.freeze({
     // (c) Ricerca live & normalizzazioni
     SEARCH_ID_NAME: 60 * 60 * 1000,                     // 1 ora (idNameCache per attori/keyword)
     SEARCH_NORMALIZER_RAM: 6 * 60 * 60 * 1000,          // 6 ore (AiQueryNormalizer resolutionCache)
-    DNA_NAMES: 30 * 24 * 60 * 60 * 1000,                // 30 giorni (dnaNamesCache)
     IMDB_TO_TMDB: 7 * 24 * 60 * 60 * 1000,              // 7 giorni (imdbIdCache) o permanente su DB
     
     // Protezione anti-hammering

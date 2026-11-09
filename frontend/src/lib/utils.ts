@@ -30,8 +30,6 @@ export interface BackendProfile {
     tmdbKey?: string;
     kidsMode?: boolean;
     animeIdMode?: 'kitsu' | 'imdb';
-    manualDNA?: unknown[];
-    suggestedDNA?: unknown[];
     typeSelectors?: TypeSelectors;
   };
   raw_ui_state?: {
@@ -121,8 +119,6 @@ export function profilesToApiPayload(profiles: Profile[]) {
         tmdbKey: p.settings?.tmdbKey,
         kidsMode: p.settings?.kidsMode ?? false,
         animeIdMode: p.settings?.animeIdMode ?? 'kitsu',
-        manualDNA: p.settings?.manualDNA ?? [],
-        suggestedDNA: p.settings?.suggestedDNA ?? [],
         typeSelectors: sanitizeTypeSelectors(p.settings?.typeSelectors),
         sliders,
       },
@@ -223,8 +219,6 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       tmdbKey: bSettings.tmdbKey ?? '',
       kidsMode: Boolean(bSettings.kidsMode),
       animeIdMode: (bSettings.animeIdMode === 'imdb' ? 'imdb' : 'kitsu') as 'kitsu' | 'imdb',
-      manualDNA: Array.isArray(bSettings.manualDNA) ? bSettings.manualDNA as import('@/types').DNAItem[] : [],
-      suggestedDNA: Array.isArray(bSettings.suggestedDNA) ? bSettings.suggestedDNA as import('@/types').DNAItem[] : [],
       typeSelectors: sanitizeTypeSelectors(bSettings.typeSelectors),
       sliders,
     },

@@ -511,9 +511,7 @@ router.get('/sincronizzazione', async (req, res) => {
             total: profile?.syncStatus?.total || 0,
             current: profile?.syncStatus?.current || 0,
             lastSync: profile?.syncStatus?.lastSync || null,
-            onboardingCompleted: profile?.onboardingCompleted || false,
-            manualDNA: profileSettings.manualDNA || [],
-            suggestedDNA: profileSettings.suggestedDNA || []
+            onboardingCompleted: profile?.onboardingCompleted || false
         });
     } catch (err) {
         console.error('[ProfiloAPI] Errore stato sincronizzazione:', err.message);
@@ -579,62 +577,6 @@ router.post('/aggiorna', async (req, res) => {
     } catch (err) {
         console.error('[ProfiloAPI] Errore aggiornamento suggerimenti:', err.message);
         return erroreDominio(res, 500, 'non_disponibile', 'Impossibile aggiornare i suggerimenti.');
-    }
-});
-
-/**
- * POST /api/profilo/dna/conferma
- * Conferma il DNA suggerito trasformandolo in manuale nel profilo.
- */
-router.post('/dna/conferma', async (req, res) => {
-    const profileId = (req.body && req.body.profileId) || 'global';
-    try {
-        const account = await accountDi(req.utenteId);
-        if (!account?.addonUuid) {
-            return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
-        }
-
-        const addonConfig = await AddonConfig.findOne({ uuid: account.addonUuid });
-        if (!addonConfig) {
-            return erroreDominio(res, 404, 'non_trovato', 'Configurazione non trovata.');
-        }
-
-        const profile = (addonConfig.profiles || []).find(p => p.id === profileId);
-        if (!profile) {
-            return erroreDominio(res, 404, 'non_trovato', 'Profilo non trovato.');
-        }
-
-        const targetSettings = profile.settings || {};
-        const suggested = targetSettings.suggestedDNA || [];
-        const manual = targetSettings.manualDNA || [];
-
-        const updatedManual = [...manual];
-        const existingIds = new Set(manual.map(m => `${m.type}:${m.id}`));
-
-        suggested.forEach(s => {
-            if (!existingIds.has(`${s.type}:${s.id}`)) updatedManual.push(s);
-        });
-
-        await AddonConfig.updateOne(
-            { uuid: account.addonUuid, 'profiles.id': profileId },
-            {
-                $set: {
-                    'profiles.$.settings.manualDNA': updatedManual,
-                    'profiles.$.settings.suggestedDNA': []
-                }
-            }
-        );
-
-        await TasteProfile.updateOne(
-            { owner: req.utenteId, context: profileId },
-            { $set: { onboardingCompleted: true } },
-            { upsert: true }
-        );
-
-        return res.json({ success: true, onboardingCompleted: true });
-    } catch (err) {
-        console.error('[ProfiloAPI] Errore conferma DNA:', err.message);
-        return erroreDominio(res, 500, 'non_disponibile', 'Impossibile confermare il DNA.');
     }
 });
 

@@ -1,11 +1,8 @@
 const { getTmdbIdByName, createTmdbClient } = require('../../clients/tmdb');
 const { routeLiveStremioSearch } = require('../../ricerca/router');
-const { getProfileDnaFilters } = require('../../infra');
-
 const { applyConsensusScoring } = require('../../infra');
 const { getDuckDbCatalogFromFilters } = require('../../indice');
 const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
-const ProfileScorer = require('../../profile/ProfileScorer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
 const { G } = require('../../indice/filters');
 
@@ -291,17 +288,6 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     const profileId = userConfig.activeProfileId;
     const activeContext = profileId || 'global';
     
-    const { getTasteProfile } = require('../../profile');
-    let profileDoc = null;
-    let globalProfileDoc = null;
-    if (userId) {
-        [profileDoc, globalProfileDoc] = await Promise.all([
-            getTasteProfile(userId, activeContext),
-            activeContext === 'global' ? Promise.resolve(null) : getTasteProfile(userId, 'global')
-        ]);
-    }
-    const dnaFilters = getProfileDnaFilters(userConfig, activeContext);
-
     let plannedQueries = [];
     let usingLexicalFallback = false;
     try {
@@ -364,17 +350,8 @@ async function executeCombinedSearch(search, userConfig, type, skip, activeProfi
     for (const item of finalItems) {
         const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
         const tmdbVote = getTmdbVoteScore(item);
-        if (profileDoc) {
-            const affinity = ProfileScorer.calculateItemMatch(item.rawTMDB || item, profileDoc, {
-                globalProfile: globalProfileDoc,
-                dnaFilters
-            });
-            item.affinity = affinity;
-            item.finalScore = tmdbVote + consensusBonus + affinity;
-        } else {
-            item.affinity = 0;
-            item.finalScore = tmdbVote + consensusBonus;
-        }
+        item.affinity = 0;
+        item.finalScore = tmdbVote + consensusBonus;
         item.consensusBonus = consensusBonus;
         delete item.queryIndexes;
     }

@@ -12,9 +12,7 @@
  */
 
 const {
-    ANIME_POLICY_MODES,
-    getProfileAnimationQuota,
-    getPolicyFromQuota
+    ANIME_POLICY_MODES
 } = require('../anime');
 
 /**
@@ -50,11 +48,8 @@ function selettoriEffettivi(profilo = null, richiesta = null) {
         animePolicy = requestSelectors.anime;
     } else if (profileSelectors.anime) {
         animePolicy = profileSelectors.anime;
-    } else if (isKidsMode) {
-        animePolicy = ANIME_POLICY_MODES.NEUTRAL;
     } else {
-        const quota = getProfileAnimationQuota(profileObj);
-        animePolicy = getPolicyFromQuota(quota);
+        animePolicy = ANIME_POLICY_MODES.NEUTRAL;
     }
 
     // 5. Composizione risultato

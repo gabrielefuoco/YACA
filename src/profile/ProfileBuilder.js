@@ -9,17 +9,6 @@ const {
 } = require('../library');
 const AddonConfig = require('../models/AddonConfig');
 const { accountDi } = require('../configurazione');
-const {
-    extractActiveDNAFromTmdbData,
-    computeFinalDNA,
-    computeActiveDNA,
-    calculateWeightedInteractions,
-    computeTimeDecay,
-    calculateProfileRelevance,
-    calculateFlatnessMetrics,
-    clusterTasteSignals,
-    shouldRecomputeClusters
-} = require('./dnaEngine');
 
 class ProfileBuilder {
     /**
@@ -97,88 +86,10 @@ class ProfileBuilder {
             lastWatchedAt,
             source
         });
-
-        // --- Delta Update DNA ---
-        ProfileBuilder._updateVectorsAsync(owner, context, tmdbId, type).catch(err => {
-            console.error('[ProfileBuilder] Delta DNA Error:', err.message);
-        });
     }
 
-    /**
-     * Ricomputo puro di V_active e V_final dai segnali (funzione pura, niente accumulo incrementale).
-     */
-    static async _updateAndSaveActiveVectors(owner, context) {
-        return ProfileBuilder.recomputeVectorsForUser(owner, context);
-    }
-
-    /**
-     * Porta la cache DF dall'indice al motore DNA, se non c'è già.
-     * Esplicita e idempotente: la rarità legge una variabile di modulo, e senza questa
-     * chiamata ricadrebbe in SILENZIO sulle stime stimate (vedi l'avvertenza in dnaEngine).
-     * Va invocata prima di ogni calcolo che tocca la rarità.
-     */
-    static sincronizzaDfCache() {
-        return require('./dfCache').sincronizzaDfCache();
-    }
-
-
-
-    /**
-     * Recupera i dati DNA per una lista di elementi da DuckDB locale.
-     */
-    static async _fetchDnaItemsFromDuckDb(items) {
-        if (!items || items.length === 0) return [];
-        const { queryRaw } = require('../indice');
-
-        const movieItems = items.filter(i => !i.type || i.type === 'movie');
-        const tvItems = items.filter(i => i.type === 'tv' || i.type === 'series');
-
-        const queryTable = async (table, targetItems) => {
-            const ids = [...new Set(targetItems.map(i => Number(i.tmdbId)).filter(id => !isNaN(id) && id > 0))];
-            if (ids.length === 0) return [];
-
-            const chunkSize = 500;
-            let rows = [];
-            for (let i = 0; i < ids.length; i += chunkSize) {
-                const chunk = ids.slice(i, i + chunkSize);
-                const directorsCol = table === 'movies' ? 'directors' : 'created_by AS directors';
-                const sql = `SELECT id, genres, keywords, "cast", ${directorsCol}, original_language FROM ${table} WHERE id IN (${chunk.join(',')})`;
-                try {
-                    const res = await queryRaw(sql);
-                    if (res && res.length > 0) rows.push(...res);
-                } catch (err) {
-                    console.warn(`[ProfileBuilder] Errore query DuckDB per ${table}:`, err.message);
-                }
-            }
-            return rows;
-        };
-
-        const [movieRows, tvRows] = await Promise.all([
-            queryTable('movies', movieItems),
-            queryTable('tv', tvItems)
-        ]);
-
-        const allRows = [...movieRows, ...tvRows];
-        const weightMap = new Map(items.map(i => [Number(i.tmdbId), i.weight || 100]));
-        return allRows.map(row => {
-            let genres = [];
-            let keywords = [];
-            let cast = [];
-            let directors = [];
-            try { if (row.genres) genres = typeof row.genres === 'string' ? JSON.parse(row.genres) : row.genres; } catch(e){}
-            try { if (row.keywords) keywords = typeof row.keywords === 'string' ? JSON.parse(row.keywords) : row.keywords; } catch(e){}
-            try { if (row.cast) cast = typeof row.cast === 'string' ? JSON.parse(row.cast) : row.cast; } catch(e){}
-            try { if (row.directors) directors = typeof row.directors === 'string' ? JSON.parse(row.directors) : row.directors; } catch(e){}
-
-            return {
-                tmdbId: Number(row.id),
-                weight: weightMap.get(Number(row.id)) || 100,
-                genre_ids: genres.map(g => g.id || g),
-                keyword_ids: keywords.map(k => k.id || k),
-                cast_ids: cast.slice(0, 5).map(c => c.id || c),
-                director_ids: directors.map(d => d.id || d)
-            };
-        });
+    static async _updateAndSaveActiveVectors() {
+        return { vActive: {}, vFinal: {}, flatnessMetrics: null, scritto: false };
     }
 
     /**
@@ -207,165 +118,18 @@ class ProfileBuilder {
         await backfillCronologia({ owner, targetContext });
     }
 
-    /**
-     * Ricalcola V_active e V_final dai segnali reali (WatchHistory + UserLibraryItem).
-     * Pesi: loved 4, liked 3, visto 2, libreria 1.
-     *
-     * `options.scrivi === false` è il percorso dry-run usato dal DNA d'account
-     * (ticket 02): calcola e restituisce i vettori senza aggiornare TasteProfile.
-     * Il default resta la scrittura, quindi nessun chiamante esistente cambia.
-     *
-     * @returns {Promise<{vActive: object, vFinal: object, flatnessMetrics: object|null, scritto: boolean}|undefined>}
-     */
-    static async recomputeVectorsForUser(owner, context, options = {}) {
-        const scrivi = options?.scrivi !== false;
-        if (!owner || !context) return;
-        const profile = await TasteProfile.findOne({ owner, context }).lean();
-        if (!profile) return;
-
-        const vStatic = profile.compiledVectors?.V_static || {};
-
-        // 1. Legge cronologia e segnali
-        const historyDocs = await storiaDi({ userId: owner, profileId: context });
-        const itemMap = new Map(); // tmdbId -> { tmdbId, type, weight }
-
-        for (const doc of historyDocs) {
-            const tmdbId = Number(doc.tmdbId);
-            if (!tmdbId) continue;
-            let weight = 0;
-            const signals = doc.signals || [];
-            if (signals.length === 0) {
-                const decay = computeTimeDecay(doc.lastWatchedAt || doc.createdAt);
-                weight = 200 * decay; // default visto (peso 2 con decadimento)
-            } else {
-                for (const s of signals) {
-                    const signalDate = s.at || doc.lastWatchedAt || doc.createdAt;
-                    const decay = computeTimeDecay(signalDate);
-                    if (s.type === 'loved') weight += 400 * decay;      // loved 4
-                    else if (s.type === 'liked') weight += 300 * decay; // liked 3
-                    else if (s.type === 'watched') weight += 200 * decay; // visto 2
-                    else if (s.type === 'library') weight += 100 * decay; // libreria 1
-                }
-            }
-            if (weight > 0) {
-                itemMap.set(tmdbId, { tmdbId, type: doc.type || 'movie', weight });
-            }
-        }
-
-        // 2. Legge UserLibraryItem dell'account (libreria = peso 100 = 1)
-        const addonUuid = await ProfileBuilder._resolveAddonUuid(owner);
-        if (addonUuid) {
-            try {
-                const libraryDocs = await leggiLibreriaPerProfilo({ addonUuid });
-
-                for (const lib of libraryDocs) {
-                    const tmdbId = Number(lib.tmdbId);
-                    if (!tmdbId) continue;
-                    const libType = (lib.type === 'series' || lib.type === 'tv') ? 'tv' : 'movie';
-                    const decay = computeTimeDecay(lib.addedAt || lib.createdAt);
-                    const libWeight = 100 * decay;
-                    if (itemMap.has(tmdbId)) {
-                        itemMap.get(tmdbId).weight += libWeight;
-                    } else {
-                        itemMap.set(tmdbId, { tmdbId, type: libType, weight: libWeight });
-                    }
-                }
-            } catch (err) {
-                console.warn('[ProfileBuilder] Warning reading UserLibraryItem:', err.message);
-            }
-        }
-
-        const items = Array.from(itemMap.values());
-        if (items.length === 0) {
-            return {
-                vActive: profile.compiledVectors?.V_active || {},
-                vFinal: profile.compiledVectors?.V_final || {},
-                flatnessMetrics: profile.flatnessMetrics || null,
-                scritto: false
-            };
-        }
-
-        // 3. Estrae metadati da DuckDB locale
-        const duckDbDnaData = await ProfileBuilder._fetchDnaItemsFromDuckDb(items);
-        const rawActive = {};
-        const clusterInputItems = [];
-
-        for (const data of duckDbDnaData) {
-            const itemDna = extractActiveDNAFromTmdbData(data, 100);
-            const relevanceFactor = calculateProfileRelevance(itemDna, vStatic, context);
-            const effectiveWeight = (data.weight || 100) * relevanceFactor;
-            for (const [key, value] of Object.entries(itemDna)) {
-                rawActive[key] = (rawActive[key] || 0) + (value * (effectiveWeight / 100));
-            }
-            if (effectiveWeight > 0 && Object.keys(itemDna).length > 0) {
-                clusterInputItems.push({
-                    tmdbId: data.tmdbId,
-                    weight: effectiveWeight,
-                    itemDna
-                });
-            }
-        }
-
-        // Anti-flat: saturazione logaritmica per chiave (rendimenti decrescenti),
-        // poi normalizzazione alla scala di persistenza (somma 100) come la rotta REST.
-        ProfileBuilder.sincronizzaDfCache();
-        const vActive = computeActiveDNA(rawActive);
-
-        const totalInteractions = calculateWeightedInteractions(historyDocs);
-        const vFinal = computeFinalDNA(vStatic, vActive, totalInteractions);
-        const flatnessMetrics = calculateFlatnessMetrics(vFinal);
-
-        // Clustering multi-vettore con isteresi
-        const existingClusters = profile.compiledVectors?.V_clusters || [];
-        const existingMeta = profile.compiledVectors?.clustersMeta || null;
-
-        let vClusters = existingClusters;
-        let clustersMeta = existingMeta;
-
-        if (shouldRecomputeClusters(existingClusters, existingMeta, clusterInputItems)) {
-            vClusters = clusterTasteSignals(clusterInputItems);
-            clustersMeta = {
-                signalCount: clusterInputItems.length,
-                itemIds: clusterInputItems.map(i => i.tmdbId),
-                computedAt: new Date()
-            };
-        }
-
-        if (!scrivi) {
-            return { vActive, vFinal, flatnessMetrics, scritto: false };
-        }
-
-        await TasteProfile.updateOne(
-            { owner, context },
-            {
-                $set: {
-                    "compiledVectors.V_active": vActive,
-                    "compiledVectors.V_final": vFinal,
-                    "compiledVectors.V_clusters": vClusters,
-                    "compiledVectors.clustersMeta": clustersMeta,
-                    flatnessMetrics
-                }
-            },
-            { upsert: true }
-        );
-
-        return { vActive, vFinal, flatnessMetrics, scritto: true };
+    static async recomputeVectorsForUser(_owner, _context, _options = {}) {
+        return {
+            vActive: {},
+            vFinal: {},
+            flatnessMetrics: null,
+            scritto: false
+        };
     }
 
-    /**
-     * Aggiorna V_active e V_final in background (singolo elemento).
-     */
-    static async _updateVectorsAsync(owner, context, tmdbId, type) {
-        await ProfileBuilder.recomputeVectorsForUser(owner, context);
-    }
+    static async _updateVectorsAsync() {}
 
-    /**
-     * Aggiorna V_active e V_final in background (bulk elementi).
-     */
-    static async _bulkUpdateVectorsAsync(owner, context, items) {
-        if (!items || items.length === 0) return;
-        await ProfileBuilder.recomputeVectorsForUser(owner, context);
-    }
+    static async _bulkUpdateVectorsAsync() {}
 
     /**
      * Entry point per la sincronizzazione Trakt (ottimizzato Bulk + fasce + dedup Stremio-first + fan-out).
@@ -466,7 +230,6 @@ class ProfileBuilder {
                     await scriviBatchCronologia(bulkOps);
                 }
 
-                await ProfileBuilder.recomputeVectorsForUser(owner, ctx);
                 await ProfileBuilder._updateSyncStatus(owner, ctx, {
                     isSyncing: false,
                     current: traktHistory.length,
@@ -606,9 +369,6 @@ class ProfileBuilder {
 
                 // Esegue anche backfill per contesti che non avevano storico
                 await ProfileBuilder.backfillProfileWatchHistory(owner, ctx);
-
-                // Ricalcola vettori completi (WatchHistory + UserLibraryItem)
-                await ProfileBuilder.recomputeVectorsForUser(owner, ctx);
 
                 await ProfileBuilder._updateSyncStatus(owner, ctx, {
                     isSyncing: false,

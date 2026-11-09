@@ -87,7 +87,7 @@ export function CatalogLivePreview({ catalogId, userId, profileId, sliders, type
   }
 
   if (items.length === 0) {
-    return <div className="text-marrow-light/70 text-sm p-4 italic">Nessun elemento trovato per il tuo DNA.</div>;
+    return <div className="text-marrow-light/70 text-sm p-4 italic">Nessun elemento trovato.</div>;
   }
 
   return (

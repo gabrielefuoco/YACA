@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DNAItem, DEFAULT_ENGINE_SLIDERS } from '@/types';
+import { Profile, Catalog, RawProfileData, SyncStatus, TmdbMetadataMap, DEFAULT_ENGINE_SLIDERS } from '@/types';
 import { api } from '@/lib/api';
 import { LOCAL_STORAGE_KEYS, HERO_PRESET_IDS, DEFAULT_PRESET_IDS } from '@/lib/constants';
 
@@ -26,8 +26,6 @@ function createGlobalProfile(): Profile {
     sliders: { ...DEFAULT_ENGINE_SLIDERS },
     settings: {
       fastRefresh: false,
-      manualDNA: [],
-      suggestedDNA: [],
       typeSelectors: { anime: null },
       sliders: { ...DEFAULT_ENGINE_SLIDERS },
     },
@@ -329,17 +327,14 @@ export function useProfiles(initialProfiles?: Profile[], initialActiveProfileId?
         setSyncStatus({ isSyncing: true, total: 100, current: 0, phase: 'Inizializzazione...' });
         
         // --- STAGE 1: Avvio Sincronizzazione Backend ---
-        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione Stremio/Trakt e Calcolo DNA...', current: 10 }));
+        setSyncStatus((prev: SyncStatus) => ({ ...prev, phase: 'Sincronizzazione Stremio/Trakt...', current: 10 }));
         
-        // La chiamata POST avvia il task di sincronizzazione e estrazione vettoriale sul server Node.js.
+        // La chiamata POST avvia il task di sincronizzazione sul server Node.js.
         await api.refreshSync(profileId, userId);
 
-        // --- STAGE 2: Polling in background ---
-        // Il polling dello stato avviene già nel componente DnaAndAiPanel (fetchSyncStatus) 
-        // e verrà aggiornato reattivamente lì. Segnaliamo solo il successo preliminare qui.
-        setSyncStatus({ isSyncing: false, total: 100, current: 100, phase: 'Task in esecuzione sul server...' });
+        // --- STAGE 2: Completamento ---
+        setSyncStatus({ isSyncing: false, total: 100, current: 100, phase: 'Sincronizzazione completata' });
         
-        // Ritorniamo un mock vuoto poichè il vero aggiornamento avverrà tramite polling di DnaAndAiPanel
         return {};
       } catch (err) {
         setSyncStatus({ isSyncing: false, total: 100, current: 0, phase: 'Errore' });

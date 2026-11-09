@@ -4,12 +4,6 @@ const {
     filterRetiredTmdbKeywords,
     sanitizeDnaVector
 } = require('../src/indice/keywordIds');
-const { getProfileDnaFilters } = require('../src/infra/helpers');
-const {
-    computeTopKeywords,
-    extractStaticDNAFromQueries,
-    extractActiveDNAFromTmdbData
-} = require('../src/profile');
 const { getPresets } = require('../src/catalog/presets');
 
 const RETIRED_IDS = [363309, 364043, 210086, 208035];
@@ -43,29 +37,8 @@ describe('Ticket 24: keyword TMDB ritirate', () => {
         expect(sumVector(sanitized)).toBeCloseTo(100, 6);
     });
 
-    test('estrazione static e attiva non ricrea le keyword ritirate', () => {
-        const staticDna = extractStaticDNAFromQueries([
-            { with_keywords: RETIRED_IDS.concat(12190).join('|') }
-        ]);
-        expect(staticDna['k:363309']).toBeUndefined();
-        expect(staticDna['k:364043']).toBeUndefined();
-        expect(staticDna['k:210086']).toBeUndefined();
-        expect(staticDna['k:208035']).toBeUndefined();
-        expect(staticDna['k:12190']).toBeDefined();
-
-        const activeDna = extractActiveDNAFromTmdbData({
-            keyword_ids: [...RETIRED_IDS, 12190]
-        });
-        RETIRED_IDS.forEach(id => expect(activeDna[`k:${id}`]).toBeUndefined());
-        expect(activeDna['k:12190']).toBeDefined();
-    });
-
     test('ProfileScorer ignora keyword ritirate anche nei vettori legacy', () => {
         expect(ProfileScorer.getVectorScore({ 'k:363309': 10 }, 'k', 363309)).toBe(0);
-        expect(ProfileScorer.computeDnaMultiplier(
-            { genre_ids: [99], keywords: [{ id: 363309 }] },
-            [{ type: 'keyword', id: 363309 }]
-        )).toBe(0.1);
 
         const item = {
             genre_ids: [35],
@@ -90,26 +63,7 @@ describe('Ticket 24: keyword TMDB ritirate', () => {
             .toBeCloseTo(ProfileScorer.calculateLightScore(item, cleanProfile), 8);
     });
 
-    test('query e selettori DNA non usano più gli ID ritirati', () => {
-        const profile = {
-            compiledVectors: { V_final: { 'k:12190': 90, 'k:210086': 10 } }
-        };
-        expect(computeTopKeywords(profile, 2)).toEqual(['12190']);
-
-        const filters = getProfileDnaFilters({
-            profiles: [{
-                id: 'cinefilo',
-                settings: {
-                    manualDNA: [
-                        { type: 'keyword', id: 363309 },
-                        { type: 'keyword', id: 12190 }
-                    ],
-                    suggestedDNA: [{ type: 'keyword', id: 208035 }]
-                }
-            }]
-        }, 'cinefilo');
-        expect(filters).toEqual([{ type: 'keyword', id: 12190 }]);
-
+    test('preset non usano più gli ID ritirati', () => {
         const presetKeywordStrings = getPresets()
             .flatMap(preset => preset.queries || [])
             .map(query => query.with_keywords)

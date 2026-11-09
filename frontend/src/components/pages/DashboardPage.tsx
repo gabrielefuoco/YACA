@@ -4,7 +4,6 @@ import { Profile, Catalog, MyList, ModoInfo, ModoId, CatalogoEsploraVoce, Catalo
 import { api } from '@/lib/api';
 import { TIPI_CATALOGO_MAP } from '@/lib/catalogPresentation';
 import { CreatorPanel } from '@/components/dashboard/CreatorPanel';
-import { DnaAndAiPanel } from '@/components/dashboard/DnaAndAiPanel';
 import { UserLibraryPanel } from '@/components/dashboard/UserLibraryPanel';
 import { ActiveCatalogsPanel } from '@/components/dashboard/ActiveCatalogsPanel';
 import { CatalogLivePreview } from '@/components/dashboard/CatalogLivePreview';
@@ -363,29 +362,7 @@ export function DashboardPage({
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 6. DNA & AI LAB (Ticket 07)                                         */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-4">
-        <div className="border-b border-marrow-light/10 pb-2">
-          <h2 className="text-xl sm:text-2xl font-black text-marrow-deep tracking-tight">DNA & AI Lab</h2>
-          <p className="text-xs sm:text-sm text-marrow-light font-medium mt-0.5">
-            Il DNA del tuo account calcolato sulla cronologia di visione completa
-          </p>
-        </div>
-        <div className="glass-panel p-3 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10">
-          {activeProfile && (
-            <DnaAndAiPanel
-              profile={activeProfile}
-              onUpdateProfile={onUpdateProfile}
-              syncStatus={syncStatus}
-              userId={userId}
-            />
-          )}
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 7. LIBRERIA UTENTE (Ticket 07 & Ticket 09)                          */}
+      {/* 6. LIBRERIA UTENTE (Ticket 07 & Ticket 09)                          */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <section className="space-y-4">
         <div className="border-b border-marrow-light/10 pb-2">

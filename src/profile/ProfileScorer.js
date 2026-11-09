@@ -106,37 +106,6 @@ class ProfileScorer {
         return 0;
     }
 
-    static computeDnaMultiplier(tmdbData, dnaFilters = []) {
-        if (!Array.isArray(dnaFilters) || dnaFilters.length === 0) return 1.0;
-
-        const rawGenreIds = tmdbData.genre_ids || (tmdbData.genres ? tmdbData.genres.map(g => g.id) : []);
-        const genreIdSet = new Set();
-        for (const gid of rawGenreIds) {
-            const norm = this.normalizeDnaId(gid);
-            if (norm) {
-                genreIdSet.add(norm);
-                const alts = this.getEquivalentGenreIds(norm);
-                alts.forEach(alt => genreIdSet.add(String(alt)));
-            }
-        }
-
-        const keywordItems = filterRetiredTmdbKeywords(
-            Array.isArray(tmdbData.keywords)
-                ? tmdbData.keywords
-                : (tmdbData.keywords?.keywords || tmdbData.keywords?.results || [])
-        );
-        const keywordIds = keywordItems.map((k) => this.normalizeDnaId(typeof k === 'object' && k !== null ? (k.id || k.name) : k));
-
-        const hasGenreMatch = dnaFilters.some(
-            (f) => f.type === 'genre' && genreIdSet.has(this.normalizeDnaId(f.id))
-        );
-        const hasKeywordMatch = dnaFilters.some(
-            (f) => f.type === 'keyword' && !isRetiredTmdbKeywordId(f.id) && keywordIds.includes(this.normalizeDnaId(f.id))
-        );
-
-        return hasGenreMatch || hasKeywordMatch ? 1.0 : 0.1;
-    }
-
     /**
      * Calcola il thematic score grezzo (generi + keyword) di un item rispetto a un vettore DNA.
      * @param {Object} vector Vettore DNA sanitizzato
@@ -300,7 +269,6 @@ class ProfileScorer {
     static calculateItemMatch(tmdbData, profile, context = {}) {
         if (!tmdbData || !profile) return 0;
 
-        const dnaMultiplier = this.computeDnaMultiplier(tmdbData, context.dnaFilters);
         const profileScore = this.calculateBaseItemMatch(tmdbData, profile, context);
         const globalProfile = context.globalProfile;
 
@@ -309,7 +277,6 @@ class ProfileScorer {
             const globalScore = this.calculateBaseItemMatch(tmdbData, globalProfile, context);
             finalScore = ((profileScore * ACTIVE_PROFILE_WEIGHT) + (globalScore * GLOBAL_PROFILE_WEIGHT));
         }
-        finalScore *= dnaMultiplier;
 
         const animeMultiplier = this.computeAnimeMultiplier(tmdbData, profile, context);
         finalScore *= animeMultiplier;

@@ -160,8 +160,6 @@ export const api = {
     get(`/api/profilo/sincronizzazione?profileId=${encodeURIComponent(profileId)}`),
   refreshSync: (profileId: string = 'global', _userId?: string) =>
     post('/api/profilo/sincronizzazione', { profileId }),
-  confirmDNA: (profileId: string = 'global', _userId?: string) =>
-    post('/api/profilo/dna/conferma', { profileId }),
   clearCache: () =>
     post('/api/profilo/aggiorna'),
 

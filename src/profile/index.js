@@ -48,10 +48,6 @@ const ProfileBuilder = require('./ProfileBuilder');
 const ProfileScorer = require('./ProfileScorer');
 const studioProfile = require('./studioProfile');
 
-// Motore matematico del DNA (Ticket 49)
-const dnaEngine = require('./dnaEngine');
-
-
 // Staleness del profilo (Ticket 41 - Fetta 1)
 const {
     PROFILE_SYNC_INTERVAL_MS,
@@ -74,10 +70,9 @@ const { fetchProfileContext, getTasteProfile, touchTasteProfile } = require('./p
 // Impressioni delle raccomandazioni (Ticket 41 - Step 6)
 const { recordRecommendationImpressions, registraImpressioni } = require('./impressions');
 
-// Modalità del profilo (ticket 01) e DNA d'account (ticket 02).
+// Modalità del profilo (ticket 01).
 // Fondamenta additive: nessun consumatore vivo le legge ancora.
 const modo = require('./modo');
-const dnaAccount = require('./dnaAccount');
 
 module.exports = {
     // La porta del modulo (Ticket 21 & Ticket 26)
@@ -137,31 +132,6 @@ module.exports = {
     applicaImmutabilitaModo: modo.applicaImmutabilitaModo,
     leggiSliders: modo.leggiSliders,
     scriviSliders: modo.scriviSliders,
-    slidersDelProfiloAttivo: modo.slidersDelProfiloAttivo,
-
-    // DNA d'account (ticket 02)
-    calcolaDnaAccount: dnaAccount.calcolaDnaAccount,
-    dnaMapsDaVettore: dnaAccount.dnaMapsDaVettore,
-
-    // Motore DNA (Ticket 49)
-    dnaEngine,
-    extractStaticDNAFromQueries: dnaEngine.extractStaticDNAFromQueries,
-    extractActiveDNAFromTmdbData: dnaEngine.extractActiveDNAFromTmdbData,
-    computeFinalDNA: dnaEngine.computeFinalDNA,
-    computeActiveDNA: dnaEngine.computeActiveDNA,
-    calculateWeightedInteractions: dnaEngine.calculateWeightedInteractions,
-    calculateFlatnessMetrics: dnaEngine.calculateFlatnessMetrics,
-    setGlobalDfCache: dnaEngine.setGlobalDfCache,
-    getGlobalDfCache: dnaEngine.getGlobalDfCache,
-    getSoftRarityMultiplier: dnaEngine.getSoftRarityMultiplier,
-    applySoftRarity: dnaEngine.applySoftRarity,
-    computeTimeDecay: dnaEngine.computeTimeDecay,
-    normalizeVector: dnaEngine.normalizeVector,
-    // Il resolver dei nomi TMDB è del profilo: chi sta fuori lo prende dalla porta (docs/INDEX.md:19).
-    resolveDnaNames: (...a) => require('./tmdbNameResolver').resolveDnaNames(...a),
-    getReadableFallback: (...a) => require('./tmdbNameResolver').getReadableFallback(...a),
-    GENRE_ID_TO_NAME: require('./tmdbNameResolver').GENRE_ID_TO_NAME,
-    // Sincronizza la cache DF dall'indice al motore DNA: da invocare prima di un calcolo che usa la rarità.
-    sincronizzaDfCache: (...a) => require('./dfCache').sincronizzaDfCache(...a)
+    slidersDelProfiloAttivo: modo.slidersDelProfiloAttivo
 };
 

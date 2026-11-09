@@ -61,13 +61,9 @@ export function SettingsPage({
     setError('');
     setSuccess(false);
 
-    const currentDNA = activeProfile?.settings?.manualDNA ?? [];
-    const currentSuggestedDNA = activeProfile?.settings?.suggestedDNA ?? [];
     onUpdateProfile(activeProfileId, {
       settings: {
         ...settings,
-        manualDNA: currentDNA,
-        suggestedDNA: currentSuggestedDNA,
       },
     });
 

@@ -88,11 +88,7 @@ function resolveAnimePolicy(profile, typeSelectors = null, options = {}) {
     if (profileManual) {
         return profileManual;
     }
-    if (options?.isKidsMode || profile?.settings?.kidsMode || profile?.kidsMode) {
-        return ANIME_POLICY_MODES.NEUTRAL;
-    }
-    const quota = getProfileAnimationQuota(profile);
-    return getPolicyFromQuota(quota);
+    return ANIME_POLICY_MODES.NEUTRAL;
 }
 
 /**

@@ -69,30 +69,11 @@ describe('Profile Module Door (Ticket 21)', () => {
             expect(resultKids.anime).toBe('neutral');
         });
 
-        it('deduces anime policy from DNA when no manual selector exists', () => {
-            // Animation quota >= 0.60 -> 'only'
-            const profileHighAnime = {
-                settings: {},
-                compiledVectors: {
-                    V_final: new Map([
-                        ['g:16', 70],
-                        ['g:18', 30]
-                    ])
-                }
+        it('defaults anime policy to neutral when no manual selector exists', () => {
+            const profileWithoutSelector = {
+                settings: {}
             };
-            expect(selettoriEffettivi(profileHighAnime, null).anime).toBe('only');
-
-            // Animation quota < 0.10 -> 'exclude'
-            const profileLowAnime = {
-                settings: {},
-                compiledVectors: {
-                    V_final: {
-                        'g:16': 5,
-                        'g:18': 95
-                    }
-                }
-            };
-            expect(selettoriEffettivi(profileLowAnime, null).anime).toBe('exclude');
+            expect(selettoriEffettivi(profileWithoutSelector, null).anime).toBe('neutral');
         });
     });
 

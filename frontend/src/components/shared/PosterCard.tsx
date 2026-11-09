@@ -94,7 +94,7 @@ export function PosterCard({
           showFallbackTitle={titlePlacement === 'none'}
         />
 
-        {/* Badge opzionale in alto a sinistra (es. % Match DNA) */}
+        {/* Badge opzionale in alto a sinistra (es. % Match) */}
         {badge && <div className="absolute top-2 left-2 z-20 pointer-events-none">{badge}</div>}
 
         {/* Azioni esplicite: un solo controllo, sempre visibile, fuori dalla zona del titolo */}

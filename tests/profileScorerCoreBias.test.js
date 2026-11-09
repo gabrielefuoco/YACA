@@ -35,15 +35,4 @@ describe('ProfileScorer core taste bias', () => {
 
         expect(blended).toBeCloseTo((scoreA * 0.8) + (scoreB * 0.2), 6);
     });
-
-    it('applies DNA firewall after blending', () => {
-        const activeProfile = createProfile({ genreScores: { '1': 100 } });
-        const globalProfile = createProfile({ genreScores: { '1': 20 } });
-        const dnaFilters = [{ type: 'genre', id: '99', name: 'Genre 99' }];
-
-        const blended = ProfileScorer.calculateItemMatch(tmdbData, activeProfile, { globalProfile });
-        const dnaBlocked = ProfileScorer.calculateItemMatch(tmdbData, activeProfile, { globalProfile, dnaFilters });
-
-        expect(dnaBlocked).toBeCloseTo(blended * 0.1, 6);
-    });
 });

@@ -1,6 +1,5 @@
 const ProfileScorer = require('../src/profile/ProfileScorer');
 const { G, F } = require('../src/indice/filters');
-const { computeTopGenres, computeTopKeywords } = require('../src/profile');
 const HierarchicalGraph = require('../src/indice/HierarchicalGraph');
 
 describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
@@ -113,67 +112,12 @@ describe('Ticket 15: Fix DNA e Ordinamento Cataloghi', () => {
         });
     });
 
-    describe('BUG-DNA-2: Cross-mapping in computeDnaMultiplier e getVectorScore', () => {
-        it('computeDnaMultiplier NON penalizza a 0.1x una serie TV (10759) con DNA Film Azione (28)', () => {
-            const tvItem = { id: 7001, genre_ids: [10759] };
-            const dnaFilters = [{ type: 'genre', id: 28 }]; // Azione Film
-
-            const multiplier = ProfileScorer.computeDnaMultiplier(tvItem, dnaFilters);
-            expect(multiplier).toBe(1.0);
-        });
-
-        it('computeDnaMultiplier NON penalizza a 0.1x una serie TV (10759) con DNA Film Avventura (12)', () => {
-            const tvItem = { id: 7001, genre_ids: [10759] };
-            const dnaFilters = [{ type: 'genre', id: 12 }]; // Avventura Film
-
-            const multiplier = ProfileScorer.computeDnaMultiplier(tvItem, dnaFilters);
-            expect(multiplier).toBe(1.0);
-        });
-
-        it('computeDnaMultiplier NON penalizza a 0.1x un Film Azione (28) con DNA Serie TV (10759)', () => {
-            const movieItem = { id: 550, genre_ids: [28] };
-            const dnaFilters = [{ type: 'genre', id: 10759 }]; // Action & Adventure TV
-
-            const multiplier = ProfileScorer.computeDnaMultiplier(movieItem, dnaFilters);
-            expect(multiplier).toBe(1.0);
-        });
-
-        it('computeDnaMultiplier NON penalizza a 0.1x una serie TV Sci-Fi/Fantasy (10765) con DNA Film Fantasy (14)', () => {
-            const tvItem = { id: 7002, genre_ids: [10765] };
-            const dnaFilters = [{ type: 'genre', id: 14 }]; // Fantasy Film
-
-            const multiplier = ProfileScorer.computeDnaMultiplier(tvItem, dnaFilters);
-            expect(multiplier).toBe(1.0);
-        });
-
-        it('riconosce Thriller movie nelle serie Mystery e Romance movie nelle serie Drama', () => {
-            expect(ProfileScorer.computeDnaMultiplier(
-                { genre_ids: [9648] }, [{ type: 'genre', id: 53 }]
-            )).toBe(1.0);
-            expect(ProfileScorer.computeDnaMultiplier(
-                { genre_ids: [18] }, [{ type: 'genre', id: 10749 }]
-            )).toBe(1.0);
-            expect(ProfileScorer.computeDnaMultiplier(
-                { genre_ids: [53] }, [{ type: 'genre', id: 9648 }]
-            )).toBe(1.0);
-            expect(ProfileScorer.computeDnaMultiplier(
-                { genre_ids: [10749] }, [{ type: 'genre', id: 18 }]
-            )).toBe(1.0);
-        });
-
+    describe('BUG-DNA-2: Cross-mapping in getVectorScore', () => {
         it('getVectorScore applica il mapping anche a Thriller e Romance', () => {
             expect(ProfileScorer.getVectorScore({ 'g:53': 8.2 }, 'g', 9648)).toBe(8.2);
             expect(ProfileScorer.getVectorScore({ 'g:10749': 7.1 }, 'g', 18)).toBe(7.1);
             expect(ProfileScorer.getVectorScore({ 'g:9648': 6.9 }, 'g', 53)).toBe(6.9);
             expect(ProfileScorer.getVectorScore({ 'g:18': 6.4 }, 'g', 10749)).toBe(6.4);
-        });
-
-        it('computeDnaMultiplier applica 0.1x se i generi sono realmente non correlati', () => {
-            const tvItem = { id: 7003, genre_ids: [35] }; // Comedy
-            const dnaFilters = [{ type: 'genre', id: 27 }]; // Horror
-
-            const multiplier = ProfileScorer.computeDnaMultiplier(tvItem, dnaFilters);
-            expect(multiplier).toBe(0.1);
         });
 
         it('getVectorScore riconosce sia Action (28) che Adventure (12) per serie TV (10759)', () => {

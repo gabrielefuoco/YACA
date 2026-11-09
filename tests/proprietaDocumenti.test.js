@@ -82,7 +82,6 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
             'src/profile/ProfileBuilder.js',
             'src/profile/ProfileScorer.js',
             'src/profile/modo.js',
-            'src/profile/dnaAccount.js',
             'src/profile/models/ProfileUiState.js',
 
             // Definizione del modello schema AddonConfig
