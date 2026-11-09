@@ -387,11 +387,19 @@ const HERO_STRATEGIES = [
                 });
                 const tipoSeed = med === 'movie' ? 'movie' : 'tv';
                 // Un solo posto per la politica anime del profilo (la usano i semi e i filtri a monte).
-                const animePolicy = ctx.animePolicy
-                    || ctx.effectiveSelectors?.anime
-                    || ctx.typeSelectors?.anime
-                    || ctx.userConfig?.activeProfileSettings?.typeSelectors?.anime
-                    || ctx.userConfig?.typeSelectors?.anime;
+                // Con i modi accesi le leve arrivano da `derivaLeve(modo)` (ctx.leve). Se il pool
+                // leggesse i selettori del profilo, chiederebbe al grafo una politica diversa da
+                // quella del resolver: chiave di cache diversa, scaffali diversi, e i cataloghi
+                // che Esplora elenca resterebbero senza titoli.
+                const levePool = ctx.leve || null;
+                const animePolicy = (levePool?.anime && levePool.anime !== 'neutral')
+                    ? levePool.anime
+                    : (ctx.animePolicy
+                        || ctx.effectiveSelectors?.anime
+                        || ctx.typeSelectors?.anime
+                        || ctx.userConfig?.activeProfileSettings?.typeSelectors?.anime
+                        || ctx.userConfig?.typeSelectors?.anime);
+                const kidsPool = levePool ? Boolean(levePool.kids) : Boolean(ctx.kidsMode);
 
                 const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
                 const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione, tipi, plays });
@@ -447,7 +455,7 @@ const HERO_STRATEGIES = [
                 // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
                 const filtri = {
                     anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
-                    kids: Boolean(ctx.kidsMode)
+                    kids: kidsPool
                 };
                 const opzioniScaffali = {
                     ...(opzioni || {}),

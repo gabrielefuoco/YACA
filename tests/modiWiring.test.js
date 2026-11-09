@@ -37,7 +37,10 @@ const FIXTURE_CHIAVE_SCAFFALI = Object.freeze({
     cap: 60,
     versioni: { artefatto: 'a1', ricetta: 'r1' }
 });
-const CHIAVE_SCAFFALI_PRE_CABLAGGIO = 'b1165f5a36f2feae81f80eabdce1fbd35e47bccae81e6ebf51f1b4ca76257710';
+// La chiave è cambiata quando il budget di scaffali (`n`) è entrato nell'impronta: con 8 e con 16
+// la risposta del grafo è diversa, e la cache non deve restituire le righe della richiesta precedente.
+// Il valore vecchio era b1165f5a36f2feae81f80eabdce1fbd35e47bccae81e6ebf51f1b4ca76257710.
+const CHIAVE_SCAFFALI_PRE_CABLAGGIO = '424b0007c42e3dea087cb3e94430502afa463ba5a719460dca481d2c46968b11';
 
 function configConModi({ attivo = 'film' } = {}) {
     const profili = materializzaModi({ profiles: [] }).profiles;
