@@ -876,6 +876,11 @@ def esegui_scaffali(
             }
             for t in sh.titoli
         ]
+        # Uno scaffale svuotato dai filtri (anime, bambini) non si dichiara: prometterlo
+        # produceva cataloghi elencati e senza un titolo, indistinguibili da un guasto.
+        if not titoli_out:
+            continue
+
         scaffali_out.append({
             "catalog_id": str(sh.catalog_id),
             "nome": str(sh.nome),
