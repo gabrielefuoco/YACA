@@ -138,7 +138,7 @@ export function DashboardPage({
   const suggerimentiScaffali = cataloghiData?.gruppi?.suggerimenti || [];
   const previewCatalog = suggerimentiScaffali[0] || cataloghiAttivi[0] || null;
   const previewCatalogId = previewCatalog?.id || null;
-  const previewMediaType = previewCatalog?.media === 'series' ? 'series' : 'movie';
+  const previewMediaType = (previewCatalog?.stremioType === 'series' || (!previewCatalog?.stremioType && previewCatalog?.media === 'series')) ? 'series' : 'movie';
 
   return (
     <div className="flex flex-col w-full gap-6 sm:gap-8 min-w-0">
@@ -156,35 +156,60 @@ export function DashboardPage({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 min-[460px]:grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+            <div className="flex overflow-x-auto no-scrollbar gap-2.5 sm:gap-3 pb-2 sm:pb-0 sm:grid sm:grid-cols-5">
               {DEFAULT_MODI.map(({ modo, nome, emoji: defaultEmoji }) => {
                 const apiModo = modi.find((m) => m.modo === modo);
                 const isAttivo = activeModo === modo;
                 const emoji = apiModo?.emoji || defaultEmoji;
 
                 return (
-                  <button
+                  <div
                     key={modo}
-                    type="button"
-                    onClick={() => onSelectModo(modo)}
-                    disabled={isSwitchingModo}
-                    className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[90px] sm:min-h-[108px] ${
+                    onClick={() => {
+                      if (!isAttivo && !isSwitchingModo) {
+                        onSelectModo(modo);
+                      }
+                    }}
+                    className={`relative flex flex-col items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[120px] sm:min-h-[130px] shrink-0 w-[135px] sm:w-auto ${
                       isAttivo
-                        ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02]'
-                        : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40'
-                    } ${isSwitchingModo ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                        ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02] cursor-default'
+                        : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40 cursor-pointer'
+                    } ${isSwitchingModo ? 'opacity-50 cursor-wait' : ''}`}
                   >
-                    <span className="text-2xl sm:text-3xl mb-1 select-none">{emoji}</span>
-                    <span className={`text-xs sm:text-sm font-black tracking-tight ${isAttivo ? 'text-white' : 'text-marrow-deep'}`}>
-                      {nome}
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-2xl sm:text-3xl mb-1 select-none">{emoji}</span>
+                      <span className={`text-xs sm:text-sm font-black tracking-tight ${isAttivo ? 'text-white' : 'text-marrow-deep'}`}>
+                        {nome}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 w-full flex justify-center">
+                      {isAttivo ? (
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-white/20 text-white border border-white/30 cursor-default select-none pointer-events-none">
+                          Attiva
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isSwitchingModo) onSelectModo(modo);
+                          }}
+                          disabled={isSwitchingModo}
+                          className="w-full py-1.5 px-3 rounded-lg bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-black uppercase tracking-wider border border-primary/20 transition-all touch-manipulation"
+                        >
+                          Attiva
+                        </button>
+                      )}
+                    </div>
+
                     {isAttivo && (
                       <span className="absolute top-2 right-2 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                       </span>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -201,7 +226,7 @@ export function DashboardPage({
           </section>
 
           {/* Seconda fila di pillole: esattamente due pannelli (Cataloghi attivi | Esplora) */}
-          <div className="flex items-center justify-center sm:justify-start">
+          <div className="flex items-center justify-center w-full">
             <div className="flex items-center gap-1.5 p-1.5 bg-white/40 rounded-2xl border border-marrow-light/10">
               <button
                 type="button"

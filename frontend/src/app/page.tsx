@@ -573,7 +573,7 @@ export default function Home() {
           ) : (
             <>
 
-              {activeTab === 'settings' ? (
+              {activeTab === 'settings' || activeTab === 'library' || activeTab === 'creator' || activeTab === 'gusti' ? (
                 <SettingsPage
                   profiles={profiles}
                   activeProfileId={activeProfileId}
@@ -594,6 +594,12 @@ export default function Home() {
                   }}
                   onConfigSaved={handleConfigSaved}
                   onFlushConfig={flushConfigure}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onAddCatalog={addCatalog}
+                  onSaveMyList={handleSaveMyList}
+                  onConfigChanged={(ver) => setConfigVersion(ver)}
+                  cataloghiData={cataloghiData}
                 />
               ) : (
                 <DashboardPage

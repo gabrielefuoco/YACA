@@ -94,6 +94,7 @@ export interface CatalogCardData {
   name: string;
   type: 'movie' | 'series' | 'both';
   media?: 'movie' | 'series' | null;
+  stremioType?: 'movie' | 'series' | 'anime';
   emoji?: string;
   source?: string;
   raw_prompt?: string;
@@ -105,6 +106,10 @@ export interface CatalogCardData {
   fonte?: 'grafo' | 'watchlist' | 'creazione' | 'preset';
   attivo?: boolean;
   ordine?: number | null;
+  nome_fonte?: string | null;
+  confidenza?: number | null;
+  semi_membri?: ShelfMemberSeed[];
+  semi_rappresentativi?: ShelfRepresentativeSeed[];
 }
 
 export type ModoId = 'generale' | 'film' | 'serie' | 'anime' | 'bambini';
@@ -126,11 +131,16 @@ export interface CatalogoEsploraVoce {
   nome: string;
   tipo: 'film' | 'serie' | 'anime' | 'bambini';
   media?: 'movie' | 'series' | null;
+  stremioType?: 'movie' | 'series' | 'anime';
   fonte: 'grafo' | 'watchlist' | 'creazione' | 'preset';
   attivo: boolean;
   ordine: number | null;
   emoji?: string;
   description?: string;
+  nome_fonte?: string | null;
+  confidenza?: number | null;
+  semi_membri?: ShelfMemberSeed[];
+  semi_rappresentativi?: ShelfRepresentativeSeed[];
 }
 
 export interface CataloghiEsploraGruppi {

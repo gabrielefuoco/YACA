@@ -10,7 +10,7 @@ interface CatalogLivePreviewProps {
   userId: string;
   profileId: string;
   sliders?: EngineSliders;
-  type?: 'movie' | 'series';
+  type?: 'movie' | 'series' | 'anime';
 }
 
 export function CatalogLivePreview({ catalogId, userId, profileId, sliders, type }: CatalogLivePreviewProps) {

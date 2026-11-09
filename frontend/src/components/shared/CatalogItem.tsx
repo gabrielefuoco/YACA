@@ -1,11 +1,13 @@
 'use client';
-import { ReactNode, DragEventHandler } from 'react';
+import { useState, useMemo, ReactNode, DragEventHandler } from 'react';
 import { CatalogCardData } from '@/types';
 import { getFrontendCatalogKind } from '@/lib/catalogKind';
 import { TIPI_CATALOGO_MAP, FONTI_CATALOGO_MAP, TipoFamiglia } from '@/lib/catalogPresentation';
 import { PosterRow } from '@/components/shared/PosterRow';
 import { Switch } from '@/components/ui/switch';
-import { GripVertical, Trash2, Pencil, ChevronUp, ChevronDown, Sparkles, List, Wand2, EyeOff, Film, Tv } from 'lucide-react';
+import { GripVertical, Trash2, Pencil, ChevronUp, ChevronDown, Sparkles, List, Wand2, EyeOff, Film, Tv, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { formatShelfSeeds } from '@/lib/shelfPresentation';
 import { useFinePointer } from '@/hooks/useFinePointer';
 
 interface CatalogItemProps {
@@ -54,17 +56,30 @@ export function CatalogItem({
   onDragEnd,
 }: CatalogItemProps) {
   const finePointer = useFinePointer();
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const mediaSet = getFrontendCatalogKind(catalog).mediaSet;
 
   const isPreset = catalog.source === 'preset' || catalog.fonte === 'preset' || (!catalog.source && !catalog.fonte);
   const fonte = catalog.fonte || catalog.source;
-  const sourceLabel = FONTI_CATALOGO_MAP[fonte || '']?.label || (isPreset ? 'Preset' : 'Creato');
+  const isRecommendation = fonte === 'grafo' || Boolean(catalog.semi_rappresentativi?.length || catalog.semi_membri?.length || catalog.nome_fonte);
+  const sourceLabel = FONTI_CATALOGO_MAP[fonte || '']?.label || (isPreset ? 'Preset' : (fonte === 'grafo' ? 'Suggerito' : 'Creato'));
   const SourceIcon = (fonte === 'preset' || fonte === 'grafo') ? Sparkles : (fonte === 'watchlist' || fonte === 'mylist' ? List : Wand2);
+
+  const seeds = useMemo(() => {
+    return formatShelfSeeds({
+      semi_membri: catalog.semi_membri,
+      semi_rappresentativi: catalog.semi_rappresentativi,
+      medium: catalog.media || (catalog.type === 'both' ? undefined : catalog.type),
+    });
+  }, [catalog.semi_membri, catalog.semi_rappresentativi, catalog.media, catalog.type]);
 
   const activeState = Boolean(catalog.attivo ?? isAttivo);
 
   // Determina tipo effettivo (film/serie/anime/bambini)
   const tipoEffettivo = (catalog.tipo || (catalog.isAnime ? 'anime' : (catalog.type === 'series' ? 'serie' : (catalog.type === 'movie' ? 'film' : null)))) as TipoFamiglia | null;
+
+  // Stremio type prioritario per l'anteprima (correzione 9: preserva 'anime' per la watchlist anime)
+  const previewType = catalog.stremioType || (catalog.type === 'both' ? 'movie' : (catalog.type || (tipoEffettivo === 'serie' ? 'series' : 'movie')));
 
   // Filtra la dicitura generica del preset (ticket 06: via dicitura fissa)
   const rawDesc = description || catalog.description || catalog.raw_prompt;
@@ -201,6 +216,20 @@ export function CatalogItem({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 ml-2 sm:ml-4">
+          {isRecommendation && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsInfoOpen(true);
+              }}
+              className="p-2 rounded-xl text-marrow-light/60 hover:text-primary hover:bg-primary/5 transition-all size-11 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+              title="Informazioni raccomandazione"
+              aria-label="Perché questo catalogo?"
+            >
+              <Info className="h-4 w-4" />
+            </button>
+          )}
           {onToggleActive && (
             <div className="flex items-center gap-2 mr-1">
               <span className={`text-xs font-bold uppercase tracking-wider hidden sm:inline ${activeState ? 'text-primary font-black' : 'text-marrow-light/50'}`}>
@@ -245,11 +274,93 @@ export function CatalogItem({
         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/row:opacity-100 transition-opacity rounded-2xl -z-10" />
         <PosterRow
           presetId={isPreset ? (catalog.id.startsWith('yaca_preset_') ? catalog.id : `yaca_preset_${catalog.id}`) : catalog.id}
-          type={catalog.type === 'both' ? 'movie' : (catalog.type || (tipoEffettivo === 'serie' ? 'series' : 'movie'))}
+          type={previewType}
           filters={catalog.filters}
           prompt={catalog.raw_prompt}
         />
       </div>
+
+      {/* Popup esplicativo raccomandazione (Ticket correzione 11) */}
+      {isRecommendation && (
+        <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+          <DialogContent className="max-w-md w-[calc(100vw-2rem)] p-4 sm:p-6 bg-[#fdfaf5] border border-marrow-light/20 rounded-2xl">
+            <DialogHeader className="text-left space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{catalog.emoji || '✨'}</span>
+                <DialogTitle className="text-base sm:text-lg font-black text-marrow-deep">
+                  {catalog.name}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-xs text-marrow-light">
+                Perché questo catalogo è presente nei tuoi suggerimenti
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {catalog.nome_fonte && (
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-marrow-deep">Origine:</span>
+                    <span className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-primary font-bold">
+                      {catalog.nome_fonte === 'tassonomia' ? 'Tassonomia' : catalog.nome_fonte === 'perche_hai_visto' ? 'Perché hai visto' : catalog.nome_fonte}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-marrow-deep">Medium:</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-white/70 border border-marrow-light/15 text-marrow-deep font-semibold">
+                    {catalog.stremioType === 'anime' ? 'anime' : (catalog.media === 'series' || catalog.type === 'series' ? 'serie' : 'film')}
+                  </span>
+                </div>
+                {typeof catalog.confidenza === 'number' && (
+                  <div className="flex items-center gap-1 text-marrow-light/70">
+                    <span className="font-bold text-marrow-deep">Confidenza:</span>
+                    <span className="font-mono font-bold text-primary">{(catalog.confidenza * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-marrow-deep">
+                  <span>Titoli del tuo profilo che lo hanno attivato</span>
+                  <span className="font-mono text-marrow-light/70">({seeds.length})</span>
+                </div>
+
+                {seeds.length === 0 ? (
+                  <p className="text-xs text-marrow-light/60 italic py-3 text-center bg-white/40 rounded-xl border border-marrow-light/10">
+                    Nessun titolo memorizzato per questo catalogo.
+                  </p>
+                ) : (
+                  <div className="flex flex-col divide-y divide-marrow-light/10 bg-white/60 rounded-xl border border-marrow-light/15 overflow-hidden max-h-60 overflow-y-auto">
+                    {seeds.map((seed, idx) => (
+                      <div key={`${seed.tmdbId || seed.titolo}-${idx}`} className="px-3 py-2 flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-bold text-marrow-deep truncate">{seed.titolo}</span>
+                          {seed.anno && (
+                            <span className="text-marrow-light/60 font-mono shrink-0">({seed.anno})</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-marrow-light/70 shrink-0">
+                          {typeof seed.plays === 'number' && (
+                            <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
+                              {seed.plays === 1 ? '1 visione' : `${seed.plays} visioni`}
+                            </span>
+                          )}
+                          {typeof seed.eta_giorni === 'number' && (
+                            <span className="text-marrow-light/60">
+                              {seed.eta_giorni <= 0 ? 'oggi' : seed.eta_giorni === 1 ? '1 gg fa' : `${seed.eta_giorni} gg fa`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

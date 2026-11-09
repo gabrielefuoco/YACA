@@ -46,6 +46,7 @@ export function catalogoVoceToCard(voce: CatalogoEsploraVoce): CatalogCardData {
     name: voce.nome,
     type: resolvedType,
     media: voce.media,
+    stremioType: voce.stremioType,
     tipo: voce.tipo,
     fonte: voce.fonte,
     attivo: voce.attivo,
@@ -53,5 +54,9 @@ export function catalogoVoceToCard(voce: CatalogoEsploraVoce): CatalogCardData {
     emoji: voce.emoji,
     description: voce.description,
     isAnime: voce.tipo === 'anime',
+    nome_fonte: voce.nome_fonte,
+    confidenza: voce.confidenza,
+    semi_membri: voce.semi_membri,
+    semi_rappresentativi: voce.semi_rappresentativi,
   };
 }

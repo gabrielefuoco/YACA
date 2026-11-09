@@ -10,7 +10,6 @@ import { usePresets } from '@/hooks/usePresets';
 
 export const ESPLORA_CATEGORIES = [
   '🔥 Top & Trend',
-  '🏮 Solo Anime',
   "🎬 Cinema d'Autore & Registi",
   '👨‍👩‍👧‍👦 Bambini & Famiglia',
   '🐉 Fantascienza & Fantasy',
@@ -23,6 +22,28 @@ export const ESPLORA_CATEGORIES = [
   '🔥 Altri Cataloghi',
   '📺 Network & Piattaforme',
 ] as const;
+
+/**
+ * Mappa estendibile per la suddivisione dei cataloghi anime in base a `media`.
+ * Correzione 12: split in un unico punto senza if-chain, con supporto per future categorie anime.
+ */
+export const ANIME_MEDIA_CATEGORY_MAP: Record<string, { id: string; label: string }> = {
+  movie: { id: 'film_anime', label: 'Film anime' },
+  series: { id: 'serie_anime', label: 'Serie anime' },
+};
+
+export const DEFAULT_ANIME_CATEGORY: { id: string; label: string } = {
+  id: 'film_anime',
+  label: 'Film anime',
+};
+
+export function resolveAnimeCategory(media?: 'movie' | 'series' | null): { id: string; label: string } {
+  if (media && ANIME_MEDIA_CATEGORY_MAP[media]) {
+    return ANIME_MEDIA_CATEGORY_MAP[media];
+  }
+  // Se media è null o non determinabile, il catalogo finisce in Film anime
+  return DEFAULT_ANIME_CATEGORY;
+}
 
 function cleanCategory(str?: string): string {
   if (!str) return '';
@@ -104,15 +125,55 @@ export function ExplorePanel({
     if (tutti.length > 0) {
       pills.push({ id: 'tutti', label: 'Tutti', items: tutti });
 
-      // 4..16: Le 13 categorie dei preset presenti in 'tutti'
+      // Separazione Anime (correzione 12: split in Film anime e Serie anime tramite mapping)
+      const animeItems = tutti.filter((item) => {
+        const cat = getCategoryForCatalog(item.id);
+        return item.tipo === 'anime' || (cat && cleanCategory(cat) === cleanCategory('🏮 Solo Anime'));
+      });
+
+      const animeGroups: Record<string, CatalogoEsploraVoce[]> = {
+        film_anime: [],
+        serie_anime: [],
+      };
+      animeItems.forEach((item) => {
+        const resolved = resolveAnimeCategory(item.media);
+        if (!animeGroups[resolved.id]) {
+          animeGroups[resolved.id] = [];
+        }
+        animeGroups[resolved.id].push(item);
+      });
+
+      // 4..16: Categorie dei preset presenti in 'tutti'
       for (const cat of ESPLORA_CATEGORIES) {
         const cleanCat = cleanCategory(cat);
         const matching = tutti.filter((item) => {
+          if (item.tipo === 'anime') return false;
           const itemCat = getCategoryForCatalog(item.id);
           return itemCat && cleanCategory(itemCat) === cleanCat;
         });
         if (matching.length > 0) {
           pills.push({ id: cat, label: cat, items: matching });
+        }
+
+        // Posiziona i due pill anime (Film anime e Serie anime) subito dopo '🔥 Top & Trend'
+        if (cleanCat === cleanCategory('🔥 Top & Trend')) {
+          if (animeGroups.film_anime.length > 0) {
+            pills.push({ id: 'film_anime', label: 'Film anime', items: animeGroups.film_anime });
+          }
+          if (animeGroups.serie_anime.length > 0) {
+            pills.push({ id: 'serie_anime', label: 'Serie anime', items: animeGroups.serie_anime });
+          }
+        }
+      }
+
+      // Se '🔥 Top & Trend' non era presente in tutti (es. modalità Anime), aggiungi i gruppi anime
+      const animeAlreadyAdded = pills.some((p) => p.id === 'film_anime' || p.id === 'serie_anime');
+      if (!animeAlreadyAdded) {
+        if (animeGroups.film_anime.length > 0) {
+          pills.push({ id: 'film_anime', label: 'Film anime', items: animeGroups.film_anime });
+        }
+        if (animeGroups.serie_anime.length > 0) {
+          pills.push({ id: 'serie_anime', label: 'Serie anime', items: animeGroups.serie_anime });
         }
       }
     }
