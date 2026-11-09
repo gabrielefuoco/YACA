@@ -29,6 +29,8 @@ const {
 } = require('../src/pool');
 const { contestoDi } = require('../src/profile/context');
 const library = require('../src/library');
+const cache = require('../src/cache');
+const { shelvesCache } = require('../src/cache/cacheInstances');
 
 describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
     beforeEach(() => {
@@ -104,19 +106,21 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
 
     describe('2. Il filo: dal profilo a graph_rows e getHeroPool', () => {
         beforeEach(() => {
+            // Cache del pool sempre miss e cache scaffali svuotata: senza, il secondo test riusa
+            // il risultato del primo (stessa chiave) e il grafo non viene chiamato affatto.
+            jest.spyOn(cache, 'leggi').mockResolvedValue({ value: null, status: 'miss' });
+            if (typeof shelvesCache?.clear === 'function') shelvesCache.clear();
             jest.spyOn(library, 'semiDi').mockResolvedValue({
                 seeds: new Map([['603', 4]]),
                 counts: { loved: 1, liked: 0, watched: 0, library: 0 }
             });
         });
 
-        test('gli slider salvati nel profilo raggiungono graphClient.raccomanda attraverso getHeroPool', async () => {
-            const customSliders = { largo: 7, lontano: 0.4, cozy: -0.6, canone: 0.8 };
-            const raccomandaSpy = jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
-                liste: [
-                    { ruolo: 'il_tuo_mondo', titoli: [{ tmdbId: 603, medium: 'movie', punteggio: 1.0 }] },
-                    { ruolo: 'un_passo_fuori', titoli: [{ tmdbId: 604, medium: 'movie', punteggio: 0.8 }] }
-                ]
+        test('gli slider salvati nel profilo raggiungono graphClient.scaffali attraverso getHeroPool', async () => {
+            const customSliders = { tonalita: -0.6, notorieta: 0.8 };
+            // Il pool serve gli scaffali: è quella la chiamata che deve portare gli slider.
+            const scaffaliSpy = jest.spyOn(graphClient, 'scaffali').mockResolvedValue({
+                contratto: 1, versioni: {}, scaffali: []
             });
 
             const userConfig = {
@@ -140,16 +144,16 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
                 userConfig
             });
 
-            expect(raccomandaSpy).toHaveBeenCalledTimes(1);
-            const argsPassed = raccomandaSpy.mock.calls[0][0];
-            expect(argsPassed.opzioni).toEqual(customSliders);
-            expect(argsPassed.medium).toBe('movie');
-            raccomandaSpy.mockRestore();
+            expect(scaffaliSpy).toHaveBeenCalled();
+            const opzioniInviate = scaffaliSpy.mock.calls[0][1].opzioni;
+            expect(opzioniInviate).toEqual(customSliders);
+            expect(scaffaliSpy.mock.calls[0][1].medium).toBe('movie');
+            scaffaliSpy.mockRestore();
         });
 
-        test('se il profilo non ha slider, opzioni è undefined e i default del motore valgono', async () => {
-            const raccomandaSpy = jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
-                liste: []
+        test('se il profilo non ha slider, i default del motore valgono', async () => {
+            const scaffaliSpy = jest.spyOn(graphClient, 'scaffali').mockResolvedValue({
+                contratto: 1, versioni: {}, scaffali: []
             });
 
             const userConfig = {
@@ -171,10 +175,10 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
                 userConfig
             });
 
-            expect(raccomandaSpy).toHaveBeenCalledTimes(1);
-            const argsPassed = raccomandaSpy.mock.calls[0][0];
-            expect(argsPassed.opzioni).toBeUndefined();
-            raccomandaSpy.mockRestore();
+            expect(scaffaliSpy).toHaveBeenCalled();
+            const opzioniInviate = scaffaliSpy.mock.calls[0][1].opzioni;
+            expect(opzioniInviate === undefined || Object.keys(opzioniInviate).length === 0).toBe(true);
+            scaffaliSpy.mockRestore();
         });
     });
 
@@ -191,7 +195,7 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
             const keySenzaSlider = buildSharedHeroCacheKey(baseParams);
             const keySliderDefault = buildSharedHeroCacheKey({
                 ...baseParams,
-                sliders: { largo: 4, lontano: 0, cozy: 0, canone: 0 }
+                sliders: { tonalita: 0, notorieta: 0 }
             });
 
             expect(keySenzaSlider).toBe(`user1_prof1_heroes_${HERO_CACHE_KEY_VERSION}_movie`);
@@ -199,14 +203,15 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
         });
 
         test('slider modificati cambiano la chiave di cache evitando collisioni con vecchie risposte', () => {
+            // I cursori vivi sono due: tonalità e notorietà.
             const keyBase = buildSharedHeroCacheKey(baseParams);
             const keyModificata = buildSharedHeroCacheKey({
                 ...baseParams,
-                sliders: { largo: 6, lontano: 0.3, cozy: 0, canone: 0 }
+                sliders: { tonalita: -0.6, notorieta: 0.8 }
             });
 
             expect(keyModificata).not.toBe(keyBase);
-            expect(keyModificata).toContain('_sl_6_0.3_0_0');
+            expect(keyModificata).toContain('_sl_-0.6_0.8');
         });
     });
 

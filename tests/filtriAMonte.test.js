@@ -37,34 +37,33 @@ async function esegui({ kidsMode = false, typeSelectors = {} } = {}) {
         counts: { loved: 1, liked: 0, watched: 0, library: 0 }
     });
     jest.spyOn(graphClient, 'getGraphHealthVersions').mockResolvedValue({ artefatto: 'a', ricetta: 'r' });
-    jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
+    // Il pool serve gli scaffali: è quella la chiamata che deve portare i filtri.
+    jest.spyOn(graphClient, 'scaffali').mockResolvedValue({
         contratto: 1,
         versioni: { artefatto: 'a', ricetta: 'r' },
-        semi: { n: 1, da_catalogo: false },
-        liste: [],
-        motivi: []
+        scaffali: []
     });
     const strategia = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
     await strategia.run(
         { userId: 'u1', context: 'p1', mediaType: 'movie', kidsMode, typeSelectors, userConfig: configCon() },
         { assigned: {}, rawTraktResult: { traktAvailable: false } }
     );
-    return graphClient.raccomanda.mock.calls[0][0];
+    return graphClient.scaffali.mock.calls[0][1].opzioni;
 }
 
 describe('Ticket 12: la politica viaggia fino al motore', () => {
     test('anime "only" e kids-mode arrivano come `filtri`', async () => {
         const chiamata = await esegui({ kidsMode: true, typeSelectors: { anime: 'only' } });
-        expect(chiamata.opzioni.filtri).toEqual({ anime: 'only', kids: true });
+        expect(chiamata.filtri).toEqual({ anime: 'only', kids: true });
     });
 
     test('anime "exclude" senza kids', async () => {
         const chiamata = await esegui({ typeSelectors: { anime: 'exclude' } });
-        expect(chiamata.opzioni.filtri).toEqual({ anime: 'exclude', kids: false });
+        expect(chiamata.filtri).toEqual({ anime: 'exclude', kids: false });
     });
 
     test('profilo neutro: nessun filtro (il motore non deve mascherare niente)', async () => {
         const chiamata = await esegui({ typeSelectors: { anime: 'neutral' } });
-        expect(chiamata.opzioni).toBeUndefined();
+        expect(chiamata).toEqual({});
     });
 });

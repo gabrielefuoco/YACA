@@ -104,22 +104,15 @@ function deriva(descrizione) {
             const animeSuffix = selettori?.anime ? `_a_${selettori.anime}` : '';
             const sl = varia.slider ?? varia.sliders;
             let sliderSuffix = '';
+            // I cursori vivi sono due: tonalità e notorietà. `largo`/`lontano` non esistono più.
             if (sl && typeof sl === 'object') {
-                const largo = sl.largo !== undefined ? Number(sl.largo) : 4;
-                const lontano = sl.lontano !== undefined ? Number(sl.lontano) : 0;
-                const cozy = sl.cozy !== undefined ? Number(sl.cozy) : 0;
-                const canone = sl.canone !== undefined ? Number(sl.canone) : 0;
-                if (largo !== 4 || lontano !== 0 || cozy !== 0 || canone !== 0) {
-                    sliderSuffix = `_sl_${largo}_${lontano}_${cozy}_${canone}`;
+                const tonalita = Number(sl.tonalita ?? sl.cozy ?? 0);
+                const notorieta = Number(sl.notorieta ?? sl.canone ?? 0);
+                if (tonalita !== 0 || notorieta !== 0) {
+                    sliderSuffix = `_sl_${tonalita}_${notorieta}`;
                 }
             }
 
-            // Ticket 22: il motore deduce solo fra le righe servite, quindi la risposta dipende da
-            // quell'insieme. Un hash corto lo porta nella chiave senza allungarla a dismisura.
-            const righe = Array.isArray(varia.righeServite) ? [...varia.righeServite].sort() : null;
-            const righeSuffix = righe && righe.length > 0
-                ? `_rs_${crypto.createHash('md5').update(righe.join(',')).digest('hex').slice(0, 8)}`
-                : '';
 
             // Inclusione identità scaffali (catalog_id + nome): se cambiano gli interessi o i cluster
             // del profilo, la chiave si invalida immediatamente e l'utente non eredita il vecchio feed.
@@ -133,7 +126,7 @@ function deriva(descrizione) {
                 shelvesSuffix = `_sh_${crypto.createHash('md5').update(shelfSig).digest('hex').slice(0, 8)}`;
             }
 
-            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}${righeSuffix}${shelvesSuffix}`;
+            chiave = `${utente}_${profilo}_heroes_${vNorm}${gSuffix}_${media}${kidsSuffix}${animeSuffix}${sliderSuffix}${shelvesSuffix}`;
             break;
         }
 
@@ -163,13 +156,12 @@ function deriva(descrizione) {
             const animeSuffix = selettori?.anime ? `_a_${selettori.anime}` : '';
             const slRec = varia.slider ?? varia.sliders;
             let sliderSuffixRec = '';
+            // I cursori vivi sono due: tonalità e notorietà. `largo`/`lontano` non esistono più.
             if (slRec && typeof slRec === 'object') {
-                const largo = slRec.largo !== undefined ? Number(slRec.largo) : 4;
-                const lontano = slRec.lontano !== undefined ? Number(slRec.lontano) : 0;
-                const cozy = slRec.cozy !== undefined ? Number(slRec.cozy) : 0;
-                const canone = slRec.canone !== undefined ? Number(slRec.canone) : 0;
-                if (largo !== 4 || lontano !== 0 || cozy !== 0 || canone !== 0) {
-                    sliderSuffixRec = `_sl_${largo}_${lontano}_${cozy}_${canone}`;
+                const tonalita = Number(slRec.tonalita ?? slRec.cozy ?? 0);
+                const notorieta = Number(slRec.notorieta ?? slRec.canone ?? 0);
+                if (tonalita !== 0 || notorieta !== 0) {
+                    sliderSuffixRec = `_sl_${tonalita}_${notorieta}`;
                 }
             }
 

@@ -152,27 +152,6 @@ const activeHeroGroupBuilds = new Map();
  * @param {{userConfig?: object, context?: string, mediaType?: string}} params
  * @returns {string[]|null}
  */
-function righeServiteDelProfilo({ userConfig, context, mediaType = 'movie' } = {}) {
-    const profili = Array.isArray(userConfig?.profiles) ? userConfig.profiles : [];
-    const idProfilo = (context && typeof context === 'string') ? context : userConfig?.activeProfileId;
-    const profilo = profili.find((p) => p.id === idProfilo);
-    const presets = selectedPresetsDi(profilo);
-    if (!Array.isArray(presets) || presets.length === 0) return null;
-
-    const ruoli = new Set();
-    for (const { ruolo, slug } of RUOLI_HERO) {
-        if (presets.includes(getHeroCatalogId(slug, mediaType))) ruoli.add(ruolo);
-    }
-    for (const slug of RUOLI_MICRO) {
-        if (presets.includes(getHeroCatalogId(slug, mediaType))) ruoli.add(slug);
-    }
-    if (presets.includes(getHeroCatalogId('punti_incontro', mediaType))) {
-        for (const ruolo of RUOLI_PONTE) ruoli.add(ruolo);
-    }
-    // Nessuna riga di QUESTO medium accesa: non c'e' niente da proteggere, si torna al §9.1 (`null`),
-    // non a un insieme vuoto (che direbbe «nessuna riga partecipa» e sarebbe un'altra cosa).
-    return ruoli.size > 0 ? [...ruoli] : null;
-}
 
 function getHeroCatalogId(slug, mediaType) {
     return `yaca_${slug}_${mediaType === 'movie' ? 'movies' : 'series'}`;
@@ -204,7 +183,7 @@ function slidersDelPool({ userConfig = null, sliders = null, slider = null } = {
     return undefined;
 }
 
-function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders, righeServite, modo }) {
+function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSelectors, graphVersions, slider, sliders, modo }) {
     const versions = graphVersions !== undefined ? graphVersions : graphClient.getGraphHealthVersionsCached();
     const sl = sliders || slider;
     const { chiave } = cache.deriva({
@@ -220,12 +199,7 @@ function buildSharedHeroCacheKey({ userId, context, mediaType, kidsMode, typeSel
                 // Due modalità non devono condividere le righe (stessa ragione della
                 // chiave degli scaffali). Inserito solo con il flag acceso.
                 ...(modo ? { modo } : {}),
-                ...(sl ? { slider: sl } : {}),
-                // Ticket 22: il motore deduce solo fra le righe servite, quindi la risposta dipende da
-                // questo insieme. Senza, il profilo A erediterebbe le righe del profilo B.
-                ...(Array.isArray(righeServite) && righeServite.length > 0
-                    ? { righeServite: [...righeServite].sort() }
-                    : {})
+                ...(sl ? { slider: sl } : {})
             },
             invalida: {
                 artefatto: versions?.artefatto,
@@ -402,11 +376,6 @@ const HERO_STRATEGIES = [
         // =========================================================================
         run: async (ctx, { assigned, rawTraktResult, sharedState }) => {
             const med = ctx.mediaType === 'movie' ? 'movie' : 'series';
-            const suffisso = ctx.mediaType === 'movie' ? 'movies' : 'series';
-            const catMondi = `yaca_mondi_${suffisso}`;
-            const catPasso = `yaca_passo_fuori_${suffisso}`;
-            const catUscite = `yaca_uscite_nuove_${suffisso}`;
-            const catNicchia = `yaca_nicchia_di_qualita_${suffisso}`;
 
             try {
                 const { semiDi } = require('../library');
@@ -543,102 +512,23 @@ const HERO_STRATEGIES = [
                         console.log(`[Scaffali] ${ctx.mediaType}: serviti ${scaffali.length} scaffali dinamici dal grafo`);
                         return;
                     }
-                }
 
-                // -------------------------------------------------------------------------
-                // CODICE LEGACY DORMIENTE: 10 RUOLI EDITORIALI (POST /raccomanda)
-                // -------------------------------------------------------------------------
-                // Ticket 22: il waterfall del motore deduce solo fra le righe che qualcuno mostra.
-                const servite = ctx.righeServite !== undefined
-                    ? ctx.righeServite
-                    : righeServiteDelProfilo({ userConfig: ctx.userConfig, context: ctx.context, mediaType: med });
-                // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
-                // (a valle si butta via la pagina: se i primi 20 sono 15 non idonei, la riga ne serve 5).
-                // `opzioni` resta `undefined` quando non c'e' niente da aggiungere: se lo si manda vuoto,
-                // i default del motore non valgono piu' (Ticket 41 lo fissa, ed e' giusto).
-                const extra = {
-                    ...(servite ? { righe_servite: servite } : {}),
-                    ...(filtri.anime || filtri.kids ? { filtri } : {}),
-                    ...(filtri.kids ? { kids: true } : {})
-                };
-                const opzioniMotore = Object.keys(extra).length > 0 ? { ...(opzioni || {}), ...extra } : opzioni;
-                const resGraph = await graphClient.raccomanda({
-                    semi,
-                    medium: med,
-                    opzioni: opzioniMotore,
-                    cap
-                });
-
-                const liste = resGraph?.liste || [];
-                const perRuolo = new Map(liste.map((l) => [l.ruolo, l]));
-                const catalogo = (slug) => getHeroCatalogId(slug, ctx.mediaType);
-
-                for (const { ruolo, slug } of RUOLI_HERO) {
-                    assigned[catalogo(slug)] = itemsDi(perRuolo.get(ruolo));
-                }
-                for (const slug of RUOLI_MICRO) {
-                    // Se il motore non produce quel filone, lo slot resta vuoto (non sparisce).
-                    assigned[catalogo(slug)] = itemsDi(perRuolo.get(slug));
-                }
-                // Un solo catalogo per i ponti: si uniscono le coppie in ordine, senza doppioni.
-                const vistiPonte = new Set();
-                const ponte = [];
-                for (const ruolo of RUOLI_PONTE) {
-                    for (const t of (perRuolo.get(ruolo)?.titoli || [])) {
-                        const id = `tmdb:${t.tmdbId}`;
-                        if (vistiPonte.has(id)) continue;
-                        vistiPonte.add(id);
-                        ponte.push(t);
+                    // Il servizio ha risposto ma senza scaffali: è un guasto, non un risultato vuoto.
+                    // Prima si cadeva in una pipeline editoriale che nessuno dichiarava; ora lo si dice.
+                    if (sharedState) {
+                        sharedState.graphCallFailed = true;
+                        sharedState.shelves = [];
                     }
-                }
-                assigned[catalogo('punti_incontro')] = itemsDi({ titoli: ponte });
-
-                const nMondi = (assigned[catalogo('mondi')] || []).length;
-                const nPasso = (assigned[catalogo('passo_fuori')] || []).length;
-                const nUscite = (assigned[catalogo('uscite_nuove')] || []).length;
-                const nNicchia = (assigned[catalogo('nicchia_di_qualita')] || []).length;
-                const nClassici = (assigned[catalogo('classici')] || []).length;
-                const nUltime = (assigned[catalogo('ultime_visioni')] || []).length;
-                const nPonte = (assigned[catalogo('punti_incontro')] || []).length;
-                const nMicro = Object.fromEntries(
-                    RUOLI_MICRO.map((slug) => [slug.replace(/^micro_cluster_/, ''), (assigned[catalogo(slug)] || []).length])
-                );
-                const nonServiti = {};
-                for (const li of liste) {
-                    if (RUOLI_SERVITI.has(li.ruolo)) continue;
-                    const ruolo = String(li.ruolo ?? 'senza-ruolo');
-                    const famiglia = ruolo.replace(/_\d+$/, '');
-                    const voce = nonServiti[famiglia] || { righe: 0, titoli: 0 };
-                    voce.righe += 1;
-                    voce.titoli += (li.titoli || []).length;
-                    nonServiti[famiglia] = voce;
+                    console.warn(`[Scaffali] ${ctx.mediaType}: il servizio ha risposto senza scaffali`);
                 }
 
-                console.log(`[Mondi] ${ctx.mediaType}: seed da archivio ${semi.length - traktCount}, da Trakt ${traktCount}` +
-                    ` · mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}` +
-                    ` · classici ${nClassici} · ultime ${nUltime} · ponte ${nPonte} · micro ${JSON.stringify(nMicro)}`);
-                if (Object.keys(nonServiti).length > 0) {
-                    console.log(`[Mondi] righe del grafo senza catalogo (dichiarate): ${JSON.stringify(nonServiti)}`);
-                }
-                if (semi.length > 0 && nMondi === 0 && nPasso === 0 && nUscite === 0 && nNicchia === 0) {
-                    console.warn(`[Mondi] ATTENZIONE: ${semi.length} seed e ZERO titoli in tutte le righe ` +
-                        `(${ctx.mediaType}). O il grafo non conosce quei titoli, o l'id non si risolve a valle.`);
-                }
             } catch (e) {
-                // Un guasto a meta' strada non deve lasciare righe a meta': si azzerano TUTTE le dieci.
-                const cat = (slug) => getHeroCatalogId(slug, ctx.mediaType);
-                for (const { slug } of RUOLI_HERO) assigned[cat(slug)] = [];
-                for (const slug of RUOLI_MICRO) assigned[cat(slug)] = [];
-                assigned[cat('punti_incontro')] = [];
-                assigned[catMondi] = assigned[catMondi] || [];
-                assigned[catPasso] = assigned[catPasso] || [];
-                assigned[catUscite] = assigned[catUscite] || [];
-                assigned[catNicchia] = assigned[catNicchia] || [];
+                // Il grafo non ha risposto: nessuno scaffale, e lo si dichiara.
                 if (sharedState) {
                     sharedState.graphCallFailed = true;
                     sharedState.shelves = [];
                 }
-                console.warn(`[Mondi] motore non raggiungibile: ${e?.message || e}`);
+                console.warn(`[Scaffali] motore non raggiungibile: ${e?.message || e}`);
             }
         }
     }
@@ -663,7 +553,7 @@ async function runPoolBuilder(strat, ctx, args) {
 /**
  * Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta.
  */
-async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders, righeServite = null }) {
+async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken, tmdbApiKey, kidsMode, userConfig, typeSelectors, slider, sliders }) {
     const { profile, user } = await fetchProfileContext(userId, context).catch(() => ({}));
     // Con `MODI_ABILITATI` acceso le leve sono quelle della modalità attiva: i
     // selettori e il kids-mode del profilo non sono più input (ticket 01).
@@ -711,7 +601,6 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
         slider: resolvedSliders,
         tasteProfile: profile || null,
         profile: profile || null,
-        righeServite,
         ...(modoPool ? { modo: modoPool.modo, leve: modoPool.leve } : {})
     };
 
@@ -768,10 +657,7 @@ function toHeroDesc(args, keyOrDesc) {
                 kids: args?.kidsMode,
                 selettori: args?.typeSelectors,
                 ...(args?.modo ? { modo: args.modo } : {}),
-                ...(sl ? { slider: sl } : {}),
-                ...(Array.isArray(args?.righeServite) && args.righeServite.length > 0
-                    ? { righeServite: [...args.righeServite].sort() }
-                    : {})
+                ...(sl ? { slider: sl } : {})
             },
             invalida: {
                 artefatto: args?.graphVersions?.artefatto,
@@ -866,7 +752,6 @@ async function getHeroPool(params) {
     const graphVersions = await graphClient.getGraphHealthVersions();
     // Ticket 22: le righe accese per questo profilo entrano nella chiave (il motore deduce solo fra
     // quelle) e viaggiano fino alla chiamata del motore.
-    const righeServite = righeServiteDelProfilo({ userConfig, context, mediaType });
     const heroDesc = toHeroDesc({
         userId,
         context,
@@ -876,7 +761,6 @@ async function getHeroPool(params) {
         graphVersions,
         sliders: resolvedSliders,
         slider: resolvedSliders,
-        righeServite,
         ...(modoPool ? { modo: modoPool.modo } : {})
     });
     const sharedGroup = await getSharedHeroCatalogs({
@@ -891,7 +775,6 @@ async function getHeroPool(params) {
         graphVersions,
         sliders: resolvedSliders,
         slider: resolvedSliders,
-        righeServite
     }, heroDesc);
 
     const assignedCache = sharedGroup?.catalogs || {};
@@ -913,16 +796,6 @@ async function getHeroPool(params) {
             `(media ${statImpressioni.giorniMedi} giorni in home), ` +
             `${statImpressioni.spostamenti} cambi di posizione (decadimento + alpha)${nonOrdinate}`);
     }
-    const catMondi = `yaca_mondi_${mediaType === 'movie' ? 'movies' : 'series'}`;
-    const catPasso = `yaca_passo_fuori_${mediaType === 'movie' ? 'movies' : 'series'}`;
-    const catUscite = `yaca_uscite_nuove_${mediaType === 'movie' ? 'movies' : 'series'}`;
-    const catNicchia = `yaca_nicchia_di_qualita_${mediaType === 'movie' ? 'movies' : 'series'}`;
-    const nMondi = (assigned[catMondi] || []).length;
-    const nPasso = (assigned[catPasso] || []).length;
-    const nUscite = (assigned[catUscite] || []).length;
-    const nNicchia = (assigned[catNicchia] || []).length;
-    console.log(`[Mondi] ${mediaType}: pool mondi ${nMondi} · passo fuori ${nPasso} · uscite ${nUscite} · nicchia ${nNicchia}`);
-
     return {
         ...assigned,
         catalogs: assigned,
@@ -938,7 +811,6 @@ module.exports = {
     buildSharedHeroCatalogs,
     buildSharedHeroCacheKey,
     getRecommendationId,
-    righeServiteDelProfilo,
     getHeroCatalogId,
     getCachedProfileShelves,
     setCachedProfileShelves,

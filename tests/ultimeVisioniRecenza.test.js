@@ -1,6 +1,7 @@
 const { HERO_STRATEGIES, convertiSemiPerGrafo } = require('../src/pool');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
+const { shelvesCache } = require('../src/cache/cacheInstances');
 const { SEED_RECENTI_QUANTI } = library;
 
 /** `tipi` come lo consegna `semiDi` (Ticket 17): nei fixture il tipo e' quello che il test ha scritto. */
@@ -76,33 +77,32 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         for (let i = 1; i <= 5; i++) expect(recent.has(i)).toBe(false);
     });
 
-    test('il pool manda recente al servizio del grafo', async () => {
+    test('il pool manda l età dei semi al servizio del grafo', async () => {
         jest.clearAllMocks();
-        const ultimaVisione = new Map([['603', 200], ['314', 0]]);
+        // Contratto di `/scaffali`: ogni seme porta `eta_giorni` (numero). Il flag `recente` è una
+        // selezione che resta a monte, dentro `convertiSemiPerGrafo` — provata dal test precedente.
         jest.spyOn(library, 'semiDi').mockResolvedValue({
             seeds: new Map([['603', 3], ['314', 4]]),
             counts: { loved: 1, liked: 1, watched: 0, library: 0 },
-            ultimaVisione
+            ultimaVisione: new Map([['603', 200], ['314', 0]])
         });
-        jest.spyOn(graphClient, 'raccomanda').mockResolvedValue({
-            liste: []
+        jest.spyOn(graphClient, 'scaffali').mockResolvedValue({
+            contratto: 1, versioni: {}, scaffali: []
         });
+        if (typeof shelvesCache?.clear === 'function') shelvesCache.clear();
 
         const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
-        const assigned = {};
-        await graphStrategy.run({
-            userId: 'u1',
-            context: 'p1',
-            mediaType: 'movie',
-            userConfig: {}
-        }, { assigned, rawTraktResult: { traktAvailable: false } });
+        await graphStrategy.run(
+            { userId: 'u1', context: 'p1', mediaType: 'movie', userConfig: {} },
+            { assigned: {}, rawTraktResult: { traktAvailable: false } }
+        );
 
-        const call = graphClient.raccomanda.mock.calls[0][0];
-        const semi = call.semi;
-        const recentIds = semi.filter((s) => s.recente === true).map((s) => s.tmdbId);
-        expect(recentIds).toEqual([603]);
+        const semi = graphClient.scaffali.mock.calls[0][0];
+        expect(semi.length).toBeGreaterThan(0);
         for (const s of semi) {
-            if (s.tmdbId !== 603) expect(s).not.toHaveProperty('recente');
+            expect(typeof s.eta_giorni).toBe('number');
+            expect(Number.isFinite(s.eta_giorni)).toBe(true);
+            expect(s).not.toHaveProperty('recente');
         }
     });
 

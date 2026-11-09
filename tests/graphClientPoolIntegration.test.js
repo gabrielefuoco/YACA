@@ -112,9 +112,7 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             }, { assigned, rawTraktResult: { traktAvailable: false }, sharedState });
 
             expect(sharedState.graphCallFailed).toBe(true);
-            expect(assigned.yaca_mondi_movies).toEqual([]);
-            expect(assigned.yaca_passo_fuori_movies).toEqual([]);
-            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[Mondi] motore non raggiungibile: connect ECONNREFUSED'));
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[Scaffali] movie: il servizio ha risposto senza scaffali'));
 
             warnSpy.mockRestore();
         });
