@@ -8,10 +8,9 @@ import { useModoCatalogs } from '@/hooks/useModoCatalogs';
 import { usePresets } from '@/hooks/usePresets';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { Header } from '@/components/layout/Header';
-import { TabNav } from '@/components/layout/TabNav';
+import { TabNav, AppTab } from '@/components/layout/TabNav';
 import { LoginPage } from '@/components/pages/LoginPage';
 import { DashboardPage } from '@/components/pages/DashboardPage';
-import { ExplorePanel } from '@/components/dashboard/ExplorePanel';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { MyList, StremioAuth, Profile, Catalog, ProfileTemplate, DEFAULT_ENGINE_SLIDERS } from '@/types';
@@ -57,7 +56,7 @@ export default function Home() {
   } = useAuth();
 
   const [traktExpiresAt, setTraktExpiresAt] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'explore' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
   const [myLists, setMyLists] = useState<MyList[]>([]);
   const [customCatalogs, setCustomCatalogs] = useState<Catalog[]>([]);
   const [configVersion, setConfigVersion] = useState<string | undefined>();
@@ -574,46 +573,7 @@ export default function Home() {
           ) : (
             <>
 
-              {activeTab === 'dashboard' && (
-                <DashboardPage
-                  profiles={profiles}
-                  editingProfileId={editingProfileId}
-                  activeProfileId={activeProfileId}
-                  customCatalogs={customCatalogs}
-                  onTogglePreset={togglePreset}
-                  onReorderCatalogs={reorderCatalogs}
-                  onRemoveCatalog={removeCatalog}
-                  onAddCatalog={addCatalog}
-                  onUpdateCatalog={updateCatalog}
-                  onSaveMyList={handleSaveMyList}
-                  onRemoveMyList={handleRemoveMyList}
-                  onUpdateProfile={updateProfile}
-                  onTemplateApplied={handleTemplateApplied}
-                  syncStatus={syncStatus}
-                  userId={userId ?? undefined}
-                  onGoToExplore={() => setActiveTab('explore')}
-                  onConfigChanged={(ver) => setConfigVersion(ver)}
-                  cataloghiData={cataloghiData}
-                  modi={modi}
-                  activeModo={activeModo}
-                  isSwitchingModo={isSwitchingModo}
-                  propagationMessage={propagationMessage}
-                  onSelectModo={selectModo}
-                  onReorderActiveCatalogs={reorderActiveCatalogs}
-                />
-              )}
-
-              {activeTab === 'explore' && (
-                <ExplorePanel
-                  data={cataloghiData}
-                  loading={cataloghiLoading}
-                  activeModo={activeModo}
-                  onToggleActive={toggleCatalogActive}
-                  onConfigChanged={(ver) => setConfigVersion(ver)}
-                />
-              )}
-
-              {activeTab === 'settings' && (
+              {activeTab === 'settings' ? (
                 <SettingsPage
                   profiles={profiles}
                   activeProfileId={activeProfileId}
@@ -634,6 +594,37 @@ export default function Home() {
                   }}
                   onConfigSaved={handleConfigSaved}
                   onFlushConfig={flushConfigure}
+                />
+              ) : (
+                <DashboardPage
+                  profiles={profiles}
+                  editingProfileId={editingProfileId}
+                  activeProfileId={activeProfileId}
+                  presets={presets}
+                  customCatalogs={customCatalogs}
+                  onTogglePreset={togglePreset}
+                  onReorderCatalogs={reorderCatalogs}
+                  onRemoveCatalog={removeCatalog}
+                  onAddCatalog={addCatalog}
+                  onUpdateCatalog={updateCatalog}
+                  onSaveMyList={handleSaveMyList}
+                  onRemoveMyList={handleRemoveMyList}
+                  onUpdateProfile={updateProfile}
+                  onTemplateApplied={handleTemplateApplied}
+                  syncStatus={syncStatus}
+                  userId={userId ?? undefined}
+                  onConfigChanged={(ver) => setConfigVersion(ver)}
+                  cataloghiData={cataloghiData}
+                  cataloghiLoading={cataloghiLoading}
+                  modi={modi}
+                  activeModo={activeModo}
+                  isSwitchingModo={isSwitchingModo}
+                  propagationMessage={propagationMessage}
+                  onSelectModo={selectModo}
+                  onToggleCatalogActive={toggleCatalogActive}
+                  onReorderActiveCatalogs={reorderActiveCatalogs}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
                 />
               )}
             </>

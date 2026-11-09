@@ -1,16 +1,46 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { CatalogoEsploraVoce, CataloghiEsploraResponse, ModoId } from '@/types';
+import { useState, useMemo, useRef } from 'react';
+import { CatalogoEsploraVoce, CataloghiEsploraResponse, ModoId, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
-import { TIPI_CATALOGO_MAP, ORDINE_TIPI, TipoFamiglia, catalogoVoceToCard } from '@/lib/catalogPresentation';
-import { Search, Loader2 } from 'lucide-react';
+import { catalogoVoceToCard } from '@/lib/catalogPresentation';
+import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { usePresets } from '@/hooks/usePresets';
+
+export const ESPLORA_CATEGORIES = [
+  '🔥 Top & Trend',
+  '🏮 Solo Anime',
+  "🎬 Cinema d'Autore & Registi",
+  '👨‍👩‍👧‍👦 Bambini & Famiglia',
+  '🐉 Fantascienza & Fantasy',
+  '👻 Brivido & Paura',
+  '🌏 K-Drama, Dizi & Asia',
+  '🕵️ Crimine, Mistero & Thriller',
+  '🍿 Serata Leggera & Risate',
+  '💥 Adrenalina & Avventura',
+  '🌍 Documentari & Storie Vere',
+  '🔥 Altri Cataloghi',
+  '📺 Network & Piattaforme',
+] as const;
+
+function cleanCategory(str?: string): string {
+  if (!str) return '';
+  return str.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+}
+
+interface ExplorePill {
+  id: string;
+  label: string;
+  items: CatalogoEsploraVoce[];
+}
 
 interface ExplorePanelProps {
   data: CataloghiEsploraResponse | null;
   loading?: boolean;
   activeModo?: ModoId;
-  onToggleActive: (id: string, attivo: boolean) => Promise<any> | void;
+  presets?: Preset[];
+  onToggleActive?: (id: string, attivo: boolean) => Promise<any> | void;
   onEditCatalog?: (catalog: any) => void;
   onConfigChanged?: (configVersion: string) => void;
 }
@@ -18,17 +48,95 @@ interface ExplorePanelProps {
 export function ExplorePanel({
   data,
   loading = false,
-  activeModo,
+  presets: propsPresets,
   onToggleActive,
   onEditCatalog,
-  onConfigChanged,
 }: ExplorePanelProps) {
+  const { presets: hookPresets } = usePresets();
+  const presets = propsPresets && propsPresets.length > 0 ? propsPresets : hookPresets;
+
+  const [selectedPillId, setSelectedPillId] = useState<string>('raccomandazioni');
   const [search, setSearch] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState<string>('tutti');
+  const [showSearch, setShowSearch] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Mappa di preset per risolvere la categoria per ID (supporta con e senza prefisso yaca_preset_)
+  const presetCategoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    presets.forEach((p) => {
+      if (p.id && p.category) {
+        map.set(p.id, p.category);
+        const cleanId = p.id.replace(/^yaca_preset_/, '');
+        map.set(cleanId, p.category);
+        map.set(`yaca_preset_${cleanId}`, p.category);
+      }
+    });
+    return map;
+  }, [presets]);
+
+  const getCategoryForCatalog = (id: string): string | undefined => {
+    return presetCategoryMap.get(id);
+  };
+
+  // Costruzione dinamica delle pillole di Esplora:
+  // Raccomandazioni · Le mie creazioni · Tutti · <le 13 categorie>
+  // I gruppi assenti dalla risposta API non generano la pillola (niente pillole vuote)
+  const availablePills = useMemo<ExplorePill[]>(() => {
+    const pills: ExplorePill[] = [];
+
+    // 1. Raccomandazioni (suggerimenti del grafo + watchlist per la modalità attiva)
+    const suggerimenti = data?.gruppi?.suggerimenti || [];
+    const watchlist = data?.gruppi?.watchlist || [];
+    const raccomandazioni = [...suggerimenti, ...watchlist];
+    if (raccomandazioni.length > 0) {
+      pills.push({ id: 'raccomandazioni', label: 'Raccomandazioni', items: raccomandazioni });
+    }
+
+    // 2. Le mie creazioni (gruppo creazioni servibili nel modo)
+    const creazioni = data?.gruppi?.creazioni || [];
+    if (creazioni.length > 0) {
+      pills.push({ id: 'creazioni', label: 'Le mie creazioni', items: creazioni });
+    }
+
+    // 3. Tutti (tutto il resto nella modalità corrente)
+    const tutti = data?.gruppi?.tutti || [];
+    if (tutti.length > 0) {
+      pills.push({ id: 'tutti', label: 'Tutti', items: tutti });
+
+      // 4..16: Le 13 categorie dei preset presenti in 'tutti'
+      for (const cat of ESPLORA_CATEGORIES) {
+        const cleanCat = cleanCategory(cat);
+        const matching = tutti.filter((item) => {
+          const itemCat = getCategoryForCatalog(item.id);
+          return itemCat && cleanCategory(itemCat) === cleanCat;
+        });
+        if (matching.length > 0) {
+          pills.push({ id: cat, label: cat, items: matching });
+        }
+      }
+    }
+
+    return pills;
+  }, [data, presetCategoryMap]);
+
+  // Pillola attiva con fallback se la precedente non esiste più (es. cambio modalità)
+  const activePill = useMemo(() => {
+    if (availablePills.length === 0) return null;
+    const found = availablePills.find((p) => p.id === selectedPillId);
+    return found || availablePills[0];
+  }, [availablePills, selectedPillId]);
+
+  // Elementi filtrati dalla ricerca interna alla pillola selezionata
+  const filteredItems = useMemo(() => {
+    if (!activePill) return [];
+    if (!search.trim()) return activePill.items;
+    const q = search.toLowerCase();
+    return activePill.items.filter((item) => item.nome.toLowerCase().includes(q));
+  }, [activePill, search]);
 
   const handleToggle = async (id: string, attivo: boolean) => {
-    if (togglingId === id) return;
+    if (!onToggleActive || togglingId === id) return;
     setTogglingId(id);
     try {
       await onToggleActive(id, attivo);
@@ -39,194 +147,130 @@ export function ExplorePanel({
     }
   };
 
-  const filtraVoci = (voci?: CatalogoEsploraVoce[]) => {
-    if (!voci) return [];
-    let filtrati = voci;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      filtrati = filtrati.filter(v => v.nome.toLowerCase().includes(q));
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 250;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
     }
-    if (filtroTipo !== 'tutti') {
-      filtrati = filtrati.filter(v => v.tipo === filtroTipo);
-    }
-    return filtrati;
-  };
-
-  // Gruppo 1: Suggerimenti di visione & Watchlist
-  const vociSuggerimenti = data?.gruppi?.suggerimenti;
-  const vociWatchlist = data?.gruppi?.watchlist;
-  const gruppo1Tutti = useMemo(() => {
-    const list: CatalogoEsploraVoce[] = [];
-    if (vociSuggerimenti && vociSuggerimenti.length > 0) list.push(...vociSuggerimenti);
-    if (vociWatchlist && vociWatchlist.length > 0) list.push(...vociWatchlist);
-    return list;
-  }, [vociSuggerimenti, vociWatchlist]);
-  const gruppo1Filtrato = useMemo(() => filtraVoci(gruppo1Tutti), [gruppo1Tutti, search, filtroTipo]);
-
-  // Gruppo 2: Le mie creazioni
-  const vociCreazioni = data?.gruppi?.creazioni;
-  const gruppo2Tutti = useMemo(() => vociCreazioni || [], [vociCreazioni]);
-  const gruppo2Filtrato = useMemo(() => filtraVoci(gruppo2Tutti), [gruppo2Tutti, search, filtroTipo]);
-
-  // Gruppo 3: Tutti (raggruppato per tipo)
-  const vociTutti = data?.gruppi?.tutti;
-  const gruppo3FiltratoPerTipo = useMemo(() => {
-    if (!vociTutti || vociTutti.length === 0) return null;
-    const filtrati = filtraVoci(vociTutti);
-    if (filtrati.length === 0) return null;
-
-    const mappa: Record<string, CatalogoEsploraVoce[]> = {};
-    for (const tipo of ORDINE_TIPI) {
-      const perTipo = filtrati.filter(v => v.tipo === tipo);
-      if (perTipo.length > 0) {
-        mappa[tipo] = perTipo;
-      }
-    }
-    return mappa;
-  }, [vociTutti, search, filtroTipo]);
-
-  const renderVoce = (voce: CatalogoEsploraVoce) => {
-    const cardData = catalogoVoceToCard(voce);
-
-    return (
-      <CatalogItem
-        key={voce.id}
-        catalog={cardData}
-        onToggleActive={(attivo) => handleToggle(voce.id, attivo)}
-        onEdit={voce.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(voce) : undefined}
-      />
-    );
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 min-w-0">
+    <div className="space-y-4 sm:space-y-6 min-w-0">
       {/* Intestazione Esplora */}
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl sm:text-3xl font-black text-marrow-deep tracking-tight">Esplora Cataloghi</h1>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl sm:text-2xl font-black text-marrow-deep tracking-tight">Esplora Cataloghi</h2>
         <p className="text-xs sm:text-sm text-marrow-light font-medium">
           Tutti i cataloghi disponibili per la modalità attiva. Accendili per renderli visibili nella tua installazione di Stremio.
         </p>
       </div>
 
-      {/* Barra di ricerca */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-marrow-light/50" />
-        <Input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cerca un catalogo per nome..."
-          className="pl-10 h-11 bg-white/50 border-marrow-light/15 rounded-xl text-sm placeholder:text-marrow-light/40 focus-visible:ring-primary font-medium"
-        />
-      </div>
-
-      {/* Filtri orizzontali per Tipo */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-        <button
-          type="button"
-          onClick={() => setFiltroTipo('tutti')}
-          className={`shrink-0 rounded-full min-h-[38px] px-4 text-xs font-bold transition-all touch-manipulation ${
-            filtroTipo === 'tutti'
-              ? 'bg-primary text-white shadow-md shadow-primary/30 font-black'
-              : 'text-marrow-deep hover:text-primary hover:bg-white/60 bg-white/30'
-          }`}
+      {/* Pill row (Terzo livello di navigazione): frecce, scroll orizzontale e toggle ricerca */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 min-h-[40px] min-w-[40px] shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex touch-manipulation rounded-full"
+          onClick={() => scroll('left')}
+          aria-label="Scorri a sinistra"
         >
-          Tutti i tipi
-        </button>
-        {ORDINE_TIPI.map((t) => {
-          const info = TIPI_CATALOGO_MAP[t];
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setFiltroTipo(t)}
-              className={`shrink-0 rounded-full inline-flex items-center gap-1.5 justify-center min-h-[38px] px-4 text-xs font-bold transition-all touch-manipulation ${
-                filtroTipo === t
-                  ? 'bg-primary text-white shadow-md shadow-primary/30 font-black'
-                  : 'text-marrow-deep hover:text-primary hover:bg-white/60 bg-white/30'
-              }`}
-            >
-              <span>{info.icon}</span>
-              <span>{info.label}</span>
-            </button>
-          );
-        })}
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        {/* Contenitore orizzontale SENZA ombra perimetrale */}
+        <div
+          ref={scrollRef}
+          className="flex-1 flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1.5 px-0.5 no-scrollbar scroll-smooth"
+        >
+          {availablePills.map((pill) => {
+            const isSelected = activePill?.id === pill.id;
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setSelectedPillId(pill.id)}
+                className={`shrink-0 rounded-full inline-flex items-center justify-center min-h-[40px] px-4 sm:px-5 py-2 text-xs sm:text-sm transition-all touch-manipulation whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30 font-black'
+                    : 'bg-white/60 text-marrow-deep hover:text-primary hover:bg-white transition-colors border border-marrow-light/10 font-bold'
+                }`}
+              >
+                <span>{pill.label}</span>
+                <span className={`ml-1.5 text-xs ${isSelected ? 'text-white/80' : 'text-marrow-light/60 font-normal'}`}>
+                  ({pill.items.length})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 min-h-[40px] min-w-[40px] shrink-0 text-marrow-light/70 hover:text-primary hover:bg-marrow-light/10 hidden sm:flex touch-manipulation rounded-full"
+          onClick={() => scroll('right')}
+          aria-label="Scorri a destra"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-10 w-10 min-h-[40px] min-w-[40px] shrink-0 rounded-full transition-colors touch-manipulation border ${
+            showSearch || search
+              ? 'bg-primary text-white border-primary shadow-sm'
+              : 'text-marrow-deep bg-white/60 hover:bg-white hover:text-primary border-marrow-light/10'
+          }`}
+          onClick={() => {
+            setShowSearch((prev) => !prev);
+            if (showSearch) setSearch('');
+          }}
+          aria-label="Cerca cataloghi"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
       </div>
 
+      {/* Campo di ricerca (visibile solo su toggle) */}
+      {showSearch && (
+        <div className="pt-0.5">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Cerca in ${activePill?.label || 'questo gruppo'}...`}
+            autoFocus
+            className="bg-white/60 border-marrow-light/20 text-marrow-deep font-medium placeholder:text-marrow-light/40 text-sm h-11 rounded-xl"
+          />
+        </div>
+      )}
+
+      {/* Elenco dei cataloghi — stesso widget CatalogItem con switch di attivazione */}
       {loading ? (
         <div className="flex items-center justify-center p-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="py-12 text-center rounded-2xl border border-marrow-light/10 bg-white/20">
+          <p className="text-sm text-marrow-light font-bold">
+            {search ? 'Nessun catalogo corrisponde alla ricerca.' : 'Nessun catalogo disponibile per questo gruppo nella modalità corrente.'}
+          </p>
+        </div>
       ) : (
-        <div className="space-y-8 sm:space-y-12">
-          {/* GRUPPO 1: Suggerimenti di visione & Watchlist — omesso se vuoto */}
-          {gruppo1Filtrato.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-6 bg-primary rounded-full shrink-0" />
-                <h2 className="text-lg sm:text-xl font-black text-marrow-deep tracking-tight">
-                  Suggerimenti di visione & Watchlist
-                </h2>
-                <span className="text-xs font-bold text-marrow-light ml-1">({gruppo1Filtrato.length})</span>
-              </div>
-              <div className="flex flex-col gap-3 sm:gap-4 w-full">
-                {gruppo1Filtrato.map(renderVoce)}
-              </div>
-            </section>
-          )}
-
-          {/* GRUPPO 2: Le mie creazioni — omesso se vuoto */}
-          {gruppo2Filtrato.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-6 bg-accent rounded-full shrink-0" />
-                <h2 className="text-lg sm:text-xl font-black text-marrow-deep tracking-tight">
-                  Le mie creazioni
-                </h2>
-                <span className="text-xs font-bold text-marrow-light ml-1">({gruppo2Filtrato.length})</span>
-              </div>
-              <div className="flex flex-col gap-3 sm:gap-4 w-full">
-                {gruppo2Filtrato.map(renderVoce)}
-              </div>
-            </section>
-          )}
-
-          {/* GRUPPO 3: Tutti — raggruppato per tipo, omesso se vuoto */}
-          {gruppo3FiltratoPerTipo && Object.keys(gruppo3FiltratoPerTipo).length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-marrow-light/10 pb-2">
-                <div className="w-1.5 h-6 bg-marrow-deep rounded-full shrink-0" />
-                <h2 className="text-lg sm:text-xl font-black text-marrow-deep tracking-tight">
-                  Tutti i cataloghi
-                </h2>
-              </div>
-
-              {ORDINE_TIPI.map((tipo) => {
-                const voci = gruppo3FiltratoPerTipo[tipo];
-                if (!voci || voci.length === 0) return null;
-                const info = TIPI_CATALOGO_MAP[tipo];
-                return (
-                  <div key={tipo} className="space-y-3">
-                    <h3 className="text-sm font-black uppercase tracking-wider text-marrow-light flex items-center gap-1.5">
-                      <span>{info.icon}</span>
-                      <span>{info.label}</span>
-                      <span className="text-marrow-light/50 font-medium">({voci.length})</span>
-                    </h3>
-                    <div className="flex flex-col gap-3 sm:gap-4 w-full">
-                      {voci.map(renderVoce)}
-                    </div>
-                  </div>
-                );
-              })}
-            </section>
-          )}
-
-          {/* Fallback se non ci sono risultati con la ricerca */}
-          {gruppo1Filtrato.length === 0 && gruppo2Filtrato.length === 0 && (!gruppo3FiltratoPerTipo || Object.keys(gruppo3FiltratoPerTipo).length === 0) && (
-            <div className="p-12 text-center rounded-2xl border border-marrow-light/10 bg-white/20">
-              <p className="text-sm text-marrow-light font-bold">Nessun catalogo trovato per la modalità corrente.</p>
-            </div>
-          )}
+        <div className="flex flex-col gap-3 sm:gap-4 w-full">
+          {filteredItems.map((item) => {
+            const cardData = catalogoVoceToCard(item);
+            return (
+              <CatalogItem
+                key={item.id}
+                catalog={cardData}
+                onToggleActive={(attivo) => handleToggle(item.id, attivo)}
+                onEdit={item.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(item) : undefined}
+              />
+            );
+          })}
         </div>
       )}
     </div>
