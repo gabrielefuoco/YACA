@@ -106,9 +106,12 @@ export interface CatalogCardData {
   fonte?: 'grafo' | 'watchlist' | 'creazione' | 'preset';
   attivo?: boolean;
   ordine?: number | null;
+  nomeFonte?: 'tassonomia' | 'perche_hai_visto' | string | null;
   nome_fonte?: string | null;
   confidenza?: number | null;
+  semiMembri?: ShelfMemberSeed[];
   semi_membri?: ShelfMemberSeed[];
+  semiRappresentativi?: ShelfRepresentativeSeed[];
   semi_rappresentativi?: ShelfRepresentativeSeed[];
 }
 
@@ -137,9 +140,12 @@ export interface CatalogoEsploraVoce {
   ordine: number | null;
   emoji?: string;
   description?: string;
+  nomeFonte?: 'tassonomia' | 'perche_hai_visto' | string | null;
   nome_fonte?: string | null;
   confidenza?: number | null;
+  semiMembri?: ShelfMemberSeed[];
   semi_membri?: ShelfMemberSeed[];
+  semiRappresentativi?: ShelfRepresentativeSeed[];
   semi_rappresentativi?: ShelfRepresentativeSeed[];
 }
 
@@ -267,9 +273,12 @@ export interface HeroCatalogUiGroup {
   slot?: number;
   uiType?: 'ai' | 'algo';
   anime?: boolean;
+  nomeFonte?: string | null;
   nome_fonte?: string;
   confidenza?: number | null;
+  semiMembri?: ShelfMemberSeed[];
   semi_membri?: ShelfMemberSeed[];
+  semiRappresentativi?: ShelfRepresentativeSeed[];
   semi_rappresentativi?: ShelfRepresentativeSeed[];
 }
 

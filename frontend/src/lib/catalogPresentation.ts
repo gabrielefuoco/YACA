@@ -54,9 +54,12 @@ export function catalogoVoceToCard(voce: CatalogoEsploraVoce): CatalogCardData {
     emoji: voce.emoji,
     description: voce.description,
     isAnime: voce.tipo === 'anime',
-    nome_fonte: voce.nome_fonte,
+    nomeFonte: voce.nomeFonte ?? voce.nome_fonte,
+    nome_fonte: voce.nome_fonte ?? voce.nomeFonte,
     confidenza: voce.confidenza,
-    semi_membri: voce.semi_membri,
-    semi_rappresentativi: voce.semi_rappresentativi,
+    semiMembri: voce.semiMembri ?? voce.semi_membri,
+    semi_membri: voce.semi_membri ?? voce.semiMembri,
+    semiRappresentativi: voce.semiRappresentativi ?? voce.semi_rappresentativi,
+    semi_rappresentativi: voce.semi_rappresentativi ?? voce.semiRappresentativi,
   };
 }

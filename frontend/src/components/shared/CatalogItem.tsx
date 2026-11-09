@@ -61,17 +61,21 @@ export function CatalogItem({
 
   const isPreset = catalog.source === 'preset' || catalog.fonte === 'preset' || (!catalog.source && !catalog.fonte);
   const fonte = catalog.fonte || catalog.source;
-  const isRecommendation = fonte === 'grafo' || Boolean(catalog.semi_rappresentativi?.length || catalog.semi_membri?.length || catalog.nome_fonte);
+  const nomeFonte = catalog.nomeFonte ?? catalog.nome_fonte;
+  const confidenza = catalog.confidenza;
+  const semiMembri = catalog.semiMembri ?? catalog.semi_membri;
+  const semiRappresentativi = catalog.semiRappresentativi ?? catalog.semi_rappresentativi;
+  const isRecommendation = fonte === 'grafo' || Boolean(semiRappresentativi?.length || semiMembri?.length || nomeFonte);
   const sourceLabel = FONTI_CATALOGO_MAP[fonte || '']?.label || (isPreset ? 'Preset' : (fonte === 'grafo' ? 'Suggerito' : 'Creato'));
   const SourceIcon = (fonte === 'preset' || fonte === 'grafo') ? Sparkles : (fonte === 'watchlist' || fonte === 'mylist' ? List : Wand2);
 
   const seeds = useMemo(() => {
     return formatShelfSeeds({
-      semi_membri: catalog.semi_membri,
-      semi_rappresentativi: catalog.semi_rappresentativi,
+      semiMembri,
+      semiRappresentativi,
       medium: catalog.media || (catalog.type === 'both' ? undefined : catalog.type),
     });
-  }, [catalog.semi_membri, catalog.semi_rappresentativi, catalog.media, catalog.type]);
+  }, [semiMembri, semiRappresentativi, catalog.media, catalog.type]);
 
   const activeState = Boolean(catalog.attivo ?? isAttivo);
 
@@ -298,24 +302,24 @@ export function CatalogItem({
 
             <div className="space-y-4 pt-2">
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                {catalog.nome_fonte && (
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold text-marrow-deep">Origine:</span>
+                {nomeFonte && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-marrow-deep">Origine del nome:</span>
                     <span className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-primary font-bold">
-                      {catalog.nome_fonte === 'tassonomia' ? 'Tassonomia' : catalog.nome_fonte === 'perche_hai_visto' ? 'Perché hai visto' : catalog.nome_fonte}
+                      {nomeFonte === 'tassonomia' ? 'Tassonomia' : nomeFonte === 'perche_hai_visto' ? 'Perché hai visto' : nomeFonte}
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <span className="font-bold text-marrow-deep">Medium:</span>
                   <span className="px-2 py-0.5 rounded-lg bg-white/70 border border-marrow-light/15 text-marrow-deep font-semibold">
                     {catalog.stremioType === 'anime' ? 'anime' : (catalog.media === 'series' || catalog.type === 'series' ? 'serie' : 'film')}
                   </span>
                 </div>
-                {typeof catalog.confidenza === 'number' && (
-                  <div className="flex items-center gap-1 text-marrow-light/70">
+                {typeof confidenza === 'number' && (
+                  <div className="flex items-center gap-1.5 text-marrow-light/70">
                     <span className="font-bold text-marrow-deep">Confidenza:</span>
-                    <span className="font-mono font-bold text-primary">{(catalog.confidenza * 100).toFixed(0)}%</span>
+                    <span className="font-mono font-bold text-primary">{(confidenza * 100).toFixed(0)}%</span>
                   </div>
                 )}
               </div>
@@ -327,8 +331,8 @@ export function CatalogItem({
                 </div>
 
                 {seeds.length === 0 ? (
-                  <p className="text-xs text-marrow-light/60 italic py-3 text-center bg-white/40 rounded-xl border border-marrow-light/10">
-                    Nessun titolo memorizzato per questo catalogo.
+                  <p className="text-xs text-marrow-light/70 italic py-2.5 px-3 text-center bg-white/50 rounded-xl border border-marrow-light/10">
+                    Questo catalogo raccomandato non ha titoli membri registrati nel profilo.
                   </p>
                 ) : (
                   <div className="flex flex-col divide-y divide-marrow-light/10 bg-white/60 rounded-xl border border-marrow-light/15 overflow-hidden max-h-60 overflow-y-auto">
@@ -348,7 +352,7 @@ export function CatalogItem({
                           )}
                           {typeof seed.eta_giorni === 'number' && (
                             <span className="text-marrow-light/60">
-                              {seed.eta_giorni <= 0 ? 'oggi' : seed.eta_giorni === 1 ? '1 gg fa' : `${seed.eta_giorni} gg fa`}
+                              {seed.eta_giorni <= 0 ? 'oggi' : seed.eta_giorni === 1 ? '1 giorno fa' : `${seed.eta_giorni} gg fa`}
                             </span>
                           )}
                         </div>

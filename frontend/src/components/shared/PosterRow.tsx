@@ -74,7 +74,10 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
         </div>
       )}
       {!loading && loaded && items.length === 0 && (
-        <p className="text-xs text-marrow-light/40 py-8 text-center italic font-medium uppercase tracking-widest">Nessun risultato trovato</p>
+        <div className="flex flex-col items-center justify-center py-6 px-4 rounded-xl bg-white/30 border border-marrow-light/10 text-center">
+          <p className="text-xs text-marrow-light/70 font-medium">Nessun titolo disponibile in anteprima al momento</p>
+          <span className="text-[11px] text-marrow-light/40 mt-0.5">I contenuti si aggiorneranno con la tua attività</span>
+        </div>
       )}
     </div>
   );

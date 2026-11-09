@@ -94,6 +94,9 @@ export function DashboardPage({
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
+  // Stato per rivelare l'affordance "Attiva" su click di un singolo modo
+  const [selectedModoForActivation, setSelectedModoForActivation] = useState<ModoId | null>(null);
+
   const handleEditCatalog = (catalog: any) => {
     if (catalog.source === 'preset' || catalog.fonte === 'preset') return;
     setEditingCatalog({ ...catalog });
@@ -160,19 +163,26 @@ export function DashboardPage({
               {DEFAULT_MODI.map(({ modo, nome, emoji: defaultEmoji }) => {
                 const apiModo = modi.find((m) => m.modo === modo);
                 const isAttivo = activeModo === modo;
+                const isSelected = selectedModoForActivation === modo;
                 const emoji = apiModo?.emoji || defaultEmoji;
 
                 return (
                   <div
                     key={modo}
                     onClick={() => {
-                      if (!isAttivo && !isSwitchingModo) {
-                        onSelectModo(modo);
+                      if (isAttivo) {
+                        setSelectedModoForActivation(null);
+                        return;
+                      }
+                      if (!isSwitchingModo) {
+                        setSelectedModoForActivation((prev) => (prev === modo ? null : modo));
                       }
                     }}
                     className={`relative flex flex-col items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[120px] sm:min-h-[130px] shrink-0 w-[135px] sm:w-auto ${
                       isAttivo
                         ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02] cursor-default'
+                        : isSelected
+                        ? 'border-primary/60 bg-white/90 shadow-md ring-2 ring-primary/30 text-marrow-deep cursor-pointer'
                         : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40 cursor-pointer'
                     } ${isSwitchingModo ? 'opacity-50 cursor-wait' : ''}`}
                   >
@@ -183,24 +193,27 @@ export function DashboardPage({
                       </span>
                     </div>
 
-                    <div className="mt-2 w-full flex justify-center">
+                    <div className="mt-2 w-full min-h-[26px] flex items-center justify-center">
                       {isAttivo ? (
-                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-white/20 text-white border border-white/30 cursor-default select-none pointer-events-none">
-                          Attiva
+                        <span className="text-xs font-semibold text-white/90 lowercase select-none">
+                          attiva
                         </span>
-                      ) : (
+                      ) : isSelected ? (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!isSwitchingModo) onSelectModo(modo);
+                            if (!isSwitchingModo) {
+                              onSelectModo(modo);
+                              setSelectedModoForActivation(null);
+                            }
                           }}
                           disabled={isSwitchingModo}
-                          className="w-full py-1.5 px-3 rounded-lg bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-black uppercase tracking-wider border border-primary/20 transition-all touch-manipulation"
+                          className="text-xs font-bold text-primary hover:text-primary/70 underline underline-offset-4 transition-colors py-0.5 px-2 rounded hover:bg-primary/5 disabled:opacity-50"
                         >
                           Attiva
                         </button>
-                      )}
+                      ) : null}
                     </div>
 
                     {isAttivo && (

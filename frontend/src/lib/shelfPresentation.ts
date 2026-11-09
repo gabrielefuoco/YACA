@@ -63,18 +63,26 @@ export interface FormattedShelfSeed {
  * arricchisce con plays ed eta_giorni da semi_rappresentativi quando presenti.
  */
 export function formatShelfSeeds(shelf: {
+  semiMembri?: ShelfMemberSeed[];
   semi_membri?: ShelfMemberSeed[];
+  semiRappresentativi?: ShelfRepresentativeSeed[];
   semi_rappresentativi?: ShelfRepresentativeSeed[];
   medium?: string;
 }): FormattedShelfSeed[] {
-  const repList = Array.isArray(shelf.semi_rappresentativi) ? shelf.semi_rappresentativi : [];
+  const repList = Array.isArray(shelf.semiRappresentativi)
+    ? shelf.semiRappresentativi
+    : Array.isArray(shelf.semi_rappresentativi)
+    ? shelf.semi_rappresentativi
+    : [];
   const repMap = new Map<string, ShelfRepresentativeSeed>();
   for (const r of repList) {
     const key = r.tmdbId ? String(r.tmdbId) : String(r.titolo || '');
     if (key) repMap.set(key, r);
   }
 
-  const memberList = Array.isArray(shelf.semi_membri) && shelf.semi_membri.length > 0
+  const memberList = Array.isArray(shelf.semiMembri) && shelf.semiMembri.length > 0
+    ? shelf.semiMembri
+    : Array.isArray(shelf.semi_membri) && shelf.semi_membri.length > 0
     ? shelf.semi_membri
     : repList;
 
