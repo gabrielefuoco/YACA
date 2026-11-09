@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Profile,
   Catalog,
@@ -61,6 +61,14 @@ const DEFAULT_MODI: { modo: ModoId; nome: string; emoji: string }[] = [
   { modo: 'bambini', nome: 'Bambini', emoji: '🧸' },
 ];
 
+const MODO_DESCRIPTIONS: Record<ModoId, string> = {
+  generale: 'Tutti i tipi di contenuto (film, serie, anime)',
+  film: 'Solo film (esclude serie TV e anime)',
+  serie: 'Solo serie TV (esclude film e anime)',
+  anime: 'Solo anime (film e serie anime)',
+  bambini: 'Solo contenuti adatti a bambini e famiglie',
+};
+
 export function DashboardPage({
   profiles,
   activeProfileId,
@@ -94,8 +102,14 @@ export function DashboardPage({
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // Stato per rivelare l'affordance "Attiva" su click di un singolo modo
-  const [selectedModoForActivation, setSelectedModoForActivation] = useState<ModoId | null>(null);
+  // Modalità selezionata per la configurazione (default: modalità attiva)
+  const [selectedModo, setSelectedModo] = useState<ModoId>(activeModo);
+
+  useEffect(() => {
+    if (activeModo) {
+      setSelectedModo(activeModo);
+    }
+  }, [activeModo]);
 
   const handleEditCatalog = (catalog: any) => {
     if (catalog.source === 'preset' || catalog.fonte === 'preset') return;
@@ -143,6 +157,10 @@ export function DashboardPage({
   const previewCatalogId = previewCatalog?.id || null;
   const previewMediaType = (previewCatalog?.stremioType === 'series' || (!previewCatalog?.stremioType && previewCatalog?.media === 'series')) ? 'series' : 'movie';
 
+  const currentModoConfig = DEFAULT_MODI.find((m) => m.modo === selectedModo) || DEFAULT_MODI[0];
+  const currentApiModo = modi.find((m) => m.modo === selectedModo);
+  const isCurrentAttivo = activeModo === selectedModo;
+
   return (
     <div className="flex flex-col w-full gap-6 sm:gap-8 min-w-0">
       {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -163,28 +181,27 @@ export function DashboardPage({
               {DEFAULT_MODI.map(({ modo, nome, emoji: defaultEmoji }) => {
                 const apiModo = modi.find((m) => m.modo === modo);
                 const isAttivo = activeModo === modo;
-                const isSelected = selectedModoForActivation === modo;
+                const isSelected = selectedModo === modo;
                 const emoji = apiModo?.emoji || defaultEmoji;
 
                 return (
-                  <div
+                  <button
                     key={modo}
+                    type="button"
                     onClick={() => {
-                      if (isAttivo) {
-                        setSelectedModoForActivation(null);
-                        return;
-                      }
                       if (!isSwitchingModo) {
-                        setSelectedModoForActivation((prev) => (prev === modo ? null : modo));
+                        setSelectedModo(modo);
                       }
                     }}
-                    className={`relative flex flex-col items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[120px] sm:min-h-[130px] shrink-0 w-[135px] sm:w-auto ${
+                    className={`relative flex flex-col items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[110px] sm:min-h-[120px] shrink-0 w-[135px] sm:w-auto ${
                       isAttivo
-                        ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02] cursor-default'
+                        ? isSelected
+                          ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02] ring-2 ring-primary/40'
+                          : 'border-primary/80 bg-primary/90 text-white shadow-md'
                         : isSelected
-                        ? 'border-primary/60 bg-white/90 shadow-md ring-2 ring-primary/30 text-marrow-deep cursor-pointer'
-                        : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40 cursor-pointer'
-                    } ${isSwitchingModo ? 'opacity-50 cursor-wait' : ''}`}
+                        ? 'border-primary bg-white/90 shadow-md ring-2 ring-primary/40 text-marrow-deep'
+                        : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40'
+                    } ${isSwitchingModo ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
                   >
                     <div className="flex flex-col items-center">
                       <span className="text-2xl sm:text-3xl mb-1 select-none">{emoji}</span>
@@ -193,27 +210,12 @@ export function DashboardPage({
                       </span>
                     </div>
 
-                    <div className="mt-2 w-full min-h-[26px] flex items-center justify-center">
-                      {isAttivo ? (
+                    <div className="mt-2 w-full min-h-[20px] flex items-center justify-center">
+                      {isAttivo && (
                         <span className="text-xs font-semibold text-white/90 lowercase select-none">
                           attiva
                         </span>
-                      ) : isSelected ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isSwitchingModo) {
-                              onSelectModo(modo);
-                              setSelectedModoForActivation(null);
-                            }
-                          }}
-                          disabled={isSwitchingModo}
-                          className="text-xs font-bold text-primary hover:text-primary/70 underline underline-offset-4 transition-colors py-0.5 px-2 rounded hover:bg-primary/5 disabled:opacity-50"
-                        >
-                          Attiva
-                        </button>
-                      ) : null}
+                      )}
                     </div>
 
                     {isAttivo && (
@@ -222,7 +224,7 @@ export function DashboardPage({
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
                       </span>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -238,69 +240,236 @@ export function DashboardPage({
             )}
           </section>
 
-          {/* Seconda fila di pillole: esattamente due pannelli (Cataloghi attivi | Esplora) */}
-          <div className="flex items-center justify-center w-full">
-            <div className="flex items-center gap-1.5 p-1.5 bg-white/40 rounded-2xl border border-marrow-light/10">
-              <button
-                type="button"
-                onClick={() => onTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[40px] ${
-                  activeTab === 'dashboard'
-                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                    : 'text-marrow-deep hover:text-primary hover:bg-white/60'
-                }`}
-              >
-                <Layers className="h-4 w-4" />
-                <span>Cataloghi attivi</span>
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                    activeTab === 'dashboard' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                  }`}
-                >
-                  {cataloghiAttivi.length}
+          {/* Pannello della modalità selezionata (aperto come una pagina profilo) */}
+          <section className="glass-panel p-4 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10 space-y-6">
+            {/* Header del pannello modalità */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-marrow-light/10">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="size-11 sm:size-12 rounded-2xl flex items-center justify-center bg-white shadow-inner text-2xl sm:text-3xl shrink-0">
+                  {currentApiModo?.emoji || currentModoConfig.emoji}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-black text-marrow-deep tracking-tight truncate">
+                      Modalità {currentModoConfig.nome}
+                    </h3>
+                    {isCurrentAttivo && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 shrink-0">
+                        In uso
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-marrow-light font-medium mt-0.5 truncate sm:whitespace-normal">
+                    {MODO_DESCRIPTIONS[selectedModo]}
+                  </p>
+                </div>
+              </div>
+
+              {/* Pulsante Attiva all'interno del pannello */}
+              <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                {isCurrentAttivo ? (
+                  <div
+                    className="inline-flex items-center justify-center gap-1.5 min-w-[32px] min-h-[32px] px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 font-bold select-none shadow-sm"
+                    title="Modalità attualmente attiva"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-4 h-4 shrink-0 text-emerald-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                      <line x1="12" y1="2" x2="12" y2="12" />
+                    </svg>
+                    <span className="text-xs font-black uppercase tracking-wider">Attiva</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSelectModo(selectedModo)}
+                    disabled={isSwitchingModo}
+                    className="inline-flex items-center justify-center gap-1.5 min-w-[32px] min-h-[32px] px-3.5 py-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 active:scale-95 border border-primary/20 shadow-sm transition-all disabled:opacity-50 disabled:pointer-events-none touch-manipulation cursor-pointer"
+                    title={`Attiva modalità ${currentModoConfig.nome}`}
+                    aria-label={`Attiva modalità ${currentModoConfig.nome}`}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-4 h-4 shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                      <line x1="12" y1="2" x2="12" y2="12" />
+                    </svg>
+                    <span className="text-xs font-black uppercase tracking-wider">Attiva</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Cursori Raccomandazione della modalità (superficie esistente) */}
+            <div className="space-y-3 p-3.5 sm:p-4 rounded-xl bg-white/40 border border-marrow-light/10">
+              <div className="flex items-center gap-1.5">
+                <Sliders className="h-4 w-4 text-primary" />
+                <span className="text-xs font-black uppercase tracking-wider text-marrow-deep">
+                  Cursori Raccomandazione
                 </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onTabChange('explore')}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[40px] ${
-                  activeTab === 'explore'
-                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                    : 'text-marrow-deep hover:text-primary hover:bg-white/60'
-                }`}
-              >
-                <Compass className="h-4 w-4" />
-                <span>Esplora</span>
-              </button>
-            </div>
-          </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                {/* Tonalità */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-marrow-deep">Tonalità</span>
+                    <span className="font-bold text-primary">
+                      {tonalita < -0.2 ? 'Cupa / Intensa' : tonalita > 0.2 ? 'Leggera / Cozy' : 'Bilanciata'} ({tonalita.toFixed(1)})
+                    </span>
+                  </div>
+                  <Slider
+                    value={[tonalita]}
+                    min={-1}
+                    max={1}
+                    step={0.1}
+                    onValueChange={([val]) => handleSliderChange(val, notorieta)}
+                  />
+                  <div className="flex justify-between text-[10px] text-marrow-light/70 font-semibold px-0.5">
+                    <span>Cupa / Tesa</span>
+                    <span>Equilibrata</span>
+                    <span>Leggera / Cozy</span>
+                  </div>
+                </div>
 
-          {/* Pannello Cataloghi Attivi */}
-          {activeTab === 'dashboard' && (
-            <div className="glass-panel p-3 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10">
-              <ActiveCatalogsPanel
-                catalogs={cataloghiAttivi}
-                onReorder={onReorderActiveCatalogs}
-                onGoToExplore={() => onTabChange('explore')}
-                onEditCatalog={handleEditCatalog}
-              />
+                {/* Notorietà */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-marrow-deep">Notorietà</span>
+                    <span className="font-bold text-primary">
+                      {notorieta < -0.2 ? 'Di nicchia / Raro' : notorieta > 0.2 ? 'Mainstream / Popolare' : 'Bilanciata'} ({notorieta.toFixed(1)})
+                    </span>
+                  </div>
+                  <Slider
+                    value={[notorieta]}
+                    min={-1}
+                    max={1}
+                    step={0.1}
+                    onValueChange={([val]) => handleSliderChange(tonalita, val)}
+                  />
+                  <div className="flex justify-between text-[10px] text-marrow-light/70 font-semibold px-0.5">
+                    <span>Di nicchia / Cult</span>
+                    <span>Equilibrata</span>
+                    <span>Popolari / Mainstream</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
 
-          {/* Pannello Esplora */}
-          {activeTab === 'explore' && (
-            <div className="glass-panel p-3 sm:p-6 bg-white/40 rounded-2xl border border-marrow-light/10">
-              <ExplorePanel
-                data={cataloghiData}
-                loading={cataloghiLoading}
-                activeModo={activeModo}
-                presets={presets}
-                onToggleActive={onToggleCatalogActive}
-                onEditCatalog={handleEditCatalog}
-                onConfigChanged={onConfigChanged}
-              />
-            </div>
-          )}
+            {/* Riepilogo e gestione cataloghi */}
+            {isCurrentAttivo ? (
+              <div className="space-y-4 pt-1">
+                {/* Seconda fila di pillole: esattamente due pannelli (Cataloghi attivi | Esplora) */}
+                <div className="flex items-center justify-center w-full">
+                  <div className="flex items-center gap-1.5 p-1.5 bg-white/60 rounded-2xl border border-marrow-light/10 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => onTabChange('dashboard')}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[36px] ${
+                        activeTab === 'dashboard'
+                          ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                          : 'text-marrow-deep hover:text-primary hover:bg-white/60'
+                      }`}
+                    >
+                      <Layers className="h-4 w-4" />
+                      <span>Cataloghi attivi</span>
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                          activeTab === 'dashboard' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                        }`}
+                      >
+                        {cataloghiAttivi.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onTabChange('explore')}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[36px] ${
+                        activeTab === 'explore'
+                          ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                          : 'text-marrow-deep hover:text-primary hover:bg-white/60'
+                      }`}
+                    >
+                      <Compass className="h-4 w-4" />
+                      <span>Esplora</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pannello Cataloghi Attivi */}
+                {activeTab === 'dashboard' && (
+                  <ActiveCatalogsPanel
+                    catalogs={cataloghiAttivi}
+                    onReorder={onReorderActiveCatalogs}
+                    onGoToExplore={() => onTabChange('explore')}
+                    onEditCatalog={handleEditCatalog}
+                  />
+                )}
+
+                {/* Pannello Esplora */}
+                {activeTab === 'explore' && (
+                  <ExplorePanel
+                    data={cataloghiData}
+                    loading={cataloghiLoading}
+                    activeModo={activeModo}
+                    presets={presets}
+                    onToggleActive={onToggleCatalogActive}
+                    onEditCatalog={handleEditCatalog}
+                    onConfigChanged={onConfigChanged}
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-xl bg-white/30 border border-marrow-light/10 text-center space-y-3">
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div className="max-w-md space-y-1">
+                  <h4 className="text-sm font-black text-marrow-deep">
+                    Riepilogo cataloghi ({currentModoConfig.nome})
+                  </h4>
+                  <p className="text-xs text-marrow-light font-medium leading-relaxed">
+                    I cataloghi visibili su Stremio appartengono alla modalità attiva. Attiva <strong>{currentModoConfig.nome}</strong> per accedere e gestire i suoi cataloghi ed esplorare le raccomandazioni dedicate.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectModo(selectedModo)}
+                  disabled={isSwitchingModo}
+                  className="inline-flex items-center justify-center gap-1.5 min-w-[32px] min-h-[32px] px-3.5 py-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 active:scale-95 border border-primary/20 shadow-sm text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 touch-manipulation cursor-pointer"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-3.5 h-3.5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                    <line x1="12" y1="2" x2="12" y2="12" />
+                  </svg>
+                  <span>Attiva {currentModoConfig.nome}</span>
+                </button>
+              </div>
+            )}
+          </section>
         </>
       )}
 

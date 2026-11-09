@@ -90,16 +90,19 @@ export function formatShelfSeeds(shelf: {
     const key = seed.tmdbId ? String(seed.tmdbId) : String(seed.titolo || '');
     const rep = repMap.get(key);
 
-    const plays = seed.plays !== undefined ? seed.plays : (rep?.plays !== undefined ? rep.plays : null);
-    const eta_giorni = seed.eta_giorni !== undefined ? seed.eta_giorni : (rep?.eta_giorni !== undefined ? rep.eta_giorni : null);
+    const rawPlays = seed.plays !== undefined && seed.plays !== null ? seed.plays : (rep?.plays !== undefined && rep?.plays !== null ? rep.plays : null);
+    const rawEta = seed.eta_giorni !== undefined && seed.eta_giorni !== null ? seed.eta_giorni : (rep?.eta_giorni !== undefined && rep?.eta_giorni !== null ? rep.eta_giorni : null);
+
+    const plays = rawPlays !== null && rawPlays !== undefined && Number.isFinite(Number(rawPlays)) ? Number(rawPlays) : null;
+    const eta_giorni = rawEta !== null && rawEta !== undefined && Number.isFinite(Number(rawEta)) ? Math.round(Number(rawEta)) : null;
 
     return {
       titolo: String(seed.titolo || 'Senza titolo'),
-      anno: seed.anno !== undefined && seed.anno !== null ? Number(seed.anno) : (rep?.anno !== undefined ? Number(rep.anno) : null),
-      tmdbId: seed.tmdbId !== undefined ? Number(seed.tmdbId) : (rep?.tmdbId !== undefined ? Number(rep.tmdbId) : null),
+      anno: seed.anno !== undefined && seed.anno !== null ? Number(seed.anno) : (rep?.anno !== undefined && rep?.anno !== null ? Number(rep.anno) : null),
+      tmdbId: seed.tmdbId !== undefined && seed.tmdbId !== null ? Number(seed.tmdbId) : (rep?.tmdbId !== undefined && rep?.tmdbId !== null ? Number(rep.tmdbId) : null),
       medium: seed.medium || rep?.medium || shelf.medium || 'movie',
-      plays: plays !== null && plays !== undefined ? Number(plays) : null,
-      eta_giorni: eta_giorni !== null && eta_giorni !== undefined ? Math.round(Number(eta_giorni)) : null,
+      plays,
+      eta_giorni,
     };
   });
 }

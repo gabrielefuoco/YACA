@@ -345,12 +345,12 @@ export function CatalogItem({
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-[11px] font-mono text-marrow-light/70 shrink-0">
-                          {typeof seed.plays === 'number' && (
+                          {typeof seed.plays === 'number' && Number.isFinite(seed.plays) && (
                             <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
                               {seed.plays === 1 ? '1 visione' : `${seed.plays} visioni`}
                             </span>
                           )}
-                          {typeof seed.eta_giorni === 'number' && (
+                          {typeof seed.eta_giorni === 'number' && Number.isFinite(seed.eta_giorni) && (
                             <span className="text-marrow-light/60">
                               {seed.eta_giorni <= 0 ? 'oggi' : seed.eta_giorni === 1 ? '1 giorno fa' : `${seed.eta_giorni} gg fa`}
                             </span>
