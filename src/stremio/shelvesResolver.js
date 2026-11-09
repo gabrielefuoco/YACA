@@ -28,6 +28,25 @@ const { risolviProfiloAttivo } = require('../profile');
 /**
  * Fonde due liste di scaffali (film e serie) assegnando slot progressivi e deterministici (1..N).
  */
+/**
+ * Uno scaffale di anime in una modalità che li esclude non va dichiarato.
+ *
+ * Il manifest dichiarava «Anime shonen» anche in Serie TV: Stremio chiedeva il catalogo,
+ * il gestore rispondeva `serie:true` ma i titoli sono anime, quindi tornavano zero — e
+ * l'anteprima in YACA mostrava «nessun titolo». Il filtro sta qui, dove manifest, Esplora
+ * e serving leggono la stessa lista.
+ *
+ * @param {Array} shelves
+ * @param {object|null} userConfig
+ * @returns {Array}
+ */
+function filtraScaffaliPerModo(shelves, userConfig) {
+    if (!Array.isArray(shelves) || shelves.length === 0) return shelves || [];
+    const modoPool = modoDelPool(userConfig);
+    if (!modoPool || modoPool.leve.anime !== 'exclude') return shelves;
+    return shelves.filter(s => !s?.anime);
+}
+
 function mergeShelves(movieList = [], seriesList = []) {
     const merged = [];
     const seen = new Set();
@@ -96,7 +115,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
 
     // Se entrambi i media sono già in cache, restituisce subito la fusione completa (0 chiamate esterne)
     if (hasCachedMovie && hasCachedSeries) {
-        return mergeShelves(cachedMovie, cachedSeries);
+        return filtraScaffaliPerModo(mergeShelves(cachedMovie, cachedSeries), userConfig);
     }
 
     // 3. Risoluzione parametri motore e anime policy dalla modalità attiva (derivaLeve) o fallback legacy
@@ -170,6 +189,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
                 opzioni: opzioniScaffali,
                 cap,
                 n: SCAFFALI_PER_MODALITA,
+                modo: modoPool?.modo,
                 versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
                     ? graphClient.getGraphHealthVersionsCached()
                     : undefined
@@ -235,7 +255,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
             console.warn(`[resolveProfileShelves] Profilo ${idProfilo} (${userId}): nessun scaffale disponibile (cold start o grafo non raggiungibile)`);
         }
 
-        return merged;
+        return filtraScaffaliPerModo(merged, userConfig);
     } catch (globalErr) {
         console.warn(`[resolveProfileShelves] Eccezione imprevista durante risoluzione scaffali per ${idProfilo} (${userId}): ${globalErr.message}`);
         return [];

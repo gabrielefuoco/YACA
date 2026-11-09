@@ -266,3 +266,50 @@ describe('La cache in RAM non mescola le modalità', () => {
         process.env.MODI_ABILITATI = '1';
     });
 });
+
+describe('Uno scaffale anime non si dichiara dove gli anime sono esclusi', () => {
+    // In Serie TV il manifest elencava «Anime shonen»: Stremio chiedeva il catalogo e
+    // riceveva zero titoli, perché la modalità filtra gli anime al serving.
+    it('in Serie TV gli scaffali anime spariscono dalla lista, in Anime restano', async () => {
+        const originalModiEnv = process.env.MODI_ABILITATI;
+        const originalScaffali = graphClient.scaffali;
+        const library = require('../src/library');
+
+        process.env.MODI_ABILITATI = '1';
+        try {
+            jest.spyOn(library, 'semiDi').mockResolvedValue({
+                seeds: new Map([[1399, 1.0]]),
+                tipi: new Map([[1399, 'watched']]),
+                ultimaVisione: new Map(),
+                plays: new Map()
+            });
+            graphClient.scaffali = jest.fn().mockResolvedValue({
+                scaffali: [
+                    { catalog_id: 'yaca_1399_series', medium: 'series', nome: 'Serie vera', slot: 1, anime: false },
+                    { catalog_id: 'yaca_30669_series', medium: 'series', nome: 'Anime shonen', slot: 2, anime: true }
+                ]
+            });
+
+            const config = (modo) => ({
+                userId: `u_${modo}`,
+                activeProfileId: `modo_${modo}`,
+                config: { activeModo: modo },
+                profiles: [{ id: `modo_${modo}`, modo }]
+            });
+
+            clearCachedProfileShelves();
+            const serie = await resolveProfileShelves({ userConfig: config('serie'), profileId: 'modo_serie' });
+            expect(serie.map(s => s.catalog_id)).toContain('yaca_1399_series');
+            expect(serie.map(s => s.catalog_id)).not.toContain('yaca_30669_series');
+
+            clearCachedProfileShelves();
+            const anime = await resolveProfileShelves({ userConfig: config('anime'), profileId: 'modo_anime' });
+            expect(anime.map(s => s.catalog_id)).toContain('yaca_30669_series');
+        } finally {
+            graphClient.scaffali = originalScaffali;
+            jest.restoreAllMocks();
+            process.env.MODI_ABILITATI = originalModiEnv;
+            clearCachedProfileShelves();
+        }
+    });
+});
