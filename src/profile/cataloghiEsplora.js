@@ -226,7 +226,15 @@ function voceDi(definizione, fonte, contesto) {
         stremioType: tipo === 'anime' ? 'anime' : (media || 'movie'),
         fonte,
         attivo: contesto.attive.has(id),
-        ordine
+        ordine,
+        // Perché esiste questo scaffale: solo per le righe del grafo, che sono quelle che
+        // nascono da una decisione da spiegare.
+        ...(fonte === 'grafo' ? {
+            nomeFonte: definizione.nome_fonte || null,
+            confidenza: definizione.confidenza ?? null,
+            semiRappresentativi: Array.isArray(definizione.semi_rappresentativi) ? definizione.semi_rappresentativi : [],
+            semiMembri: Array.isArray(definizione.semi_membri) ? definizione.semi_membri : []
+        } : {})
     };
 }
 

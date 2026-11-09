@@ -356,6 +356,12 @@ function catalogDefinitionsFromShelves(shelves = []) {
         name: s.nome || s.name || s.label || 'Scaffale',
         anime: Boolean(s.anime),
         slot: s.slot !== undefined ? Number(s.slot) : (idx + 1),
+        // Le ragioni dello scaffale viaggiano con la definizione: l'interfaccia le mostra nel
+        // popup info e non deve rifare il giro del grafo per sapere cosa l'ha attivato.
+        nome_fonte: s.nome_fonte || null,
+        confidenza: s.confidenza !== undefined ? s.confidenza : null,
+        semi_rappresentativi: Array.isArray(s.semi_rappresentativi) ? s.semi_rappresentativi : [],
+        semi_membri: Array.isArray(s.semi_membri) ? s.semi_membri : [],
         extra: [{ name: 'skip' }]
     }));
 }
