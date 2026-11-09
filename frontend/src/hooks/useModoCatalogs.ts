@@ -21,10 +21,12 @@ export function useModoCatalogs({ onConfigChanged }: UseModoCatalogsOptions = {}
     selectedModoRef.current = selectedModo;
   }, [selectedModo]);
 
-  const fetchCataloghi = useCallback(async (modo?: ModoId) => {
+  const fetchCataloghi = useCallback(async (modo?: ModoId, opzioni?: { silenzioso?: boolean }) => {
     const modoDaCaricare = modo || selectedModoRef.current;
     try {
-      setCataloghiLoading(true);
+      // Silenzioso = la lista resta a schermo mentre arriva quella nuova. Il caricamento
+      // rumoroso serve solo al primo arrivo, quando non c'è niente da mostrare.
+      if (!opzioni?.silenzioso) setCataloghiLoading(true);
       const data = await api.getCataloghi(modoDaCaricare);
       if (data) {
         setCataloghiData(data);
@@ -32,7 +34,7 @@ export function useModoCatalogs({ onConfigChanged }: UseModoCatalogsOptions = {}
     } catch (err) {
       console.warn('[useModoCatalogs] Errore caricamento cataloghi:', err);
     } finally {
-      setCataloghiLoading(false);
+      if (!opzioni?.silenzioso) setCataloghiLoading(false);
     }
   }, []);
 
@@ -135,13 +137,13 @@ export function useModoCatalogs({ onConfigChanged }: UseModoCatalogsOptions = {}
         if (res?.configVersion && onConfigChanged) {
           onConfigChanged(res.configVersion);
         }
-        // Ricarica la lista dall'API per quella modalità dopo ogni scrittura
-        await fetchCataloghi(modo);
+        // Ricarica silenziosa: la lista resta visibile, niente spinner a tutto schermo.
+        await fetchCataloghi(modo, { silenzioso: true });
         return res;
       } catch (err) {
         console.error('[useModoCatalogs] Errore attivazione catalogo:', err);
         // Revert in caso di errore
-        await fetchCataloghi(modo);
+        await fetchCataloghi(modo, { silenzioso: true });
         throw err;
       }
     },
@@ -176,12 +178,12 @@ export function useModoCatalogs({ onConfigChanged }: UseModoCatalogsOptions = {}
         if (res?.configVersion && onConfigChanged) {
           onConfigChanged(res.configVersion);
         }
-        // Ricarica la lista dall'API per quella modalità dopo ogni scrittura
-        await fetchCataloghi(modo);
+        // Ricarica silenziosa: l'ordine ottimistico resta a schermo.
+        await fetchCataloghi(modo, { silenzioso: true });
         return res;
       } catch (err) {
         console.error('[useModoCatalogs] Errore riordino cataloghi:', err);
-        await fetchCataloghi(modo);
+        await fetchCataloghi(modo, { silenzioso: true });
         throw err;
       }
     },

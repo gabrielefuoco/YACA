@@ -106,15 +106,19 @@ export function DashboardPage({
   const [editingCatalog, setEditingCatalog] = useState<Catalog | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // Modalità selezionata per la configurazione (default: modalità attiva)
-  const [internalSelectedModo, setInternalSelectedModo] = useState<ModoId>(activeModo);
-  const selectedModo = propsSelectedModo ?? internalSelectedModo;
+  // Modalità selezionata per la configurazione (default: modalità attiva).
+  // Lo stato è locale e la prop lo aggiorna quando arriva: prima la prop vinceva
+  // sempre, così il clic su una modalità non mostrava niente finché il genitore
+  // non rispondeva — e sembrava che il clic fosse ignorato.
+  const [selectedModo, setSelectedModo] = useState<ModoId>(propsSelectedModo ?? activeModo);
 
   useEffect(() => {
-    if (activeModo && !propsSelectedModo) {
-      setInternalSelectedModo(activeModo);
-    }
-  }, [activeModo, propsSelectedModo]);
+    if (propsSelectedModo) setSelectedModo(propsSelectedModo);
+  }, [propsSelectedModo]);
+
+  useEffect(() => {
+    setSelectedModo(activeModo);
+  }, [activeModo]);
 
   const handleEditCatalog = (catalog: any) => {
     if (catalog.source === 'preset' || catalog.fonte === 'preset') return;
@@ -200,21 +204,19 @@ export function DashboardPage({
                     key={modo}
                     type="button"
                     onClick={() => {
-                      if (!isSwitchingModo) {
-                        if (onSelectModoTab) {
-                          onSelectModoTab(modo);
-                        } else {
-                          setInternalSelectedModo(modo);
-                        }
-                      }
+                      if (isSwitchingModo) return;
+                      // La scelta si vede subito, chiunque sia a tenere lo stato: prima il
+                      // clic poteva non mostrare niente finché il genitore non rispondeva.
+                      setSelectedModo(modo);
+                      onSelectModoTab?.(modo);
                     }}
                     className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[96px] sm:min-h-[104px] shrink-0 w-[135px] sm:w-auto ${
                       isAttivo
                         ? isSelected
-                          ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02] ring-2 ring-primary/40'
+                          ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02]'
                           : 'border-primary/80 bg-primary/90 text-white shadow-md'
                         : isSelected
-                        ? 'border-primary/30 bg-white/40 hover:bg-white/70 text-marrow-deep ring-1 ring-inset ring-primary/25 shadow-md'
+                        ? 'border-marrow-light/20 bg-primary/10 text-marrow-deep shadow-lg scale-[1.02]'
                         : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40'
                     } ${isSwitchingModo ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
                   >
@@ -236,15 +238,6 @@ export function DashboardPage({
               })}
             </div>
 
-            {propagationMessage && (
-              <div className="flex items-start gap-2.5 p-3 sm:p-3.5 bg-primary/5 border border-primary/20 rounded-xl text-xs sm:text-sm text-marrow-deep font-medium">
-                <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <span className="font-bold text-primary block">Stato sincronizzazione Stremio</span>
-                  <p className="text-marrow-light leading-relaxed">{propagationMessage}</p>
-                </div>
-              </div>
-            )}
           </section>
 
           {/* Pannello della modalità selezionata (aperto come una pagina profilo) */}

@@ -90,7 +90,36 @@ router.post('/anteprima', async (req, res) => {
         let strategy = 'discovery';
         let sanitizedPrompt = null;
 
-        if (id && (id.startsWith('yaca_preset_') || id.startsWith('preset_') || getPresets().some(p => p.id === id))) {
+        // Un catalogo del profilo (scaffale del grafo, watchlist, creazione) NON passa dai
+        // preset: si serve con lo stesso handler che usa Stremio. Se un catalogo è valido
+        // nell'app, deve esserlo anche qui — altrimenti l'anteprima mente.
+        const ePreset = Boolean(id) && (id.startsWith('yaca_preset_') || id.startsWith('preset_') || getPresets().some(p => p.id === id));
+        if (id && !ePreset && !prompt) {
+            const { catalogHandler } = require('../stremio/catalogHandler');
+            const hostUrl = `${req.protocol}://${req.get('host') || 'localhost'}`;
+            const esito = await catalogHandler(
+                { id, type: customType || 'movie', extra: { skip: 0 } },
+                fullUserConfig,
+                hostUrl
+            );
+            const metas = Array.isArray(esito?.metas) ? esito.metas : [];
+            const cards = metas.map(m => ({
+                id: m.id,
+                titolo: m.name,
+                anno: m.releaseInfo ? String(m.releaseInfo).substring(0, 4) : '',
+                poster: m.poster || null,
+                type: m.type || customType || 'movie'
+            }));
+            return res.json(formatPreviewResponse({
+                name: null,
+                type: customType || 'movie',
+                cards,
+                diagnosi: { candidati: metas.length, entrati: cards.length, tagliati: {} },
+                total: cards.length
+            }));
+        }
+
+        if (id && ePreset) {
             const presetId = id.startsWith('yaca_preset_') ? id.replace('yaca_preset_', '') : id;
             const presets = getPresets();
             preset = presets.find(p => p.id === id || p.id === presetId || p.id === `preset_${presetId}`);

@@ -309,7 +309,7 @@ export function ExplorePanel({
       )}
 
       {/* Elenco dei cataloghi — stesso widget CatalogItem con switch di attivazione */}
-      {loading ? (
+      {loading && filteredItems.length === 0 ? (
         <div className="flex items-center justify-center p-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
