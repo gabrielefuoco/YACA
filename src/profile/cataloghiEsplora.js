@@ -213,11 +213,17 @@ function mediaDi(definizione) {
 function voceDi(definizione, fonte, contesto) {
     const id = String(definizione.id);
     const ordine = contesto.attive.has(id) ? contesto.attive.get(id) : null;
+    const tipo = tipoDi(definizione, contesto.presetMap);
+    const media = mediaDi(definizione);
     return {
         id,
         nome: definizione.name || definizione.nome || id,
-        tipo: tipoDi(definizione, contesto.presetMap),
-        media: mediaDi(definizione),
+        tipo,
+        media,
+        // Il tipo che il manifest dichiara a Stremio. La watchlist anime è dichiarata `anime`,
+        // non `movie`: senza questo campo l'interfaccia chiede il catalogo col tipo sbagliato
+        // e mostra «nessun risultato» su un catalogo che ha 18 titoli.
+        stremioType: tipo === 'anime' ? 'anime' : (media || 'movie'),
         fonte,
         attivo: contesto.attive.has(id),
         ordine

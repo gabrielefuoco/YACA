@@ -22,7 +22,7 @@ const {
 const library = require('../library');
 const { graphClient } = require('../clients');
 const { shelvesCache } = require('../cache/cacheInstances');
-const { buildShelfCacheKey } = require('../cache/shelfKey');
+const { SCAFFALI_PER_MODALITA, buildShelfCacheKey } = require('../cache/shelfKey');
 const { risolviProfiloAttivo } = require('../profile');
 
 /**
@@ -174,7 +174,8 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
             const resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
                 medium: med,
                 opzioni: opzioniScaffali,
-                cap
+                cap,
+                n: SCAFFALI_PER_MODALITA
             }));
 
             if (resScaffali && Array.isArray(resScaffali.scaffali)) {

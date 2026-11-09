@@ -14,7 +14,7 @@
 
 const cache = require('../cache');
 const { hybridRecommendationsCache, shelvesCache } = require('../cache/cacheInstances');
-const { buildShelfCacheKey } = require('../cache/shelfKey');
+const { SCAFFALI_PER_MODALITA, buildShelfCacheKey } = require('../cache/shelfKey');
 const { normalizeContentId } = require('../catalog/contentId');
 const { getHeroPoolSpec, getHeroRuoli } = require('../catalog/registry');
 const { applicaDecadimento } = require('./impressioni');
@@ -478,7 +478,10 @@ const HERO_STRATEGIES = [
                         resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
                             medium: med,
                             opzioni: opzioniScaffali,
-                            cap
+                            cap,
+                            // Più righe per modalità: con i modi che filtrano per medium, 8 bastavano
+                            // a lasciare una sola manciata di scaffali servibili.
+                            n: SCAFFALI_PER_MODALITA
                         }));
                     } catch (scaffaliErr) {
                         if (!isMockFunction(graphClient.raccomanda)) {

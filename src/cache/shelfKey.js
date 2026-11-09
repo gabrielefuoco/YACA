@@ -25,6 +25,12 @@
  * è un dato puramente derivato dalla composizione dei membri dello scaffale e dai metadati del
  * canone (congelati nell'artefatto del grafo). Includerlo nella chiave sarebbe ridondante ed errato.
  */
+/**
+ * Scaffali base chiesti al grafo per modalità. Il tetto di prodotto era 8: con i modi che filtrano
+ * per medium, 8 lasciava una sola manciata di righe servibili per modalità.
+ */
+const SCAFFALI_PER_MODALITA = 16;
+
 const crypto = require('crypto');
 const { modiAbilitati, isModoValido, normalizzaModo } = require('../profile/modo');
 
@@ -84,4 +90,5 @@ function buildShelfCacheKey({ semi, medium, opzioni, cap, versioni, modo } = {})
     return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
-module.exports = { buildShelfCacheKey, CHIAVE_VERSIONE };
+module.exports = {
+    SCAFFALI_PER_MODALITA, buildShelfCacheKey, CHIAVE_VERSIONE };
