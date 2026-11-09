@@ -44,11 +44,13 @@ interface DashboardPageProps {
   cataloghiLoading?: boolean;
   modi: ModoInfo[];
   activeModo: ModoId;
+  selectedModo?: ModoId;
+  onSelectModoTab?: (modo: ModoId) => void;
   isSwitchingModo: boolean;
   propagationMessage: string | null;
   onSelectModo: (modo: ModoId) => Promise<any>;
-  onToggleCatalogActive?: (id: string, attivo: boolean) => Promise<any> | void;
-  onReorderActiveCatalogs: (newIds: string[]) => Promise<any>;
+  onToggleCatalogActive?: (id: string, attivo: boolean, modo?: ModoId) => Promise<any> | void;
+  onReorderActiveCatalogs: (newIds: string[], modo?: ModoId) => Promise<any>;
   activeTab: AppTab;
   onTabChange: (tab: AppTab) => void;
 }
@@ -83,6 +85,8 @@ export function DashboardPage({
   cataloghiLoading,
   modi,
   activeModo,
+  selectedModo: propsSelectedModo,
+  onSelectModoTab,
   isSwitchingModo,
   propagationMessage,
   onSelectModo,
@@ -103,13 +107,14 @@ export function DashboardPage({
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Modalità selezionata per la configurazione (default: modalità attiva)
-  const [selectedModo, setSelectedModo] = useState<ModoId>(activeModo);
+  const [internalSelectedModo, setInternalSelectedModo] = useState<ModoId>(activeModo);
+  const selectedModo = propsSelectedModo ?? internalSelectedModo;
 
   useEffect(() => {
-    if (activeModo) {
-      setSelectedModo(activeModo);
+    if (activeModo && !propsSelectedModo) {
+      setInternalSelectedModo(activeModo);
     }
-  }, [activeModo]);
+  }, [activeModo, propsSelectedModo]);
 
   const handleEditCatalog = (catalog: any) => {
     if (catalog.source === 'preset' || catalog.fonte === 'preset') return;
@@ -137,7 +142,7 @@ export function DashboardPage({
     }, 500);
   };
 
-  // Cataloghi attivi per la modalità corrente
+  // Cataloghi attivi per la modalità selezionata
   const cataloghiAttivi: CatalogoEsploraVoce[] = (() => {
     if (!cataloghiData?.gruppi) return [];
     const tutti: CatalogoEsploraVoce[] = [
@@ -146,9 +151,15 @@ export function DashboardPage({
       ...(cataloghiData.gruppi.creazioni || []),
       ...(cataloghiData.gruppi.tutti || []),
     ];
-    return tutti
-      .filter((c) => c.attivo)
-      .sort((a, b) => (a.ordine ?? 999) - (b.ordine ?? 999));
+    const seen = new Set<string>();
+    const uniqueAttivi: CatalogoEsploraVoce[] = [];
+    for (const c of tutti) {
+      if (c.attivo && !seen.has(c.id)) {
+        seen.add(c.id);
+        uniqueAttivi.push(c);
+      }
+    }
+    return uniqueAttivi.sort((a, b) => (a.ordine ?? 999) - (b.ordine ?? 999));
   })();
 
   // Scaffali di suggerimento per la modalità attiva (usati per anteprima live)
@@ -190,32 +201,28 @@ export function DashboardPage({
                     type="button"
                     onClick={() => {
                       if (!isSwitchingModo) {
-                        setSelectedModo(modo);
+                        if (onSelectModoTab) {
+                          onSelectModoTab(modo);
+                        } else {
+                          setInternalSelectedModo(modo);
+                        }
                       }
                     }}
-                    className={`relative flex flex-col items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[110px] sm:min-h-[120px] shrink-0 w-[135px] sm:w-auto ${
+                    className={`relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl border transition-all text-center touch-manipulation min-h-[96px] sm:min-h-[104px] shrink-0 w-[135px] sm:w-auto ${
                       isAttivo
                         ? isSelected
                           ? 'border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-[1.02] ring-2 ring-primary/40'
                           : 'border-primary/80 bg-primary/90 text-white shadow-md'
                         : isSelected
-                        ? 'border-primary bg-white/90 shadow-md ring-2 ring-primary/40 text-marrow-deep'
+                        ? 'border-primary/30 bg-white/40 hover:bg-white/70 text-marrow-deep ring-1 ring-inset ring-primary/25 shadow-md'
                         : 'border-marrow-light/15 bg-white/40 hover:bg-white/70 text-marrow-deep hover:border-primary/40'
                     } ${isSwitchingModo ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
                   >
-                    <div className="flex flex-col items-center">
-                      <span className="text-2xl sm:text-3xl mb-1 select-none">{emoji}</span>
+                    <div className="flex flex-col items-center select-none">
+                      <span className="text-2xl sm:text-3xl mb-1">{emoji}</span>
                       <span className={`text-xs sm:text-sm font-black tracking-tight ${isAttivo ? 'text-white' : 'text-marrow-deep'}`}>
                         {nome}
                       </span>
-                    </div>
-
-                    <div className="mt-2 w-full min-h-[20px] flex items-center justify-center">
-                      {isAttivo && (
-                        <span className="text-xs font-semibold text-white/90 lowercase select-none">
-                          attiva
-                        </span>
-                      )}
                     </div>
 
                     {isAttivo && (
@@ -262,6 +269,11 @@ export function DashboardPage({
                   <p className="text-xs text-marrow-light font-medium mt-0.5 truncate sm:whitespace-normal">
                     {MODO_DESCRIPTIONS[selectedModo]}
                   </p>
+                  {!isCurrentAttivo && (
+                    <p className="text-xs text-marrow-light font-medium mt-1">
+                      Le modifiche sono salvate per questa modalità e raggiungeranno Stremio quando verrà attivata.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -371,104 +383,67 @@ export function DashboardPage({
             </div>
 
             {/* Riepilogo e gestione cataloghi */}
-            {isCurrentAttivo ? (
-              <div className="space-y-4 pt-1">
-                {/* Seconda fila di pillole: esattamente due pannelli (Cataloghi attivi | Esplora) */}
-                <div className="flex items-center justify-center w-full">
-                  <div className="flex items-center gap-1.5 p-1.5 bg-white/60 rounded-2xl border border-marrow-light/10 shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => onTabChange('dashboard')}
-                      className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[36px] ${
-                        activeTab === 'dashboard'
-                          ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                          : 'text-marrow-deep hover:text-primary hover:bg-white/60'
-                      }`}
-                    >
-                      <Layers className="h-4 w-4" />
-                      <span>Cataloghi attivi</span>
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                          activeTab === 'dashboard' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                        }`}
-                      >
-                        {cataloghiAttivi.length}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onTabChange('explore')}
-                      className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[36px] ${
-                        activeTab === 'explore'
-                          ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                          : 'text-marrow-deep hover:text-primary hover:bg-white/60'
-                      }`}
-                    >
-                      <Compass className="h-4 w-4" />
-                      <span>Esplora</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Pannello Cataloghi Attivi */}
-                {activeTab === 'dashboard' && (
-                  <ActiveCatalogsPanel
-                    catalogs={cataloghiAttivi}
-                    onReorder={onReorderActiveCatalogs}
-                    onGoToExplore={() => onTabChange('explore')}
-                    onEditCatalog={handleEditCatalog}
-                  />
-                )}
-
-                {/* Pannello Esplora */}
-                {activeTab === 'explore' && (
-                  <ExplorePanel
-                    data={cataloghiData}
-                    loading={cataloghiLoading}
-                    activeModo={activeModo}
-                    presets={presets}
-                    onToggleActive={onToggleCatalogActive}
-                    onEditCatalog={handleEditCatalog}
-                    onConfigChanged={onConfigChanged}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-xl bg-white/30 border border-marrow-light/10 text-center space-y-3">
-                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <Layers className="h-5 w-5" />
-                </div>
-                <div className="max-w-md space-y-1">
-                  <h4 className="text-sm font-black text-marrow-deep">
-                    Riepilogo cataloghi ({currentModoConfig.nome})
-                  </h4>
-                  <p className="text-xs text-marrow-light font-medium leading-relaxed">
-                    I cataloghi visibili su Stremio appartengono alla modalità attiva. Attiva <strong>{currentModoConfig.nome}</strong> per accedere e gestire i suoi cataloghi ed esplorare le raccomandazioni dedicate.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onSelectModo(selectedModo)}
-                  disabled={isSwitchingModo}
-                  className="inline-flex items-center justify-center gap-1.5 min-w-[32px] min-h-[32px] px-3.5 py-1.5 rounded-xl bg-primary text-white hover:bg-primary/90 active:scale-95 border border-primary/20 shadow-sm text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 touch-manipulation cursor-pointer"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="w-3.5 h-3.5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
+            <div className="space-y-4 pt-1">
+              {/* Seconda fila di pillole: esattamente due pannelli (Cataloghi attivi | Esplora) */}
+              <div className="flex items-center justify-center w-full">
+                <div className="flex items-center gap-1.5 p-1.5 bg-white/60 rounded-2xl border border-marrow-light/10 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => onTabChange('dashboard')}
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[36px] ${
+                      activeTab === 'dashboard'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                        : 'text-marrow-deep hover:text-primary hover:bg-white/60'
+                    }`}
                   >
-                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-                    <line x1="12" y1="2" x2="12" y2="12" />
-                  </svg>
-                  <span>Attiva {currentModoConfig.nome}</span>
-                </button>
+                    <Layers className="h-4 w-4" />
+                    <span>Cataloghi attivi</span>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                        activeTab === 'dashboard' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                      }`}
+                    >
+                      {cataloghiAttivi.length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onTabChange('explore')}
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all touch-manipulation min-h-[36px] ${
+                      activeTab === 'explore'
+                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                        : 'text-marrow-deep hover:text-primary hover:bg-white/60'
+                    }`}
+                  >
+                    <Compass className="h-4 w-4" />
+                    <span>Esplora</span>
+                  </button>
+                </div>
               </div>
-            )}
+
+              {/* Pannello Cataloghi Attivi */}
+              {activeTab === 'dashboard' && (
+                <ActiveCatalogsPanel
+                  catalogs={cataloghiAttivi}
+                  onReorder={(ids) => onReorderActiveCatalogs(ids, selectedModo)}
+                  onGoToExplore={() => onTabChange('explore')}
+                  onEditCatalog={handleEditCatalog}
+                />
+              )}
+
+              {/* Pannello Esplora */}
+              {activeTab === 'explore' && (
+                <ExplorePanel
+                  data={cataloghiData}
+                  loading={cataloghiLoading}
+                  activeModo={selectedModo}
+                  presets={presets}
+                  onToggleActive={(id, attivo) => onToggleCatalogActive?.(id, attivo, selectedModo)}
+                  onEditCatalog={handleEditCatalog}
+                  onConfigChanged={onConfigChanged}
+                />
+              )}
+            </div>
           </section>
         </>
       )}

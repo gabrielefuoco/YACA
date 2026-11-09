@@ -3,7 +3,7 @@ import { useState, useMemo, useRef } from 'react';
 import { CatalogoEsploraVoce, CataloghiEsploraResponse, ModoId, Preset } from '@/types';
 import { CatalogItem } from '@/components/shared/CatalogItem';
 import { catalogoVoceToCard } from '@/lib/catalogPresentation';
-import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { usePresets } from '@/hooks/usePresets';
@@ -224,7 +224,7 @@ export function ExplorePanel({
       <div className="flex flex-col gap-1">
         <h2 className="text-xl sm:text-2xl font-black text-marrow-deep tracking-tight">Esplora Cataloghi</h2>
         <p className="text-xs sm:text-sm text-marrow-light font-medium">
-          Tutti i cataloghi disponibili per la modalità attiva. Accendili per renderli visibili nella tua installazione di Stremio.
+          Tutti i cataloghi disponibili per questa modalità. Accendili per renderli visibili nella tua configurazione.
         </p>
       </div>
 
@@ -327,7 +327,7 @@ export function ExplorePanel({
               <CatalogItem
                 key={item.id}
                 catalog={cardData}
-                onToggleActive={(attivo) => handleToggle(item.id, attivo)}
+                onToggleActive={onToggleActive ? (attivo) => handleToggle(item.id, attivo) : undefined}
                 onEdit={item.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(item) : undefined}
               />
             );

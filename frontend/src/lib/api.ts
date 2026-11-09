@@ -146,12 +146,12 @@ export const api = {
     get('/api/profilo/modi'),
   attivaModo: (modo: string) =>
     post('/api/profilo/modi/attiva', { modo }),
-  getCataloghi: () =>
-    get('/api/profilo/cataloghi'),
-  attivaCatalogo: (id: string, attivo: boolean) =>
-    post('/api/profilo/cataloghi/attiva', { id, attivo }),
-  riordinaCataloghi: (ids: string[]) =>
-    post('/api/profilo/cataloghi/ordine', { ids }),
+  getCataloghi: (modo: string) =>
+    get(`/api/profilo/cataloghi?modo=${encodeURIComponent(modo)}`),
+  attivaCatalogo: (id: string, attivo: boolean, modo: string) =>
+    post('/api/profilo/cataloghi/attiva', { id, attivo, modo }),
+  riordinaCataloghi: (ids: string[], modo: string) =>
+    post('/api/profilo/cataloghi/ordine', { ids, modo }),
   checkUser: (_authKey?: string, _email?: string) =>
     get('/api/profilo'),
   getProfileAnalytics: (profileId?: string, _userId?: string) =>

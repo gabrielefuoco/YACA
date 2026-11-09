@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 
 interface ActiveCatalogsPanelProps {
   catalogs: CatalogoEsploraVoce[];
-  onReorder: (ids: string[]) => void;
+  onReorder?: (ids: string[]) => void;
   onEditCatalog?: (catalog: any) => void;
   onGoToExplore?: () => void;
 }
@@ -20,27 +20,30 @@ export function ActiveCatalogsPanel({
   onGoToExplore,
 }: ActiveCatalogsPanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const canReorder = Boolean(onReorder);
 
   const handleDragStart = (index: number) => {
+    if (!canReorder) return;
     setDragIndex(index);
   };
 
   const handleDrop = (targetIndex: number) => {
-    if (dragIndex === null || dragIndex === targetIndex) return;
+    if (!canReorder || !onReorder || dragIndex === null || dragIndex === targetIndex) return;
     const reordered = [...catalogs];
     const [moved] = reordered.splice(dragIndex, 1);
     reordered.splice(targetIndex, 0, moved);
     setDragIndex(null);
-    onReorder(reordered.map(c => c.id));
+    onReorder(reordered.map((c) => c.id));
   };
 
   const handleMoveCatalog = (fromIndex: number, direction: 'up' | 'down') => {
+    if (!canReorder || !onReorder) return;
     const targetIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
     if (targetIndex < 0 || targetIndex >= catalogs.length) return;
     const reordered = [...catalogs];
     const [moved] = reordered.splice(fromIndex, 1);
     reordered.splice(targetIndex, 0, moved);
-    onReorder(reordered.map(c => c.id));
+    onReorder(reordered.map((c) => c.id));
   };
 
   return (
@@ -56,11 +59,11 @@ export function ActiveCatalogsPanel({
             </span>
           </div>
           <p className="text-xs text-marrow-light font-medium mt-0.5">
-            L&apos;elenco effettivo dichiarato a Stremio per la modalità corrente. Trascina o usa le frecce per riordinare.
+            L&apos;elenco effettivo dei cataloghi per questa modalità. Trascina o usa le frecce per riordinare.
           </p>
         </div>
 
-        {catalogs.length > 1 && (
+        {catalogs.length > 1 && canReorder && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/40 rounded-xl border border-marrow-light/10 shrink-0">
             <Info className="h-3.5 w-3.5 text-primary shrink-0" />
             <p className="text-xs text-marrow-light font-bold">
@@ -76,7 +79,7 @@ export function ActiveCatalogsPanel({
           <div className="size-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-4">
             <Layers className="h-8 w-8 text-primary/40" />
           </div>
-          <p className="text-base font-black text-marrow-deep">Nessun catalogo attivo nella modalità corrente</p>
+          <p className="text-base font-black text-marrow-deep">Nessun catalogo attivo nella modalità selezionata</p>
           <p className="text-xs text-marrow-light font-medium mt-1 max-w-sm mx-auto">
             I cataloghi attivi determinano cosa vedrai su Stremio. Attiva i cataloghi che desideri da Esplora.
           </p>
@@ -101,13 +104,15 @@ export function ActiveCatalogsPanel({
                 catalog={cardData}
                 isDragging={dragIndex === index}
                 onEdit={catalog.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(catalog) : undefined}
-                onMoveUp={() => handleMoveCatalog(index, 'up')}
-                onMoveDown={() => handleMoveCatalog(index, 'down')}
-                canMoveUp={index > 0}
-                canMoveDown={index < catalogs.length - 1}
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDrop={() => handleDrop(index)}
+                onMoveUp={canReorder ? () => handleMoveCatalog(index, 'up') : undefined}
+                onMoveDown={canReorder ? () => handleMoveCatalog(index, 'down') : undefined}
+                canMoveUp={canReorder && index > 0}
+                canMoveDown={canReorder && index < catalogs.length - 1}
+                onDragStart={canReorder ? () => handleDragStart(index) : undefined}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                }}
+                onDrop={canReorder ? () => handleDrop(index) : undefined}
                 onDragEnd={() => setDragIndex(null)}
               />
             );

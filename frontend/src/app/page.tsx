@@ -195,6 +195,8 @@ export default function Home() {
   const {
     modi,
     activeModo,
+    selectedModo,
+    selectModoTab,
     isSwitchingModo,
     propagationMessage,
     cataloghiData,
@@ -624,6 +626,8 @@ export default function Home() {
                   cataloghiLoading={cataloghiLoading}
                   modi={modi}
                   activeModo={activeModo}
+                  selectedModo={selectedModo}
+                  onSelectModoTab={selectModoTab}
                   isSwitchingModo={isSwitchingModo}
                   propagationMessage={propagationMessage}
                   onSelectModo={selectModo}
