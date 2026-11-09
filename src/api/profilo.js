@@ -180,7 +180,7 @@ router.get('/cataloghi', async (req, res) => {
         if (!user) {
             return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
         }
-        return res.json(await elencaEsplora(user));
+        return res.json(await elencaEsplora(user, req.query?.modo ?? null));
     } catch (err) {
         return rispostaErroreDominio(res, err, 'Impossibile caricare i cataloghi');
     }
@@ -188,7 +188,9 @@ router.get('/cataloghi', async (req, res) => {
 
 /**
  * POST /api/profilo/cataloghi/attiva
- * Body: { id: string, attivo: boolean } — idempotente, in coda all'attivazione.
+ * Body: { id: string, attivo: boolean, modo?: string } — idempotente, in coda
+ * all'attivazione. `modo` permette di modificare le liste di una modalità non attiva:
+ * i cataloghi appartengono alla modalità, non all'atto di attivarla.
  */
 router.post('/cataloghi/attiva', async (req, res) => {
     const { modiAbilitati } = require('../profile/modo');
@@ -201,7 +203,7 @@ router.post('/cataloghi/attiva', async (req, res) => {
         if (!user) {
             return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
         }
-        const risultato = await attivaCatalogo({ userConfig: user, id: req.body?.id, attivo: req.body?.attivo });
+        const risultato = await attivaCatalogo({ userConfig: user, id: req.body?.id, attivo: req.body?.attivo, modo: req.body?.modo ?? null });
         await propagaAStremio(req, risultato);
         return res.json(risultato);
     } catch (err) {
@@ -211,7 +213,7 @@ router.post('/cataloghi/attiva', async (req, res) => {
 
 /**
  * POST /api/profilo/cataloghi/ordine
- * Body: { ids: string[] } — permutazione esatta dei cataloghi attivi della modalità.
+ * Body: { ids: string[], modo?: string } — permutazione esatta dei cataloghi attivi della modalità.
  */
 router.post('/cataloghi/ordine', async (req, res) => {
     const { modiAbilitati } = require('../profile/modo');
@@ -224,7 +226,7 @@ router.post('/cataloghi/ordine', async (req, res) => {
         if (!user) {
             return erroreDominio(res, 404, 'non_trovato', 'Profilo utente non trovato.');
         }
-        const risultato = await riordinaCataloghi({ userConfig: user, ids: req.body?.ids });
+        const risultato = await riordinaCataloghi({ userConfig: user, ids: req.body?.ids, modo: req.body?.modo ?? null });
         await propagaAStremio(req, risultato);
         return res.json(risultato);
     } catch (err) {

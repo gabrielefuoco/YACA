@@ -173,13 +173,21 @@ const WATCHLIST_PER_ID = new Map(WATCHLIST_CATALOGS.map(c => [c.id, c]));
  *
  * @param {object} userConfig configurazione risolta (resolveUserConfig)
  */
-async function contestoEsplora(userConfig) {
+async function contestoEsplora(userConfig, modoRichiesto = null) {
     if (!userConfig) throw new AccountNonTrovatoError();
 
-    const modo = modoAttivoStretto(userConfig);
+    const modoAttivo = modoAttivoStretto(userConfig);
+    let modo = modoAttivo;
+    if (modoRichiesto !== null && modoRichiesto !== undefined) {
+        const normalizzato = normalizzaModo(modoRichiesto);
+        if (!isModoValido(normalizzato)) throw ERRORE_MODO(modoRichiesto);
+        modo = normalizzato;
+    }
     const leve = derivaLeve(modo);
-    // Stesso resolver del manifest: nessuna seconda logica sugli scaffali.
-    const shelves = await resolveProfileShelves({ userConfig });
+    // Stesso resolver del manifest: nessuna seconda logica sugli scaffali. Per una
+    // modalità non attiva si sposta solo la lente del resolver, non lo stato dell'account.
+    const configPerModo = modo === modoAttivo ? userConfig : { ...userConfig, activeModo: modo };
+    const shelves = await resolveProfileShelves({ userConfig: configPerModo });
     const definizioniGrafo = catalogDefinitionsFromShelves(shelves);
     const presetMap = mappaPreset();
     const attive = new Map(cataloghiDelModo(userConfig, modo).map(v => [v.id, v.ordine]));
@@ -251,8 +259,8 @@ function confrontoTesto(a, b) {
  * @param {object} userConfig
  * @returns {Promise<{modo: string, gruppi: object, configVersion: string|null}>}
  */
-async function elencaEsplora(userConfig) {
-    const contesto = await contestoEsplora(userConfig);
+async function elencaEsplora(userConfig, modo = null) {
+    const contesto = await contestoEsplora(userConfig, modo);
     const gruppi = {};
 
     const suggerimenti = contesto.definizioniGrafo
@@ -333,6 +341,14 @@ async function salvaCataloghi({ userConfig, modo, voci }) {
     const cataloghi = { ...cataloghiPrima };
     cataloghi[modo] = voci.map((voce, idx) => ({ id: voce.id, ordine: idx }));
 
+    // Il manifest serve la modalità ATTIVA: modificare le liste di un'altra
+    // modalità non deve dichiarare una risincronizzazione che non cambierebbe nulla.
+    const toccaManifest = modo === modoAttivoStretto(userConfig);
+    if (!toccaManifest) {
+        await AddonConfig.updateOne({ uuid }, { $set: { 'config.cataloghi': cataloghi } });
+        return { modo, configVersion: userConfig?.configVersion || null, manifestChanged: false, cataloghi: cataloghi[modo], attivi: voci.map(v => v.id) };
+    }
+
     const activeProfileId = userConfig?.activeProfileId || null;
     const nextFingerprint = buildManifestFingerprint({
         activeProfileId,
@@ -372,7 +388,7 @@ async function salvaCataloghi({ userConfig, modo, voci }) {
  *
  * @param {{userConfig: object, id: unknown, attivo: unknown}} params
  */
-async function attivaCatalogo({ userConfig, id, attivo } = {}) {
+async function attivaCatalogo({ userConfig, id, attivo, modo = null } = {}) {
     if (typeof id !== 'string' || !id.trim()) {
         throw errore('catalogo_non_valido', 'Il campo `id` è obbligatorio e deve essere una stringa non vuota.');
     }
@@ -380,7 +396,7 @@ async function attivaCatalogo({ userConfig, id, attivo } = {}) {
         throw errore('catalogo_non_valido', 'Il campo `attivo` è obbligatorio e deve essere booleano (true/false).');
     }
 
-    const contesto = await contestoEsplora(userConfig);
+    const contesto = await contestoEsplora(userConfig, modo);
     const trovato = trovaDefinizione(id.trim(), contesto);
     if (!trovato) {
         throw errore('catalogo_non_valido', `Catalogo sconosciuto: ${id}. Non esiste fra grafo, watchlist, preset e creazioni.`);
@@ -426,7 +442,7 @@ async function attivaCatalogo({ userConfig, id, attivo } = {}) {
  *
  * @param {{userConfig: object, ids: unknown}} params
  */
-async function riordinaCataloghi({ userConfig, ids } = {}) {
+async function riordinaCataloghi({ userConfig, ids, modo = null } = {}) {
     if (!Array.isArray(ids)) {
         throw errore('ordine_non_valido', 'Il campo `ids` è obbligatorio e deve essere un array di identificatori.');
     }
@@ -437,7 +453,7 @@ async function riordinaCataloghi({ userConfig, ids } = {}) {
         throw errore('ordine_duplicato', '`ids` contiene duplicati: un catalogo può comparire una sola volta.');
     }
 
-    const contesto = await contestoEsplora(userConfig);
+    const contesto = await contestoEsplora(userConfig, modo);
     const attive = cataloghiDelModo(userConfig, contesto.modo);
     const idAttivi = attive.map(voce => voce.id);
 

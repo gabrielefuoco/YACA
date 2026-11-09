@@ -244,6 +244,69 @@ describe('POST attiva: idempotenza e coda', () => {
     });
 });
 
+describe('Liste di una modalità non attiva', () => {
+    // I cataloghi appartengono alla modalità, non all'atto di attivarla: si guardano
+    // e si modificano anche mentre un'altra modalità è in uso.
+    it('elenca i cataloghi della modalità richiesta, non di quella attiva', async () => {
+        const risultato = await elencaEsplora(utente({ modo: 'film', activeModo: 'film' }), 'serie');
+        expect(risultato.modo).toBe('serie');
+        expect(resolveProfileShelves).toHaveBeenCalledWith(
+            expect.objectContaining({ userConfig: expect.objectContaining({ activeModo: 'serie' }) })
+        );
+    });
+
+    it('una modalità inventata è 400 modo_non_valido', async () => {
+        await expect(elencaEsplora(utente(), 'documentari')).rejects.toMatchObject({ code: 'modo_non_valido' });
+    });
+
+    it('attivare in una modalità non attiva scrive le liste ma non risincronizza Stremio', async () => {
+        const user = utente({ modo: 'anime', activeModo: 'anime' });
+
+        const risultato = await attivaCatalogo({ userConfig: user, id: 'preset_pop_movies', attivo: true, modo: 'film' });
+
+        expect(risultato.modo).toBe('film');
+        expect(risultato.manifestChanged).toBe(false);
+        const [filtro, aggiornamento] = AddonConfig.updateOne.mock.calls[0];
+        expect(filtro).toEqual({ uuid: 'addon-esplora' });
+        expect(Object.keys(aggiornamento.$set)).toEqual(['config.cataloghi']);
+        expect(aggiornamento.$set['config.pendingStremioResync']).toBeUndefined();
+        expect(aggiornamento.$set['config.cataloghi'].film).toEqual([
+            { id: 'preset_pop_movies', ordine: 0 }
+        ]);
+        expect(aggiornamento.$set['config.configVersion']).toBeUndefined();
+    });
+
+    it('la modalità attiva continua invece a invalidare il manifest', async () => {
+        const user = utente({ modo: 'film', activeModo: 'film' });
+
+        const risultato = await attivaCatalogo({ userConfig: user, id: 'preset_pop_movies', attivo: true, modo: 'film' });
+
+        expect(risultato.manifestChanged).toBe(true);
+        expect(AddonConfig.updateOne.mock.calls[0][1].$set['config.pendingStremioResync']).toBe(true);
+    });
+
+    it('il riordino vale per la modalità indicata, non per quella in uso', async () => {
+        const user = utente({
+            modo: 'anime',
+            activeModo: 'anime',
+            cataloghi: { anime: [], film: voci('preset_pop_movies', 'preset_top_rated_movies') }
+        });
+
+        const risultato = await riordinaCataloghi({
+            userConfig: user,
+            ids: ['preset_top_rated_movies', 'preset_pop_movies'],
+            modo: 'film'
+        });
+
+        expect(risultato.modo).toBe('film');
+        expect(risultato.manifestChanged).toBe(false);
+        expect(AddonConfig.updateOne.mock.calls[0][1].$set['config.cataloghi'].film).toEqual([
+            { id: 'preset_top_rated_movies', ordine: 0 },
+            { id: 'preset_pop_movies', ordine: 1 }
+        ]);
+    });
+});
+
 describe('POST ordine: solo la permutazione esatta degli attivi', () => {
     const user = () => utente({
         modo: 'film',
