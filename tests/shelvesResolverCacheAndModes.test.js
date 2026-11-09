@@ -249,3 +249,20 @@ describe('shelvesResolver & pool cache invariant (Ticket V45)', () => {
         }
     });
 });
+
+describe('La cache in RAM non mescola le modalità', () => {
+    // Le cinque modalità condividono lo stesso userId: la cache per (profilo, medium)
+    // restituiva in una modalità gli scaffali costruiti da un'altra, quindi cataloghi
+    // elencati e poi vuoti al serving.
+    it('la chiave della cache porta la modalità, ma solo a flag acceso', () => {
+        const { chiaveCacheScaffali } = require('../src/cache/shelfKey');
+
+        process.env.MODI_ABILITATI = '1';
+        expect(chiaveCacheScaffali('REOZrGNRr3', { activeModo: 'film' })).toBe('REOZrGNRr3::film');
+        expect(chiaveCacheScaffali('REOZrGNRr3', { activeModo: 'serie' })).toBe('REOZrGNRr3::serie');
+
+        process.env.MODI_ABILITATI = '0';
+        expect(chiaveCacheScaffali('REOZrGNRr3', { activeModo: 'film' })).toBe('REOZrGNRr3');
+        process.env.MODI_ABILITATI = '1';
+    });
+});

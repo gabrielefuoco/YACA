@@ -32,7 +32,7 @@
 const SCAFFALI_PER_MODALITA = 16;
 
 const crypto = require('crypto');
-const { modiAbilitati, isModoValido, normalizzaModo } = require('../profile/modo');
+const { modiAbilitati, isModoValido, normalizzaModo, leggiModoAttivo } = require('../profile/modo');
 
 const CHIAVE_VERSIONE = 1;
 
@@ -93,5 +93,30 @@ function buildShelfCacheKey({ semi, medium, opzioni, cap, n, versioni, modo } = 
     return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
+/**
+ * La chiave della cache in RAM degli scaffali risolti.
+ *
+ * La cache è per (profilo, medium) e la modalità NON entrava nella chiave: le cinque
+ * modalità condividono lo stesso `userId`, così una modalità rileggeva gli scaffali
+ * costruiti da un'altra — cataloghi elencati e poi vuoti al serving. Quando le
+ * modalità sono accese la modalità fa parte della chiave; a flag spento la chiave
+ * resta esattamente quella di prima.
+ *
+ * @param {string|null} base id del profilo o dello utente
+ * @param {object|null} userConfig configurazione da cui leggere la modalità
+ * @returns {string|null}
+ */
+function chiaveCacheScaffali(base, userConfig) {
+    if (!base) return null;
+    if (!modiAbilitati()) return String(base);
+    let modo = null;
+    try {
+        modo = modoPerChiave(leggiModoAttivo(userConfig));
+    } catch (_err) {
+        modo = null;
+    }
+    return modo ? `${base}::${modo}` : String(base);
+}
+
 module.exports = {
-    SCAFFALI_PER_MODALITA, buildShelfCacheKey, CHIAVE_VERSIONE };
+    SCAFFALI_PER_MODALITA, buildShelfCacheKey, CHIAVE_VERSIONE, chiaveCacheScaffali };

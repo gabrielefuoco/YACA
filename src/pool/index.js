@@ -520,8 +520,11 @@ const HERO_STRATEGIES = [
                         if (sharedState) {
                             sharedState.shelves = shelfSummary;
                         }
-                        if (ctx.context) setCachedProfileShelves(ctx.context, shelfSummary, ctx.mediaType);
-                        if (ctx.userId) setCachedProfileShelves(ctx.userId, shelfSummary, ctx.mediaType);
+                        // La modalità fa parte della chiave: le cinque modalità condividono lo
+                        // stesso userId, e senza questo una rileggeva gli scaffali dell'altra.
+                        const chiaveCache = require('../cache/shelfKey').chiaveCacheScaffali;
+                        if (ctx.context) setCachedProfileShelves(chiaveCache(ctx.context, ctx.userConfig), shelfSummary, ctx.mediaType);
+                        if (ctx.userId) setCachedProfileShelves(chiaveCache(ctx.userId, ctx.userConfig), shelfSummary, ctx.mediaType);
                         console.log(`[Scaffali] ${ctx.mediaType}: serviti ${scaffali.length} scaffali dinamici dal grafo`);
                         return;
                     }

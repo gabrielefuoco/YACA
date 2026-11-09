@@ -22,7 +22,7 @@ const {
 const library = require('../library');
 const { graphClient } = require('../clients');
 const { shelvesCache } = require('../cache/cacheInstances');
-const { SCAFFALI_PER_MODALITA, buildShelfCacheKey } = require('../cache/shelfKey');
+const { SCAFFALI_PER_MODALITA, buildShelfCacheKey, chiaveCacheScaffali } = require('../cache/shelfKey');
 const { risolviProfiloAttivo } = require('../profile');
 
 /**
@@ -83,10 +83,13 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
     const userId = userConfig?.userId || userConfig?.owner;
 
     // 2. Controllo cache RAM in-memory del pool per medium
-    const cachedMovie = (idProfilo ? getCachedProfileShelves(idProfilo, 'movie') : null)
-        || (userId ? getCachedProfileShelves(userId, 'movie') : null);
-    const cachedSeries = (idProfilo ? getCachedProfileShelves(idProfilo, 'series') : null)
-        || (userId ? getCachedProfileShelves(userId, 'series') : null);
+    // Stessa chiave del pool, modalità compresa: le cinque modalità condividono lo userId.
+    const chiaveProfilo = chiaveCacheScaffali(idProfilo, userConfig);
+    const chiaveUtente = chiaveCacheScaffali(userId, userConfig);
+    const cachedMovie = (chiaveProfilo ? getCachedProfileShelves(chiaveProfilo, 'movie') : null)
+        || (chiaveUtente ? getCachedProfileShelves(chiaveUtente, 'movie') : null);
+    const cachedSeries = (chiaveProfilo ? getCachedProfileShelves(chiaveProfilo, 'series') : null)
+        || (chiaveUtente ? getCachedProfileShelves(chiaveUtente, 'series') : null);
 
     const hasCachedMovie = Array.isArray(cachedMovie) && cachedMovie.length > 0;
     const hasCachedSeries = Array.isArray(cachedSeries) && cachedSeries.length > 0;
