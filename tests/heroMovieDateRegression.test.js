@@ -68,6 +68,10 @@ function cachedHeroGroup(mediaType, ids) {
         seedIds: [],
         catalogs
     };
+
+// Questa suite carica DuckDB e ricostruisce le righe: da sola sta in ~90 s, e sotto il carico
+// delle 195 suite parallele un test sforava i 30 s. Il limite resta basso, ma non da flake.
+jest.setTimeout(60000);
 }
 
 describe('Hero Catalogs Audit 02 Fixes', () => {

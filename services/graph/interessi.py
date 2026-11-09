@@ -712,7 +712,7 @@ def clusters(
                     "titolo": str(titles[r]) if titles is not None else k_seme,
                     "anno": int(years[r]) if years is not None else 0,
                     "plays": float(plays_arr[idx]),
-                    "eta_giorni": float(eta_arr[idx]),
+                    **({"eta_giorni": float(eta_arr[idx])} if not np.isnan(eta_arr[idx]) else {}),
                 })
 
             semi_membri = []
@@ -809,7 +809,7 @@ def unisci_cluster_tassonomia_identici(
                 "titolo": str(titles[r]) if titles is not None else k_seme,
                 "anno": int(years[r]) if years is not None else 0,
                 "plays": float(plays_arr[idx]),
-                "eta_giorni": float(eta_arr[idx]),
+                **({"eta_giorni": float(eta_arr[idx])} if not np.isnan(eta_arr[idx]) else {}),
             })
 
         semi_membri = []
@@ -1189,7 +1189,7 @@ def scaffali(
                             "titolo": str(titles[r]) if titles is not None else k_seme,
                             "anno": int(years[r]) if years is not None else 0,
                             "plays": float(plays_arr[idx]),
-                            "eta_giorni": float(eta_arr[idx]),
+                            **({"eta_giorni": float(eta_arr[idx])} if not np.isnan(eta_arr[idx]) else {}),
                         })
 
                 cat_prefix = sh.catalog_id.rsplit("_", 1)[0]

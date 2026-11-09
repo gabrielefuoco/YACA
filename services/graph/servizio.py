@@ -796,13 +796,16 @@ def esegui_scaffali(
         else:
             p_calc = 1.0
 
-        eta = float(s.get("eta_giorni", idx))
+        # Se l'età non arriva, NON si inventa: prima si usava l'indice del seme, e l'interfaccia
+        # finiva per dire «oggi» su titoli visti anni fa. Assente è un'informazione, sbagliata no.
+        eta = float(s["eta_giorni"]) if "eta_giorni" in s else float("nan")
 
         seme_prep = {
             "key": k,
             "plays": p_calc,
-            "eta_giorni": eta,
         }
+        if not math.isnan(eta):
+            seme_prep["eta_giorni"] = eta
         if "tipo" in s:
             seme_prep["tipo"] = s["tipo"]
         if "tipi" in s:
@@ -849,7 +852,9 @@ def esegui_scaffali(
                 "anno": int(sr["anno"]),
                 "tmdbId": int(sr["tmdbId"]),
                 "plays": float(sr["plays"]),
-                "eta_giorni": float(sr["eta_giorni"]),
+                **({"eta_giorni": float(sr["eta_giorni"])}
+                   if sr.get("eta_giorni") is not None and not math.isnan(float(sr["eta_giorni"]))
+                   else {}),
             }
             for sr in sh.semi_rappresentativi
         ]

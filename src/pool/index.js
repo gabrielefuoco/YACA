@@ -413,7 +413,8 @@ const HERO_STRATEGIES = [
                         // Ticket 11: i semi Trakt non vengono potati per animePolicy === 'only'
                         visti.add(id);
                         // I semi Trakt non hanno una data nel payload di oggi: entrano fra i semi, mai fra i recenti.
-                        semi.push({ tmdbId: id, medium: med, tipo: 'liked', plays: 1, eta_giorni: semi.length });
+                        // Nessuna data per i semi Trakt: l'età si omette, non si inventa con l'indice.
+                        semi.push({ tmdbId: id, medium: med, tipo: 'liked', plays: 1 });
                         traktCount++;
                     }
                 }
