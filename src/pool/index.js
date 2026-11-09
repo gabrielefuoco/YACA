@@ -465,6 +465,7 @@ const HERO_STRATEGIES = [
                         medium: med,
                         opzioni: opzioniScaffali,
                         cap,
+                        n: SCAFFALI_PER_MODALITA,
                         // La modalità entra nella chiave con il flag acceso: due modi
                         // non devono scambiarsi le righe (spec §9).
                         modo: ctx.modo,

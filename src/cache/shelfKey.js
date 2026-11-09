@@ -75,13 +75,16 @@ function normalizzaOpzioni(opzioni) {
     return Object.keys(out).length ? out : null;
 }
 
-function buildShelfCacheKey({ semi, medium, opzioni, cap, versioni, modo } = {}) {
+function buildShelfCacheKey({ semi, medium, opzioni, cap, n, versioni, modo } = {}) {
     const modoChiave = modoPerChiave(modo);
     const payload = JSON.stringify({
         v: CHIAVE_VERSIONE,
         g: [versioni && versioni.artefatto, versioni && versioni.ricetta].filter(Boolean).join('|'),
         med: medium === 'movie' ? 'movie' : (medium === 'series' || medium === 'tv' ? 'series' : 'all'),
         cap: Number(cap) || 60,
+        // Il budget di scaffali entra nella chiave: con 8 e con 16 la risposta è diversa, e senza
+        // questo campo la cache restituirebbe le righe della richiesta precedente.
+        n: Number(n) || 8,
         // Inserito DOPO `cap`: a flag spento la stringa canonica non cambia.
         ...(modoChiave ? { modo: modoChiave } : {}),
         opt: normalizzaOpzioni(opzioni),

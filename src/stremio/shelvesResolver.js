@@ -166,6 +166,7 @@ async function resolveProfileShelves({ userConfig = {}, profileId = null } = {})
                 medium: med,
                 opzioni: opzioniScaffali,
                 cap,
+                n: SCAFFALI_PER_MODALITA,
                 versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
                     ? graphClient.getGraphHealthVersionsCached()
                     : undefined

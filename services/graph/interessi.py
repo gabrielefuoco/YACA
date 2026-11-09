@@ -55,6 +55,7 @@ from graph.tassonomia import TASSONOMIA_36, TaxonomyEntry, assegna_etichetta_clu
 #   - a tau = 10.0%: si scende a 85 righe tot
 #   - a tau = 20.0%: si scende a 80 righe tot (perdita controparti horror/crime)
 TAU_CONTROPARTE: float = 0.025  # 2.5% permissiva
+MAX_SCAFFALI_SERVITI: int = 24  # tetto di righe per profilo (era 16)
 
 # Soglia sotto la quale l'intero profilo ha meno semi del floor di scaffali (n=8).
 # In questi profili ultra-corti (GAP 3, es. carverclan con 7 semi o test con singolo seme),
@@ -482,6 +483,8 @@ def clusters(
     eta: Sequence[float] | None = None,
     plays: Sequence[float] | None = None,
     W_aff: sp.csr_matrix | None = None,
+    micro_tau: float = 0.02,
+    macro_tau: float = 0.03,
 ) -> list[Shelf]:
     """Genera la lista completa dei cluster/scaffali ammissibili (Steps 1-8 della ricetta).
 
@@ -510,7 +513,7 @@ def clusters(
     S = calcola_sim_affinity(righe_arr, W_aff)
 
     # 2. Micro-clustering
-    micros, _ = micro_clustering(S, min_affinity=0.02)
+    micros, _ = micro_clustering(S, min_affinity=micro_tau)
     is_tiny_profile = n_seeds < TINY_PROFILE_FLOOR
 
     if not micros:
@@ -521,7 +524,7 @@ def clusters(
             return []
     else:
         # 3. Macro-merge
-        raw_macros = macro_merge(engine, righe_arr, micros, tau=0.03)
+        raw_macros = macro_merge(engine, righe_arr, micros, tau=macro_tau)
 
     # Conteggio semi clusterizzati per floor adattivo
     clustered_seeds = set(idx for m in raw_macros for idx in m)
@@ -847,6 +850,8 @@ def scaffali(
     engine: Engine,
     semi: Sequence[Any],
     n: int = 8,
+    micro_tau: float = 0.02,
+    macro_tau: float = 0.03,
     medium: str | None = None,
     W_aff: sp.csr_matrix | None = None,
     label_merge: bool = False,
@@ -929,6 +934,8 @@ def scaffali(
         eta=eta_list,
         plays=plays_list,
         W_aff=W_aff,
+        micro_tau=micro_tau,
+        macro_tau=macro_tau,
     )
     if not eligible:
         return []
@@ -1222,8 +1229,10 @@ def scaffali(
             sh.nome_display = sh.nome
             all_served.append(sh)
 
-    # Ceiling massimo di 16 righe servite per profilo
-    all_served = all_served[:16]
+    # Ceiling massimo di righe servite per profilo. Era 16 quando gli scaffali erano l'unica cosa
+    # in pagina; con le modalità che filtrano per medium serve più margine perché ogni modo abbia
+    # un numero decente di righe.
+    all_served = all_served[:MAX_SCAFFALI_SERVITI]
 
     for slot_idx, sh in enumerate(all_served, 1):
         sh.slot_position = slot_idx
