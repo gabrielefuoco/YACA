@@ -47,7 +47,7 @@ def test_engine_loads(engine):
     """Verifica che l'Engine esponga n, percorso, artefatto (fingerprint), nep e matrice sparsa."""
     assert engine.n == 76497
     assert engine.percorso is not None
-    assert engine.percorso.endswith("bolle-eterogeneo-V45-p1.0-triangolo.npz")
+    assert engine.percorso.endswith("v45-triangolo.npz")
     assert engine.artefatto is not None
     assert not engine.artefatto.endswith(".npz")
     assert engine.Tr is not None

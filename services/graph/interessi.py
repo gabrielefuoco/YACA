@@ -127,7 +127,7 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
 
     PERCHÉ È FONDAMENTALE (TASK MEMORIA DOCKER 512 MiB):
     In precedenza, questo metodo caricava il triangolo grezzo V45 non potato da 37,2M archi
-    ('bolle-eterogeneo-V45-p1.0-triangolo.npz') e materializzava a runtime la matrice simmetrica da
+    (`v45-triangolo.npz`, allora chiamato `bolle-eterogeneo-V45-p1.0-triangolo.npz`) e materializzava a runtime la matrice simmetrica da
     74,4M archi, generando un picco RSS di 1.007,6 MB che portava all'OOM istantaneo nel container
     di produzione vincolato a `mem_limit: 512m` (docker-compose.yml:74).
     
@@ -140,14 +140,17 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
     rientrando stabilmente entro la soglia di sicurezza di 400 MB e lasciando ampio margine nel container.
 
     REGOLA CRITICA (INVARIANTE ARCHITETTURALE):
-    È SEVERAMENTE VIETATO reintrodurre o caricare 'bolle-eterogeneo-V45-p1.0-triangolo.npz' nel percorso
-    di clustering. Questo metodo solleva ValueError esplicito se viene passato il percorso del triangolo.
+    È SEVERAMENTE VIETATO reintrodurre o caricare `v45-triangolo.npz` nel percorso di clustering.
+    Questo metodo solleva ValueError esplicito se viene passato il percorso del triangolo.
     """
     if path is not None:
         p_str = str(path).replace("\\", "/")
-        if "bolle-eterogeneo-V45-p1.0-triangolo.npz" in p_str:
+        # Il vecchio nome resta nella guardia: se un server non aggiornato ha ancora il file
+        # chiamato cosi', il divieto deve valere lo stesso. Un rinominamento che allenta la
+        # guardia e' peggio di nessun rinominamento.
+        if "v45-triangolo.npz" in p_str or "bolle-eterogeneo-V45-p1.0-triangolo.npz" in p_str:
             raise ValueError(
-                "VIOLAZIONE ARCHITETTURALE: È severamente vietato caricare 'bolle-eterogeneo-V45-p1.0-triangolo.npz' "
+                "VIOLAZIONE ARCHITETTURALE: È severamente vietato caricare 'v45-triangolo.npz' "
                 "nel clustering. Genera un picco RSS di 1.007,6 MB violando il vincolo mem_limit: 512m "
                 "del container. Usare esclusivamente l'artefatto compatto precalcolato dei top-100 vicini "
                 "('services/graph/data/v45-vicini100/vicini-top100.npz')."

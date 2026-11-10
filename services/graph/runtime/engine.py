@@ -4,7 +4,7 @@ PERCHÉ ESISTE.
 Il motore storico di YACA (`motore.py` / `servizio.py`) è nato per servire raccomandazioni basate
 sulle 3.497 partizioni in bolle (V10), con complessi waterfall per riga hero, micro-cluster e
 ripescaggi.
-Con la congelazione di V45 a 76.497 nodi (50.660.592 archi in `bolle-eterogeneo-V45-p1.0-triangolo.npz`),
+Con la congelazione di V45 a 76.497 nodi (50.660.592 archi in `v45-triangolo.npz`),
 questo modulo realizza il runtime puro per la camminata sparsa (Personalized PageRank):
   - carica l'artefatto V45 con provenance canonica;
   - simmetrizza preliminarmente `(W + W.T)` come fa `camminata.transizione_pronta()`, garantendo che
@@ -156,7 +156,7 @@ class Engine:
 
         Args:
             path: Percorso al file `.npz` di V45. Se None, carica il default congelato:
-                  `services/graph/data/v45/bolle-eterogeneo-V45-p1.0-triangolo.npz`.
+                  `services/graph/data/v45/v45-triangolo.npz`.
             pota: Numero di archi massimi da tenere per riga (es. 16, 32, 64).
                   Se None, conserva tutti gli archi del grafo senza potatura.
 
@@ -168,7 +168,7 @@ class Engine:
                 Path(__file__).resolve().parents[1]
                 / "data"
                 / "v45"
-                / "bolle-eterogeneo-V45-p1.0-triangolo.npz"
+                / "v45-triangolo.npz"
             )
         path = Path(path)
         if not path.is_file():

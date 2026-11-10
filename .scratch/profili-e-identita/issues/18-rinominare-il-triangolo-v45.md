@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: —
 
@@ -41,6 +41,28 @@ restare allineati, non un `mv`.
 | 4 | `services/graph/interessi.py:143` | **la stringa della guardia**, con il nome nuovo |
 | 5 | testi che asseriscono il `ValueError` | devono continuare a passare con il nome nuovo |
 | 6 | `services/graph/parametri.py:31`, `camminata.py:56` | puntano al **V10**, non al V45: restano (vedi nota sotto) |
+
+## Esito (10/11/2026)
+
+Rinominato in **`services/graph/data/v45/v45-triangolo.npz`**. Aggiornati: `build/pipeline.py` (il nome
+generato), `runtime/prepara.py`, `runtime/engine.py`, `servizio.py`, i test (`test_runtime.py`,
+`test_interessi.py`) e la documentazione (`README.md`, `V45.md`).
+
+**La guardia** ora rifiuta il nome nuovo **e** il vecchio: un rinominamento che allenta la guardia
+sarebbe peggio di nessun rinominamento, e durante la transizione il file potrebbe ancora chiamarsi
+così su un ferro non aggiornato. Il test prova entrambi i nomi.
+
+**Una correzione al ticket.** Avevo scritto «rigenerati identici byte per byte»: è impossibile, e me
+ne sono accorto rigenerando. La provenienza registra **il nome del file di input**, quindi rigenerare
+cambia i byte per costruzione. La verifica vera, fatta con `prepara.py` sul ferro di casa (2 minuti):
+
+| artefatto | `indptr`/`indices`/`data` | provenienza |
+|---|---|---|
+| `vicini-top100.npz` | **identici** | cambia solo la chiave di `inputs` (`v45-triangolo.npz`) |
+| `transizione-pota16.npz` | **identici** | idem |
+
+E il test di equivalenza (`test_vicini100_*`, che ricostruisce l'affinità **dal triangolo** e la
+confronta con `vicini-top100` servito) passa: 11 test verdi in `test_interessi.py`.
 
 ## La prova che conta
 

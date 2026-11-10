@@ -352,9 +352,15 @@ def test_vicini100_fingerprint():
 
     # Verifica registrazione input sorgente triangolo
     inputs = prov.get("inputs", {})
-    assert "bolle-eterogeneo-V45-p1.0-triangolo.npz" in inputs
+    # Il file si chiama `v45-triangolo.npz`; l'artefatto servito oggi registra ancora il vecchio
+    # nome, e la provenienza e' un fatto storico: si accettano entrambi, si pretende il sha giusto.
+    nome_in = next(
+        (n for n in ("v45-triangolo.npz", "bolle-eterogeneo-V45-p1.0-triangolo.npz") if n in inputs),
+        None,
+    )
+    assert nome_in is not None, f"input del triangolo non registrato: {list(inputs)}"
     expected_prov_sha = "1932ddd4b910f2e2ec4e19f57c14b7e34af4ef9cf08be4ee382bd7a351b86deb"
-    assert inputs["bolle-eterogeneo-V45-p1.0-triangolo.npz"] == expected_prov_sha
+    assert inputs[nome_in] == expected_prov_sha
 
     # Verifica coerenza con V45.lock.json se presente
     lock_p = Path(__file__).resolve().parents[1] / "recipes" / "V45.lock.json"
@@ -374,9 +380,10 @@ def test_vicini100_fingerprint():
     diffs = np.diff(W.indptr)
     assert (diffs <= 100).all(), f"Trovate righe con più di 100 vicini: max={diffs.max()}"
 
-    # Guardia architetturale: vietato passare 'bolle-eterogeneo-V45-p1.0-triangolo.npz'
-    with pytest.raises(ValueError, match="VIOLAZIONE ARCHITETTURALE"):
-        carica_matrice_affinita("services/graph/data/v45/bolle-eterogeneo-V45-p1.0-triangolo.npz")
+    # Guardia architetturale: vietato passare il triangolo, con il nome nuovo E con il vecchio
+    for nome in ("v45-triangolo.npz", "bolle-eterogeneo-V45-p1.0-triangolo.npz"):
+        with pytest.raises(ValueError, match="VIOLAZIONE ARCHITETTURALE"):
+            carica_matrice_affinita(f"services/graph/data/v45/{nome}")
 
 
 # ==============================================================================
@@ -393,7 +400,7 @@ def test_vicini100_prototype_equivalence_20_seeds():
         Path(__file__).resolve().parents[1]
         / "data"
         / "v45"
-        / "bolle-eterogeneo-V45-p1.0-triangolo.npz"
+        / "v45-triangolo.npz"
     )
     if not triangolo_p.is_file():
         pytest.skip("Triangolo sorgente non presente per il test di equivalenza")

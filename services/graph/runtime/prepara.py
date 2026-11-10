@@ -51,7 +51,7 @@ def prepara_transizione(
     """
     root_graph = Path(__file__).resolve().parents[1]
     if in_path is None:
-        in_path = root_graph / "data" / "v45" / "bolle-eterogeneo-V45-p1.0-triangolo.npz"
+        in_path = root_graph / "data" / "v45" / "v45-triangolo.npz"
     in_path = Path(in_path).resolve()
     if not in_path.is_file():
         raise FileNotFoundError(f"Triangolo V45 non trovato: {in_path}")
@@ -153,7 +153,7 @@ def prepara_vicini(
     """
     root_graph = Path(__file__).resolve().parents[1]
     if in_path is None:
-        in_path = root_graph / "data" / "v45" / "bolle-eterogeneo-V45-p1.0-triangolo.npz"
+        in_path = root_graph / "data" / "v45" / "v45-triangolo.npz"
     in_path = Path(in_path).resolve()
     if not in_path.is_file():
         raise FileNotFoundError(f"Triangolo V45 non trovato: {in_path}")

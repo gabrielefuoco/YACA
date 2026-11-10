@@ -463,7 +463,7 @@ def stato_artefatti(engine: Engine | None = None, w_aff: sp.csr_matrix | None = 
     sha_assi = _estrai_sha_da_npz(p_assi) if pres_assi else None
 
     # 4. Grafo V45 grezzo (triangolo originale non potato)
-    p_v45 = Path(__file__).resolve().parent / "data" / "v45" / "bolle-eterogeneo-V45-p1.0-triangolo.npz"
+    p_v45 = Path(__file__).resolve().parent / "data" / "v45" / "v45-triangolo.npz"
     pres_v45 = p_v45.is_file()
     sha_v45 = _estrai_sha_da_npz(p_v45) if pres_v45 else None
 

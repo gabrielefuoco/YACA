@@ -135,7 +135,7 @@ Misurazioni scientifiche Resident Set Size (RSS psutil con TUTTI E TRE gli artef
 - **Clustering completo `scaffali()` su `warnok` (476 semi, 16 righe)**: **293,51 MB** peak RSS (target <= 400 MB rispettato con **106,49 MB** di margine libero!)
 - **Headroom nel container Docker (mem_limit: 512m)**: **218,49 MB** di margine libero.
 
-È severamente vietato toccare `bolle-eterogeneo-V45-p1.0-triangolo.npz` nel modulo clustering. L'artefatto
+È severamente vietato toccare `v45-triangolo.npz` nel modulo clustering. L'artefatto
 risiede in `services/graph/data/v45-vicini100/`, è gitignored e rigenerabile dal comando documentato.
 
 ## Compatibilità storica

@@ -325,7 +325,7 @@ def build(a, lock):
          '--damp-coll', '--damp-titolo', '--gate-asimmetrico', '--pop-gap', '2.0',
          '--pop-slope', '1.5', '--gate-k', '10', '--damp-animazione',
          '--damp-anim-fattore', '0.2', '--tipi', type_names], env)
-    final = out / f'bolle-eterogeneo-{a.version.upper()}-p1.0-triangolo.npz'
+    final = out / f'{a.version.lower()}-triangolo.npz'
     run([sys.executable, '-u', '-m', 'graph.build.chiudi', mix_out / 'MIX-rrf-dc-dt-ga.npz', final,
          '--modo', 'log'], env)
 
