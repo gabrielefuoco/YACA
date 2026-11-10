@@ -1,4 +1,4 @@
-Status: needs-info
+Status: ready-for-agent
 Type: task
 Blocked by: 20
 
@@ -41,7 +41,18 @@ Chiudere il cerchio: prendere un titolo **del canone**, toglierlo, farlo passare
 fosse nuovo, e confrontare la riga prodotta con quella servita. Deve battere il risultato del ticket 20
 sullo stesso titolo — se è peggio, la pipeline ha un bug che l'esperimento non aveva.
 
-## Perché `needs-info`
+## Decisione presa (10/11/2026)
+
+**La lista dei titoli da collocare arriva dall'evento, non da un job.** Si colloca **su domanda** il
+titolo che l'utente ha guardato e che non è nel canone: pochi al giorno, e con la garanzia che ogni
+seme abbia davvero la sua riga. Il daemon TMDB resta fuori da questo giro: collocare titoli che nessuno
+ha ancora guardato è lavoro senza domanda, e il ticket 20 ha già mostrato che senza comportamento la
+riga è debole per costruzione.
+
+Conseguenza per il 22: la cadenza non è quotidiana ma episodica, e un incremento per volta deve poter
+essere **messo e tolto**.
+
+## Perché era `needs-info`
 
 Manca una decisione che non è mia: **da dove arriva la lista dei titoli da collocare**. Tre possibilità,
 con conseguenze diverse su 22 (che deve sapere quanto lavoro arriva e con che cadenza):

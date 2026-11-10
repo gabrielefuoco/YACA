@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: research
 Blocked by: —
 
@@ -58,6 +58,49 @@ Altrimenti il numero si legge a comodo.
 
 Secondaria, ma va registrata: la coda. Se il mediano è buono e il 10° percentile è zero, il
 problema non è risolto, è solo medio.
+
+## Esito (10/11/2026) — il cancello è passato
+
+Strumento: `.scratch/profili-e-identita/ticket20-misura.py` (parte 1) e `ticket20-ppr.py` (parte 2).
+**300 righe** campionate (100 film, 100 serie, 100 anime), 14 fonti vere da `v45/tipi2-pesi/`, pesi e
+`rrf_k=15` dal manifest, correzione hub su `CAST`/`PROD` come nel mixer. Nessuna GPU, nessun
+addestramento, 2,3 secondi.
+
+### 1. Righe — la ricostruzione
+
+| | `@10` | `@50` | `@100` | p10 `@100` | p90 `@100` |
+|---|---|---|---|---|---|
+| **tutte le fonti** (controllo) | 0,70 | 0,74 | **0,74** | 0,60 | 0,82 |
+| **solo contenuto** (5,6 di 8,4) | 0,50 | 0,58 | **0,58** | 0,32 | 0,73 |
+
+Il controllo dice **l'errore dello strumento**: la mia ricostruzione somiglia al servito al 74%, non
+al 100%, perché manca la catena successiva (damping famiglia, gate asimmetrico, chiusura, potatura).
+Quella distanza è dichiarata e non si attribuisce al contenuto.
+
+Togliere il comportamento costa **0,74 → 0,58**: si conserva il **78%** di ciò che la ricostruzione
+conserva. Per classe (`@100`, solo contenuto): film 0,65 · serie 0,57 · anime 0,51.
+
+**Cancello dichiarato prima: `@100` mediano ≥ 0,5 → passa (0,58).**
+
+### 2. Diffusione — la prova che conta
+
+12 gruppi di 5 semi, righe dei semi sostituite coi loro top-16 «solo contenuto», PPR sulla
+transizione potata contro quella servita:
+
+| metrica | mediana | minimo |
+|---|---|---|
+| `overlap@10` | **0,60** | 0,40 |
+| `overlap@20` | **0,60** | 0,40 |
+
+Cioè: **il 60% dei consigli resta lo stesso**, e il 40% cambia. Ma il confronto vero è con l'alternativa
+reale, che non è «consigli diversi»: è **nessun consiglio da quel seme**. Fra 60% e 0% la scelta non è
+in discussione.
+
+### La coda, che non va nascosta
+
+`p10` a 0,32 sulle righe: un titolo su dieci viene collocato in un quartiere **davvero** diverso. Non è
+un difetto da correggere prima di procedere, è il motivo per cui il ticket 22 deve rendere l'incremento
+**reversibile**: se un titolo si rivela mal collocato, si toglie la riga e si torna a prima.
 
 ## Fuori scope
 
