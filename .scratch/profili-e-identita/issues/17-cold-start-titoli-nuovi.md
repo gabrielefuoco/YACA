@@ -1,40 +1,54 @@
-# Un film nuovo non entra nel grafo: cold start senza studente
-
 Status: ready-for-human
 Type: grilling
 Blocked by: —
 
-## Il fatto
+# Cold start: i titoli nuovi nel grafo
 
-Il canone V45 è congelato a **76.497 titoli**. Un titolo che non è in quelle righe **non può essere un seme**, ed è scartato in silenzio:
+Questo è il **genitore**. Le decisioni sono state prese in grilling il 10/11/2026; il lavoro è nei
+figli. Non si esegue niente qui.
 
-```python
-# services/graph/runtime/engine.py:412
-if not key or key not in self.row_of:
-    return None
-```
+## Il fatto, misurato
 
-Nessun log, nessun avviso: se l'utente guarda un film uscito ieri, quel segnale semplicemente non esiste. Le raccomandazioni restano corrette, ma ignorano la sua visione più recente — che è esattamente quella che pesa di più.
+| | |
+|---|---|
+| canone servito | **76.497** righe (`spazi-trakt.npz`) |
+| copertura dei film famosi 2025 / 2026 | 87% / **66%** |
+| copertura serie 2025 / 2026 | 96% / 88% |
+| cronologia reale dell'account | 21 titoli, **0 fuori canone** |
+| titolo fuori canone come seme | **scartato in silenzio** (`engine.py:412`) |
 
-## Cosa esisteva, e non è collegato
+Il buco oggi non morde l'account; morde i titoli che escono da qui in avanti, e chi guarda
+soprattutto quelli.
 
-- `.scratch/distillazione-grafo/cold-encode.py` — *«piazza un film NUOVO nello spazio di m1 e b10 senza addestrare»*: prende trama e keyword proiettate più le feature strutturali, le passa agli studenti (`GatedStudent`, `BlockStudentG`, `FieldStudent`) e ne ricava l'embedding. Lo cita solo un documento di handoff: **nessuna rotta, nessun job, nessun chiamante**.
-- `estensione_bolle.py` (archiviato) — non era cold start: estendeva la partizione delle bolle da 66.259 a 76.497 una volta sola, per non invalidare gli ID.
+## Le decisioni prese
 
-## Cosa manca, oltre al codice
+| | |
+|---|---|
+| **Il titolo nuovo deve poter entrare nel grafo** | come **seme** è comportamento dell'utente: negargli i vicini significa negare i suggerimenti a chi guarda solo roba nuova. La popolarità è un'altra cosa dall'utilità come sorgente |
+| **Assente ≠ debole** | senza riga il titolo nuovo non è «poco consigliato»: è **irraggiungibile**. Con la riga è debole, che è accettabile |
+| **Non serve ri-chiudere il grafo** | il runtime simmetrizza al caricamento (`M = (M + M.T)`, `engine.py:186`): una riga asimmetrica produce da sola gli archi inversi |
+| **Una fonte vuota non distorce** | in RRF una fonte che non ranka il titolo non somma nulla: la riga fusa è una **votazione parziale**, non una riga di natura diversa |
+| **Il contenuto basta per cominciare** | **5,6 di 8,4** di peso della fusione è calcolabile senza comportamento. Mancano `COVISION` 0,8 · `RRFST` 1,0 · `LIST` 1,0 |
+| **Widen: si misura, non si discute** | quanto una riga «solo contenuto» somigli a una riga servita lo dice un esperimento sui titoli **già nel grafo**, senza GPU e senza studente |
+| **Lo studente non è un prerequisito** | serve a riportare la quinta fonte (`RRFST`, peso 1,0), non a collocare |
 
-1. **L'artefatto dello studente.** `rrfstudent-norrfst.npz` è stato cancellato durante la pulizia dei dati (ticket 15) e non è recuperabile: pesava 1.0 nella fusione RRF di V45, e servirebbe identico per collocare un titolo nuovo **coerentemente** con il grafo che servi. Senza, un titolo nuovo verrebbe collocato da un altro studente, quindi in una posizione plausibile ma non coerente con i suoi vicini già nel grafo.
-2. **La cucitura degli archi.** Anche avendo l'embedding, un titolo nuovo va collegato: cast, regia, keyword, trama, paesi, decennio. Il mixer sa fonderli per il canone intero; non esiste un pezzo che li calcoli **per una riga sola** contro le righe esistenti.
-3. **La decisione**: un titolo nuovo può *entrare* nel grafo (modificando la matrice servita) o solo *essere pesato* come seme (una riga temporanea in memoria, che vive il tempo di una richiesta)? Sono due architetture diverse: la prima vuole un job di aggiornamento e una nuova versione del grafo, la seconda vuole un'estensione a runtime e nessuna scrittura.
+## I figli
 
-## Le strade
+| # | cosa | stato |
+|---|---|---|
+| **19** | lo scarto parla: il conteggio esiste già e viene buttato | pronto |
+| **20** | collocazione per contenuto, **misurata** sui titoli esistenti | ricerca |
+| **21** | pipeline di collocazione di un titolo | dopo 20 |
+| **22** | l'incremento si serve senza ricompilare | dopo 21 |
+| **23** | lo studente come encoder, se e quando | decisione, dopo 20 |
+| **18** | rinominare il triangolo V45 (ha una tagliola) | pronto, indipendente |
 
-1. **Rigenerare uno studente** dal triangolo V10 (il maestro esiste, `train_b1.py` è archiviato): costo in GPU, e il risultato **non è identico** all'originale, quindi il grafo ricostruito somiglia a V45 ma non lo riproduce.
-2. **Collocare senza studente**: cucire gli archi del titolo nuovo da cast/regia/keyword/trama verso i nodi esistenti, e aggiungere la riga al grafo in memoria. Niente studente, niente training: si usa ciò che il mixer già sa fare, applicato a una riga.
-3. **Non collocare**, e rendere rumoroso lo scarto: almeno un log con il titolo scartato, così il buco è visibile invece che silenzioso.
+## Cosa NON è stato deciso
 
-## Da decidere
-
-- Quale delle tre strade, e se il titolo nuovo debba **entrare** nel grafo o solo **pesare** come seme per la richiesta corrente.
-- Con quale frequenza i titoli nuovi arrivano (il daemon TMDB aggiorna il catalogo: quanti al giorno?), perché questo decide se serve un job o basta un'estensione a runtime.
-- Cosa succede quando un titolo nuovo *non* si riesce a collocare — e oggi la risposta è "niente, sparisce".
+- La **cadenza** dell'incremento (giornaliera? a mano? a ogni deploy?) — si decide nel 22 guardando
+  il costo vero di `prepara.py`, non prima.
+- Se l'incremento si **fonde** nel triangolo o resta un **sovrapposto** consultato al caricamento:
+  il 22 confronta le due, con l'atomicità e il rollback come requisiti.
+- Se lo studente si riaddestra davvero: il maestro è **disallineato** (V10 ha 66.259 righe, il canone
+  V45 ne ha 76.497), quindi non è «rigenerare uno studente» ma «costruire prima un maestro
+  allineato». Sta nel 23.
