@@ -137,8 +137,12 @@ class ProfileBuilder {
     static async syncUserHistory(owner, context, traktHistory) {
         if (!owner || !traktHistory?.length) return;
 
-        const allContexts = await ProfileBuilder._resolveAllContexts(owner);
-        const targetContexts = allContexts.includes(context) ? allContexts : [context, ...allContexts];
+        // Una copia sola. Prima si scriveva in OGNI contesto dell'account (profili vecchi,
+        // profili di test, cinque modalità): lo stesso titolo diventava quindici documenti,
+        // ognuno con il proprio contatore gonfiato a ogni sync.
+        const { contestoCronologia } = require('../library/reader');
+        const contestoUnico = contestoCronologia(context);
+        const targetContexts = [contestoUnico];
 
         for (const ctx of targetContexts) {
             await ProfileBuilder._updateSyncStatus(owner, ctx, {
@@ -284,8 +288,12 @@ class ProfileBuilder {
             ];
         }
 
-        const allContexts = await ProfileBuilder._resolveAllContexts(owner);
-        const targetContexts = allContexts.includes(context) ? allContexts : [context, ...allContexts];
+        // Una copia sola. Prima si scriveva in OGNI contesto dell'account (profili vecchi,
+        // profili di test, cinque modalità): lo stesso titolo diventava quindici documenti,
+        // ognuno con il proprio contatore gonfiato a ogni sync.
+        const { contestoCronologia } = require('../library/reader');
+        const contestoUnico = contestoCronologia(context);
+        const targetContexts = [contestoUnico];
 
         for (const ctx of targetContexts) {
             await ProfileBuilder._updateSyncStatus(owner, ctx, {

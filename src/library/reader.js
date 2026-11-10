@@ -13,6 +13,23 @@ const getHistoryModel = () => (WatchHistory.getModel && WatchHistory.getModel())
 const WATCHLIST_PAGE_SIZE = 20;
 
 /**
+ * Il contesto in cui vive la cronologia.
+ *
+ * Con le modalità accese la storia è della PERSONA, non del modo: una sola copia, in
+ * `global`. I modi la leggono e filtrano il risultato con le proprie leve. Prima il
+ * sync la copiava in ogni profilo e in ogni modo — lo stesso titolo 15 volte, con un
+ * contatore di visioni che cresceva di uno per sincronizzazione.
+ *
+ * @param {string|null} contesto contesto richiesto (id profilo o 'global')
+ * @returns {string}
+ */
+function contestoCronologia(contesto) {
+    const { modiAbilitati } = require('../profile/modo');
+    if (modiAbilitati()) return 'global';
+    return contesto || 'global';
+}
+
+/**
  * Legge gli elementi della watchlist paginati e ordinati stabilmente.
  *
  * @param {Object} params
@@ -162,7 +179,7 @@ async function contaDaConvertire({ addonUuid }) {
  */
 async function storiaDi({ userId, profileId, limit = null }) {
     const owner = userId;
-    const context = profileId || 'global';
+    const context = contestoCronologia(profileId);
     const HistoryModel = getHistoryModel();
     if (!HistoryModel || typeof HistoryModel.find !== 'function') {
         return [];
@@ -186,7 +203,7 @@ async function registraVisione({ owner, context, tmdbId, type, episodesWatched =
     const HistoryModel = getHistoryModel();
     if (!tmdbId || !type || !HistoryModel || typeof HistoryModel.findOneAndUpdate !== 'function') return null;
     return HistoryModel.findOneAndUpdate(
-        { owner, context, tmdbId },
+        { owner, context: contestoCronologia(context), tmdbId },
         { 
             $set: { type, lastWatchedAt, source },
             $inc: { episodesWatched } 
@@ -236,7 +253,7 @@ async function backfillCronologia({ owner, targetContext }) {
 async function trovaCronologiaPerIds({ owner, context, tmdbIds }) {
     const HistoryModel = getHistoryModel();
     if (!HistoryModel || typeof HistoryModel.find !== 'function') return [];
-    const res = HistoryModel.find({ owner, context, tmdbId: { $in: tmdbIds } });
+    const res = HistoryModel.find({ owner, context: contestoCronologia(context), tmdbId: { $in: tmdbIds } });
     return (res && typeof res.lean === 'function') ? res.lean() : res;
 }
 
@@ -365,6 +382,7 @@ async function salvaOrdineLibreria({ addonUuid, profileId = 'global', itemIds = 
 
 module.exports = {
     WATCHLIST_PAGE_SIZE,
+    contestoCronologia,
     leggiWatchlist,
     leggiTitolo,
     trovaItemLibreria,

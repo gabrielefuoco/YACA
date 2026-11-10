@@ -120,7 +120,9 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
         if (HistoryModel?.db && HistoryModel.db.readyState !== 1) {
             return { seeds: new Map(), tipi: new Map(), counts: { loved: 0, liked: 0, watched: 0, library: 0 }, ultimaVisione: new Map(), plays: new Map() };
         }
-        historyDocs = await HistoryModel.find({ owner: userId, context: ctx }).lean();
+        // Stessa regola di `reader.js`: con i modi accesi la storia è in `global`.
+        const { contestoCronologia } = require('./reader');
+        historyDocs = await HistoryModel.find({ owner: userId, context: contestoCronologia(context || ctx) }).lean();
         if (!Array.isArray(historyDocs)) historyDocs = [];
     } catch (_e) {
         historyDocs = [];
