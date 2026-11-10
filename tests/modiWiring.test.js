@@ -40,7 +40,9 @@ const FIXTURE_CHIAVE_SCAFFALI = Object.freeze({
 // La chiave è cambiata quando il budget di scaffali (`n`) è entrato nell'impronta: con 8 e con 16
 // la risposta del grafo è diversa, e la cache non deve restituire le righe della richiesta precedente.
 // Il valore vecchio era b1165f5a36f2feae81f80eabdce1fbd35e47bccae81e6ebf51f1b4ca76257710.
-const CHIAVE_SCAFFALI_PRE_CABLAGGIO = '424b0007c42e3dea087cb3e94430502afa463ba5a719460dca481d2c46968b11';
+// v2: la chiave porta CHIAVE_VERSIONE = 2 (età ignota non più riempita con l'indice).
+// v1 era 424b0007c42e3dea087cb3e94430502afa463ba5a719460dca481d2c46968b11.
+const CHIAVE_SCAFFALI_PRE_CABLAGGIO = 'fd739bed0fc7510b44d28a06b726e7d06bda93099ffe700806dacae0aa46066b';
 
 function configConModi({ attivo = 'film' } = {}) {
     const profili = materializzaModi({ profiles: [] }).profiles;
@@ -98,6 +100,10 @@ describe('flag OFF: il comportamento è quello di sempre', () => {
 
     it('la chiave di cache degli scaffali è quella di prima, senza la modalità', () => {
         const chiave = buildShelfCacheKey({ ...FIXTURE_CHIAVE_SCAFFALI, modo: 'film' });
+        // La costante cambia quando cambia il CODICE che calcola gli scaffali, non quando cambia
+        // la modalità: la chiave porta la versione (2 = età ignota non più riempita con
+        // l'indice del seme) e non contiene il campo `modo`. Qui si fissa che a flag spento
+        // la modalità non entri nella chiave: è questo che il test protegge.
         expect(chiave).toBe(CHIAVE_SCAFFALI_PRE_CABLAGGIO);
     });
 

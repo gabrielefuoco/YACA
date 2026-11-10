@@ -34,7 +34,11 @@ const SCAFFALI_PER_MODALITA = 16;
 const crypto = require('crypto');
 const { modiAbilitati, isModoValido, normalizzaModo, leggiModoAttivo } = require('../profile/modo');
 
-const CHIAVE_VERSIONE = 1;
+// 2: il grafo non riempie più un'età ignota con l'indice del seme. Alzare la versione è
+// l'unico modo di buttare le righe calcolate dal codice vecchio: gli artefatti del grafo
+// (che sono gli altri ingredienti della chiave) non sono cambiati, quindi senza questo
+// incremento la cache avrebbe continuato a servire scaffali con «oggi» inventato.
+const CHIAVE_VERSIONE = 2;
 
 /**
  * La modalità entra nella chiave solo con `MODI_ABILITATI` acceso e solo se è
