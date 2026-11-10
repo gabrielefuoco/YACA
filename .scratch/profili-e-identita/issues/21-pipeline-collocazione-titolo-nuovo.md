@@ -13,6 +13,22 @@ Blocked by: 20
 - **La riga si colloca su domanda**: quando un seme dell'utente è fuori canone (ticket 19 registra
   esattamente quei casi).
 
+## La forma vera della pipeline (dopo la prova nel grafo)
+
+Il ticket 23 ha mostrato che il nuovo studente **non** va messo al posto di `RRFST` nel grafo servito
+(peggiora il recall@20 di ~0,01 in modo stabile). Quindi il suo unico ruolo è questo, e la pipeline si
+semplifica:
+
+```
+metadati TMDB → trama (Qwen3) → blocco keyword → feature meta
+     → le sette righe delle fonti di contenuto (input)
+     → ENCODER (forma B) → Z → top-16 → LA RIGA DEL TITOLO NUOVO
+```
+
+Le sette fonti servono **solo come ingresso dell'encoder**: non si fondono a mano, non si applicano
+pesi RRF. Un solo artefatto da mantenere (lo studente), e la riga prodotta è quella che il ticket 23 ha
+misurato (0,49 sulle righe, 0,625 sulla diffusione contro 0,55 del RRF fisso).
+
 ## Cosa deve fare
 
 Da un id TMDB appena uscito a una riga di archi nel grafo. Sei passi, tutti già esistenti come pezzi

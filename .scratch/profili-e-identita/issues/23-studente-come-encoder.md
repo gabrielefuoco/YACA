@@ -142,6 +142,36 @@ peggiora niente, e la coda della forma B è migliore (p10 0,28 contro 0,23).
 Vive in `.cache/` perché è un artefatto di build: il posto definitivo e la sua versionatura sono
 materia del ticket 22, non di questo.
 
+## Prova nel grafo — il nuovo studente NON migliora il grafo servito
+
+Prima di adottarlo come fonte, la prova ovvia: ricostruire la catena (`norm` → `budget` → `mixer` →
+`chiudi` → `prepara`) sostituendo `RRFST` con la nuova fonte e misurare se il grafo serve meglio.
+Catena rifatta in **10 minuti** (576 s), cosa che il ticket 15 dava per rotta.
+
+Poi il banco di ritenuta: la storia di ogni profilo Trakt tagliata cronologicamente, il passato semina,
+il futuro è l'oro, si diffonde (PPR) e si conta quanti titoli ritenuti entrano nei primi 20. Stesso
+banco, stesso taglio, due grafi: differenza appaiata, bootstrap 2.000 ricampionamenti.
+
+| banco | servito | nuovo | differenza | IC95 | migliorati / peggiorati |
+|---|---|---|---|---|---|
+| 813 utenti, ritenuta 20% | 0,1810 | 0,1716 | **−0,0094** | [−0,0129, −0,0057] | 150 / 257 |
+| 813 utenti, ritenuta 30% | 0,2067 | 0,1931 | **−0,0137** | [−0,0175, −0,0098] | — |
+
+**Il nuovo studente peggiora il grafo del ~5–7% relativo, in modo stabile su due tagli.** Non è rumore:
+l'intervallo esclude lo zero in entrambi.
+
+E ha una spiegazione che torna: il vecchio `RRFST` era addestrato su un maestro **comportamentale**
+(V10), quindi portava segnale di pubblico. Il nuovo è addestrato a riprodurre V45 partendo dal solo
+contenuto: è un **encoder di cold start**, non un pezzo migliore del grafo.
+
+**Conseguenza architetturale, e va scritta perché è la decisione che conta:**
+
+| | |
+|---|---|
+| il grafo servito | **resta V45 com'è**. Non si ricostruisce col nuovo studente |
+| lo studente | serve **solo** a collocare un titolo che non ha riga, al momento in cui serve |
+| il suo ruolo | `contenuto → Z → top-16 → la riga del titolo nuovo`, non «sostituisce RRFST» |
+
 ## Numeri riproducibili
 
 | script | cosa fa |
@@ -149,3 +179,5 @@ materia del ticket 22, non di questo.
 | `.scratch/profili-e-identita/ricostruisci-blocks.py` | ricostruisce `blocks.npz` in 12 s (SEED=42) |
 | `.scratch/profili-e-identita/studente-addestra.py` | addestra (forma A/B, held-out o completo) ed esegue la prova |
 | `.scratch/profili-e-identita/studente-diffusione.py` | la prova di diffusione: studente contro RRF fisso |
+| `.scratch/profili-e-identita/ricostruisci-grafo.py` | rifà la catena con la nuova fonte (10 min) |
+| `.scratch/profili-e-identita/banco-grafo-nuovo.py` | il banco di ritenuta: grafo servito contro grafo ricostruito |
