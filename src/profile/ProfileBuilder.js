@@ -245,6 +245,29 @@ class ProfileBuilder {
     }
 
     /**
+     * I dati di visione che Stremio dichiara davvero su un elemento di libreria.
+     *
+     * Stremio mette `state.lastWatched` (ISO) e `state.timesWatched` (numero). Il codice
+     * precedente li ignorava e scriveva `new Date()` e `+1` a ogni sync: da lì sono nate
+     * cronologie con 30360 «visioni» e titoli «visti oggi». Qui si legge, non si inventa.
+     *
+     * @param {object} item elemento della libreria Stremio
+     * @returns {{ultima: Date|null, conteggio: number|null}}
+     */
+    static datiVisioneDaStremio(item) {
+        const stato = item && typeof item.state === 'object' && item.state !== null ? item.state : {};
+        const candidata = stato.lastWatched || item?.lastWatched || null;
+        const data = candidata ? new Date(candidata) : null;
+        const ultima = data && !Number.isNaN(data.getTime()) ? data : null;
+
+        const grezzo = stato.timesWatched ?? item?.timesWatched;
+        const numero = Number(grezzo);
+        const conteggio = Number.isFinite(numero) && numero >= 0 ? numero : null;
+
+        return { ultima, conteggio };
+    }
+
+    /**
      * Entry point per la sincronizzazione Stremio (ottimizzato Bulk + DuckDB IMDb resolution + fan-out).
      */
     static async syncStremioData(owner, stremioData, context = 'global') {
@@ -319,16 +342,18 @@ class ProfileBuilder {
                 }
 
                 if (tmdbId && !isNaN(tmdbId) && tmdbId > 0) {
+                    const datiVisione = ProfileBuilder.datiVisioneDaStremio(item);
                     resolvedItems.push({
                         tmdbId,
                         type,
                         signalType,
                         source,
-                        // Una data inventata non è un dato: `new Date()` faceva sembrare visto
-                        // oggi ciò che l'utente non ha visto oggi, e a ogni sync lo spostava
-                        // avanti. Se la sorgente non dice quando, resta `null`.
-                        at: item.lastWatched ? new Date(item.lastWatched)
-                            : (item._ctime ? new Date(item._ctime) : null)
+                        // Solo una data che la sorgente dichiara. `_ctime` è quando il titolo è
+                        // entrato in libreria, non una visione: usarlo farebbe sembrare visto
+                        // oggi ciò che è stato solo aggiunto. Se non c'è, resta `null`.
+                        at: datiVisione.ultima,
+                        // Il conteggio vero delle visioni, quando Stremio lo dichiara.
+                        visioniDichiarate: datiVisione.conteggio
                     });
                 }
             }
@@ -360,11 +385,16 @@ class ProfileBuilder {
                     // Le visioni si CONTANO dai segnali di visione, non si incrementano a ogni
                     // sincronizzazione: con `$inc: 1` il numero cresceva di uno per sync fino a
                     // valori impossibili (30360 visioni di un titolo), e l'interfaccia li mostrava.
-                    const visioniReali = new Set(
+                    const visioniDaiSegnali = new Set(
                         signals
                             .filter(s => s && s.type === 'watched' && s.at)
                             .map(s => new Date(s.at).getTime())
                     ).size;
+                    // Se Stremio dichiara un conteggio, quello vince: è un dato suo, non una
+                    // nostra deduzione. Altrimenti si contano i segnali di visione.
+                    const visioniReali = Number.isFinite(item.visioniDichiarate) && item.visioniDichiarate !== null
+                        ? Math.max(visioniDaiSegnali, item.visioniDichiarate)
+                        : visioniDaiSegnali;
 
                     const setOperazione = {
                         type: item.type,

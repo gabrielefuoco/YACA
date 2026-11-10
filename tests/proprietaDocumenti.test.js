@@ -183,3 +183,27 @@ describe('Ingestione Stremio: niente conteggi gonfiati, niente date inventate', 
         expect(blocco).not.toMatch(/lastWatched:\s*new Date\(\)\s*\)/);
     });
 });
+
+describe('I dati di visione si leggono da Stremio, non si inventano', () => {
+    const ProfileBuilder = require('../src/profile/ProfileBuilder');
+
+    it('prende state.lastWatched e state.timesWatched quando ci sono', () => {
+        const dati = ProfileBuilder.datiVisioneDaStremio({
+            state: { lastWatched: '2026-05-29T19:51:21.453Z', timesWatched: 3, timeOffset: 100 }
+        });
+        expect(dati.ultima.toISOString()).toBe('2026-05-29T19:51:21.453Z');
+        expect(dati.conteggio).toBe(3);
+    });
+
+    it('senza una data dichiarata restituisce null, non «adesso»', () => {
+        const dati = ProfileBuilder.datiVisioneDaStremio({ state: { timesWatched: 0 }, _ctime: '2026-05-29T19:51:09.483Z' });
+        expect(dati.ultima).toBeNull();
+        expect(dati.conteggio).toBe(0);
+    });
+
+    it('un elemento senza state (amato/preferito) non produce né data né conteggio', () => {
+        const dati = ProfileBuilder.datiVisioneDaStremio({ id: 'tt1234567', name: 'Qualcosa' });
+        expect(dati.ultima).toBeNull();
+        expect(dati.conteggio).toBeNull();
+    });
+});
