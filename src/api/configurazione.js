@@ -46,30 +46,53 @@ router.post('/', async (req, res) => {
  */
 router.post('/anteprima', async (req, res) => {
     try {
-        const { id, type: customType, filters: customFilters, prompt } = req.body || {};
+        const { id, type: customType, filters: customFilters, prompt, modo: modoRichiesto } = req.body || {};
         const user = await UserConfig.resolveUserConfig(req.utenteId);
         if (!user) {
             return erroreDominio(res, 404, 'non_trovato', 'Utente non trovato.');
+        }
+
+        // L'anteprima guarda un catalogo di UNA modalità. Usare il profilo attivo significa
+        // chiedere un catalogo di serie con le leve di Film (serie:false) e ricevere zero
+        // titoli, mentre Stremio lo serve benissimo. La modalità arriva dal client; senza,
+        // resta quella attiva.
+        let modoDiAnteprima = null;
+        if (modoRichiesto) {
+            const { normalizzaModo, isModoValido, modiAbilitati, MODI } = require('../profile/modo');
+            if (!modiAbilitati()) {
+                return erroreDominio(res, 404, 'non_disponibile', 'Le modalità non sono abilitate su questa istanza.');
+            }
+            const normalizzato = normalizzaModo(modoRichiesto);
+            if (!isModoValido(normalizzato)) {
+                return erroreDominio(res, 400, 'modo_non_valido', `Modalità sconosciuta. Valori ammessi: ${MODI.join(', ')}.`);
+            }
+            modoDiAnteprima = normalizzato;
         }
 
         const { chiaveEffettiva } = require('../configurazione');
         let tmdbKey = chiaveEffettiva({ account: user, richiesta: req.body.tmdbKey, servizio: 'tmdb' });
         let mistralKey = chiaveEffettiva({ account: user, richiesta: req.body.mistralKey, servizio: 'mistral' });
 
+        // Con una modalità dichiarata, contesto e selettori si leggono DA QUELLA modalità.
+        const utentePerAnteprima = modoDiAnteprima
+            ? { ...user, activeModo: modoDiAnteprima, config: { ...(user.config || {}), activeModo: modoDiAnteprima } }
+            : user;
+
         const { contestoDi } = require('../profile');
         const profileContext = await contestoDi({
             userId: req.utenteId,
-            profileId: req.body.profileId || user.activeProfileId,
+            profileId: req.body.profileId
+                || (modoDiAnteprima ? `modo_${modoDiAnteprima}` : user.activeProfileId),
             addonUuid: user.addonUuid,
             richiesta: req.body,
-            user
+            user: utentePerAnteprima
         });
         const activeProfileId = profileContext.profileId;
         const kidsMode = profileContext.kidsMode;
         const effectiveSliders = req.body?.sliders || profileContext.sliders;
 
         const fullUserConfig = {
-            ...user,
+            ...utentePerAnteprima,
             activeProfileId,
             context: profileContext,
             activeProfileSettings: {

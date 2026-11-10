@@ -9,14 +9,16 @@ interface PosterRowProps {
   filters?: Record<string, unknown>;
   type?: string;
   prompt?: string;
+  /** Modalità dell'elenco che si sta guardando: l'anteprima va chiesta con le SUE leve. */
+  modo?: string;
 }
 
-export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
+export function PosterRow({ presetId, filters, type, prompt, modo }: PosterRowProps) {
   const [items, setItems] = useState<PosterItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const requestKey = JSON.stringify({ presetId, filters, type, prompt });
+  const requestKey = JSON.stringify({ presetId, filters, type, prompt, modo });
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -31,7 +33,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
         if (entries[0].isIntersecting) {
           setLoading(true);
           api
-            .previewCatalog({ id: presetId, filters, type, prompt })
+            .previewCatalog({ id: presetId, filters, type, prompt, modo })
             .then((data) => setItems(data.items || data.results || []))
             .catch((err) => { 
               console.error('Failed to preview catalog:', err);
@@ -48,7 +50,7 @@ export function PosterRow({ presetId, filters, type, prompt }: PosterRowProps) {
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [presetId, filters, type, prompt, loaded]);
+  }, [presetId, filters, type, prompt, modo, loaded]);
 
   return (
     <div ref={ref} className="mt-2 w-full max-w-full overflow-hidden">

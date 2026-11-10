@@ -359,3 +359,51 @@ describe('CatalogLivePreview con ID scaffale dinamici (yaca_<tmdbId>_<medium>)',
         expect(items).toHaveLength(0);
     });
 });
+
+describe('Anteprima con la modalità dichiarata dal client', () => {
+    // L'anteprima usava il profilo ATTIVO: guardando un catalogo di Serie TV mentre la
+    // modalità in uso è Film, il contesto rispondeva `serie:false` e l'anteprima tornava
+    // vuota su un catalogo che Stremio serviva. Ora il client dice per quale modalità guarda.
+    const utenteBase = () => ({
+        userId: 'utente-preview-test',
+        addonUuid: 'addon-preview',
+        activeProfileId: 'modo_film',
+        config: { activeModo: 'film' },
+        apiKeys: { tmdb: 'tmdb-test-key' },
+        profiles: [
+            { id: 'modo_film', modo: 'film', settings: { kidsMode: false } },
+            { id: 'modo_serie', modo: 'serie', settings: { kidsMode: false } }
+        ],
+        shelves: FAKE_3_SHELFS
+    });
+
+    beforeEach(() => {
+        process.env.MODI_ABILITATI = '1';
+        UserConfig.resolveUserConfig.mockResolvedValue(utenteBase());
+    });
+
+    afterEach(() => {
+        delete process.env.MODI_ABILITATI;
+    });
+
+    test('una modalità inventata è 400 modo_non_valido', async () => {
+        const { status } = await request('POST', '/api/configurazione/anteprima', {
+            id: 'yaca_12609_series',
+            type: 'series',
+            modo: 'documentari'
+        });
+        expect(status).toBe(400);
+    });
+
+    test('la modalità dichiarata sostituisce quella attiva nel contesto', async () => {
+        const spia = jest.spyOn(require('../src/profile'), 'contestoDi');
+        await request('POST', '/api/configurazione/anteprima', {
+            id: 'yaca_12609_series',
+            type: 'series',
+            modo: 'serie'
+        });
+        const argomenti = spia.mock.calls.at(-1)?.[0] || {};
+        expect(argomenti.user?.activeModo).toBe('serie');
+        expect(argomenti.profileId).toBe('modo_serie');
+    });
+});

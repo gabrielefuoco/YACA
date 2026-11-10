@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button';
 
 interface ActiveCatalogsPanelProps {
   catalogs: CatalogoEsploraVoce[];
+  /** Modalità di questo elenco: le anteprime vanno chieste con le sue leve. */
+  modo?: string;
   onReorder?: (ids: string[]) => void;
   onEditCatalog?: (catalog: any) => void;
   onGoToExplore?: () => void;
 }
 
 export function ActiveCatalogsPanel({
+  modo,
   catalogs,
   onReorder,
   onEditCatalog,
@@ -102,6 +105,7 @@ export function ActiveCatalogsPanel({
               <CatalogItem
                 key={catalog.id}
                 catalog={cardData}
+                modo={modo}
                 isDragging={dragIndex === index}
                 onEdit={catalog.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(catalog) : undefined}
                 onMoveUp={canReorder ? () => handleMoveCatalog(index, 'up') : undefined}

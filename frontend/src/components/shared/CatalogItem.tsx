@@ -12,6 +12,8 @@ import { useFinePointer } from '@/hooks/useFinePointer';
 
 interface CatalogItemProps {
   catalog: CatalogCardData;
+  /** Modalità dell'elenco in cui il catalogo è mostrato: l'anteprima usa le sue leve. */
+  modo?: string;
   actions?: ReactNode;
   badges?: ReactNode;
   description?: string;
@@ -35,6 +37,7 @@ interface CatalogItemProps {
 
 export function CatalogItem({
   catalog,
+  modo,
   actions,
   badges,
   description,
@@ -281,6 +284,7 @@ export function CatalogItem({
           type={previewType}
           filters={catalog.filters}
           prompt={catalog.raw_prompt}
+          modo={modo}
         />
       </div>
 

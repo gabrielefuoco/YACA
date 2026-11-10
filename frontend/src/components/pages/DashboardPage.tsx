@@ -418,6 +418,7 @@ export function DashboardPage({
               {activeTab === 'dashboard' && (
                 <ActiveCatalogsPanel
                   catalogs={cataloghiAttivi}
+                  modo={selectedModo}
                   onReorder={(ids) => onReorderActiveCatalogs(ids, selectedModo)}
                   onGoToExplore={() => onTabChange('explore')}
                   onEditCatalog={handleEditCatalog}

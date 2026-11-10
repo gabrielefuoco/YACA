@@ -69,6 +69,7 @@ interface ExplorePanelProps {
 export function ExplorePanel({
   data,
   loading = false,
+  activeModo,
   presets: propsPresets,
   onToggleActive,
   onEditCatalog,
@@ -327,6 +328,7 @@ export function ExplorePanel({
               <CatalogItem
                 key={item.id}
                 catalog={cardData}
+                modo={activeModo}
                 onToggleActive={onToggleActive ? (attivo) => handleToggle(item.id, attivo) : undefined}
                 onEdit={item.fonte === 'creazione' && onEditCatalog ? () => onEditCatalog(item) : undefined}
               />
