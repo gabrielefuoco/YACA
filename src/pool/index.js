@@ -334,14 +334,18 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
         }
         const seedPlays = Number(plays?.get?.(String(tmdbId)) ?? plays?.get?.(tmdbId) ?? plays?.[String(tmdbId)] ?? 1);
         const ts = Number(ultimaVisione && typeof ultimaVisione.get === 'function' ? ultimaVisione.get(String(tmdbId)) : NaN);
-        const eta_giorni = Number.isFinite(ts) && ts > 0 ? Number(Math.max(0, (now - ts) / 86400000).toFixed(2)) : idx;
+        // L'età si dichiara solo se c'è una data di visione. Prima, senza data, ci finiva
+        // l'INDICE del seme: l'interfaccia lo leggeva come «visto oggi» sui primi tre.
+        const eta_giorni = Number.isFinite(ts) && ts > 0
+            ? Number(Math.max(0, (now - ts) / 86400000).toFixed(2))
+            : null;
 
         return {
             tmdbId,
             medium: med,
             tipo,
             plays: Number.isFinite(seedPlays) && seedPlays >= 0 ? seedPlays : 1,
-            eta_giorni
+            ...(eta_giorni === null ? {} : { eta_giorni })
         };
     });
 

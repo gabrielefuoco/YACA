@@ -174,14 +174,21 @@ describe('Integrazione Scaffali V45: Manifest, Pool e Migrazione', () => {
         const semiInviati = callArgs[0];
         expect(Array.isArray(semiInviati)).toBe(true);
         expect(semiInviati.length).toBeGreaterThan(0);
-        // Ogni seme ha plays, eta_giorni, medium e NON contiene 'recente'
+        // Ogni seme ha plays e medium, NON contiene 'recente' né 'peso'. `eta_giorni` c'è
+        // solo dove esiste una data di visione: dove manca il campo si omette, invece di
+        // riempirlo con l'indice del seme (che l'interfaccia leggeva come «oggi»).
         for (const s of semiInviati) {
             expect(s.plays).toBeDefined();
-            expect(s.eta_giorni).toBeDefined();
             expect(s.medium).toBeDefined();
             expect(s.recente).toBeUndefined();
             expect(s.peso).toBeUndefined();
+            if (s.eta_giorni !== undefined) {
+                expect(typeof s.eta_giorni).toBe('number');
+                expect(Number.isFinite(s.eta_giorni)).toBe(true);
+            }
         }
+        const conData = semiInviati.find(s => String(s.tmdbId) === '12609');
+        expect(conData?.eta_giorni).toBeGreaterThan(4);
 
         // Il pool contiene i titoli per ciascuno dei cataloghi scaffale
         expect(pool['yaca_12609_series']).toBeDefined();

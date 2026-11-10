@@ -77,10 +77,12 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         for (let i = 1; i <= 5; i++) expect(recent.has(i)).toBe(false);
     });
 
-    test('il pool manda l età dei semi al servizio del grafo', async () => {
+    test("il pool manda l'età dei semi, e la omette dove non la conosce", async () => {
         jest.clearAllMocks();
-        // Contratto di `/scaffali`: ogni seme porta `eta_giorni` (numero). Il flag `recente` è una
-        // selezione che resta a monte, dentro `convertiSemiPerGrafo` — provata dal test precedente.
+        // Contratto di `/scaffali`: `eta_giorni` è un numero quando esiste una data di visione.
+        // Dove la data manca il campo NON si manda: prima ci finiva l'indice del seme, e
+        // l'interfaccia lo leggeva come «visto oggi». Il flag `recente` è una selezione che
+        // resta a monte, dentro `convertiSemiPerGrafo` — provata dal test precedente.
         jest.spyOn(library, 'semiDi').mockResolvedValue({
             seeds: new Map([['603', 3], ['314', 4]]),
             counts: { loved: 1, liked: 1, watched: 0, library: 0 },
@@ -99,11 +101,15 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
 
         const semi = graphClient.scaffali.mock.calls[0][0];
         expect(semi.length).toBeGreaterThan(0);
-        for (const s of semi) {
-            expect(typeof s.eta_giorni).toBe('number');
-            expect(Number.isFinite(s.eta_giorni)).toBe(true);
-            expect(s).not.toHaveProperty('recente');
-        }
+
+        const conData = semi.find(s => String(s.tmdbId) === '603');
+        const senzaData = semi.find(s => String(s.tmdbId) === '314');
+        expect(typeof conData?.eta_giorni).toBe('number');
+        expect(Number.isFinite(conData?.eta_giorni)).toBe(true);
+        expect(senzaData).toBeDefined();
+        expect(senzaData).not.toHaveProperty('eta_giorni');
+
+        for (const s of semi) expect(s).not.toHaveProperty('recente');
     });
 
     test('il taglio avviene fra i semi inviati, non fra tutte le visioni', () => {
