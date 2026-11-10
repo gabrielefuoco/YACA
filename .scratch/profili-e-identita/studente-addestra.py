@@ -118,6 +118,9 @@ def main() -> int:
     ap.add_argument("--dim", type=int, default=512)
     ap.add_argument("--tau", type=float, default=float(C.TAU))
     ap.add_argument("--lr", type=float, default=float(C.LR))
+    ap.add_argument("--maestro", default=str(V45 / "v45-triangolo.npz"),
+                    help="grafo maestro: deve essere SENZA RRFST (ricetta norrfst), altrimenti lo "
+                         "studente impara a imitare lo studente precedente invece del comportamento")
     ap.add_argument("--out", default=".cache/studente-v45.npz")
     a = ap.parse_args()
 
@@ -129,9 +132,9 @@ def main() -> int:
         torch.cuda.empty_cache()
 
     B = D.basic(); N = B["N"]
-    zt = np.load(V45 / "v45-triangolo.npz", allow_pickle=True)
+    zt = np.load(a.maestro, allow_pickle=True)
     W = sp.csr_matrix((zt["data"], zt["indices"], zt["indptr"]), shape=(N, N)).tocsr()
-    print(f"maestro: {W.nnz:,} archi · {N:,} righe", flush=True)
+    print(f"maestro: {Path(a.maestro).name} · {W.nnz:,} archi · {N:,} righe", flush=True)
 
     zbl = np.load(ROOT / "services" / "graph_dense" / "data" / "blocks.npz")
     Bp = torch.from_numpy(zbl["Bp"].astype(np.float32)).to(dev)
@@ -242,7 +245,7 @@ def main() -> int:
     out = ROOT / a.out
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out, Z=Z, forma=a.forma, heldout=esclusi.astype(np.int64),
-                        epoche=a.epoche, maestro="v45-triangolo.npz")
+                        epoche=a.epoche, maestro=Path(a.maestro).name)
     print(f"scritto {out} · Z {Z.shape} · {out.stat().st_size/2**20:.0f} MB · {time.time()-t0:.0f}s", flush=True)
 
     # ---- la prova: i titoli esclusi si collocano come se fossero nuovi

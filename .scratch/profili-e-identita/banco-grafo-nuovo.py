@@ -39,10 +39,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--utenti", type=int, default=200)
     ap.add_argument("--ritenuta", type=float, default=0.2)
+    ap.add_argument("--nuovo", default=str(NUOVO), help="transizione del grafo da confrontare")
+    ap.add_argument("--out", default=".cache/banco-grafo-nuovo.json")
     a = ap.parse_args()
 
     t0 = time.time()
-    Tr_old, Tr_new = carica(SERVITO), carica(NUOVO)
+    Tr_old, Tr_new = carica(SERVITO), carica(Path(a.nuovo))
     N = Tr_old.shape[0]
     print(f"grafo servito {Tr_old.nnz:,} · nuovo {Tr_new.nnz:,} · {time.time()-t0:.0f}s", flush=True)
 
@@ -99,7 +101,7 @@ def main() -> int:
         "utenti_peggiorati": int((diff < 0).sum()),
         "secondi": round(time.time() - t0, 1),
     }
-    (ROOT / ".cache" / "banco-grafo-nuovo.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    (ROOT / a.out).write_text(json.dumps(rep, indent=2), encoding="utf-8")
     print(json.dumps(rep, indent=2))
     return 0
 

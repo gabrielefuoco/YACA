@@ -29,10 +29,10 @@ K = 100
 PESI = json.loads((V45 / "pesi.json").read_text())
 
 
-def rrfst_dal_nuovo_studente(out: Path) -> None:
+def rrfst_dal_nuovo_studente(out: Path, z_file: Path = Z_FILE) -> None:
     """Gli archi della nuova fonte: coseno top-100 su Z, come `cmd_rrfst` ma su GPU."""
     t0 = time.time()
-    z = np.load(Z_FILE, allow_pickle=True)
+    z = np.load(z_file, allow_pickle=True)
     Z = np.asarray(z["Z"], np.float32)
     N = Z.shape[0]
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -64,10 +64,14 @@ def rrfst_dal_nuovo_studente(out: Path) -> None:
 
 
 def main() -> int:
+    global LAV
     ap = argparse.ArgumentParser()
     ap.add_argument("--solo-rrfst", action="store_true")
+    ap.add_argument("--z", default=str(Z_FILE), help="file con la Z dello studente da cui fare RRFST")
+    ap.add_argument("--lav", default=str(LAV), help="cartella di lavoro (per non sovrascrivere la prova)")
     a = ap.parse_args()
 
+    LAV = Path(a.lav)
     tipi = LAV / "tipi"
     norm = LAV / "norm"
     pesi = LAV / "pesi"
@@ -78,7 +82,7 @@ def main() -> int:
 
     t0 = time.time()
     print("1. la fonte dello studente", flush=True)
-    rrfst_dal_nuovo_studente(tipi / "RRFST.npz")
+    rrfst_dal_nuovo_studente(tipi / "RRFST.npz", Path(a.z))
     if a.solo_rrfst:
         print("fermo qui (--solo-rrfst)")
         return 0

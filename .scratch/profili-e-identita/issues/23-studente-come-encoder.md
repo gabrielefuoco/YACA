@@ -172,6 +172,40 @@ contenuto: è un **encoder di cold start**, non un pezzo migliore del grafo.
 | lo studente | serve **solo** a collocare un titolo che non ha riga, al momento in cui serve |
 | il suo ruolo | `contenuto → Z → top-16 → la riga del titolo nuovo`, non «sostituisce RRFST» |
 
+## La correzione: il maestro era sbagliato, non lo studente
+
+Dopo la prova nel grafo ho riletto la ricetta originale, che avevo dato per persa: `services/graph/V45.md`
+la scrive per esteso.
+
+> *«Studente RRFST: `rrfstudent-norrfst.npz` (76.497 × 2.048). È il nuovo studente addestrato da zero
+> sul grafo **senza RRFST**»*
+
+Due cose che avevo sbagliato:
+
+1. **Il vecchio studente non mangiava comportamento.** Gli stessi tre blocchi densi, stessa dimensione
+   (1.024 + 512 + 512 = **2.048**). La frase «il vecchio portava segnale di pubblico» era falsa.
+2. **La differenza era il maestro**, e il nome la urlava: `norrfst` = maestro **senza** la fonte dello
+   studente. È il trucco contro la circolarità: non si insegna a uno studente a riprodurre un grafo che
+   contiene sé stesso. Io avevo distillato il triangolo **servito**, che contiene il vecchio studente al
+   12% del peso: il nuovo ha passato l'addestramento a imitare il vecchio con meno informazione.
+
+Rifatto con il maestro giusto (mix delle altre 13 fonti + chiusura, 47.308.177 archi):
+
+| collocazione nel grafo | R@20 servito | R@20 nuovo | differenza | IC95 |
+|---|---|---|---|---|
+| maestro = triangolo servito (sbagliato) | 0,1810 | 0,1716 | −0,0094 | [−0,0129, −0,0057] |
+| **maestro = senza RRFST (ricetta vera)** | 0,1808 | 0,1772 | **−0,0036** | [−0,0067, −0,0004] |
+
+Il degrado **si riduce di 2,6 volte**: l'ipotesi era giusta, il difetto stava nel maestro. Resta un
+residuo negativo di 0,0036, che è però dentro l'ordine del rumore di addestramento (seed singolo).
+
+## Come si batte, adesso che la ricetta è quella giusta
+
+La forma A con il maestro corretto **pareggia quasi**: −0,0036. La candidata a superarlo è la **forma B
+sullo stesso maestro**, che porta nel modello le righe delle sette fonti di contenuto invece di sole
+tre proiezioni dense. Sul collocamento aveva già vinto (0,49 contro 0,42 sulle righe, 0,625 contro 0,55
+sulla diffusione). Prova in corso: forma B, maestro norrfst, poi catena completa e banco di ritenuta.
+
 ## Numeri riproducibili
 
 | script | cosa fa |
