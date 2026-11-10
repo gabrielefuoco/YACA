@@ -126,10 +126,13 @@ function sanitizeScaffaliSeed(s, idx) {
     }
     if (sanitized.eta_giorni !== undefined) {
         const eg = Number(sanitized.eta_giorni);
-        sanitized.eta_giorni = Number.isFinite(eg) && eg >= 0 ? eg : Number(idx);
-    } else {
-        sanitized.eta_giorni = Number(idx);
+        // Un'età non valida si scarta, non si sostituisce con l'indice del seme.
+        if (Number.isFinite(eg) && eg >= 0) sanitized.eta_giorni = eg;
+        else delete sanitized.eta_giorni;
     }
+    // NIENTE `else`: se la fonte non dichiara l'età, il campo non si inventa. Qui c'era
+    // `sanitized.eta_giorni = Number(idx)`, e l'interfaccia leggeva quell'indice come
+    // «visto oggi». Era l'ultima invenzione rimasta, proprio sul confine di rete.
     if (sanitized.tmdbId !== undefined) {
         sanitized.tmdbId = Number(sanitized.tmdbId);
     }
@@ -213,6 +216,7 @@ function resetHealthCache() {
 }
 
 module.exports = {
+    sanitizeScaffaliSeed,
     getGraphHealthVersionsCached,
     getGraphHealthVersions,
     raccomanda,

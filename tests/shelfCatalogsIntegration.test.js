@@ -276,3 +276,25 @@ describe('Integrazione Scaffali V45: Manifest, Pool e Migrazione', () => {
         expect(sentSeed.unknown_key).toBeUndefined();
     });
 });
+
+describe("Il confine di rete non inventa l'età di un seme", () => {
+    // `sanitizeScaffaliSeed` riempiva `eta_giorni` con l'INDICE del seme quando mancava:
+    // l'interfaccia lo leggeva come «visto oggi», e ogni correzione a monte veniva annullata
+    // un istante prima della chiamata HTTP.
+    const { sanitizeScaffaliSeed } = require('../src/clients/graphClient');
+
+    test('un seme senza età resta senza età', () => {
+        const s = sanitizeScaffaliSeed({ tmdbId: 671, plays: 1, medium: 'movie' }, 7);
+        expect(s).not.toHaveProperty('eta_giorni');
+    });
+
+    test("un'età dichiarata passa intatta", () => {
+        const s = sanitizeScaffaliSeed({ tmdbId: 671, plays: 1, eta_giorni: 12.5 }, 7);
+        expect(s.eta_giorni).toBe(12.5);
+    });
+
+    test("un'età non valida si scarta, non diventa un indice", () => {
+        const s = sanitizeScaffaliSeed({ tmdbId: 671, plays: 1, eta_giorni: 'boh' }, 7);
+        expect(s).not.toHaveProperty('eta_giorni');
+    });
+});
