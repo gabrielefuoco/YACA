@@ -128,6 +128,20 @@ peggiora niente, e la coda della forma B è migliore (p10 0,28 contro 0,23).
 - Il tetto resta il contenuto: **nessun modello** può superare il limite di ciò che a cold start
   esiste. Se un giorno servisse di più, la strada non è addestrare meglio — è avere `COVISION`.
 
+## L'artefatto
+
+| | |
+|---|---|
+| file | `.cache/studente-B-usare.npz` (fuori da git, 581 MB) |
+| contenuto | `Z` 76.497 × 2.560 float32, più forma, epoche, maestro |
+| sha256 | `04f4518ac70a7c82c9bfd37da16d7c02889649700500661be24ee6ae1de064c7` |
+| addestramento | forma B, tutte le righe, 24 epoche, 1.194 s su RTX 3060 |
+| loss finale | 8,6955 |
+| uso | `Z` → coseno → top-k = la fonte `RRFST` per la riga nuova (peso 1,0) |
+
+Vive in `.cache/` perché è un artefatto di build: il posto definitivo e la sua versionatura sono
+materia del ticket 22, non di questo.
+
 ## Numeri riproducibili
 
 | script | cosa fa |
