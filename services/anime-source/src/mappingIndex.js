@@ -101,65 +101,57 @@ function buildMappingIndex({ fribbData = [], anibridgeData = {}, overridesData, 
     const safeFribb = Array.isArray(fribbData) ? fribbData : [];
     for (const item of safeFribb) {
         if (!item || typeof item !== 'object') continue;
-        if (item.kitsu_id) {
-            const kitsuIdStr = String(item.kitsu_id);
+        const kitsuIdStr = item.kitsu_id ? String(item.kitsu_id) : null;
+        if (kitsuIdStr) {
             if (item.anidb_id) fribbIndex.anidb.set(String(item.anidb_id), item.kitsu_id);
             if (item.anilist_id) fribbIndex.anilist.set(String(item.anilist_id), item.kitsu_id);
             if (item.mal_id) fribbIndex.mal.set(String(item.mal_id), item.kitsu_id);
+        }
 
-            if (item.themoviedb_id) {
-                const rawTmdb = item.themoviedb_id;
-                let detectedType = null;
-                let tmdbVal = null;
+        if (!item.themoviedb_id) continue;
+        const rawTmdb = item.themoviedb_id;
+        let detectedType = null;
+        let tmdbVal = null;
 
-                if (typeof rawTmdb === 'object' && rawTmdb !== null) {
-                    if (rawTmdb.tv !== undefined && rawTmdb.tv !== null && rawTmdb.tv !== '') {
-                        detectedType = 'tv';
-                        tmdbVal = rawTmdb.tv;
-                    } else if (rawTmdb.movie !== undefined && rawTmdb.movie !== null && rawTmdb.movie !== '') {
-                        detectedType = 'movie';
-                        tmdbVal = rawTmdb.movie;
-                    } else {
-                        tmdbVal = rawTmdb;
-                    }
-                } else if (rawTmdb) {
-                    tmdbVal = rawTmdb;
-                }
+        if (typeof rawTmdb === 'object' && rawTmdb !== null) {
+            if (rawTmdb.tv !== undefined && rawTmdb.tv !== null && rawTmdb.tv !== '') {
+                detectedType = 'tv';
+                tmdbVal = rawTmdb.tv;
+            } else if (rawTmdb.movie !== undefined && rawTmdb.movie !== null && rawTmdb.movie !== '') {
+                detectedType = 'movie';
+                tmdbVal = rawTmdb.movie;
+            } else {
+                tmdbVal = rawTmdb;
+            }
+        } else if (rawTmdb) {
+            tmdbVal = rawTmdb;
+        }
 
-                if (!detectedType) {
-                    const itemType = String(item.type || '').toUpperCase();
-                    if (itemType === 'MOVIE') {
-                        detectedType = 'movie';
-                    } else if (['TV', 'OVA', 'ONA', 'SPECIAL'].includes(itemType)) {
-                        detectedType = 'tv';
-                    }
-                }
+        if (!detectedType) {
+            const itemType = String(item.type || '').toUpperCase();
+            if (itemType === 'MOVIE') {
+                detectedType = 'movie';
+            } else if (['TV', 'OVA', 'ONA', 'SPECIAL'].includes(itemType)) {
+                detectedType = 'tv';
+            }
+        }
 
-                const tmdbIds = Array.isArray(tmdbVal)
-                    ? tmdbVal.filter(id => id !== null && id !== undefined && id !== '')
-                    : (tmdbVal ? [tmdbVal] : []);
+        const tmdbIds = Array.isArray(tmdbVal)
+            ? tmdbVal.filter(id => id !== null && id !== undefined && id !== '')
+            : (tmdbVal ? [tmdbVal] : []);
 
-                if (tmdbIds.length > 0) {
-                    const primaryTmdb = String(tmdbIds[0]);
-                    kitsuToTmdb.set(kitsuIdStr, primaryTmdb);
-                    if (detectedType) {
-                        kitsuToTmdbType.set(kitsuIdStr, detectedType);
-                    }
-                    if (item.mal_id) {
-                        malToTmdb.set(String(item.mal_id), primaryTmdb);
-                    }
-
-                    if (detectedType === 'movie') {
-                        for (const tmdbId of tmdbIds) {
-                            tmdbToKitsuMovie.set(String(tmdbId), item.kitsu_id);
-                        }
-                    } else {
-                        for (const tmdbId of tmdbIds) {
-                            tmdbToKitsu.set(String(tmdbId), item.kitsu_id);
-                        }
-                    }
+        if (tmdbIds.length > 0) {
+            const primaryTmdb = String(tmdbIds[0]);
+            if (kitsuIdStr) {
+                kitsuToTmdb.set(kitsuIdStr, primaryTmdb);
+                if (detectedType) kitsuToTmdbType.set(kitsuIdStr, detectedType);
+                if (detectedType === 'movie') {
+                    for (const tmdbId of tmdbIds) tmdbToKitsuMovie.set(String(tmdbId), item.kitsu_id);
+                } else {
+                    for (const tmdbId of tmdbIds) tmdbToKitsu.set(String(tmdbId), item.kitsu_id);
                 }
             }
+            if (item.mal_id) malToTmdb.set(String(item.mal_id), primaryTmdb);
         }
     }
 
@@ -183,6 +175,8 @@ function buildMappingIndex({ fribbData = [], anibridgeData = {}, overridesData, 
 
         let bridgeNode = null;
         const allNodes = [clusterKey, ...Object.keys(mappings)];
+        // Preserve Fribb precedence, then fill MAL season/alias IDs from their AniBridge TMDB show.
+        const malList = allNodes.filter(node => node.startsWith('mal:')).map(node => node.split(':')[1]);
 
         for (const node of allNodes) {
             if (node.startsWith('anidb:')) { bridgeNode = { p: 'anidb', id: node.split(':')[1] }; break; }
@@ -203,6 +197,9 @@ function buildMappingIndex({ fribbData = [], anibridgeData = {}, overridesData, 
 
                 if (tmdbId) {
                     const cleanTmdbId = String(tmdbId);
+                    for (const malId of malList) {
+                        if (!malToTmdb.has(malId)) malToTmdb.set(malId, cleanTmdbId);
+                    }
                     anibridgeTmdbIds.add(cleanTmdbId);
                     if (providerKey.startsWith('tmdb_show:')) {
                         anibridgeShowTmdbIds.add(cleanTmdbId);

@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { modiAbilitati, leggiModoAttivo, cataloghiDelModo } = require('../profile/modo');
+const { modiAbilitati, leggiModoAttivo, derivaLeve, selettoriDaLeve, cataloghiDelModo } = require('../profile/modo');
 
 const FINGERPRINT_SCHEMA_VERSION = 1;
 
@@ -54,9 +54,14 @@ function projectManifestShelf(shelf) {
     };
 }
 
-function projectManifestProfile(profile, fallbackShelves = null) {
+function projectManifestProfile(profile, fallbackShelves = null, leve = null) {
     const rawUiState = profile?.uiState || profile?.raw_ui_state || {};
-    const typeSelectors = profile?.settings?.typeSelectors || {};
+    // Con le modalità accese i selettori NON sono un dato del profilo: si derivano dalla
+    // modalità. Proiettare quelli salvati faceva cambiare l'impronta al variare di un campo
+    // che il serving non legge — una risincronizzazione dichiarata per niente.
+    const typeSelectors = leve
+        ? selettoriDaLeve(leve)
+        : (profile?.settings?.typeSelectors || {});
 
     let rawShelves = profile?.shelves || profile?.scaffali;
     if (!rawShelves && profile?.id) {
@@ -89,7 +94,7 @@ function projectManifestProfile(profile, fallbackShelves = null) {
             serie: Boolean(typeSelectors.serie),
             anime: typeSelectors.anime || null
         },
-        kidsMode: Boolean(profile?.settings?.kidsMode)
+        kidsMode: leve ? Boolean(leve.kids) : Boolean(profile?.settings?.kidsMode)
     };
 }
 
@@ -105,9 +110,6 @@ function getEffectiveActiveProfileId(userConfig) {
         : 'global';
 }
 
-const { getHeroCatalogFingerprintRows, getRegistryHash } = require('../catalog/registry');
-
-const DEFAULT_HERO_CATALOGS = getHeroCatalogFingerprintRows();
 
 function getHeroCatalogs() {
     try {
@@ -128,8 +130,13 @@ function getHeroCatalogs() {
                 }
             }
         }
-    } catch (_) {}
-    return DEFAULT_HERO_CATALOGS;
+    } catch (err) {
+        console.warn('[Fingerprint] manifest non costruibile:', err?.message || err);
+    }
+    // Nessun elenco di riserva: `DEFAULT_HERO_CATALOGS` era una lista di venti cataloghi
+    // che il manifest non dichiara più (`yaca_mondi_*`, `yaca_passo_fuori_*`, …). Un
+    // ripiego che finge un contenuto è peggio di un elenco vuoto, che almeno è vero.
+    return [];
 }
 
 function getPresetDefinitions() {
@@ -204,7 +211,8 @@ function buildManifestFingerprint(userConfig = {}, options = {}) {
             .map(p => {
                 const isCurrentActive = p && String(p.id) === String(activeProfileId);
                 const fallback = isCurrentActive ? rootShelves : null;
-                return projectManifestProfile(p, fallback);
+                const leve = modiAbilitati() ? derivaLeve(leggiModoAttivo(userConfig)) : null;
+                return projectManifestProfile(p, fallback, leve);
             })
             .sort((a, b) => {
                 const aId = String(a.id);
@@ -234,7 +242,6 @@ function buildManifestFingerprint(userConfig = {}, options = {}) {
 
 module.exports = {
     FINGERPRINT_SCHEMA_VERSION,
-    DEFAULT_HERO_CATALOGS,
     buildManifestDefinitionsSignature,
     buildManifestFingerprint
 };

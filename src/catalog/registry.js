@@ -6,7 +6,6 @@
  * Tutte le righe hero sono ora DEFINIZIONI DICHIARATIVE DI SISTEMA (System Presets),
  * e tutte le 10 proiezioni del prodotto discendono da queste definizioni:
  * - Manifest Stremio (getManifestHeroCatalogs)
- * - Fingerprint cache (getHeroCatalogFingerprintRows)
  * - Mappe kind per selettori (getHeroCatalogKindMap)
  * - Specifiche del pool (getHeroPoolSpec)
  * - Gruppi UI della dashboard (getHeroUiGroups)
@@ -307,17 +306,6 @@ function getManifestHeroCatalogs() {
 /**
  * Hero rows projected for cache fingerprint signature.
  */
-function getHeroCatalogFingerprintRows() {
-    return HERO_SYSTEM_CATALOGS.map(r => ({
-        id: r.id,
-        type: r.type,
-        name: r.name
-    }));
-}
-
-/**
- * Engine catalog modes mapping (CATALOG_MODES).
- */
 function getHeroCatalogModes() {
     const modes = {};
     for (const r of HERO_SYSTEM_CATALOGS) {
@@ -518,7 +506,6 @@ module.exports = {
     isDailyWindowCatalog,
     getManifestHeroCatalogs,
     catalogDefinitionsFromShelves,
-    getHeroCatalogFingerprintRows,
     getHeroCatalogModes,
     getHeroPrefixes,
     isHeroCatalogId,

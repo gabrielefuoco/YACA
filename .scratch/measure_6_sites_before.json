@@ -1,0 +1,118 @@
+{
+  "site1": {
+    "full": 1,
+    "short": 9,
+    "empty": 0,
+    "details": [
+      {
+        "id": "preset_pop_movies",
+        "count": 19
+      },
+      {
+        "id": "preset_pop_series",
+        "count": 8
+      },
+      {
+        "id": "preset_top_rated_movies",
+        "count": 19
+      },
+      {
+        "id": "preset_top_rated_series",
+        "count": 11
+      },
+      {
+        "id": "preset_new_movies",
+        "count": 14
+      },
+      {
+        "id": "preset_new_series",
+        "count": 3
+      },
+      {
+        "id": "preset_grandi_registi",
+        "count": 16
+      },
+      {
+        "id": "preset_blockbusters",
+        "count": 20
+      },
+      {
+        "id": "preset_80s_movies",
+        "count": 19
+      },
+      {
+        "id": "preset_90s_movies",
+        "count": 16
+      }
+    ]
+  },
+  "site2": {
+    "full": 0,
+    "short": 0,
+    "empty": 5,
+    "details": [
+      {
+        "id": "preset_pop_movies",
+        "count": 0
+      },
+      {
+        "id": "preset_pop_series",
+        "count": 0
+      },
+      {
+        "id": "preset_top_rated_movies",
+        "count": 0
+      },
+      {
+        "id": "preset_top_rated_series",
+        "count": 0
+      },
+      {
+        "id": "preset_new_movies",
+        "count": 0
+      }
+    ]
+  },
+  "site3": {
+    "full": 2,
+    "short": 3,
+    "empty": 0,
+    "details": [
+      {
+        "id": "preset_pop_anime",
+        "count": 10
+      },
+      {
+        "id": "preset_anime_kids_series",
+        "count": 20
+      },
+      {
+        "id": "preset_anime_kids_movies",
+        "count": 20
+      },
+      {
+        "id": "preset_anime_shonen",
+        "count": 5
+      },
+      {
+        "id": "preset_anime_classic",
+        "count": 12
+      }
+    ]
+  },
+  "site4": {
+    "returnedFromProvider": 20,
+    "survivedKidsMode": 0,
+    "shortOrEmpty": true
+  },
+  "site5": {
+    "requested": 20,
+    "returned": 20,
+    "shortOrEmpty": false
+  },
+  "site6": {
+    "candidateCount": 40,
+    "hydratedCount": 20,
+    "shortOrEmpty": false
+  }
+}

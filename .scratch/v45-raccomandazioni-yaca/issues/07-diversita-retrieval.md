@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: grilling
 Blocked by: 05
 
@@ -32,3 +32,7 @@ nella stessa lista).
   per costruzione.
 - **Recenza = `min_eta`** (il seme piu fresco del gruppo), non la mediana: la mediana spinge il gruppo
   piu fresco al rango 28 su 31.
+
+## Esito
+
+Dedup, filtro per medium e cap sono dentro `interessi.py` (clustering e chiusura); il grafo conserva i ponti, l'ordinamento li usa.

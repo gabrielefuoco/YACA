@@ -117,6 +117,30 @@ describe('Mapping Index Producer (Ticket 32)', () => {
         assert.strictEqual(malMap.get('57334'), 48269);
     });
 
+    test('completa malToTmdb con AniBridge, mantenendo le mappe Fribb e accorpando le stagioni', () => {
+        const artifact = buildMappingIndex({
+            fribbData: [
+                { type: 'TV', kitsu_id: 10, mal_id: 100, themoviedb_id: { tv: 900 } },
+                { type: 'TV', mal_id: 300, themoviedb_id: { tv: 903 } }
+            ],
+            anibridgeData: {
+                'mal:100': {
+                    'tmdb_show:901:s1': { '1-12': '1-12' }
+                },
+                'mal:200': {
+                    'tmdb_show:902:s1': { '1-12': '1-12' },
+                    'tmdb_show:902:s2': { '13-24': '1-12' }
+                }
+            },
+            overridesData: { version: 1, identities: [], certify: [], exclude: [] }
+        });
+        const malToTmdb = new Map(artifact.malToTmdb);
+
+        assert.strictEqual(malToTmdb.get('100'), '900', 'Fribb mantiene la precedenza');
+        assert.strictEqual(malToTmdb.get('200'), '902', 'MAL stagionali convergono sullo show TMDB');
+        assert.strictEqual(malToTmdb.get('300'), '903', 'MAL diretto non richiede un Kitsu ID');
+    });
+
     describe('Regola di Conflitto: Exclude Vince Sempre su Certify', () => {
         test('se un ID compare sia in certify che in exclude, exclude vince ed elimina da insiemi anime', () => {
             const overridesData = {

@@ -69,12 +69,13 @@ def risolvi_percorso_kw_tfidf(dir_path: str | Path | None = None) -> tuple[Path,
     if v_canon.is_file() and t_canon.is_file():
         return v_canon, t_canon
 
-    d_dense = K.ROOT / "services" / "graph_dense" / "data" / "graph"
-    v_dense = d_dense / "05-vocab.json"
-    t_dense = d_dense / "05-tfidf.npz"
-    if v_dense.is_file() and t_dense.is_file():
-        return v_dense, t_dense
-
+    # Nessun ripiego sui prototipi di `services/graph_dense`: esiste ancora, quindi il
+    # ripiego non falliva mai in modo visibile — serviva artefatti diversi dai canonici
+    # senza dirlo. Se manca il canonico lo si dichiara, e si prosegue senza.
+    import logging
+    logging.getLogger(__name__).warning(
+        "kw-tfidf canonico assente in %s: la blacklist bambini resta senza espansione per parola chiave", d_canon
+    )
     return v_canon, t_canon
 
 

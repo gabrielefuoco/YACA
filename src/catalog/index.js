@@ -33,7 +33,6 @@ const {
     HERO_CATALOG_IDS_SET,
     getManifestHeroCatalogs,
     catalogDefinitionsFromShelves,
-    getHeroCatalogFingerprintRows,
     getHeroCatalogModes,
     getHeroPrefixes,
     isHeroCatalogId,
@@ -109,7 +108,6 @@ module.exports = {
     // Derivazioni
     getManifestHeroCatalogs,
     catalogDefinitionsFromShelves,
-    getHeroCatalogFingerprintRows,
     getHeroCatalogModes,
     getHeroPrefixes,
     isHeroCatalogId,

@@ -1,0 +1,499 @@
+{
+  "total": 163,
+  "fullCount": 31,
+  "shortCount": 119,
+  "emptyCount": 13,
+  "shortList": [
+    {
+      "id": "preset_pop_movies",
+      "count": 19
+    },
+    {
+      "id": "preset_pop_series",
+      "count": 8
+    },
+    {
+      "id": "preset_top_rated_movies",
+      "count": 19
+    },
+    {
+      "id": "preset_top_rated_series",
+      "count": 11
+    },
+    {
+      "id": "preset_new_movies",
+      "count": 14
+    },
+    {
+      "id": "preset_new_series",
+      "count": 3
+    },
+    {
+      "id": "preset_new_series_eps",
+      "count": 7
+    },
+    {
+      "id": "preset_pop_anime",
+      "count": 10
+    },
+    {
+      "id": "preset_grandi_registi",
+      "count": 16
+    },
+    {
+      "id": "preset_nolan",
+      "count": 5
+    },
+    {
+      "id": "preset_scorsese",
+      "count": 12
+    },
+    {
+      "id": "preset_kubrick",
+      "count": 8
+    },
+    {
+      "id": "preset_villeneuve",
+      "count": 6
+    },
+    {
+      "id": "preset_fincher",
+      "count": 2
+    },
+    {
+      "id": "preset_burton",
+      "count": 17
+    },
+    {
+      "id": "preset_wesanderson",
+      "count": 10
+    },
+    {
+      "id": "preset_lynch",
+      "count": 2
+    },
+    {
+      "id": "preset_scott",
+      "count": 14
+    },
+    {
+      "id": "preset_actor_dicaprio",
+      "count": 8
+    },
+    {
+      "id": "preset_actor_cruise",
+      "count": 16
+    },
+    {
+      "id": "preset_actor_reeves",
+      "count": 17
+    },
+    {
+      "id": "preset_brad_pitt",
+      "count": 17
+    },
+    {
+      "id": "preset_de_niro",
+      "count": 13
+    },
+    {
+      "id": "preset_johnny_depp",
+      "count": 19
+    },
+    {
+      "id": "preset_denzel",
+      "count": 13
+    },
+    {
+      "id": "preset_nicolas_cage",
+      "count": 18
+    },
+    {
+      "id": "preset_a24",
+      "count": 16
+    },
+    {
+      "id": "preset_dc",
+      "count": 18
+    },
+    {
+      "id": "preset_blumhouse",
+      "count": 10
+    },
+    {
+      "id": "preset_kdrama_romance",
+      "count": 7
+    },
+    {
+      "id": "preset_asian_action",
+      "count": 15
+    },
+    {
+      "id": "preset_cinema_coreano",
+      "count": 18
+    },
+    {
+      "id": "preset_british_crime",
+      "count": 4
+    },
+    {
+      "id": "preset_bollywood",
+      "count": 19
+    },
+    {
+      "id": "preset_french_cinema",
+      "count": 18
+    },
+    {
+      "id": "preset_italian_cinema",
+      "count": 17
+    },
+    {
+      "id": "preset_german_dark",
+      "count": 7
+    },
+    {
+      "id": "preset_80s_movies",
+      "count": 19
+    },
+    {
+      "id": "preset_90s_movies",
+      "count": 16
+    },
+    {
+      "id": "preset_00s_movies",
+      "count": 17
+    },
+    {
+      "id": "preset_cult_classics",
+      "count": 6
+    },
+    {
+      "id": "preset_mindfuck",
+      "count": 9
+    },
+    {
+      "id": "preset_mindfuck_series",
+      "count": 2
+    },
+    {
+      "id": "preset_whodunit",
+      "count": 7
+    },
+    {
+      "id": "preset_whodunit_series",
+      "count": 5
+    },
+    {
+      "id": "preset_apocalypse_survival",
+      "count": 18
+    },
+    {
+      "id": "preset_cyberpunk",
+      "count": 15
+    },
+    {
+      "id": "preset_sad_romance",
+      "count": 18
+    },
+    {
+      "id": "preset_heist",
+      "count": 1
+    },
+    {
+      "id": "preset_true_story",
+      "count": 18
+    },
+    {
+      "id": "preset_stand_up",
+      "count": 8
+    },
+    {
+      "id": "preset_musical",
+      "count": 19
+    },
+    {
+      "id": "preset_war_movies",
+      "count": 17
+    },
+    {
+      "id": "preset_western",
+      "count": 16
+    },
+    {
+      "id": "preset_epic_historical",
+      "count": 19
+    },
+    {
+      "id": "preset_neo_noir",
+      "count": 7
+    },
+    {
+      "id": "preset_neo_noir_series",
+      "count": 4
+    },
+    {
+      "id": "preset_disaster_movies",
+      "count": 19
+    },
+    {
+      "id": "preset_martial_arts",
+      "count": 14
+    },
+    {
+      "id": "preset_time_travel_movies",
+      "count": 19
+    },
+    {
+      "id": "preset_tv_mafia",
+      "count": 9
+    },
+    {
+      "id": "preset_tv_high_fantasy",
+      "count": 6
+    },
+    {
+      "id": "preset_tv_dystopia",
+      "count": 1
+    },
+    {
+      "id": "preset_tv_politics",
+      "count": 6
+    },
+    {
+      "id": "preset_tv_superheroes_dark",
+      "count": 2
+    },
+    {
+      "id": "preset_tv_horror",
+      "count": 5
+    },
+    {
+      "id": "preset_nature_series_docs",
+      "count": 18
+    },
+    {
+      "id": "preset_sea_series_docs",
+      "count": 14
+    },
+    {
+      "id": "preset_sports_docs",
+      "count": 8
+    },
+    {
+      "id": "preset_doc_music_legends",
+      "count": 15
+    },
+    {
+      "id": "preset_doc_food_travel",
+      "count": 14
+    },
+    {
+      "id": "preset_doc_history_war",
+      "count": 15
+    },
+    {
+      "id": "preset_doc_tech_future",
+      "count": 17
+    },
+    {
+      "id": "preset_miniseries",
+      "count": 6
+    },
+    {
+      "id": "preset_anthology",
+      "count": 11
+    },
+    {
+      "id": "preset_sketch_comedy",
+      "count": 14
+    },
+    {
+      "id": "preset_sitcoms",
+      "count": 11
+    },
+    {
+      "id": "preset_medical_drama",
+      "count": 8
+    },
+    {
+      "id": "preset_teen_drama",
+      "count": 5
+    },
+    {
+      "id": "preset_time_travel",
+      "count": 12
+    },
+    {
+      "id": "preset_legal_drama",
+      "count": 7
+    },
+    {
+      "id": "preset_tv_thriller",
+      "count": 2
+    },
+    {
+      "id": "preset_anime_shonen",
+      "count": 5
+    },
+    {
+      "id": "preset_anime_seinen",
+      "count": 3
+    },
+    {
+      "id": "preset_anime_shoujo",
+      "count": 9
+    },
+    {
+      "id": "preset_anime_slice_of_life",
+      "count": 5
+    },
+    {
+      "id": "preset_anime_mecha",
+      "count": 9
+    },
+    {
+      "id": "preset_anime_isekai",
+      "count": 6
+    },
+    {
+      "id": "preset_anime_dark",
+      "count": 3
+    },
+    {
+      "id": "preset_anime_action",
+      "count": 11
+    },
+    {
+      "id": "preset_anime_sports",
+      "count": 10
+    },
+    {
+      "id": "preset_donghua",
+      "count": 9
+    },
+    {
+      "id": "preset_anime_classic",
+      "count": 12
+    },
+    {
+      "id": "preset_anime_00s",
+      "count": 12
+    },
+    {
+      "id": "preset_anime_movies_top",
+      "count": 18
+    },
+    {
+      "id": "preset_anime_movies_romance",
+      "count": 17
+    },
+    {
+      "id": "preset_hbo",
+      "count": 2
+    },
+    {
+      "id": "preset_netflix",
+      "count": 7
+    },
+    {
+      "id": "preset_amazon",
+      "count": 1
+    },
+    {
+      "id": "preset_disney_plus",
+      "count": 13
+    },
+    {
+      "id": "preset_apple_tv",
+      "count": 3
+    },
+    {
+      "id": "preset_cyberpunk_series",
+      "count": 3
+    },
+    {
+      "id": "preset_top_current_year",
+      "count": 18
+    },
+    {
+      "id": "preset_romcom",
+      "count": 15
+    },
+    {
+      "id": "preset_action_blockbusters",
+      "count": 17
+    },
+    {
+      "id": "preset_reality_shows",
+      "count": 15
+    },
+    {
+      "id": "preset_italian_comedy",
+      "count": 17
+    },
+    {
+      "id": "preset_turkish_dizi",
+      "count": 18
+    },
+    {
+      "id": "preset_teen_drama_comedy",
+      "count": 13
+    },
+    {
+      "id": "preset_zombies",
+      "count": 7
+    },
+    {
+      "id": "preset_zombies_movies",
+      "count": 6
+    },
+    {
+      "id": "preset_extreme_survival",
+      "count": 18
+    },
+    {
+      "id": "preset_sports_underdog",
+      "count": 18
+    },
+    {
+      "id": "preset_netflix_movies",
+      "count": 18
+    },
+    {
+      "id": "preset_amazon_movies",
+      "count": 15
+    },
+    {
+      "id": "preset_hbo_max_movies",
+      "count": 11
+    },
+    {
+      "id": "preset_hbo_max_series",
+      "count": 3
+    },
+    {
+      "id": "preset_hulu_series",
+      "count": 11
+    },
+    {
+      "id": "preset_paramount_series",
+      "count": 5
+    }
+  ],
+  "emptyList": [
+    "preset_tarantino",
+    "preset_kdrama_thriller",
+    "preset_nordic_noir",
+    "preset_spanish_thriller",
+    "preset_horror_all",
+    "preset_scary_horror",
+    "preset_slasher_gore",
+    "preset_true_crime",
+    "preset_crime_procedural",
+    "preset_anime_simulcast",
+    "preset_a24_horror",
+    "preset_psych_thriller",
+    "preset_adult_animation"
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "total": 163,
+  "fullCount": 109,
+  "shortCount": 41,
+  "emptyCount": 13,
+  "shortList": [
+    {
+      "id": "preset_new_series_eps",
+      "count": 7
+    },
+    {
+      "id": "preset_nolan",
+      "count": 5
+    },
+    {
+      "id": "preset_scorsese",
+      "count": 12
+    },
+    {
+      "id": "preset_kubrick",
+      "count": 8
+    },
+    {
+      "id": "preset_villeneuve",
+      "count": 6
+    },
+    {
+      "id": "preset_fincher",
+      "count": 2
+    },
+    {
+      "id": "preset_burton",
+      "count": 17
+    },
+    {
+      "id": "preset_wesanderson",
+      "count": 10
+    },
+    {
+      "id": "preset_lynch",
+      "count": 2
+    },
+    {
+      "id": "preset_scott",
+      "count": 14
+    },
+    {
+      "id": "preset_actor_dicaprio",
+      "count": 8
+    },
+    {
+      "id": "preset_brad_pitt",
+      "count": 18
+    },
+    {
+      "id": "preset_denzel",
+      "count": 13
+    },
+    {
+      "id": "preset_blumhouse",
+      "count": 10
+    },
+    {
+      "id": "preset_british_crime",
+      "count": 4
+    },
+    {
+      "id": "preset_german_dark",
+      "count": 7
+    },
+    {
+      "id": "preset_cult_classics",
+      "count": 6
+    },
+    {
+      "id": "preset_mindfuck",
+      "count": 9
+    },
+    {
+      "id": "preset_mindfuck_series",
+      "count": 9
+    },
+    {
+      "id": "preset_whodunit",
+      "count": 7
+    },
+    {
+      "id": "preset_whodunit_series",
+      "count": 5
+    },
+    {
+      "id": "preset_cyberpunk",
+      "count": 15
+    },
+    {
+      "id": "preset_heist",
+      "count": 1
+    },
+    {
+      "id": "preset_neo_noir",
+      "count": 7
+    },
+    {
+      "id": "preset_neo_noir_series",
+      "count": 4
+    },
+    {
+      "id": "preset_tv_mafia",
+      "count": 18
+    },
+    {
+      "id": "preset_tv_dystopia",
+      "count": 8
+    },
+    {
+      "id": "preset_tv_superheroes_dark",
+      "count": 2
+    },
+    {
+      "id": "preset_tv_horror",
+      "count": 15
+    },
+    {
+      "id": "preset_sea_series_docs",
+      "count": 14
+    },
+    {
+      "id": "preset_legal_drama",
+      "count": 7
+    },
+    {
+      "id": "preset_tv_thriller",
+      "count": 8
+    },
+    {
+      "id": "preset_anime_dark",
+      "count": 9
+    },
+    {
+      "id": "preset_hbo",
+      "count": 10
+    },
+    {
+      "id": "preset_amazon",
+      "count": 19
+    },
+    {
+      "id": "preset_apple_tv",
+      "count": 16
+    },
+    {
+      "id": "preset_cyberpunk_series",
+      "count": 7
+    },
+    {
+      "id": "preset_zombies",
+      "count": 9
+    },
+    {
+      "id": "preset_zombies_movies",
+      "count": 6
+    },
+    {
+      "id": "preset_hbo_max_series",
+      "count": 14
+    },
+    {
+      "id": "preset_paramount_series",
+      "count": 14
+    }
+  ],
+  "emptyList": [
+    "preset_tarantino",
+    "preset_kdrama_thriller",
+    "preset_nordic_noir",
+    "preset_spanish_thriller",
+    "preset_horror_all",
+    "preset_scary_horror",
+    "preset_slasher_gore",
+    "preset_true_crime",
+    "preset_crime_procedural",
+    "preset_anime_simulcast",
+    "preset_a24_horror",
+    "preset_psych_thriller",
+    "preset_adult_animation"
+  ]
+}

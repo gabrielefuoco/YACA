@@ -240,7 +240,7 @@ def percorso_kw_tfidf(dir_path: str | Path | None = None) -> tuple[Path, Path]:
     Ordine di risoluzione:
       1. Parametro esplicito dir_path o variabile d'ambiente KW_TFIDF_DIR;
       2. Cartella canonica: services/graph/data/kw-tfidf/ (vocab.json, tfidf.npz);
-      3. Fallback prototipi locali dev: services/graph_dense/data/graph/ (05-vocab.json, 05-tfidf.npz).
+      3. Se il canonico manca: un avviso nei log, e la tassonomia resta senza parole chiave.
     """
     env_dir = dir_path or os.environ.get("KW_TFIDF_DIR")
     if env_dir:
@@ -256,13 +256,14 @@ def percorso_kw_tfidf(dir_path: str | Path | None = None) -> tuple[Path, Path]:
     if v_canon.is_file() and t_canon.is_file():
         return v_canon, t_canon
 
-    # 3. Fallback per prototipi locali
-    d_dense = K.ROOT / "services" / "graph_dense" / "data" / "graph"
-    v_dense = d_dense / "05-vocab.json"
-    t_dense = d_dense / "05-tfidf.npz"
-    if v_dense.is_file() and t_dense.is_file():
-        return v_dense, t_dense
-
+    # Niente ripiego sui prototipi di `services/graph_dense`: quel percorso esiste ancora,
+    # quindi il ripiego non falliva mai in modo visibile — serviva artefatti diversi dai
+    # canonici senza dirlo. Se i canonici mancano lo si dichiara, e si prosegue senza.
+    if not (v_canon.is_file() and t_canon.is_file()):
+        import logging
+        logging.getLogger(__name__).warning(
+            "kw-tfidf canonico assente in %s: la tassonomia resta senza parole chiave", d_canon
+        )
     return v_canon, t_canon
 
 

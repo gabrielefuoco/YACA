@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: wontfix
 Type: task
 Blocked by: 01
 
@@ -35,3 +35,7 @@ Da R@20 0,251 (vecchio studente) a 0,198 (V18), per tre motivi identificati:
 ## Costo
 
 ~15 minuti di GPU, 30 epoche su 76.497 nodi.
+
+## Chiusura
+
+Lo studente è stato perso (ticket 15) e la sua funzione è ormai dentro il grafo: rifarlo non serve a servire meglio. La domanda vera è rimasta in `profili-e-identita/17`.

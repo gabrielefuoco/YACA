@@ -1,0 +1,3842 @@
+[
+  {
+    "keyword": "sex abuse",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.0266,
+    "similarity": 0.9734,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "rape attempt",
+    "nearest_seed": "attempted rape",
+    "distance": 0.0308,
+    "similarity": 0.9692,
+    "titles_count": 13,
+    "group": "A"
+  },
+  {
+    "keyword": "beheaded",
+    "nearest_seed": "beheading",
+    "distance": 0.0312,
+    "similarity": 0.9688,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "cannibal",
+    "nearest_seed": "cannibalism",
+    "distance": 0.0314,
+    "similarity": 0.9686,
+    "titles_count": 179,
+    "group": "A"
+  },
+  {
+    "keyword": "erotic",
+    "nearest_seed": "erotica",
+    "distance": 0.0323,
+    "similarity": 0.9677,
+    "titles_count": 97,
+    "group": "B"
+  },
+  {
+    "keyword": "childhood sexual abuse",
+    "nearest_seed": "child sexual abuse",
+    "distance": 0.0362,
+    "similarity": 0.9638,
+    "titles_count": 20,
+    "group": "A"
+  },
+  {
+    "keyword": "rape of a male",
+    "nearest_seed": "male rape",
+    "distance": 0.0375,
+    "similarity": 0.9625,
+    "titles_count": 19,
+    "group": "A"
+  },
+  {
+    "keyword": "drug use",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0384,
+    "similarity": 0.9616,
+    "titles_count": 83,
+    "group": "B"
+  },
+  {
+    "keyword": "suicide thoughts",
+    "nearest_seed": "suicidal thoughts",
+    "distance": 0.0413,
+    "similarity": 0.9587,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "drug addict",
+    "nearest_seed": "drug addiction",
+    "distance": 0.0469,
+    "similarity": 0.9531,
+    "titles_count": 16,
+    "group": "A"
+  },
+  {
+    "keyword": "eroticism",
+    "nearest_seed": "erotica",
+    "distance": 0.0483,
+    "similarity": 0.9517,
+    "titles_count": 189,
+    "group": "B"
+  },
+  {
+    "keyword": "paedophilia",
+    "nearest_seed": "pedophilia",
+    "distance": 0.0504,
+    "similarity": 0.9496,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "overdose",
+    "nearest_seed": "drug overdose",
+    "distance": 0.0546,
+    "similarity": 0.9454,
+    "titles_count": 31,
+    "group": "A"
+  },
+  {
+    "keyword": "erotic movie",
+    "nearest_seed": "erotica",
+    "distance": 0.0553,
+    "similarity": 0.9447,
+    "titles_count": 242,
+    "group": "B"
+  },
+  {
+    "keyword": "abused child",
+    "nearest_seed": "child abuse",
+    "distance": 0.0571,
+    "similarity": 0.9429,
+    "titles_count": 15,
+    "group": "A"
+  },
+  {
+    "keyword": "drug usage",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0651,
+    "similarity": 0.9349,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "sadism",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.0656,
+    "similarity": 0.9344,
+    "titles_count": 157,
+    "group": "B"
+  },
+  {
+    "keyword": "drugs",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0681,
+    "similarity": 0.9319,
+    "titles_count": 629,
+    "group": "B"
+  },
+  {
+    "keyword": "child sex trade",
+    "nearest_seed": "child prostitution",
+    "distance": 0.0686,
+    "similarity": 0.9314,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "child sex trafficking",
+    "nearest_seed": "child prostitution",
+    "distance": 0.0707,
+    "similarity": 0.9293,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "drug",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0742,
+    "similarity": 0.9258,
+    "titles_count": 26,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual violence",
+    "nearest_seed": "sexual assault",
+    "distance": 0.0753,
+    "similarity": 0.9247,
+    "titles_count": 53,
+    "group": "A"
+  },
+  {
+    "keyword": "decapitated head",
+    "nearest_seed": "decapitation",
+    "distance": 0.0774,
+    "similarity": 0.9226,
+    "titles_count": 9,
+    "group": "A"
+  },
+  {
+    "keyword": "mutilated body",
+    "nearest_seed": "body mutilation",
+    "distance": 0.078,
+    "similarity": 0.922,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "drug culture",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0781,
+    "similarity": 0.9219,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "addiction",
+    "nearest_seed": "drug addiction",
+    "distance": 0.0783,
+    "similarity": 0.9217,
+    "titles_count": 115,
+    "group": "B"
+  },
+  {
+    "keyword": "narcotics",
+    "nearest_seed": "heroin",
+    "distance": 0.0786,
+    "similarity": 0.9214,
+    "titles_count": 20,
+    "group": "B"
+  },
+  {
+    "keyword": "sadistic",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.08,
+    "similarity": 0.92,
+    "titles_count": 32,
+    "group": "B"
+  },
+  {
+    "keyword": "sexy",
+    "nearest_seed": "erotica",
+    "distance": 0.0818,
+    "similarity": 0.9182,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "child mistreatment",
+    "nearest_seed": "child abuse",
+    "distance": 0.0821,
+    "similarity": 0.9179,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "torture porn",
+    "nearest_seed": "sexual torture",
+    "distance": 0.0821,
+    "similarity": 0.9179,
+    "titles_count": 14,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide note",
+    "nearest_seed": "suicide",
+    "distance": 0.0824,
+    "similarity": 0.9176,
+    "titles_count": 9,
+    "group": "A"
+  },
+  {
+    "keyword": "crack addict",
+    "nearest_seed": "crack cocaine",
+    "distance": 0.0833,
+    "similarity": 0.9167,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "contemplating suicide",
+    "nearest_seed": "suicide",
+    "distance": 0.0836,
+    "similarity": 0.9164,
+    "titles_count": 6,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide jumping",
+    "nearest_seed": "suicide",
+    "distance": 0.0861,
+    "similarity": 0.9139,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "child molester",
+    "nearest_seed": "child molestation",
+    "distance": 0.0864,
+    "similarity": 0.9136,
+    "titles_count": 17,
+    "group": "A"
+  },
+  {
+    "keyword": "incest",
+    "nearest_seed": "incest rape",
+    "distance": 0.0868,
+    "similarity": 0.9132,
+    "titles_count": 229,
+    "group": "B"
+  },
+  {
+    "keyword": "bloody",
+    "nearest_seed": "blood and gore",
+    "distance": 0.087,
+    "similarity": 0.913,
+    "titles_count": 12,
+    "group": "C"
+  },
+  {
+    "keyword": "driven to suicide",
+    "nearest_seed": "suicide",
+    "distance": 0.0871,
+    "similarity": 0.9129,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "erotic vignettes",
+    "nearest_seed": "erotica",
+    "distance": 0.0876,
+    "similarity": 0.9124,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "torture victim",
+    "nearest_seed": "torture",
+    "distance": 0.0883,
+    "similarity": 0.9117,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "erotic fantasy",
+    "nearest_seed": "erotica",
+    "distance": 0.0887,
+    "similarity": 0.9113,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "sadistic horror",
+    "nearest_seed": "sadistic torture",
+    "distance": 0.0924,
+    "similarity": 0.9076,
+    "titles_count": 26,
+    "group": "C"
+  },
+  {
+    "keyword": "mass killing",
+    "nearest_seed": "mass suicide",
+    "distance": 0.0925,
+    "similarity": 0.9075,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "sex video",
+    "nearest_seed": "pornographic video",
+    "distance": 0.0928,
+    "similarity": 0.9072,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "rape victim",
+    "nearest_seed": "rape",
+    "distance": 0.0934,
+    "similarity": 0.9066,
+    "titles_count": 44,
+    "group": "A"
+  },
+  {
+    "keyword": "cannibal cult",
+    "nearest_seed": "cannibalism",
+    "distance": 0.0946,
+    "similarity": 0.9054,
+    "titles_count": 6,
+    "group": "A"
+  },
+  {
+    "keyword": "illegal drugs",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0948,
+    "similarity": 0.9052,
+    "titles_count": 59,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide by hanging",
+    "nearest_seed": "suicide",
+    "distance": 0.0956,
+    "similarity": 0.9044,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "crystal meth",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.0959,
+    "similarity": 0.9041,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide pact",
+    "nearest_seed": "suicide",
+    "distance": 0.0965,
+    "similarity": 0.9035,
+    "titles_count": 9,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide by gun",
+    "nearest_seed": "suicide",
+    "distance": 0.0975,
+    "similarity": 0.9025,
+    "titles_count": 11,
+    "group": "A"
+  },
+  {
+    "keyword": "rape accusation",
+    "nearest_seed": "rape",
+    "distance": 0.0993,
+    "similarity": 0.9007,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "illegal drug",
+    "nearest_seed": "drug abuse",
+    "distance": 0.0994,
+    "similarity": 0.9006,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "alcoholism",
+    "nearest_seed": "substance abuse",
+    "distance": 0.0999,
+    "similarity": 0.9001,
+    "titles_count": 207,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual pleasure",
+    "nearest_seed": "erotica",
+    "distance": 0.1005,
+    "similarity": 0.8995,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "amphetamine",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.1012,
+    "similarity": 0.8988,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual sadism",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.1022,
+    "similarity": 0.8978,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "penis mutilation",
+    "nearest_seed": "mutilation",
+    "distance": 0.1023,
+    "similarity": 0.8977,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "mass murder",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1028,
+    "similarity": 0.8972,
+    "titles_count": 76,
+    "group": "C"
+  },
+  {
+    "keyword": "gruesome",
+    "nearest_seed": "extreme gore",
+    "distance": 0.1032,
+    "similarity": 0.8968,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic drama",
+    "nearest_seed": "erotica",
+    "distance": 0.1032,
+    "similarity": 0.8968,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic thriller",
+    "nearest_seed": "erotica",
+    "distance": 0.1033,
+    "similarity": 0.8967,
+    "titles_count": 71,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic romance",
+    "nearest_seed": "erotica",
+    "distance": 0.1034,
+    "similarity": 0.8966,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "sadist",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.1035,
+    "similarity": 0.8965,
+    "titles_count": 38,
+    "group": "B"
+  },
+  {
+    "keyword": "pornographer",
+    "nearest_seed": "pornography",
+    "distance": 0.1036,
+    "similarity": 0.8964,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "rape and murder",
+    "nearest_seed": "incest rape",
+    "distance": 0.1043,
+    "similarity": 0.8957,
+    "titles_count": 25,
+    "group": "A"
+  },
+  {
+    "keyword": "erotism",
+    "nearest_seed": "erotica",
+    "distance": 0.1044,
+    "similarity": 0.8956,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "parental abuse",
+    "nearest_seed": "child abuse",
+    "distance": 0.1044,
+    "similarity": 0.8956,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "abuse",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1044,
+    "similarity": 0.8956,
+    "titles_count": 87,
+    "group": "B"
+  },
+  {
+    "keyword": "rapist",
+    "nearest_seed": "rape",
+    "distance": 0.1051,
+    "similarity": 0.8949,
+    "titles_count": 23,
+    "group": "B"
+  },
+  {
+    "keyword": "genital mutilation",
+    "nearest_seed": "mutilation",
+    "distance": 0.1052,
+    "similarity": 0.8948,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "child trafficking",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1052,
+    "similarity": 0.8948,
+    "titles_count": 9,
+    "group": "A"
+  },
+  {
+    "keyword": "drug dealing",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1052,
+    "similarity": 0.8948,
+    "titles_count": 53,
+    "group": "B"
+  },
+  {
+    "keyword": "rape culture",
+    "nearest_seed": "rape",
+    "distance": 0.106,
+    "similarity": 0.894,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "sex",
+    "nearest_seed": "erotica",
+    "distance": 0.1061,
+    "similarity": 0.8939,
+    "titles_count": 89,
+    "group": "B"
+  },
+  {
+    "keyword": "terrifying",
+    "nearest_seed": "gore",
+    "distance": 0.1065,
+    "similarity": 0.8935,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "drug trip",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1078,
+    "similarity": 0.8922,
+    "titles_count": 16,
+    "group": "B"
+  },
+  {
+    "keyword": "alcohol abuse",
+    "nearest_seed": "substance abuse",
+    "distance": 0.1079,
+    "similarity": 0.8921,
+    "titles_count": 44,
+    "group": "B"
+  },
+  {
+    "keyword": "rape pregnancy",
+    "nearest_seed": "rape",
+    "distance": 0.1092,
+    "similarity": 0.8908,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "horror",
+    "nearest_seed": "gore",
+    "distance": 0.1102,
+    "similarity": 0.8898,
+    "titles_count": 434,
+    "group": "C"
+  },
+  {
+    "keyword": "drug crime",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1103,
+    "similarity": 0.8897,
+    "titles_count": 34,
+    "group": "B"
+  },
+  {
+    "keyword": "prescription drug abuse",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1109,
+    "similarity": 0.8891,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "recreational drug use",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1117,
+    "similarity": 0.8883,
+    "titles_count": 9,
+    "group": "B"
+  },
+  {
+    "keyword": "kinky sex",
+    "nearest_seed": "erotica",
+    "distance": 0.1117,
+    "similarity": 0.8883,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "suicide by poison",
+    "nearest_seed": "suicide",
+    "distance": 0.1121,
+    "similarity": 0.8879,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "drug rehabilitation",
+    "nearest_seed": "drug addiction",
+    "distance": 0.113,
+    "similarity": 0.887,
+    "titles_count": 22,
+    "group": "C"
+  },
+  {
+    "keyword": "marital rape",
+    "nearest_seed": "incest rape",
+    "distance": 0.114,
+    "similarity": 0.886,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "disembowelment",
+    "nearest_seed": "decapitation",
+    "distance": 0.1148,
+    "similarity": 0.8852,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "euthanasia",
+    "nearest_seed": "assisted suicide",
+    "distance": 0.1152,
+    "similarity": 0.8848,
+    "titles_count": 19,
+    "group": "B"
+  },
+  {
+    "keyword": "incest overtones",
+    "nearest_seed": "incest rape",
+    "distance": 0.1154,
+    "similarity": 0.8846,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "extreme violence",
+    "nearest_seed": "extreme gore",
+    "distance": 0.1157,
+    "similarity": 0.8843,
+    "titles_count": 26,
+    "group": "C"
+  },
+  {
+    "keyword": "horny female",
+    "nearest_seed": "erotica",
+    "distance": 0.1158,
+    "similarity": 0.8842,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "stabbed to death",
+    "nearest_seed": "beheading",
+    "distance": 0.1166,
+    "similarity": 0.8834,
+    "titles_count": 15,
+    "group": "C"
+  },
+  {
+    "keyword": "forced sex",
+    "nearest_seed": "sexual torture",
+    "distance": 0.1178,
+    "similarity": 0.8822,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "death sentence",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1179,
+    "similarity": 0.8821,
+    "titles_count": 28,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual content",
+    "nearest_seed": "erotica",
+    "distance": 0.1181,
+    "similarity": 0.8819,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "drug dealer",
+    "nearest_seed": "heroin addict",
+    "distance": 0.1191,
+    "similarity": 0.8809,
+    "titles_count": 216,
+    "group": "B"
+  },
+  {
+    "keyword": "gay pornography",
+    "nearest_seed": "pornography",
+    "distance": 0.1198,
+    "similarity": 0.8802,
+    "titles_count": 12,
+    "group": "A"
+  },
+  {
+    "keyword": "drugged",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1205,
+    "similarity": 0.8795,
+    "titles_count": 9,
+    "group": "B"
+  },
+  {
+    "keyword": "horor",
+    "nearest_seed": "gore",
+    "distance": 0.1207,
+    "similarity": 0.8793,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "suicide mission",
+    "nearest_seed": "suicide",
+    "distance": 0.1217,
+    "similarity": 0.8783,
+    "titles_count": 17,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual fetish",
+    "nearest_seed": "erotica",
+    "distance": 0.1217,
+    "similarity": 0.8783,
+    "titles_count": 10,
+    "group": "B"
+  },
+  {
+    "keyword": "murdered",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1227,
+    "similarity": 0.8773,
+    "titles_count": 38,
+    "group": "C"
+  },
+  {
+    "keyword": "crack",
+    "nearest_seed": "crack cocaine",
+    "distance": 0.1227,
+    "similarity": 0.8773,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "roman porno",
+    "nearest_seed": "porno",
+    "distance": 0.1237,
+    "similarity": 0.8763,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "sensuality",
+    "nearest_seed": "erotica",
+    "distance": 0.124,
+    "similarity": 0.876,
+    "titles_count": 20,
+    "group": "B"
+  },
+  {
+    "keyword": "sexuality",
+    "nearest_seed": "erotica",
+    "distance": 0.1244,
+    "similarity": 0.8756,
+    "titles_count": 171,
+    "group": "B"
+  },
+  {
+    "keyword": "sadistic psychopath",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.1244,
+    "similarity": 0.8756,
+    "titles_count": 15,
+    "group": "B"
+  },
+  {
+    "keyword": "morphine",
+    "nearest_seed": "heroin",
+    "distance": 0.1249,
+    "similarity": 0.8751,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "perversion",
+    "nearest_seed": "pornography",
+    "distance": 0.125,
+    "similarity": 0.875,
+    "titles_count": 18,
+    "group": "B"
+  },
+  {
+    "keyword": "fetish",
+    "nearest_seed": "erotica",
+    "distance": 0.1257,
+    "similarity": 0.8743,
+    "titles_count": 34,
+    "group": "B"
+  },
+  {
+    "keyword": "bloody death",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1262,
+    "similarity": 0.8738,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "opioid use disorder",
+    "nearest_seed": "heroin addiction",
+    "distance": 0.1262,
+    "similarity": 0.8738,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "gay erotica",
+    "nearest_seed": "erotica",
+    "distance": 0.1263,
+    "similarity": 0.8737,
+    "titles_count": 9,
+    "group": "B"
+  },
+  {
+    "keyword": "mass slaughter",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1264,
+    "similarity": 0.8736,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "sadistic killer",
+    "nearest_seed": "sadistic torture",
+    "distance": 0.1264,
+    "similarity": 0.8736,
+    "titles_count": 9,
+    "group": "B"
+  },
+  {
+    "keyword": "sex scene",
+    "nearest_seed": "erotica",
+    "distance": 0.127,
+    "similarity": 0.873,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "self-destructive behavior",
+    "nearest_seed": "self-harm",
+    "distance": 0.1273,
+    "similarity": 0.8727,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "brutal death",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1278,
+    "similarity": 0.8722,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual exploration",
+    "nearest_seed": "erotica",
+    "distance": 0.1279,
+    "similarity": 0.8721,
+    "titles_count": 10,
+    "group": "B"
+  },
+  {
+    "keyword": "narco",
+    "nearest_seed": "cocaine",
+    "distance": 0.1285,
+    "similarity": 0.8715,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "beaten to death",
+    "nearest_seed": "tortured to death",
+    "distance": 0.129,
+    "similarity": 0.871,
+    "titles_count": 13,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual arousal",
+    "nearest_seed": "erotica",
+    "distance": 0.1291,
+    "similarity": 0.8709,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "torturing police",
+    "nearest_seed": "torture",
+    "distance": 0.1293,
+    "similarity": 0.8707,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "guillotine",
+    "nearest_seed": "beheading",
+    "distance": 0.1293,
+    "similarity": 0.8707,
+    "titles_count": 34,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual exploitation",
+    "nearest_seed": "molestation",
+    "distance": 0.13,
+    "similarity": 0.87,
+    "titles_count": 18,
+    "group": "A"
+  },
+  {
+    "keyword": "drug scene",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1302,
+    "similarity": 0.8698,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "murder",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1304,
+    "similarity": 0.8696,
+    "titles_count": 3100,
+    "group": "C"
+  },
+  {
+    "keyword": "fetishism",
+    "nearest_seed": "erotica",
+    "distance": 0.1306,
+    "similarity": 0.8694,
+    "titles_count": 19,
+    "group": "B"
+  },
+  {
+    "keyword": "female sexuality",
+    "nearest_seed": "erotica",
+    "distance": 0.1309,
+    "similarity": 0.8691,
+    "titles_count": 25,
+    "group": "B"
+  },
+  {
+    "keyword": "deadly",
+    "nearest_seed": "gore",
+    "distance": 0.1312,
+    "similarity": 0.8688,
+    "titles_count": 11,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual fantasy",
+    "nearest_seed": "erotica",
+    "distance": 0.1322,
+    "similarity": 0.8678,
+    "titles_count": 46,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual predator",
+    "nearest_seed": "pedophile",
+    "distance": 0.1325,
+    "similarity": 0.8675,
+    "titles_count": 22,
+    "group": "A"
+  },
+  {
+    "keyword": "prostitution",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1326,
+    "similarity": 0.8674,
+    "titles_count": 260,
+    "group": "B"
+  },
+  {
+    "keyword": "self-inflicted injury",
+    "nearest_seed": "self-harm",
+    "distance": 0.1328,
+    "similarity": 0.8672,
+    "titles_count": 9,
+    "group": "A"
+  },
+  {
+    "keyword": "fellatio",
+    "nearest_seed": "erotica",
+    "distance": 0.1328,
+    "similarity": 0.8672,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "recovering addict",
+    "nearest_seed": "drug addiction",
+    "distance": 0.1333,
+    "similarity": 0.8667,
+    "titles_count": 23,
+    "group": "C"
+  },
+  {
+    "keyword": "marijuana use",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1333,
+    "similarity": 0.8667,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic massage",
+    "nearest_seed": "erotica",
+    "distance": 0.1339,
+    "similarity": 0.8661,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "disintegration",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1346,
+    "similarity": 0.8654,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual perversion",
+    "nearest_seed": "pornography",
+    "distance": 0.1347,
+    "similarity": 0.8653,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "mass shooting",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1347,
+    "similarity": 0.8653,
+    "titles_count": 14,
+    "group": "B"
+  },
+  {
+    "keyword": "drug lord",
+    "nearest_seed": "heroin addict",
+    "distance": 0.1355,
+    "similarity": 0.8645,
+    "titles_count": 74,
+    "group": "B"
+  },
+  {
+    "keyword": "violent death",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1358,
+    "similarity": 0.8642,
+    "titles_count": 28,
+    "group": "C"
+  },
+  {
+    "keyword": "addiction recovery",
+    "nearest_seed": "drug addiction",
+    "distance": 0.136,
+    "similarity": 0.864,
+    "titles_count": 12,
+    "group": "C"
+  },
+  {
+    "keyword": "drug kingpin",
+    "nearest_seed": "heroin addict",
+    "distance": 0.1363,
+    "similarity": 0.8637,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "child endangerment",
+    "nearest_seed": "child abuse",
+    "distance": 0.1366,
+    "similarity": 0.8634,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "drugged drink",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1366,
+    "similarity": 0.8634,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "violent",
+    "nearest_seed": "gore",
+    "distance": 0.137,
+    "similarity": 0.863,
+    "titles_count": 15,
+    "group": "C"
+  },
+  {
+    "keyword": "child protection",
+    "nearest_seed": "child abuse",
+    "distance": 0.137,
+    "similarity": 0.863,
+    "titles_count": 8,
+    "group": "C"
+  },
+  {
+    "keyword": "teenage prostitute",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1374,
+    "similarity": 0.8626,
+    "titles_count": 14,
+    "group": "A"
+  },
+  {
+    "keyword": "action horror",
+    "nearest_seed": "gore",
+    "distance": 0.1377,
+    "similarity": 0.8623,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "hentai",
+    "nearest_seed": "porno",
+    "distance": 0.1379,
+    "similarity": 0.8621,
+    "titles_count": 17,
+    "group": "A"
+  },
+  {
+    "keyword": "sexual encounter",
+    "nearest_seed": "erotica",
+    "distance": 0.138,
+    "similarity": 0.862,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual desire",
+    "nearest_seed": "erotica",
+    "distance": 0.1388,
+    "similarity": 0.8612,
+    "titles_count": 34,
+    "group": "B"
+  },
+  {
+    "keyword": "drug stealing",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1388,
+    "similarity": 0.8612,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "drug withdrawal",
+    "nearest_seed": "drug addiction",
+    "distance": 0.1391,
+    "similarity": 0.8609,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "marijuana",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.1392,
+    "similarity": 0.8608,
+    "titles_count": 175,
+    "group": "B"
+  },
+  {
+    "keyword": "zoophilia",
+    "nearest_seed": "pedophilia",
+    "distance": 0.1395,
+    "similarity": 0.8605,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "masturbation",
+    "nearest_seed": "pornography",
+    "distance": 0.1396,
+    "similarity": 0.8604,
+    "titles_count": 68,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual intercourse",
+    "nearest_seed": "erotica",
+    "distance": 0.14,
+    "similarity": 0.86,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "kinky",
+    "nearest_seed": "erotica",
+    "distance": 0.1405,
+    "similarity": 0.8595,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "savage",
+    "nearest_seed": "gore",
+    "distance": 0.1406,
+    "similarity": 0.8594,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "rape and revenge",
+    "nearest_seed": "rape",
+    "distance": 0.1407,
+    "similarity": 0.8593,
+    "titles_count": 89,
+    "group": "A"
+  },
+  {
+    "keyword": "terror",
+    "nearest_seed": "gore",
+    "distance": 0.1407,
+    "similarity": 0.8593,
+    "titles_count": 24,
+    "group": "C"
+  },
+  {
+    "keyword": "orgy",
+    "nearest_seed": "erotica",
+    "distance": 0.1408,
+    "similarity": 0.8592,
+    "titles_count": 50,
+    "group": "B"
+  },
+  {
+    "keyword": "brutal violence",
+    "nearest_seed": "extreme gore",
+    "distance": 0.1421,
+    "similarity": 0.8579,
+    "titles_count": 23,
+    "group": "C"
+  },
+  {
+    "keyword": "matricide",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1425,
+    "similarity": 0.8575,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "gang violence",
+    "nearest_seed": "gang rape",
+    "distance": 0.1426,
+    "similarity": 0.8574,
+    "titles_count": 22,
+    "group": "C"
+  },
+  {
+    "keyword": "rape revenge",
+    "nearest_seed": "rape",
+    "distance": 0.1427,
+    "similarity": 0.8573,
+    "titles_count": 14,
+    "group": "A"
+  },
+  {
+    "keyword": "death by hanging",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1433,
+    "similarity": 0.8567,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "drug trafficker",
+    "nearest_seed": "heroin addict",
+    "distance": 0.1434,
+    "similarity": 0.8566,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual humiliation",
+    "nearest_seed": "sexual torture",
+    "distance": 0.1434,
+    "similarity": 0.8566,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "domestic abuse",
+    "nearest_seed": "child abuse",
+    "distance": 0.1435,
+    "similarity": 0.8565,
+    "titles_count": 69,
+    "group": "B"
+  },
+  {
+    "keyword": "electrical torture",
+    "nearest_seed": "torture",
+    "distance": 0.1436,
+    "similarity": 0.8564,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "war on drugs",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1442,
+    "similarity": 0.8558,
+    "titles_count": 28,
+    "group": "B"
+  },
+  {
+    "keyword": "forced prostitution",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1448,
+    "similarity": 0.8552,
+    "titles_count": 23,
+    "group": "A"
+  },
+  {
+    "keyword": "sexy woman",
+    "nearest_seed": "erotica",
+    "distance": 0.1458,
+    "similarity": 0.8542,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "teenage rape",
+    "nearest_seed": "rape",
+    "distance": 0.146,
+    "similarity": 0.854,
+    "titles_count": 6,
+    "group": "A"
+  },
+  {
+    "keyword": "forced to kill",
+    "nearest_seed": "tortured to death",
+    "distance": 0.146,
+    "similarity": 0.854,
+    "titles_count": 10,
+    "group": "C"
+  },
+  {
+    "keyword": "pornography addiction",
+    "nearest_seed": "pornography",
+    "distance": 0.1464,
+    "similarity": 0.8536,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "self-destruction",
+    "nearest_seed": "self mutilation",
+    "distance": 0.1467,
+    "similarity": 0.8533,
+    "titles_count": 50,
+    "group": "B"
+  },
+  {
+    "keyword": "physical abuse",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1472,
+    "similarity": 0.8528,
+    "titles_count": 32,
+    "group": "B"
+  },
+  {
+    "keyword": "self-cannibalism",
+    "nearest_seed": "self mutilation",
+    "distance": 0.1474,
+    "similarity": 0.8526,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "torment",
+    "nearest_seed": "torture",
+    "distance": 0.1475,
+    "similarity": 0.8525,
+    "titles_count": 15,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic horror",
+    "nearest_seed": "erotica",
+    "distance": 0.1477,
+    "similarity": 0.8523,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "drug deal",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1477,
+    "similarity": 0.8523,
+    "titles_count": 20,
+    "group": "B"
+  },
+  {
+    "keyword": "cruelty",
+    "nearest_seed": "sadistic torture",
+    "distance": 0.148,
+    "similarity": 0.852,
+    "titles_count": 69,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual murder",
+    "nearest_seed": "incest rape",
+    "distance": 0.1482,
+    "similarity": 0.8518,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "stabbing",
+    "nearest_seed": "beheading",
+    "distance": 0.1483,
+    "similarity": 0.8517,
+    "titles_count": 39,
+    "group": "C"
+  },
+  {
+    "keyword": "scare",
+    "nearest_seed": "gore",
+    "distance": 0.1485,
+    "similarity": 0.8515,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "bloodbath",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1485,
+    "similarity": 0.8515,
+    "titles_count": 11,
+    "group": "C"
+  },
+  {
+    "keyword": "perverse sex",
+    "nearest_seed": "erotica",
+    "distance": 0.1496,
+    "similarity": 0.8504,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "mass execution",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1497,
+    "similarity": 0.8503,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "ganja",
+    "nearest_seed": "heroin",
+    "distance": 0.1503,
+    "similarity": 0.8497,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "drug trafficking",
+    "nearest_seed": "cocaine",
+    "distance": 0.1504,
+    "similarity": 0.8496,
+    "titles_count": 110,
+    "group": "B"
+  },
+  {
+    "keyword": "severed head",
+    "nearest_seed": "beheading",
+    "distance": 0.1506,
+    "similarity": 0.8494,
+    "titles_count": 27,
+    "group": "A"
+  },
+  {
+    "keyword": "brutal deaths",
+    "nearest_seed": "extreme gore",
+    "distance": 0.1512,
+    "similarity": 0.8488,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual behavior",
+    "nearest_seed": "erotica",
+    "distance": 0.1518,
+    "similarity": 0.8482,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "drug war",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1518,
+    "similarity": 0.8482,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "lynching",
+    "nearest_seed": "beheading",
+    "distance": 0.1518,
+    "similarity": 0.8482,
+    "titles_count": 16,
+    "group": "C"
+  },
+  {
+    "keyword": "death",
+    "nearest_seed": "suicide",
+    "distance": 0.1519,
+    "similarity": 0.8481,
+    "titles_count": 608,
+    "group": "C"
+  },
+  {
+    "keyword": "drug pusher",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1524,
+    "similarity": 0.8476,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "alcoholic",
+    "nearest_seed": "substance abuse",
+    "distance": 0.1525,
+    "similarity": 0.8475,
+    "titles_count": 204,
+    "group": "B"
+  },
+  {
+    "keyword": "cannabis",
+    "nearest_seed": "cocaine",
+    "distance": 0.1526,
+    "similarity": 0.8474,
+    "titles_count": 31,
+    "group": "B"
+  },
+  {
+    "keyword": "baby trafficking",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1527,
+    "similarity": 0.8473,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "narcos",
+    "nearest_seed": "cocaine",
+    "distance": 0.1529,
+    "similarity": 0.8471,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "killing",
+    "nearest_seed": "beheading",
+    "distance": 0.1529,
+    "similarity": 0.8471,
+    "titles_count": 92,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual relationship",
+    "nearest_seed": "erotica",
+    "distance": 0.1531,
+    "similarity": 0.8469,
+    "titles_count": 10,
+    "group": "B"
+  },
+  {
+    "keyword": "stabbed",
+    "nearest_seed": "beheading",
+    "distance": 0.1535,
+    "similarity": 0.8465,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "child neglect",
+    "nearest_seed": "child abuse",
+    "distance": 0.1535,
+    "similarity": 0.8465,
+    "titles_count": 11,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide bomber",
+    "nearest_seed": "suicide",
+    "distance": 0.1537,
+    "similarity": 0.8463,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "soft porn",
+    "nearest_seed": "porno",
+    "distance": 0.1538,
+    "similarity": 0.8462,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "sex life",
+    "nearest_seed": "erotica",
+    "distance": 0.1541,
+    "similarity": 0.8459,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "ritual suicide",
+    "nearest_seed": "suicide",
+    "distance": 0.1543,
+    "similarity": 0.8457,
+    "titles_count": 6,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide prevention",
+    "nearest_seed": "suicide",
+    "distance": 0.1543,
+    "similarity": 0.8457,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "self destructiveness",
+    "nearest_seed": "self-harm",
+    "distance": 0.1544,
+    "similarity": 0.8456,
+    "titles_count": 18,
+    "group": "B"
+  },
+  {
+    "keyword": "orgasm",
+    "nearest_seed": "erotica",
+    "distance": 0.1547,
+    "similarity": 0.8453,
+    "titles_count": 24,
+    "group": "B"
+  },
+  {
+    "keyword": "self hatred",
+    "nearest_seed": "self-harm",
+    "distance": 0.1552,
+    "similarity": 0.8448,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "drug cartel",
+    "nearest_seed": "cocaine",
+    "distance": 0.1553,
+    "similarity": 0.8447,
+    "titles_count": 70,
+    "group": "B"
+  },
+  {
+    "keyword": "nudity",
+    "nearest_seed": "pornography",
+    "distance": 0.1555,
+    "similarity": 0.8445,
+    "titles_count": 68,
+    "group": "B"
+  },
+  {
+    "keyword": "brutal",
+    "nearest_seed": "gore",
+    "distance": 0.1556,
+    "similarity": 0.8444,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "lechery",
+    "nearest_seed": "erotica",
+    "distance": 0.1558,
+    "similarity": 0.8442,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "young prostitute",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1559,
+    "similarity": 0.8441,
+    "titles_count": 10,
+    "group": "A"
+  },
+  {
+    "keyword": "public sex",
+    "nearest_seed": "pornography",
+    "distance": 0.156,
+    "similarity": 0.844,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "statutory rape",
+    "nearest_seed": "rape",
+    "distance": 0.1567,
+    "similarity": 0.8433,
+    "titles_count": 11,
+    "group": "A"
+  },
+  {
+    "keyword": "obscenity",
+    "nearest_seed": "pornography",
+    "distance": 0.157,
+    "similarity": 0.843,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "psychosexual",
+    "nearest_seed": "erotica",
+    "distance": 0.157,
+    "similarity": 0.843,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "drug trade",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1573,
+    "similarity": 0.8427,
+    "titles_count": 17,
+    "group": "B"
+  },
+  {
+    "keyword": "sexappeal",
+    "nearest_seed": "erotica",
+    "distance": 0.1576,
+    "similarity": 0.8424,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "psycho-sexual",
+    "nearest_seed": "erotica",
+    "distance": 0.1577,
+    "similarity": 0.8423,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "violence",
+    "nearest_seed": "gore",
+    "distance": 0.1577,
+    "similarity": 0.8423,
+    "titles_count": 197,
+    "group": "C"
+  },
+  {
+    "keyword": "dread",
+    "nearest_seed": "gore",
+    "distance": 0.1582,
+    "similarity": 0.8418,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "cruel",
+    "nearest_seed": "sadistic torture",
+    "distance": 0.1584,
+    "similarity": 0.8416,
+    "titles_count": 79,
+    "group": "C"
+  },
+  {
+    "keyword": "rough sex",
+    "nearest_seed": "erotica",
+    "distance": 0.1586,
+    "similarity": 0.8414,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "underage prostitution ring",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1586,
+    "similarity": 0.8414,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "sex show",
+    "nearest_seed": "erotica",
+    "distance": 0.1587,
+    "similarity": 0.8413,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "alcohol problems",
+    "nearest_seed": "substance abuse",
+    "distance": 0.1588,
+    "similarity": 0.8412,
+    "titles_count": 20,
+    "group": "B"
+  },
+  {
+    "keyword": "coke",
+    "nearest_seed": "cocaine",
+    "distance": 0.1592,
+    "similarity": 0.8408,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "deaths",
+    "nearest_seed": "suicide",
+    "distance": 0.1592,
+    "similarity": 0.8408,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "macabre",
+    "nearest_seed": "gore",
+    "distance": 0.1597,
+    "similarity": 0.8403,
+    "titles_count": 114,
+    "group": "C"
+  },
+  {
+    "keyword": "bloody fight",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1599,
+    "similarity": 0.8401,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "killer",
+    "nearest_seed": "gore",
+    "distance": 0.1601,
+    "similarity": 0.8399,
+    "titles_count": 260,
+    "group": "B"
+  },
+  {
+    "keyword": "crime horror",
+    "nearest_seed": "gore",
+    "distance": 0.1602,
+    "similarity": 0.8398,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "menace",
+    "nearest_seed": "gore",
+    "distance": 0.1602,
+    "similarity": 0.8398,
+    "titles_count": 16,
+    "group": "C"
+  },
+  {
+    "keyword": "prison brutality",
+    "nearest_seed": "prison rape",
+    "distance": 0.1604,
+    "similarity": 0.8396,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "prisoner abuse",
+    "nearest_seed": "prison rape",
+    "distance": 0.1609,
+    "similarity": 0.8391,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "meth lab",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.1609,
+    "similarity": 0.8391,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "marijuana joint",
+    "nearest_seed": "heroin",
+    "distance": 0.161,
+    "similarity": 0.839,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "slasher horror",
+    "nearest_seed": "gore",
+    "distance": 0.1611,
+    "similarity": 0.8389,
+    "titles_count": 16,
+    "group": "C"
+  },
+  {
+    "keyword": "hashish",
+    "nearest_seed": "heroin",
+    "distance": 0.1617,
+    "similarity": 0.8383,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "savagery",
+    "nearest_seed": "gore",
+    "distance": 0.1619,
+    "similarity": 0.8381,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "brutal murder",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.162,
+    "similarity": 0.838,
+    "titles_count": 11,
+    "group": "C"
+  },
+  {
+    "keyword": "meurtre",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1623,
+    "similarity": 0.8377,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "lust",
+    "nearest_seed": "erotica",
+    "distance": 0.1624,
+    "similarity": 0.8376,
+    "titles_count": 78,
+    "group": "B"
+  },
+  {
+    "keyword": "teen suicide",
+    "nearest_seed": "suicide",
+    "distance": 0.1627,
+    "similarity": 0.8373,
+    "titles_count": 19,
+    "group": "A"
+  },
+  {
+    "keyword": "death by poisoning",
+    "nearest_seed": "drug overdose",
+    "distance": 0.1627,
+    "similarity": 0.8373,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "breakdown",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1635,
+    "similarity": 0.8365,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "sadomasochism",
+    "nearest_seed": "sadistic torture",
+    "distance": 0.1638,
+    "similarity": 0.8362,
+    "titles_count": 50,
+    "group": "B"
+  },
+  {
+    "keyword": "killed",
+    "nearest_seed": "decapitation",
+    "distance": 0.164,
+    "similarity": 0.836,
+    "titles_count": 16,
+    "group": "C"
+  },
+  {
+    "keyword": "massacre",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1643,
+    "similarity": 0.8357,
+    "titles_count": 107,
+    "group": "B"
+  },
+  {
+    "keyword": "pregnancy from rape",
+    "nearest_seed": "rape",
+    "distance": 0.165,
+    "similarity": 0.835,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "dissection",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1652,
+    "similarity": 0.8348,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "milf",
+    "nearest_seed": "erotica",
+    "distance": 0.1655,
+    "similarity": 0.8345,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual obsession",
+    "nearest_seed": "erotica",
+    "distance": 0.1658,
+    "similarity": 0.8342,
+    "titles_count": 53,
+    "group": "B"
+  },
+  {
+    "keyword": "danger",
+    "nearest_seed": "gore",
+    "distance": 0.1662,
+    "similarity": 0.8338,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual blackmail",
+    "nearest_seed": "molestation",
+    "distance": 0.1663,
+    "similarity": 0.8337,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "decomposition",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1665,
+    "similarity": 0.8335,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "drug smuggling",
+    "nearest_seed": "cocaine",
+    "distance": 0.1666,
+    "similarity": 0.8334,
+    "titles_count": 79,
+    "group": "B"
+  },
+  {
+    "keyword": "slasher",
+    "nearest_seed": "gore",
+    "distance": 0.1666,
+    "similarity": 0.8334,
+    "titles_count": 543,
+    "group": "B"
+  },
+  {
+    "keyword": "dying",
+    "nearest_seed": "suicide",
+    "distance": 0.167,
+    "similarity": 0.833,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "castration",
+    "nearest_seed": "mutilation",
+    "distance": 0.1674,
+    "similarity": 0.8326,
+    "titles_count": 17,
+    "group": "A"
+  },
+  {
+    "keyword": "sexploitation",
+    "nearest_seed": "pornography",
+    "distance": 0.1676,
+    "similarity": 0.8324,
+    "titles_count": 75,
+    "group": "A"
+  },
+  {
+    "keyword": "suicide by gas",
+    "nearest_seed": "suicide",
+    "distance": 0.1677,
+    "similarity": 0.8323,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "brutality",
+    "nearest_seed": "gore",
+    "distance": 0.1677,
+    "similarity": 0.8323,
+    "titles_count": 131,
+    "group": "B"
+  },
+  {
+    "keyword": "killer child",
+    "nearest_seed": "child abuse",
+    "distance": 0.1677,
+    "similarity": 0.8323,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "alcohol",
+    "nearest_seed": "substance abuse",
+    "distance": 0.1677,
+    "similarity": 0.8323,
+    "titles_count": 176,
+    "group": "B"
+  },
+  {
+    "keyword": "internet porn",
+    "nearest_seed": "pornography",
+    "distance": 0.1681,
+    "similarity": 0.8319,
+    "titles_count": 6,
+    "group": "A"
+  },
+  {
+    "keyword": "child abandonment",
+    "nearest_seed": "child abuse",
+    "distance": 0.1687,
+    "similarity": 0.8313,
+    "titles_count": 24,
+    "group": "C"
+  },
+  {
+    "keyword": "exploring sexuality",
+    "nearest_seed": "erotica",
+    "distance": 0.1692,
+    "similarity": 0.8308,
+    "titles_count": 33,
+    "group": "B"
+  },
+  {
+    "keyword": "porn industry",
+    "nearest_seed": "pornography",
+    "distance": 0.1694,
+    "similarity": 0.8306,
+    "titles_count": 37,
+    "group": "A"
+  },
+  {
+    "keyword": "illegal prostitution",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1698,
+    "similarity": 0.8302,
+    "titles_count": 43,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic dance",
+    "nearest_seed": "erotica",
+    "distance": 0.1699,
+    "similarity": 0.8301,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "child welfare",
+    "nearest_seed": "child abuse",
+    "distance": 0.17,
+    "similarity": 0.83,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "street prostitution",
+    "nearest_seed": "child prostitution",
+    "distance": 0.17,
+    "similarity": 0.83,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "pervert",
+    "nearest_seed": "pedophile",
+    "distance": 0.1703,
+    "similarity": 0.8297,
+    "titles_count": 10,
+    "group": "B"
+  },
+  {
+    "keyword": "intoxication",
+    "nearest_seed": "substance abuse",
+    "distance": 0.1704,
+    "similarity": 0.8296,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "oral sex",
+    "nearest_seed": "erotica",
+    "distance": 0.1708,
+    "similarity": 0.8292,
+    "titles_count": 9,
+    "group": "B"
+  },
+  {
+    "keyword": "opium",
+    "nearest_seed": "heroin",
+    "distance": 0.1713,
+    "similarity": 0.8287,
+    "titles_count": 21,
+    "group": "B"
+  },
+  {
+    "keyword": "deadly creature",
+    "nearest_seed": "gore",
+    "distance": 0.1718,
+    "similarity": 0.8282,
+    "titles_count": 8,
+    "group": "C"
+  },
+  {
+    "keyword": "shot to death",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1719,
+    "similarity": 0.8281,
+    "titles_count": 10,
+    "group": "C"
+  },
+  {
+    "keyword": "psychological abuse",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1721,
+    "similarity": 0.8279,
+    "titles_count": 17,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual attraction",
+    "nearest_seed": "erotica",
+    "distance": 0.1722,
+    "similarity": 0.8278,
+    "titles_count": 34,
+    "group": "B"
+  },
+  {
+    "keyword": "sex slavery",
+    "nearest_seed": "sexual torture",
+    "distance": 0.1722,
+    "similarity": 0.8278,
+    "titles_count": 9,
+    "group": "B"
+  },
+  {
+    "keyword": "sex trafficking",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1723,
+    "similarity": 0.8277,
+    "titles_count": 31,
+    "group": "B"
+  },
+  {
+    "keyword": "sex crime",
+    "nearest_seed": "sexual assault",
+    "distance": 0.1724,
+    "similarity": 0.8276,
+    "titles_count": 14,
+    "group": "A"
+  },
+  {
+    "keyword": "psychotropic drugs",
+    "nearest_seed": "drug addiction",
+    "distance": 0.1725,
+    "similarity": 0.8275,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "patricide",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1725,
+    "similarity": 0.8275,
+    "titles_count": 15,
+    "group": "C"
+  },
+  {
+    "keyword": "death row",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1727,
+    "similarity": 0.8273,
+    "titles_count": 34,
+    "group": "C"
+  },
+  {
+    "keyword": "brother sister incest",
+    "nearest_seed": "incest rape",
+    "distance": 0.1729,
+    "similarity": 0.8271,
+    "titles_count": 29,
+    "group": "A"
+  },
+  {
+    "keyword": "killer children",
+    "nearest_seed": "child abuse",
+    "distance": 0.1731,
+    "similarity": 0.8269,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "homicidal",
+    "nearest_seed": "gore",
+    "distance": 0.1735,
+    "similarity": 0.8265,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "gas chamber",
+    "nearest_seed": "torture chamber",
+    "distance": 0.1736,
+    "similarity": 0.8264,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "disfigurement",
+    "nearest_seed": "mutilation",
+    "distance": 0.1741,
+    "similarity": 0.8259,
+    "titles_count": 42,
+    "group": "B"
+  },
+  {
+    "keyword": "explosive",
+    "nearest_seed": "gore",
+    "distance": 0.1743,
+    "similarity": 0.8257,
+    "titles_count": 35,
+    "group": "C"
+  },
+  {
+    "keyword": "attempted murder",
+    "nearest_seed": "attempted rape",
+    "distance": 0.1745,
+    "similarity": 0.8255,
+    "titles_count": 69,
+    "group": "C"
+  },
+  {
+    "keyword": "indecent proposal",
+    "nearest_seed": "pornography",
+    "distance": 0.1748,
+    "similarity": 0.8252,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "traumatized child",
+    "nearest_seed": "child abuse",
+    "distance": 0.175,
+    "similarity": 0.825,
+    "titles_count": 13,
+    "group": "C"
+  },
+  {
+    "keyword": "violence action",
+    "nearest_seed": "blood and gore",
+    "distance": 0.175,
+    "similarity": 0.825,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "child murder",
+    "nearest_seed": "child abuse",
+    "distance": 0.1753,
+    "similarity": 0.8247,
+    "titles_count": 99,
+    "group": "C"
+  },
+  {
+    "keyword": "break-up",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1753,
+    "similarity": 0.8247,
+    "titles_count": 129,
+    "group": "B"
+  },
+  {
+    "keyword": "chilling",
+    "nearest_seed": "gore",
+    "distance": 0.1754,
+    "similarity": 0.8246,
+    "titles_count": 8,
+    "group": "C"
+  },
+  {
+    "keyword": "gang",
+    "nearest_seed": "gang rape",
+    "distance": 0.1759,
+    "similarity": 0.8241,
+    "titles_count": 260,
+    "group": "C"
+  },
+  {
+    "keyword": "nude",
+    "nearest_seed": "pornography",
+    "distance": 0.1759,
+    "similarity": 0.8241,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "eaten alive",
+    "nearest_seed": "cannibalism",
+    "distance": 0.176,
+    "similarity": 0.824,
+    "titles_count": 12,
+    "group": "A"
+  },
+  {
+    "keyword": "provocative",
+    "nearest_seed": "erotica",
+    "distance": 0.1761,
+    "similarity": 0.8239,
+    "titles_count": 152,
+    "group": "C"
+  },
+  {
+    "keyword": "shocksploitation",
+    "nearest_seed": "splatter horror",
+    "distance": 0.1762,
+    "similarity": 0.8238,
+    "titles_count": 9,
+    "group": "A"
+  },
+  {
+    "keyword": "mass destruction",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1763,
+    "similarity": 0.8237,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "violent fantasies",
+    "nearest_seed": "extreme gore",
+    "distance": 0.1764,
+    "similarity": 0.8236,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "blood",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1764,
+    "similarity": 0.8236,
+    "titles_count": 53,
+    "group": "C"
+  },
+  {
+    "keyword": "crucifixion",
+    "nearest_seed": "decapitation",
+    "distance": 0.1765,
+    "similarity": 0.8235,
+    "titles_count": 30,
+    "group": "C"
+  },
+  {
+    "keyword": "debauchery",
+    "nearest_seed": "pornography",
+    "distance": 0.1767,
+    "similarity": 0.8233,
+    "titles_count": 18,
+    "group": "B"
+  },
+  {
+    "keyword": "child labour",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1768,
+    "similarity": 0.8232,
+    "titles_count": 8,
+    "group": "C"
+  },
+  {
+    "keyword": "kill",
+    "nearest_seed": "decapitation",
+    "distance": 0.177,
+    "similarity": 0.823,
+    "titles_count": 24,
+    "group": "C"
+  },
+  {
+    "keyword": "seducer",
+    "nearest_seed": "pedophile",
+    "distance": 0.1773,
+    "similarity": 0.8227,
+    "titles_count": 13,
+    "group": "C"
+  },
+  {
+    "keyword": "circumcision",
+    "nearest_seed": "mutilation",
+    "distance": 0.1773,
+    "similarity": 0.8227,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual tension",
+    "nearest_seed": "erotica",
+    "distance": 0.1773,
+    "similarity": 0.8227,
+    "titles_count": 28,
+    "group": "B"
+  },
+  {
+    "keyword": "erotic photography",
+    "nearest_seed": "erotica",
+    "distance": 0.1773,
+    "similarity": 0.8227,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "death wish",
+    "nearest_seed": "suicide",
+    "distance": 0.1775,
+    "similarity": 0.8225,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "suicide investigation",
+    "nearest_seed": "suicide",
+    "distance": 0.1776,
+    "similarity": 0.8224,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "underage sex",
+    "nearest_seed": "child pornography",
+    "distance": 0.1777,
+    "similarity": 0.8223,
+    "titles_count": 20,
+    "group": "A"
+  },
+  {
+    "keyword": "drug syndicate",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1778,
+    "similarity": 0.8222,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "murder victim",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.178,
+    "similarity": 0.822,
+    "titles_count": 15,
+    "group": "C"
+  },
+  {
+    "keyword": "inebriation",
+    "nearest_seed": "substance abuse",
+    "distance": 0.178,
+    "similarity": 0.822,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "addicted",
+    "nearest_seed": "drug addiction",
+    "distance": 0.1782,
+    "similarity": 0.8218,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "sudden death",
+    "nearest_seed": "suicide",
+    "distance": 0.1784,
+    "similarity": 0.8216,
+    "titles_count": 10,
+    "group": "C"
+  },
+  {
+    "keyword": "drug ring",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1784,
+    "similarity": 0.8216,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "drug money",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1785,
+    "similarity": 0.8215,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "vulgar",
+    "nearest_seed": "pornography",
+    "distance": 0.1787,
+    "similarity": 0.8213,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "amputation",
+    "nearest_seed": "mutilation",
+    "distance": 0.179,
+    "similarity": 0.821,
+    "titles_count": 18,
+    "group": "B"
+  },
+  {
+    "keyword": "flesh eating",
+    "nearest_seed": "cannibalism",
+    "distance": 0.179,
+    "similarity": 0.821,
+    "titles_count": 16,
+    "group": "A"
+  },
+  {
+    "keyword": "opioid crisis",
+    "nearest_seed": "heroin addiction",
+    "distance": 0.1791,
+    "similarity": 0.8209,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "lesbian sex",
+    "nearest_seed": "erotica",
+    "distance": 0.1792,
+    "similarity": 0.8208,
+    "titles_count": 49,
+    "group": "B"
+  },
+  {
+    "keyword": "violence against women",
+    "nearest_seed": "sexual assault",
+    "distance": 0.1792,
+    "similarity": 0.8208,
+    "titles_count": 26,
+    "group": "C"
+  },
+  {
+    "keyword": "separation",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1797,
+    "similarity": 0.8203,
+    "titles_count": 18,
+    "group": "C"
+  },
+  {
+    "keyword": "depravity",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.18,
+    "similarity": 0.82,
+    "titles_count": 14,
+    "group": "B"
+  },
+  {
+    "keyword": "seduction",
+    "nearest_seed": "erotica",
+    "distance": 0.1803,
+    "similarity": 0.8197,
+    "titles_count": 197,
+    "group": "B"
+  },
+  {
+    "keyword": "suicide of mother",
+    "nearest_seed": "suicide",
+    "distance": 0.1804,
+    "similarity": 0.8196,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "illegitimate child",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1804,
+    "similarity": 0.8196,
+    "titles_count": 19,
+    "group": "C"
+  },
+  {
+    "keyword": "escape attempt",
+    "nearest_seed": "suicide attempt",
+    "distance": 0.1806,
+    "similarity": 0.8194,
+    "titles_count": 20,
+    "group": "C"
+  },
+  {
+    "keyword": "abuse survivor",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1808,
+    "similarity": 0.8192,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "mass hanging",
+    "nearest_seed": "mass suicide",
+    "distance": 0.1809,
+    "similarity": 0.8191,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "imprisonment",
+    "nearest_seed": "torture chamber",
+    "distance": 0.181,
+    "similarity": 0.819,
+    "titles_count": 32,
+    "group": "C"
+  },
+  {
+    "keyword": "self immolation",
+    "nearest_seed": "self mutilation",
+    "distance": 0.1811,
+    "similarity": 0.8189,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "breakup",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1811,
+    "similarity": 0.8189,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "suicide of husband",
+    "nearest_seed": "suicide",
+    "distance": 0.1813,
+    "similarity": 0.8187,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "psychosexual thriller",
+    "nearest_seed": "erotica",
+    "distance": 0.1816,
+    "similarity": 0.8184,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "sex slave",
+    "nearest_seed": "molestation",
+    "distance": 0.1816,
+    "similarity": 0.8184,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "mortality",
+    "nearest_seed": "suicide",
+    "distance": 0.1819,
+    "similarity": 0.8181,
+    "titles_count": 14,
+    "group": "C"
+  },
+  {
+    "keyword": "ritual murder",
+    "nearest_seed": "beheading",
+    "distance": 0.1822,
+    "similarity": 0.8178,
+    "titles_count": 20,
+    "group": "C"
+  },
+  {
+    "keyword": "stolen child",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1822,
+    "similarity": 0.8178,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "pervertion",
+    "nearest_seed": "pedophile",
+    "distance": 0.1824,
+    "similarity": 0.8176,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "electric chair",
+    "nearest_seed": "torture chamber",
+    "distance": 0.1825,
+    "similarity": 0.8175,
+    "titles_count": 20,
+    "group": "B"
+  },
+  {
+    "keyword": "cunnilingus",
+    "nearest_seed": "pornography",
+    "distance": 0.1827,
+    "similarity": 0.8173,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "assassination attempt",
+    "nearest_seed": "suicide attempt",
+    "distance": 0.1828,
+    "similarity": 0.8172,
+    "titles_count": 46,
+    "group": "C"
+  },
+  {
+    "keyword": "firing squad",
+    "nearest_seed": "beheading",
+    "distance": 0.1829,
+    "similarity": 0.8171,
+    "titles_count": 14,
+    "group": "B"
+  },
+  {
+    "keyword": "bloodthirsty",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1829,
+    "similarity": 0.8171,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "hallucinogenic drug",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.183,
+    "similarity": 0.817,
+    "titles_count": 16,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual deviants",
+    "nearest_seed": "pedophile",
+    "distance": 0.1831,
+    "similarity": 0.8169,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "drugstore",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1833,
+    "similarity": 0.8167,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "child kidnapping",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1833,
+    "similarity": 0.8167,
+    "titles_count": 120,
+    "group": "B"
+  },
+  {
+    "keyword": "sex offender",
+    "nearest_seed": "pedophile",
+    "distance": 0.1835,
+    "similarity": 0.8165,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "father daughter incest",
+    "nearest_seed": "incest rape",
+    "distance": 0.1836,
+    "similarity": 0.8164,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "lethal injection",
+    "nearest_seed": "beheading",
+    "distance": 0.1836,
+    "similarity": 0.8164,
+    "titles_count": 6,
+    "group": "B"
+  },
+  {
+    "keyword": "harakiri",
+    "nearest_seed": "decapitation",
+    "distance": 0.1837,
+    "similarity": 0.8163,
+    "titles_count": 4,
+    "group": "A"
+  },
+  {
+    "keyword": "groping",
+    "nearest_seed": "molestation",
+    "distance": 0.1837,
+    "similarity": 0.8163,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "drug runner",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1838,
+    "similarity": 0.8162,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual oppression",
+    "nearest_seed": "sexual assault",
+    "distance": 0.1838,
+    "similarity": 0.8162,
+    "titles_count": 3,
+    "group": "A"
+  },
+  {
+    "keyword": "blood lust",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1839,
+    "similarity": 0.8161,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "extreme cinema",
+    "nearest_seed": "extreme gore",
+    "distance": 0.184,
+    "similarity": 0.816,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "mother son incest",
+    "nearest_seed": "incest rape",
+    "distance": 0.1842,
+    "similarity": 0.8158,
+    "titles_count": 5,
+    "group": "A"
+  },
+  {
+    "keyword": "drug gang",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1846,
+    "similarity": 0.8154,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "premarital sex",
+    "nearest_seed": "pornography",
+    "distance": 0.1847,
+    "similarity": 0.8153,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "broken",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1852,
+    "similarity": 0.8148,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "horror fans",
+    "nearest_seed": "gore",
+    "distance": 0.1852,
+    "similarity": 0.8148,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "sodomy",
+    "nearest_seed": "pornography",
+    "distance": 0.1853,
+    "similarity": 0.8147,
+    "titles_count": 10,
+    "group": "B"
+  },
+  {
+    "keyword": "sci-fi horror",
+    "nearest_seed": "gore",
+    "distance": 0.1855,
+    "similarity": 0.8145,
+    "titles_count": 39,
+    "group": "C"
+  },
+  {
+    "keyword": "sexual awakening",
+    "nearest_seed": "erotica",
+    "distance": 0.1857,
+    "similarity": 0.8143,
+    "titles_count": 60,
+    "group": "B"
+  },
+  {
+    "keyword": "horror western",
+    "nearest_seed": "gore",
+    "distance": 0.1857,
+    "similarity": 0.8143,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "bdsm",
+    "nearest_seed": "erotica",
+    "distance": 0.1861,
+    "similarity": 0.8139,
+    "titles_count": 98,
+    "group": "B"
+  },
+  {
+    "keyword": "pimps",
+    "nearest_seed": "porno",
+    "distance": 0.1862,
+    "similarity": 0.8138,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "body modification",
+    "nearest_seed": "body mutilation",
+    "distance": 0.1863,
+    "similarity": 0.8137,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "fear",
+    "nearest_seed": "gore",
+    "distance": 0.1864,
+    "similarity": 0.8136,
+    "titles_count": 125,
+    "group": "C"
+  },
+  {
+    "keyword": "emotional abuse",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1867,
+    "similarity": 0.8133,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "female masturbation",
+    "nearest_seed": "erotica",
+    "distance": 0.1868,
+    "similarity": 0.8132,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "deathbed",
+    "nearest_seed": "suicide",
+    "distance": 0.1868,
+    "similarity": 0.8132,
+    "titles_count": 9,
+    "group": "C"
+  },
+  {
+    "keyword": "abused woman",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1869,
+    "similarity": 0.8131,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "female child abuser",
+    "nearest_seed": "child abuse",
+    "distance": 0.187,
+    "similarity": 0.813,
+    "titles_count": 7,
+    "group": "A"
+  },
+  {
+    "keyword": "forbidden sexuality",
+    "nearest_seed": "erotica",
+    "distance": 0.1871,
+    "similarity": 0.8129,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "disturbed child",
+    "nearest_seed": "child abuse",
+    "distance": 0.1872,
+    "similarity": 0.8128,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "aphrodisiac",
+    "nearest_seed": "erotica",
+    "distance": 0.1872,
+    "similarity": 0.8128,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "carnage",
+    "nearest_seed": "gore",
+    "distance": 0.1874,
+    "similarity": 0.8126,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "unwanted child",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1875,
+    "similarity": 0.8125,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "nicotine",
+    "nearest_seed": "heroin",
+    "distance": 0.1876,
+    "similarity": 0.8124,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "sex tape",
+    "nearest_seed": "pornography",
+    "distance": 0.1876,
+    "similarity": 0.8124,
+    "titles_count": 16,
+    "group": "A"
+  },
+  {
+    "keyword": "accidental killing",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1877,
+    "similarity": 0.8123,
+    "titles_count": 23,
+    "group": "B"
+  },
+  {
+    "keyword": "death incarnate",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1879,
+    "similarity": 0.8121,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "explosive action",
+    "nearest_seed": "gore",
+    "distance": 0.188,
+    "similarity": 0.812,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "thrill kill",
+    "nearest_seed": "gore",
+    "distance": 0.188,
+    "similarity": 0.812,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "execution",
+    "nearest_seed": "beheading",
+    "distance": 0.1882,
+    "similarity": 0.8118,
+    "titles_count": 65,
+    "group": "B"
+  },
+  {
+    "keyword": "self-sabotage",
+    "nearest_seed": "self-harm",
+    "distance": 0.1883,
+    "similarity": 0.8117,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "necrophilia",
+    "nearest_seed": "pedophilia",
+    "distance": 0.1888,
+    "similarity": 0.8112,
+    "titles_count": 42,
+    "group": "A"
+  },
+  {
+    "keyword": "mass evacuation",
+    "nearest_seed": "mass suicide",
+    "distance": 0.189,
+    "similarity": 0.811,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "fake suicide",
+    "nearest_seed": "suicide",
+    "distance": 0.1891,
+    "similarity": 0.8109,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "prostitute",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1896,
+    "similarity": 0.8104,
+    "titles_count": 400,
+    "group": "B"
+  },
+  {
+    "keyword": "slaughter",
+    "nearest_seed": "beheading",
+    "distance": 0.1897,
+    "similarity": 0.8103,
+    "titles_count": 34,
+    "group": "C"
+  },
+  {
+    "keyword": "child abduction",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1898,
+    "similarity": 0.8102,
+    "titles_count": 30,
+    "group": "B"
+  },
+  {
+    "keyword": "child labor",
+    "nearest_seed": "child exploitation",
+    "distance": 0.1898,
+    "similarity": 0.8102,
+    "titles_count": 8,
+    "group": "C"
+  },
+  {
+    "keyword": "broke",
+    "nearest_seed": "dismemberment",
+    "distance": 0.1901,
+    "similarity": 0.8099,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "masochism",
+    "nearest_seed": "sadistic torture",
+    "distance": 0.1903,
+    "similarity": 0.8097,
+    "titles_count": 21,
+    "group": "B"
+  },
+  {
+    "keyword": "mind altering drug",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.1903,
+    "similarity": 0.8097,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual promiscuity",
+    "nearest_seed": "erotica",
+    "distance": 0.1904,
+    "similarity": 0.8096,
+    "titles_count": 21,
+    "group": "B"
+  },
+  {
+    "keyword": "male prostitution",
+    "nearest_seed": "male rape",
+    "distance": 0.1905,
+    "similarity": 0.8095,
+    "titles_count": 62,
+    "group": "B"
+  },
+  {
+    "keyword": "attempted robbery",
+    "nearest_seed": "attempted rape",
+    "distance": 0.1907,
+    "similarity": 0.8093,
+    "titles_count": 12,
+    "group": "C"
+  },
+  {
+    "keyword": "addict",
+    "nearest_seed": "drug addiction",
+    "distance": 0.1911,
+    "similarity": 0.8089,
+    "titles_count": 24,
+    "group": "B"
+  },
+  {
+    "keyword": "porn actor",
+    "nearest_seed": "porno",
+    "distance": 0.1912,
+    "similarity": 0.8088,
+    "titles_count": 16,
+    "group": "A"
+  },
+  {
+    "keyword": "drugging someone",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1916,
+    "similarity": 0.8084,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "childhood trauma",
+    "nearest_seed": "child abuse",
+    "distance": 0.1917,
+    "similarity": 0.8083,
+    "titles_count": 117,
+    "group": "C"
+  },
+  {
+    "keyword": "murderer",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1923,
+    "similarity": 0.8077,
+    "titles_count": 90,
+    "group": "C"
+  },
+  {
+    "keyword": "scalpel",
+    "nearest_seed": "mutilation",
+    "distance": 0.1923,
+    "similarity": 0.8077,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "intense",
+    "nearest_seed": "gore",
+    "distance": 0.1924,
+    "similarity": 0.8076,
+    "titles_count": 349,
+    "group": "C"
+  },
+  {
+    "keyword": "male sexuality",
+    "nearest_seed": "erotica",
+    "distance": 0.1925,
+    "similarity": 0.8075,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "burned at the stake",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1929,
+    "similarity": 0.8071,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "gang warfare",
+    "nearest_seed": "gang rape",
+    "distance": 0.1931,
+    "similarity": 0.8069,
+    "titles_count": 15,
+    "group": "C"
+  },
+  {
+    "keyword": "grim",
+    "nearest_seed": "gore",
+    "distance": 0.1931,
+    "similarity": 0.8069,
+    "titles_count": 94,
+    "group": "C"
+  },
+  {
+    "keyword": "mental abuse",
+    "nearest_seed": "sexual abuse",
+    "distance": 0.1934,
+    "similarity": 0.8066,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "sex industry",
+    "nearest_seed": "pornography",
+    "distance": 0.1935,
+    "similarity": 0.8065,
+    "titles_count": 11,
+    "group": "B"
+  },
+  {
+    "keyword": "drug mule",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1936,
+    "similarity": 0.8064,
+    "titles_count": 14,
+    "group": "B"
+  },
+  {
+    "keyword": "honor killing",
+    "nearest_seed": "beheading",
+    "distance": 0.1938,
+    "similarity": 0.8062,
+    "titles_count": 8,
+    "group": "B"
+  },
+  {
+    "keyword": "bestiality",
+    "nearest_seed": "pedophilia",
+    "distance": 0.194,
+    "similarity": 0.806,
+    "titles_count": 15,
+    "group": "A"
+  },
+  {
+    "keyword": "alcoholic drink",
+    "nearest_seed": "substance abuse",
+    "distance": 0.1946,
+    "similarity": 0.8054,
+    "titles_count": 7,
+    "group": "B"
+  },
+  {
+    "keyword": "skinning",
+    "nearest_seed": "mutilation",
+    "distance": 0.1947,
+    "similarity": 0.8053,
+    "titles_count": 8,
+    "group": "A"
+  },
+  {
+    "keyword": "psychedelic drug",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1948,
+    "similarity": 0.8052,
+    "titles_count": 13,
+    "group": "B"
+  },
+  {
+    "keyword": "execution by hanging",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1948,
+    "similarity": 0.8052,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "sexual harassment",
+    "nearest_seed": "sexual assault",
+    "distance": 0.1949,
+    "similarity": 0.8051,
+    "titles_count": 52,
+    "group": "A"
+  },
+  {
+    "keyword": "ex prostitute",
+    "nearest_seed": "child prostitution",
+    "distance": 0.195,
+    "similarity": 0.805,
+    "titles_count": 5,
+    "group": "B"
+  },
+  {
+    "keyword": "murder of husband",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1953,
+    "similarity": 0.8047,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "accidental death",
+    "nearest_seed": "suicide",
+    "distance": 0.1953,
+    "similarity": 0.8047,
+    "titles_count": 52,
+    "group": "C"
+  },
+  {
+    "keyword": "bloodthirstiness",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1956,
+    "similarity": 0.8044,
+    "titles_count": 7,
+    "group": "C"
+  },
+  {
+    "keyword": "ketamine",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.1957,
+    "similarity": 0.8043,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "murdered wife",
+    "nearest_seed": "murder-suicide",
+    "distance": 0.1957,
+    "similarity": 0.8043,
+    "titles_count": 13,
+    "group": "C"
+  },
+  {
+    "keyword": "prisoner",
+    "nearest_seed": "torture chamber",
+    "distance": 0.1957,
+    "similarity": 0.8043,
+    "titles_count": 133,
+    "group": "B"
+  },
+  {
+    "keyword": "blood bath",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1957,
+    "similarity": 0.8043,
+    "titles_count": 8,
+    "group": "C"
+  },
+  {
+    "keyword": "criminal gang",
+    "nearest_seed": "gang rape",
+    "distance": 0.1957,
+    "similarity": 0.8043,
+    "titles_count": 62,
+    "group": "C"
+  },
+  {
+    "keyword": "body horror",
+    "nearest_seed": "body mutilation",
+    "distance": 0.196,
+    "similarity": 0.804,
+    "titles_count": 120,
+    "group": "C"
+  },
+  {
+    "keyword": "mass grave",
+    "nearest_seed": "mass suicide",
+    "distance": 0.196,
+    "similarity": 0.804,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "porn director",
+    "nearest_seed": "porno",
+    "distance": 0.1964,
+    "similarity": 0.8036,
+    "titles_count": 6,
+    "group": "A"
+  },
+  {
+    "keyword": "thrilling",
+    "nearest_seed": "gore",
+    "distance": 0.1966,
+    "similarity": 0.8034,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "corpse",
+    "nearest_seed": "decapitation",
+    "distance": 0.1967,
+    "similarity": 0.8033,
+    "titles_count": 92,
+    "group": "C"
+  },
+  {
+    "keyword": "catholic priest",
+    "nearest_seed": "pedophile priest",
+    "distance": 0.1968,
+    "similarity": 0.8032,
+    "titles_count": 56,
+    "group": "C"
+  },
+  {
+    "keyword": "scary stories",
+    "nearest_seed": "gore",
+    "distance": 0.1971,
+    "similarity": 0.8029,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "sadistic husband",
+    "nearest_seed": "extreme sadism",
+    "distance": 0.1971,
+    "similarity": 0.8029,
+    "titles_count": 3,
+    "group": "B"
+  },
+  {
+    "keyword": "drug trial",
+    "nearest_seed": "drug abuse",
+    "distance": 0.1972,
+    "similarity": 0.8028,
+    "titles_count": 4,
+    "group": "C"
+  },
+  {
+    "keyword": "dripping blood",
+    "nearest_seed": "blood and gore",
+    "distance": 0.1975,
+    "similarity": 0.8025,
+    "titles_count": 3,
+    "group": "C"
+  },
+  {
+    "keyword": "hell",
+    "nearest_seed": "gore",
+    "distance": 0.1975,
+    "similarity": 0.8025,
+    "titles_count": 91,
+    "group": "C"
+  },
+  {
+    "keyword": "sex trade",
+    "nearest_seed": "child prostitution",
+    "distance": 0.1979,
+    "similarity": 0.8021,
+    "titles_count": 10,
+    "group": "B"
+  },
+  {
+    "keyword": "abusive parent",
+    "nearest_seed": "child abuse",
+    "distance": 0.1982,
+    "similarity": 0.8018,
+    "titles_count": 11,
+    "group": "A"
+  },
+  {
+    "keyword": "seppuku",
+    "nearest_seed": "decapitation",
+    "distance": 0.1985,
+    "similarity": 0.8015,
+    "titles_count": 13,
+    "group": "A"
+  },
+  {
+    "keyword": "aggression",
+    "nearest_seed": "gore",
+    "distance": 0.1986,
+    "similarity": 0.8014,
+    "titles_count": 13,
+    "group": "C"
+  },
+  {
+    "keyword": "assassination",
+    "nearest_seed": "beheading",
+    "distance": 0.1987,
+    "similarity": 0.8013,
+    "titles_count": 138,
+    "group": "C"
+  },
+  {
+    "keyword": "porn star",
+    "nearest_seed": "porno",
+    "distance": 0.1989,
+    "similarity": 0.8011,
+    "titles_count": 27,
+    "group": "A"
+  },
+  {
+    "keyword": "martyrdom",
+    "nearest_seed": "tortured to death",
+    "distance": 0.199,
+    "similarity": 0.801,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "prison",
+    "nearest_seed": "prison rape",
+    "distance": 0.199,
+    "similarity": 0.801,
+    "titles_count": 573,
+    "group": "C"
+  },
+  {
+    "keyword": "synthetic drug",
+    "nearest_seed": "methamphetamine",
+    "distance": 0.1991,
+    "similarity": 0.8009,
+    "titles_count": 4,
+    "group": "B"
+  },
+  {
+    "keyword": "strangulation",
+    "nearest_seed": "tortured to death",
+    "distance": 0.1991,
+    "similarity": 0.8009,
+    "titles_count": 34,
+    "group": "B"
+  },
+  {
+    "keyword": "zombie horror",
+    "nearest_seed": "gore",
+    "distance": 0.1992,
+    "similarity": 0.8008,
+    "titles_count": 6,
+    "group": "C"
+  },
+  {
+    "keyword": "vicious killings",
+    "nearest_seed": "extreme gore",
+    "distance": 0.1993,
+    "similarity": 0.8007,
+    "titles_count": 5,
+    "group": "C"
+  },
+  {
+    "keyword": "survival horror",
+    "nearest_seed": "gore",
+    "distance": 0.1993,
+    "similarity": 0.8007,
+    "titles_count": 124,
+    "group": "C"
+  },
+  {
+    "keyword": "dildo",
+    "nearest_seed": "erotica",
+    "distance": 0.1994,
+    "similarity": 0.8006,
+    "titles_count": 11,
+    "group": "A"
+  }
+]

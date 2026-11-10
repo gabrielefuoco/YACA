@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YACA — prova sfondo</title>
+<style>
+  :root {
+    --beige: #EED9B9;
+    --marrow: #5E0006;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--marrow);
+    background: var(--beige);
+    overflow-x: hidden;
+  }
+
+  /* Lo sfondo: immagine vera, che si muove lentamente.
+     Solo transform: il compositore se ne occupa, zero costo di CPU. */
+  .scena {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .scena::before {
+    content: "";
+    position: absolute;
+    inset: -12%;
+    background-image: url("sfondo.jpg");
+    background-size: cover;
+    background-position: center;
+    animation: deriva 48s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  /* Grana: tile piccolo e statico, sopra la luce. */
+  .scena::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("grain.png");
+    background-size: 128px 128px;
+    opacity: .16;
+    mix-blend-mode: overlay;
+  }
+  @keyframes deriva {
+    0%   { transform: scale(1.04) translate3d(-1.2%, 0.8%, 0); }
+    100% { transform: scale(1.10) translate3d(1.6%, -1.4%, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scena::before { animation: none; transform: scale(1.06); }
+  }
+
+  .pagina { position: relative; z-index: 1; padding: 32px clamp(16px, 4vw, 56px) 80px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; margin-bottom: 34px;
+    background: rgba(253, 250, 245, .55);
+    border: 1px solid rgba(94, 0, 6, .08);
+    border-radius: 18px;
+    backdrop-filter: blur(10px);
+  }
+  .logo { font-size: 30px; letter-spacing: .14em; font-weight: 700; }
+  .pillole { display: flex; gap: 6px; }
+  .pillola {
+    padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .pillola.attiva {
+    background: #fff; box-shadow: 0 4px 14px rgba(94, 0, 6, .10);
+  }
+
+  h1 { font-size: 15px; letter-spacing: .16em; text-transform: uppercase; opacity: .65; margin: 0 0 14px; }
+
+  .card {
+    background: rgba(255, 255, 255, .42);
+    border: 1px solid rgba(94, 0, 6, .08);
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 30px rgba(94, 0, 6, .06);
+    backdrop-filter: blur(6px);
+  }
+
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    background: rgba(255, 255, 255, .55);
+    border: 1px solid rgba(94, 0, 6, .10);
+  }
+  .titoli { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .locandina {
+    aspect-ratio: 2/3; border-radius: 12px;
+    background: linear-gradient(160deg, rgba(94,0,6,.16), rgba(238,217,185,.5));
+    border: 1px solid rgba(94, 0, 6, .08);
+  }
+
+  .avviso {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 2; padding: 10px 18px; border-radius: 999px;
+    background: rgba(94, 0, 6, .88); color: #F5E2C3; font-size: 12px; letter-spacing: .04em;
+  }
+</style>
+</head>
+<body>
+  <div class="scena"></div>
+
+  <div class="pagina">
+    <div class="topbar">
+      <div class="logo">YACA</div>
+      <div class="pillole">
+        <div class="pillola attiva">Dashboard</div>
+        <div class="pillola">Impostazioni</div>
+      </div>
+    </div>
+
+    <h1>Cataloghi attivi</h1>
+    <div class="chips" style="margin-bottom:26px">
+      <div class="chip">Anime shōnen (serie)</div>
+      <div class="chip">Western contemporaneo (film)</div>
+      <div class="chip">Space opera (film)</div>
+      <div class="chip">Animazione per famiglie (film)</div>
+    </div>
+
+    <div class="card">
+      <h1 style="margin-bottom:16px">Suggerimenti di visione</h1>
+      <div class="titoli">
+        <div class="locandina"></div><div class="locandina"></div><div class="locandina"></div>
+        <div class="locandina"></div><div class="locandina"></div><div class="locandina"></div>
+        <div class="locandina"></div><div class="locandina"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1 style="margin-bottom:10px">Il tuo DNA</h1>
+      <p style="margin:0; font-size:14px; line-height:1.6; opacity:.8">
+        Sfondo reale, grana statica, deriva di 48 secondi. Se lo guardi e ti accorgi
+        che si muove solo perché lo sapevi, funziona.
+      </p>
+    </div>
+  </div>
+
+  <div class="avviso">prova sfondo — non è il prodotto</div>
+</body>
+</html>

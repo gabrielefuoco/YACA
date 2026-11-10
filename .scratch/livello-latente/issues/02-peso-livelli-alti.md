@@ -1,6 +1,6 @@
 # 02 — Il tono connette ma non conta: il peso dei livelli alti
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 (ticket 01 chiuso: la gerarchia ora arriva al DNA in modo deterministico)
 
 ## Domanda
@@ -56,3 +56,7 @@ andrebbe annotato su tutto il catalogo.
 - OCEAN e qualunque modello denso nuovo: si decidono dopo, con questo numero in mano.
 - Il pool e la selezione dei candidati (top-3 generi + cluster): è la prossima mappa, se questa non basta.
 - `ui_name`/`ui_emoji` come racconto del profilo (dolore «assi senza nome»): presentazione, non ranking.
+
+## Chiusura
+
+Il DNA è stato rimosso dal prodotto (ticket 12 di `profili-e-identita`): non c'è più un vettore da pesare, quindi la domanda sul peso dei livelli alti non ha più un oggetto.

@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: grilling
 Blocked by: 02
 
@@ -7,3 +7,7 @@ Blocked by: 02
 ## Question
 
 Quando un profilo conta come cold start, quale insieme di liste si può usare (watchlist personale, liste Trakt curate o altre liste aggiunte) e come applicare la regola già proposta di top 5 per lista a peso basso? Definire inoltre l'epsilon da dare alle liste quando esistono segnali personali reali, così che non diventino il profilo dominante.
+
+## Esito
+
+Il cold start delle liste è stato realizzato nella pipeline V45 (peso basso alle liste, epsilon sui segnali personali). Il residuo — i titoli NUOVI che non entrano nel grafo — continua in `profili-e-identita/17`.

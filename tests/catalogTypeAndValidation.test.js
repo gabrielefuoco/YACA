@@ -21,7 +21,6 @@ const {
     getHeroRuoli,
     HERO_PREFIXES,
     getManifestHeroCatalogs,
-    getHeroCatalogFingerprintRows,
     getHeroCatalogModes,
     getHeroPrefixes,
     isHeroCatalogId,
@@ -161,19 +160,6 @@ describe('Ticket 23: Il Tipo Catalogo e le sue Derivazioni', () => {
                 name: '💎 Nicchia di Qualità',
                 extra: [{ name: 'skip' }]
             });
-        });
-
-        test('getHeroCatalogFingerprintRows produce le 20 righe per la firma cache', () => {
-            const fingerprints = getHeroCatalogFingerprintRows();
-            // Ticket 13: erano 8 (4 righe x 2 medium); ora 20 (10 x 2): il registro elenca anche
-            // classici, ultime visioni, punti d'incontro e i tre slot dei micro-cluster.
-            expect(fingerprints).toHaveLength(20);
-            for (const row of fingerprints) {
-                expect(row).toHaveProperty('id');
-                expect(row).toHaveProperty('type');
-                expect(row).toHaveProperty('name');
-                expect(row).not.toHaveProperty('extra');
-            }
         });
 
         test('getHeroCatalogKindMap mappa tutti i 20 cataloghi a mediaSet, anime: agnostic, alwaysVisible: false', () => {

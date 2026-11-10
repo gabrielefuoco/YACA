@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: prototype
 Blocked by: 08
 
@@ -39,3 +39,7 @@ Ancorate alle misure qui sopra con margine, per il servizio dietro i 512 MiB di 
 
 Manca ancora, e non è misurabile senza una decisione: il contratto degli scaffali (ticket 08) e la
 prova con un profilo reale completo — cioè la parte «end-to-end» di questa domanda.
+
+## Esito
+
+Cutover fatto: il runtime V45 serve le richieste in produzione, con il servizio Python dietro `graph:7862`.

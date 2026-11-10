@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: task
 Blocked by: 04, 05, 06, 07
 
@@ -96,3 +96,7 @@ Dopo build e deploy (l'export statico `out/` è servito da Express, `index.js:86
 ## Done quando
 La **Parte A è chiusa** (fatto, 21/10), la **B0 è verde su tutti i tab e le larghezze**, e i 6 punti
 della B1 sono stati visti su un dispositivo reale (telefono, non solo emulazione).
+
+## Esito
+
+La Parte A è in codice (riallineamento del 21/10) e la Parte B è stata verificata a schermo nei giri `pillole` e `pillole-fix`, con desktop e mobile ispezionati.

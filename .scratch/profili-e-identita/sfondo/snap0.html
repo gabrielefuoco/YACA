@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>YACA — sfondo</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    color: #5E0006;
+    background: #EED9B9;
+    font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Non ci sono macchie con un bordo proprio: ogni massa e' un campo di colore
+     che la turbolenza deforma e sfuma. I wrapper si muovono su traiettorie distinte. */
+  .sfondo { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #EED9B9; }
+  .sfondo svg { width: 100%; height: 100%; display: block; }
+  .campo-luce { transform-box: fill-box; transform-origin: center; will-change: transform; }
+  .campo-luce.a { animation: soffio-a 17s ease-in-out infinite alternate; }
+  .campo-luce.b { animation: soffio-b 23s ease-in-out infinite alternate; }
+  .campo-luce.c { animation: soffio-c 31s ease-in-out infinite alternate; }
+  @keyframes soffio-a {
+    0% { transform: translate(-8%, 4%) scale(1.02, .96); }
+    38% { transform: translate(4%, -7%) scale(1.16, 1.08); }
+    72% { transform: translate(10%, 6%) scale(.96, 1.17); }
+    100% { transform: translate(-3%, 10%) scale(1.12, .94); }
+  }
+  @keyframes soffio-b {
+    0% { transform: translate(9%, -6%) scale(.94, 1.08); }
+    34% { transform: translate(-5%, 8%) scale(1.14, .95); }
+    70% { transform: translate(-11%, -3%) scale(1.02, 1.16); }
+    100% { transform: translate(4%, -9%) scale(1.18, .98); }
+  }
+  @keyframes soffio-c {
+    0% { transform: translate(-5%, -7%) scale(1.08, .94); }
+    42% { transform: translate(10%, 5%) scale(.96, 1.18); }
+    76% { transform: translate(-8%, 9%) scale(1.17, 1.02); }
+    100% { transform: translate(6%, -5%) scale(.94, 1.14); }
+  }
+  body.fermo .campo-luce { animation: none !important; }
+
+  .pagina { position: relative; z-index: 1; padding: 26px clamp(16px,4vw,54px) 96px; }
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:13px 20px; border-radius:18px; margin-bottom:30px;
+    background:rgba(253,250,245,.54); border:1px solid rgba(94,0,6,.08);
+    backdrop-filter:blur(8px);
+  }
+  .logo { font-size:29px; font-weight:700; letter-spacing:.14em; }
+  .pillole { display:flex; gap:6px; }
+  .pillola { padding:9px 17px; border-radius:999px; font-size:13px; font-weight:600; }
+  .pillola.on { background:#fff; box-shadow:0 4px 14px rgba(94,0,6,.1); }
+  .label { margin:0 0 12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase; opacity:.65; }
+  .chips { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:24px; }
+  .chip { padding:10px 16px; border-radius:12px; font-size:13px; font-weight:600;
+          background:rgba(255,255,255,.53); border:1px solid rgba(94,0,6,.1); }
+  .card { margin-bottom:18px; padding:20px; border:1px solid rgba(94,0,6,.08); border-radius:18px;
+          background:rgba(255,255,255,.43); box-shadow:0 12px 34px rgba(94,0,6,.07); backdrop-filter:blur(6px); }
+  .posters { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; }
+  .poster { aspect-ratio:2/3; border:1px solid rgba(94,0,6,.08); border-radius:12px;
+            background:linear-gradient(160deg,rgba(94,0,6,.16),rgba(238,217,185,.55)); }
+  .note { margin:0; max-width:62ch; opacity:.78; }
+  .controls { position:fixed; z-index:2; bottom:14px; left:50%; transform:translateX(-50%);
+              display:flex; gap:6px; padding:7px; border-radius:999px; background:rgba(94,0,6,.9); }
+  button { padding:8px 16px; border:0; border-radius:999px; background:transparent; color:#F5E2C3;
+           font:600 12px ui-sans-serif,system-ui,sans-serif; cursor:pointer; }
+  button.active { background:#F5E2C3; color:#5E0006; }
+.campo-luce, feTurbulence { animation-play-state: paused !important; animation-delay: -0s !important; }
+</style>
+</head>
+<body>
+<div class="sfondo" aria-hidden="true">
+  <svg viewBox="0 0 1000 700" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Rumore a bassissima frequenza: deforma il campo, non aggiunge grana. -->
+      <filter id="soffio" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".002 .003" numOctaves="2" seed="12" result="noise">
+          <animate attributeName="baseFrequency" values=".0015 .0024;.0028 .0017;.0013 .0030;.0015 .0024" dur="29s" repeatCount="indefinite"/>
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="115" xChannelSelector="R" yChannelSelector="G" result="wavy"/>
+        <feGaussianBlur in="wavy" stdDeviation="24"/>
+      </filter>
+      <radialGradient id="luce" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#fffdf8" stop-opacity=".94"/>
+        <stop offset=".28" stop-color="#fffaf0" stop-opacity=".74"/>
+        <stop offset=".62" stop-color="#f5e2c3" stop-opacity=".32"/>
+        <stop offset="1" stop-color="#f5e2c3" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="crema" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#fffdf6" stop-opacity=".72"/>
+        <stop offset=".42" stop-color="#f5e2c3" stop-opacity=".42"/>
+        <stop offset="1" stop-color="#eed9b9" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="caldo" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#d53e0f" stop-opacity=".22"/>
+        <stop offset=".46" stop-color="#9b0f06" stop-opacity=".12"/>
+        <stop offset="1" stop-color="#9b0f06" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g filter="url(#soffio)">
+      <g class="campo-luce a"><ellipse cx="800" cy="115" rx="540" ry="400" fill="url(#luce)"/></g>
+      <g class="campo-luce b"><ellipse cx="220" cy="420" rx="520" ry="430" fill="url(#crema)"/></g>
+      <g class="campo-luce c"><ellipse cx="70" cy="690" rx="500" ry="390" fill="url(#caldo)"/></g>
+    </g>
+  </svg>
+</div>
+
+<main class="pagina">
+  <header class="topbar"><div class="logo">YACA</div><div class="pillole"><div class="pillola on">Dashboard</div><div class="pillola">Impostazioni</div></div></header>
+  <p class="label">Cataloghi attivi</p>
+  <div class="chips"><div class="chip">Anime shōnen (serie)</div><div class="chip">Western contemporaneo (film)</div><div class="chip">Space opera (film)</div><div class="chip">Animazione per famiglie (film)</div></div>
+  <section class="card"><p class="label">Suggerimenti di visione</p><div class="posters"><div class="poster"></div><div class="poster"></div><div class="poster"></div><div class="poster"></div><div class="poster"></div><div class="poster"></div><div class="poster"></div><div class="poster"></div></div></section>
+  <section class="card"><p class="label">Il tuo DNA</p><p class="note">Il colore non ha contorni: la turbolenza deforma il gradiente mentre tre campi si espandono e si ritirano con tempi diversi.</p></section>
+</main>
+<div class="controls"><button id="play" class="active">Sbuffo</button><button id="pause">Fermo</button></div>
+<script>
+  const body = document.body;
+  document.getElementById('play').onclick = e => { body.classList.remove('fermo'); e.target.classList.add('active'); document.getElementById('pause').classList.remove('active'); };
+  document.getElementById('pause').onclick = e => { body.classList.add('fermo'); e.target.classList.add('active'); document.getElementById('play').classList.remove('active'); };
+</script>
+</body>
+</html>

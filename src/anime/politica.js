@@ -84,6 +84,13 @@ function resolveAnimePolicy(profile, typeSelectors = null, options = {}) {
     if (typeSelectors?.anime) {
         return typeSelectors.anime;
     }
+    // Con le modalità accese l'unica fonte è `derivaLeve(modo)`: i selettori salvati nel
+    // profilo sono un residuo del modello vecchio, e rileggerli qui era una seconda verità
+    // che poteva contraddire la modalità in uso.
+    const { modiAbilitati } = require('../profile/modo');
+    if (modiAbilitati()) {
+        return ANIME_POLICY_MODES.NEUTRAL;
+    }
     const profileManual = profile?.settings?.typeSelectors?.anime || profile?.typeSelectors?.anime;
     if (profileManual) {
         return profileManual;

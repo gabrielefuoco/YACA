@@ -1,4 +1,4 @@
-Status: needs-info
+Status: wontfix
 Type: research
 Blocked by: 05, 01
 
@@ -157,3 +157,7 @@ etichettato.
 
 Il pilota resta utile per una cosa: **la separazione dei falsi amici** (#992, #1239, #1505 contro i #23
 e #40 di KWLAT). Quella proprietà è reale e va ricordata se un giorno si costruisce l'asse etichettato.
+
+## Chiusura
+
+Effort di sperimentazione chiuso: la ricetta servita oggi è il V45 uscito da quel percorso. Restano i documenti come memoria delle prove, non come lavoro aperto.
