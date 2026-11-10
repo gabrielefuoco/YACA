@@ -476,6 +476,20 @@ def bisect_cluster(engine: Engine, righe: np.ndarray, cluster_indices: list[int]
 # STEP 1 - 8: GENERAZIONE DEI CLUSTER AMMISSIBILI
 # ==============================================================================
 
+def _eta_ordinabile(valore: float) -> float:
+    """Ordinamento tollerante all'età ignota.
+
+    `NaN` non è confrontabile: senza questo, ordinare i semi per recenza solleva o
+    restituisce ordini casuali. Un'età ignota vale come «molto vecchia» per l'ordine,
+    ma resta `NaN` nell'uscita, dove significa «non la conosciamo».
+    """
+    try:
+        v = float(valore)
+    except (TypeError, ValueError):
+        return float("inf")
+    return float("inf") if math.isnan(v) else v
+
+
 def clusters(
     engine: Engine,
     righe: Sequence[int] | np.ndarray,
@@ -504,7 +518,8 @@ def clusters(
     if n_seeds == 0:
         return []
 
-    eta_arr = np.asarray(eta, dtype=np.float64) if eta is not None else np.zeros(n_seeds, dtype=np.float64)
+    # Età ignota = NaN, non 0: zero significa «visto oggi».
+    eta_arr = np.asarray(eta, dtype=np.float64) if eta is not None else np.full(n_seeds, np.nan)
     plays_arr = np.asarray(plays, dtype=np.float64) if plays is not None else np.ones(n_seeds, dtype=np.float64)
 
     # 1. Matrice di affinità
@@ -564,12 +579,12 @@ def clusters(
         elif c_med["movie"] > c_med["series"]:
             m_med = "movie"
         else:
-            best_idx = max(m_indices, key=lambda idx: (plays_arr[idx], -eta_arr[idx]))
+            best_idx = max(m_indices, key=lambda idx: (plays_arr[idx], -_eta_ordinabile(eta_arr[idx])))
             m_med = "series" if m_keys[m_indices.index(best_idx)].startswith("tv:") else "movie"
 
         anime_pct = float(anime_flags[m_rows].mean()) if anime_flags is not None else 0.0
         adult_pct = float(adult_flags[m_rows].mean()) if adult_flags is not None else 0.0
-        m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+        m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], _eta_ordinabile(eta_arr[idx])))
         repr_seeds = [str(titles[righe_arr[idx]]) for idx in m_sorted[:3]]
 
         ev = {
@@ -673,7 +688,7 @@ def clusters(
             if len(m_indices) < min_cluster_size:
                 continue
 
-            m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+            m_sorted = sorted(m_indices, key=lambda idx: (-plays_arr[idx], _eta_ordinabile(eta_arr[idx])))
             top_seed_idx = m_sorted[0]
             top_row = righe_arr[top_seed_idx]
             top_key = engine.keys[top_row]
@@ -735,7 +750,8 @@ def clusters(
                 semi_rappresentativi=semi_rappresentativi,
                 semi_membri=semi_membri,
                 size=len(m_indices),
-                min_eta=float(min(eta_arr[idx] for idx in m_indices)),
+                # Con età ignote (NaN) `min` restituirebbe NaN: si prende la più vecchia nota.
+                min_eta=min((float(eta_arr[idx]) for idx in m_indices if not math.isnan(float(eta_arr[idx]))), default=float("inf")),
                 matched_entry=item["matched_entry"],
                 seeds_indices=m_indices,
                 dom_coll=dom_coll,
@@ -790,7 +806,7 @@ def unisci_cluster_tassonomia_identici(
         for sh in sh_list:
             all_seeds.update(sh.seeds_indices)
 
-        m_sorted = sorted(all_seeds, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+        m_sorted = sorted(all_seeds, key=lambda idx: (-plays_arr[idx], _eta_ordinabile(eta_arr[idx])))
         capped_seeds = m_sorted[:cap]
 
         top_s = capped_seeds[0]
@@ -893,7 +909,7 @@ def scaffali(
 
     for idx, s in enumerate(semi):
         r_idx = None
-        s_eta = float(idx)  # Fallback: ordine della sequenza
+        s_eta = float("nan")  # età ignota: nessun fallback, l'indice non è una data
         s_plays = 1.0
 
         if isinstance(s, int):
@@ -910,7 +926,10 @@ def scaffali(
                     k = f"{pref}:{int(tid)}"
             if k:
                 r_idx = engine.row_of.get(k)
-            s_eta = float(s.get("eta_giorni", s.get("eta", s.get("min_eta", idx))))
+            if s.get("eta_giorni") is not None:
+                s_eta = float(s["eta_giorni"])
+            elif s.get("eta") is not None:
+                s_eta = float(s["eta"])
             s_plays = float(s.get("plays", 1.0))
 
         if r_idx is not None and 0 <= r_idx < engine.n:
@@ -1170,7 +1189,7 @@ def scaffali(
                 other_members = []
                 other_rep = []
                 if other_indices:
-                    other_sorted = sorted(other_indices, key=lambda idx: (-plays_arr[idx], eta_arr[idx]))
+                    other_sorted = sorted(other_indices, key=lambda idx: (-plays_arr[idx], _eta_ordinabile(eta_arr[idx])))
                     for idx in other_sorted:
                         r = righe_arr[idx]
                         k_seme = engine.keys[r]
