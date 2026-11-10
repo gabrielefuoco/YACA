@@ -1,6 +1,6 @@
 # 19 — Le scelte del grafo decise dal teacher, non a mano
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 17 (fatto)
+**Status**: `wontfix` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 17 (fatto)
 
 ## Il problema
 
@@ -25,3 +25,7 @@ Lo stesso vale per il livello di aggregazione (L1 vs L2 vs keyword grezze): oggi
 1. La curva AUC-per-risoluzione deve avere un massimo **netto** (se è piatta, la manopola non conta e va detto).
 2. Il numero di cluster scelto deve restare compatibile con l'uso previsto (micro-generi, non macro-generi).
 3. Ogni scelta va registrata nella mappa con il numero che l'ha determinata — è la regola del filone.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

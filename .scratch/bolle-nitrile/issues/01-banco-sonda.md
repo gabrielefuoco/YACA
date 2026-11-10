@@ -1,6 +1,6 @@
 # banco sonda
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `prototype`
 
 Il banco sonda: 20 titoli sentinella, letti prima e dopo.
@@ -33,3 +33,7 @@ titoli era peggiore. Serve uno strumento che sia **la lettura, resa ripetibile**
 ## Esito
 
 Lo strumento funziona e riproduce le letture a mano. Trova due patologie nuove: The Mandalorian con Il re leone ed Elf, Star Trek: Discovery con La mummia e MacGyver. Conferma che le 4 nicchie che il ticket 08 di grafo-servibile aveva dissolto erano perfette.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

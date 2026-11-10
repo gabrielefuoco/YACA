@@ -1,6 +1,6 @@
 # 22 — Le raccomandazioni TMDB: il segnale comportamentale che copre anche le serie
 
-**Status**: `claimed` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Da dove nasce
 
@@ -63,3 +63,7 @@ dice 4,7 volte di piu. E TMDB raccomanda titoli piu popolari della sorgente (265
 
 **Gerarchia confermata**: co-visione primaria, raccomandazioni dove il teacher e cieco (serie, ticket
 12) e come feature nell adiacenza appresa (passo 2).
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

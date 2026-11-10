@@ -1,6 +1,6 @@
 # 18 — L'adiacenza appresa: il peso si impara dal teacher
 
-**Status**: `claimed` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 17 (fatto)
+**Status**: `wontfix` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 17 (fatto)
 
 ## L'idea
 
@@ -67,3 +67,7 @@ di misurabile a basso dosaggio.
 
 La struttura migliore **non** si trasferisce alle liste in modo automatico. Serve il disaccoppiamento
 testa/imbuto e la statistica forte (ticket 11).
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

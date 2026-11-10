@@ -1,6 +1,6 @@
 # LIST nelle bolle
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 07
 
@@ -32,3 +32,7 @@ esattamente il segnale che stiamo cercando di ricostruire con le keyword.
 ## Esito
 
 IL RISULTATO MIGLIORE DEL GIRO. 1.617 bolle, mediana 34. Le cinque minestrone diventano film noir americano (114), fantasy anni '80 (37), commedia romantica (53), commedia sexy all'italiana (162). Le nicchie rotte dal ticket 02 guariscono. Tarkovsky diventa cinema d'autore europeo. 18 sentinelle su 20 leggono un mondo nominabile. MA i film e le serie di Star Wars restano in DUE bolle separate: il ponte cross-medium non viene dalle liste.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

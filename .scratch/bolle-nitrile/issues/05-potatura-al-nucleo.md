@@ -1,6 +1,6 @@
 # potatura al nucleo
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 04
 
@@ -32,3 +32,7 @@ titoli.
 ## Esito
 
 A V4 non cambia quasi niente (1.413 bolle prima e dopo, 1.302 -> 1.295 con >=15): l'effetto catena non e' misurabile a questo stadio. Diventa aggressiva solo dopo il consenso (9.452 titoli espulsi a V6). Non ha mai rotto una nicchia: era il requisito.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

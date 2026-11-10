@@ -1,6 +1,6 @@
 # 01 — Il gate: MovieLens copre il catalogo abbastanza da valerne la pena?
 
-**Status**: `resolved` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Domanda
 
@@ -23,3 +23,7 @@ trasferisce ai metadati.
 
 **Conseguenza**: il filone va avanti. Ma il limite è dichiarato fin qui, non alla fine: le serie sono l'80%
 delle cronologie reali e MovieLens è cieco (vedi [ticket 12](12-trasferimento-serie.md)).
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

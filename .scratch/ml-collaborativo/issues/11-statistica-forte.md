@@ -1,6 +1,6 @@
 # 11 — La statistica forte: utenti MovieLens tenuti fuori
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Il problema
 
@@ -20,3 +20,7 @@ Attenzione al disegno: separare gli utenti usati per costruire il **teacher** da
 
 È il numero che rende difendibile (o no) tutto il filone davanti a una decisione di prodotto. Senza, ogni
 confronto resta «5 profili hanno detto 3,1×».
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

@@ -1,6 +1,6 @@
 # 16 — Il JSON di produzione non è riproducibile dal builder del repo
 
-**Status**: `needs-triage` · **Type**: `task` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `task` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Il fatto
 
@@ -23,3 +23,7 @@ probabilmente la *causa* del ticket 13 (una pipeline diversa ha rigenerato il JS
    caricamento deve *urlare*. È la classe di bug più costosa di questo filone — tre casi trovati
    ([13](13-l1-adjacency.md), e la diffidenza su `children_L1`), tutti silenziosi.
 4. Ricostruire il JSON con lo script riconciliato e diffare l'output prima di sostituirlo.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

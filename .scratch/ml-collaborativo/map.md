@@ -241,3 +241,12 @@ fumo, mai come evidenza.
 
 **I 14 ticket ancora aperti** di questa mappa vanno passati in rassegna: alcuni sono superati (il
 trasferimento alle serie, le liste servite), altri restano validi e vanno ripresi dalla mappa nuova.
+
+## Chiusura
+
+**10/11/2026.** Mappa chiusa: la ricerca era già conclusa il 13/10/2026 e i 14 ticket che restavano
+— la coda da «passare in rassegna» — sono stati chiusi in blocco, per decisione esplicita.
+
+Nessuno di quei ticket è stato realizzato: sono chiusi come **coda di una ricerca conclusa**, non come
+lavoro fatto. I testi restano nel repo (`issues/`), ciascuno con la propria domanda: se una di quelle
+domande tornerà, il punto di partenza è lì.

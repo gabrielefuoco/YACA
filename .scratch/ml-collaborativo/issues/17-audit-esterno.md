@@ -1,6 +1,6 @@
 # 17 — L'audit esterno del grafo: il teacher come giudice
 
-**Status**: `resolved` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 13
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 13
 
 ## Perché esiste
 
@@ -25,3 +25,7 @@ Metodo, esempi e lettura: [`ricerche/07-audit-esterno.md`](../ricerche/07-audit-
 
 Questo diventa il **cancello strutturale** del filone, accanto a quello di prodotto (imbuto + coseno).
 Teacher in cache per riuso: `.cache/movielens/teacher-Z.npz`.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

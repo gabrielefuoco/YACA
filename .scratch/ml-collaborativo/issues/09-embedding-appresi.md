@@ -1,6 +1,6 @@
 # 09 — Embedding appresi dal sottografo (l'idea dell'utente)
 
-**Status**: `resolved` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 (le premesse sono misurate: [07](07-feature-estese.md) e [08](08-fix-puntuali.md))
 
 ## Ipotesi
@@ -84,3 +84,7 @@ ma il collo di bottiglia della media resterebbe.
 
 **Conclusione: la rappresentazione non e il collo di bottiglia.** Il margine residuo non si
 recupera cambiando come descriviamo i film.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

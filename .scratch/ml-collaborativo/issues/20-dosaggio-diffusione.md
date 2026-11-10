@@ -1,6 +1,6 @@
 # 20 — Il dosaggio della diffusione: disaccoppiare testa e imbuto
 
-**Status**: `ready-for-agent` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 18 (misurato), 11 (consigliato)
+**Status**: `wontfix` · **Type**: `prototype` · **Aperto**: 08/10/2026 · **Blocked by**: 18 (misurato), 11 (consigliato)
 
 ## Il fatto misurato
 
@@ -39,3 +39,7 @@ Atteso: la profondità di C (+2 @200) **senza** la perdita di testa.
 1. 2 hop @50 **≥ 5,9** *e* @200 **≥ 10,5** nello stesso braccio (è il punto: averli insieme).
 2. Il cluster @50 non deve scendere sotto 2,8.
 3. Statistica forte o almeno 2-3 profili in più (ticket 11): il ±1 punto è dentro il rumore.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

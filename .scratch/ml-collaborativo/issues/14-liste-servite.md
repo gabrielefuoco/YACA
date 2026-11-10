@@ -1,6 +1,6 @@
 # 14 — La verifica finale: le liste servite (rank 10→30)
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: 10 (consigliato)
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: 10 (consigliato)
 
 ## Dove siamo
 
@@ -18,3 +18,7 @@ ma il grafo aggiunge una lettura di `.npz` e un k-NN.
 
 Se il grafo entra in produzione, e con quale strategia (100% dei candidati, o blend con il pool attuale solo
 per le fasce dove vince). È l'ultimo cancello prima del [ticket 15](15-decisione-integrazione.md).
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

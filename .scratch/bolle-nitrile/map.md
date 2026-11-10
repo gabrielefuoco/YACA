@@ -51,3 +51,13 @@ Etichetta di lavoro (dall'esperto, e ci sta): *«i triangoli non mentono mai»*.
 - **La gerarchia a tre livelli**: il ticket 11 di `grafo-servibile` l'ha dichiarata impossibile sulla
   sparsificazione. Qui non si riapre.
 - **YACA in produzione**: `src/` non si tocca. Mai.
+
+## Chiusura
+
+**10/11/2026.** Mappa chiusa, per decisione esplicita. Il suo percorso — bolle nitide e nominabili —
+è stato **superato**: le bolle sono uscite dal prodotto con la pulizia, e la raccomandazione serve oggi
+scaffali dal grafo V45.
+
+Cosa sopravvive di questa mappa, e va detto perché è la parte che valeva: il **banco sonda** con i
+venti titoli sentinella, e la regola che ha corretto quattro errori di fila — **vince la lettura, non
+l'indicatore**. I ticket restano scritti con le loro diagnosi.

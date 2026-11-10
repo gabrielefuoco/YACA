@@ -1,6 +1,6 @@
 # 13 — `L1_adjacency`: il segnale laterale del grafo vecchio è morto in produzione
 
-**Status**: `ready-for-human` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 **Verificato**: 08/10/2026, con tre prove indipendenti (sotto)
 
 ## Il fatto (non un sospetto: verificato)
@@ -67,3 +67,7 @@ solo in profondità**. Non è una vittoria, e il guadagno grande apparente non �
 
 **Manca il test pulito**: pool fissato dai due run (esportare anche il pool vero in
 `export-graph-candidates.py` e leggerlo dal file) → la differenza sarebbe *solo* della diffusione.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

@@ -1,6 +1,6 @@
 # 10 — Il banco appaiato per popolarità: quanto vantaggio resta dopo aver tolto la fama?
 
-**Status**: `ready-for-agent` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Il buco, dichiarato
 
@@ -20,3 +20,7 @@ dei candidati dei due bracci (già nota: 63 mediani contro 22) accanto al recall
   argomento forte per la produzione.
 - Se **scompare** → il vantaggio è (in buona parte) un effetto di popolarità, e va detto: cambia il valore del
   filone e va corretto il modo di scegliere i semi (normalizzare per popolarità).
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

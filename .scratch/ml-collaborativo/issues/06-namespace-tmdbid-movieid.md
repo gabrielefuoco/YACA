@@ -1,6 +1,6 @@
 # 06 — Il probe rotto: tmdbId contro movieId (e come è stato smascherato)
 
-**Status**: `resolved` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Il bug
 
@@ -22,3 +22,7 @@ Sintomo: il controllo del vettore medio crollava da **0,224 a 0,056**, e il prob
 
 **Convertire una volta sola, al confine del namespace, e stampare la copertura.** E: nessun numero senza il
 controllo del banale accanto.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

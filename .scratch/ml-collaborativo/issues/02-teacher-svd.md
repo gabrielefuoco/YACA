@@ -1,6 +1,6 @@
 # 02 — Il teacher: la SVD collaborativa e il controllo del banale
 
-**Status**: `resolved` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 01
+**Status**: `wontfix` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 01
 
 ## Cosa è stato fatto
 
@@ -18,3 +18,7 @@ dava 0,044 e senza questo controllo sarebbe passato per un risultato: era un bug
 
 Prima componente: **42,5% di varianza**. 49.709 film hanno il teacher (su 71.298 film nel catalogo caricato).
 Artefatti: `.cache/movielens/` (gitignorato). Riconciliazione dei due script: `reconcile-svd.py`.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

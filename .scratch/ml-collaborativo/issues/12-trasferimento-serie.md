@@ -1,6 +1,6 @@
 # 12 — Il trasferimento alle serie: 0%, e adesso?
 
-**Status**: `needs-triage` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Il problema aperto più grande
 
@@ -75,3 +75,7 @@ filtra gia per tipo, la classifica avviene dentro un tipo.
 
 Il blocco POSF in build-film-graph.py va disattivato prima di ricostruire; film-graph-typeclean.npz
 non va usato.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

@@ -1,6 +1,6 @@
 # mappa nuova
 
-**Status**: `claimed`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 09
 
@@ -67,3 +67,7 @@ legame "struttura" fra quelli letti e' proprio **Star Wars <-> Star Wars TV**.
 
 **Resta da fare**: gli 8 slot tipizzati (4 canonici + 2 vibe + 2 cross-medium), la leva
 popolare/nicchia sulle bolle nuove, e la lettura di 10 bolle nuove.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

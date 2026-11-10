@@ -1,6 +1,6 @@
 # 07 — Le feature che non usavamo: +11% di coseno, +26% di recall
 
-**Status**: `resolved` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 03
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 03
 
 ## La domanda
 
@@ -21,3 +21,7 @@ non le feature. Quel buco non si colma con un modello migliore.
 
 Aggiunte lingua, persone (cast+creatori, top 3.000), franchise (top 800), budget/incassi, `content_rating`,
 stagioni → held-out **0,430 → 0
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

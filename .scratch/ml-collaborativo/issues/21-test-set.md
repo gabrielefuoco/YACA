@@ -1,6 +1,6 @@
 # 21 — Il test set congelato: la linea di base per migliorie e regressioni
 
-**Status**: `resolved` · **Type**: `task` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
+**Status**: `wontfix` · **Type**: `task` · **Aperto**: 08/10/2026 · **Blocked by**: nessuno
 
 ## Fatto
 
@@ -49,3 +49,7 @@ produzione da **75 candidati** (fame); e **il ranker e il punto debole** — ord
 popolarita batte lo scorer a @50 (6,1% contro 4,3%, e 8,5% contro 5,0% sulla fascia mainstream).
 
 Comando d uso: `CAND_FILE=graph-candidates-testset.json node bench-graph-funnel.js`
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

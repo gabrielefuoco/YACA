@@ -1,6 +1,6 @@
 # 03 — Lo student: dai metadati allo spazio collaborativo
 
-**Status**: `resolved` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 02
+**Status**: `wontfix` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 02
 
 ## Cosa è stato fatto
 
@@ -19,3 +19,7 @@ numeriche.
 
 Il gap base di +0,054 dice una cosa precisa: **il Ridge non sotto-adatta** → una testa non lineare non è la
 prima leva. Le leve erano le feature ([07](07-feature-estese.md)) e la regolarizzazione ([08](08-fix-puntuali.md)).
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

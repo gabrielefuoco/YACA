@@ -1,6 +1,6 @@
 # shrinkage di riga
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 02
 
@@ -36,3 +36,7 @@ Conseguenze:
 ## Esito
 
 Difetto vero e meccanismo dimostrato. Le bolle passano da 4.635 a 1.771, mediana da 11 a 30.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

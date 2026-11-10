@@ -1,6 +1,6 @@
 # maschera genere e COLL
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 05
 
@@ -31,3 +31,7 @@ capitolo e l'altro.
 ## Esito
 
 Taglia il 76,3% degli archi DIR (317.624 su 416.154) e il 39,5% di CAST. Percentuale enorme, e la lettura dice che e' benefica: e' qui che emergono i mondi veri. COLL da 1 a 3 non isolato, dichiarato.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

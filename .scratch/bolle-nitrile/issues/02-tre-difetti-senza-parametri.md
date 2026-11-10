@@ -1,6 +1,6 @@
 # tre difetti senza parametri
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 01
 
@@ -35,3 +35,7 @@ condivise.
 ## Esito
 
 D2 (row<col su matrice asimmetrica) e' vero e grave, corretto. D3 (coseno L2) e' vero ma con la soglia 0,12 su CAST lo uccide (mediana del grado 0). D1 (n_iterations) e' vero ma IRRILEVANTE: 2 e 6 passate danno la stessa partizione. La lettura: sacchi meglio, due nicchie rotte (Watamote finisce tra i film horror), intruso NON risolto.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

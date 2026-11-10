@@ -1,6 +1,6 @@
 # 05 — L'imbuto: il grafo davanti allo scorer di produzione, a parità di budget
 
-**Status**: `resolved` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 04
+**Status**: `wontfix` · **Type**: `research` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 04
 
 ## Il metodo (che è la parte che vale)
 
@@ -24,3 +24,7 @@ fa lo stesso punteggio, la sorgente non ha informazione.
 sono ancora spiegati dalla popolarità da sola ([ticket 10](10-banco-appaiato-popolarita.md)).
 
 Riproduzione: `export-graph-candidates.py` → `bench-graph-funnel.js`.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

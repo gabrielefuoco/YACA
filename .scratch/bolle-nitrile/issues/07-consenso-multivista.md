@@ -1,6 +1,6 @@
 # consenso multivista
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 06
 
@@ -29,3 +29,7 @@ dato che la nicchia non ha.
 ## Esito
 
 PREMESSA NON VERIFICATA: solo l'8,6% degli archi ha due o piu' viste, fattore medio 0,992. Il bonus non premia quasi nulla, di fatto e' solo una penalita' su 1.161.496 archi.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.

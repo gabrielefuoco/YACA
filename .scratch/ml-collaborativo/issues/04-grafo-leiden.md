@@ -1,6 +1,6 @@
 # 04 — Il grafo: k-NN + Leiden, e la prova che è *diverso*
 
-**Status**: `resolved` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 03
+**Status**: `wontfix` · **Type**: `task` · **Aperto**: 08/10/2026 · **Chiuso**: 08/10/2026 · **Blocked by**: 03
 
 ## Cosa è stato fatto
 
@@ -21,3 +21,7 @@ stessi cluster, il grafo nuovo non serviva (bastava quello delle keyword): non l
 | 256 | 3.217 | 24 | 105 | 0,434 | 0,736 |
 
 Res 16 è già micro-genere (299 titoli di mediana). La manopola esiste se serve più fine.
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. La mappa era già chiusa come ricerca il 13/10/2026 e l'esito è nel V45 servito oggi; i ticket rimasti erano la coda da «passare in rassegna». Restano scritti qui: se una domanda tornerà utile, si riparte da questo testo invece che da zero.

@@ -1,6 +1,6 @@
 # CPM e risoluzione
 
-**Status**: `resolved`
+**Status**: `wontfix`
 **Type**: `task`
 **Blocked by**: 08
 
@@ -58,3 +58,7 @@ proprio a questo: a dimostrare che il problema non era la risoluzione ma la **co
 e che dopo i ticket 02-08 la coarsening e' atterrata esattamente dove doveva.
 
 **Nessun cambio di risoluzione. V7 resta la partizione di riferimento del ticket 10.**
+
+## Chiusura
+
+Chiuso con la mappa il 10/11/2026, per decisione esplicita. Il percorso che questa mappa serviva — bolle nitide e nominabili — è stato superato: le bolle sono uscite dal prodotto (pulizia-bolle) e la raccomandazione serve oggi scaffali dal grafo V45. Il banco sonda e la regola «vince la lettura, non l'indicatore» restano la parte utile, e sono citati nella mappa.
