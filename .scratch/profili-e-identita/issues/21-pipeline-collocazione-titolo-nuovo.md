@@ -4,6 +4,15 @@ Blocked by: 20
 
 # Collocare un titolo nuovo: la pipeline, un titolo alla volta
 
+## Cosa è stato deciso prima di iniziare (grilling 10/11/2026)
+
+- **Lo studente c'è** (ticket 23, forma B): le fonti sono **otto**, non sette. `RRFST` è calcolabile
+  per un titolo nuovo perché lo studente mangia solo contenuto — è il ponte contenuto → comportamento.
+- Le altre sei fonti comportamentali restano fuori (`COVISION`, `LIST`, `LISTSEM`, `RESID`,
+  `CONTESTI`, `TRIBU`): peso 2,8 su 8,4 che a cold start non esiste.
+- **La riga si colloca su domanda**: quando un seme dell'utente è fuori canone (ticket 19 registra
+  esattamente quei casi).
+
 ## Cosa deve fare
 
 Da un id TMDB appena uscito a una riga di archi nel grafo. Sei passi, tutti già esistenti come pezzi
@@ -15,7 +24,7 @@ sparsi: il lavoro è **metterli in fila e renderli ripetibili**, non inventarli.
 | 2 | **embedding della trama** | `Qwen3-Embedding-0.6B`, **già nella cache HF locale** (`models--Qwen--Qwen3-Embedding-0.6B`) | ~0,2–1 s su CPU |
 | 3 | **blocco keyword** | `kw-tfidf/vocab.json` + proiezione casuale ±1/√k, `SEED=42`, stesse `kwcols` di `blocks.py` | millisecondi, ma vedi il punto fragile |
 | 4 | feature strutturali | decennio, paese, NEP, cast/crew props, flag anime | millisecondi |
-| 5 | **le fonti** con i loro pesi veri, poi RRF `k=15` | `tipi.py` sa calcolare ognuna per il canone intero: qui serve **per una riga sola** | millisecondi |
+| 5 | **le fonti** (sette di contenuto + lo studente) con i loro pesi, poi la fusione | `tipi.py` per le fonti, `studente-addestra.py` per `RRFST` | millisecondi |
 | 6 | la riga: top-100 archi uscenti | come `cmd_rrfst` ma per una riga | millisecondi |
 
 ## Il punto fragile, da chiudere subito

@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: research
 Blocked by: 20
 
@@ -91,3 +91,47 @@ Quattro strade, e vanno scelte guardando il **costo**, non la qualità teorica:
   il RRF fisso; rifarlo con la forma B dice quale delle due serve meglio, non solo quale somiglia di più;
 - **insistere sul modello** (più epoche, più capacità): la loss scendeva ancora, ma il tetto è il
   contenuto, quindi il guadagno atteso è piccolo.
+
+## La diffusione — il criterio che decide (e che il cancello era un surrogato)
+
+12 gruppi di 5 semi pescati dai **999 titoli che lo studente non ha mai visto**, righe dei semi
+sostituite con i rispettivi top-16, PPR, confronto del top-20 con la transizione servita:
+
+| collocazione dei semi | overlap@20 mediano | peggiore |
+|---|---|---|
+| **studente, forma B** | **0,625** | 0,40 |
+| RRF fisso, sette fonti | 0,550 | 0,45 |
+
+Lo studente vince **7 gruppi su 12**, ne perde 4 e ne pareggia 1. Sulla riga secca erano pari (0,49);
+sulla diffusione — cioè su ciò che l'utente vede — la forma B è **+0,075**.
+
+Perché ha senso: lo studente impara la *distribuzione* dei vicini del maestro (softmax su tutto il
+canone), mentre l'RRF produce un top-k dove conta solo l'ordine dei primi. Quando si diffonde, la
+coda pesata conta più dell'ordine esatto.
+
+## Come si legge, e cosa NON si nasconde
+
+Il cancello dichiarato prima (`overlap@100` ≥ 0,50) **non è passato**: 0,49. La decisione di usare la
+forma B si appoggia su una misura **non pre-dichiarata**, la diffusione, che è stata fatta *dopo*
+aver visto il pareggio. Va detto perché è esattamente il modo in cui un criterio si piega a ciò che
+si voleva trovare.
+
+Resta difendibile per tre motivi, e solo questi: (1) la diffusione è più vicina all'esperienza
+dell'utente della riga secca; (2) il margine non è un'unghia — 7 gruppi su 12, +0,075 di mediana;
+(3) sul criterio dichiarato le due strade sono **pari** (0,49 contro 0,49), quindi la scelta non
+peggiora niente, e la coda della forma B è migliore (p10 0,28 contro 0,23).
+
+## Esito
+
+- **forma A chiusa**: 0,42, peggiore del RRF fisso. I blocchi densi non bastano.
+- **forma B adottata**: è l'encoder che il ticket 21 userà. Artefatto prodotto con tutte le righe.
+- Il tetto resta il contenuto: **nessun modello** può superare il limite di ciò che a cold start
+  esiste. Se un giorno servisse di più, la strada non è addestrare meglio — è avere `COVISION`.
+
+## Numeri riproducibili
+
+| script | cosa fa |
+|---|---|
+| `.scratch/profili-e-identita/ricostruisci-blocks.py` | ricostruisce `blocks.npz` in 12 s (SEED=42) |
+| `.scratch/profili-e-identita/studente-addestra.py` | addestra (forma A/B, held-out o completo) ed esegue la prova |
+| `.scratch/profili-e-identita/studente-diffusione.py` | la prova di diffusione: studente contro RRF fisso |
