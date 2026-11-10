@@ -78,7 +78,8 @@ class Engine:
         self.kids_ok: np.ndarray | None = None
         self.kids_errore: str | None = None
         self.tmdb_to_indices: dict[int, list[int]] = {}
-        self.ultimo_scarto: dict[str, int] = {
+        self._chiavi_scartate: list[str] = []
+        self.ultimo_scarto: dict[str, Any] = {
             "semi_fuori_canone": 0,
             "esclusi_fuori_canone": 0,
         }
@@ -275,6 +276,28 @@ class Engine:
         inst._init_canone(n)
 
         return inst
+
+    @staticmethod
+    def _chiave_per_log(item: Any) -> str:
+        """La chiave di un seme cosi' come e' arrivata, per poterla NOMINARE in un log.
+
+        `_parse_seme` ritorna `None` quando il titolo e' fuori canone e la chiave si perde:
+        il chiamante saprebbe dire «1 scarto» ma non «quale». Questo estrattore non valida
+        niente — serve solo a non lasciare anonimo uno scarto.
+        """
+        if isinstance(item, str):
+            return item
+        if isinstance(item, dict):
+            k = item.get("key")
+            if k:
+                return str(k)
+            if "tmdbId" in item:
+                pref = "tv" if item.get("medium") in ("tv", "series", "show") else "movie"
+                return f"{pref}:{item['tmdbId']}"
+            return ""
+        if isinstance(item, (tuple, list)) and item:
+            return str(item[0])
+        return str(item)[:40]
 
     def _parse_seme(self, item: Any) -> dict | None:
         """Estrae i parametri di un seme validandone i campi.
@@ -523,6 +546,7 @@ class Engine:
         """
         parsed_seeds: list[dict] = []
         semi_fuori_canone = 0
+        self._chiavi_scartate: list[str] = []
 
         for s in semi:
             parsed = self._parse_seme(s)
@@ -530,6 +554,9 @@ class Engine:
                 parsed_seeds.append(parsed)
             else:
                 semi_fuori_canone += 1
+                chiave = self._chiave_per_log(s)
+                if chiave:
+                    self._chiavi_scartate.append(chiave)
 
         if not parsed_seeds:
             return [], [], semi_fuori_canone
@@ -665,6 +692,7 @@ class Engine:
         self.ultimo_scarto = {
             "semi_fuori_canone": semi_fuori_canone,
             "esclusi_fuori_canone": esclusi_fuori_canone,
+            "semi_scartati": list(getattr(self, "_chiavi_scartate", []) or []),
         }
 
         if cap <= 0 or not final_rows:

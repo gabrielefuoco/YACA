@@ -53,6 +53,26 @@ MSG_ERR_BLACKLIST: str = _kids.MSG_ERR_BLACKLIST
 
 _UNSET = object()
 
+# Contatore giornaliero dei semi fuori canone. Non e' una metrica di prodotto: e' la prova che il
+# buco del cold start si presenta o no. Se resta a zero per giorni, i ticket di collocazione non
+# hanno un motivo per esistere.
+_SCARTI_GIORNO: dict[str, Any] = {"giorno": "", "film": 0, "serie": 0, "totale": 0}
+
+
+def _registra_scarti(chiavi: list[str]) -> None:
+    """Aggiorna il contatore del giorno, azzerandolo al cambio di data."""
+    global _SCARTI_GIORNO
+    oggi = time.strftime("%Y-%m-%d", time.gmtime())
+    if _SCARTI_GIORNO.get("giorno") != oggi:
+        _SCARTI_GIORNO = {"giorno": oggi, "film": 0, "serie": 0, "totale": 0}
+    for k in chiavi:
+        _SCARTI_GIORNO["totale"] += 1
+        if str(k).startswith("tv:") or str(k).startswith("series:"):
+            _SCARTI_GIORNO["serie"] += 1
+        else:
+            _SCARTI_GIORNO["film"] += 1
+
+
 
 def _estrai_kids_param(dati: dict, opzioni: dict | None = None) -> bool:
     """Estrae il flag booleano kids da dati o opzioni.
@@ -527,6 +547,7 @@ def costruisci_health_payload(engine: Engine | None = None, w_aff: sp.csr_matrix
             "ricetta": P.impronta(),
         },
         "artefatti": arts,
+        "scarti_semi": dict(_SCARTI_GIORNO),
     }
 
 
@@ -826,6 +847,7 @@ def esegui_scaffali(
             else:
                 esclusi_keys.append(str(it))
 
+    diagnostica: dict = {}
     try:
         shelves = I.scaffali(
             engine=engine,
@@ -838,9 +860,22 @@ def esegui_scaffali(
             tono=tono,
             complessita=complessita,
             kids=kids,
+            diagnostica=diagnostica,
         )
     except Exception as exc:
         return 500, {"ok": False, "errore": f"errore durante la generazione degli scaffali: {exc}"}
+
+    scartati = list(diagnostica.get("semi_fuori_canone") or [])
+    if scartati:
+        # DICHIARARE, NON INGOIARE: un titolo fuori canone e' un seme che non semina.
+        _registra_scarti(scartati)
+        print(
+            f"WARNING [scaffali]: {len(scartati)} semi fuori canone scartati: "
+            + ", ".join(scartati[:10])
+            + (" …" if len(scartati) > 10 else ""),
+            file=sys.stderr,
+            flush=True,
+        )
 
     scaffali_out = []
     covered_seeds = set()
@@ -905,6 +940,14 @@ def esegui_scaffali(
             "righe": int(len(scaffali_out)),
         },
     }
+    # La diagnostica compare SOLO se c'e' qualcosa da dire: la chiave assente significa «nessun seme
+    # scartato», che e' il caso normale. Cosi' il contratto non si allarga per un'informazione
+    # operativa, e quando la chiave c'e' e' perche' un titolo fuori canone ha aperto un buco.
+    if scartati:
+        risposta["diagnostica"] = {
+            "semi_fuori_canone": int(len(scartati)),
+            "semi_scartati": scartati[:20],
+        }
     return 200, risposta
 
 

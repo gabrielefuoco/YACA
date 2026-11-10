@@ -92,6 +92,37 @@ def test_profilo_lungo_restituisce_200_con_16_scaffali(warnok_seeds):
     assert slots == list(range(1, 17))
 
 
+def test_seme_fuori_canone_viene_nominato(warnok_seeds, capsys):
+    """Un titolo fuori canone non sparisce piu' in silenzio: lo dice la risposta, lo dice il log.
+
+    Prima di questo test il seme fuori canone veniva contato e poi buttato via: chi guarda solo
+    titoli nuovi riceveva scaffali senza sapere perche' il suo titolo non avesse seminato niente.
+    """
+    fuori = "movie:1751701"  # «After Impact» (2026), verificato fuori dal canone V45
+    semi = list(warnok_seeds) + [{"key": fuori, "plays": 1}]
+
+    status, res = servizio.esegui_scaffali({"semi": semi, "n": 8})
+
+    assert status == 200
+    # il contratto normale non si allarga: `statistiche` resta quello di sempre
+    assert set(res["statistiche"].keys()) == {"semi_totali", "semi_coperti", "righe"}
+    # la diagnostica compare solo quando c'e' uno scarto, e lo NOMINA
+    assert res["diagnostica"]["semi_fuori_canone"] == 1
+    assert res["diagnostica"]["semi_scartati"] == [fuori]
+    # il contatore del giorno lo registra come film
+    assert servizio._SCARTI_GIORNO["film"] >= 1
+
+    err = capsys.readouterr().err
+    assert fuori in err, "il log deve nominare il titolo scartato, non solo contarli"
+
+
+def test_senza_scarti_nessuna_diagnostica(warnok_seeds):
+    """Con soli titoli in canone la chiave non compare: assente = nessuno scarto."""
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
+    assert status == 200
+    assert "diagnostica" not in res
+
+
 # ------------------------------------------------------------------------------
 # 2. Semi vuoti -> 200 con lista vuota
 # ------------------------------------------------------------------------------

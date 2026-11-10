@@ -863,6 +863,28 @@ def unisci_cluster_tassonomia_identici(
 # STEP 9 - 10: SELEZIONE GREEDY SUL BUDGET N ED ORDINAMENTO DISPLAY
 # ==============================================================================
 
+def _chiave_seme(item: Any) -> str:
+    """La chiave di un seme, come e' arrivata — per poterla NOMINARE in un log.
+
+    Non valida niente: serve solo a non lasciare anonimo uno scarto. Un conteggio dice che il
+    buco esiste, il nome dice quale titolo lo ha aperto.
+    """
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        k = item.get("key")
+        if k:
+            return str(k)
+        tid = item.get("tmdbId") or item.get("tmdb_id")
+        if tid is not None:
+            pref = "tv" if item.get("medium") in ("tv", "series", "show") else "movie"
+            return f"{pref}:{tid}"
+        return ""
+    if isinstance(item, (tuple, list)) and item:
+        return str(item[0])
+    return str(item)[:40]
+
+
 def scaffali(
     engine: Engine,
     semi: Sequence[Any],
@@ -879,6 +901,7 @@ def scaffali(
     tono: float = 0.0,
     complessita: float = 0.0,
     kids: bool = False,
+    diagnostica: dict | None = None,
 ) -> list[Shelf]:
     """Genera gli scaffali serviti per il profilo spendendo il budget N per copertura (Steps 9-10).
 
@@ -893,6 +916,9 @@ def scaffali(
         cand_cap: Alias esplicito per il cap dei candidati per riga (se None, usa cap).
         weighted_support: Se True, la selezione greedy e il rank supporto usano il peso/interazioni dei semi.
         esclusi: Lista di chiavi escluse dalle raccomandazioni.
+        diagnostica: Dizionario opzionale che viene riempito con `{"semi_fuori_canone": [...],
+            "semi_ricevuti": n}`. Serve a NOMINARE i semi scartati: prima sparivano senza lasciare
+            traccia, e chi guarda solo titoli nuovi non sapeva perche' non arrivava nulla.
 
     Returns:
         Lista di oggetti `Shelf` ordinati per esposizione UI (righe primarie + controparti ammesse).
@@ -907,6 +933,7 @@ def scaffali(
     eta_list: list[float] = []
     plays_list: list[float] = []
     chiavi: list[str] = []
+    fuori_canone: list[str] = []
 
     for idx, s in enumerate(semi):
         r_idx = None
@@ -938,6 +965,14 @@ def scaffali(
             eta_list.append(s_eta)
             plays_list.append(s_plays)
             chiavi.append(engine.keys[r_idx])
+        else:
+            # Il seme non e' nel canone: si conta E si nomina. Un conteggio senza il nome
+            # dice che il buco esiste; il nome dice quale titolo lo ha aperto.
+            fuori_canone.append(_chiave_seme(s))
+
+    if diagnostica is not None:
+        diagnostica["semi_ricevuti"] = len(semi)
+        diagnostica["semi_fuori_canone"] = fuori_canone
 
     if not righe:
         return []
