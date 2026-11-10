@@ -207,3 +207,26 @@ describe('I dati di visione si leggono da Stremio, non si inventano', () => {
         expect(dati.conteggio).toBeNull();
     });
 });
+
+describe('Nessuna scrittura di cronologia inventa la data', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const sorgente = fs.readFileSync(path.join(__dirname, '..', 'src', 'profile', 'ProfileBuilder.js'), 'utf8');
+
+    it("non usa `new Date()` come data di una visione", () => {
+        // Le uniche `new Date()` ammesse sono l'istante d'inserimento di un documento nuovo
+        // (lo schema impone una data) e il timestamp di stato della sincronizzazione.
+        const righe = sorgente.split(String.fromCharCode(10)).filter(r => r.includes('new Date()') && !r.trim().startsWith('*') && !r.trim().startsWith('//'));
+        for (const riga of righe) {
+            expect(riga).toMatch(/lastSync|setOperazione\.lastWatchedAt = new Date\(\)/);
+        }
+    });
+
+    it('scrive `lastWatchedAt` solo quando la voce porta una data', () => {
+        // La forma ammessa è lo spread condizionale: `...(item.at ? { lastWatchedAt: item.at } : {})`.
+        // Vietata la forma nuda, che scriverebbe `undefined`/`null` nel campo obbligatorio.
+        const righe = sorgente.split(String.fromCharCode(10));
+        const nude = righe.filter(r => /^\s*lastWatchedAt:\s*item\.at,?\s*$/.test(r));
+        expect(nude).toEqual([]);
+    });
+});

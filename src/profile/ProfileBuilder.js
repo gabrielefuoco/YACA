@@ -6,6 +6,23 @@ const {
 const AddonConfig = require('../models/AddonConfig');
 const { accountDi } = require('../configurazione');
 
+/**
+ * La data di visione di un documento, se è una data vera.
+ *
+ * `lastWatchedAt` uguale a `createdAt` (entro un minuto) è il momento in cui il documento
+ * è stato inserito, non un momento in cui qualcuno ha guardato: vale come «non nota».
+ *
+ * @param {object} doc documento di cronologia
+ * @returns {Date|null}
+ */
+function dataVisioneAffidabile(doc) {
+    const visione = doc?.lastWatchedAt ? new Date(doc.lastWatchedAt) : null;
+    if (!visione || Number.isNaN(visione.getTime())) return null;
+    const inserimento = doc?.createdAt ? new Date(doc.createdAt) : null;
+    if (inserimento && Math.abs(visione.getTime() - inserimento.getTime()) <= 60000) return null;
+    return visione;
+}
+
 class ProfileBuilder {
     /**
      * Resolves the addon UUID for a given owner (userId).
@@ -140,7 +157,9 @@ class ProfileBuilder {
                     isRating,
                     ratingVal,
                     episodio,
-                    at: entry.watched_at || entry.rated_at || new Date()
+                    // Trakt dichiara sempre la data. Se non lo facesse, la voce resta senza:
+                    // un `new Date()` qui è il modo in cui è nato il «visto oggi».
+                    at: entry.watched_at || entry.rated_at || null
                 });
             }
 
@@ -175,27 +194,39 @@ class ProfileBuilder {
 
                     const signals = [...existingSignals];
                     if (signals.length === 0 && existing?.source) {
-                        signals.push({ type: 'watched', source: existing.source, at: existing.lastWatchedAt || new Date() });
+                        // Ricostruzione di un documento scritto da versioni vecchie: il tipo si
+                        // deduce da `source`, la data solo se è una data vera (non se coincide
+                        // con l'istante in cui il documento è stato importato).
+                        const quando = dataVisioneAffidabile(existing);
+                        signals.push({ type: 'watched', source: existing.source, ...(quando ? { at: quando } : {}) });
                     }
 
                     const signalIdx = signals.findIndex(s => s.type === item.signalType && s.source === 'trakt');
                     if (signalIdx >= 0) {
-                        signals[signalIdx].at = item.at;
+                        if (item.at) signals[signalIdx].at = item.at;
                         if (item.ratingVal !== null) signals[signalIdx].value = item.ratingVal;
                     } else {
                         signals.push({
                             type: item.signalType,
                             source: 'trakt',
-                            at: item.at,
+                            ...(item.at ? { at: item.at } : {}),
                             ...(item.ratingVal !== null ? { value: item.ratingVal } : {})
                         });
                     }
+
+                    // `lastWatchedAt` si scrive solo se la voce porta una data: mai `null`.
+                    const setTrakt = {
+                        type: item.type,
+                        source: 'trakt',
+                        signals,
+                        ...(item.at ? { lastWatchedAt: item.at } : {})
+                    };
 
                     bulkOps.push({
                         updateOne: {
                             filter: { owner, context: ctx, tmdbId: item.tmdbId },
                             update: {
-                                $set: { type: item.type, lastWatchedAt: item.at, source: 'trakt', signals },
+                                $set: setTrakt,
                                 // `$max`: cresce quando la storia porta più episodi, non si
                                 // gonfia ripetendo la stessa sincronizzazione.
                                 $max: { episodesWatched: conteggioEpisodi.get(item.tmdbId) || 1 }
@@ -389,6 +420,9 @@ class ProfileBuilder {
                     // `lastWatchedAt` si tocca solo quando c'è una data vera: prima ogni sync lo
                     // portava a «adesso» anche per un titolo solo messo in libreria.
                     if (item.at) setOperazione.lastWatchedAt = item.at;
+                    // Un documento nuovo richiede una data (lo schema la impone). Questa è
+                    // l'istante dell'inserimento, e la lettura la riconosce come tale: se
+                    // coincide con `createdAt` non diventa l'età di una visione.
                     else if (!existing) setOperazione.lastWatchedAt = new Date();
 
                     bulkOps.push({
