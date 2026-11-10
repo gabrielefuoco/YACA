@@ -134,9 +134,16 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
         if (!id) continue;
         const fallbackAt = getSeedTimestamp(doc.lastWatchedAt, doc.createdAt)
             || (typeof doc.daysAgo === 'number' ? Date.now() - doc.daysAgo * 86400000 : 0);
+        // Un documento senza segnali (scritto da versioni vecchie) viene letto come una
+        // visione, ma la sua data vale solo se è una data di visione: `lastWatchedAt` uguale
+        // a `createdAt` è il momento dell'importazione, non un momento in cui hai guardato.
+        const dataImportazione = getSeedTimestamp(doc.createdAt);
+        const dataVisione = getSeedTimestamp(doc.lastWatchedAt);
+        const dataAffidabile = dataVisione > 0
+            && !(dataImportazione > 0 && Math.abs(dataVisione - dataImportazione) <= 60000);
         const signals = Array.isArray(doc.signals) && doc.signals.length > 0
             ? doc.signals
-            : [{ type: 'watched', at: doc.lastWatchedAt, daysAgo: doc.daysAgo }];
+            : [{ type: 'watched', ...(dataAffidabile ? { at: doc.lastWatchedAt } : {}), daysAgo: doc.daysAgo }];
         for (const signal of signals) {
             const bucket = buckets[signal?.type];
             if (!bucket) continue;
