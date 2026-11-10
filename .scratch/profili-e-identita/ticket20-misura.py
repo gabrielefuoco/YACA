@@ -35,7 +35,13 @@ PESI = json.loads((V45 / "pesi.json").read_text())
 RRF_K = 15
 HUB_TIPI = {"CAST", "PROD"}
 HUB_BETA = 0.25
-BEHAV = {"COVISION", "RRFST", "LIST"}          # le fonti che un titolo nuovo non puo' avere
+# Le fonti che un titolo nuovo NON puo' avere, perche' il loro ingresso e' il comportamento:
+# COVISION (nessuno l'ha visto), RRFST (lo studente, artefatto perso), LIST/LISTSEM (liste curate
+# che non lo contengono ancora), RESID (residuo dei VOTI: senza voti e' nullo per definizione),
+# CONTESTI (NMF su contesti d'uso) e TRIBU (segmenti di pubblico appresi) — queste ultime due
+# richiedono un'assegnazione appresa sul corpus, che una riga nuova non ha.
+BEHAV = {"COVISION", "RRFST", "LIST", "LISTSEM", "RESID", "CONTESTI", "TRIBU"}
+BEHAV_STRETTO = {"COVISION", "RRFST", "LIST"}   # la classificazione (troppo ottimista) del primo giro
 TOP = 100
 
 
@@ -153,7 +159,8 @@ def main() -> int:
 
         tutto = overlap(per_fonte)
         contenuto = overlap({t: v for t, v in per_fonte.items() if t not in BEHAV})
-        risultati.append({"riga": int(r), "tutto": tutto, "contenuto": contenuto})
+        largo = overlap({t: v for t, v in per_fonte.items() if t not in BEHAV_STRETTO})
+        risultati.append({"riga": int(r), "tutto": tutto, "contenuto": contenuto, "largo": largo})
 
     def riassunto(chiave: str, metrica: str) -> dict[str, float]:
         v = np.asarray([x[chiave][metrica] for x in risultati], float)
@@ -171,8 +178,11 @@ def main() -> int:
         "escluse": sorted(BEHAV & set(tipi)),
         "peso_totale": round(sum(PESI.values()), 2),
         "peso_contenuto": round(sum(v for k, v in PESI.items() if k not in BEHAV), 2),
+        "peso_contenuto_largo": round(sum(v for k, v in PESI.items() if k not in BEHAV_STRETTO), 2),
+        "fonti_contenuto": sorted(t for t in tipi if t not in BEHAV),
         "tutte_le_fonti": {m: riassunto("tutto", m) for m in ("@10", "@50", "@100")},
         "solo_contenuto": {m: riassunto("contenuto", m) for m in ("@10", "@50", "@100")},
+        "contenuto_largo": {m: riassunto("largo", m) for m in ("@10", "@50", "@100")},
         "per_classe": {},
         "secondi": round(time.time() - t0, 1),
     }
@@ -192,7 +202,7 @@ def main() -> int:
     out = ROOT / a.out
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(json.dumps({k: report[k] for k in ("righe_valutate", "tutte_le_fonti", "solo_contenuto")}, indent=2))
+    print(json.dumps({k: report[k] for k in ("righe_valutate", "tutte_le_fonti", "solo_contenuto", "contenuto_largo")}, indent=2))
     print(f"\nscritto {out} · {report['secondi']}s")
     return 0
 
