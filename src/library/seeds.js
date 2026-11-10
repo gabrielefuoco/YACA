@@ -144,7 +144,11 @@ async function semiDi({ userId, profileId, context, medium, mediaType, user = nu
                 || (typeof signal.daysAgo === 'number' ? Date.now() - signal.daysAgo * 86400000 : 0);
             keepMostRecentSeed(bucket, id, signalAt || fallbackAt);
             if (SIGNALI_VISIONE.has(signal?.type)) {
-                const at = signalAt || fallbackAt;
+                // L'età di una visione viene SOLO dalla data di un segnale di visione. Non da
+                // `lastWatchedAt`, che è un riassunto scritto da chi sincronizza e può essere
+                // inventato (prima ci finiva `new Date()`), né da `createdAt`, che è la data
+                // d'importazione. Meglio nessuna età che una falsa.
+                const at = signalAt || 0;
                 if (at > 0) keepMostRecentSeed(ultimaVisione, id, at);
             }
         }

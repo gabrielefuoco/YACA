@@ -118,4 +118,23 @@ describe('Ticket 07: la recenza viene dalle date vere di WatchHistory', () => {
     test('la finestra dei 15 e\' una costante dichiarata, non un numero sparso', () => {
         expect(library.SEED_RECENTI_QUANTI).toBe(15);
     });
+
+    test("la data di importazione non diventa l'età di una visione", async () => {
+        // Un documento senza una data di visione vera non deve produrre un'età: prima si
+        // ripiegava su `createdAt`, e un titolo importato a maggio risultava «visto» a maggio.
+        const senzaData = {
+            owner: 'u1',
+            context: 'global',
+            tmdbId: 303,
+            type: 'movie',
+            createdAt: new Date('2026-05-30T10:00:00Z'),
+            lastWatchedAt: new Date('2026-05-30T10:00:00Z'),
+            signals: [{ type: 'loved', source: 'stremio' }]
+        };
+
+        const { seeds, ultimaVisione } = await conStoria([senzaData]);
+
+        expect(seeds.has('303')).toBe(true);
+        expect(ultimaVisione.has('303')).toBe(false);
+    });
 });

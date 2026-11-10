@@ -173,17 +173,37 @@ class ProfileBuilder {
                     else signalType = 'negative';
                 }
 
+                // Trakt consegna UNA voce per episodio: quante voci distinte per un titolo è
+                // il numero di episodi visti. L'episodio si identifica con stagione+numero;
+                // se manca (film, o voci vecchie) si usa l'istante di visione.
+                const episodio = entry.episode
+                    ? `${entry.episode.season ?? '?'}-${entry.episode.number ?? '?'}`
+                    : `at:${entry.watched_at || entry.rated_at || ''}`;
+
                 parsedEntries.push({
                     tmdbId: Number(tmdbId),
                     type,
                     signalType,
                     isRating,
                     ratingVal,
+                    episodio,
                     at: entry.watched_at || entry.rated_at || new Date()
                 });
             }
 
             const tmdbIds = [...new Set(parsedEntries.map(e => e.tmdbId))];
+
+            // Episodi distinti per titolo: si CALCOLA, non si somma a ogni sincronizzazione.
+            // Con `$inc 1` per voce, ogni sync ri-aggiungeva tutta la storia: da lì i valori
+            // come 401796 «visioni» di una serie.
+            const episodiPerTitolo = new Map();
+            for (const e of parsedEntries) {
+                if (!episodiPerTitolo.has(e.tmdbId)) episodiPerTitolo.set(e.tmdbId, new Set());
+                episodiPerTitolo.get(e.tmdbId).add(e.episodio);
+            }
+            const conteggioEpisodi = new Map(
+                [...episodiPerTitolo.entries()].map(([id, set]) => [id, Math.max(1, set.size)])
+            );
 
             for (const ctx of targetContexts) {
                 const existingDocs = await trovaCronologiaPerIds({ owner, context: ctx, tmdbIds });
@@ -223,7 +243,9 @@ class ProfileBuilder {
                             filter: { owner, context: ctx, tmdbId: item.tmdbId },
                             update: {
                                 $set: { type: item.type, lastWatchedAt: item.at, source: 'trakt', signals },
-                                $inc: { episodesWatched: 1 }
+                                // `$max`: cresce quando la storia porta più episodi, non si
+                                // gonfia ripetendo la stessa sincronizzazione.
+                                $max: { episodesWatched: conteggioEpisodi.get(item.tmdbId) || 1 }
                             },
                             upsert: true
                         }
@@ -404,11 +426,12 @@ class ProfileBuilder {
                         ? Math.max(visioniDaiSegnali, item.visioniDichiarate)
                         : visioniDaiSegnali;
 
+                    // `episodesWatched` NON sta qui: è assegnato con `$max` sotto, e MongoDB
+                    // rifiuta lo stesso campo in due operatori.
                     const setOperazione = {
                         type: item.type,
                         source: item.source,
-                        signals,
-                        episodesWatched: Math.max(1, visioniReali)
+                        signals
                     };
                     // `lastWatchedAt` si tocca solo quando c'è una data vera: prima ogni sync lo
                     // portava a «adesso» anche per un titolo solo messo in libreria.
@@ -418,7 +441,10 @@ class ProfileBuilder {
                     bulkOps.push({
                         updateOne: {
                             filter: { owner, context: ctx, tmdbId: item.tmdbId },
-                            update: { $set: setOperazione },
+                            update: {
+                                $set: setOperazione,
+                                $max: { episodesWatched: Math.max(1, visioniReali, item.visioniDichiarate || 0) }
+                            },
                             upsert: true
                         }
                     });

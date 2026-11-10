@@ -349,11 +349,24 @@ export function CatalogItem({
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-[11px] font-mono text-marrow-light/70 shrink-0">
-                          {typeof seed.plays === 'number' && Number.isFinite(seed.plays) && (
-                            <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
-                              {seed.plays === 1 ? '1 visione' : `${seed.plays} visioni`}
-                            </span>
-                          )}
+                          {/*
+                            Per una serie il numero è un numero di EPISODI, e solo quando viene
+                            da Trakt (che consegna una voce per episodio). Per un film è quante
+                            volte l'hai visto. `1` non è un'informazione: è il minimo di ogni
+                            titolo presente in cronologia, quindi su una serie non si mostra.
+                          */}
+                          {typeof seed.plays === 'number' && Number.isFinite(seed.plays) && (() => {
+                            const eSerie = seed.medium === 'series' || seed.medium === 'tv';
+                            if (eSerie && seed.plays <= 1) return null;
+                            const etichetta = eSerie
+                              ? (seed.plays === 1 ? '1 episodio' : `${seed.plays} episodi`)
+                              : (seed.plays === 1 ? '1 visione' : `${seed.plays} visioni`);
+                            return (
+                              <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">
+                                {etichetta}
+                              </span>
+                            );
+                          })()}
                           {typeof seed.eta_giorni === 'number' && Number.isFinite(seed.eta_giorni) && (
                             <span className="text-marrow-light/60">
                               {seed.eta_giorni <= 0 ? 'oggi' : seed.eta_giorni === 1 ? '1 giorno fa' : `${seed.eta_giorni} gg fa`}
