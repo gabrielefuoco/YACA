@@ -109,16 +109,7 @@ const { getHeroCatalogFingerprintRows, getRegistryHash } = require('../catalog/r
 
 const DEFAULT_HERO_CATALOGS = getHeroCatalogFingerprintRows();
 
-let globalHeroCatalogsOverride = null;
-
-function setHeroCatalogs(catalogs) {
-    globalHeroCatalogsOverride = catalogs;
-}
-
 function getHeroCatalogs() {
-    if (globalHeroCatalogsOverride) {
-        return globalHeroCatalogsOverride;
-    }
     try {
         const { buildManifest } = require('./manifest');
         if (typeof buildManifest === 'function') {
@@ -162,19 +153,15 @@ function getPresetDefinitions() {
  * Builds a deterministic hash of the code-level manifest definitions:
  * the hero catalogs declared in buildManifest and relevant fields of presets in presets.js.
  */
-function buildManifestDefinitionsSignature(heroCatalogsOverride, presetsOverride) {
-    const rawHeroes = heroCatalogsOverride !== undefined
-        ? (heroCatalogsOverride || [])
-        : getHeroCatalogs();
+function buildManifestDefinitionsSignature() {
+    const rawHeroes = getHeroCatalogs();
     const heroes = rawHeroes.map(c => ({
         id: String(c?.id ?? ''),
         name: String(c?.name ?? ''),
         type: String(c?.type ?? '')
     }));
 
-    const rawPresets = presetsOverride !== undefined
-        ? (presetsOverride || [])
-        : getPresetDefinitions();
+    const rawPresets = getPresetDefinitions();
     const presets = rawPresets.map(p => ({
         id: String(p?.id ?? ''),
         name: String(p?.name ?? ''),
@@ -199,8 +186,7 @@ function buildManifestFingerprint(userConfig = {}, options = {}) {
         ? userConfig.profiles
         : [];
 
-    const definitionsSignature = options.definitionsSignature
-        || buildManifestDefinitionsSignature(options.heroCatalogs, options.presets);
+    const definitionsSignature = buildManifestDefinitionsSignature();
 
     const activeProfileId = getEffectiveActiveProfileId(userConfig);
     const rootShelves = options.shelves
@@ -249,7 +235,6 @@ function buildManifestFingerprint(userConfig = {}, options = {}) {
 module.exports = {
     FINGERPRINT_SCHEMA_VERSION,
     DEFAULT_HERO_CATALOGS,
-    setHeroCatalogs,
     buildManifestDefinitionsSignature,
     buildManifestFingerprint
 };

@@ -132,27 +132,6 @@ function recordCollision(targetId) {
     checkAndLogAggregatedStats();
 }
 
-function getKitsuMappingStats() {
-    return {
-        totalMisses: kitsuStats.totalMisses,
-        totalCollisions: kitsuStats.totalCollisions,
-        missesCount: kitsuStats.misses.size,
-        collisionsCount: kitsuStats.collisions.size,
-        misses: new Map(kitsuStats.misses),
-        collisions: new Map(kitsuStats.collisions)
-    };
-}
-
-function resetKitsuMappingStats() {
-    kitsuStats.totalMisses = 0;
-    kitsuStats.totalCollisions = 0;
-    kitsuStats.misses.clear();
-    kitsuStats.collisions.clear();
-    lastLoggedMisses = 0;
-    lastLoggedCollisions = 0;
-    lastLogTime = Date.now();
-}
-
 async function applyKitsuMappingToMeta(meta, tmdbId) {
     if (!meta) return;
 
@@ -517,8 +496,6 @@ module.exports = {
     isMetaDubbed,
     applyKitsuMappingToMeta,
     buildResponseMeta,
-    getKitsuMappingStats,
-    resetKitsuMappingStats,
     resolveImdbIdPerEpisodi,
     getMetaDetails: (tmdbId, type) => indice.getMetaDetails(tmdbId, type),
     allineaIdFilm

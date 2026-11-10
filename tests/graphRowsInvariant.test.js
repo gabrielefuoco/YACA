@@ -15,7 +15,7 @@ const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const cache = require('../src/cache');
 const { shelvesCache } = require('../src/cache/cacheInstances');
-const { HERO_STRATEGIES } = require('../src/pool');
+const { righeDelGrafo } = require('../src/pool');
 
 async function eseguiCon({ mediaType, shelf }) {
     jest.clearAllMocks();
@@ -33,9 +33,8 @@ async function eseguiCon({ mediaType, shelf }) {
         scaffali: [shelf]
     });
 
-    const strategia = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
     const assigned = {};
-    await strategia.run(
+    await righeDelGrafo(
         { userId: 'u1', context: 'p1', mediaType, userConfig: {} },
         { assigned, rawTraktResult: { traktAvailable: false } }
     );

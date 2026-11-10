@@ -178,7 +178,7 @@ describe('Ingestione Stremio: niente conteggi gonfiati, niente date inventate', 
         const fs = require('fs');
         const path = require('path');
         const sorgente = fs.readFileSync(path.join(__dirname, '..', 'src', 'profile', 'ProfileBuilder.js'), 'utf8');
-        const blocco = sorgente.slice(sorgente.indexOf('syncStremioData'), sorgente.indexOf('_updateAndSaveActiveVectors'));
+        const blocco = sorgente.slice(sorgente.indexOf('syncStremioData'));
         expect(blocco).not.toMatch(/\$inc:\s*\{\s*episodesWatched/);
         expect(blocco).not.toMatch(/lastWatched:\s*new Date\(\)\s*\)/);
     });

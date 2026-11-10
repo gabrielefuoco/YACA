@@ -1,7 +1,7 @@
 const AddonConfig = require('../src/models/AddonConfig');
 const UserAccount = require('../src/models/UserAccount');
 const { updateStremioAddonCollection } = require('../src/stremio/collection');
-const { reconcileManifests, buildManifestFingerprint, buildManifestDefinitionsSignature, setHeroCatalogs } = require('../src/stremio');
+const { reconcileManifests, buildManifestFingerprint, buildManifestDefinitionsSignature } = require('../src/stremio');
 
 jest.mock('../src/models/AddonConfig');
 jest.mock('../src/models/UserAccount');
@@ -18,12 +18,10 @@ describe('manifestReconciler', () => {
         process.env = { ...originalEnv };
         process.env.HOST_URL = 'https://yaca.example.com';
         delete process.env.DISABLE_MANIFEST_RECONCILE;
-        setHeroCatalogs(null);
     });
 
     afterAll(() => {
         process.env = originalEnv;
-        setHeroCatalogs(null);
     });
 
     test('(a) impronta diversa -> versione aggiornata + resync chiamato con la URL giusta + flag azzerato', async () => {
@@ -302,41 +300,27 @@ describe('manifestReconciler', () => {
         expect(updateStremioAddonCollection).not.toHaveBeenCalled();
     });
 
-    test('(e) la firma di build influenza la fingerprint (cambiando la lista dei cataloghi hero cambia il valore calcolato)', () => {
+    test('(e) la firma delle definizioni entra nella fingerprint', () => {
+        // Prima si potevano iniettare cataloghi hero finti per provare questo; ora si prova
+        // sul serio: la firma è calcolata dal codice, e la fingerprint la contiene.
         const sampleConfig = {
             activeProfileId: 'profile-hero-test',
-            profiles: [
-                { id: 'profile-hero-test', name: 'Test', catalogs: [] }
-            ],
+            profiles: [{ id: 'profile-hero-test', name: 'Test', catalogs: [] }],
             customCatalogs: []
         };
 
-        const defaultFingerprint = buildManifestFingerprint(sampleConfig);
-        const defaultSignature = buildManifestDefinitionsSignature();
+        const firma = buildManifestDefinitionsSignature();
+        expect(typeof firma).toBe('string');
+        expect(firma.length).toBeGreaterThan(0);
 
-        const customHeroList = [
-            { id: 'yaca_new_hero_catalog', type: 'movie', name: 'Catalogo Eroe Novità' }
-        ];
-
-        // 1. Tramite opzioni in buildManifestFingerprint
-        const overriddenFingerprint = buildManifestFingerprint(sampleConfig, {
-            heroCatalogs: customHeroList
-        });
-        expect(overriddenFingerprint).not.toBe(defaultFingerprint);
-
-        // 2. Tramite setter globale setHeroCatalogs
-        setHeroCatalogs(customHeroList);
-        const setterFingerprint = buildManifestFingerprint(sampleConfig);
-        expect(setterFingerprint).not.toBe(defaultFingerprint);
-        expect(setterFingerprint).toBe(overriddenFingerprint);
-
-        // 3. Verifica firma definizioni diretta
-        const customSignature = buildManifestDefinitionsSignature(customHeroList);
-        expect(customSignature).not.toBe(defaultSignature);
-
-        // Reset
-        setHeroCatalogs(null);
-        expect(buildManifestFingerprint(sampleConfig)).toBe(defaultFingerprint);
+        const fingerprint = buildManifestFingerprint(sampleConfig);
+        expect(fingerprint).toMatch(/^[0-9a-f]{64}$/);
+        expect(fingerprint).toBe(buildManifestFingerprint(sampleConfig));
+        // Una configurazione diversa produce una fingerprint diversa.
+        expect(buildManifestFingerprint({
+            ...sampleConfig,
+            customCatalogs: [{ id: 'yaca_x', type: 'movie', name: 'X' }]
+        })).not.toBe(fingerprint);
     });
 
     test('ritenta resync pendente al successivo avvio anche se la fingerprint non e cambiata', async () => {

@@ -5,10 +5,6 @@ const {
     profiliDi,
     contestoDi,
     risolviProfiloAttivo,
-    eliminaProfilo,
-    creaProfilo,
-    rinominaProfilo,
-    duplicaProfilo
 } = require('../src/profile');
 
 jest.mock('../src/models/UserAccount');
@@ -204,19 +200,6 @@ describe('Profile Module Door (Ticket 21)', () => {
             expect(list[0].name).toBe('Generale');
         });
 
-        it('eliminaProfilo refuses to delete the last remaining profile', async () => {
-            UserAccount.findOne.mockReturnValue({
-                lean: jest.fn().mockResolvedValue({ userId: 'u1', addonUuid: 'uuid-1' })
-            });
-            AddonConfig.findOne.mockResolvedValue({
-                uuid: 'uuid-1',
-                profiles: [{ id: 'global', name: 'Generale' }]
-            });
-
-            await expect(eliminaProfilo({ userId: 'u1', profileId: 'global' }))
-                .rejects.toThrow(/almeno un profilo|last profile/i);
-        });
-
         it('risolviProfiloAttivo collapses || "global" copies and returns a valid ID', () => {
             expect(risolviProfiloAttivo()).toBe('global');
             expect(risolviProfiloAttivo({})).toBe('global');
@@ -229,24 +212,5 @@ describe('Profile Module Door (Ticket 21)', () => {
             })).toBe('first-prof');
         });
 
-        it('GUARD TEST: only profile module manages profiles array mutations', async () => {
-            UserAccount.findOne.mockReturnValue({
-                lean: jest.fn().mockResolvedValue({ userId: 'u1', addonUuid: 'uuid-1' })
-            });
-            AddonConfig.findOne.mockReturnValue({
-                uuid: 'uuid-1',
-                profiles: [{ id: 'global', name: 'Generale' }]
-            });
-            AddonConfig.updateOne = jest.fn().mockResolvedValue({ modifiedCount: 1 });
-
-            await creaProfilo({ userId: 'u1', profileData: { id: 'p2', name: 'Profilo 2' } });
-            expect(AddonConfig.updateOne).toHaveBeenCalledWith(
-                { uuid: 'uuid-1' },
-                expect.objectContaining({
-                    $push: expect.objectContaining({ profiles: expect.objectContaining({ id: 'p2' }) })
-                }),
-                { upsert: true }
-            );
-        });
     });
 });

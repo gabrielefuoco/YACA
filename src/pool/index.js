@@ -40,7 +40,6 @@ const HERO_CACHE_KEY_VERSION = 'v17';
 
 // Flag architetturale: i cataloghi serviti dipendono esclusivamente dagli scaffali del grafo.
 // Il mapping dei 10 ruoli editoriali storici resta dormiente dietro questo flag per compatibilità con i test storici.
-const ENABLE_LEGACY_EDITORIAL_ROLES = false;
 
 // Invariante (Ticket V45): la cache degli scaffali dinamici mantiene al più una voce
 // per (profilo, medium). La scrittura di un medium preserva sempre l'altro.
@@ -370,206 +369,198 @@ function convertiSemiPerGrafo(seeds, { medium = 'movie', animePolicy = 'neutral'
  * Il grafo genera le 10 righe additive (Ticket 13): mondi, passo_fuori, uscite_nuove,
  * nicchia_di_qualita, classici, ultime_visioni, punti_incontro, micro_cluster_1..3.
  */
-const HERO_STRATEGIES = [
-    {
-        name: 'graph_rows',
-        slug: 'graph_rows',
-        additive: true,
-        // =========================================================================
-        // GANCI DEL GRAFO (Ticket 08 & Ticket 46: servizio Python persistente via HTTP)
-        // =========================================================================
-        run: async (ctx, { assigned, rawTraktResult, sharedState }) => {
-            const med = ctx.mediaType === 'movie' ? 'movie' : 'series';
+/**
+ * Le righe additive del grafo.
+ *
+ * Era un registro di strategie con UNA strategia, un flag `additive` e un runner che la
+ * avvolgeva: un'impalcatura per un caso solo. Ora è una funzione, chiamata una volta.
+ */
+async function righeDelGrafo(ctx, { assigned, sharedState, rawTraktResult = { traktAvailable: false, ids: [] } }) {
 
-            try {
-                const { semiDi } = require('../library');
-                const { seeds, tipi, ultimaVisione, plays } = await semiDi({
-                    userId: ctx.userId,
-                    context: ctx.context,
-                    mediaType: ctx.mediaType,
-                    user: ctx.userConfig
-                });
-                const tipoSeed = med === 'movie' ? 'movie' : 'tv';
-                // Un solo posto per la politica anime del profilo (la usano i semi e i filtri a monte).
-                // Con i modi accesi le leve arrivano da `derivaLeve(modo)` (ctx.leve). Se il pool
-                // leggesse i selettori del profilo, chiederebbe al grafo una politica diversa da
-                // quella del resolver: chiave di cache diversa, scaffali diversi, e i cataloghi
-                // che Esplora elenca resterebbero senza titoli.
-                const levePool = ctx.leve || null;
-                const animePolicy = (levePool?.anime && levePool.anime !== 'neutral')
-                    ? levePool.anime
-                    : (ctx.animePolicy
-                        || ctx.effectiveSelectors?.anime
-                        || ctx.typeSelectors?.anime
-                        || ctx.userConfig?.activeProfileSettings?.typeSelectors?.anime
-                        || ctx.userConfig?.typeSelectors?.anime);
-                const kidsPool = levePool ? Boolean(levePool.kids) : Boolean(ctx.kidsMode);
+    const med = ctx.mediaType === 'movie' ? 'movie' : 'series';
 
-                const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
-                const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione, tipi, plays });
-                const visti = new Set(semi.map((s) => s.tmdbId));
-                let traktCount = 0;
-                if (rawTraktResult?.traktAvailable) {
-                    for (const voce of (rawTraktResult.ids || [])) {
-                        const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
-                        if (!Number.isFinite(id) || visti.has(id)) continue;
-                        if (animePolicy === 'exclude' && isAnimeSeed(id)) continue;
-                        // Ticket 11: i semi Trakt non vengono potati per animePolicy === 'only'
-                        visti.add(id);
-                        // I semi Trakt non hanno una data nel payload di oggi: entrano fra i semi, mai fra i recenti.
-                        // Nessuna data per i semi Trakt: l'età si omette, non si inventa con l'indice.
-                        semi.push({ tmdbId: id, medium: med, tipo: 'liked', plays: 1 });
-                        traktCount++;
-                    }
-                }
+    try {
+        const { semiDi } = require('../library');
+        const { seeds, tipi, ultimaVisione, plays } = await semiDi({
+            userId: ctx.userId,
+            context: ctx.context,
+            mediaType: ctx.mediaType,
+            user: ctx.userConfig
+        });
+        const tipoSeed = med === 'movie' ? 'movie' : 'tv';
+        // Un solo posto per la politica anime del profilo (la usano i semi e i filtri a monte).
+        // Con i modi accesi le leve arrivano da `derivaLeve(modo)` (ctx.leve). Se il pool
+        // leggesse i selettori del profilo, chiederebbe al grafo una politica diversa da
+        // quella del resolver: chiave di cache diversa, scaffali diversi, e i cataloghi
+        // che Esplora elenca resterebbero senza titoli.
+        const levePool = ctx.leve || null;
+        const animePolicy = (levePool?.anime && levePool.anime !== 'neutral')
+            ? levePool.anime
+            : (ctx.animePolicy
+                || ctx.effectiveSelectors?.anime
+                || ctx.typeSelectors?.anime
+                || ctx.userConfig?.activeProfileSettings?.typeSelectors?.anime
+                || ctx.userConfig?.typeSelectors?.anime);
+        const kidsPool = levePool ? Boolean(levePool.kids) : Boolean(ctx.kidsMode);
 
-                if (semi.length === 0) {
-                    // Nessun seme (cold start): nessun catalogo generato.
-                    if (sharedState) sharedState.shelves = [];
-                    for (const { slug } of RUOLI_HERO) assigned[getHeroCatalogId(slug, ctx.mediaType)] = [];
-                    for (const slug of RUOLI_MICRO) assigned[getHeroCatalogId(slug, ctx.mediaType)] = [];
-                    assigned[getHeroCatalogId('punti_incontro', ctx.mediaType)] = [];
-                    console.log(`[Scaffali] ${ctx.mediaType}: nessun seme disponibile (cold start)`);
-                    return;
-                }
-
-                // I semi sono i titoli che l'utente conosce: il decadimento non tocca questi (Ticket 14).
-                if (sharedState) sharedState.seedIds = semi.map((x) => String(x.tmdbId));
-                const opzioni = ctx.sliders
-                    || ctx.slider
-                    || ctx.userConfig?.activeProfileSettings?.sliders
-                    || ctx.userConfig?.activeProfileSettings?.slider
-                    || ctx.userConfig?.context?.sliders
-                    || ctx.userConfig?.context?.slider
-                    || ctx.userConfig?.activeProfileSettings?.graphOptions
-                    || ctx.userConfig?.graphOptions
-                    || undefined;
-                const cap = ctx.cap || 60;
-
-                const itemsDi = (lista) => (lista?.titoli || []).map((t) => ensurePoolItem({
-                    id: t.key || `tmdb:${t.tmdbId}`,
-                    tmdbId: Number(t.tmdbId),
-                    type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'series',
-                    media_type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'tv',
-                    punteggio: t.punteggio
-                }, ctx.mediaType));
-
-                // -------------------------------------------------------------------------
-                // NUOVO MOTORE V45: SCAFFALI DINAMICI (POST /scaffali)
-                // -------------------------------------------------------------------------
-                // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
-                const filtri = {
-                    anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
-                    kids: kidsPool
-                };
-                const opzioniScaffali = {
-                    ...(opzioni || {}),
-                    ...(filtri.anime || filtri.kids ? { filtri } : {}),
-                    ...(filtri.kids ? { kids: true } : {})
-                };
-                const semiPerScaffali = semi.map(({ recente, ...rest }) => rest);
-                if (!ENABLE_LEGACY_EDITORIAL_ROLES && typeof graphClient.scaffali === 'function') {
-                    let resScaffali = null;
-                    // La risposta costa ~4 s e dipende solo da semi, cursori, cap e versione del
-                    // grafo: la si tiene in cache (RAM + Redis) invece di ricalcolarla a ogni
-                    // costruzione del pool. Chiave in `cache/shelfKey.js`.
-                    const chiaveScaffali = buildShelfCacheKey({
-                        semi: semiPerScaffali,
-                        medium: med,
-                        opzioni: opzioniScaffali,
-                        cap,
-                        n: SCAFFALI_PER_MODALITA,
-                        // La modalità entra nella chiave con il flag acceso: due modi
-                        // non devono scambiarsi le righe (spec §9).
-                        modo: ctx.modo,
-                        // Se il client non espone le versioni (mock, client vecchio) la chiave resta
-                        // valida ma senza l'impronta del grafo: il TTL breve copre quel caso.
-                        versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
-                            ? graphClient.getGraphHealthVersionsCached()
-                            : undefined
-                    });
-                    try {
-                        resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
-                            medium: med,
-                            opzioni: opzioniScaffali,
-                            cap,
-                            // Più righe per modalità: con i modi che filtrano per medium, 8 bastavano
-                            // a lasciare una sola manciata di scaffali servibili.
-                            n: SCAFFALI_PER_MODALITA
-                        }));
-                    } catch (scaffaliErr) {
-                        if (!isMockFunction(graphClient.raccomanda)) {
-                            throw scaffaliErr;
-                        }
-                    }
-
-                    if (resScaffali && Array.isArray(resScaffali.scaffali)) {
-                        const scaffali = resScaffali.scaffali;
-                        for (const shelf of scaffali) {
-                            if (shelf.catalog_id) {
-                                assigned[shelf.catalog_id] = itemsDi(shelf);
-                            }
-                        }
-                        const shelfSummary = scaffali.map(s => ({
-                            catalog_id: s.catalog_id,
-                            nome: s.nome,
-                            nome_fonte: s.nome_fonte,
-                            confidenza: s.confidenza,
-                            medium: s.medium || ctx.mediaType,
-                            slot: s.slot,
-                            anime: Boolean(s.anime),
-                            semi_rappresentativi: s.semi_rappresentativi,
-                            semi_membri: s.semi_membri
-                        }));
-                        if (sharedState) {
-                            sharedState.shelves = shelfSummary;
-                        }
-                        // La modalità fa parte della chiave: le cinque modalità condividono lo
-                        // stesso userId, e senza questo una rileggeva gli scaffali dell'altra.
-                        const chiaveCache = require('../cache/shelfKey').chiaveCacheScaffali;
-                        if (ctx.context) setCachedProfileShelves(chiaveCache(ctx.context, ctx.userConfig), shelfSummary, ctx.mediaType);
-                        if (ctx.userId) setCachedProfileShelves(chiaveCache(ctx.userId, ctx.userConfig), shelfSummary, ctx.mediaType);
-                        console.log(`[Scaffali] ${ctx.mediaType}: serviti ${scaffali.length} scaffali dinamici dal grafo`);
-                        return;
-                    }
-
-                    // Il servizio ha risposto ma senza scaffali: è un guasto, non un risultato vuoto.
-                    // Prima si cadeva in una pipeline editoriale che nessuno dichiarava; ora lo si dice.
-                    if (sharedState) {
-                        sharedState.graphCallFailed = true;
-                        sharedState.shelves = [];
-                    }
-                    console.warn(`[Scaffali] ${ctx.mediaType}: il servizio ha risposto senza scaffali`);
-                }
-
-            } catch (e) {
-                // Il grafo non ha risposto: nessuno scaffale, e lo si dichiara.
-                if (sharedState) {
-                    sharedState.graphCallFailed = true;
-                    sharedState.shelves = [];
-                }
-                console.warn(`[Scaffali] motore non raggiungibile: ${e?.message || e}`);
+        const isAnimeSeed = (id) => isAnimeContent({ tmdbId: Number(id), tipo: tipoSeed });
+        const semi = convertiSemiPerGrafo(seeds, { medium: med, animePolicy, ultimaVisione, tipi, plays });
+        const visti = new Set(semi.map((s) => s.tmdbId));
+        let traktCount = 0;
+        if (rawTraktResult?.traktAvailable) {
+            for (const voce of (rawTraktResult.ids || [])) {
+                const id = Number(typeof voce === 'object' && voce !== null ? voce.id : voce);
+                if (!Number.isFinite(id) || visti.has(id)) continue;
+                if (animePolicy === 'exclude' && isAnimeSeed(id)) continue;
+                // Ticket 11: i semi Trakt non vengono potati per animePolicy === 'only'
+                visti.add(id);
+                // I semi Trakt non hanno una data nel payload di oggi: entrano fra i semi, mai fra i recenti.
+                // Nessuna data per i semi Trakt: l'età si omette, non si inventa con l'indice.
+                semi.push({ tmdbId: id, medium: med, tipo: 'liked', plays: 1 });
+                traktCount++;
             }
         }
+
+        if (semi.length === 0) {
+            // Nessun seme (cold start): nessun catalogo generato.
+            if (sharedState) sharedState.shelves = [];
+            for (const { slug } of RUOLI_HERO) assigned[getHeroCatalogId(slug, ctx.mediaType)] = [];
+            for (const slug of RUOLI_MICRO) assigned[getHeroCatalogId(slug, ctx.mediaType)] = [];
+            assigned[getHeroCatalogId('punti_incontro', ctx.mediaType)] = [];
+            console.log(`[Scaffali] ${ctx.mediaType}: nessun seme disponibile (cold start)`);
+            return;
+        }
+
+        // I semi sono i titoli che l'utente conosce: il decadimento non tocca questi (Ticket 14).
+        if (sharedState) sharedState.seedIds = semi.map((x) => String(x.tmdbId));
+        const opzioni = ctx.sliders
+            || ctx.slider
+            || ctx.userConfig?.activeProfileSettings?.sliders
+            || ctx.userConfig?.activeProfileSettings?.slider
+            || ctx.userConfig?.context?.sliders
+            || ctx.userConfig?.context?.slider
+            || ctx.userConfig?.activeProfileSettings?.graphOptions
+            || ctx.userConfig?.graphOptions
+            || undefined;
+        const cap = ctx.cap || 60;
+
+        const itemsDi = (lista) => (lista?.titoli || []).map((t) => ensurePoolItem({
+            id: t.key || `tmdb:${t.tmdbId}`,
+            tmdbId: Number(t.tmdbId),
+            type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'series',
+            media_type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'tv',
+            punteggio: t.punteggio
+        }, ctx.mediaType));
+
+        // -------------------------------------------------------------------------
+        // NUOVO MOTORE V45: SCAFFALI DINAMICI (POST /scaffali)
+        // -------------------------------------------------------------------------
+        // Ticket 12: la politica anime e il kids-mode vanno applicati dal motore PRIMA del taglio
+        const filtri = {
+            anime: (animePolicy === 'only' || animePolicy === 'exclude') ? animePolicy : null,
+            kids: kidsPool
+        };
+        const opzioniScaffali = {
+            ...(opzioni || {}),
+            ...(filtri.anime || filtri.kids ? { filtri } : {}),
+            ...(filtri.kids ? { kids: true } : {})
+        };
+        const semiPerScaffali = semi.map(({ recente, ...rest }) => rest);
+        if (typeof graphClient.scaffali === 'function') {
+            let resScaffali = null;
+            // La risposta costa ~4 s e dipende solo da semi, cursori, cap e versione del
+            // grafo: la si tiene in cache (RAM + Redis) invece di ricalcolarla a ogni
+            // costruzione del pool. Chiave in `cache/shelfKey.js`.
+            const chiaveScaffali = buildShelfCacheKey({
+                semi: semiPerScaffali,
+                medium: med,
+                opzioni: opzioniScaffali,
+                cap,
+                n: SCAFFALI_PER_MODALITA,
+                // La modalità entra nella chiave con il flag acceso: due modi
+                // non devono scambiarsi le righe (spec §9).
+                modo: ctx.modo,
+                // Se il client non espone le versioni (mock, client vecchio) la chiave resta
+                // valida ma senza l'impronta del grafo: il TTL breve copre quel caso.
+                versioni: typeof graphClient.getGraphHealthVersionsCached === 'function'
+                    ? graphClient.getGraphHealthVersionsCached()
+                    : undefined
+            });
+            try {
+                resScaffali = await shelvesCache.getOrFetch(chiaveScaffali, () => graphClient.scaffali(semiPerScaffali, {
+                    medium: med,
+                    opzioni: opzioniScaffali,
+                    cap,
+                    // Più righe per modalità: con i modi che filtrano per medium, 8 bastavano
+                    // a lasciare una sola manciata di scaffali servibili.
+                    n: SCAFFALI_PER_MODALITA
+                }));
+            } catch (scaffaliErr) {
+                if (!isMockFunction(graphClient.raccomanda)) {
+                    throw scaffaliErr;
+                }
+            }
+
+            if (resScaffali && Array.isArray(resScaffali.scaffali)) {
+                const scaffali = resScaffali.scaffali;
+                for (const shelf of scaffali) {
+                    if (shelf.catalog_id) {
+                        assigned[shelf.catalog_id] = itemsDi(shelf);
+                    }
+                }
+                const shelfSummary = scaffali.map(s => ({
+                    catalog_id: s.catalog_id,
+                    nome: s.nome,
+                    nome_fonte: s.nome_fonte,
+                    confidenza: s.confidenza,
+                    medium: s.medium || ctx.mediaType,
+                    slot: s.slot,
+                    anime: Boolean(s.anime),
+                    semi_rappresentativi: s.semi_rappresentativi,
+                    semi_membri: s.semi_membri
+                }));
+                if (sharedState) {
+                    sharedState.shelves = shelfSummary;
+                }
+                // La modalità fa parte della chiave: le cinque modalità condividono lo
+                // stesso userId, e senza questo una rileggeva gli scaffali dell'altra.
+                // Una chiave sola: il profilo. Lo userId resta come ripiego per il solo caso
+                // in cui il profilo non sia noto — due scritture erano due copie da tenere
+                // allineate, e bastava una divergenza per servire scaffali di un altro modo.
+                const chiaveCache = require('../cache/shelfKey').chiaveCacheScaffali;
+                const chiave = ctx.context
+                    ? chiaveCache(ctx.context, ctx.userConfig)
+                    : chiaveCache(ctx.userId, ctx.userConfig);
+                if (chiave) setCachedProfileShelves(chiave, shelfSummary, ctx.mediaType);
+                console.log(`[Scaffali] ${ctx.mediaType}: serviti ${scaffali.length} scaffali dinamici dal grafo`);
+                return;
+            }
+
+            // Il servizio ha risposto ma senza scaffali: è un guasto, non un risultato vuoto.
+            // Prima si cadeva in una pipeline editoriale che nessuno dichiarava; ora lo si dice.
+            if (sharedState) {
+                sharedState.graphCallFailed = true;
+                sharedState.shelves = [];
+            }
+            console.warn(`[Scaffali] ${ctx.mediaType}: il servizio ha risposto senza scaffali`);
+        }
+
+    } catch (e) {
+        // Il grafo non ha risposto: nessuno scaffale, e lo si dichiara.
+        if (sharedState) {
+            sharedState.graphCallFailed = true;
+            sharedState.shelves = [];
+        }
+        console.warn(`[Scaffali] motore non raggiungibile: ${e?.message || e}`);
     }
-];
+}
+
 
 /**
  * Esegue in sicurezza un builder del pool (Ticket 41 - parità con il fallback).
  * Se la strategia solleva un errore non gestito, lo cattura per evitare
  * che l'intero pool fallisca, permettendo al sistema di degradare con grazia.
  */
-async function runPoolBuilder(strat, ctx, args) {
-    try {
-        await strat.run(ctx, args);
-    } catch (err) {
-        console.error(`[HeroPool] Strategy builder '${strat?.name || strat?.slug || 'unknown'}' threw:`, err?.message || err);
-        if (args?.sharedState) {
-            args.sharedState.graphCallFailed = true;
-        }
-    }
-}
-
 /**
  * Costruisce una sola volta tutti i pool e poi applica l'assegnazione disgiunta.
  */
@@ -632,9 +623,12 @@ async function buildSharedHeroCatalogs({ userId, context, mediaType, traktToken,
     const assigned = assignHeroPools(pools, mediaType);
 
     const sharedState = { graphCallFailed: false, shelves: [] };
-    const additiveStrategies = HERO_STRATEGIES.filter(s => s.additive);
-    for (const strat of additiveStrategies) {
-        await runPoolBuilder(strat, ctx, { assigned, rawTraktResult: { traktAvailable: false, ids: [] }, sharedState });
+    try {
+        await righeDelGrafo(ctx, { assigned, sharedState, rawTraktResult: { traktAvailable: false, ids: [] } });
+    } catch (err) {
+        // Il pool non deve cadere se il grafo è giù: si segnala e si prosegue senza righe.
+        console.error('[HeroPool] righeDelGrafo ha lanciato:', err?.message || err);
+        sharedState.graphCallFailed = true;
     }
 
     return {
@@ -840,8 +834,7 @@ module.exports = {
     HERO_CACHE_KEY_VERSION,
     HERO_CACHE_SCHEMA_VERSION,
     HERO_PRIORITY,
-    HERO_STRATEGIES,
-    runPoolBuilder,
+    righeDelGrafo,
     convertiSemiPerGrafo,
     graphClient,
     get composer() {

@@ -14,7 +14,6 @@ const {
     leggiLibreria,
     trovaItemLibreria,
     salvaItemLibreria,
-    normalizeLegacyPosterHost,
     applyDuplicateMarks,
     previewWatchedLibrary,
     removeWatchedLibrary,
@@ -245,8 +244,9 @@ router.get('/libreria', async (req, res) => {
             return erroreDominio(res, 404, 'non_trovato', 'Account utente non trovato.');
         }
 
+        // I poster su host ritirati si correggono con `scripts/migra-host-poster.js` e ai
+        // sync della libreria: riscriverli qui era una migrazione pagata a ogni lettura.
         const items = await leggiLibreria({ addonUuid: account.addonUuid });
-        const currentHost = process.env.HOST_URL || `${req.protocol}://${req.get('host')}`;
 
         const seen = new Set();
         const mappedItems = [];
@@ -258,7 +258,6 @@ router.get('/libreria', async (req, res) => {
 
             mappedItems.push({
                 ...item,
-                poster: normalizeLegacyPosterHost(item.poster, currentHost),
                 _id: effectiveId,
                 itemId: effectiveId
             });

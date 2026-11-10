@@ -81,26 +81,6 @@ class ProfileBuilder {
         }
     }
 
-    static async _updateAndSaveActiveVectors() {
-        return { vActive: {}, vFinal: {}, flatnessMetrics: null, scritto: false };
-    }
-
-    /**
-     * Backfill della cronologia/segnali da global a un contesto secondario se vuoto.
-     */
-    static async recomputeVectorsForUser(_owner, _context, _options = {}) {
-        return {
-            vActive: {},
-            vFinal: {},
-            flatnessMetrics: null,
-            scritto: false
-        };
-    }
-
-    static async _updateVectorsAsync() {}
-
-    static async _bulkUpdateVectorsAsync() {}
-
     /**
      * Entry point per la sincronizzazione Trakt (ottimizzato Bulk + fasce + dedup Stremio-first + fan-out).
      */

@@ -301,116 +301,6 @@ async function profiloDi({ userId, profileId, addonUuid } = {}) {
     }
 }
 
-/**
- * Comando: Crea un nuovo profilo nell'AddonConfig dell'utente.
- */
-async function creaProfilo({ userId, profileData = {}, addonUuid = null } = {}) {
-    const uuid = await resolveAddonUuid(userId, addonUuid);
-    if (!uuid) throw new Error('Account utente non trovato per la creazione del profilo.');
-
-    const settings = { ...(profileData.settings || {}) };
-    if (profileData.sliders && !settings.sliders) {
-        settings.sliders = profileData.sliders;
-    }
-    const newProfile = {
-        id: profileData.id || nanoid(8),
-        name: profileData.name || 'Nuovo Profilo',
-        catalogs: Array.isArray(profileData.catalogs) ? profileData.catalogs : [],
-        settings,
-        ...(settings.sliders ? { sliders: settings.sliders } : {}),
-        raw_ui_state: { ...(profileData.raw_ui_state || {}) }
-    };
-
-    await AddonConfig.updateOne(
-        { uuid },
-        { $push: { profiles: newProfile } },
-        { upsert: true }
-    );
-
-    return newProfile;
-}
-
-/**
- * Comando: Rinomina un profilo.
- */
-async function rinominaProfilo({ userId, profileId, name, addonUuid = null } = {}) {
-    const uuid = await resolveAddonUuid(userId, addonUuid);
-    if (!uuid) throw new Error('Account utente non trovato.');
-    if (!profileId || !name) throw new Error('profileId e name sono obbligatori.');
-
-    await AddonConfig.updateOne(
-        { uuid, 'profiles.id': profileId },
-        { $set: { 'profiles.$.name': name } }
-    );
-    return { success: true, profileId, name };
-}
-
-/**
- * Comando: Duplica un profilo esistente.
- */
-async function duplicaProfilo({ userId, profileId, newName, addonUuid = null } = {}) {
-    const original = await profiloDi({ userId, profileId, addonUuid });
-    const uuid = await resolveAddonUuid(userId, addonUuid);
-
-    const duplicated = {
-        ...original,
-        id: nanoid(8),
-        name: newName || `${original.name || 'Profilo'} (Copia)`
-    };
-
-    await AddonConfig.updateOne(
-        { uuid },
-        { $push: { profiles: duplicated } }
-    );
-
-    return duplicated;
-}
-
-/**
- * Comando: Elimina un profilo.
- * Invariante «almeno uno»: rifiuta l'eliminazione se è l'ultimo profilo rimasto.
- */
-async function eliminaProfilo({ userId, profileId, addonUuid = null } = {}) {
-    const uuid = await resolveAddonUuid(userId, addonUuid);
-    if (!uuid) throw new Error('Account utente non trovato.');
-
-    const addonConfig = await AddonConfig.findOne({ uuid });
-    const profiles = addonConfig?.profiles || [];
-
-    if (profiles.length <= 1) {
-        throw new Error('Impossibile eliminare l\'ultimo profilo rimanente: deve esistere almeno un profilo.');
-    }
-
-    const remaining = profiles.filter(p => (p.id || p._id?.toString()) !== profileId);
-
-    // Se stiamo eliminando il profilo attivo, imposta il primo rimanente come attivo
-    const updateOps = {
-        $pull: { profiles: { id: profileId } }
-    };
-
-    if (addonConfig.config?.activeProfileId === profileId) {
-        const nextActiveId = remaining[0]?.id || 'global';
-        updateOps.$set = { 'config.activeProfileId': nextActiveId };
-    }
-
-    await AddonConfig.updateOne({ uuid }, updateOps);
-    return { success: true, deletedProfileId: profileId };
-}
-
-/**
- * Comando: Attiva un profilo per l'utente.
- */
-async function attivaProfilo({ userId, profileId, addonUuid = null } = {}) {
-    const uuid = await resolveAddonUuid(userId, addonUuid);
-    if (!uuid) throw new Error('Account utente non trovato.');
-
-    await AddonConfig.updateOne(
-        { uuid },
-        { $set: { 'config.activeProfileId': profileId } }
-    );
-    return { success: true, activeProfileId: profileId };
-}
-
 module.exports = {
     defaultGlobalProfile,
     risolviProfiloAttivo,
@@ -419,10 +309,5 @@ module.exports = {
     salvaUiState,
     selectedPresetsDi,
     profiliDi,
-    profiloDi,
-    creaProfilo,
-    rinominaProfilo,
-    duplicaProfilo,
-    eliminaProfilo,
-    attivaProfilo
+    profiloDi
 };

@@ -30,7 +30,6 @@ module.exports = {
     // Fingerprint
     FINGERPRINT_SCHEMA_VERSION: fingerprint.FINGERPRINT_SCHEMA_VERSION,
     DEFAULT_HERO_CATALOGS: fingerprint.DEFAULT_HERO_CATALOGS,
-    setHeroCatalogs: fingerprint.setHeroCatalogs,
     buildManifestDefinitionsSignature: fingerprint.buildManifestDefinitionsSignature,
     buildManifestFingerprint: fingerprint.buildManifestFingerprint,
 

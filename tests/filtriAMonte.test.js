@@ -21,7 +21,7 @@ jest.mock('../src/anime', () => {
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const cache = require('../src/cache');
-const { HERO_STRATEGIES } = require('../src/pool');
+const { righeDelGrafo } = require('../src/pool');
 
 
 function configCon() {
@@ -43,7 +43,7 @@ async function esegui({ kidsMode = false, typeSelectors = {} } = {}) {
         versioni: { artefatto: 'a', ricetta: 'r' },
         scaffali: []
     });
-    const strategia = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
+    const strategia = { run: righeDelGrafo };
     await strategia.run(
         { userId: 'u1', context: 'p1', mediaType: 'movie', kidsMode, typeSelectors, userConfig: configCon() },
         { assigned: {}, rawTraktResult: { traktAvailable: false } }

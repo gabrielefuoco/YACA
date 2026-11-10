@@ -19,7 +19,7 @@ const {
     buildSharedHeroCatalogs,
     getHeroPool,
     HERO_CACHE_KEY_VERSION,
-    HERO_STRATEGIES
+    righeDelGrafo
 } = require('../src/pool');
 const { hybridRecommendationsCache } = require('../src/cache/cacheInstances');
 const library = require('../src/library');
@@ -100,16 +100,15 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             jest.spyOn(graphClient, 'raccomanda').mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:7862'));
             const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-            const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
             const assigned = {};
             const sharedState = { graphCallFailed: false };
 
-            await graphStrategy.run({
+            await righeDelGrafo({
                 userId: 'u1',
                 context: 'p1',
                 mediaType: 'movie',
                 userConfig: {}
-            }, { assigned, rawTraktResult: { traktAvailable: false }, sharedState });
+            }, { assigned, sharedState });
 
             expect(sharedState.graphCallFailed).toBe(true);
             expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[Scaffali] movie: il servizio ha risposto senza scaffali'));
@@ -145,33 +144,6 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
             cacheSetSpy.mockRestore();
         });
 
-        test('runPoolBuilder intercetta eccezioni sollevate dal builder impedendo il crash del pool', async () => {
-            const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-            const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
-            const originalRun = graphStrategy.run;
-            graphStrategy.run = jest.fn().mockRejectedValue(new Error('Uncaught builder crash'));
-
-            try {
-                const group = await buildSharedHeroCatalogs({
-                    userId: 'user_throw',
-                    context: 'global',
-                    mediaType: 'movie',
-                    kidsMode: false,
-                    userConfig: {}
-                });
-
-                expect(group).toBeDefined();
-                expect(group.catalogs).toBeDefined();
-                expect(group.graphCallFailed).toBe(true);
-                expect(errSpy).toHaveBeenCalledWith(
-                    expect.stringContaining('[HeroPool] Strategy builder'),
-                    expect.stringContaining('Uncaught builder crash')
-                );
-            } finally {
-                graphStrategy.run = originalRun;
-                errSpy.mockRestore();
-            }
-        });
     });
 });
 

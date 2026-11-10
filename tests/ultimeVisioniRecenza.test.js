@@ -1,4 +1,4 @@
-const { HERO_STRATEGIES, convertiSemiPerGrafo } = require('../src/pool');
+const { righeDelGrafo, convertiSemiPerGrafo } = require('../src/pool');
 const graphClient = require('../src/clients/graphClient');
 const library = require('../src/library');
 const { shelvesCache } = require('../src/cache/cacheInstances');
@@ -93,10 +93,9 @@ describe('Ticket 07: recenza dei semi da data vera', () => {
         });
         if (typeof shelvesCache?.clear === 'function') shelvesCache.clear();
 
-        const graphStrategy = HERO_STRATEGIES.find((s) => s.slug === 'graph_rows');
-        await graphStrategy.run(
+        await righeDelGrafo(
             { userId: 'u1', context: 'p1', mediaType: 'movie', userConfig: {} },
-            { assigned: {}, rawTraktResult: { traktAvailable: false } }
+            { assigned: {}, sharedState: {}, rawTraktResult: { traktAvailable: false } }
         );
 
         const semi = graphClient.scaffali.mock.calls[0][0];

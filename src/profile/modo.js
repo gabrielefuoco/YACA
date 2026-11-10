@@ -32,7 +32,6 @@ const MODI_SET = new Set(MODI);
  * Spenta di default: `MODI_ABILITATI` assente, vuota o `0` = comportamento storico.
  */
 const FLAG_MODI_ENV = 'MODI_ABILITATI';
-const VALORI_FLAG_ACCESO = new Set(['1', 'true', 'on', 'yes', 'si', 'sì']);
 
 /**
  * Il flag si legge a ogni chiamata (non una volta al caricamento del modulo):
@@ -43,9 +42,9 @@ const VALORI_FLAG_ACCESO = new Set(['1', 'true', 'on', 'yes', 'si', 'sì']);
  * @returns {boolean}
  */
 function modiAbilitati(env = process.env) {
-    const raw = env ? env[FLAG_MODI_ENV] : undefined;
-    if (raw === undefined || raw === null || raw === '') return false;
-    return VALORI_FLAG_ACCESO.has(String(raw).trim().toLowerCase());
+    // Un solo valore acceso: `1`. Le sei grafie precedenti erano flessibilità che
+    // nessuno usava, e ognuna era un modo diverso di sbagliare il flag in produzione.
+    return String(env?.[FLAG_MODI_ENV] ?? '').trim() === '1';
 }
 
 /** Nome fisso della modalità: la sola cosa personalizzabile è l'emoji. */
@@ -143,10 +142,6 @@ function modoDaSelettori(typeSelectors = null, kidsMode = false) {
  * Leve effettive di un profilo legacy, passando dal ponte e poi dall'unica
  * tabella. Utile per i test di caratterizzazione e per una futura migrazione.
  */
-function leveDaSelettori(typeSelectors = null, kidsMode = false) {
-    return derivaLeve(modoDaSelettori(typeSelectors, kidsMode));
-}
-
 function idsProfili(profiles) {
     const ids = new Set();
     for (const profilo of profiles) {
@@ -484,7 +479,6 @@ module.exports = {
     conformeAlModo,
     opzioniGrafoDi,
     modoDaSelettori,
-    leveDaSelettori,
     materializzaModi,
     leggiSliders,
     scriviSliders,

@@ -36,17 +36,12 @@ const {
     selectedPresetsDi,
     profiliDi,
     profiloDi,
-    creaProfilo,
-    rinominaProfilo,
-    duplicaProfilo,
-    eliminaProfilo,
     attivaProfilo
 } = require('./door');
 
-// Deduzioni esistenti (ProfileBuilder, ProfileScorer, studioProfile)
+// Deduzioni esistenti (ProfileBuilder, ProfileScorer)
 const ProfileBuilder = require('./ProfileBuilder');
 const ProfileScorer = require('./ProfileScorer');
-const studioProfile = require('./studioProfile');
 
 // Staleness del profilo (Ticket 41 - Fetta 1)
 const {
@@ -110,24 +105,16 @@ module.exports = {
     selectedPresetsDi,
 
     // Comandi anagrafica profili
-    creaProfilo,
-    rinominaProfilo,
-    duplicaProfilo,
-    eliminaProfilo,
-    attivaProfilo,
 
     // Deduzioni
     ProfileBuilder,
     ProfileScorer,
-    studioProfile,
 
     // Modalità e leve (ticket 01)
     MODI: modo.MODI,
     NOMI_MODI: modo.NOMI_MODI,
     isModoValido: modo.isModoValido,
     derivaLeve: modo.derivaLeve,
-    modoDaSelettori: modo.modoDaSelettori,
-    leveDaSelettori: modo.leveDaSelettori,
     materializzaModi: modo.materializzaModi,
     applicaImmutabilitaModo: modo.applicaImmutabilitaModo,
     leggiSliders: modo.leggiSliders,
