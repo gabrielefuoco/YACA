@@ -199,12 +199,38 @@ Rifatto con il maestro giusto (mix delle altre 13 fonti + chiusura, 47.308.177 a
 Il degrado **si riduce di 2,6 volte**: l'ipotesi era giusta, il difetto stava nel maestro. Resta un
 residuo negativo di 0,0036, che è però dentro l'ordine del rumore di addestramento (seed singolo).
 
-## Come si batte, adesso che la ricetta è quella giusta
+## Il tentativo di batterlo, e il risultato
 
-La forma A con il maestro corretto **pareggia quasi**: −0,0036. La candidata a superarlo è la **forma B
-sullo stesso maestro**, che porta nel modello le righe delle sette fonti di contenuto invece di sole
-tre proiezioni dense. Sul collocamento aveva già vinto (0,49 contro 0,42 sulle righe, 0,625 contro 0,55
-sulla diffusione). Prova in corso: forma B, maestro norrfst, poi catena completa e banco di ritenuta.
+La forma B sullo stesso maestro norrfst è stata addestrata (24 epoche, 581 MB, loss 9,0223) e provata
+nella catena completa. **Non batte niente: peggiora.**
+
+| studente usato come fonte nel grafo | R@20 servito | R@20 nuovo | differenza | IC95 |
+|---|---|---|---|---|
+| forma A, maestro servito (sbagliato) | 0,1810 | 0,1716 | −0,0094 | [−0,0129, −0,0057] |
+| **forma A, maestro norrfst** | 0,1808 | 0,1772 | **−0,0036** | [−0,0067, −0,0004] |
+| forma B, maestro norrfst | 0,1808 | 0,1688 | −0,0120 | [−0,0156, −0,0082] |
+
+La forma A col maestro giusto è la migliore delle tre, ma **resta sotto** il vecchio `RRFST`. La forma
+B è la peggiore *come fonte del grafo*, pur essendo la migliore a collocare un titolo che nessuno ha
+visto (0,625 contro 0,55 di diffusione sui 999 esclusi).
+
+**Perché**, ed è la lezione vera di questo ticket: la forma B impara a riprodurre i vicini partendo
+dalle righe delle fonti di contenuto — cioè da ciò che il grafo **già contiene** (KWSEM 1,4, DIR 1,0,
+CAST 0,4…). Come fonte aggiuntiva, ripete informazione che c'è. Il vecchio `RRFST` aggiungeva qualcosa
+di diverso: un addestramento fatto su un maestro **comportamentale dell'epoca V10**, che portava il
+punto di vista del pubblico e non solo quello del contenuto.
+
+## Conclusione, che vale più del tentativo
+
+Non si batte il vecchio `RRFST` con questi mezzi, e non serve: **sono due mestieri diversi**.
+
+| mestiere | chi lo fa |
+|---|---|
+| essere una delle 14 fonti del grafo servito, per 76.497 titoli che il comportamento lo hanno | il **vecchio** `RRFST` dentro V45. Il grafo non si tocca |
+| collocare un titolo che **nessuno ha ancora visto**, partendo dal contenuto | la **forma B**, e solo per quello |
+
+Quindi: V45 resta servito com'è; lo studente nuovo è un encoder di cold start. Il tentativo di
+sostituire il vecchio è **chiuso con un esito negativo misurato**, non con un'opinione.
 
 ## Numeri riproducibili
 
