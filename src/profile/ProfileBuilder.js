@@ -324,7 +324,11 @@ class ProfileBuilder {
                         type,
                         signalType,
                         source,
-                        at: item._ctime ? new Date(item._ctime) : (item.lastWatched ? new Date(item.lastWatched) : new Date())
+                        // Una data inventata non è un dato: `new Date()` faceva sembrare visto
+                        // oggi ciò che l'utente non ha visto oggi, e a ogni sync lo spostava
+                        // avanti. Se la sorgente non dice quando, resta `null`.
+                        at: item.lastWatched ? new Date(item.lastWatched)
+                            : (item._ctime ? new Date(item._ctime) : null)
                     });
                 }
             }
@@ -340,24 +344,43 @@ class ProfileBuilder {
                 for (const item of resolvedItems) {
                     const existing = existingMap.get(item.tmdbId);
                     const signals = existing?.signals ? [...existing.signals] : [];
-                    if (signals.length === 0 && existing?.source) {
-                        signals.push({ type: 'watched', source: existing.source, at: existing.lastWatchedAt || new Date() });
-                    }
 
                     const signalIdx = signals.findIndex(s => s.type === item.signalType && s.source === item.source);
                     if (signalIdx >= 0) {
-                        signals[signalIdx].at = item.at;
+                        // Un segnale senza data non sovrascrive una data vera già registrata.
+                        if (item.at) signals[signalIdx].at = item.at;
                     } else {
-                        signals.push({ type: item.signalType, source: item.source, at: item.at });
+                        signals.push({
+                            type: item.signalType,
+                            source: item.source,
+                            ...(item.at ? { at: item.at } : {})
+                        });
                     }
+
+                    // Le visioni si CONTANO dai segnali di visione, non si incrementano a ogni
+                    // sincronizzazione: con `$inc: 1` il numero cresceva di uno per sync fino a
+                    // valori impossibili (30360 visioni di un titolo), e l'interfaccia li mostrava.
+                    const visioniReali = new Set(
+                        signals
+                            .filter(s => s && s.type === 'watched' && s.at)
+                            .map(s => new Date(s.at).getTime())
+                    ).size;
+
+                    const setOperazione = {
+                        type: item.type,
+                        source: item.source,
+                        signals,
+                        episodesWatched: Math.max(1, visioniReali)
+                    };
+                    // `lastWatchedAt` si tocca solo quando c'è una data vera: prima ogni sync lo
+                    // portava a «adesso» anche per un titolo solo messo in libreria.
+                    if (item.at) setOperazione.lastWatchedAt = item.at;
+                    else if (!existing) setOperazione.lastWatchedAt = new Date();
 
                     bulkOps.push({
                         updateOne: {
                             filter: { owner, context: ctx, tmdbId: item.tmdbId },
-                            update: {
-                                $set: { type: item.type, lastWatchedAt: item.at, source: item.source, signals },
-                                $inc: { episodesWatched: 1 }
-                            },
+                            update: { $set: setOperazione },
                             upsert: true
                         }
                     });

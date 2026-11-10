@@ -169,3 +169,17 @@ describe('Test di Proprietà dei Documenti (Ticket 26, Decisione 6)', () => {
         });
     });
 });
+
+describe('Ingestione Stremio: niente conteggi gonfiati, niente date inventate', () => {
+    // Il sync faceva `$inc: episodesWatched: 1` a ogni giro e metteva `new Date()` quando la
+    // sorgente non dichiarava una data: nel database sono arrivate cronologie con 30360
+    // «visioni» e titoli «visti oggi» che nessuno aveva guardato oggi.
+    it('non incrementa episodesWatched e non inventa lastWatchedAt', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const sorgente = fs.readFileSync(path.join(__dirname, '..', 'src', 'profile', 'ProfileBuilder.js'), 'utf8');
+        const blocco = sorgente.slice(sorgente.indexOf('syncStremioData'), sorgente.indexOf('_updateAndSaveActiveVectors'));
+        expect(blocco).not.toMatch(/\$inc:\s*\{\s*episodesWatched/);
+        expect(blocco).not.toMatch(/lastWatched:\s*new Date\(\)\s*\)/);
+    });
+});
