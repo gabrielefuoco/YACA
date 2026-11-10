@@ -1,29 +1,32 @@
+/**
+ * tests/profileBuilder.test.js
+ *
+ * Il costruttore di profilo non scrive più cronologia: `appendToHistory` e
+ * `registraVisione` sono state rimosse insieme al fan-out. La scrittura della
+ * cronologia passa da `syncUserHistory` (Trakt) e `syncStremioData` (Stremio),
+ * provate dai loro test. Qui resta il controllo che il modulo sia caricabile e
+ * che non esponga più i vecchi ingressi.
+ */
+
 const ProfileBuilder = require('../src/profile/ProfileBuilder');
-const TasteProfile = require('../src/models/TasteProfile');
-const WatchHistory = require('../src/library/models/WatchHistory');
 
 jest.mock('../src/models/TasteProfile');
 jest.mock('../src/library/models/WatchHistory');
 
 describe('ProfileBuilder', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+    it('non espone più appendToHistory', () => {
+        expect(ProfileBuilder.appendToHistory).toBeUndefined();
     });
 
-    describe('appendToHistory', () => {
-        it('should append item to WatchHistory', async () => {
-            WatchHistory.findOneAndUpdate.mockResolvedValue({});
+    it('non espone più il fan-out sui contesti', () => {
+        expect(ProfileBuilder._resolveAllContexts).toBeUndefined();
+    });
 
-            await ProfileBuilder.appendToHistory('user123', 'global', {
-                tmdbId: 123,
-                type: 'movie'
-            });
-
-            expect(WatchHistory.findOneAndUpdate).toHaveBeenCalledWith(
-                { owner: 'user123', context: 'global', tmdbId: 123 },
-                expect.any(Object),
-                expect.any(Object)
-            );
+    it('legge i dati di visione da Stremio invece di inventarli', () => {
+        const dati = ProfileBuilder.datiVisioneDaStremio({
+            state: { lastWatched: '2026-05-29T19:51:21.453Z', timesWatched: 2 }
         });
+        expect(dati.ultima.toISOString()).toBe('2026-05-29T19:51:21.453Z');
+        expect(dati.conteggio).toBe(2);
     });
 });

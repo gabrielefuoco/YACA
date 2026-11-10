@@ -1,9 +1,5 @@
 const TasteProfile = require('../models/TasteProfile');
 const {
-    storiaDi,
-    leggiLibreriaPerProfilo,
-    registraVisione,
-    backfillCronologia,
     trovaCronologiaPerIds,
     scriviBatchCronologia
 } = require('../library');
@@ -68,56 +64,13 @@ class ProfileBuilder {
         }
     }
 
-    /**
-     * Aggiunge o aggiorna un elemento nella cronologia di visione (WatchHistory).
-     * Non effettua calcoli di scoring (delegati al client).
-     */
-    static async appendToHistory(owner, context, item) {
-        const { tmdbId, type, episodesWatched = 1, lastWatchedAt = new Date(), source = 'manual' } = item;
-        
-        if (!tmdbId || !type) return;
-
-        await registraVisione({
-            owner,
-            context,
-            tmdbId,
-            type,
-            episodesWatched,
-            lastWatchedAt,
-            source
-        });
-    }
-
     static async _updateAndSaveActiveVectors() {
         return { vActive: {}, vFinal: {}, flatnessMetrics: null, scritto: false };
     }
 
     /**
-     * Risolve tutti i contesti attivi per un utente (global + profili AddonConfig).
-     */
-    static async _resolveAllContexts(owner) {
-        const contexts = new Set(['global']);
-        try {
-            const account = await accountDi(owner);
-            if (account?.addonUuid) {
-                const config = await AddonConfig.findOne({ uuid: account.addonUuid }).lean();
-                for (const p of (config?.profiles || [])) {
-                    if (p.id) contexts.add(p.id);
-                }
-            }
-        } catch (e) {
-            console.warn('[ProfileBuilder] Error resolving contexts:', e.message);
-        }
-        return Array.from(contexts);
-    }
-
-    /**
      * Backfill della cronologia/segnali da global a un contesto secondario se vuoto.
      */
-    static async backfillProfileWatchHistory(owner, targetContext) {
-        await backfillCronologia({ owner, targetContext });
-    }
-
     static async recomputeVectorsForUser(_owner, _context, _options = {}) {
         return {
             vActive: {},
@@ -453,9 +406,6 @@ class ProfileBuilder {
                 if (bulkOps.length > 0) {
                     await scriviBatchCronologia(bulkOps);
                 }
-
-                // Esegue anche backfill per contesti che non avevano storico
-                await ProfileBuilder.backfillProfileWatchHistory(owner, ctx);
 
                 await ProfileBuilder._updateSyncStatus(owner, ctx, {
                     isSyncing: false,

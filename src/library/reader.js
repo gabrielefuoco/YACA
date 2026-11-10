@@ -197,22 +197,6 @@ async function storiaDi({ userId, profileId, limit = null }) {
 const cronologiaDi = storiaDi;
 
 /**
- * Registra o incrementa una voce nella cronologia di visione.
- */
-async function registraVisione({ owner, context, tmdbId, type, episodesWatched = 1, lastWatchedAt = new Date(), source = 'manual' }) {
-    const HistoryModel = getHistoryModel();
-    if (!tmdbId || !type || !HistoryModel || typeof HistoryModel.findOneAndUpdate !== 'function') return null;
-    return HistoryModel.findOneAndUpdate(
-        { owner, context: contestoCronologia(context), tmdbId },
-        { 
-            $set: { type, lastWatchedAt, source },
-            $inc: { episodesWatched } 
-        },
-        { upsert: true }
-    );
-}
-
-/**
  * Esegue il backfill della cronologia da global a un contesto secondario vuoto.
  */
 async function backfillCronologia({ owner, targetContext }) {
@@ -392,7 +376,6 @@ module.exports = {
     contaDaConvertire,
     storiaDi,
     cronologiaDi,
-    registraVisione,
     backfillCronologia,
     trovaCronologiaPerIds,
     scriviBatchCronologia,
