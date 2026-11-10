@@ -1,29 +1,25 @@
 #!/usr/bin/env node
 /**
- * Ripara la cronologia di visione corrotta dall'ingestione di Stremio.
+ * Corregge i dati di visione della cronologia, senza togliere voci.
  *
- * IL DANNO. `ProfileBuilder.syncStremioData` faceva due cose sbagliate a ogni
- * sincronizzazione:
+ * IL DANNO. `episodesWatched` cresceva di uno a ogni sincronizzazione invece che per
+ * visione (valori come 401796), e `lastWatchedAt` veniva messo a `new Date()` quando la
+ * sorgente non dichiarava una data: titoli «visti oggi» che nessuno aveva guardato oggi.
  *
- *   1. `$inc: { episodesWatched: 1 }` — il numero di visioni cresceva di uno **per
- *      sync**, non per visione. Dopo N sincronizzazioni un titolo risultava visto N
- *      volte: nel database ci sono documenti con 30360 «visioni».
- *   2. `lastWatchedAt: new Date()` quando la sorgente non dichiarava una data — cioè
- *      quasi sempre per gli item di libreria. Risultato: titoli «visti oggi» che non
- *      sono stati visti oggi, e la data si spostava avanti a ogni sync.
+ * COSA FA. Per ogni titolo in `global`:
+ *   1. cerca la data vera nella libreria Stremio (`userlibraryitems.state.lastWatched`,
+ *      incrociata per nome e anno, perché la libreria non conserva il tmdbId);
+ *   2. se la libreria non la conserva, usa la data che Trakt aveva già scritto;
+ *   3. se nessuna delle due esiste, la data si toglie: l'età resta ignota invece di
+ *      diventare «oggi».
+ *   4. `episodesWatched` diventa il conteggio dichiarato da Stremio (`state.timesWatched`)
+ *      quando è maggiore di zero, altrimenti 1 — cioè «almeno una visione».
  *
- * Il codice è stato corretto (niente `$inc`, niente date inventate). Questo script
- * ripara i documenti già scritti.
- *
- * COME RICONOSCE L'ORIGINE DEL DANNO. Un `at` di segnale condiviso da molti documenti
- * allo stesso millisecondo non è una visione: è il timestamp del ciclo di sync. Quei
- * segnali si scartano; le date singole restano perché sono informazioni vere.
+ * Le voci non si eliminano: cambiano i numeri e le date.
  *
  * USO
- *   node scripts/ripara-cronologia.js            → prova, non scrive niente
+ *   node scripts/ripara-cronologia.js            → prova
  *   node scripts/ripara-cronologia.js --conferma → applica
- *
- * Tocca solo `watchhistories`. Non tocca la libreria, i cataloghi né il grafo.
  */
 
 const path = require('path');
@@ -31,22 +27,56 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const mongoose = require('mongoose');
 
-const SOGLIA_CONDIVISIONE = 5; // un `at` condiviso da >= 5 documenti è un ciclo di sync
-const TOLLERANZA_SCRITTURA_MS = 5000; // `at` a meno di 5s dalla scrittura del documento
-const CHIAVE_DATA = (at) => (at ? new Date(at).toISOString() : null);
+const normalizza = (s) => String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/** Nomi con cui un titolo può comparire in libreria. */
+const ALIAS = {
+    94664: ['mushoku tensei jobless reincarnation'],
+    4556: ['scrubs medici ai primi ferri'],
+    295778: ['scrubs']
+};
 
 /**
- * Il segnale è stato scritto con `new Date()` al posto della data vera.
+ * La data vera di visione, dalla libreria Stremio.
  *
- * Due firme, entrambe sul solo Stremio (Trakt porta la data dell'episodio):
- *  - l'`at` coincide con l'istante in cui il documento è stato scritto (±5s);
- *  - l'`at` è condiviso da molti documenti, cioè è il timestamp del ciclo di sync.
+ * La libreria non conserva il tmdbId (`mapped: false`), quindi si incrocia per nome:
+ * corrispondenza esatta, oppure contenimento verificato dall'anno. Quando un titolo
+ * compare più volte vince la visione più recente.
  */
-function segnaleInventato(segnale, doc, dateSospette) {
-    if (!segnale?.at || segnale.source !== 'stremio') return false;
-    if (dateSospette.has(CHIAVE_DATA(segnale.at))) return true;
-    if (!doc.updatedAt) return false;
-    return Math.abs(new Date(segnale.at).getTime() - new Date(doc.updatedAt).getTime()) <= TOLLERANZA_SCRITTURA_MS;
+function dataDaLibreria(titolo, libreria) {
+    const chiavi = [normalizza(titolo.nome), ...(ALIAS[titolo.tmdbId] || [])].filter(Boolean);
+    const candidati = libreria.filter(item => {
+        const nome = normalizza(item.name);
+        if (!nome) return false;
+        const nomeCombacia = chiavi.some(k => nome === k || nome.includes(k) || k.includes(nome));
+        if (!nomeCombacia) return false;
+        // L'anno decide i casi ambigui: «Scrubs» (2026) non è «Scrubs - Medici ai primi
+        // ferri» (2001). Senza questo controllo una serie prendeva la data di un remake.
+        if (titolo.anno && item.year) {
+            const scarto = Math.abs(Number(item.year) - Number(titolo.anno));
+            if (Number.isFinite(scarto) && scarto > 1) return false;
+        }
+        return true;
+    });
+    let migliore = null;
+    for (const c of candidati) {
+        const quando = c.state?.lastWatched ? new Date(c.state.lastWatched) : null;
+        if (!quando || Number.isNaN(quando.getTime())) continue;
+        if (!migliore || quando > migliore.quando) {
+            migliore = {
+                quando,
+                conteggio: Number(c.state?.timesWatched) || 0,
+                nome: c.name,
+                anno: c.year || null
+            };
+        }
+    }
+    return migliore;
 }
 
 async function main() {
@@ -58,109 +88,111 @@ async function main() {
     }
 
     await mongoose.connect(uri);
-    const cronologia = mongoose.connection.db.collection('watchhistories');
+    const db = mongoose.connection.db;
+    const cronologia = db.collection('watchhistories');
 
-    const documenti = await cronologia.find({}).toArray();
-    console.log(`documenti in cronologia: ${documenti.length}`);
+    const documenti = await cronologia.find({ context: 'global' }).toArray();
+    const libreria = await db.collection('userlibraryitems')
+        .find({ removed: { $ne: true } }, { projection: { name: 1, year: 1, state: 1 } })
+        .toArray();
+    console.log(`documenti da correggere: ${documenti.length} | elementi in libreria: ${libreria.length}\n`);
 
-    // 1. Quali date di segnale sono un artefatto del sync?
-    //
-    // Solo i segnali di Stremio possono esserlo: Trakt porta la data dell'episodio, e
-    // scartarla perché capita lo stesso millisecondo su più titoli (un import in blocco)
-    // sarebbe buttare informazione vera. La regola guarda quindi la SORGENTE, non solo
-    // la ripetizione.
-    const contatoreDate = new Map();
-    for (const doc of documenti) {
-        for (const segnale of Array.isArray(doc.signals) ? doc.signals : []) {
-            if (!segnale?.at || segnale.source !== 'stremio') continue;
-            const chiave = CHIAVE_DATA(segnale.at);
-            contatoreDate.set(chiave, (contatoreDate.get(chiave) || 0) + 1);
-        }
-    }
-    const dateSospette = new Set(
-        [...contatoreDate.entries()].filter(([, n]) => n >= SOGLIA_CONDIVISIONE).map(([data]) => data)
-    );
-    console.log(`date di segnale condivise da >= ${SOGLIA_CONDIVISIONE} documenti (artefatti del sync): ${dateSospette.size}`);
+    // I documenti di cronologia non conservano il titolo: serve per incrociare la libreria.
+    const { getDuckDbMetaDetails } = require('../src/indice/duckDbProvider');
+    const nomiPerTmdb = new Map();
+    const nomeDi = async (tmdbId, tipo) => {
+        const chiave = `${tmdbId}:${tipo}`;
+        if (nomiPerTmdb.has(chiave)) return nomiPerTmdb.get(chiave);
+        let voce = { nome: '', anno: null };
+        try {
+            const meta = await getDuckDbMetaDetails(tmdbId, tipo === 'tv' ? 'series' : 'movie');
+            const anno = Number(meta?.year || String(meta?.releaseInfo || meta?.release_date || '').slice(0, 4));
+            voce = {
+                nome: meta?.name || meta?.title || meta?.titolo || '',
+                anno: Number.isFinite(anno) && anno > 1900 ? anno : null
+            };
+        } catch (_e) { voce = { nome: '', anno: null }; }
+        nomiPerTmdb.set(chiave, voce);
+        return voce;
+    };
 
-    // 2. Piano di riparazione, documento per documento
     const piano = [];
     for (const doc of documenti) {
         const segnali = Array.isArray(doc.signals) ? doc.signals : [];
-        // Un segnale con data inventata si toglie del tutto: se restasse senza `at`, i lettori
-        // ripiegherebbero su `lastWatchedAt` — che è anch'esso inventato — e l'età tornerebbe.
-        const segnaliVeri = segnali.filter(s => !segnaleInventato(s, doc, dateSospette));
-        const visioniVere = new Set(
-            segnaliVeri.filter(s => s.type === 'watched').map(s => CHIAVE_DATA(s.at))
-        ).size;
-        const ultimaVisioneVera = segnaliVeri
-            .filter(s => s.type === 'watched' && s.at)
-            .map(s => new Date(s.at).getTime())
-            .sort((a, b) => b - a)[0];
+        const { nome, anno } = await nomeDi(doc.tmdbId, doc.type);
 
-        // Una data è sospetta solo se coincide con un artefatto del sync E l'ultimo
-        // segnale viene da Stremio: quella di Trakt non si tocca.
-        const ultimoSegnale = segnali.length > 0 ? segnali[segnali.length - 1] : null;
-        const lastWatchedAttuale = doc.lastWatchedAt ? new Date(doc.lastWatchedAt) : null;
-        // La data del documento è inventata se coincide con la scrittura ed è di Stremio.
-        const lastWatchedAtSospetto = lastWatchedAttuale
-            ? (ultimoSegnale?.source === 'stremio'
-                && Math.abs(lastWatchedAttuale.getTime() - new Date(doc.updatedAt || 0).getTime()) <= TOLLERANZA_SCRITTURA_MS)
-            : false;
-        const lastWatchedAtNuovo = lastWatchedAtSospetto
-            ? (ultimaVisioneVera ? new Date(ultimaVisioneVera) : (doc.createdAt ? new Date(doc.createdAt) : null))
-            : lastWatchedAttuale;
+        // 1. data Trakt già registrata (è vera: porta la data dell'episodio)
+        const dateTrakt = segnali
+            .filter(s => s?.source === 'trakt' && s.at)
+            .map(s => new Date(s.at))
+            .filter(d => !Number.isNaN(d.getTime()));
+        const ultimaTrakt = dateTrakt.length > 0
+            ? new Date(Math.max(...dateTrakt.map(d => d.getTime())))
+            : null;
 
-        const episodesAttuale = Number(doc.episodesWatched) || 0;
-        const episodesNuovo = Math.max(1, visioniVere);
+        // 2. data vera dalla libreria Stremio (per i segnali Stremio, che non ne avevano una)
+        const daLibreria = dataDaLibreria({ tmdbId: doc.tmdbId, nome, anno }, libreria);
 
-        const cambiaSegnali = segnaliVeri.length !== segnali.length;
-        const cambiaEpisodi = episodesAttuale !== episodesNuovo;
-        const eliminaData = Boolean(lastWatchedAtSospetto && ultimaVisioneVera === undefined);
-        const cambiaData = !eliminaData && lastWatchedAttuale && lastWatchedAtNuovo
-            ? lastWatchedAttuale.getTime() !== lastWatchedAtNuovo.getTime()
-            : (!eliminaData && lastWatchedAtNuovo !== null && !lastWatchedAttuale);
+        // Fra due date vere vince la più recente: è l'ultima visione, non la prima.
+        const candidate = [daLibreria?.quando, ultimaTrakt].filter(Boolean);
+        const dataScelta = candidate.length > 0
+            ? new Date(Math.max(...candidate.map(d => d.getTime())))
+            : null;
+        const fonte = !dataScelta
+            ? 'nessuna'
+            : (daLibreria?.quando && dataScelta.getTime() === daLibreria.quando.getTime()
+                ? `libreria ("${daLibreria.nome}")`
+                : 'trakt');
+        const conteggio = Math.max(1, daLibreria?.conteggio || 0);
 
-        if (!cambiaSegnali && !cambiaEpisodi && !cambiaData && !eliminaData) continue;
+        // 3. i segnali Stremio non portano più una data inventata: o quella vera, o niente
+        const segnaliNuovi = segnali.map(s => {
+            if (s?.source === 'trakt') return s;
+            const { at, ...resto } = s || {};
+            return dataScelta ? { ...resto, at: dataScelta } : resto;
+        });
 
         piano.push({
             _id: doc._id,
             tmdbId: doc.tmdbId,
-            context: doc.context,
-            prima: { episodesWatched: episodesAttuale, lastWatchedAt: doc.lastWatchedAt, segnali: segnali.length },
-            dopo: { episodesWatched: episodesNuovo, lastWatchedAt: lastWatchedAtNuovo, segnali: segnaliVeri.length },
+            tipo: doc.type,
+            nome,
+            prima: {
+                visioni: Number(doc.episodesWatched) || 0,
+                data: doc.lastWatchedAt ? new Date(doc.lastWatchedAt).toISOString().slice(0, 10) : null
+            },
+            dopo: {
+                visioni: conteggio,
+                data: dataScelta ? dataScelta.toISOString().slice(0, 10) : null
+            },
+            fonte,
             aggiornamento: {
                 $set: {
-                    signals: segnaliVeri,
-                    episodesWatched: episodesNuovo,
-                    ...(eliminaData || !lastWatchedAtNuovo ? {} : { lastWatchedAt: lastWatchedAtNuovo })
+                    episodesWatched: conteggio,
+                    signals: segnaliNuovi,
+                    ...(dataScelta ? { lastWatchedAt: dataScelta } : {})
                 },
-                // Senza una visione vera, la data non si dichiara affatto: l'età resta ignota
-                // invece di diventare «oggi».
-                ...(eliminaData ? { $unset: { lastWatchedAt: '' } } : {})
+                ...(dataScelta ? {} : { $unset: { lastWatchedAt: '' } })
             }
         });
     }
 
-    console.log(`documenti da riparare: ${piano.length} / ${documenti.length}`);
-    const assurdiPrima = documenti.filter(d => (Number(d.episodesWatched) || 0) > 50).length;
-    const assurdiDopo = piano.length
-        ? documenti.filter(d => (Number(d.episodesWatched) || 0) > 50 && !piano.some(p => String(p._id) === String(d._id))).length
-            + piano.filter(p => p.dopo.episodesWatched > 50).length
-        : assurdiPrima;
-    console.log(`documenti con più di 50 visioni: ${assurdiPrima} prima, ${assurdiDopo} dopo`);
-
-    const segnaliRimossi = piano.reduce((sum, p) => sum + (p.prima.segnali - p.dopo.segnali), 0);
-    const dateEliminate = piano.filter(p => p.aggiornamento.$unset).length;
-    console.log(`segnali con data inventata da rimuovere: ${segnaliRimossi}`);
-    console.log(`documenti a cui togliere una data falsa («visto oggi»): ${dateEliminate}`);
-
-    const esempi = piano.slice(0, 8);
-    for (const p of esempi) {
-        console.log(`  ${p.context} · tmdb ${p.tmdbId}: ${p.prima.episodesWatched} visioni → ${p.dopo.episodesWatched}, ` +
-            `${p.prima.lastWatchedAt ? new Date(p.prima.lastWatchedAt).toISOString().slice(0, 10) : '—'} → ` +
-            `${p.dopo.lastWatchedAt ? new Date(p.dopo.lastWatchedAt).toISOString().slice(0, 10) : '—'}`);
+    piano.sort((a, b) => a.prima.visioni - b.prima.visioni);
+    console.log('tmdb   | visioni        | data                | fonte');
+    console.log('-------+----------------+---------------------+---------------------');
+    for (const p of piano) {
+        const visioni = `${String(p.prima.visioni).padStart(6)} → ${String(p.dopo.visioni).padEnd(3)}`;
+        const data = `${p.prima.data || '—'} → ${p.dopo.data || 'ignota'}`;
+        console.log(`${String(p.tmdbId).padEnd(6)} | ${visioni} | ${data.padEnd(19)} | ${p.fonte} ${p.nome ? `· ${p.nome}` : ''}`);
     }
-    if (piano.length > esempi.length) console.log(`  … e altri ${piano.length - esempi.length} documenti`);
+
+    const cambia = piano.filter(p =>
+        p.prima.visioni !== p.dopo.visioni ||
+        (p.prima.data || null) !== (p.dopo.data || null)
+    ).length;
+    console.log(`\ndocumenti che cambiano: ${cambia} / ${piano.length}`);
+    console.log(`date vere recuperate: ${piano.filter(p => p.dopo.data).length}`);
+    console.log(`date che restano ignote: ${piano.filter(p => !p.dopo.data).length}`);
 
     if (!conferma) {
         console.log('\nPROVA. Non è stato scritto niente. Rilancia con --conferma per applicare.');
@@ -168,22 +200,17 @@ async function main() {
         return;
     }
 
-    const operazioni = piano.map(p => ({
-        updateOne: { filter: { _id: p._id }, update: p.aggiornamento }
-    }));
     let applicate = 0;
-    for (let i = 0; i < operazioni.length; i += 200) {
-        const lotto = operazioni.slice(i, i + 200);
-        if (lotto.length === 0) continue;
-        const esito = await cronologia.bulkWrite(lotto, { ordered: false });
+    for (const p of piano) {
+        const esito = await cronologia.updateOne({ _id: p._id }, p.aggiornamento);
         applicate += esito.modifiedCount || 0;
     }
-    console.log(`\nAPPLICATO: ${applicate} documenti riparati.`);
+    console.log(`\nAPPLICATO: ${applicate} documenti corretti.`);
     await mongoose.disconnect();
 }
 
 main().catch(async (err) => {
-    console.error('Errore durante la riparazione:', err.message);
+    console.error('Errore durante la correzione:', err.message);
     try { await mongoose.disconnect(); } catch (_e) { /* niente */ }
     process.exit(1);
 });
