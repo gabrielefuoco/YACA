@@ -512,7 +512,18 @@ async function righeDelGrafo(ctx, { assigned, sharedState, rawTraktResult = { tr
                         assigned[shelf.catalog_id] = itemsDi(shelf);
                     }
                 }
-                const shelfSummary = scaffali.map(s => ({
+                // INVARIANTE (ticket 26): uno scaffale senza titoli NON si dichiara. Il grafo già
+                // omette gli scaffali vuoti, ma l'assegnazione del pool è esclusiva: un titolo
+                // finisce in una riga sola, e una riga può restare senza. Dichiararla comunque
+                // produceva un catalogo elencato e vuoto — «yaca_35935_series», 0 titoli, HTTP 200.
+                const scaffaliConTitoli = scaffali.filter(
+                    s => (assigned[s.catalog_id] || []).length > 0
+                );
+                const omessi = scaffali.length - scaffaliConTitoli.length;
+                if (omessi > 0) {
+                    console.log(`[Scaffali] ${ctx.mediaType}: ${omessi} scaffali omessi perché senza titoli dopo l'assegnazione`);
+                }
+                const shelfSummary = scaffaliConTitoli.map(s => ({
                     catalog_id: s.catalog_id,
                     nome: s.nome,
                     nome_fonte: s.nome_fonte,
