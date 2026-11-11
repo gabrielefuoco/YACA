@@ -76,3 +76,35 @@ non passi `modo`/`leve` come li passa l'elenco.
 
 Il dato c'è: il guasto è nel percorso di servizio. Resta da trovare **quale** argomento diverge, e
 quello è lavoro di codice, non una decisione. Il sospetto è il disallineamento delle leve.
+
+## Le cinque sonde, in ordine (11/11/2026)
+
+| # | sonda | esito |
+|---|---|---|
+| 1 | il catalogo è nella configurazione? | no: `35935` non compare nel documento `config` |
+| 2 | è nella cache degli scaffali del profilo? | no: la chiave `modo_generale::generale` è **vuota** |
+| 3 | il grafo lo restituisce? | **sì**: è uno dei 4 «suggerimenti», `fonte: grafo`, `anime: true`, `medium: series`, nome **«Anime shōnen»**, semi *Berserk*, *Yu degli spettri*, *Code Geass* |
+| 4 | il pool ha titoli? | **sì: 60**, e identici nella forma a quelli dell'altro scaffale anime (*Magia & Stregoneria*) che invece ne serve 20 |
+| 5 | è una cache sporca? | **no**: svuotate le 1.051 chiavi `tmdb_catalog:*`, una build **fresca** dà ancora 0 (268 ms) |
+
+Quindi: due scaffali anime strutturalmente uguali (60 titoli ciascuno, `type: series`, nessun flag
+`anime` sugli item), uno serve 20 e l'altro 0. **Il guasto è nella logica per-catalogo del gestore**, non
+nel pool, non nel grafo, non nella cache.
+
+Dove guardare, di preciso: dentro `catalogHandler.fetchCatalog` c'è una catena di filtri che dipende
+dal **singolo** catalogo — `catalogMeta`/`targetCatalog` risolti dal registro, `isSubjectCatalog`,
+`isAnimeCatalog`, la conformità `catalogKind`, i filtri di preset. Il sospetto più forte è che per
+`yaca_35935_series` venga risolto un preset omonimo («Anime shōnen») con filtri di genere che i 60
+titoli non soddisfano, e che il filtro li scarti tutti in silenzio.
+
+## Il passo esatto che serve
+
+Una riga di log temporanea in `fetchCatalog`, dopo ogni filtro, con `id` e conteggio: dice in due
+minuti quale filtro porta 60 → 0. Non ho voluto aggiungere log a una build di produzione senza il tuo
+via, e la diagnosi è già abbastanza stretta da non richiedere altre ipotesi.
+
+## Cosa NON è
+
+- non è V46: il catalogo esisteva già prima, e i titoli nel pool ci sono;
+- non è il grafo: la risposta è completa e coerente;
+- non è la cache: il vuoto si rigenera.
