@@ -128,7 +128,20 @@ peggiora niente, e la coda della forma B è migliore (p10 0,28 contro 0,23).
 - Il tetto resta il contenuto: **nessun modello** può superare il limite di ciò che a cold start
   esiste. Se un giorno servisse di più, la strada non è addestrare meglio — è avere `COVISION`.
 
-## L'artefatto
+## L'artefatto (aggiornato: servono i PESI, non solo la Z)
+
+| | |
+|---|---|
+| pesi del modello | `.cache/studente-B-colloca.pt` (247 MB) — sha `f76e8fd0118ea7d8` |
+| ricetta degl'ingressi | `.cache/studente-B-colloca.config.json` (forma, dimensioni, sha di `keep` e `kwcols`, KPROJ, SEED, fonti) |
+| tabella dei vettori | `.cache/studente-B-colloca.npz` (`Z` 76.497 × 2.560, 583 MB) |
+| addestramento | forma B, freddi ×4, 24 epoche, 1.357 s su GPU, loss 9,1795 |
+
+**La `Z` da sola non basta**: collocare un titolo che non c'è vuol dire eseguire il forward, e per
+quello servono i pesi. Il primo addestramento aveva salvato solo la `Z` — sarebbe stato scoperto tardi,
+davanti a un titolo nuovo.
+
+## L'artefatto (prima versione, superata)
 
 | | |
 |---|---|
