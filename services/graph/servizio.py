@@ -585,6 +585,17 @@ def verifica_startup_e_avvertimenti(logger_fn=print) -> None:
         )
 
 
+def _anime_di(engine, chiave: str):
+    """True/False se il canone sa se quel titolo è anime, None se non lo sa o se il motore manca."""
+    if engine is None:
+        return None
+    riga = getattr(engine, "row_of", {}).get(str(chiave))
+    anime = getattr(engine, "anime", None)
+    if riga is None or anime is None or len(anime) <= riga:
+        return None
+    return bool(anime[riga])
+
+
 def esegui_scaffali(
     dati: dict,
     engine: Engine | None = None,
@@ -912,6 +923,10 @@ def esegui_scaffali(
                 "tmdbId": int(t["tmdbId"]),
                 "medium": str(t["medium"]),
                 "punteggio": round(float(t["punteggio"]), 6),
+                # Il flag anime viaggia col titolo. Prima restava solo sullo scaffale, e il
+                # client — che filtra gli scaffali anime con `isItemAnime` — scartava tutti i
+                # titoli come «non anime»: un catalogo dichiarato e vuoto (ticket 26).
+                "anime": _anime_di(engine, t["key"]),
             }
             for t in sh.titoli
         ]

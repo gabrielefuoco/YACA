@@ -404,7 +404,10 @@ def test_schema_risposta_esatto(sangam456_seeds):
         "titoli",
     }
     EXPECTED_REP_KEYS = {"titolo", "anno", "tmdbId", "plays", "eta_giorni"}
-    EXPECTED_TITLE_KEYS = {"key", "tmdbId", "medium", "punteggio"}
+    # `anime` è stato aggiunto col ticket 26: il flag viaggia col titolo, non solo con lo scaffale.
+    # Senza, il client filtrava gli scaffali anime con `isItemAnime` e scartava tutti i titoli —
+    # un catalogo dichiarato e vuoto.
+    EXPECTED_TITLE_KEYS = {"key", "tmdbId", "medium", "punteggio", "anime"}
     EXPECTED_MEMBER_KEYS = {"titolo", "anno", "tmdbId", "medium"}
 
     for sh in res["scaffali"]:

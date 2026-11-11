@@ -449,7 +449,11 @@ async function righeDelGrafo(ctx, { assigned, sharedState, rawTraktResult = { tr
             tmdbId: Number(t.tmdbId),
             type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'series',
             media_type: (t.medium === 'movie' || lista.medium === 'movie') ? 'movie' : 'tv',
-            punteggio: t.punteggio
+            punteggio: t.punteggio,
+            // `_isAnime` è la marcatura che `normalizeAnimeMarker` legge per prima. Senza, un
+            // titolo anime dentro uno scaffale anime veniva filtrato come «non anime» dal
+            // gestore dei cataloghi, che si fidava solo della marca (ticket 26).
+            ...(t.anime === true || t.anime === false ? { _isAnime: t.anime } : {})
         }, ctx.mediaType));
 
         // -------------------------------------------------------------------------
