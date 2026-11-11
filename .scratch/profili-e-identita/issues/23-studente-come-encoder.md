@@ -286,13 +286,43 @@ Cioè: collocare un seme freddo dal contenuto **non fa danni** e quasi **raddopp
 consigliare altri titoli freddi — ma resta un numero piccolo, e le istanze sono poche (7 utenti
 migliorati, 4 peggiorati). Onestamente: la direzione è giusta, la magnitudine è ancora modesta.
 
-## Dove si può ancora migliorare, e con quale leva
+## La leva del campionamento pesato — provata, e funziona
 
-Il divario caldi/freddi a +0,12 dice che lo studente impara soprattutto dalla massa popolare: i titoli
-freddi pesano poco nell'addestramento perché sono pochi *per utente* (il campionamento è uniforme sulle
-righe). La leva ovvia e non ancora provata:
+L'ipotesi: il campionamento uniforme spende la capacità sulla massa popolare. Fatto: le righe con
+`COVISION ≤ 2` pesano **×4** nell'estrazione (28.203 righe su 72.205), forma B, stesso maestro.
 
-- **campionamento pesato per freddezza**: le righe con co-visione bassa pesano di più nel batch, così
-  la capacità si spende dove serve. Costo: un addestramento (10-20 min).
-- in alternativa, addestrare **solo sui freddi** (dove il maestro ha comunque RESID/CONTESTI) e
-  verificare che i caldi non peggiorino.
+| studente | fedeltà caldi | fedeltà freddi | divario |
+|---|---|---|---|
+| B, uniforme | 0,340 | 0,220 | +0,120 |
+| **B, freddi ×4** | 0,300 | **0,230** | **+0,070** |
+
+Il divario si dimezza quasi. Il prezzo è 0,04 di fedeltà sui caldi.
+
+### E il prezzo non si paga sui consigli veri
+
+| configurazione dei semi freddi | recall@20 totale | recall@20 bersagli freddi | migliorati / peggiorati |
+|---|---|---|---|
+| grafo servito, com'è | 0,1881 | 0,0033 | — |
+| + studente A (uniforme) | 0,1885 | 0,0056 | 3 / 3 |
+| + studente B (uniforme) | 0,1883 | 0,0056 | 7 / 4 |
+| **+ studente B (freddi ×4)** | **0,1878** | **0,0081** | **10 / 2** |
+
+Tre cose, lette insieme:
+
+1. sul **totale** il contenuto è **neutro** (−0,0003, IC95 [−0,0025, +0,0015]): non peggiora niente;
+2. sui **bersagli freddi** il recall passa da 0,0033 a **0,0081**: **+145% relativo**, il doppio di
+   quanto faceva la forma A;
+3. il rapporto migliorati/peggiorati è **10 a 2**, il più netto delle tre configurazioni: non è
+   un caso isolato che tira su la media.
+
+**Onestà sulla magnitudine**: 0,8% resta un numero piccolo, e le istanze sono poche (12 utenti
+cambiano). Il guadagno è reale e nella direzione giusta, non è una vittoria schiacciante.
+
+## La configurazione scelta
+
+| | |
+|---|---|
+| maestro | sei fonti comportamentali (19.130.279 archi), ricostruibile |
+| studente | **forma B, freddi ×4** (Z 76.497 × 2.560) |
+| uso | collocare un titolo senza riga: `contenuto → Z → top-16` |
+| dove NON va usato | come fonte sostitutiva nel grafo servito (peggiora: −0,0120) |

@@ -121,6 +121,10 @@ def main() -> int:
     ap.add_argument("--maestro", default=str(V45 / "v45-triangolo.npz"),
                     help="grafo maestro: deve essere SENZA RRFST (ricetta norrfst), altrimenti lo "
                          "studente impara a imitare lo studente precedente invece del comportamento")
+    ap.add_argument("--peso-freddi", type=float, default=1.0,
+                    help="quanto pesa nell'estrazione una riga con co-visione bassa (1.0 = uniforme)")
+    ap.add_argument("--freddi-soglia", type=int, default=2,
+                    help="grado di COVISION sotto il quale una riga conta come fredda")
     ap.add_argument("--out", default=".cache/studente-v45.npz")
     a = ap.parse_args()
 
@@ -161,6 +165,19 @@ def main() -> int:
         esclusi = np.unique(np.concatenate(scelti))
         print(f"held-out: {len(esclusi):,} titoli esclusi dal training", flush=True)
     addestrabili = np.setdiff1d(nodi, esclusi)
+
+    # Estrazione pesata per freddezza: con `--peso-freddi > 1` le righe senza co-visione pesano di
+    # piu' nei batch. Serve perche' il campionamento uniforme spende la capacita' sulla massa
+    # popolare, e i titoli senza comportamento restano indietro (divario misurato: +0,12).
+    zc = np.load(V45 / "tipi2-pesi" / "COVISION.npz")
+    cov_grado = np.diff(zc["indptr"])
+    prob = None
+    if a.peso_freddi != 1.0:
+        pesi_camp = np.where(cov_grado[addestrabili] <= a.freddi_soglia, float(a.peso_freddi), 1.0)
+        prob = pesi_camp / pesi_camp.sum()
+        print(f"estrazione pesata: freddi (COVISION<={a.freddi_soglia}) x{a.peso_freddi} · "
+              f"{int((cov_grado[addestrabili] <= a.freddi_soglia).sum()):,} righe fredde su "
+              f"{len(addestrabili):,}", flush=True)
 
     fonti = carica_fonti(N) if a.forma == "B" else {}
     if a.forma == "B":
@@ -214,7 +231,8 @@ def main() -> int:
         ep_t = time.time()
         Zb = banca()
         model.train()
-        perm = rng.permutation(addestrabili)
+        perm = (rng.choice(addestrabili, size=len(addestrabili), replace=True, p=prob)
+                if prob is not None else rng.permutation(addestrabili))
         tot, nb = 0.0, 0
         for st in range(0, len(perm), a.batch):
             bn = perm[st:st + a.batch]
@@ -245,7 +263,8 @@ def main() -> int:
     out = ROOT / a.out
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out, Z=Z, forma=a.forma, heldout=esclusi.astype(np.int64),
-                        epoche=a.epoche, maestro=Path(a.maestro).name)
+                        epoche=a.epoche, maestro=Path(a.maestro).name,
+                        peso_freddi=np.float32(a.peso_freddi))
     print(f"scritto {out} · Z {Z.shape} · {out.stat().st_size/2**20:.0f} MB · {time.time()-t0:.0f}s", flush=True)
 
     # ---- la prova: i titoli esclusi si collocano come se fossero nuovi
