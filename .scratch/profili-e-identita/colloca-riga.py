@@ -32,9 +32,13 @@ from services.graph import camminata as cam          # noqa: E402
 from services.graph.build import config as C        # noqa: E402
 from services.graph.build import data as D          # noqa: E402
 
-FONTI = ROOT / ".cache" / "fonti"
+# Gli artefatti hanno un CONTRATTO (ticket 24): cartella dichiarata, manifesto versionato con sha e
+# ricetta, e un controllo che si ferma invece di ripiegare. Non stanno più in `.cache/`, che è
+# sacrificabile per definizione.
+ARTEFATTI = ROOT / "services" / "graph" / "data" / "collocatore"
+FONTI = ARTEFATTI / "fonti"
 RIGHE = FONTI / "righe"
-ING = ROOT / ".cache" / "ingressi"
+ING = ARTEFATTI / "ingressi"
 TRANS = ROOT / "services" / "graph" / "data" / "v45-transizione" / "transizione-pota16.npz"
 PESI = json.loads((ROOT / "services" / "graph" / "data" / "v45" / "pesi.json").read_text())
 RRF_K = 15
@@ -227,10 +231,21 @@ def ingresso_fusione(righe: dict[str, dict[int, float]], N: int) -> tuple[np.nda
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--key", required=True)
-    ap.add_argument("--studente", default=str(ROOT / ".cache" / "studente-finale"))
+    ap.add_argument("--studente", default=str(ARTEFATTI / "studente-finale"))
     ap.add_argument("--out", default=".cache/collocazione-finale.json")
     ap.add_argument("--verifica", action="store_true")
     a = ap.parse_args()
+
+    # il contratto si verifica PRIMA di toccare qualsiasi cosa
+    import importlib.util as _iu
+    _spec = _iu.spec_from_file_location(
+        "va", ROOT / ".scratch" / "profili-e-identita" / "verifica-artefatti.py")
+    va = _iu.module_from_spec(_spec); _spec.loader.exec_module(va)
+    problemi = va.verifica()
+    if problemi:
+        for p in problemi:
+            print(f"  · {p}")
+        raise SystemExit("artefatti del collocatore non validi: mi fermo invece di collocare male")
 
     col = Collocatore()
     meta = CT.meta_tmdb(a.key)

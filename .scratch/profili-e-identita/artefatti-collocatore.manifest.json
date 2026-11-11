@@ -1,0 +1,127 @@
+{
+ "cosa": "Artefatti del collocatore di titoli nuovi (ticket 21/23). NON sono derivati sacrificabili: il modello non si ricostruisce identico, quindi va conservato o riaddestrato a mano.",
+ "dove": "services/graph/data/collocatore/  (gitignored come tutti i dati del grafo; questo manifesto è versionato perché è il contratto)",
+ "regola": "Se un file manca o lo sha non torna, la pipeline SI FERMA e nomina il comando di rigenerazione. Mai un risultato plausibile da un artefatto diverso.",
+ "rigenerazione": {
+  "fonti/AN_CAST.npz": "py .scratch/profili-e-identita/congela-fonti.py  (~2 min, struttura da TMDB)",
+  "fonti/KWSEM_Xs.npz": "py .scratch/profili-e-identita/congela-kwsem.py  (~40 min, embedding delle keyword su CPU)",
+  "fonti/KWSEM_G.npz": "py .scratch/profili-e-identita/congela-kwsem.py",
+  "fonti/righe/CREWPROP.npz": "py .scratch/profili-e-identita/crewprop-camminata.py  (~80 min, camminata sul grafo)",
+  "ingressi/ricetta.npz": "py .scratch/profili-e-identita/congela-ingressi.py  (~2 s)",
+  "studente-finale.pt": "py .scratch/profili-e-identita/studente-addestra.py --forma B --heldout 0 --epoche 24 --peso-freddi 4 --maestro .cache/docente-comportamentale/docente-comportamentale.npz --fonti-dir services/graph/data/collocatore/fonti/righe --out services/graph/data/collocatore/studente-finale.npz  (~25 min GPU)"
+ },
+ "artefatti": {
+  "fonti/AN_CAST.json": {
+   "sha256": "133b0b1fde3cba5af2cdfecf0ccf07869d2812e1ab0099ad16c1d602c2372094",
+   "byte": 18411995
+  },
+  "fonti/AN_CAST.npz": {
+   "sha256": "1a68a4419be4b3232a78a50b058a0836d48e5a7755a915310e985787297e0faa",
+   "byte": 5463858
+  },
+  "fonti/AN_COLL.json": {
+   "sha256": "4a25bce46692c5a447c439d02595ece7922191b152c909a310e297d6fa455a06",
+   "byte": 149498
+  },
+  "fonti/AN_COLL.npz": {
+   "sha256": "87495d43613d91912024ea99ebfeaf8b3593d5065118c55c2b90fe854cf269be",
+   "byte": 43799
+  },
+  "fonti/AN_DIR.json": {
+   "sha256": "f6163bf672eb5a00768d62df9af78730d50632bffcab2091914887ab1049953e",
+   "byte": 1651237
+  },
+  "fonti/AN_DIR.npz": {
+   "sha256": "ccc2c8258ac6c97df655e4cb9cf0758696948c69ba9a8b3b385fa28f851d0518",
+   "byte": 364621
+  },
+  "fonti/AN_PROD.json": {
+   "sha256": "3ef203047c99d889e98b04df18b7f1d5406831e5ef821616f028e8437cfbeee5",
+   "byte": 2311538
+  },
+  "fonti/AN_PROD.npz": {
+   "sha256": "57a62bc04e1cc25c9b3fc09ce7354710ab9899f9b60db4bebe603f9654a75833",
+   "byte": 1025142
+  },
+  "fonti/CREWPROP-camminata.npz": {
+   "sha256": "158afc603a399015849fedbc6f6deb27490c88223403a9e1464a27ac1fdcedc6",
+   "byte": 43613679
+  },
+  "fonti/CREWPROP-trama.npz": {
+   "sha256": "92f3ce967403caffa7865333aeb1a951df6c185aaecbf2a8375c91efdd4d7189",
+   "byte": 37232944
+  },
+  "fonti/KWSEM.json": {
+   "sha256": "f88f0a243c2b18c9cba887f9ae4c01ed99303bec6ecec621000d87eb234ba00b",
+   "byte": 442248
+  },
+  "fonti/KWSEM_G.npz": {
+   "sha256": "07d9ba9c3e965f236b5f9a508d7c8ad4372b2459c7bcec966e2f82ea70b659f7",
+   "byte": 3567632
+  },
+  "fonti/KWSEM_norme.npy": {
+   "sha256": "d23eeb48014e9b24640e4d4bd70deb804b083f73fb3b8481804d768686f4abc1",
+   "byte": 306116
+  },
+  "fonti/KWSEM_Xs.npz": {
+   "sha256": "c5aa1c0d71d90bc5a94c91169ec4e3911f9178903362308038fe97f127384393",
+   "byte": 85071197
+  },
+  "fonti/righe/CAST.npz": {
+   "sha256": "8ca88514886236bb44774721a6e3b01aefe587e9e8f0c644c2969dc71e2fe2f5",
+   "byte": 35053285
+  },
+  "fonti/righe/COLL.npz": {
+   "sha256": "3a3d24bdbde37371fd6961c8e1cea1641f5b617212af9c444962c2aed13d1ad4",
+   "byte": 66180
+  },
+  "fonti/righe/CREWPROP.npz": {
+   "sha256": "158afc603a399015849fedbc6f6deb27490c88223403a9e1464a27ac1fdcedc6",
+   "byte": 43613679
+  },
+  "fonti/righe/DIR.npz": {
+   "sha256": "accbf2ca2dd8708964adda71d8ff6aa7872ebcafa7de13c0a8e44a848ee8b7e3",
+   "byte": 1313033
+  },
+  "fonti/righe/KWSEM.npz": {
+   "sha256": "1e311416e73d10f6cf5299a0ee1bc8d9717f404768c53a1b0190d8218c5e8fd7",
+   "byte": 37171100
+  },
+  "fonti/righe/PROD.npz": {
+   "sha256": "198644f93970ff8a2ced224fb094723d331965ca6b83d06cb330b305d0169098",
+   "byte": 17029574
+  },
+  "fonti/righe/RRFST.npz": {
+   "sha256": "1254ecd69af5f8c2aa2aa3e8b6d1a62ce66132a333fd6c775addf76bac4278dd",
+   "byte": 43621434
+  },
+  "fonti/righe/TRAMA.npz": {
+   "sha256": "dbd2e4e740e2d13acbdeed4cd25146ffddb1b0e042152d28c1528b107e28021e",
+   "byte": 42090639
+  },
+  "fonti/TRAMA.json": {
+   "sha256": "0aa98c568c4a3b2de02105bf52e939b82dc0bbabe06e87a1aa2dba3809038328",
+   "byte": 140
+  },
+  "ingressi/ricetta.json": {
+   "sha256": "5cd55c341cd1e8587497f00b9209b369a5b42bb90d1864aa5f037cbe831ba057",
+   "byte": 2989380
+  },
+  "ingressi/ricetta.npz": {
+   "sha256": "1160a7be8e2a848b6b1b0dec384fb70e04fd177e759f2fe7d7ac1ce4811a9009",
+   "byte": 86062
+  },
+  "studente-finale.config.json": {
+   "sha256": "a111a4c12118b90b30278709455594a2cf65f32ba23d7de0c955c2a6381884db",
+   "byte": 356
+  },
+  "studente-finale.npz": {
+   "sha256": "394e1936edf09dfec29a541eb12c4e5fc79aca6c9effb46fa120fd9691fc845f",
+   "byte": 611676193
+  },
+  "studente-finale.pt": {
+   "sha256": "4bed86869a25dceb73a88fa551454bf3456d5f08f6ee759fbf01e00d7b3dae6f",
+   "byte": 247686268
+  }
+ }
+}

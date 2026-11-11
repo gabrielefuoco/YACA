@@ -30,9 +30,9 @@ sys.path.insert(0, str(ROOT))
 from services.graph.build import config as C   # noqa: E402
 from services.graph.build import data as D    # noqa: E402
 
-ING = ROOT / ".cache" / "ingressi"
+ING = ROOT / "services" / "graph" / "data" / "collocatore" / "ingressi"
 V45 = ROOT / "services" / "graph" / "data" / "v45"
-STUDENTE = ROOT / ".cache" / "studente-B-colloca"
+STUDENTE = ROOT / "services" / "graph" / "data" / "collocatore" / "studente-finale"
 TOP = 16
 
 
