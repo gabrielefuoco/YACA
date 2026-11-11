@@ -64,11 +64,17 @@ class StudenteFusione(nn.Module):
         return F.normalize(torch.cat([b, h], 1), dim=1)
 
 
-def carica_fonti(N: int) -> dict[str, sp.csr_matrix]:
-    """Le righe delle sette fonti di contenuto, gia' normalizzate e pesate per riga."""
+def carica_fonti(N: int, cartella: Path | None = None) -> dict[str, sp.csr_matrix]:
+    """Le righe delle sette fonti di contenuto.
+
+    `cartella` permette di usare le righe rigenerate con le strutture congelate
+    (`.cache/fonti/righe/`): stesso codice per addestramento e inferenza, che e' l'unico modo per
+    non addestrare su una versione e servirne un'altra.
+    """
     out = {}
+    base = Path(cartella) if cartella else (V45 / "tipi2-pesi")
     for t in CONTENUTO:
-        p = V45 / "tipi2-pesi" / f"{t}.npz"
+        p = base / f"{t}.npz"
         if not p.is_file():
             raise SystemExit(f"fonte mancante: {p}")
         z = np.load(p)
@@ -126,6 +132,8 @@ def main() -> int:
                     help="quanto pesa nell'estrazione una riga con co-visione bassa (1.0 = uniforme)")
     ap.add_argument("--freddi-soglia", type=int, default=2,
                     help="grado di COVISION sotto il quale una riga conta come fredda")
+    ap.add_argument("--fonti-dir", default=None,
+                    help="cartella delle righe delle fonti (default: v45/tipi2-pesi)")
     ap.add_argument("--out", default=".cache/studente-v45.npz")
     a = ap.parse_args()
 
@@ -180,7 +188,9 @@ def main() -> int:
               f"{int((cov_grado[addestrabili] <= a.freddi_soglia).sum()):,} righe fredde su "
               f"{len(addestrabili):,}", flush=True)
 
-    fonti = carica_fonti(N) if a.forma == "B" else {}
+    fonti = carica_fonti(N, a.fonti_dir) if a.forma == "B" else {}
+    if a.forma == "B":
+        print(f"fonti da: {a.fonti_dir or 'v45/tipi2-pesi'}", flush=True)
     if a.forma == "B":
         print(f"fusione appresa su: {', '.join(fonti)}", flush=True)
 

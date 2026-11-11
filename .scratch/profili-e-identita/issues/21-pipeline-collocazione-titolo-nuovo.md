@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 20
 
@@ -162,3 +162,43 @@ a **sei** (`KWSEM`, `DIR`, `COLL`, `CAST`, `PROD`, `TRAMA`), e lo studente va ri
 
 Resta da congelare **`KWSEM`**: serve il grafo keyword (`G`, vocabolo×vocabolo con PPMI) e la
 proiezione dei titoli su di esso. È l'ultimo pezzo.
+
+## Terzo pezzo: la catena completa, e due titoli veri (11/11/2026)
+
+`.scratch/profili-e-identita/colloca-riga.py` fa tutto: sette righe di fonte → fusione RRF (stessi pesi)
+→ studente → top-16.
+
+| fonte | come si calcola per un titolo che il grafo non ha | verifica contro la riga congelata |
+|---|---|---|
+| TRAMA | coseno del suo embedding di trama (Qwen3, cache locale) | **1,000** |
+| CAST · DIR · PROD · COLL | coseno IDF+shrinkage sui suoi attributi | **1,000** ciascuna |
+| KWSEM | keyword → grafo keyword congelato → coseno | 0,910 *(float16 della build vs float32 qui)* |
+| CREWPROP | camminata sul grafo servito dai film delle sue persone | 0,950 |
+
+### Due titoli del 2026, fuori canone
+
+**`movie:1751701` — «After Impact»** (fonti attive: TRAMA, KWSEM, CAST 3) →
+*Earthfall · Asteroid vs Earth · How It Ends · Addio alla Terra · 3 días*: catastrofico di serie B, il
+suo genere.
+
+**`movie:1153576` — «Street Fighter»** (fonti attive: tutte tranne COLL) →
+*Mortal Kombat · Mortal Kombat II · The Last Kumite · Mortal Kombat: Legacy · Tekken: Bloodline*:
+adattamenti da videogiochi di combattimento. Somiglianze 0,42–0,53.
+
+**La lezione del primo esempio**: per un titolo davvero oscuro si accendono **due fonti su sette**
+(TRAMA e KWSEM) e il collocamento resta sensato. La coda funziona perché le fonti che mancano vengono
+**omesse**, non messe a zero — e in RRF una fonte assente non vota.
+
+## L'artefatto finale
+
+| | |
+|---|---|
+| pesi | `.cache/studente-finale.pt` — sha `4bed86869a25dceb`, 247 MB |
+| ricetta | `.cache/studente-finale.config.json` (7 fonti, forma B, `PESO_FREDDI` 4,0) |
+| vettori | `.cache/studente-finale.npz` (`Z` 76.497 × 2.560) |
+| addestramento | 1.574 s su GPU, loss 9,24 |
+
+## Cosa resta: il ticket 22
+
+La riga prodotta va **servita**: rigenerare `vicini-top100` e `transizione-pota16` (o un sovrapposto),
+scambio atomico, rollback. Il collocatore è pronto; manca il recapito.
