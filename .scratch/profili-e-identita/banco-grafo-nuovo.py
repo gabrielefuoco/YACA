@@ -41,6 +41,9 @@ def main() -> int:
     ap.add_argument("--ritenuta", type=float, default=0.2)
     ap.add_argument("--nuovo", default=str(NUOVO), help="transizione del grafo da confrontare")
     ap.add_argument("--out", default=".cache/banco-grafo-nuovo.json")
+    ap.add_argument("--freddi-soglia", type=int, default=None,
+                    help="se dato, conta solo i titoli ritenuti con COVISION <= soglia: "
+                         "e' il banco dei titoli senza comportamento")
     a = ap.parse_args()
 
     t0 = time.time()
@@ -49,6 +52,12 @@ def main() -> int:
     print(f"grafo servito {Tr_old.nnz:,} · nuovo {Tr_new.nnz:,} · {time.time()-t0:.0f}s", flush=True)
 
     # i file sono `movie-<utente>.json` e `show-<utente>.json`: l'utente e' il suffisso
+    cov_grado = None
+    if a.freddi_soglia is not None:
+        cov_grado = np.diff(np.load(ROOT / "services" / "graph" / "data" / "v45" / "tipi2-pesi" / "COVISION.npz")["indptr"])
+        print(f"banco ristretto: solo titoli ritenuti con COVISION <= {a.freddi_soglia} "
+              f"({int((cov_grado <= a.freddi_soglia).sum()):,} titoli nel canone)", flush=True)
+
     utenti = sorted({p.stem.split("-", 1)[1] for p in (ROOT / ".cache" / "trakt" / "users").glob("*.json")
                      if p.stem.startswith(("movie-", "show-"))})
     rng = np.random.default_rng(5)
@@ -71,6 +80,8 @@ def main() -> int:
         pesi = np.asarray([min(float(p), 3.0) for _, _, p in passato], np.float32)
         pesi = pesi / pesi.sum()
         oro = set(int(r) for _, r, _ in futuro)
+        if cov_grado is not None:
+            oro = {r for r in oro if cov_grado[r] <= a.freddi_soglia}
         if not oro:
             continue
 
@@ -93,6 +104,7 @@ def main() -> int:
     rep = {
         "utenti": int(len(v)),
         "ritenuta": a.ritenuta,
+        "solo_freddi_soglia": a.freddi_soglia,
         "recall20_servito": round(float(v.mean()), 4),
         "recall20_nuovo": round(float(n_.mean()), 4),
         "differenza": round(float(diff.mean()), 4),

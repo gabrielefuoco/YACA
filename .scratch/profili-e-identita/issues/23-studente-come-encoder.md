@@ -241,3 +241,58 @@ sostituire il vecchio è **chiuso con un esito negativo misurato**, non con un'o
 | `.scratch/profili-e-identita/studente-diffusione.py` | la prova di diffusione: studente contro RRF fisso |
 | `.scratch/profili-e-identita/ricostruisci-grafo.py` | rifà la catena con la nuova fonte (10 min) |
 | `.scratch/profili-e-identita/banco-grafo-nuovo.py` | il banco di ritenuta: grafo servito contro grafo ricostruito |
+
+## Il maestro replicabile di oggi, e la prova sui titoli senza co-visione
+
+La critica che ha riaperto il ticket: **il vecchio `RRFST` non è replicabile**, quindi confrontarsi con
+lui è tempo perso — conta come si comporta sui titoli che **non hanno co-visione**, che sono il dato
+mancante dei titoli nuovi. E ha un ordine di grandezza che nessuno aveva misurato:
+
+| | |
+|---|---|
+| titoli con **zero** archi di co-visione | **31.509 (41,2%)** |
+| titoli con co-visione ≤ 2 | 32.495 (42,5%) |
+| quota dei primi 20 consigli che va a un titolo freddo | **0,41%** |
+
+Cioè: due titoli su cinque non hanno comportamento, e il grafo li consiglia **quattro volte su mille**.
+
+### Maestro nuovo: sei fonti comportamentali, ricostruibile sempre
+
+`COVISION 0,8 · RESID 1,2 · LIST 1,0 · CONTESTI 0,2 · TRIBU 0,15 · LISTSEM 0,15` → fusione RRF +
+chiusura: **19.130.279 archi**, 94,4% delle righe con almeno un arco. Non dipende da nessun artefatto
+perso: si rigenera da ciò che c'è.
+
+### Fedeltà per strato (contro le righe del grafo servito)
+
+| studente, maestro comportamentale | caldi (19.775) | **freddi (31.509)** | divario |
+|---|---|---|---|
+| forma A (blocchi densi) | 0,290 | 0,160 | +0,130 |
+| **forma B (fusione appresa)** | 0,340 | **0,220** | **+0,120** |
+
+La forma B colloca i freddi **37% meglio** della A, e il divario si stringe. È la conferma che la
+fusione appresa serve: i titoli senza comportamento vanno dedotti dal contenuto, e B ha più contenuto
+in ingresso.
+
+### Il banco che conta: semi freddi collocati dal contenuto
+
+582 profili con almeno un seme freddo, passato semina, futuro è l'oro, ritenuta 20%:
+
+| | recall@20 base | con contenuto | differenza |
+|---|---|---|---|
+| tutti i bersagli | 0,1883 | 0,1870 | −0,0013 (neutro) |
+| **solo bersagli freddi** | 0,0033 | **0,0056** | **+0,0023** (+70% relativo) |
+
+Cioè: collocare un seme freddo dal contenuto **non fa danni** e quasi **raddoppia** la capacità di
+consigliare altri titoli freddi — ma resta un numero piccolo, e le istanze sono poche (7 utenti
+migliorati, 4 peggiorati). Onestamente: la direzione è giusta, la magnitudine è ancora modesta.
+
+## Dove si può ancora migliorare, e con quale leva
+
+Il divario caldi/freddi a +0,12 dice che lo studente impara soprattutto dalla massa popolare: i titoli
+freddi pesano poco nell'addestramento perché sono pochi *per utente* (il campionamento è uniforme sulle
+righe). La leva ovvia e non ancora provata:
+
+- **campionamento pesato per freddezza**: le righe con co-visione bassa pesano di più nel batch, così
+  la capacità si spende dove serve. Costo: un addestramento (10-20 min).
+- in alternativa, addestrare **solo sui freddi** (dove il maestro ha comunque RESID/CONTESTI) e
+  verificare che i caldi non peggiorino.
