@@ -61,4 +61,3 @@ dai metadati, più un modello che si riaddestra dalla sua ricetta. Nessuna dipen
   confronto. La prima è la strada.
 - **Il collocatore (ticket 21) usa `studente-finale`, già la fonte nuova**: se il grafo viene
   promosso, collocatore e grafo vengono dalla **stessa** ricetta, che è la proprietà che conta.
-"""
