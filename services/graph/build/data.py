@@ -154,7 +154,7 @@ def _durata(rt):
     return 5
 
 
-def extra_features(basic_d):
+def extra_features(basic_d, con_vocabolario=False):
     """Blocchi che il vocabolario 05 non ha: collection, writers, lingua, rating, durata, stagioni.
 
     Il vocabolario del vecchio modulo ha cast, registi, generi, keyword, case, paesi, reti TV; NON
@@ -229,6 +229,10 @@ def extra_features(basic_d):
     M = sp.diags(1.0 / n) @ M
     print(f"extra: {len(tieni):,} token · {M.nnz:,} nonzero · "
           f"collectio {sum(1 for t in tieni if t.startswith('cl:')):,}", flush=True)
+    if con_vocabolario:
+        # Il vocabolario dei token extra non e' un artefatto su disco: serve a chi deve calcolare
+        # la riga di un titolo NUOVO con lo stesso spazio di colonne (ticket 21).
+        return M.tocsr().astype(np.float32), {"token": tieni, "pesi": pesi.tolist()}
     return M.tocsr().astype(np.float32)
 
 

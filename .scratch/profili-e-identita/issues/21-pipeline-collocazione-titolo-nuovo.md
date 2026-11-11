@@ -88,3 +88,43 @@ con conseguenze diverse su 22 (che deve sapere quanto lavoro arriva e con che ca
 - un comando a mano, quando se ne sente il bisogno.
 
 La seconda è la più onesta rispetto al problema («il seme non si butta»), la prima è la più semplice.
+
+## Fatto (10/11/2026) — la parte fragile, chiusa e misurata
+
+**La ricetta degl'ingressi è congelata** (`.scratch/profili-e-identita/congela-ingressi.py` → `.cache/ingressi/`):
+vocabolario `05`, idf, pesi per prefisso (`ge 1,5 · rt 1,5 · di 0,8 · co 0,4 · ca 0,4`, keyword a 1,0),
+proiezione gerarchica L1/L2/L3 (1.382/469/131 cluster), vocabolario dei token extra (13.255), colonne
+keyword e proiezione casuale (`SEED=42`, `KPROJ=512`), maschera `keep` (87.846 colonne su 104.790).
+
+**Il costruttore di riga** (`.scratch/profili-e-identita/colloca-titolo.py`) prende un id TMDB, legge i
+metadati (parquet, o API se il titolo è fuori cache) e ricostruisce i tre blocchi. `--verifica` fa il
+giro di controllo sui titoli **del canone**: se gl'ingressi non coincidono, il collocatore guarda un
+altro spazio e nessun numero a valle avrebbe senso.
+
+| prova | esito |
+|---|---|
+| 8 titoli a mano (film, serie, anime) | differenza massima **1,2e-07** |
+| **300 titoli a caso** | mediana **2,98e-08** · p99 1,19e-07 · massima **1,19e-07** · nessuno oltre 1e-4 |
+| trama | 3-5e-05 (float32 della matrice congelata) |
+
+### I due bug trovati dalla verifica, che sarebbero stati invisibili
+
+1. **Il caso delle lettere nel blocco extra.** `data._nomi` abbassa il caso (sceneggiatori, case), il
+   blocco `05` no. Con i nomi come stanno nel parquet la riga sbagliava di **0,385**: due token su
+   trentasette, e nessun test l'avrebbe detto.
+2. **`first_air_date` per le serie, in due posti.** Il decennio (token `de:`) e l'anno strutturale
+   leggono `release_date` sui film e `first_air_date` sulle serie. Sbagliarlo costava **0,129** — cioè
+   esattamente `0,514 × 0,25`, il valore dell'anno normalizzato.
+
+Sono la ragione per cui la verifica esiste: senza, il collocatore avrebbe prodotto righe plausibili e
+sbagliate, e il banco avrebbe misurato la cosa sbagliata senza dirlo.
+
+## Cosa manca, per finire il ticket
+
+1. **Le sette righe delle fonti di contenuto** per un titolo nuovo (ingresso della forma B). Per i
+   titoli del canone stanno in `v45/tipi2-pesi`; per uno nuovo vanno calcolate: `TRAMA` è un coseno
+   (economico), `CAST/DIR/PROD/COLL` sono coseni IDF su insiemi d'attributi (serve congelare gli
+   insiemi una volta), `KWSEM` ha bisogno del grafo keyword (da congelare), `CREWPROP` delle coorti.
+   **Il modello, non la Z**: il forward richiede i pesi — `studente-addestra.py` ora salva `.pt` +
+   `.config.json` accanto alla `Z`, ed è il motivo per cui lo studente è stato riaddestrato.
+2. La riga finale (top-16) e il suo uso nel ticket 22.

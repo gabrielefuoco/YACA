@@ -18,6 +18,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -262,6 +263,20 @@ def main() -> int:
 
     out = ROOT / a.out
     out.parent.mkdir(parents=True, exist_ok=True)
+    # IL MODELLO, non solo la Z: collocare un titolo NUOVO vuol dire eseguire il forward, e una
+    # tabella di vettori non si applica a una riga che non c'e'. Serve anche la ricetta degl ingressi
+    # (keep, kwcols, SEED, forma, dimensioni) perche' l'ingresso sia lo stesso.
+    torch.save(model.state_dict(), out.with_suffix(".pt"))
+    (out.with_suffix(".config.json")).write_text(json.dumps({
+        "forma": a.forma, "dim": a.dim, "n_meta": int(X.shape[1]),
+        "keep_sha": hashlib.sha256(keep.tobytes()).hexdigest()[:16],
+        "kwcols_sha": hashlib.sha256(zbl["kwcols"].tobytes()).hexdigest()[:16],
+        "KPROJ": int(zbl["KPROJ"]), "SEED": int(zbl["SEED"]),
+        "maestro": Path(a.maestro).name, "epoche": a.epoche,
+        "peso_freddi": a.peso_freddi, "fonti": CONTENUTO if a.forma == "B" else [],
+        "dim_vettore": int(dim_v),
+    }, indent=1), encoding="utf-8")
+    print(f"modello salvato: {out.with_suffix('.pt').name} + config", flush=True)
     np.savez_compressed(out, Z=Z, forma=a.forma, heldout=esclusi.astype(np.int64),
                         epoche=a.epoche, maestro=Path(a.maestro).name,
                         peso_freddi=np.float32(a.peso_freddi))
