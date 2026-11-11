@@ -338,7 +338,7 @@ def test_vicini100_fingerprint():
     artefatto_p = (
         Path(__file__).resolve().parents[1]
         / "data"
-        / "v45-vicini100"
+        / "v46-vicini100"
         / "vicini-top100.npz"
     )
     if not artefatto_p.is_file():
@@ -350,17 +350,27 @@ def test_vicini100_fingerprint():
     assert prov.get("params", {}).get("top_k") == 100
     assert prov.get("canon_len") == 76497
 
-    # Verifica registrazione input sorgente triangolo
+    # Verifica registrazione input sorgente triangolo.
+    # Lo sha NON si scrive a mano: si calcola dal triangolo che sta su disco. Scriverlo a mano
+    # significa che ogni versione nuova rompe il test e qualcuno lo "aggiusta" copiando il valore
+    # nuovo — cioè smette di verificare qualsiasi cosa.
+    import json as _json
+
     inputs = prov.get("inputs", {})
-    # Il file si chiama `v45-triangolo.npz`; l'artefatto servito oggi registra ancora il vecchio
-    # nome, e la provenienza e' un fatto storico: si accettano entrambi, si pretende il sha giusto.
-    nome_in = next(
-        (n for n in ("v45-triangolo.npz", "bolle-eterogeneo-V45-p1.0-triangolo.npz") if n in inputs),
-        None,
-    )
+    nome_in = next((n for n in ("v46-triangolo.npz", "v45-triangolo.npz",
+                                "bolle-eterogeneo-V45-p1.0-triangolo.npz") if n in inputs), None)
     assert nome_in is not None, f"input del triangolo non registrato: {list(inputs)}"
-    expected_prov_sha = "1932ddd4b910f2e2ec4e19f57c14b7e34af4ef9cf08be4ee382bd7a351b86deb"
-    assert inputs[nome_in] == expected_prov_sha
+    base = Path(__file__).resolve().parents[1] / "data"
+    candidati = [base / "v46" / "v46-triangolo.npz", base / "v45" / "v45-triangolo.npz"]
+    triangolo_disco = next((c for c in candidati if c.is_file()), None)
+    if triangolo_disco is not None:
+        # `prepara` registra lo sha della **matrice** dichiarato nella provenienza del triangolo, non
+        # quello del file: sono due numeri diversi, e confonderli è l'errore che questo test aveva.
+        prov_tri = _json.loads(str(np.load(triangolo_disco, allow_pickle=True)["_provenance"]))
+        assert inputs[nome_in] == prov_tri.get("sha256"), (
+            "la provenienza dei vicini non corrisponde alla matrice del triangolo su disco: "
+            f"registrato {inputs[nome_in][:12]}, triangolo {str(prov_tri.get('sha256'))[:12]}"
+        )
 
     # Verifica coerenza con V45.lock.json se presente
     lock_p = Path(__file__).resolve().parents[1] / "recipes" / "V45.lock.json"
@@ -399,8 +409,8 @@ def test_vicini100_prototype_equivalence_20_seeds():
     triangolo_p = (
         Path(__file__).resolve().parents[1]
         / "data"
-        / "v45"
-        / "v45-triangolo.npz"
+        / "v46"
+        / "v46-triangolo.npz"
     )
     if not triangolo_p.is_file():
         pytest.skip("Triangolo sorgente non presente per il test di equivalenza")

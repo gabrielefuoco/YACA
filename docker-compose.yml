@@ -78,8 +78,8 @@ services:
     mem_limit: 512m
     environment:
       - PORT=7862
-      - V45_TRANSIZIONE_PATH=/app/services/graph/data/v45-transizione/transizione-pota16.npz
-      - V45_VICINI_PATH=/app/services/graph/data/v45-vicini100/vicini-top100.npz
+      - YACA_TRANSIZIONE_PATH=/app/services/graph/data/v46-transizione/transizione-pota16.npz
+      - YACA_VICINI_PATH=/app/services/graph/data/v46-vicini100/vicini-top100.npz
       - ASSI_CANONE_PATH=/app/services/graph/data/assi-canone.npz
       - KW_TFIDF_DIR=/app/services/graph/data/kw-tfidf
     volumes:

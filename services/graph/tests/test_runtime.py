@@ -102,7 +102,7 @@ def test_carica_transizione_precomputed():
     trans_path = (
         Path(__file__).resolve().parents[1]
         / "data"
-        / "v45-transizione"
+        / "v46-transizione"
         / "transizione-pota16.npz"
     )
     if not trans_path.is_file():

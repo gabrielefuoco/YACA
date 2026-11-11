@@ -134,7 +134,7 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
     CONCETTO CHIAVE:
     Per calcolare l'affinità iniziale dei semi di un profilo (~500 titoli al massimo), non serve
     mai l'intera matrice da 74M archi: per ciascun seme servono esclusivamente i suoi top-100 vicini.
-    L'artefatto precalcolato `services/graph/data/v45-vicini100/vicini-top100.npz` contiene esattamente
+    L'artefatto precalcolato `services/graph/data/v46-vicini100/vicini-top100.npz` contiene esattamente
     queste liste per ciascuna delle 76.497 righe del canone (shape 76497x76497, nnz ~7,65M).
     Caricandolo, il picco RSS del clustering scende da 1.007,6 MB a ~307 MB (misurato su warnok e pepsipex),
     rientrando stabilmente entro la soglia di sicurezza di 400 MB e lasciando ampio margine nel container.
@@ -153,14 +153,14 @@ def carica_matrice_affinita(path: str | Path | None = None) -> sp.csr_matrix:
                 "VIOLAZIONE ARCHITETTURALE: È severamente vietato caricare 'v45-triangolo.npz' "
                 "nel clustering. Genera un picco RSS di 1.007,6 MB violando il vincolo mem_limit: 512m "
                 "del container. Usare esclusivamente l'artefatto compatto precalcolato dei top-100 vicini "
-                "('services/graph/data/v45-vicini100/vicini-top100.npz')."
+                "('services/graph/data/v46-vicini100/vicini-top100.npz')."
             )
         cand_p = Path(path)
     else:
         global _MATRICE_AFFINITA_CACHE
         if _MATRICE_AFFINITA_CACHE is not None:
             return _MATRICE_AFFINITA_CACHE
-        cartella = Path(__file__).resolve().parent / "data" / "v45-vicini100"
+        cartella = Path(__file__).resolve().parent / "data" / "v46-vicini100"
         cand_p = cartella / "vicini-top100.npz"
         if not cand_p.is_file():
             files = sorted(cartella.glob("*.npz")) if cartella.is_dir() else []

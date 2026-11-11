@@ -8,9 +8,9 @@ raggiunge ~1.0 GB di memoria (1.007,6 MB).
 
 Questo modulo offline precalcola e scrive su disco con provenienza tracciata
 (`graph.provenance.scrivi`) due artefatti distinti e compatti in cartelle dedicate esterne:
-1. `transizione-pota16.npz` (~10 MB, ~1,6M archi stocastici) in `data/v45-transizione/`:
+1. `transizione-pota16.npz` (~10 MB, ~1,6M archi stocastici) in `data/v46-transizione/`:
    usato dal runtime PageRank (`Engine.carica_transizione`), avvio istantaneo e ~157 MiB peak RSS.
-2. `vicini-top100.npz` (~43.5 MB, ~7,6M archi non stocastici) in `data/v45-vicini100/`:
+2. `vicini-top100.npz` (~43.5 MB, ~7,6M archi non stocastici) in `data/v46-vicini100/`:
    usato dal modulo clustering/interessi (`carica_matrice_affinita`), elimina la necessità di
    materializzare a runtime la matrice non potata da 74,4M archi, garantendo un picco RSS
    costantemente <= 400 MB (misurato: 307.1 MB su warnok, 305.9 MB su pepsipex) e lasciando oltre
@@ -72,7 +72,7 @@ def prepara_transizione(
     if dest_dir == v45_dir:
         raise ValueError(
             f"Violazione di immutabilità: vietato scrivere in {v45_dir}. "
-            "Gli artefatti precalcolati devono risiedere all'esterno (es. data/v45-transizione/)."
+            "Gli artefatti precalcolati devono risiedere all'esterno (es. data/v46-transizione/)."
         )
 
     print(f"Lettura triangolo sorgente da: {in_path}...", flush=True)
@@ -174,7 +174,7 @@ def prepara_vicini(
     if dest_dir == v45_dir:
         raise ValueError(
             f"Violazione di immutabilità: vietato scrivere in {v45_dir}. "
-            "Gli artefatti precalcolati devono risiedere all'esterno (es. data/v45-vicini100/)."
+            "Gli artefatti precalcolati devono risiedere all'esterno (es. data/v46-vicini100/)."
         )
 
     print(f"Lettura triangolo sorgente da: {in_path}...", flush=True)
@@ -311,13 +311,13 @@ def main() -> None:
     if target in ("transizione", "entrambi", "tutti"):
         out_trans = args.out_path
         if out_trans is None and target in ("entrambi", "tutti"):
-            out_trans = "services/graph/data/v45-transizione/"
+            out_trans = "services/graph/data/v46-transizione/"
         prepara_transizione(in_path=args.in_path, out_path=out_trans, pota=args.pota)
 
     if target in ("vicini", "entrambi", "tutti"):
         out_vicini = args.out_path
         if out_vicini is None and target in ("entrambi", "tutti"):
-            out_vicini = "services/graph/data/v45-vicini100/"
+            out_vicini = "services/graph/data/v46-vicini100/"
         prepara_vicini(in_path=args.in_path, out_path=out_vicini, top_k=args.top_k)
 
     if target in ("assi", "tutti"):

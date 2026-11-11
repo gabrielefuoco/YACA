@@ -316,8 +316,12 @@ def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> 
 # GESTIONE ARTEFATTI, SINGLETON E STATO DI SALUTE (Ticket Container & Health)
 # ==============================================================================
 
-TRANSIZIONE_PATH: str | Path | None = os.environ.get("V45_TRANSIZIONE_PATH")
-VICINI_PATH: str | Path | None = os.environ.get("V45_VICINI_PATH")
+# La versione servita si dichiara qui. I nomi `V45_*` restano letti per compatibilità: un container
+# non ancora aggiornato deve continuare a partire, non rompersi per una variabile rinominata.
+TRANSIZIONE_PATH: str | Path | None = (os.environ.get("YACA_TRANSIZIONE_PATH")
+                                       or os.environ.get("V45_TRANSIZIONE_PATH"))
+VICINI_PATH: str | Path | None = (os.environ.get("YACA_VICINI_PATH")
+                                  or os.environ.get("V45_VICINI_PATH"))
 ASSI_PATH: str | Path | None = os.environ.get("ASSI_CANONE_PATH")
 KW_TFIDF_PATH: str | Path | None = os.environ.get("KW_TFIDF_DIR")
 BLACKLIST_PATH: str | Path | None = os.environ.get("BLACKLIST_BAMBINI_PATH") or os.environ.get("BLACKLIST_PATH")
@@ -333,10 +337,10 @@ ALLOWED_SEED_KEYS: frozenset[str] = frozenset({
 
 
 def risolvi_percorso_transizione(path: str | Path | None = None) -> Path:
-    target = path or TRANSIZIONE_PATH or os.environ.get("V45_TRANSIZIONE_PATH")
+    target = path or TRANSIZIONE_PATH
     if target is not None:
         return Path(target)
-    cartella = Path(__file__).resolve().parent / "data" / "v45-transizione"
+    cartella = Path(__file__).resolve().parent / "data" / "v46-transizione"
     return cartella / "transizione-pota16.npz"
 
 
@@ -344,7 +348,7 @@ def risolvi_percorso_vicini(path: str | Path | None = None) -> Path:
     target = path or VICINI_PATH or os.environ.get("V45_VICINI_PATH")
     if target is not None:
         return Path(target)
-    cartella = Path(__file__).resolve().parent / "data" / "v45-vicini100"
+    cartella = Path(__file__).resolve().parent / "data" / "v46-vicini100"
     return cartella / "vicini-top100.npz"
 
 

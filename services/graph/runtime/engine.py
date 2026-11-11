@@ -156,7 +156,7 @@ class Engine:
 
         Args:
             path: Percorso al file `.npz` di V45. Se None, carica il default congelato:
-                  `services/graph/data/v45/v45-triangolo.npz`.
+                  `services/graph/data/v46/v46-triangolo.npz`.
             pota: Numero di archi massimi da tenere per riga (es. 16, 32, 64).
                   Se None, conserva tutti gli archi del grafo senza potatura.
 
@@ -219,7 +219,7 @@ class Engine:
 
         Args:
             path: Percorso al file `.npz` pre-potato. Se None, cerca nel percorso predefinito
-                  `services/graph/data/v45-transizione/`.
+                  `services/graph/data/v46-transizione/`.
             pota: Valore di potatura atteso o dichiarato. Se None, viene dedotto dai parametri
                   della provenienza inclusa nel file `.npz`.
 
@@ -227,7 +227,7 @@ class Engine:
             Istanza di `Engine` configurata e pronta all'uso.
         """
         if path is None:
-            cartella = Path(__file__).resolve().parents[1] / "data" / "v45-transizione"
+            cartella = Path(__file__).resolve().parents[1] / "data" / "v46-transizione"
             if pota is not None:
                 candidato = cartella / f"transizione-pota{pota}.npz"
             else:
