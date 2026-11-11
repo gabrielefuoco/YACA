@@ -128,3 +128,37 @@ sbagliate, e il banco avrebbe misurato la cosa sbagliata senza dirlo.
    **Il modello, non la Z**: il forward richiede i pesi — `studente-addestra.py` ora salva `.pt` +
    `.config.json` accanto alla `Z`, ed è il motivo per cui lo studente è stato riaddestrato.
 2. La riga finale (top-16) e il suo uso nel ticket 22.
+
+## Secondo pezzo: le strutture delle fonti, congelate e verificate (10/11/2026)
+
+`.scratch/profili-e-identita/congela-fonti.py` → `.cache/fonti/`. Per ognuna delle fonti a attributi
+(`CAST`, `DIR`, `PROD`, `COLL`) salva la matrice **già pesata** (IDF `log(N/(1+df))` + shrinkage L2 con
+`tau` mediano), esattamente come `tipi._idf_cosine`. Un titolo nuovo costa poi un coseno, non una
+passata sul corpus.
+
+**Verifica** — 40 titoli a caso, riga ricostruita dai metadati contro la riga che la build produsse
+(`v45/tipi2/<fonte>.npz`):
+
+| fonte | sovrapposizione@100 mediana | minimo |
+|---|---|---|
+| CAST | **1,000** | 0,929 |
+| DIR | **1,000** | 0,000 |
+| PROD | **1,000** | 0,000 |
+| COLL | **1,000** | 1,000 |
+
+I minimi a zero **non sono un bug**: sono titoli il cui metadato TMDB è cambiato dopo la build. Un
+esempio verificato: `movie:103448` ha oggi un regista («Daoud Abdel Sayed») e nel grafo ha grado 0 su
+`DIR`; la ricostruzione usa il metadato di oggi, quindi trova una somiglianza che allora non esisteva.
+La stessa cosa vale per ogni fonte: **le righe del canone sono una fotografia**, non la verità corrente.
+
+## La fonte che non si può fare: `CREWPROP`
+
+`crewprop.py:101` legge `rrfstudent-v18.npz` — **cancellato col ticket 15**, come `RRFST`. La sua riga
+non è ricostruibile: la carriera di un titolo è un centroide calcolato nei vettori di quello studente.
+
+Peso: **0,15 su 8,4** (1,8%). Conseguenza onesta: le fonti d'ingresso della forma B scendono da sette
+a **sei** (`KWSEM`, `DIR`, `COLL`, `CAST`, `PROD`, `TRAMA`), e lo studente va riaddestrato senza
+`CREWPROP`, altrimenti gl'ingressi a inferenza non sarebbero quelli dell'addestramento.
+
+Resta da congelare **`KWSEM`**: serve il grafo keyword (`G`, vocabolo×vocabolo con PPMI) e la
+proiezione dei titoli su di esso. È l'ultimo pezzo.
