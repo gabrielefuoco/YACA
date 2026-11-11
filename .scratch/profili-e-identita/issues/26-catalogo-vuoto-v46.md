@@ -1,4 +1,4 @@
-Status: needs-info
+Status: ready-for-agent
 Type: task
 Blocked by: —
 
@@ -41,8 +41,38 @@ Instrumentare **la stessa id** nei due percorsi e confrontare:
 presenti (`[Scaffali] ... serviti N scaffali dinamici`, `[Esplora] ... non servibili/non elencati`) si
 dovrebbe vedere subito se lo scaffale c'è in una fase e non nell'altra.
 
-## Perché `needs-info`
+## Cosa è stato misurato (11/11/2026)
 
-Non so ancora quale delle due sia: il dato manca, non la decisione. Se è la 2, la correzione è nella
-regola di elenco (una riga); se è la 1, è il disallineamento delle leve, che è un bug più serio e vale
-la pena di essere trovato ora che i modi sono cinque e le leve si derivano.
+Quattro sonde sul server, ognuna ha scartato un'ipotesi:
+
+| sonda | esito |
+|---|---|
+| il catalogo è nella configurazione? | **no**: `35935` non compare in nessun punto del documento `config` |
+| lo scaffale è nella cache del profilo? | **no**: la chiave `modo_generale::generale` è vuota |
+| il grafo lo restituisce? | **sì**: è uno dei 4 «suggerimenti», `fonte: 'grafo'`, `stremioType: 'series'` |
+| il pool ha titoli per quell'id? | **sì: 60**. `buildSharedHeroCatalogs({mediaType:'series'})` → `yaca_35935_series: 60`, tutti serie, nessuno anime, nessuno visto |
+| il gestore li serve? | **no: 0 metas in 206 ms**, mentre `yaca_94664_series` (anch'esso 60 nel pool) ne serve 20 |
+
+**Quindi il guasto è nel percorso di servizio, non nel grafo e non nei dati.** Il pool, interrogato
+come lo interroga l'**elenco**, ha sessanta titoli; il percorso che **serve** il catalogo ne produce
+zero, e in 206 ms — cioè senza costruire niente, il che fa pensare a una risposta vuota già in cache.
+
+L'assegnazione del pool è **esclusiva**: ogni titolo finisce in una sola riga, per non ripeterlo. Se le
+due chiamate usano argomenti diversi — `typeSelectors`, `modo`, `kids`, `context` — costruiscono
+assegnazioni diverse, e una delle due lascia questa riga vuota. È lo stesso difetto che il codice
+documenta già a `src/pool/index.js:395`:
+
+> *«Se il pool leggesse i selettori del profilo, chiederebbe al grafo una politica diversa da quella del
+> resolver: chiave di cache diversa, scaffali diversi, e i cataloghi che Esplora elenca resterebbero
+> senza titoli.»*
+
+## Il passo che serve
+
+Confrontare gli argomenti delle due chiamate a `buildSharedHeroCatalogs` (elenco contro
+`CatalogRouter.routeCatalogRequest`) e allinearli. Il sospetto principale è che il percorso di servizio
+non passi `modo`/`leve` come li passa l'elenco.
+
+## Perché non è più `needs-info`
+
+Il dato c'è: il guasto è nel percorso di servizio. Resta da trovare **quale** argomento diverge, e
+quello è lavoro di codice, non una decisione. Il sospetto è il disallineamento delle leve.
