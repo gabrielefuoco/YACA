@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: task
 Blocked by: 21
 
@@ -48,3 +48,42 @@ Quindi «ricompilare ogni giorno» non è la scelta in campo. Le due scelte vere
 ## Fuori scope
 
 La collocazione (21) e lo studente (23). Qui si parla solo di **come l'incremento arriva a chi serve**.
+
+## Esito (11/11/2026) — la strada corta, scelta dopo aver misurato quella lunga
+
+Estendere il canone (la strada A) costa **quattro artefatti**, non uno:
+
+| artefatto | perché serve |
+|---|---|
+| `spazi-trakt.npz` | è la numerazione delle righe: senza, il titolo non ha indice |
+| `metadati-canone.npz` | `NEP` e `ANIME` per la nuova riga |
+| `assi-canone.npz` | tono e complessità — **calcolati da un modello**, non derivabili da un id |
+| `v46-triangolo.npz` | la riga e i suoi archi inversi |
+
+Più `prepara` per rigenerare vicini e transizione. Fattibile, ma è un progetto, non un incremento — e
+gli assi sono il punto che morde: una riga con tono 0 verrebbe filtrata male da tutte le leve che li
+usano.
+
+**La strada B (scelta)**: il titolo nuovo **non entra nel grafo**, entra come *seme espanso*. Il
+collocatore gli ha già trovato i sedici vicini nel canone; il pool sostituisce il seme sconosciuto con
+quelli, **conservando il peso totale** (un titolo nuovo non pesa più di uno guardato davvero).
+
+| | |
+|---|---|
+| modulo | `src/pool/semiNuovi.js` — `espandiSemi`, `caricaVoci`, rilettura solo se il file cambia |
+| sidecar | `services/graph/data/collocatore/collocati.json`, scritto da `colloca-riga.py --scrivi-sidecar` |
+| aggancio | `src/pool/index.js`, prima della chiamata al motore, con una riga di log per ogni espansione |
+| rollback | togliere la voce dal sidecar. Nessun artefatto da rigenerare |
+| test | `tests/semiNuovi.test.js`, 7 casi: peso conservato, età non riscritta, voce senza vicini = scarto rumoroso, file mancante = vuoto |
+
+### Cosa resta scoperto, e va detto
+
+Il titolo nuovo **seminа** ma non è **raggiungibile** come candidato dagli altri semi: per quello
+servirebbe la riga nel canone, cioè la strada A. Il suo scaffale (`yaca_<id>_<medium>`) si può servire
+dal sidecar, e non è ancora fatto: è la seconda metà di questo ticket se un giorno servirà.
+
+### Perché è bastata
+
+Il bisogno dichiarato era: *«il seme non si butta, altrimenti chi guarda solo roba nuova non riceve
+consigli»*. Questo lo risolve con zero rischio sull'artefatto servito, e la verifica del ticket 19 dice
+quando il caso si presenta: finché il contatore resta a zero, questa macchina non serve a nessuno.

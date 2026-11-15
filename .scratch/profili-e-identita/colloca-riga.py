@@ -234,6 +234,10 @@ def main() -> int:
     ap.add_argument("--studente", default=str(ARTEFATTI / "studente-finale"))
     ap.add_argument("--out", default=".cache/collocazione-finale.json")
     ap.add_argument("--verifica", action="store_true")
+    ap.add_argument("--scrivi-sidecar", action="store_true",
+                    help="aggiunge la riga a collocati.json, cosi' il pool puo' espandere quel seme. "
+                         "E' l'unica scrittura che rende il titolo nuovo usabile: senza, il seme "
+                         "resta fuori canone e viene scartato.")
     a = ap.parse_args()
 
     # il contratto si verifica PRIMA di toccare qualsiasi cosa
@@ -314,6 +318,26 @@ def main() -> int:
            "nel_canone": riga is not None,
            "vicini": [{"chiave": col.keys[i], "somiglianza": round(float(sim[i]), 4)} for i in top]}
     (ROOT / a.out).write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    if a.scrivi_sidecar:
+        # Sidecar dei titoli collocati: `titoli[chiave] = { medio, vicini, creato, fonti }`.
+        # Il pool lo legge a ogni giro (ricalcolato se il file cambia) e sostituisce il seme ignoto
+        # con questi vicini. Rollback = togliere la voce.
+        import datetime as _dt
+        lato = ROOT / "services" / "graph" / "data" / "collocatore" / "collocati.json"
+        attuale = {}
+        if lato.is_file():
+            attuale = json.loads(lato.read_text(encoding="utf-8"))
+        attuale.setdefault("titoli", {})[a.key] = {
+            "medio": "movie" if a.key.startswith("movie:") else "series",
+            "titolo": out.get("titolo"),
+            "vicini": [{"chiave": v["chiave"], "peso": v["somiglianza"]} for v in out["vicini"]],
+            "fonti_attive": [t for t, v in righe.items() if v],
+            "creato": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+        }
+        lato.parent.mkdir(parents=True, exist_ok=True)
+        lato.write_text(json.dumps(attuale, indent=1, ensure_ascii=False), encoding="utf-8")
+        print(f"  sidecar aggiornato: {lato.relative_to(ROOT)} ({len(attuale['titoli'])} titoli)", flush=True)
     print("  riga: " + ", ".join(f"{v['chiave']}({v['somiglianza']:.3f})" for v in out["vicini"][:8]),
           flush=True)
     print(f"  scritto {a.out}", flush=True)

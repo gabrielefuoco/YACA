@@ -469,7 +469,15 @@ async function righeDelGrafo(ctx, { assigned, sharedState, rawTraktResult = { tr
             ...(filtri.anime || filtri.kids ? { filtri } : {}),
             ...(filtri.kids ? { kids: true } : {})
         };
-        const semiPerScaffali = semi.map(({ recente, ...rest }) => rest);
+        // Ticket 22: un titolo fuori canone non si butta. Il collocatore gli ha già trovato i vicini
+        // nel canone; qui il seme sconosciuto viene sostituito da quelli, con lo stesso peso. Il grafo
+        // non cambia, il segnale dell'utente sì.
+        const { espandiSemi } = require('./semiNuovi');
+        const espansione = espandiSemi(semi.map(({ recente, ...rest }) => rest));
+        if (espansione.espansi.length > 0) {
+            console.log(`[Semi] ${ctx.mediaType}: ${espansione.espansi.length} titoli fuori canone espansi nei loro vicini (${espansione.espansi.slice(0, 3).join(', ')})`);
+        }
+        const semiPerScaffali = espansione.semi;
         if (typeof graphClient.scaffali === 'function') {
             let resScaffali = null;
             // La risposta costa ~4 s e dipende solo da semi, cursori, cap e versione del
