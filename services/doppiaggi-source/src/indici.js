@@ -16,6 +16,7 @@ const path = require('path');
 const BASE_URL = 'https://www.antoniogenna.net/doppiaggio/';
 const DEFAULT_UA = 'YACA-bot/0.1 (valutazione copertura doppiaggi ITA; contatto: gabriele.fuoco99@gmail.com)';
 const DEFAULT_DELAY_MS = 800;
+const DEFAULT_TTL_MS = 12 * 60 * 60 * 1000;
 const ZONES = ['film', 'telefilm', 'anim', 'soap'];
 
 // Pagine d'indice e lettera note (79 pagine totali del catalogo)
@@ -43,6 +44,50 @@ const KNOWN_PAGES = {
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ponytail: TTL unico + mtime come unico stato. Il ceiling è che una pagina può restare stantia fino a 48 h e che il refresh costa 21 richieste anche quando nulla è cambiato. Upgrade path se serve: conditional GET (If-Modified-Since) con il Last-Modified di risposta salvato in un sidecar — solo allora vale un file di metadati.
+function selectPagesForRefresh(allPages, cacheDir, fallbackDirs = [], minBytes = 500, options = {}) {
+    const nowMs = typeof options.now === 'number'
+        ? options.now
+        : (typeof options.nowFn === 'function' ? options.nowFn() : Date.now());
+    const ttlMs = typeof options.ttlMs === 'number' ? options.ttlMs : DEFAULT_TTL_MS;
+    const forceRefresh = Boolean(options.forceRefresh);
+    const maxRefresh = forceRefresh
+        ? Infinity
+        : (typeof options.maxRefreshPerRun === 'number'
+            ? options.maxRefreshPerRun
+            : Math.ceil(allPages.length / 4));
+
+    const missing = new Set();
+    const staleCandidates = [];
+
+    for (const item of allPages) {
+        const page = typeof item === 'string' ? item : item.page;
+        const cachedPath = findCachedFile(page, cacheDir, fallbackDirs, minBytes);
+        if (!cachedPath) {
+            missing.add(page);
+            continue;
+        }
+
+        let mtimeMs = 0;
+        try {
+            mtimeMs = fs.statSync(cachedPath).mtimeMs;
+        } catch (_) {
+            mtimeMs = 0;
+        }
+
+        if (forceRefresh || (nowMs - mtimeMs) >= ttlMs) {
+            staleCandidates.push({ page, mtimeMs });
+        }
+    }
+
+    staleCandidates.sort((a, b) => (a.mtimeMs - b.mtimeMs) || a.page.localeCompare(b.page));
+    const selectedStale = new Set(
+        staleCandidates.slice(0, Math.max(0, maxRefresh)).map((c) => c.page)
+    );
+
+    return { missing, selectedStale, totalStale: staleCandidates.length };
+}
 
 /**
  * Trova il file di cache se esiste nella directory primaria o nei fallback.
@@ -127,70 +172,90 @@ async function fetchAllIndices(options = {}) {
     const delayMs = typeof options.delayMs === 'number' ? options.delayMs : DEFAULT_DELAY_MS;
     const userAgent = options.userAgent || DEFAULT_UA;
     const forceRefresh = Boolean(options.forceRefresh);
-    const minBytes = options.minBytes || 500;
+    const minBytes = typeof options.minBytes === 'number' ? options.minBytes : 500;
+    const fetchImpl = options.fetch || globalThis.fetch;
     const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
 
     fs.mkdirSync(cacheDir, { recursive: true });
 
     let netRequests = 0;
 
+    const allPagesToFetch = [];
+    if (Array.isArray(options.pages)) {
+        for (const item of options.pages) {
+            allPagesToFetch.push(typeof item === 'string' ? { page: item, zone: 'film' } : item);
+        }
+    } else {
+        for (const zone of ZONES) {
+            const knownList = KNOWN_PAGES[zone] || [`${zone}.htm`];
+            for (const p of knownList) {
+                if (!allPagesToFetch.some((item) => item.page === p)) {
+                    allPagesToFetch.push({ page: p, zone });
+                }
+            }
+        }
+    }
+
+    const plan = selectPagesForRefresh(allPagesToFetch, cacheDir, fallbackDirs, minBytes, options);
+
     async function fetchPage(pageName) {
-        if (!forceRefresh) {
-            const cachedPath = findCachedFile(pageName, cacheDir, fallbackDirs, minBytes);
+        const cachedPath = findCachedFile(pageName, cacheDir, fallbackDirs, minBytes);
+        const shouldRefresh = plan.missing.has(pageName) || plan.selectedStale.has(pageName);
+
+        if (cachedPath && !shouldRefresh) {
+            return {
+                html: readHtmlFile(cachedPath),
+                filePath: cachedPath,
+                fromCache: true
+            };
+        }
+
+        netRequests++;
+        const targetPath = path.join(cacheDir, pageName.replace(/\//g, '__'));
+        const url = BASE_URL + pageName;
+
+        try {
+            const res = await fetchImpl(url, {
+                headers: {
+                    'User-Agent': userAgent,
+                    'Accept': 'text/html,application/xhtml+xml'
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error(`Richiesta fallita per ${url}: HTTP ${res.status} ${res.statusText}`);
+            }
+
+            const arrayBuf = await res.arrayBuffer();
+            const buf = Buffer.from(arrayBuf);
+            if (buf.length < minBytes) {
+                throw new Error(`Risposta troppo breve per ${url} (${buf.length} bytes < ${minBytes})`);
+            }
+
+            const tmpPath = `${targetPath}.tmp.${process.pid}`;
+            fs.writeFileSync(tmpPath, buf);
+            fs.renameSync(tmpPath, targetPath);
+            const html = new TextDecoder('windows-1252').decode(buf);
+
+            if (delayMs > 0) {
+                await sleep(delayMs);
+            }
+
+            return {
+                html,
+                filePath: targetPath,
+                fromCache: false
+            };
+        } catch (err) {
             if (cachedPath) {
+                console.warn(`[Indici] Avviso: Impossibile aggiornare ${pageName} (${err.message}), riuso copia in cache`);
                 return {
                     html: readHtmlFile(cachedPath),
                     filePath: cachedPath,
                     fromCache: true
                 };
             }
-        }
-
-        // Se non in cache, effettua la richiesta HTTP con rispetto del delay
-        netRequests++;
-        const targetPath = path.join(cacheDir, pageName.replace(/\//g, '__'));
-        const url = BASE_URL + pageName;
-
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': userAgent,
-                'Accept': 'text/html,application/xhtml+xml'
-            }
-        });
-
-        if (!res.ok) {
-            throw new Error(`Richiesta fallita per ${url}: HTTP ${res.status} ${res.statusText}`);
-        }
-
-        const arrayBuf = await res.arrayBuffer();
-        const buf = Buffer.from(arrayBuf);
-        if (buf.length < minBytes) {
-            throw new Error(`Risposta troppo breve per ${url} (${buf.length} bytes < ${minBytes})`);
-        }
-
-        fs.writeFileSync(targetPath, buf);
-        const html = new TextDecoder('windows-1252').decode(buf);
-
-        if (delayMs > 0) {
-            await sleep(delayMs);
-        }
-
-        return {
-            html,
-            filePath: targetPath,
-            fromCache: false
-        };
-    }
-
-    // 1. Identifica tutte le pagine necessarie (partendo dalle 4 zone)
-    const allPagesToFetch = [];
-    for (const zone of ZONES) {
-        // Usa prima la lista nota come base
-        const knownList = KNOWN_PAGES[zone] || [`${zone}.htm`];
-        for (const p of knownList) {
-            if (!allPagesToFetch.some((item) => item.page === p)) {
-                allPagesToFetch.push({ page: p, zone });
-            }
+            throw err;
         }
     }
 
@@ -225,10 +290,12 @@ module.exports = {
     BASE_URL,
     DEFAULT_UA,
     DEFAULT_DELAY_MS,
+    DEFAULT_TTL_MS,
     ZONES,
     KNOWN_PAGES,
     findCachedFile,
     readHtmlFile,
     extractLetterPages,
+    selectPagesForRefresh,
     fetchAllIndices
 };

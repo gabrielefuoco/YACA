@@ -28,7 +28,13 @@ class TmdbDumpStore {
 
     _getFilePath(mediaType) {
         // mediaType = 'movies' o 'tv'
-        return path.join(this.basePath, `master_${mediaType}.jsonl`);
+        const type = mediaType === 'movie' ? 'movies' : mediaType;
+        return path.join(this.basePath, `master_${type}.jsonl`);
+    }
+
+    _getSpoolPath(mediaType) {
+        const type = mediaType === 'movie' ? 'movies' : mediaType;
+        return path.join(this.basePath, `promoted_${type}.jsonl`);
     }
 
     storeExists(mediaType) {
@@ -115,11 +121,54 @@ class TmdbDumpStore {
     }
 
     async upsert(rows, mediaType) {
-        if (!rows || rows.length === 0) return;
+        const spoolPath = this._getSpoolPath(mediaType);
+        const claimed = spoolPath + '.draining';
+        const spoolRows = [];
+
+        const readClaimed = (targetPath) => {
+            if (!fs.existsSync(targetPath)) return;
+            try {
+                const content = fs.readFileSync(targetPath, 'utf8');
+                for (const line of content.split('\n')) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    try {
+                        const doc = JSON.parse(trimmed);
+                        if (doc && doc.id != null) spoolRows.push(doc);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        };
+
+        // ponytail: claim-by-rename (spoolPath -> claimed) invece di merge + troncamento:
+        // da questo istante ogni nuova append va a finire in un nuovo promoted_*.jsonl
+        // creato dal writer, eliminando qualsiasi race condition.
+        // Il ceiling è che un crash lascia un residuo .draining: the leftover .draining
+        // of a crashed run is re-merged next cycle.
+        if (fs.existsSync(claimed)) {
+            readClaimed(claimed);
+        }
+
+        if (fs.existsSync(spoolPath)) {
+            try {
+                fs.renameSync(spoolPath, claimed);
+                readClaimed(claimed);
+            } catch (_) {}
+        }
+
+        const combined = [...spoolRows, ...(rows || [])];
+        if (combined.length === 0) {
+            try {
+                fs.unlinkSync(claimed);
+            } catch (e) {
+                if (e && e.code !== 'ENOENT') throw e;
+            }
+            return;
+        }
+
         const filePath = this._getFilePath(mediaType);
-        
         const newRowsMap = new Map();
-        for (const r of rows) newRowsMap.set(r.id, r);
+        for (const r of combined) newRowsMap.set(r.id, r);
 
         if (fs.existsSync(filePath)) {
             await this._processFileSafely(
@@ -139,7 +188,13 @@ class TmdbDumpStore {
                 }
             );
         } else {
-            this.appendBatch(rows, mediaType);
+            this.appendBatch(Array.from(newRowsMap.values()), mediaType);
+        }
+
+        try {
+            fs.unlinkSync(claimed);
+        } catch (e) {
+            if (e && e.code !== 'ENOENT') throw e;
         }
     }
 

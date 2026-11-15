@@ -6,6 +6,9 @@ const itaAnnotations = require('../src/catalog/itaAnnotations');
 const DEFAULT_TYPES = ['movies', 'tv'];
 
 function toSqlPath(filePath) {
+    if (Array.isArray(filePath)) {
+        return `[${filePath.map(toSqlPath).join(', ')}]`;
+    }
     return `'${filePath.replace(/\\/g, '/').replace(/'/g, "''")}'`;
 }
 
@@ -185,6 +188,7 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
 
     for (const type of types) {
         const jsonlFile = path.join(resolvedDataDir, `master_${type}.jsonl`);
+        const spoolFile = path.join(resolvedDataDir, `promoted_${type}.jsonl`);
         const parquetFile = path.join(resolvedDataDir, `${type}.parquet`);
         const tmpParquetFile = path.join(resolvedDataDir, `${type}_tmp.parquet`);
 
@@ -193,6 +197,8 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
             results.push({ type, skipped: true, reason: 'missing-jsonl' });
             continue;
         }
+
+        const sourceFile = fs.existsSync(spoolFile) ? [jsonlFile, spoolFile] : jsonlFile;
 
         console.log(`[DuckDB Convert] Copia e deduplica di ${type}...`);
         const destinationExisted = fs.existsSync(parquetFile);
@@ -205,8 +211,8 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
         try {
             db = new duckdb.Database(':memory:');
             con = db.connect();
-            const includeFetchedAt = await hasFetchedAtColumn(con, jsonlFile);
-            const inputStats = await sourceStats(con, jsonlFile);
+            const includeFetchedAt = await hasFetchedAtColumn(con, sourceFile);
+            const inputStats = await sourceStats(con, sourceFile);
 
             // Annotazioni ITA: se il file non c'è la colonna è `false` su tutto (degrado deciso).
             const annotationsPath = fs.existsSync(itaAnnotationsPath) ? itaAnnotationsPath : null;
@@ -216,7 +222,7 @@ async function convert({ dataDir, types = DEFAULT_TYPES } = {}) {
             const mediaType = type === 'movies' ? 'movie' : 'tv';
             const previousItaCount = await countItaTrue(con, parquetFile);
 
-            const select = buildConversionSelect(jsonlFile, includeFetchedAt, { annotationsPath, mediaType });
+            const select = buildConversionSelect(sourceFile, includeFetchedAt, { annotationsPath, mediaType });
             const query = `COPY (${select}) TO ${toSqlPath(writerFile)} (FORMAT PARQUET, COMPRESSION 'ZSTD')`;
 
             await exec(con, query);

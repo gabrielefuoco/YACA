@@ -35,6 +35,11 @@ const TIER1_FILES = {
     tv: 'master_tv.jsonl'
 };
 
+const PROMOTED_FILES = {
+    movie: 'promoted_movies.jsonl',
+    tv: 'promoted_tv.jsonl'
+};
+
 // Ordine canonico delle chiavi: identico a quello delle righe reali (TmdbDumpClient.fetchMovie /
 // fetchTv). `watch_providers_us` sulle serie è in coda perché il campo è arrivato dopo: si replica.
 const MOVIE_FIELDS = [
@@ -135,6 +140,12 @@ function tier1FileFor(tipo, dataDir = null) {
     return path.join(dataDir ? path.resolve(dataDir) : defaultDataDir(), TIER1_FILES[tipoNorm]);
 }
 
+/** Il percorso dello spool per un tipo, se il chiamante non ne passa uno esplicito. */
+function promotedFileFor(tipo, dataDir = null) {
+    const tipoNorm = normalizeTipo(tipo);
+    return path.join(dataDir ? path.resolve(dataDir) : defaultDataDir(), PROMOTED_FILES[tipoNorm]);
+}
+
 /**
  * La **riga** del Tier 1 per questi dettagli: stesso schema e stesso ordine di chiavi delle righe
  * già nel file, con `id` numerico e `_fetched_at` = momento della promozione (ISO).
@@ -214,29 +225,13 @@ async function* readLines(filePath, chunkSize = CHUNK_SIZE) {
     }
 }
 
-/**
- * L'id è già nel file? Si scorre a blocchi e si esce appena trovato: il file in produzione pesa
- * centinaia di MB e non deve finire in memoria.
- *
- * Le righe vuote o malformate non sono un errore: si saltano e si continua. Solo la riga che
- * contiene l'id viene parsed, e la risposta la decide il suo `id` di primo livello (le righe hanno
- * dentro di sé stringhe JSON con altri `"id":`).
- *
- * @param {string} filePath percorso del `master_*.jsonl`
- * @param {number|string} id
- * @returns {Promise<boolean>} false anche se il file non esiste
- */
-async function hasTier1Id(filePath, id) {
-    const targetId = normalizeId(id);
-    if (targetId === null) throw new Error(`Id non valido per la ricerca: ${JSON.stringify(id)}`);
-
-    const resolved = path.resolve(filePath);
-    if (!fs.existsSync(resolved)) return false;
+async function _hasIdInFile(resolvedPath, targetId) {
+    if (!fs.existsSync(resolvedPath)) return false;
 
     // Prefiltro: se la riga non contiene l'id, non la si(parsed). Regex unica per tutto il file.
     const candidate = new RegExp(`"id"\\s*:\\s*${targetId}\\s*[,}]`);
 
-    for await (const line of readLines(resolved)) {
+    for await (const line of readLines(resolvedPath)) {
         if (line.length < 8) continue; // riga vuota o spazzatura
         if (!candidate.test(line)) continue;
         let row;
@@ -249,6 +244,32 @@ async function hasTier1Id(filePath, id) {
     }
 
     return false;
+}
+
+/**
+ * L'id è già nel file o nello spool?
+ * Controlla prima lo spool della stessa cartella (file piccolo), poi il master, fermandosi al primo hit.
+ *
+ * @param {string} filePath percorso del `master_*.jsonl` o di un file esplicito
+ * @param {number|string} id
+ * @returns {Promise<boolean>} false anche se il file non esiste
+ */
+async function hasTier1Id(filePath, id) {
+    const targetId = normalizeId(id);
+    if (targetId === null) throw new Error(`Id non valido per la ricerca: ${JSON.stringify(id)}`);
+
+    const resolved = path.resolve(filePath);
+    const dir = path.dirname(resolved);
+    const base = path.basename(resolved);
+    const spoolCandidate = base === 'master_movies.jsonl'
+        ? path.join(dir, PROMOTED_FILES.movie)
+        : (base === 'master_tv.jsonl' ? path.join(dir, PROMOTED_FILES.tv) : null);
+
+    if (spoolCandidate && await _hasIdInFile(spoolCandidate, targetId)) {
+        return true;
+    }
+
+    return _hasIdInFile(resolved, targetId);
 }
 
 /** Il file è già finito con un newline? Se no, la riga nuova va staccata a mano. */
@@ -267,8 +288,10 @@ function endsWithNewline(filePath) {
 }
 
 /**
- * Promuove un titolo nel Tier 1: se l'id c'è già non scrive niente, altrimenti **appende** una
- * riga sola (il file non viene mai riscritto). Se il file non esiste, viene creato.
+ * Promuove un titolo nel Tier 1: se l'id c'è già non scrive niente, altrimenti appende una
+ * riga sola. Se filePath punta a master_*.jsonl (produzione), scrive nello spool dedicato
+ * (promoted_*.jsonl) e riporta percorso = spool; per qualsiasi altro percorso esplicito (test,
+ * backfill) continua a scrivere direttamente lì.
  *
  * @param {string} [filePath] percorso del `master_*.jsonl` (default: cartella dati + tipo)
  * @param {object} dettagli record del titolo (output di TmdbDumpClient.fetchMovie/fetchTv)
@@ -280,17 +303,23 @@ async function promoteToTier1(filePath, dettagli, tipo) {
     const line = toTier1Line(dettagli, tipoNorm);
     const resolved = path.resolve(filePath || tier1FileFor(tipoNorm));
 
-    const base = { id: line.id, tipo: tipoNorm, percorso: resolved };
+    const baseName = path.basename(resolved);
+    const isMasterFile = baseName === 'master_movies.jsonl' || baseName === 'master_tv.jsonl';
+    const writeTarget = isMasterFile
+        ? path.join(path.dirname(resolved), PROMOTED_FILES[tipoNorm])
+        : resolved;
+
+    const base = { id: line.id, tipo: tipoNorm, percorso: writeTarget };
 
     if (await hasTier1Id(resolved, line.id)) {
         return { ...base, scritto: false, motivo: `id ${line.id} già presente nel Tier 1: niente scritto` };
     }
 
-    fs.mkdirSync(path.dirname(resolved), { recursive: true });
+    fs.mkdirSync(path.dirname(writeTarget), { recursive: true });
     // Il file in produzione è grosso: append puro. Se l'ultima riga non era chiusa (file troncato
     // o scritto a mano), si stacca con un newline invece di incollare la riga nuova a quella rotta.
-    const prefix = endsWithNewline(resolved) ? '' : '\n';
-    fs.appendFileSync(resolved, `${prefix}${JSON.stringify(line)}\n`, 'utf8');
+    const prefix = endsWithNewline(writeTarget) ? '' : '\n';
+    fs.appendFileSync(writeTarget, `${prefix}${JSON.stringify(line)}\n`, 'utf8');
 
     return { ...base, scritto: true, motivo: `id ${line.id} promosso: riga aggiunta in coda` };
 }
@@ -301,6 +330,7 @@ module.exports = {
     hasTier1Id,
     promoteToTier1,
     tier1FileFor,
+    promotedFileFor,
     normalizeTipo,
     normalizeId,
     MOVIE_FIELDS,
