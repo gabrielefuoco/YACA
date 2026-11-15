@@ -57,8 +57,7 @@ Spool append-only, **un solo scrittore per file**:
 
 ## Test
 
-`tests/tier1SpoolConcurrency.test.js` (lo snippet di Q5 §3 va adattato: `promoteToTier1` deve puntare allo
-spool e `store.upsert` deve drenarlo):
+`services/tmdb-daemon/tests/tier1Spool.test.js` con `node:test` (la root usa jest e ignora `services/`; si lancia con `node --test services/tmdb-daemon/tests/`):
 
 - promozione concorrente a un `upsert` **non** perde la riga: dopo un secondo `upsert`, `loadIds` contiene
   l'id promosso;
