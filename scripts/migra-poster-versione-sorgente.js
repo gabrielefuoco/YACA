@@ -9,12 +9,16 @@
  *
  * Questo script evita entrambe le cose, senza renderizzare niente:
  *   1. semina `sorgenti.json` (erdbId -> token) leggendo `poster_path` dai parquet;
- *   2. rinomina i file esistenti al nome nuovo, calcolato con la STESSA funzione del
+ *   2. crea per ogni file esistente il nome nuovo, calcolato con la STESSA funzione del
  *      runtime (`posterFileName`), così app e volume concordano per costruzione.
  *
- * L'immagine NON viene rigenerata: il file rinominato è quello che c'era. Per i titoli
- * la cui locandina è cambiata su TMDB, la versione nuova verrà prodotta al prossimo
- * cambio di badge (o dal prefill notturno): è un ceiling accettato e dichiarato.
+ * Il nome nuovo è un **hardlink**, non una rinomina: durante la finestra di deploy il vecchio
+ * nome continua a rispondere 200 (niente raffica di 404, niente render), e il GC (ticket 09)
+ * raccoglierà i nomi vecchi con il suo TTL. Stesso inode: il disco non cresce.
+ *
+ * L'immagine NON viene rigenerata: il file linkato è quello che c'era. Per i titoli la cui
+ * locandina è cambiata su TMDB, la versione nuova verrà prodotta al prossimo cambio di badge
+ * (o dal prefill notturno): è un ceiling accettato e dichiarato.
  *
  * Uso (default: dry-run, non tocca niente):
  *   node scripts/migra-poster-versione-sorgente.js [--dir /data/erdb-cache] [--parquet /data/tmdb] [--apply]
@@ -119,7 +123,7 @@ async function main() {
 
     for (const [vecchio, nuovo] of rinomine) {
         if (opts.apply) {
-            try { fs.renameSync(path.join(opts.dir, vecchio), path.join(opts.dir, nuovo)); }
+            try { fs.linkSync(path.join(opts.dir, vecchio), path.join(opts.dir, nuovo)); }
             catch (_) { report.errori++; continue; }
         }
         report.rinominati++;
@@ -127,7 +131,7 @@ async function main() {
 
     console.log('[migra] report', JSON.stringify(report));
     if (!opts.apply) {
-        for (const [v, n] of rinomine.slice(0, 5)) console.log(`[migra]   ${v} -> ${n}`);
+        for (const [v, n] of rinomine.slice(0, 5)) console.log(`[migra]   ${v} -> ${n} (hardlink)`);
         console.log('[migra] dry-run: niente scritto. Rilanciare con --apply per applicare.');
     }
 }
