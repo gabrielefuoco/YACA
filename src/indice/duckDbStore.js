@@ -16,7 +16,7 @@ class DuckDbStore {
         // opzioni esplicite -> TMDB_DUMP_DIR -> /data/tmdb -> .cache/tmdb
         this.basePath = opts.basePath
             || (process.env.TMDB_DUMP_DIR ? path.resolve(process.env.TMDB_DUMP_DIR) : null)
-            || (fs.existsSync('/data') 
+            || (fs.existsSync('/data/tmdb') 
                 ? '/data/tmdb' 
                 : path.resolve(__dirname, '../../.cache/tmdb'));
             

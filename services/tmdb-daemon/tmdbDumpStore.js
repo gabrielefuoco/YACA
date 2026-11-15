@@ -14,7 +14,7 @@ class TmdbDumpStore {
         } else if (process.env.TMDB_DUMP_DIR) {
             this.basePath = path.resolve(process.env.TMDB_DUMP_DIR);
         } else {
-            this.basePath = fs.existsSync('/data') 
+            this.basePath = fs.existsSync('/data/tmdb') 
                 ? '/data/tmdb' 
                 : path.resolve(__dirname, '../../.cache/tmdb');
         }

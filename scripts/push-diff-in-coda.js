@@ -94,7 +94,7 @@ function dirDati(env = process.env) {
     if (env.ITA_DIFF_DIR) return env.ITA_DIFF_DIR;
     if (env.ITA_ANNOTATIONS_DIR) return env.ITA_ANNOTATIONS_DIR;
     if (env.TMDB_DUMP_DIR) return env.TMDB_DUMP_DIR;
-    if (fs.existsSync('/data')) return '/data/tmdb';
+    if (fs.existsSync('/data/tmdb')) return '/data/tmdb';
     return path.resolve(__dirname, '..', '.cache', 'tmdb');
 }
 
