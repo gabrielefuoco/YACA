@@ -39,14 +39,14 @@ function extractTokens(key) {
 
 /**
  * Verifica il contenimento stretto di token (A⊆B o B⊆A).
- * Include guardia sul rapporto di lunghezza e vincoli sui singoli token.
+ * Se c'è un solo token condiviso, deve essere raro (df <= 3).
  * @param {string[]} cardToks 
  * @param {string[]} recToks 
  * @param {function(string): number} dfFn 
  * @returns {boolean}
  */
 function isStrictContainment(cardToks, recToks, dfFn) {
-    if (!cardToks || !recToks || !cardToks.length || !recToks.length) return false;
+    if (!cardToks.length || !recToks.length) return false;
 
     const setA = new Set(cardToks);
     const setB = new Set(recToks);
@@ -58,20 +58,12 @@ function isStrictContainment(cardToks, recToks, dfFn) {
     const bInA = [...setB].every((t) => setA.has(t));
     if (!aInB && !bInA) return false;
 
-    // ponytail: guardia di lunghezza invece dello score IDF-Dice; ceiling: two similar-length titles sharing 2 tokens still match.
-    const minSize = Math.min(setA.size, setB.size);
-    const maxSize = Math.max(setA.size, setB.size);
-    if (minSize / maxSize < 0.5) return false;
+    // Se ci sono 2 o più token condivisi, il contenimento è solido
+    if (inter.length >= 2) return true;
 
-    // Se c'è un solo token in comune, deve essere raro (df <= 3), lungo >= 4 caratteri
-    // e il titolo più lungo non può avere più di 2 token
-    if (inter.length === 1) {
-        const t = inter[0];
-        const dfVal = typeof dfFn === 'function' ? dfFn(t) : 0;
-        if (t.length < 4 || dfVal > 3 || maxSize > 2) return false;
-    }
-
-    return true;
+    // Se c'è un solo token in comune, deve essere raro (df <= 3) per evitare falsi positivi
+    const minDf = Math.min(...inter.map((t) => dfFn(t)));
+    return minDf <= 3;
 }
 
 /**

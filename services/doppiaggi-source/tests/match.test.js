@@ -249,21 +249,18 @@ test('match.js - Titoli catalogo non toccati da AG restano false', () => {
     assert.equal(result.annotations[0].ita, false);
 });
 
-test('match.js - isStrictContainment: controlli di lunghezza, df e rapporto', () => {
+test('match.js - isStrictContainment: regola df <= 3 per token singolo condiviso', () => {
     const rareDf = () => 1;
     const commonDf = () => 5;
 
-    // ['up'] vs ['up','in','the','air'] -> false (minLen / maxLen = 1/4 = 0.25 < 0.5)
-    assert.equal(isStrictContainment(['up'], ['up', 'in', 'the', 'air'], rareDf), false);
+    // 2 o più token condivisi -> true
+    assert.equal(isStrictContainment(['la', 'casa'], ['la', 'casa', 'stregata'], commonDf), true);
 
-    // ['la','casa'] vs ['la','casa','stregata'] -> true (minLen / maxLen = 2/3 = 0.67 >= 0.5)
-    assert.equal(isStrictContainment(['la', 'casa'], ['la', 'casa', 'stregata'], rareDf), true);
+    // singolo token condiviso raro (df <= 3) -> true
+    assert.equal(isStrictContainment(['eva'], ['eva', 'kant'], rareDf), true);
 
-    // single token with df > 3 -> false
+    // singolo token condiviso comune (df > 3) -> false
     assert.equal(isStrictContainment(['teen'], ['teen', 'wolf'], commonDf), false);
-
-    // single token of length 3 -> false (token length < 4)
-    assert.equal(isStrictContainment(['eva'], ['eva', 'kant'], rareDf), false);
 });
 
 test('match.js - resolveByYearWithMargin: disambiguazione anno e margine', () => {
