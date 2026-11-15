@@ -248,13 +248,13 @@ describe('TMDB Budget & Spesa (Ticket #38)', () => {
 
             // 1. Prima chiamata: autorizzata
             const res1 = await dumpClient.fetchWithRetry('https://api.themoviedb.org/3/tv/999');
-            expect(res1).toEqual({ id: 999, name: 'Dump Tv' });
+            expect(res1).toEqual({ status: 'ok', data: { id: 999, name: 'Dump Tv' } });
             expect(axiosSpy).toHaveBeenCalledTimes(1);
             expect(tmdbBudget.getMetrics().byCategory[TMDB_CATEGORIES.BACKFILL]).toBe(1);
 
-            // 2. Seconda chiamata: cap superato -> restituisce null con soft degradation
+            // 2. Seconda chiamata: cap superato -> restituisce errore con soft degradation
             const res2 = await dumpClient.fetchWithRetry('https://api.themoviedb.org/3/tv/1000');
-            expect(res2).toBeNull();
+            expect(res2).toEqual({ status: 'errore', data: null });
             expect(axiosSpy).toHaveBeenCalledTimes(1); // non invocato
             expect(tmdbBudget.getMetrics().totalSkippedByCap).toBe(1);
 

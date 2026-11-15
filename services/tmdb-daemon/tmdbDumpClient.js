@@ -125,6 +125,96 @@ function resolveIngestTitle(data, isMovie = true) {
     };
 }
 
+function buildMovieRow(data) {
+    const common = extractCommonTmdbData(data);
+    const directors = (data.credits?.crew || []).filter(c => c.job === 'Director').map(c => ({id: c.id, name: c.name}));
+    const writers = (data.credits?.crew || []).filter(c => ['Screenplay', 'Writer'].includes(c.job)).map(c => ({id: c.id, name: c.name}));
+    
+    const itRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'IT');
+    const usRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'US');
+    const content_rating = itRelease?.release_dates?.[0]?.certification || usRelease?.release_dates?.[0]?.certification || null;
+
+    const titleInfo = resolveIngestTitle(data, true);
+
+    return {
+        ...common,
+        id: data.id,
+        imdb_id: data.imdb_id,
+        title: titleInfo.title,
+        title_en: titleInfo.title_en,
+        original_title: data.original_title,
+        original_language: data.original_language,
+        overview: data.overview,
+        release_date: data.release_date || null,
+        runtime: data.runtime,
+        vote_average: data.vote_average,
+        vote_count: data.vote_count,
+        popularity: data.popularity,
+        status: data.status,
+        poster_path: data.poster_path,
+        backdrop_path: data.backdrop_path,
+        directors: JSON.stringify(directors),
+        writers: JSON.stringify(writers),
+        tagline: data.tagline || null,
+        collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
+        collection_name: data.belongs_to_collection ? data.belongs_to_collection.name : null,
+        content_rating: content_rating,
+        adult: data.adult || false,
+        budget: data.budget || 0,
+        revenue: data.revenue || 0,
+        _fetched_at: new Date().toISOString()
+    };
+}
+
+function buildTvRow(data) {
+    const common = extractCommonTmdbData(data);
+    const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));
+    const networks = (data.networks || []).map(n => ({id: n.id, name: n.name}));
+    
+    // Runtime della serie (prende il primo, se disponibile, altrimenti media, altrimenti null)
+    let runtime = null;
+    if (data.episode_run_time && data.episode_run_time.length > 0) {
+        runtime = data.episode_run_time[0]; // Spesso è il valore primario
+    }
+
+    const itRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'IT');
+    const usRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'US');
+    const content_rating = itRating?.rating || usRating?.rating || null;
+
+    const titleInfo = resolveIngestTitle(data, false);
+
+    return {
+        ...common,
+        id: data.id,
+        imdb_id: data.external_ids?.imdb_id || null,
+        tvdb_id: data.external_ids?.tvdb_id || null,
+        name: titleInfo.title,
+        name_en: titleInfo.title_en,
+        original_name: data.original_name,
+        original_language: data.original_language,
+        overview: data.overview,
+        first_air_date: data.first_air_date || null,
+        last_air_date: data.last_air_date || null,
+        number_of_seasons: data.number_of_seasons,
+        number_of_episodes: data.number_of_episodes,
+        vote_average: data.vote_average,
+        vote_count: data.vote_count,
+        popularity: data.popularity,
+        status: data.status,
+        in_production: data.in_production || false,
+        type: data.type,
+        poster_path: data.poster_path,
+        backdrop_path: data.backdrop_path,
+        created_by: JSON.stringify(created_by),
+        networks: JSON.stringify(networks),
+        tagline: data.tagline || null,
+        content_rating: content_rating,
+        adult: data.adult || false,
+        runtime: runtime,
+        _fetched_at: new Date().toISOString()
+    };
+}
+
 class TmdbDumpClient {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -146,7 +236,7 @@ class TmdbDumpClient {
         const budgetCheck = tmdbBudget.checkBudget(TMDB_CATEGORIES.BACKFILL, url);
         if (!budgetCheck.allowed) {
             console.warn(`[TmdbDumpClient] Cap raggiunto per BACKFILL (${url}), skip chiamata con degrado morbido`);
-            return null;
+            return { status: 'errore', data: null };
         }
         tmdbBudget.recordCall(TMDB_CATEGORIES.BACKFILL, url);
 
@@ -161,10 +251,16 @@ class TmdbDumpClient {
         while (attempt <= retries) {
             try {
                 const res = await axios.get(url, config);
-                return res.data;
+                return { status: 'ok', data: res.data };
             } catch (error) {
                 if (error.response && error.response.status === 404) {
-                    return null; // Risorsa non trovata o rimossa
+                    return { status: 'not_found', data: null };
+                }
+
+                attempt++;
+                if (attempt > retries) {
+                    console.error(`[TmdbDumpClient] Max retries reached for ${url}`);
+                    return { status: 'errore', data: null };
                 }
                 
                 if (error.response && error.response.status === 429) {
@@ -179,134 +275,78 @@ class TmdbDumpClient {
                     await this.sleep(5000);
                 } else {
                     console.error(`[TmdbDumpClient] Fatal API Error: ${error.message}`);
-                    throw error;
-                }
-                
-                attempt++;
-                if (attempt > retries) {
-                    console.error(`[TmdbDumpClient] Max retries reached for ${url}`);
-                    return null;
+                    return { status: 'errore', data: null };
                 }
             }
         }
-        return null;
+        return { status: 'errore', data: null };
     }
 
-    async fetchMovie(id, options = {}) {
-        const data = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
+    async fetchWithRetryOutcome(url, params = {}, retries = 5) {
+        return this.fetchWithRetry(url, params, retries);
+    }
+
+    async fetchMovieOutcome(id, options = {}) {
+        const res = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
             language: 'it-IT',
             append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,release_dates,translations',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
         
-        if (!data) return null;
-        const keep = await shouldKeepTmdbRecord(data.id, data.vote_count, options);
-        if (!keep) return null;
+        if (res.status !== 'ok' || !res.data) return { status: res.status, row: null };
+        if (res.data.adult === true) return { status: 'adult_filtered', row: null };
 
-        const common = extractCommonTmdbData(data);
-        const directors = (data.credits?.crew || []).filter(c => c.job === 'Director').map(c => ({id: c.id, name: c.name}));
-        const writers = (data.credits?.crew || []).filter(c => ['Screenplay', 'Writer'].includes(c.job)).map(c => ({id: c.id, name: c.name}));
-        
-        const itRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'IT');
-        const usRelease = (data.release_dates?.results || []).find(r => r.iso_3166_1 === 'US');
-        const content_rating = itRelease?.release_dates?.[0]?.certification || usRelease?.release_dates?.[0]?.certification || null;
+        const keep = await shouldKeepTmdbRecord(res.data.id, res.data.vote_count, {
+            ...options,
+            originalLanguage: res.data.original_language
+        });
+        if (!keep) return { status: 'filtered_vote_floor', row: null };
 
-        const titleInfo = resolveIngestTitle(data, true);
-
-        return {
-            ...common,
-            id: data.id,
-            imdb_id: data.imdb_id,
-            title: titleInfo.title,
-            title_en: titleInfo.title_en,
-            original_title: data.original_title,
-            original_language: data.original_language,
-            overview: data.overview,
-            release_date: data.release_date || null,
-            runtime: data.runtime,
-            vote_average: data.vote_average,
-            vote_count: data.vote_count,
-            popularity: data.popularity,
-            status: data.status,
-            poster_path: data.poster_path,
-            backdrop_path: data.backdrop_path,
-            directors: JSON.stringify(directors),
-            writers: JSON.stringify(writers),
-            tagline: data.tagline || null,
-            collection_id: data.belongs_to_collection ? data.belongs_to_collection.id : null,
-            collection_name: data.belongs_to_collection ? data.belongs_to_collection.name : null,
-            content_rating: content_rating,
-            adult: data.adult || false,
-            budget: data.budget || 0,
-            revenue: data.revenue || 0,
-            _fetched_at: new Date().toISOString()
-        };
+        return { status: 'ok', row: buildMovieRow(res.data) };
     }
 
-    async fetchTv(id, options = {}) {
-        const data = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
+    async fetchTvOutcome(id, options = {}) {
+        const res = await this.fetchWithRetry(`${this.baseUrl}/tv/${id}`, {
             language: 'it-IT',
             append_to_response: 'keywords,credits,videos,images,recommendations,watch/providers,content_ratings,external_ids,translations',
             include_image_language: 'it,en,null',
             include_video_language: 'it,en,null'
         });
         
-        if (!data) return null;
-        const keep = await shouldKeepTmdbRecord(data.id, data.vote_count, options);
-        if (!keep) return null;
+        if (res.status !== 'ok' || !res.data) return { status: res.status, row: null };
+        if (res.data.adult === true) return { status: 'adult_filtered', row: null };
 
-        const common = extractCommonTmdbData(data);
-        const created_by = (data.created_by || []).map(c => ({id: c.id, name: c.name}));
-        const networks = (data.networks || []).map(n => ({id: n.id, name: n.name}));
-        
-        // Runtime della serie (prende il primo, se disponibile, altrimenti media, altrimenti null)
-        let runtime = null;
-        if (data.episode_run_time && data.episode_run_time.length > 0) {
-            runtime = data.episode_run_time[0]; // Spesso è il valore primario
-        }
+        const keep = await shouldKeepTmdbRecord(res.data.id, res.data.vote_count, {
+            ...options,
+            originalLanguage: res.data.original_language
+        });
+        if (!keep) return { status: 'filtered_vote_floor', row: null };
 
-        const itRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'IT');
-        const usRating = (data.content_ratings?.results || []).find(r => r.iso_3166_1 === 'US');
-        const content_rating = itRating?.rating || usRating?.rating || null;
+        return { status: 'ok', row: buildTvRow(res.data) };
+    }
 
-        const titleInfo = resolveIngestTitle(data, false);
+    async fetchMovie(id, options = {}) {
+        const outcome = await this.fetchMovieOutcome(id, options);
+        return outcome.row;
+    }
 
-        return {
-            ...common,
-            id: data.id,
-            imdb_id: data.external_ids?.imdb_id || null,
-            tvdb_id: data.external_ids?.tvdb_id || null,
-            name: titleInfo.title,
-            name_en: titleInfo.title_en,
-            original_name: data.original_name,
-            original_language: data.original_language,
-            overview: data.overview,
-            first_air_date: data.first_air_date || null,
-            last_air_date: data.last_air_date || null,
-            number_of_seasons: data.number_of_seasons,
-            number_of_episodes: data.number_of_episodes,
-            vote_average: data.vote_average,
-            vote_count: data.vote_count,
-            popularity: data.popularity,
-            status: data.status,
-            in_production: data.in_production || false,
-            type: data.type,
-            poster_path: data.poster_path,
-            backdrop_path: data.backdrop_path,
-            created_by: JSON.stringify(created_by),
-            networks: JSON.stringify(networks),
-            tagline: data.tagline || null,
-            content_rating: content_rating,
-            adult: data.adult || false,
-            runtime: runtime,
-            _fetched_at: new Date().toISOString()
-        };
+    async fetchTv(id, options = {}) {
+        const outcome = await this.fetchTvOutcome(id, options);
+        return outcome.row;
+    }
+
+    _buildMovieRow(data) {
+        return buildMovieRow(data);
+    }
+
+    _buildTvRow(data) {
+        return buildTvRow(data);
     }
 
     async fetchChanges(mediaType, page) {
-        const data = await this.fetchWithRetry(`${this.baseUrl}/${mediaType}/changes`, { page });
-        return data || { results: [], total_pages: 1 };
+        const res = await this.fetchWithRetry(`${this.baseUrl}/${mediaType}/changes`, { page });
+        return (res && res.status === 'ok' && res.data) ? res.data : { results: [], total_pages: 1 };
     }
 
     async downloadDailyExport(mediaType) {
@@ -373,5 +413,8 @@ class TmdbDumpClient {
         throw new Error(`[TmdbDumpClient] Failed to download daily export for ${mediaType}`);
     }
 }
+
+TmdbDumpClient.buildMovieRow = buildMovieRow;
+TmdbDumpClient.buildTvRow = buildTvRow;
 
 module.exports = TmdbDumpClient;
