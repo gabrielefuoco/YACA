@@ -13,19 +13,16 @@ class DuckDbStore {
         const opts = typeof options === 'string' ? { basePath: options } : (options || {});
 
         // Determina il percorso della cache usando lo stesso pattern di tmdbDumpStore:
-        // opzioni esplicite -> DUCKDB_BASE_PATH -> TMDB_DUMP_DIR -> /data/tmdb -> .cache/tmdb
+        // opzioni esplicite -> TMDB_DUMP_DIR -> /data/tmdb -> .cache/tmdb
         this.basePath = opts.basePath
-            || (process.env.DUCKDB_BASE_PATH ? path.resolve(process.env.DUCKDB_BASE_PATH) : null)
             || (process.env.TMDB_DUMP_DIR ? path.resolve(process.env.TMDB_DUMP_DIR) : null)
             || (fs.existsSync('/data') 
                 ? '/data/tmdb' 
                 : path.resolve(__dirname, '../../.cache/tmdb'));
             
         this.moviesParquetPath = opts.moviesParquetPath
-            || (process.env.DUCKDB_MOVIES_PARQUET_PATH ? path.resolve(process.env.DUCKDB_MOVIES_PARQUET_PATH) : null)
             || path.join(this.basePath, 'movies.parquet');
         this.tvParquetPath = opts.tvParquetPath
-            || (process.env.DUCKDB_TV_PARQUET_PATH ? path.resolve(process.env.DUCKDB_TV_PARQUET_PATH) : null)
             || path.join(this.basePath, 'tv.parquet');
         const configuredPath = opts.dbPath || process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
         if (configuredPath === ':memory:') {

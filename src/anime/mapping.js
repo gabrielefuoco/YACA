@@ -6,7 +6,12 @@
  * CONTRATTO (Decisioni 2, 3, 5, 6, 7):
  * 1. Lettura da artefatto atomico prodotto da anime-source: nessun download di Anibridge/Fribb
  *    nel runtime dell'app (Decisione 2).
- * 2. Nessun require nella cartella di servizio: certify ed exclude arrivano dall'artefatto (Decisione 3).
+ * 2. Il parsing di Anibridge/Fribb è **uno solo** e vive nel produttore
+ *    (`services/anime-source/src/mappingIndex.js`): qui si importa `buildMappingIndex` e si applica
+ *    l'artefatto. Il file è dentro l'immagine dell'app (`COPY . .`, e `.dockerignore` non esclude
+ *    `services/anime-source/`), quindi non serve né un pacchetto né una copia.
+ *    (Decisione 3 originale — "nessun require nella cartella di servizio" — superata dal ticket 07:
+ *    due parser dello stesso dump erano già divergenti su `malToTmdb`.)
  * 3. Uso di snapshotDaArtefatto con politica 'keepLastKnown': su errore o artefatto mancante,
  *    mantiene l'ultimo stato noto ed emette un log chiaro (mai silenzioso) (Decisione 5).
  * 4. Risponde tre stati su statoAnime(): 'si' | 'non-lo-so' | 'no' (Decisione 6).
