@@ -5,19 +5,29 @@ const fs = require('fs');
 const TMDB_IMDB_CACHE_MAX = 500;
 
 class DuckDbStore {
-    constructor() {
+    constructor(options = {}) {
         this.db = null;
         this.con = null;
         this.isInitialized = false;
         
-        // Determina il percorso della cache usando lo stesso pattern di tmdbDumpStore
-        this.basePath = fs.existsSync('/data') 
-            ? '/data/tmdb' 
-            : path.resolve(__dirname, '../../.cache/tmdb');
+        const opts = typeof options === 'string' ? { basePath: options } : (options || {});
+
+        // Determina il percorso della cache usando lo stesso pattern di tmdbDumpStore:
+        // opzioni esplicite -> DUCKDB_BASE_PATH -> TMDB_DUMP_DIR -> /data/tmdb -> .cache/tmdb
+        this.basePath = opts.basePath
+            || (process.env.DUCKDB_BASE_PATH ? path.resolve(process.env.DUCKDB_BASE_PATH) : null)
+            || (process.env.TMDB_DUMP_DIR ? path.resolve(process.env.TMDB_DUMP_DIR) : null)
+            || (fs.existsSync('/data') 
+                ? '/data/tmdb' 
+                : path.resolve(__dirname, '../../.cache/tmdb'));
             
-        this.moviesParquetPath = path.join(this.basePath, 'movies.parquet');
-        this.tvParquetPath = path.join(this.basePath, 'tv.parquet');
-        const configuredPath = process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
+        this.moviesParquetPath = opts.moviesParquetPath
+            || (process.env.DUCKDB_MOVIES_PARQUET_PATH ? path.resolve(process.env.DUCKDB_MOVIES_PARQUET_PATH) : null)
+            || path.join(this.basePath, 'movies.parquet');
+        this.tvParquetPath = opts.tvParquetPath
+            || (process.env.DUCKDB_TV_PARQUET_PATH ? path.resolve(process.env.DUCKDB_TV_PARQUET_PATH) : null)
+            || path.join(this.basePath, 'tv.parquet');
+        const configuredPath = opts.dbPath || process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
         if (configuredPath === ':memory:') {
             this.targetDbPath = ':memory:';
             this.stagingDbPath = ':memory:';
@@ -28,12 +38,12 @@ class DuckDbStore {
             this.dbPath = configuredPath;
         } else {
             this.targetDbPath = configuredPath;
-            this.stagingDbPath = process.env.DUCKDB_STAGING_PATH || `${configuredPath}.new`;
+            this.stagingDbPath = opts.stagingDbPath || process.env.DUCKDB_STAGING_PATH || `${configuredPath}.new`;
             this.dbPath = configuredPath;
         }
 
-        this.masterMoviesJsonlPath = path.join(this.basePath, 'master_movies.jsonl');
-        this.masterTvJsonlPath = path.join(this.basePath, 'master_tv.jsonl');
+        this.masterMoviesJsonlPath = opts.masterMoviesJsonlPath || path.join(this.basePath, 'master_movies.jsonl');
+        this.masterTvJsonlPath = opts.masterTvJsonlPath || path.join(this.basePath, 'master_tv.jsonl');
 
         // TMDB id → IMDb id letti dal dump: solo i risultati trovati (mai i "non trovato",
         // così un titolo promosso a Tier 1 dopo è visibile subito).
@@ -1062,6 +1072,7 @@ class DuckDbStore {
     }
 }
 
-// Esportiamo un'istanza singola (Singleton)
+// Esportiamo un'istanza singola (Singleton) con accesso alla classe
 const duckDbStore = new DuckDbStore();
+duckDbStore.DuckDbStore = DuckDbStore;
 module.exports = duckDbStore;

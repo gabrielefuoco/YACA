@@ -16,6 +16,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// Isola lo stato prima che duckDbStore venga caricato a livello di modulo (Ticket 06 - ermeticità)
+const moduleTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-ita-module-'));
+process.env.TMDB_DUMP_DIR = moduleTempDir;
+process.env.DUCKDB_PATH = path.join(moduleTempDir, 'catalog.duckdb');
+
 const { F } = require('../src/indice/filters');
 const { buildPresetFromFilters } = require('../src/indice/duckDbProvider');
 const duckDbStore = require('../src/indice/duckDbStore');
@@ -119,7 +124,10 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
             ].join('\n') + '\n', 'utf8');
 
             process.env.DUCKDB_PATH = ':memory:';
-            store = new (duckDbStore.constructor)();
+            store = new (duckDbStore.constructor)({
+                basePath: tempDir,
+                dbPath: ':memory:'
+            });
             await store.init();
 
             // Creiamo tabelle senza la colonna ita per verificare l'ALTER TABLE idempotente
@@ -190,12 +198,14 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
     describe('3. Test di swap atomico con CHECKPOINT: prevenzione corruzione da WAL stantio', () => {
         let tempDir;
         let dbFile;
+        let stagingPath;
         let annotationsFile;
         let store;
 
         beforeEach(async () => {
             tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-swap-test-'));
             dbFile = path.join(tempDir, 'catalog.duckdb');
+            stagingPath = path.join(tempDir, 'catalog.duckdb.staging');
             annotationsFile = path.join(tempDir, 'ita_annotations.jsonl');
 
             fs.writeFileSync(annotationsFile, [
@@ -204,11 +214,16 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
                 JSON.stringify({ t: 'tv', id: 10, ita: true })
             ].join('\n') + '\n', 'utf8');
 
-            process.env.ITA_ANNOTATIONS_PATH = annotationsFile;
+            process.env.TMDB_DUMP_DIR = tempDir;
             process.env.DUCKDB_PATH = dbFile;
+            process.env.DUCKDB_STAGING_PATH = stagingPath;
+            process.env.ITA_ANNOTATIONS_PATH = annotationsFile;
         });
 
         afterEach(async () => {
+            delete process.env.TMDB_DUMP_DIR;
+            delete process.env.DUCKDB_PATH;
+            delete process.env.DUCKDB_STAGING_PATH;
             delete process.env.ITA_ANNOTATIONS_PATH;
             if (store) await store.close();
             try {
@@ -219,8 +234,23 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
         test('UPDATE + CHECKPOINT consuma il WAL su file; lo swap del file DB riapre senza replay stantio e il sync ripristina i valori', async () => {
             const walFile = `${dbFile}.wal`;
 
+            // Guard obbligatorio (punto 3): fallisce rumorosamente se il DB risolto non è dentro tempDir
+            const dbPath = dbFile;
+            const tmpDir = tempDir;
+            expect(dbPath.startsWith(tmpDir)).toBe(true);
+
             // 1. Creazione iniziale del database su file da parte dello store
-            store = new (duckDbStore.constructor)();
+            store = new (duckDbStore.constructor)({
+                basePath: tempDir,
+                dbPath: dbFile,
+                stagingDbPath: stagingPath
+            });
+            expect(store.dbPath.startsWith(tempDir)).toBe(true);
+            expect(store.targetDbPath.startsWith(tempDir)).toBe(true);
+            expect(store.stagingDbPath.startsWith(tempDir)).toBe(true);
+            expect(store.moviesParquetPath.startsWith(tempDir)).toBe(true);
+            expect(store.tvParquetPath.startsWith(tempDir)).toBe(true);
+
             await store.init();
 
             // Popola tabelle di base con schema TMDB e anime_mappings
@@ -264,7 +294,6 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
             }
 
             // 3. Simula il daemon tmdb che costruisce un NUOVO database su stagingPath e fa rename
-            const stagingPath = path.join(tempDir, 'catalog.duckdb.staging');
             const stagingDb = new duckdb.Database(stagingPath);
             const stagingCon = stagingDb.connect();
 
@@ -309,7 +338,12 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
             expect(swapped).toBe(true);
 
             // 5. Riapri lo store sul nuovo database scambiato
-            store = new (duckDbStore.constructor)();
+            store = new (duckDbStore.constructor)({
+                basePath: tempDir,
+                dbPath: dbFile,
+                stagingDbPath: stagingPath
+            });
+            expect(store.dbPath.startsWith(tempDir)).toBe(true);
             await store.init();
 
             // Verifica che il database aperto sia quello NUOVO (movie 4 presente)
@@ -331,5 +365,13 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
                 expect(fs.statSync(walFile).size).toBe(0);
             }
         });
+    });
+
+    afterAll(() => {
+        delete process.env.TMDB_DUMP_DIR;
+        delete process.env.DUCKDB_PATH;
+        try {
+            fs.rmSync(moduleTempDir, { recursive: true, force: true });
+        } catch (_) {}
     });
 });
