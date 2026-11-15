@@ -47,7 +47,7 @@ rientrano solo se sono ancora popolari. È l'anomalia A7 dell'handoff.
 
 ## Test
 
-In `tests/tmdbDaemonOutcome.test.js` (node:test, non jest: sono servizi con `node --test`):
+In `services/tmdb-daemon/tests/tmdbDumpOutcome.test.js` con `node:test` (jest alla root ignora `services/`, quindi i test dei servizi vivono lì e si lanciano con `node --test services/tmdb-daemon/tests/`):
 
 - budget esaurito (`tmdbBudget.configureCap({enabled:true, limit:1})` + una `recordCall`) →
   `fetchWithRetryOutcome` ritorna `skipped_budget`, **non** `not_found`;
