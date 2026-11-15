@@ -711,6 +711,12 @@ def esegui_scaffali(
         return 503, {"ok": False, "errore": MSG_ERR_ASSI}
 
     kids = _estrai_kids_param(dati, opzioni_scaffali)
+    anime_raw = dati.get("anime")
+    if anime_raw is None and isinstance(dati.get("filtri"), dict):
+        anime_raw = dati["filtri"].get("anime")
+    filtro_anime = None
+    if isinstance(anime_raw, str) and anime_raw.strip().lower() in ("only", "exclude"):
+        filtro_anime = anime_raw.strip().lower()
     if kids:
         if getattr(engine, "kids_ok", None) is None:
             return 503, {"ok": False, "errore": getattr(engine, "kids_errore", None) or MSG_ERR_BLACKLIST}
@@ -930,6 +936,16 @@ def esegui_scaffali(
             }
             for t in sh.titoli
         ]
+        # La politica anime si applica ai TITOLI, non ai semi: con «only» un seme live-action resta
+        # un buon punto di partenza, ma ciò che esce deve essere anime.
+        if filtro_anime is not None:
+            def _e_anime(titolo) -> bool:
+                esito = titolo.get("anime")
+                return bool(esito) if esito is not None else False
+
+            titoli_out = [t for t in titoli_out
+                          if (_e_anime(t) if filtro_anime == "only" else not _e_anime(t))]
+
         # Uno scaffale svuotato dai filtri (anime, bambini) non si dichiara: prometterlo
         # produceva cataloghi elencati e senza un titolo, indistinguibili da un guasto.
         if not titoli_out:
