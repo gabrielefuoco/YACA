@@ -939,6 +939,16 @@ def esegui_scaffali(
             }
             for t in sh.titoli
         ]
+        # Il filtro bambini, allo stesso modo: `kids` era solo una GUARDIA (503 se la blacklist
+        # manca), non un filtro sui titoli. Con un seme adulto e kids=true uscivano sessanta titoli
+        # vietati — cioè la modalità Bambini serviva Oppenheimer e Spartacus.
+        if kids:
+            ammessi = getattr(engine, "kids_ok", None)
+            if ammessi is not None:
+                titoli_out = [t for t in titoli_out
+                              if bool(ammessi[engine.row_of[t["key"]]])
+                              if t["key"] in engine.row_of]
+
         # La politica anime si applica ai TITOLI, non ai semi: con «only» un seme live-action resta
         # un buon punto di partenza, ma ciò che esce deve essere anime.
         if filtro_anime is not None:

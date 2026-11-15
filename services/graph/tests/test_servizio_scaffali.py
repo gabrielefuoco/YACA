@@ -150,6 +150,22 @@ def test_filtro_anime_exclude_toglie_gli_anime(warnok_seeds):
             assert t["anime"] is False, f"{t['key']} è anime ma è stato servito con filtro exclude"
 
 
+def test_filtro_kids_toglie_i_titoli_non_ammessi(warnok_seeds):
+    """Con `kids` nessuno scaffale servito deve contenere un titolo fuori dalla blacklist.
+
+    Prima `kids` era solo una guardia (503 se la blacklist mancava), mai un filtro sui titoli:
+    con un seme adulto uscivano sessanta titoli, anche vietati.
+    """
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8, "kids": True})
+    assert status == 200
+    engine = servizio.get_engine_v45()
+    ammessi = engine.kids_ok
+    for scaffale in res["scaffali"]:
+        for t in scaffale["titoli"]:
+            riga = engine.row_of[t["key"]]
+            assert bool(ammessi[riga]) is True, f"{t['key']} non è ammesso in modalità bambini"
+
+
 def test_filtro_anime_assente_non_tocca_niente(warnok_seeds):
     """Senza filtro la risposta resta quella di sempre: il filtro non deve cambiare il caso normale."""
     status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
