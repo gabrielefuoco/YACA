@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: —
 
@@ -47,3 +47,8 @@ collocazione, ma prima serve sapere se il caso si presenta.
 Nessuna collocazione, nessun artefatto nuovo, nessuna modifica a `vicini-top100`. Questo ticket
 compra **visibilità**, non rimedio: se dopo una settimana il contatore dice zero, i ticket 20-22
 hanno un motivo in meno per esistere.
+
+## Esito
+
+Implementato e in produzione (commit `439ab3bb`): la chiave scartata viene nominata, compare in `diagnostica` della risposta e in un contatore giornaliero leggibile da `/health`.
+Due test nuovi. **Il contatore è a zero da quando esiste**: finché resta così, i ticket di collocazione (21, 22) non hanno domanda.

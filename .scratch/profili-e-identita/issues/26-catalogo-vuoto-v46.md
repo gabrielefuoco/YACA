@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: —
 
@@ -108,3 +108,12 @@ via, e la diagnosi è già abbastanza stretta da non richiedere altre ipotesi.
 - non è V46: il catalogo esisteva già prima, e i titoli nel pool ci sono;
 - non è il grafo: la risposta è completa e coerente;
 - non è la cache: il vuoto si rigenera.
+
+## Esito
+
+Due cause, entrambe vere e entrambe corrette:
+
+1. il flag `anime` restava sullo scaffale e non viaggiava col titolo, quindi il filtro anime del client scartava tutti i 60 titoli (`_isAnime` ora propagato);
+2. il pool dichiarava scaffali che la sua assegnazione **esclusiva** lasciava vuoti (ora si dichiarano solo quelli con almeno un titolo, e gli omessi si contano nei log).
+
+Verificato in produzione (`e881ea86`): **170 cataloghi, 0 vuoti**.

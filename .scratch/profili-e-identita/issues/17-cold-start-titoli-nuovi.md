@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Type: grilling
 Blocked by: —
 
@@ -52,3 +52,21 @@ soprattutto quelli.
 - Se lo studente si riaddestra davvero: il maestro è **disallineato** (V10 ha 66.259 righe, il canone
   V45 ne ha 76.497), quindi non è «rigenerare uno studente» ma «costruire prima un maestro
   allineato». Sta nel 23.
+
+## Esito
+
+Genitore chiuso: tutte le decisioni sono state prese e i figli sono chiusi.
+
+| figlio | cosa ha prodotto |
+|---|---|
+| 18 | il triangolo non si chiama più «bolle», con la guardia rafforzata |
+| 19 | lo scarto dei semi fuori canone ha un nome, un log e un contatore |
+| 20 | il contenuto da solo colloca a 0,49: misura, non opinione |
+| 21 | la pipeline: sette righe di fonte → studente → top-16, verificata |
+| 22 | il seme nuovo semina (sidecar), senza toccare il grafo |
+| 23 | lo studente riaddestrato (forma B, freddi ×4), e l'esito negativo su RRFST |
+| 24 | gli artefatti del collocatore hanno un contratto con sha e ricetta |
+| 25 | V46 in produzione: il grafo si ricostruisce dalle fonti |
+| 26 | il catalogo vuoto: due cause, entrambe corrette |
+
+**Resta non deciso, e non è un ticket**: l'incremento esatto (~75 archi toccati per titolo), misurato ma parcheggiato in attesa di sapere se la domanda esiste.
