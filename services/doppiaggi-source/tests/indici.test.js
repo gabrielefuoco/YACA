@@ -249,3 +249,18 @@ test('indici.js - Cache di produzione (81 file scaduti di 44 giorni): ruota tutt
         fs.rmSync(tmpDir, { recursive: true, force: true });
     }
 });
+
+test('decodeHtml: pagina UTF-8 e pagina windows-1252 danno lo stesso testo accentato', () => {
+    const { decodeHtml } = require('../src/indici');
+
+    const utf8 = Buffer.from('Qualcuno volò sul nido del cuculo', 'utf8');
+    const cp1252 = Buffer.from(
+        [...'Qualcuno vol'].map((c) => c.charCodeAt(0)).concat([0xf2]).concat([...' sul nido del cuculo'].map((c) => c.charCodeAt(0)))
+    );
+    const ascii = Buffer.from('Léon senza accenti', 'ascii');
+
+    assert.equal(decodeHtml(utf8), 'Qualcuno volò sul nido del cuculo');
+    assert.equal(decodeHtml(cp1252), 'Qualcuno volò sul nido del cuculo');
+    assert.ok(!decodeHtml(utf8).includes('\uFFFD'));
+    assert.equal(decodeHtml(ascii), 'Léon senza accenti');
+});

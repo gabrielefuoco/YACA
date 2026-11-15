@@ -123,13 +123,26 @@ function findCachedFile(pageName, cacheDir, fallbackDirs = [], minBytes = 500) {
 }
 
 /**
- * Legge e decodifica una pagina HTML in windows-1252.
+ * Decodifica una pagina HTML.
+ * ponytail: il sito è passato a UTF-8 (header `charset=UTF-8`) mentre le pagine ancora in cache
+ * sono windows-1252. Si prova UTF-8 e si ripiega solo se compaiono caratteri di sostituzione.
+ * Ceiling: un file cp1252 valido anche come UTF-8 è solo-ASCII e decodifica uguale (caso innocuo).
+ * @param {Buffer} buf
+ * @returns {string}
+ */
+function decodeHtml(buf) {
+    const utf8 = new TextDecoder('utf-8').decode(buf);
+    if (!utf8.includes('\uFFFD')) return utf8;
+    return new TextDecoder('windows-1252').decode(buf);
+}
+
+/**
+ * Legge e decodifica una pagina HTML dalla cache.
  * @param {string} filePath 
  * @returns {string}
  */
 function readHtmlFile(filePath) {
-    const buf = fs.readFileSync(filePath);
-    return new TextDecoder('windows-1252').decode(buf);
+    return decodeHtml(fs.readFileSync(filePath));
 }
 
 /**
@@ -235,7 +248,7 @@ async function fetchAllIndices(options = {}) {
             const tmpPath = `${targetPath}.tmp.${process.pid}`;
             fs.writeFileSync(tmpPath, buf);
             fs.renameSync(tmpPath, targetPath);
-            const html = new TextDecoder('windows-1252').decode(buf);
+            const html = decodeHtml(buf);
 
             if (delayMs > 0) {
                 await sleep(delayMs);
@@ -295,6 +308,7 @@ module.exports = {
     KNOWN_PAGES,
     findCachedFile,
     readHtmlFile,
+    decodeHtml,
     extractLetterPages,
     selectPagesForRefresh,
     fetchAllIndices
