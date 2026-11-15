@@ -6,7 +6,12 @@
  * CONTRATTO (Decisioni 2, 3, 5, 6, 7):
  * 1. Lettura da artefatto atomico prodotto da anime-source: nessun download di Anibridge/Fribb
  *    nel runtime dell'app (Decisione 2).
- * 2. Nessun require nella cartella di servizio: certify ed exclude arrivano dall'artefatto (Decisione 3).
+ * 2. Il parsing di Anibridge/Fribb è **uno solo** e vive nel produttore
+ *    (`services/anime-source/src/mappingIndex.js`): qui si importa `buildMappingIndex` e si applica
+ *    l'artefatto. Il file è dentro l'immagine dell'app (`COPY . .`, e `.dockerignore` non esclude
+ *    `services/anime-source/`), quindi non serve né un pacchetto né una copia.
+ *    (Decisione 3 originale — "nessun require nella cartella di servizio" — superata dal ticket 07:
+ *    due parser dello stesso dump erano già divergenti su `malToTmdb`.)
  * 3. Uso di snapshotDaArtefatto con politica 'keepLastKnown': su errore o artefatto mancante,
  *    mantiene l'ultimo stato noto ed emette un log chiaro (mai silenzioso) (Decisione 5).
  * 4. Risponde tre stati su statoAnime(): 'si' | 'non-lo-so' | 'no' (Decisione 6).
@@ -18,8 +23,10 @@ const fs = require('fs');
 const path = require('path');
 const { normalizeTipoAnime, flusheLogCandidatiCertify } = require('./identita');
 const { snapshotDaArtefatto } = require('../infra/snapshotDaArtefatto');
+const { buildMappingIndex, DEFAULT_FILENAME } = require('../../services/anime-source/src/mappingIndex');
 
-const FILE_NAME = 'anime_mapping.json';
+const FILE_NAME = DEFAULT_FILENAME; // 'anime-mappings.json'
+const LEGACY_FILE_NAME = 'anime_mapping.json';
 const CACHE_TTL_MS = 60 * 1000;
 
 function mappingDir() {
@@ -30,7 +37,14 @@ function mappingDir() {
 }
 
 function mappingPath() {
-    return process.env.ANIME_MAPPING_PATH || path.join(mappingDir(), FILE_NAME);
+    if (process.env.ANIME_MAPPING_PATH) return process.env.ANIME_MAPPING_PATH;
+    if (process.env.ANIME_MAPPINGS_PATH) return process.env.ANIME_MAPPINGS_PATH;
+    const dir = mappingDir();
+    const canonical = path.join(dir, FILE_NAME);
+    if (fs.existsSync(canonical)) return canonical;
+    const legacy = path.join(dir, LEGACY_FILE_NAME);
+    if (fs.existsSync(legacy)) return legacy;
+    return canonical;
 }
 
 function toMap(val) {
@@ -85,6 +99,9 @@ class AnimeMappingStore {
         this.anibridgeMovieTmdbIds = new Set();
         this.certifiedTmdbIds = new Set();
         this.excludedTmdbIds = new Set();
+
+        this._rawFribbData = [];
+        this._rawAnibridgeData = {};
 
         this.animeTmdbIdsMovie = new Set();
         this.animeTmdbIdsShow = new Set();
@@ -213,11 +230,18 @@ class AnimeMappingStore {
         this.excludedTmdbIds = toSet(rawExclude);
 
         // 3. Set TMDB: se presenti nell'artefatto usali, altrimenti fall back sui set dedicati o ricostruzione
-        if (data.animeTmdbIdsMovie || data.movie || data.ids?.movie) {
+        if (data.anibridgeMovieTmdbIds) {
+            this.anibridgeMovieTmdbIds = toSet(data.anibridgeMovieTmdbIds);
+        } else if (data.animeTmdbIdsMovie || data.movie || data.ids?.movie) {
             this.anibridgeMovieTmdbIds = toSet(data.animeTmdbIdsMovie || data.movie || data.ids?.movie);
         }
-        if (data.animeTmdbIdsShow || data.tv || data.show || data.ids?.tv || data.ids?.show) {
+        if (data.anibridgeShowTmdbIds) {
+            this.anibridgeShowTmdbIds = toSet(data.anibridgeShowTmdbIds);
+        } else if (data.animeTmdbIdsShow || data.tv || data.show || data.ids?.tv || data.ids?.show) {
             this.anibridgeShowTmdbIds = toSet(data.animeTmdbIdsShow || data.tv || data.show || data.ids?.tv || data.ids?.show);
+        }
+        if (data.anibridgeTmdbIds) {
+            this.anibridgeTmdbIds = toSet(data.anibridgeTmdbIds);
         }
 
         this._rebuildAnimeTmdbIds();
@@ -374,147 +398,32 @@ class AnimeMappingStore {
     }
 
     buildFribbIndex(fribbData) {
-        const newIndex = { anidb: new Map(), anilist: new Map(), mal: new Map() };
-        const newKitsuToTmdb = new Map();
-        const newKitsuToTmdbType = new Map();
-        const newTmdbToKitsuMovie = new Map();
-        const newTmdbToKitsu = new Map();
-        const newMalToTmdb = new Map();
-
-        for (const item of fribbData) {
-            if (item.kitsu_id) {
-                if (item.anidb_id) newIndex.anidb.set(String(item.anidb_id), item.kitsu_id);
-                if (item.anilist_id) newIndex.anilist.set(String(item.anilist_id), item.kitsu_id);
-                if (item.mal_id) newIndex.mal.set(String(item.mal_id), item.kitsu_id);
-
-                if (item.themoviedb_id) {
-                    const rawTmdb = item.themoviedb_id;
-                    let detectedType = null;
-                    let tmdbVal = null;
-
-                    if (typeof rawTmdb === 'object' && rawTmdb !== null) {
-                        if (rawTmdb.tv !== undefined && rawTmdb.tv !== null && rawTmdb.tv !== '') {
-                            detectedType = 'tv';
-                            tmdbVal = rawTmdb.tv;
-                        } else if (rawTmdb.movie !== undefined && rawTmdb.movie !== null && rawTmdb.movie !== '') {
-                            detectedType = 'movie';
-                            tmdbVal = rawTmdb.movie;
-                        } else {
-                            tmdbVal = rawTmdb;
-                        }
-                    } else if (rawTmdb) {
-                        tmdbVal = rawTmdb;
-                    }
-
-                    if (!detectedType) {
-                        const itemType = String(item.type || '').toUpperCase();
-                        if (itemType === 'MOVIE') {
-                            detectedType = 'movie';
-                        } else if (['TV', 'OVA', 'ONA', 'SPECIAL'].includes(itemType)) {
-                            detectedType = 'tv';
-                        }
-                    }
-
-                    const tmdbIds = Array.isArray(tmdbVal)
-                        ? tmdbVal.filter(id => id !== null && id !== undefined && id !== '')
-                        : (tmdbVal ? [tmdbVal] : []);
-
-                    if (tmdbIds.length > 0) {
-                        const primaryTmdb = String(tmdbIds[0]);
-                        newKitsuToTmdb.set(String(item.kitsu_id), primaryTmdb);
-                        if (detectedType) {
-                            newKitsuToTmdbType.set(String(item.kitsu_id), detectedType);
-                        }
-                        if (item.mal_id) {
-                            newMalToTmdb.set(String(item.mal_id), primaryTmdb);
-                        }
-
-                        if (detectedType === 'movie') {
-                            for (const tmdbId of tmdbIds) {
-                                newTmdbToKitsuMovie.set(String(tmdbId), item.kitsu_id);
-                            }
-                        } else {
-                            for (const tmdbId of tmdbIds) {
-                                newTmdbToKitsu.set(String(tmdbId), item.kitsu_id);
-                            }
-                        }
-                    }
-                }
+        this._rawFribbData = Array.isArray(fribbData) ? fribbData : [];
+        // ponytail: accepts full in-memory rebuild via buildMappingIndex on each dump call rather than incremental diffing
+        const artifact = buildMappingIndex({
+            fribbData: this._rawFribbData,
+            anibridgeData: this._rawAnibridgeData || {},
+            overridesData: {
+                certify: Array.from(this.certifiedTmdbIds || []).map((tmdbId) => ({ tmdbId })),
+                exclude: Array.from(this.excludedTmdbIds || []).map((tmdbId) => ({ tmdbId }))
             }
-        }
-        this.fribbIndex = newIndex;
-        this.kitsuToTmdb = newKitsuToTmdb;
-        this.kitsuToTmdbType = newKitsuToTmdbType;
-        this.tmdbToKitsuMovie = newTmdbToKitsuMovie;
-        this.tmdbToKitsu = newTmdbToKitsu;
-        this.malToTmdb = newMalToTmdb;
-        this._rebuildAnimeTmdbIds();
+        });
+        this.applyArtifact(artifact);
     }
 
     buildAnibridgeIndex(anibridgeData) {
-        const newIndex = new Map();
-        const newAnibridgeTmdbIds = new Set();
-        const newAnibridgeShowTmdbIds = new Set();
-        const newAnibridgeMovieTmdbIds = new Set();
-
-        const parseRange = (str) => {
-            const [start, end] = str.split('-').map(Number);
-            return { start, end: end || start };
-        };
-
-        for (const [clusterKey, mappings] of Object.entries(anibridgeData)) {
-            if (clusterKey === '$meta') continue;
-
-            let bridgeNode = null;
-            const allNodes = [clusterKey, ...Object.keys(mappings)];
-
-            for (const node of allNodes) {
-                if (node.startsWith('anidb:')) { bridgeNode = { p: 'anidb', id: node.split(':')[1] }; break; }
-                if (node.startsWith('anilist:')) { bridgeNode = { p: 'anilist', id: node.split(':')[1] }; break; }
-                if (node.startsWith('mal:')) { bridgeNode = { p: 'mal', id: node.split(':')[1] }; break; }
+        this._rawAnibridgeData = anibridgeData && typeof anibridgeData === 'object' && !Array.isArray(anibridgeData)
+            ? anibridgeData
+            : {};
+        const artifact = buildMappingIndex({
+            fribbData: this._rawFribbData || [],
+            anibridgeData: this._rawAnibridgeData,
+            overridesData: {
+                certify: Array.from(this.certifiedTmdbIds || []).map((tmdbId) => ({ tmdbId })),
+                exclude: Array.from(this.excludedTmdbIds || []).map((tmdbId) => ({ tmdbId }))
             }
-
-            if (!bridgeNode) continue;
-
-            for (const [providerKey, episodesMap] of Object.entries(mappings)) {
-                if (providerKey.startsWith('tmdb_show:') || providerKey.startsWith('tmdb_movie:')) {
-                    const parts = providerKey.split(':');
-                    const tmdbId = parts[1];
-                    let season = '1';
-                    if (parts.length > 2) {
-                        season = parts[2].replace('s', '');
-                    }
-
-                    if (tmdbId) {
-                        newAnibridgeTmdbIds.add(String(tmdbId));
-                        if (providerKey.startsWith('tmdb_show:')) {
-                            newAnibridgeShowTmdbIds.add(String(tmdbId));
-                        } else if (providerKey.startsWith('tmdb_movie:')) {
-                            newAnibridgeMovieTmdbIds.add(String(tmdbId));
-                        }
-                    }
-
-                    const key = `${tmdbId}:${season}`;
-                    const rules = [];
-                    for (const [animeRange, tmdbRange] of Object.entries(episodesMap)) {
-                        const anime = parseRange(animeRange);
-                        const tmdb = parseRange(tmdbRange);
-                        const offset = anime.start - tmdb.start;
-                        rules.push({ start: tmdb.start, end: tmdb.end, offset });
-                    }
-
-                    if (!newIndex.has(key)) {
-                        newIndex.set(key, []);
-                    }
-                    newIndex.get(key).push({ bridgeNode, rules });
-                }
-            }
-        }
-        this.tmdbToAnimeNode = newIndex;
-        this.anibridgeTmdbIds = newAnibridgeTmdbIds;
-        this.anibridgeShowTmdbIds = newAnibridgeShowTmdbIds;
-        this.anibridgeMovieTmdbIds = newAnibridgeMovieTmdbIds;
-        this._rebuildAnimeTmdbIds();
+        });
+        this.applyArtifact(artifact);
     }
 
     resolveKitsu(tmdbId, season = 1, episode = 1) {
@@ -728,3 +637,6 @@ module.exports.AnimeMappingStore = AnimeMappingStore;
 module.exports.MOTIVI_RESOLVE_KITSU = MOTIVI_RESOLVE_KITSU;
 module.exports.mappingPath = mappingPath;
 module.exports.mappingDir = mappingDir;
+module.exports.FILE_NAME = FILE_NAME;
+module.exports.LEGACY_FILE_NAME = LEGACY_FILE_NAME;
+module.exports.DEFAULT_FILENAME = DEFAULT_FILENAME;

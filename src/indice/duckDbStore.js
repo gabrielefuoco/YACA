@@ -5,19 +5,26 @@ const fs = require('fs');
 const TMDB_IMDB_CACHE_MAX = 500;
 
 class DuckDbStore {
-    constructor() {
+    constructor(options = {}) {
         this.db = null;
         this.con = null;
         this.isInitialized = false;
         
-        // Determina il percorso della cache usando lo stesso pattern di tmdbDumpStore
-        this.basePath = fs.existsSync('/data') 
-            ? '/data/tmdb' 
-            : path.resolve(__dirname, '../../.cache/tmdb');
+        const opts = typeof options === 'string' ? { basePath: options } : (options || {});
+
+        // Determina il percorso della cache usando lo stesso pattern di tmdbDumpStore:
+        // opzioni esplicite -> TMDB_DUMP_DIR -> /data/tmdb -> .cache/tmdb
+        this.basePath = opts.basePath
+            || (process.env.TMDB_DUMP_DIR ? path.resolve(process.env.TMDB_DUMP_DIR) : null)
+            || (fs.existsSync('/data') 
+                ? '/data/tmdb' 
+                : path.resolve(__dirname, '../../.cache/tmdb'));
             
-        this.moviesParquetPath = path.join(this.basePath, 'movies.parquet');
-        this.tvParquetPath = path.join(this.basePath, 'tv.parquet');
-        const configuredPath = process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
+        this.moviesParquetPath = opts.moviesParquetPath
+            || path.join(this.basePath, 'movies.parquet');
+        this.tvParquetPath = opts.tvParquetPath
+            || path.join(this.basePath, 'tv.parquet');
+        const configuredPath = opts.dbPath || process.env.DUCKDB_PATH || path.join(this.basePath, 'catalog.duckdb');
         if (configuredPath === ':memory:') {
             this.targetDbPath = ':memory:';
             this.stagingDbPath = ':memory:';
@@ -28,12 +35,12 @@ class DuckDbStore {
             this.dbPath = configuredPath;
         } else {
             this.targetDbPath = configuredPath;
-            this.stagingDbPath = process.env.DUCKDB_STAGING_PATH || `${configuredPath}.new`;
+            this.stagingDbPath = opts.stagingDbPath || process.env.DUCKDB_STAGING_PATH || `${configuredPath}.new`;
             this.dbPath = configuredPath;
         }
 
-        this.masterMoviesJsonlPath = path.join(this.basePath, 'master_movies.jsonl');
-        this.masterTvJsonlPath = path.join(this.basePath, 'master_tv.jsonl');
+        this.masterMoviesJsonlPath = opts.masterMoviesJsonlPath || path.join(this.basePath, 'master_movies.jsonl');
+        this.masterTvJsonlPath = opts.masterTvJsonlPath || path.join(this.basePath, 'master_tv.jsonl');
 
         // TMDB id → IMDb id letti dal dump: solo i risultati trovati (mai i "non trovato",
         // così un titolo promosso a Tier 1 dopo è visibile subito).
@@ -48,6 +55,7 @@ class DuckDbStore {
         this.activeQueries = 0;
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
+        this._lastItaMtimeMs = null;
     }
 
     getStagingDbPath() {
@@ -413,6 +421,9 @@ class DuckDbStore {
                 }
             } catch (_) {}
 
+            await this.syncItaAnnotationsLive({ ...options, skipFreshCheck: true })
+                .catch(e => console.warn('[DuckDB Store] Warning syncItaAnnotationsLive post-reopen:', e.message));
+
             await this.buildDfCache({ skipFreshCheck: true })
                 .catch(e => console.warn('[DuckDB Store] Warning buildDfCache post-reopen:', e.message));
         };
@@ -441,6 +452,7 @@ class DuckDbStore {
         const oldDb = this.db;
         this.con = null;
         this.db = null;
+        this._lastItaMtimeMs = null;
 
         await this._closeCon(oldCon);
         await this._closeDb(oldDb);
@@ -581,6 +593,9 @@ class DuckDbStore {
                 await this.updateAnimeMapping(idsByType).catch(e => console.error('[DuckDB Store] Errore updateAnimeMapping post-init:', e));
             }
 
+            await this.syncItaAnnotationsLive(options)
+                .catch(e => console.warn('[DuckDB Store] Warning syncItaAnnotationsLive post-init:', e.message));
+
             await this.buildDfCache().catch(e => console.warn('[DuckDB Store] Warning buildDfCache:', e.message));
         })();
 
@@ -673,6 +688,73 @@ class DuckDbStore {
                     resolve();
                 });
             });
+        } finally {
+            this.activeQueries--;
+            if (this.activeQueries === 0 && this._zeroActiveQueriesWaiters.length > 0) {
+                const waiters = this._zeroActiveQueriesWaiters.slice();
+                this._zeroActiveQueriesWaiters.length = 0;
+                for (const w of waiters) w();
+            }
+        }
+    }
+
+    async syncItaAnnotationsLive(options = {}) {
+        const itaAnnotations = require('../catalog/itaAnnotations');
+        const annPath = options?.annotationsPath || itaAnnotations.annotationsPath();
+        if (!annPath || !fs.existsSync(annPath)) return { synced: false, reason: 'missing_file' };
+
+        let stat;
+        try {
+            stat = fs.statSync(annPath);
+        } catch (_) {
+            return { synced: false, reason: 'stat_error' };
+        }
+
+        if (stat.size === 0) {
+            return { synced: false, reason: 'empty_file' };
+        }
+
+        if (!options?.force && this._lastItaMtimeMs === stat.mtimeMs) {
+            return { synced: false, reason: 'already_fresh' };
+        }
+
+        if (!this.con) return { synced: false, reason: 'no_connection' };
+
+        const sqlPath = `'${annPath.replace(/\\/g, '/').replace(/'/g, "''")}'`;
+        this.activeQueries++;
+        const t0 = Date.now();
+        try {
+            await this._exec(this.con, 'ALTER TABLE movies ADD COLUMN IF NOT EXISTS ita BOOLEAN DEFAULT false;');
+            await this._exec(this.con, 'ALTER TABLE tv ADD COLUMN IF NOT EXISTS ita BOOLEAN DEFAULT false;');
+
+            // ponytail: full-table UPDATE + CHECKPOINT su movies/tv (~500k righe) impiega decine di ms; se supera 500ms passare a UPDATE ... WHERE id IN (...)
+            const syncSql = `
+                CREATE OR REPLACE TEMP TABLE __ita_live AS
+                SELECT t, TRY_CAST(id AS BIGINT) AS id, ita
+                FROM read_json_auto(${sqlPath}, ignore_errors=true)
+                WHERE t IN ('movie', 'tv') AND TRY_CAST(id AS BIGINT) IS NOT NULL;
+
+                UPDATE movies SET ita = false WHERE ita IS DISTINCT FROM false;
+                UPDATE movies SET ita = __ita_live.ita
+                FROM __ita_live
+                WHERE __ita_live.t = 'movie' AND movies.id = __ita_live.id;
+
+                UPDATE tv SET ita = false WHERE ita IS DISTINCT FROM false;
+                UPDATE tv SET ita = __ita_live.ita
+                FROM __ita_live
+                WHERE __ita_live.t = 'tv' AND tv.id = __ita_live.id;
+
+                DROP TABLE __ita_live;
+                CHECKPOINT;
+            `;
+            await this._exec(this.con, syncSql);
+            const durationMs = Date.now() - t0;
+            this._lastItaMtimeMs = stat.mtimeMs;
+            console.log(`[DuckDB Store] Colonna ita riallineata a caldo da ita_annotations.jsonl (${durationMs}ms).`);
+            return { synced: true, mtimeMs: stat.mtimeMs, durationMs };
+        } catch (err) {
+            console.warn('[DuckDB Store] Warning syncItaAnnotationsLive:', err.message);
+            return { synced: false, reason: err.message };
         } finally {
             this.activeQueries--;
             if (this.activeQueries === 0 && this._zeroActiveQueriesWaiters.length > 0) {
@@ -975,6 +1057,7 @@ class DuckDbStore {
         this.activeQueries = 0;
         this.reopenPromise = null;
         this._zeroActiveQueriesWaiters = [];
+        this._lastItaMtimeMs = null;
         if (this.stagingDbPath && this.dbPath === this.stagingDbPath && this.targetDbPath) {
             this.dbPath = this.targetDbPath;
         }
@@ -986,6 +1069,7 @@ class DuckDbStore {
     }
 }
 
-// Esportiamo un'istanza singola (Singleton)
+// Esportiamo un'istanza singola (Singleton) con accesso alla classe
 const duckDbStore = new DuckDbStore();
+duckDbStore.DuckDbStore = DuckDbStore;
 module.exports = duckDbStore;
