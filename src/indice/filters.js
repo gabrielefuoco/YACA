@@ -58,6 +58,12 @@ const F = {
     notLang: (...codes) => codes.map(c => `"original_language" != '${c}'`).join(' AND '),
     country: (code) => jsonHasStr('production_countries', code),
     
+    // --- Doppiaggio Italiano (Ticket 06) ---
+    // strict = false (default): include true (doppiato certo) e null (omonimo ambiguo), esclude false.
+    // "ita" IS NOT FALSE in SQL valuta TRUE sia per TRUE che per NULL, mai toccando COALESCE.
+    // strict = true: include solo i doppiati certi ("ita" IS TRUE).
+    onlyIta: (strict = false) => (strict ? '"ita" IS TRUE' : '"ita" IS NOT FALSE'),
+    
     // --- Soglie ---
     minVotes: (n) => `"vote_count" >= ${n}`,
     maxVotes: (n) => `"vote_count" <= ${n}`,
