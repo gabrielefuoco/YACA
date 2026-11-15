@@ -50,7 +50,7 @@ const MAX_WRITE_ERRORS = 5;
 /** Stessa risoluzione di `tier2Index.defaultDataDir` / `tier1Promotion`: i dati stanno insieme. */
 function defaultDataDir() {
     if (process.env.TMDB_DUMP_DIR) return path.resolve(process.env.TMDB_DUMP_DIR);
-    if (fs.existsSync('/data')) return '/data/tmdb';
+    if (fs.existsSync('/data/tmdb')) return '/data/tmdb';
     return path.resolve(__dirname, '../../.cache/tmdb');
 }
 

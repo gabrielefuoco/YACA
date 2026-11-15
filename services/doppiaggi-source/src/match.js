@@ -67,6 +67,46 @@ function isStrictContainment(cardToks, recToks, dfFn) {
 }
 
 /**
+ * Disambigua fra candidati omonimi per anno.
+ * Priorità assoluta ad anno esatto; tolleranza ±1 anno ammessa solo se il tipo coincide,
+ * c'è un solo candidato a distanza 1 e nessun candidato a distanza 2-4 anni.
+ * @param {Array<object>} candidates 
+ * @param {number|null} agYear 
+ * @param {string} agType 
+ * @returns {{ hit: object, reason: string } | null}
+ */
+function resolveByYearWithMargin(candidates, agYear, agType) {
+    if (!Array.isArray(candidates) || candidates.length === 0 || agYear === null || agYear === undefined) {
+        return null;
+    }
+    const numYear = typeof agYear === 'number' ? agYear : parseInt(agYear, 10);
+    if (isNaN(numYear)) return null;
+
+    // 1. Anno esatto (priorità assoluta)
+    const exact = candidates.filter((c) => c.year === numYear);
+    if (exact.length === 1) return { hit: exact[0], reason: 'R2_exact_year' };
+    if (exact.length > 1) {
+        const exactByType = exact.filter((c) => c.type === agType);
+        if (exactByType.length === 1) return { hit: exactByType[0], reason: 'R2_exact_year_and_type' };
+        return null;
+    }
+
+    // 2. Tolleranza ±1 anno solo se il tipo coincide e non c'è nessun candidato a distanza 2-4 anni
+    if (!agType) return null;
+    const sameType = candidates.filter((c) => c.type === agType && typeof c.year === 'number' && !isNaN(c.year));
+    const near = sameType.filter((c) => Math.abs(c.year - numYear) === 1);
+    const othersNear = sameType.filter((c) => {
+        const dist = Math.abs(c.year - numYear);
+        return dist >= 2 && dist <= 4;
+    });
+
+    if (near.length === 1 && othersNear.length === 0) {
+        return { hit: near[0], reason: 'R2_year_margin_1yr' };
+    }
+    return null;
+}
+
+/**
  * Carica e normalizza i record di catalogo da file JSONL (stream per efficienza memoria).
  * @param {string} moviesPath 
  * @param {string} tvPath 
@@ -180,19 +220,12 @@ function matchCatalog(catalogRecords, agEntries) {
             let resolved = null;
             let reason = null;
 
-            // R2: L'anno esatto ne lascia uno solo (mai +-1)
+            // R2: Anno esatto o tolleranza ±1 con margine >= 5 anni rispetto agli altri omonimi dello stesso tipo
             if (ag.year !== null) {
-                const yearMatches = cands.filter((c) => c.year === ag.year);
-                if (yearMatches.length === 1) {
-                    resolved = yearMatches[0];
-                    reason = 'R2_exact_year';
-                } else if (yearMatches.length > 1) {
-                    // Se l'anno esatto ne lascia più d'uno, verifichiamo se la zona->tipo ne isola uno
-                    const yearTypeMatches = yearMatches.filter((c) => c.type === ag.type);
-                    if (yearTypeMatches.length === 1) {
-                        resolved = yearTypeMatches[0];
-                        reason = 'R2_exact_year_and_type';
-                    }
+                const yearRes = resolveByYearWithMargin(cands, ag.year, ag.type);
+                if (yearRes) {
+                    resolved = yearRes.hit;
+                    reason = yearRes.reason;
                 }
             }
 
@@ -307,6 +340,13 @@ function matchCatalog(catalogRecords, agEntries) {
         };
     }
 
+    const byReason = {};
+    for (const res of agResults) {
+        if (res.reason) {
+            byReason[res.reason] = (byReason[res.reason] || 0) + 1;
+        }
+    }
+
     return {
         catalogStats: {
             total: catalogRecords.length,
@@ -318,7 +358,8 @@ function matchCatalog(catalogRecords, agEntries) {
             totalExtracted: agEntries.length,
             matchedTrue: agMatchedTrue,
             ambiguousNull: agAmbiguousNull,
-            unmatchedZero: agUnmatchedZero
+            unmatchedZero: agUnmatchedZero,
+            byReason
         },
         annotations,
         agResults
@@ -329,6 +370,7 @@ module.exports = {
     STOPWORDS,
     extractTokens,
     isStrictContainment,
+    resolveByYearWithMargin,
     loadCatalogFromJsonl,
     matchCatalog
 };

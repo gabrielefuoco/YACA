@@ -72,6 +72,9 @@ function rowToEntry(row, itemType) {
     }
     const entry = { erdbId };
     if (row.ita === true) entry.badge = BADGE_ITA;
+    // Il token dell'immagine sorgente serve al prefill per calcolare lo stesso nome file
+    // che l'app calcola a runtime (ticket 08). Senza, il prefill scriverebbe orfani.
+    if (row.poster_path) entry.source = row.poster_path;
     return entry;
 }
 
@@ -106,14 +109,21 @@ async function hasItaColumn(con, parquetFile) {
     return columns.some((column) => column.column_name === 'ita');
 }
 
+/** `poster_path` c'e' in entrambi i parquet di produzione, ma non in tutte le fixture. */
+async function hasPosterPathColumn(con, parquetFile) {
+    const columns = await all(con, `DESCRIBE SELECT * FROM read_parquet(${toSqlPath(parquetFile)})`);
+    return columns.some((column) => column.column_name === 'poster_path');
+}
+
 /**
  * Proiezione minima: `id` e basta (piu' `ita` se la colonna esiste).
  * `ORDER BY id` rende la lista deterministica: due dump della stessa cartella
  * producono lo stesso file, quindi un diff tra due giri si legge.
  */
-function buildSelect(parquetFile, { withIta }) {
+function buildSelect(parquetFile, { withIta, withPoster = false }) {
     const columns = ['CAST(id AS BIGINT) AS id'];
     if (withIta) columns.push('CAST(ita AS BOOLEAN) AS ita');
+    if (withPoster) columns.push('CAST(poster_path AS VARCHAR) AS poster_path');
     return `SELECT ${columns.join(', ')}
             FROM read_parquet(${toSqlPath(parquetFile)})
             WHERE id IS NOT NULL
@@ -309,11 +319,12 @@ async function dump({ parquetDir = DEFAULT_PARQUET_DIR, out } = {}) {
         for (const source of SOURCES) {
             const parquetFile = path.join(resolvedDir, source.file);
             const withIta = await hasItaColumn(con, parquetFile);
+            const withPoster = await hasPosterPathColumn(con, parquetFile);
             if (!withIta) {
                 console.warn(`Attenzione: ${source.file} non ha la colonna "ita": in lista senza badge.`);
             }
 
-            for await (const row of con.stream(buildSelect(parquetFile, { withIta }))) {
+            for await (const row of con.stream(buildSelect(parquetFile, { withIta, withPoster }))) {
                 let entry;
                 try {
                     entry = rowToEntry(row, source.type);

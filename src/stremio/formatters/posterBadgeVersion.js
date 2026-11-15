@@ -24,30 +24,36 @@ function calcolaVersioneDisegno() {
 const BADGE_IMG_VERSION = calcolaVersioneDisegno();
 
 /**
- * Versione del poster composto specifico: dipende dal disegno (BADGE_IMG_VERSION),
- * dall'identificatore del titolo (id ERDB) e dal badge testuale.
- *
- * NON dipende dall'immagine sorgente, e non e' una dimenticanza: la sorgente e' un
- * URL che solo l'app conosce (il poster dell'item), mentre il nome del file lo devono
- * saper calcolare **entrambi i lati** — l'app e il dump offline di `scripts/erdb-builder`.
- * Se la versione dipendesse dalla sorgente, il dump produrrebbe nomi che l'app non
- * chiede, e la precomposizione dei poster con badge sarebbe lavoro sprecato.
- *
- * Cosa non copre, di conseguenza: un cambio del poster **alla sorgente** a parita' di
- * `erdbId` e badge non invalida il composto. E' lo stesso comportamento dei poster nudi
- * (che non hanno versione affatto), quindi il sistema e' coerente con se stesso.
+ * Estrae il token immutabile dell'immagine sorgente (es. "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg" -> "f89U3ADr1oiB1s9GkdPOEpXUk5H")
+ * così variazioni di dominio o dimensione (w342 vs w500) producono lo stesso identico hash.
  */
-function calcolaVersionePoster({ erdbId, badge } = {}) {
+function estraiTokenSorgente(source) {
+    if (!source || typeof source !== 'string') return '';
+    const clean = source.split('?')[0].trim().replace(/\\/g, '/');
+    const base = path.posix.basename(clean).replace(/\.(jpg|jpeg|webp|png)$/i, '');
+    return /^[A-Za-z0-9_-]{6,}$/.test(base) ? base : '';
+}
+
+/**
+ * Versione del poster composto specifico: dipende dal disegno (BADGE_IMG_VERSION),
+ * dall'identificatore del titolo (id ERDB), dal badge testuale, e dal token canonico
+ * dell'immagine sorgente se disponibile.
+ * Se source non è disponibile (o non produce un token valido), l'hash resta identico a prima.
+ */
+function calcolaVersionePoster({ erdbId, badge, source } = {}) {
+    const token = estraiTokenSorgente(source);
+    const payload = token
+        ? `${BADGE_IMG_VERSION}|${erdbId || ''}|${badge || ''}|${token}`
+        : `${BADGE_IMG_VERSION}|${erdbId || ''}|${badge || ''}`;
     return crypto.createHash('sha1')
-        .update(`${BADGE_IMG_VERSION}|${erdbId || ''}|${badge || ''}`)
+        .update(payload)
         .digest('hex')
         .slice(0, 8);
 }
 
 module.exports = {
     BADGE_IMG_VERSION,
+    estraiTokenSorgente,
     calcolaVersionePoster,
     calcolaVersioneDisegno
 };
-
-

@@ -1,8 +1,10 @@
 const axios = require('axios');
 const zlib = require('zlib');
 const readline = require('readline');
-const { shouldKeepTmdbRecord } = require('./tmdbIngestPolicy');
+const { shouldKeepTmdbRecord, loadItaDubbedIds } = require('./tmdbIngestPolicy');
 const { tmdbBudget, TMDB_CATEGORIES } = require('../../src/clients/tmdbBudget');
+
+const POPULARITY_THRESHOLD = 1.0;
 
 const TMDB_GENRES_EN_MAP = {
     28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
@@ -293,13 +295,14 @@ class TmdbDumpClient {
         if (res.status !== 'ok' || !res.data) return { status: res.status, row: null };
         if (res.data.adult === true) return { status: 'adult_filtered', row: null };
 
-        const keep = await shouldKeepTmdbRecord(res.data.id, res.data.vote_count, {
+        const policyOpts = {
             ...options,
             originalLanguage: res.data.original_language
-        });
+        };
+        const keep = await shouldKeepTmdbRecord(res.data.id, res.data.vote_count, policyOpts);
         if (!keep) return { status: 'filtered_vote_floor', row: null };
 
-        return { status: 'ok', row: buildMovieRow(res.data) };
+        return { status: 'ok', row: buildMovieRow(res.data), keepReason: policyOpts.keepReason };
     }
 
     async fetchTvOutcome(id, options = {}) {
@@ -313,13 +316,14 @@ class TmdbDumpClient {
         if (res.status !== 'ok' || !res.data) return { status: res.status, row: null };
         if (res.data.adult === true) return { status: 'adult_filtered', row: null };
 
-        const keep = await shouldKeepTmdbRecord(res.data.id, res.data.vote_count, {
+        const policyOpts = {
             ...options,
             originalLanguage: res.data.original_language
-        });
+        };
+        const keep = await shouldKeepTmdbRecord(res.data.id, res.data.vote_count, policyOpts);
         if (!keep) return { status: 'filtered_vote_floor', row: null };
 
-        return { status: 'ok', row: buildTvRow(res.data) };
+        return { status: 'ok', row: buildTvRow(res.data), keepReason: policyOpts.keepReason };
     }
 
     async fetchMovie(id, options = {}) {
@@ -345,8 +349,8 @@ class TmdbDumpClient {
         return (res && res.status === 'ok' && res.data) ? res.data : { results: [], total_pages: 1 };
     }
 
-    async downloadDailyExport(mediaType) {
-        const typeStr = mediaType === 'movies' ? 'movie_ids' : 'tv_series_ids';
+    async downloadDailyExport(mediaType, options = {}) {
+        const typeStr = (mediaType === 'movies' || mediaType === 'movie') ? 'movie_ids' : 'tv_series_ids';
         
         for (let daysAgo = 0; daysAgo < 3; daysAgo++) {
             const dt = new Date();
@@ -373,24 +377,10 @@ class TmdbDumpClient {
                 
                 console.log(`[TmdbDumpClient] Found daily export for ${mediaType} on ${dateStr}`);
                 
-                const validIds = [];
                 const gunzip = zlib.createGunzip();
-                const rl = readline.createInterface({
-                    input: res.data.pipe(gunzip),
-                    crlfDelay: Infinity
-                });
-                
-                for await (const line of rl) {
-                    if (!line.trim()) continue;
-                    try {
-                        const m = JSON.parse(line);
-                        // Filtro pre-fetch: popularity >= 1.0 (adult solo x movies)
-                        if (m.popularity >= 1.0 && m.adult !== true) {
-                            validIds.push(m.id);
-                        }
-                    } catch (e) {}
-                }
-                
+                const { validIds, counters } = await filterDailyExportStream(res.data.pipe(gunzip), mediaType, options);
+                console.log(`[TmdbDumpClient] Daily export for ${mediaType}: ${validIds.length} IDs kept (threshold=${counters.threshold}, dubbed_inclusion=${counters.dubbed_inclusion})`);
+
                 // Aggiorniamo la cache 
                 if (this.dailyExportCache.dateStr !== dateStr) {
                     this.dailyExportCache = { dateStr, movies: null, tv: null };
@@ -410,6 +400,55 @@ class TmdbDumpClient {
     }
 }
 
+// ponytail: ceiling — single popularity threshold (1.0) for movies and TV, with in-memory Set for dubbed IDs; titles below 1.0 without ita annotation are dropped at export level
+async function filterDailyExportStream(stream, mediaType, options = {}) {
+    const dubbedSet = (options && options.itaDubbedIds instanceof Set)
+        ? options.itaDubbedIds
+        : (options instanceof Set ? options : await loadItaDubbedIds(mediaType));
+
+    const validIds = [];
+    const rl = readline.createInterface({
+        input: stream,
+        crlfDelay: Infinity
+    });
+
+    let countThreshold = 0;
+    let countDubbed = 0;
+
+    for await (const line of rl) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+            const m = JSON.parse(trimmed);
+            if (m.adult === true) continue;
+            const id = Number(m.id);
+            if (!Number.isFinite(id) || id <= 0) continue;
+
+            const isDubbed = dubbedSet.has(id);
+            const passesThreshold = typeof m.popularity === 'number' && m.popularity >= POPULARITY_THRESHOLD;
+
+            if (passesThreshold || isDubbed) {
+                validIds.push(id);
+                if (passesThreshold) {
+                    countThreshold++;
+                } else {
+                    countDubbed++;
+                }
+            }
+        } catch (_) {}
+    }
+
+    return {
+        validIds,
+        counters: {
+            threshold: countThreshold,
+            dubbed_inclusion: countDubbed
+        }
+    };
+}
+
+TmdbDumpClient.POPULARITY_THRESHOLD = POPULARITY_THRESHOLD;
+TmdbDumpClient.filterDailyExportStream = filterDailyExportStream;
 TmdbDumpClient.buildMovieRow = buildMovieRow;
 TmdbDumpClient.buildTvRow = buildTvRow;
 

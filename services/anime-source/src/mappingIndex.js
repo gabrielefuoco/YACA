@@ -32,7 +32,7 @@ function resolveMappingIndexPath(customPath, cacheDir) {
     if (customPath) return customPath;
     if (process.env.ANIME_MAPPINGS_PATH) return process.env.ANIME_MAPPINGS_PATH;
     if (process.env.ANIME_MAPPING_PATH) return process.env.ANIME_MAPPING_PATH;
-    const baseDir = cacheDir || (fs.existsSync('/data') ? '/data/tmdb' : path.join(__dirname, '../.cache'));
+    const baseDir = cacheDir || (fs.existsSync('/data/tmdb') ? '/data/tmdb' : path.join(__dirname, '../.cache'));
     return path.join(baseDir, DEFAULT_FILENAME);
 }
 

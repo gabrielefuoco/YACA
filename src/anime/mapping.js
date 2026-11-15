@@ -32,7 +32,7 @@ const CACHE_TTL_MS = 60 * 1000;
 function mappingDir() {
     if (process.env.ANIME_MAPPING_DIR) return process.env.ANIME_MAPPING_DIR;
     if (process.env.TMDB_DUMP_DIR) return process.env.TMDB_DUMP_DIR;
-    if (fs.existsSync('/data')) return '/data/tmdb';
+    if (fs.existsSync('/data/tmdb')) return '/data/tmdb';
     return path.resolve(__dirname, '../../.cache/tmdb');
 }
 

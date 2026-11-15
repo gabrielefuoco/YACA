@@ -13,7 +13,7 @@ function toSqlPath(filePath) {
 }
 
 function defaultDataDir() {
-    if (fs.existsSync('/data')) return '/data/tmdb';
+    if (fs.existsSync('/data/tmdb')) return '/data/tmdb';
     return path.resolve(__dirname, '../.cache/tmdb');
 }
 

@@ -7,6 +7,7 @@ const { normalizeAnimeMarker } = require('../../anime');
 // (scripts/erdb-builder/build.js) ed è la stessa che chiede la rotta `/erdb-poster/:file`.
 // Un nome inventato qui produrrebbe file che la rotta non troverebbe mai: poster invisibile, zero errori.
 const { posterFileName } = require('../../posters/erdb/build');
+const { leggiToken } = require('../../posters/sorgenti');
 // Unica fonte di verità sulla cartella dei poster: la stessa che serve la rotta statica e
 // in cui scrive il drenatore. Se le due divergessero, nessun file sarebbe mai servito.
 const { getCacheDir } = require('../../api/staticPosters');
@@ -173,7 +174,8 @@ function urlPosterInCache(hostUrl, erdbId, badge) {
 
     let nomeFile;
     try {
-        nomeFile = posterFileName({ erdbId, badge });
+        const source = leggiToken(erdbId, getCacheDir()) || null;
+        nomeFile = posterFileName({ erdbId, badge, source });
     } catch {
         return null; // erdbId non utilizzabile: nessun nome, nessun file
     }
@@ -205,7 +207,7 @@ function urlPosterComposto(hostUrl, { erdbId, badge, source, tlBadge } = {}) {
     // divergere (un nome scritto a mano qui sarebbe la ricaduta del ticket 30).
     let nomeFile;
     try {
-        nomeFile = posterFileName({ erdbId, badge: badge || null });
+        nomeFile = posterFileName({ erdbId, badge: badge || null, source });
     } catch {
         return null;
     }

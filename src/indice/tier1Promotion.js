@@ -96,7 +96,7 @@ function defaultDataDir() {
     // Stessa convenzione di tier2Index.defaultDataDir / TmdbDumpStore (che non vogliamo richiedere
     // qui: tirerebbe dentro duckdb e better-sqlite3 per un modulo che scrive una riga).
     if (process.env.TMDB_DUMP_DIR) return path.resolve(process.env.TMDB_DUMP_DIR);
-    if (fs.existsSync('/data')) return '/data/tmdb';
+    if (fs.existsSync('/data/tmdb')) return '/data/tmdb';
     return path.resolve(__dirname, '../../.cache/tmdb');
 }
 

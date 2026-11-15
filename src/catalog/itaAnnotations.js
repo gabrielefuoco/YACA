@@ -34,7 +34,7 @@ const FILE_NAME = 'ita_annotations.jsonl';
 function annotationsDir() {
     if (process.env.ITA_ANNOTATIONS_DIR) return process.env.ITA_ANNOTATIONS_DIR;
     if (process.env.TMDB_DUMP_DIR) return process.env.TMDB_DUMP_DIR;
-    if (fs.existsSync('/data')) return '/data/tmdb';
+    if (fs.existsSync('/data/tmdb')) return '/data/tmdb';
     return path.resolve(__dirname, '../../.cache/tmdb');
 }
 

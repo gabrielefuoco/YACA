@@ -1,0 +1,13 @@
+[Unit]
+Description=Timer giornaliero alle 05:00 per il Garbage Collector del volume poster
+Documentation=file:///srv/yaca/docs/TIMER_POSTER.md
+
+[Timer]
+# Una volta al giorno alle 05:00 del mattino
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+# Jitter per evitare sincronizzazioni al secondo esatto con altri task notturni
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

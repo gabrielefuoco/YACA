@@ -19,6 +19,7 @@
  */
 
 const { posterFileName, posterUrl } = require('./erdb/build');
+const { leggiToken } = require('./sorgenti');
 
 // I soli `tipo` che la coda puo' contenere: 'tv' e tutto il resto? No, solo questi due.
 // Qualunque altro valore e' un evento malformato e deve farsi sentire (vedi `erdbIdDaEvento`).
@@ -123,8 +124,11 @@ function erdbIdDaEvento({ tipo, id } = {}) {
  * @param {{tipo: string, id: string|number, badge?: string}} evento
  * @returns {string}
  */
-function nomeFileDaEvento({ tipo, id, badge } = {}) {
-    return posterFileName({ erdbId: erdbIdDaEvento({ tipo, id }), badge });
+function nomeFileDaEvento({ tipo, id, badge } = {}, opzioni = {}) {
+    const erdbId = erdbIdDaEvento({ tipo, id });
+    const cacheDir = typeof opzioni === 'string' ? opzioni : opzioni.cacheDir;
+    const source = (typeof opzioni === 'object' && opzioni.source) || leggiToken(erdbId, cacheDir) || null;
+    return posterFileName({ erdbId, badge, source });
 }
 
 /**

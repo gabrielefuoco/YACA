@@ -304,7 +304,7 @@ async function drena({
             for (const id of ids) {
                 erdbId = id;
                 const { tipo, id: idErdb, badge } = eventoDaErdbId(id, evento);
-                const file = nomeFileDaEvento({ tipo, id: idErdb, badge });
+                const file = nomeFileDaEvento({ tipo, id: idErdb, badge }, { cacheDir: outDir });
                 const url = urlDaEvento(base, { tipo, id: idErdb, badge });
                 const buffer = await scarica(url, { fetchImpl, timeoutMs });
                 await scrivi(path.join(outDir, file), buffer);
