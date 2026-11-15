@@ -181,6 +181,7 @@ async function coldStart(store, client) {
                     progress: actualIndex
                 });
 
+                // ponytail: cold start keeps using fetchMovie/fetchTv to avoid overhead/diff churn, discard reasons are logged in dailySync only
                 const rows = await Promise.all(slice.map(id =>
                     mediaType === 'movies' ? client.fetchMovie(id, { trackedIds }) : client.fetchTv(id, { trackedIds })
                 ));
@@ -239,102 +240,129 @@ async function coldStart(store, client) {
     console.log('[TmdbDump] Cold Start FULLY COMPLETED.');
 }
 
-async function dailySync(store, client) {
+async function dailySync(store, client, options = {}) {
     updateStatus(store, { phase: 'daily-sync', currentTask: 'Starting Daily Sync...' }, true);
     console.log('[TmdbDump] Starting Daily Sync...');
 
-    const mediaTypes = ['movies', 'tv'];
-    
-    for (const mediaType of mediaTypes) {
-        updateStatus(store, { currentTask: `Fetching Changes for ${mediaType}` }, true);
-        const changedIds = new Set();
-        
-        // Pagina API Changes
-        let page = 1;
-        let totalPages = 1;
-        const tmdbType = mediaType === 'movies' ? 'movie' : 'tv';
+    const wasRunning = daemonRunning;
+    daemonRunning = true;
 
-        while (page <= totalPages) {
-            const data = await client.fetchChanges(tmdbType, page);
-            for (const res of (data.results || [])) {
-                changedIds.add(res.id);
-            }
-            totalPages = Math.min(data.total_pages || 1, 50);
-            page++;
-            await sleep(285); // Rate limit anche per le pagine changes
-        }
-
-        console.log(`[TmdbDump] Found ${changedIds.size} changed IDs for ${mediaType}`);
-
-        // Cross-reference con il DB locale (solo colonna ID)
-        const localIds = await store.loadIds(mediaType);
-        const trackedIds = await loadTrackedAiringIds();
-        
-        // Scarica Daily Export per filtrare nuovi ID per popolarità
-        updateStatus(store, { currentTask: `Downloading Daily Export for ${mediaType}` }, true);
-        const popularIds = await client.downloadDailyExport(mediaType);
-        const popularSet = new Set(popularIds);
-
-        const idsToFetch = [];
-        for (const id of changedIds) {
-            if (localIds.has(id) || popularSet.has(id) || isTrackedAiringId(id, trackedIds)) {
-                idsToFetch.push(id);
-            }
-        }
-
-        console.log(`[TmdbDump] ${idsToFetch.length} relevant changes to fetch for ${mediaType}`);
-        updateStatus(store, { total: idsToFetch.length, progress: 0 }, true);
-
-        const toUpsert = [];
-        const toDelete = [];
-
-        for (let i = 0; i < idsToFetch.length; i++) {
-            if (!daemonRunning) break;
-            
-            const id = idsToFetch[i];
-            updateStatus(store, {
-                progress: i + 1,
-                currentTask: `Syncing ${mediaType} ${id} (${i+1}/${idsToFetch.length})`
-            });
-
-            try {
-                const row = mediaType === 'movies' 
-                    ? await client.fetchMovie(id, { trackedIds }) 
-                    : await client.fetchTv(id, { trackedIds });
-                    
-                if (row) {
-                    toUpsert.push(row);
-                } else if (localIds.has(id)) {
-                    // Era nel DB ma ora è 404 o sotto soglia → rimuovi SOLO se non è tracciato da anime_airing_state
-                    if (!isTrackedAiringId(id, trackedIds)) {
-                        toDelete.push(id);
-                    }
-                }
-            } catch (err) {
-                console.error(`[TmdbDump] Failed to sync ${id}:`, err.message);
-            }
-
-            await sleep(285); // Rate limit
-        }
-
-        // Applica le modifiche al file JSONL
-        updateStatus(store, { currentTask: `Writing changes to disk for ${mediaType}` }, true);
-        console.log(`[TmdbDump] Disk Apply: ${toUpsert.length} upserts, ${toDelete.length} deletes for ${mediaType}`);
-        
-        if (toUpsert.length > 0) await store.upsert(toUpsert, mediaType);
-        if (toDelete.length > 0) await store.deleteIds(toDelete, mediaType);
-
-        const finalCount = await store.countLines(mediaType);
-        updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
-    }
-
-    console.log('[TmdbDump] Daily Sync COMPLETED. Triggering Parquet rebuild...');
     try {
-        await convertAndReloadDuckDb(store);
-    } catch (err) {
-        console.error('[TmdbDump] Error rebuilding Parquet after Daily Sync:', err);
+        const mediaTypes = ['movies', 'tv'];
+        
+        for (const mediaType of mediaTypes) {
+            updateStatus(store, { currentTask: `Fetching Changes for ${mediaType}` }, true);
+            const changedIds = new Set();
+            
+            // Pagina API Changes
+            let page = 1;
+            let totalPages = 1;
+            const tmdbType = mediaType === 'movies' ? 'movie' : 'tv';
+
+            while (page <= totalPages) {
+                const data = await client.fetchChanges(tmdbType, page);
+                for (const res of (data.results || [])) {
+                    changedIds.add(res.id);
+                }
+                totalPages = Math.min(data.total_pages || 1, 50);
+                page++;
+                const changeDelay = options.delayMs ?? 285;
+                if (changeDelay > 0) await sleep(changeDelay);
+            }
+
+            console.log(`[TmdbDump] Found ${changedIds.size} changed IDs for ${mediaType}`);
+
+            // Cross-reference con il DB locale (solo colonna ID)
+            const localIds = await store.loadIds(mediaType);
+            const trackedIds = await loadTrackedAiringIds();
+            
+            // Scarica Daily Export per filtrare nuovi ID per popolarità
+            updateStatus(store, { currentTask: `Downloading Daily Export for ${mediaType}` }, true);
+            const popularIds = await client.downloadDailyExport(mediaType);
+            const popularSet = new Set(popularIds);
+
+            const idsToFetch = [];
+            for (const id of changedIds) {
+                if (localIds.has(id) || popularSet.has(id) || isTrackedAiringId(id, trackedIds)) {
+                    idsToFetch.push(id);
+                }
+            }
+
+            console.log(`[TmdbDump] ${idsToFetch.length} relevant changes to fetch for ${mediaType}`);
+            updateStatus(store, { total: idsToFetch.length, progress: 0 }, true);
+
+            const toUpsert = [];
+            const toDelete = [];
+            const counters = {
+                not_found: 0,
+                errore: 0,
+                filtered: 0
+            };
+
+            for (let i = 0; i < idsToFetch.length; i++) {
+                if (!daemonRunning) break;
+                
+                const id = idsToFetch[i];
+                updateStatus(store, {
+                    progress: i + 1,
+                    currentTask: `Syncing ${mediaType} ${id} (${i+1}/${idsToFetch.length})`
+                });
+
+                try {
+                    const outcome = mediaType === 'movies' 
+                        ? await client.fetchMovieOutcome(id, { trackedIds }) 
+                        : await client.fetchTvOutcome(id, { trackedIds });
+                        
+                    if (outcome.status === 'ok' && outcome.row) {
+                        toUpsert.push(outcome.row);
+                    } else {
+                        if (outcome.status === 'not_found') {
+                            counters.not_found++;
+                        } else if (outcome.status === 'errore') {
+                            counters.errore++;
+                        } else if (outcome.status === 'adult_filtered' || outcome.status === 'filtered_vote_floor') {
+                            counters.filtered++;
+                        }
+
+                        if (localIds.has(id) && (outcome.status === 'not_found' || outcome.status === 'adult_filtered')) {
+                            // Cancella SOLO se è un vero 404 su TMDB o marcato adulto, mai se errore o oscillazione voti!
+                            if (!isTrackedAiringId(id, trackedIds)) {
+                                toDelete.push(id);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    counters.errore++;
+                    console.error(`[TmdbDump] Failed to sync ${id}:`, err.message);
+                }
+
+                const delayMs = options.delayMs ?? 285;
+                if (delayMs > 0) await sleep(delayMs);
+            }
+
+            // Applica le modifiche al file JSONL
+            updateStatus(store, { currentTask: `Writing changes to disk for ${mediaType}` }, true);
+            console.log(`[TmdbDump] Disk Apply: ${toUpsert.length} upserts, ${toDelete.length} deletes for ${mediaType} (not_found=${counters.not_found}, errore=${counters.errore}, filtered=${counters.filtered})`);
+            
+            if (toUpsert.length > 0) await store.upsert(toUpsert, mediaType);
+            if (toDelete.length > 0) await store.deleteIds(toDelete, mediaType);
+
+            const finalCount = await store.countLines(mediaType);
+            updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
+        }
+
+        if (!options.skipParquetRebuild) {
+            console.log('[TmdbDump] Daily Sync COMPLETED. Triggering Parquet rebuild...');
+            try {
+                await convertAndReloadDuckDb(store);
+            } catch (err) {
+                console.error('[TmdbDump] Error rebuilding Parquet after Daily Sync:', err);
+            }
+        }
+        updateStatus(store, { lastSync: new Date().toISOString() }, true);
+    } finally {
+        if (!wasRunning) daemonRunning = false;
     }
-    updateStatus(store, { lastSync: new Date().toISOString() }, true);
 }
 
 function stopDaemon() {
@@ -346,15 +374,16 @@ function stopDaemon() {
     } catch (_) {}
 }
 
-async function runTmdbDumpDaemon(options = {}) {
+async function runTmdbDumpDaemon(options = {}, client = null) {
     const once = Boolean(options.once);
     const intervalMs = options.intervalMs || (60 * 60 * 1000); // 1 ora di default
 
     if (daemonRunning) return;
     
-    const store = new TmdbDumpStore();
+    const store = options.store || new TmdbDumpStore();
+    const tmdbClient = client || options.client || (apiKey ? new TmdbDumpClient(apiKey) : null);
 
-    if (!apiKey) {
+    if (!apiKey && !tmdbClient) {
         console.error('[TmdbDump] TMDB_API_KEY non definita in .env. Il demone non partirà.');
         updateStatus(store, { error: 'Missing TMDB_API_KEY', phase: 'error', isRunning: false }, true);
         return;
@@ -364,11 +393,10 @@ async function runTmdbDumpDaemon(options = {}) {
     updateStatus(store, { isRunning: true, error: null, phase: 'starting' }, true);
 
     try {
-        const client = new TmdbDumpClient(apiKey);
         const indice = require('../../src/indice');
         
         // Conversione al boot: se i parquet esistono e sono freschi, salta convert_to_parquet.js
-        if (isFirstRun) {
+        if (isFirstRun && !options.skipParquetRebuild) {
             const parquetFresh = isParquetFresh(store, indice);
             if (!parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                 console.log('[TmdbDump] Pre-existing JSONL detected. Parquet missing or stale: running boot conversion...');
@@ -401,13 +429,15 @@ async function runTmdbDumpDaemon(options = {}) {
         const allCompleted = cursor?.completed?.movies && cursor?.completed?.tv;
 
         if (!moviesExist || !tvExist || !allCompleted) {
-            await coldStart(store, client);
+            await coldStart(store, tmdbClient);
         } else {
-            await dailySync(store, client);
+            await dailySync(store, tmdbClient, options);
         }
         
         // Conversione DuckDB e Hot-Reload (Eseguito sempre alla fine del sync)
-        await convertAndReloadDuckDb(store);
+        if (!options.skipParquetRebuild) {
+            await convertAndReloadDuckDb(store);
+        }
         
         updateStatus(store, {
             phase: 'idle',
@@ -496,5 +526,6 @@ if (require.main === module) {
 module.exports = { 
     runTmdbDumpDaemon,
     stopDaemon,
-    getDumpStatus: () => (new TmdbDumpStore()).loadStatus()
+    getDumpStatus: () => (new TmdbDumpStore()).loadStatus(),
+    dailySync
 };
