@@ -123,6 +123,40 @@ def test_senza_scarti_nessuna_diagnostica(warnok_seeds):
     assert "diagnostica" not in res
 
 
+def test_filtro_anime_only_toglie_i_non_anime(warnok_seeds):
+    """`opzioni.filtri.anime` deve arrivare al servizio e agire sui TITOLI.
+
+    Il difetto che questo test chiude: in modalità Anime il client mandava `only` e il servizio
+    leggeva solo `filtri.kids`, quindi uscivano scaffali di film live-action («Perché hai visto
+    Oppenheimer») con venti titoli su venti non anime.
+    """
+    status, res = servizio.esegui_scaffali(
+        {"semi": warnok_seeds, "n": 8, "opzioni": {"filtri": {"anime": "only"}}}
+    )
+    assert status == 200
+    for scaffale in res["scaffali"]:
+        assert scaffale["titoli"], "uno scaffale senza titoli non va dichiarato"
+        for t in scaffale["titoli"]:
+            assert t["anime"] is True, f"{t['key']} non è anime ma è stato servito con filtro only"
+
+
+def test_filtro_anime_exclude_toglie_gli_anime(warnok_seeds):
+    status, res = servizio.esegui_scaffali(
+        {"semi": warnok_seeds, "n": 8, "opzioni": {"filtri": {"anime": "exclude"}}}
+    )
+    assert status == 200
+    for scaffale in res["scaffali"]:
+        for t in scaffale["titoli"]:
+            assert t["anime"] is False, f"{t['key']} è anime ma è stato servito con filtro exclude"
+
+
+def test_filtro_anime_assente_non_tocca_niente(warnok_seeds):
+    """Senza filtro la risposta resta quella di sempre: il filtro non deve cambiare il caso normale."""
+    status, res = servizio.esegui_scaffali({"semi": warnok_seeds, "n": 8})
+    assert status == 200
+    assert len(res["scaffali"]) == 16
+
+
 # ------------------------------------------------------------------------------
 # 2. Semi vuoti -> 200 con lista vuota
 # ------------------------------------------------------------------------------

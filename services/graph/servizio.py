@@ -711,7 +711,10 @@ def esegui_scaffali(
         return 503, {"ok": False, "errore": MSG_ERR_ASSI}
 
     kids = _estrai_kids_param(dati, opzioni_scaffali)
+    # Il filtro anime viaggia in `opzioni.filtri` (è lì che il pool lo mette), non in `dati`.
     anime_raw = dati.get("anime")
+    if anime_raw is None and isinstance(opzioni_scaffali, dict) and isinstance(opzioni_scaffali.get("filtri"), dict):
+        anime_raw = opzioni_scaffali["filtri"].get("anime")
     if anime_raw is None and isinstance(dati.get("filtri"), dict):
         anime_raw = dati["filtri"].get("anime")
     filtro_anime = None
