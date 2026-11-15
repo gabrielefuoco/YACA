@@ -99,19 +99,32 @@ async function enrichWatchlistItemsWithTmdbMetadata(items) {
         const tmdbId = positiveTmdbId(item.tmdbId);
         if (!tmdbId) return item;
 
+        const inFilm = metadataByTable.get('movies').get(tmdbId);
+        const inSerie = metadataByTable.get('tv').get(tmdbId);
         let metadata;
+        // Il tipo che va a Stremio. `anime` NON è un tipo Stremio: dichiararlo faceva ricadere
+        // l'apertura su `movie`, e con lo stesso id numerico in entrambe le tabelle si apriva
+        // un'altra opera — «I dodici regni» (tv 42729) mostrava «Sherlock Holmes: Notti di
+        // terrore» (movie 42729). Il tipo lo decide il medium: prima la serie, poi il film, e
+        // quando esistono entrambi vince quello il cui titolo combacia con quello salvato.
+        let tipo = item.type;
         if (item.type === 'movie') {
-            metadata = metadataByTable.get('movies').get(tmdbId);
+            metadata = inFilm;
         } else if (item.type === 'series') {
-            metadata = metadataByTable.get('tv').get(tmdbId);
+            metadata = inSerie;
         } else {
-            metadata = metadataByTable.get('movies').get(tmdbId)
-                || metadataByTable.get('tv').get(tmdbId);
+            const nome = String(item.name || '').trim().toLowerCase();
+            const combacia = (m) => Boolean(m && nome && String(m.name || '').trim().toLowerCase() === nome);
+            if (inSerie && inFilm) metadata = combacia(inFilm) && !combacia(inSerie) ? inFilm : inSerie;
+            else metadata = inSerie || inFilm;
+            tipo = metadata === inFilm && !inSerie ? 'movie' : 'series';
         }
-        if (!metadata) return item;
+        if (tipo !== 'movie' && tipo !== 'series') tipo = 'series';
+        if (!metadata) return { ...item, type: tipo };
 
         return {
             ...item,
+            type: tipo,
             genres: metadata.genres,
             genre_ids: metadata.genre_ids,
             keywords: metadata.keywords,

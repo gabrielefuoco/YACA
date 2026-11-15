@@ -19,7 +19,10 @@ const searchExtra = [{ name: 'search', isRequired: true }];
 const WATCHLIST_CATALOGS = Object.freeze([
     Object.freeze({ id: 'yaca_watchlist_movies', type: 'movie', name: '🎬 I Film della tua Watchlist', extra: defaultExtra }),
     Object.freeze({ id: 'yaca_watchlist_series', type: 'series', name: '📺 Le Serie della tua Watchlist', extra: defaultExtra }),
-    Object.freeze({ id: 'yaca_watchlist_anime', type: 'anime', name: '🎌 Gli Anime della tua Watchlist', extra: defaultExtra })
+    // `type: 'anime'` non esiste in Stremio: la riga veniva servita, ma aprendo un suo titolo
+    // Stremio ricadeva su `movie` e — con lo stesso id nelle due tabelle TMDB — apriva un'altra
+    // opera. Il tipo è il medium; l'anime resta un'etichetta, non un tipo di catalogo.
+    Object.freeze({ id: 'yaca_watchlist_anime', type: 'series', name: '🎌 Gli Anime della tua Watchlist', extra: defaultExtra })
 ]);
 
 let canonicalPresetsMap = null;

@@ -60,7 +60,7 @@
     ],
     "customCatalogs": []
   },
-  "fingerprint": "110ffe855e17ec3cde2125435c3bf48e5e67632a222d7bafcea3baa4b8b2a31f",
+  "fingerprint": "a566d42210d024e038c98fa030b8b88421cb9cce3f97606b2e75911097ef2768",
   "manifest": {
     "id": "org.stremio.yaca.catalog",
     "version": "1.0.4",
@@ -144,7 +144,7 @@
       },
       {
         "id": "yaca_watchlist_anime",
-        "type": "anime",
+        "type": "series",
         "name": "🎌 Gli Anime della tua Watchlist",
         "extra": [
           {
@@ -184,5 +184,6 @@
     },
     "contactEmail": "yaca.addon@proton.me",
     "configurationURL": "http://localhost:7000/characterisation-user/configure"
-  }
+  },
+  "_nota": "Baseline ri-congelata l'11/11/2026: yaca_watchlist_anime dichiarava type \"anime\", che non è un tipo Stremio. Aprendo un titolo, Stremio ricadeva su movie e con lo stesso id numerico in movies e tv apriva un'altra opera (I dodici regni tv:42729 -> Sherlock Holmes movie:42729). Il tipo è ora il medium (series); l'anime resta un'etichetta. Nessun altro campo del manifest è cambiato."
 }
