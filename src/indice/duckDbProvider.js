@@ -36,6 +36,11 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
         where.push(`NOT (${F.animeOf(animeTipo)})`);
     }
 
+    if (q.onlyIta || q.isDubbed || options?.onlyIta) {
+        const strictIta = q.strictIta === true || options?.strictIta === true;
+        where.push(F.onlyIta(strictIta));
+    }
+
     if (q.permissive_recent && q['vote_count.gte']) {
         const standardFloor = q['vote_count.gte'];
         const recentFloor = typeof q.recent_vote_floor === 'number' ? q.recent_vote_floor : 0;
