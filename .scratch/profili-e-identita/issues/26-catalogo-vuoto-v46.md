@@ -117,3 +117,33 @@ Due cause, entrambe vere e entrambe corrette:
 2. il pool dichiarava scaffali che la sua assegnazione **esclusiva** lasciava vuoti (ora si dichiarano solo quelli con almeno un titolo, e gli omessi si contano nei log).
 
 Verificato in produzione (`e881ea86`): **170 cataloghi, 0 vuoti**.
+
+## Il difetto più grande, trovato indagando su questo (11/11/2026)
+
+Mentre cercavo il catalogo vuoto, l'utente ha segnalato: **«in alcuni anime, quando li apro mi
+restituisce serie TV non anime»**. Misurato con una sonda su tutti i cataloghi serviti, in ogni modo:
+
+| modo | cataloghi | con titoli non-anime dove non dovrebbero |
+|---|---|---|
+| generale | 170 | 0 |
+| **anime** | 23 | **2** — «Perché hai visto Oppenheimer, Avatar…» (film live-action) e «Perché hai visto Harry Potter…», 20 su 20 non anime |
+| film / serie | 96 / 53 | atteso: quei modi non sono anime |
+| bambini | 18 | 13, ma è un'altra questione (vedi sotto) |
+
+**La causa**: in modalità Anime il pool manda `opzioni.filtri.anime = 'only'` e il servizio leggeva
+**solo** `filtri.kids`. Il filtro arrivava e veniva buttato via — lo stesso difetto del flag `anime`
+che non viaggiava, in un altro punto del percorso.
+
+**La correzione**: il filtro anime si legge da `opzioni.filtri` (prima lo cercavo in `dati`, e non
+arrivava lo stesso) e si applica ai **titoli**, non ai semi: con `only` un seme live-action resta un
+buon punto di partenza, ma ciò che esce deve essere anime. Uno scaffale che resta vuoto non si
+dichiara. Verificato in produzione: **modo anime 21 cataloghi, 0 miscugli** (i due spariti).
+
+**Il gemello**: `kids: true` era solo una **guardia** (503 se manca la blacklist), mai un filtro sui
+titoli. Ora anche quello filtra. Ma resta un limite di prodotto, non un bug: la blacklist è un
+criterio *negativo* — blocca l'11,8% del canone, cioè i contenuti espliciti — e non dice cosa sia
+adatto a un bambino. *Oppenheimer* risulta ammesso. La modalità Bambini ha bisogno di un criterio
+**positivo** (generi, classificazione per età): è una decisione, non una correzione.
+
+**Tre test di regressione** tengono fermo tutto: `only` toglie i non anime, `exclude` toglie gli
+anime, senza filtro la risposta resta identica; più quello su `kids`.
