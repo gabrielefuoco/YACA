@@ -122,12 +122,14 @@ class TmdbDumpStore {
 
     async upsert(rows, mediaType) {
         const spoolPath = this._getSpoolPath(mediaType);
-        let spoolContent = '';
+        const claimed = spoolPath + '.draining';
         const spoolRows = [];
-        if (fs.existsSync(spoolPath)) {
+
+        const readClaimed = (targetPath) => {
+            if (!fs.existsSync(targetPath)) return;
             try {
-                spoolContent = fs.readFileSync(spoolPath, 'utf8');
-                for (const line of spoolContent.split('\n')) {
+                const content = fs.readFileSync(targetPath, 'utf8');
+                for (const line of content.split('\n')) {
                     const trimmed = line.trim();
                     if (!trimmed) continue;
                     try {
@@ -136,10 +138,33 @@ class TmdbDumpStore {
                     } catch (_) {}
                 }
             } catch (_) {}
+        };
+
+        // ponytail: claim-by-rename (spoolPath -> claimed) invece di merge + troncamento:
+        // da questo istante ogni nuova append va a finire in un nuovo promoted_*.jsonl
+        // creato dal writer, eliminando qualsiasi race condition.
+        // Il ceiling è che un crash lascia un residuo .draining: the leftover .draining
+        // of a crashed run is re-merged next cycle.
+        if (fs.existsSync(claimed)) {
+            readClaimed(claimed);
+        }
+
+        if (fs.existsSync(spoolPath)) {
+            try {
+                fs.renameSync(spoolPath, claimed);
+                readClaimed(claimed);
+            } catch (_) {}
         }
 
         const combined = [...spoolRows, ...(rows || [])];
-        if (combined.length === 0) return;
+        if (combined.length === 0) {
+            try {
+                fs.unlinkSync(claimed);
+            } catch (e) {
+                if (e && e.code !== 'ENOENT') throw e;
+            }
+            return;
+        }
 
         const filePath = this._getFilePath(mediaType);
         const newRowsMap = new Map();
@@ -166,17 +191,10 @@ class TmdbDumpStore {
             this.appendBatch(Array.from(newRowsMap.values()), mediaType);
         }
 
-        // ponytail: merge + troncamento invece di rename + resume. Il ceiling è che un crash
-        // nel millisecondo fra rename e troncamento fa rifare il merge al giro dopo (costo: una
-        // Map di poche righe). Upgrade path se lo spool cresce: rotazione giornaliera dei file.
-        if (spoolContent && fs.existsSync(spoolPath)) {
-            try {
-                const currentContent = fs.readFileSync(spoolPath, 'utf8');
-                const remaining = currentContent.startsWith(spoolContent)
-                    ? currentContent.slice(spoolContent.length)
-                    : '';
-                fs.writeFileSync(spoolPath, remaining);
-            } catch (_) {}
+        try {
+            fs.unlinkSync(claimed);
+        } catch (e) {
+            if (e && e.code !== 'ENOENT') throw e;
         }
     }
 
