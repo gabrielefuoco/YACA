@@ -83,5 +83,15 @@ module.exports = {
     azzeraStatistichePoster: require('./volumeContract').azzeraStatistichePoster,
     volumeObserver: require('./volumeContract').volumeObserver,
     VERSIONI_FILE_NAME: require('./volumeContract').VERSIONI_FILE_NAME,
-    CONTRATTO_VERSION: require('./volumeContract').CONTRATTO_VERSION
+    CONTRATTO_VERSION: require('./volumeContract').CONTRATTO_VERSION,
+
+    // 9. Mappa sorgenti poster (Ticket 08)
+    sorgenti: require('./sorgenti'),
+    leggiMappaSorgenti: require('./sorgenti').leggiMappa,
+    leggiTokenSorgente: require('./sorgenti').leggiToken,
+    scriviTokenSorgente: require('./sorgenti').scriviToken,
+    scriviMappaSorgenti: require('./sorgenti').scriviMappa,
+    resetCacheSorgenti: require('./sorgenti').resetCache,
+    SORGENTI_FILE_NAME: require('./sorgenti').SORGENTI_FILE_NAME,
+    MAX_SORGENTI_KEYS: require('./sorgenti').MAX_SORGENTI_KEYS
 };

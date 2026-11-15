@@ -22,6 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const { scriviVersioniVolume } = require('../volumeContract');
+const { scriviMappa } = require('../sorgenti');
 
 const DEFAULT_DELAY = 300;
 const DEFAULT_CONCURRENCY = 1;
@@ -72,7 +73,8 @@ function posterFileName(entry) {
         throw new Error(`campo "erdbId" mancante o non valido: ${JSON.stringify(entry)}`);
     }
     // Un chiamante puo' passare una versione esplicita (solo i test lo fanno): quella vince.
-    const version = entry.version || entry.v || calcolaVersionePoster({ erdbId, badge: entry.badge || null });
+    const source = entry.source || null;
+    const version = entry.version || entry.v || calcolaVersionePoster({ erdbId, badge: entry.badge || null, source });
     const versionPart = version ? `-${sanitizePart(version)}` : '';
     const badge = entry.badge === undefined || entry.badge === null || entry.badge === ''
         ? ''
@@ -122,7 +124,10 @@ function normalizeEntry(raw) {
     const erdbId = raw.erdbId === undefined || raw.erdbId === null ? '' : String(raw.erdbId).trim();
     if (!erdbId) throw new Error('campo "erdbId" mancante');
     const badge = raw.badge === undefined || raw.badge === null ? '' : String(raw.badge).trim();
-    return { erdbId, badge };
+    const entry = { erdbId, badge };
+    const source = raw.source || raw.poster_path || raw.posterPath || null;
+    if (source) entry.source = String(source).trim();
+    return entry;
 }
 
 /**
@@ -364,6 +369,18 @@ async function run({
         await scriviVersioniVolume(outDir, { produttore: 'erdb-builder' });
     } catch (err) {
         console.warn(`[ErdbBuilder] impossibile scrivere versioni del volume: ${err.message}`);
+    }
+
+    try {
+        const nuoveSorgenti = {};
+        for (const entry of entries) {
+            if (entry.source) nuoveSorgenti[entry.erdbId] = entry.source;
+        }
+        if (Object.keys(nuoveSorgenti).length > 0) {
+            scriviMappa(nuoveSorgenti, { cacheDir: outDir });
+        }
+    } catch (err) {
+        console.warn(`[ErdbBuilder] impossibile scrivere mappa sorgenti: ${err.message}`);
     }
 
     return report;
