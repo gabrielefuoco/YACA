@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 17 — Applicare le proposte del banco keyword
 
 **Stato**: `chiuso` 07/10/2026 · 12 proposte applicate + 2 rinomine; secondo giro su 5 cataloghi (commit `2b27480`)
@@ -81,3 +83,7 @@ Applicato. Verifica indipendente: confronto tra la top-50 **nuova** e le etichet
 
 **Pool sotto 60 residui**: `mindfuck_series` 28, `space_hard_scifi` 49, `treasure_hunters` 44 — materiale del ticket 04,
 insieme a `tv_high_fantasy` e `cyberpunk_series` che arrivano dal secondo giro del banco.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

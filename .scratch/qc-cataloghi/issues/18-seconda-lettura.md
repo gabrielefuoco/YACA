@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 18 — Seconda lettura: i cataloghi bonificati sono anche migliori?
 
 **Stato**: `chiuso` 07/10/2026 · 21 cataloghi ri-giudicati: 8 migliorati **oltre** il rumore misurato, nessuno peggiorato (`b707b4a`)
@@ -66,3 +68,7 @@ Una tornata di rilettura su un campione, con la rubrica v2 e doppio giudice.
 - I cataloghi non toccati (restano validi i verdetti del 06/10).
 - Gli hero: il confronto lì richiederebbe un nuovo fetch (e il percorso Trakt reale è del ticket 10).
 - Correzioni ulteriori: quello che emerge qui diventa ticket nuovi, non patch in questa tornata.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

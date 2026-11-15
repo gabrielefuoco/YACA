@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 16 — Il builder Trakt solleva un errore di inizializzazione e degrada sempre
 
 **Stato**: `chiuso` 06/10/2026 · variabili issate prima di `buildFallback`: l'errore è sparito dai log di produzione (commit `2b27480`)
@@ -61,3 +63,7 @@ come modello di chiamata diretta).
 
 - Il comportamento Trakt in sé (token, device flow): coperto da `docs/INTEGRATIONS.md` e dal ticket 10.
 - La qualità delle liste Trakt: giudicata dalla campagna.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

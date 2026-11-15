@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 14 — Banco di prova keyword (includere ed escludere)
 
 **Stato**: `chiuso` 06/10/2026 · `scripts/qa/keyword-bench.js` costruito e usato per tre giri di misure (commit `2b27480`)
@@ -64,3 +66,7 @@ proposta.
 
 - L'editing di `src/data/presets.js` (ticket successivo).
 - La qualità editoriale dei titoli (già giudicata dalla campagna).
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

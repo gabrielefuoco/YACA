@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 04 — Pool sotto la pagina Stremio
 
 **Stato**: `chiuso` 07/10/2026 · sotto 20: 12 → 8 · 20-59: 30 → 21 · 13 cataloghi portati a pool ≥ 60 · i 7 registi accettati corti + nuovo «I Grandi Registi» (`0127a9a`, `a356108`)
@@ -45,3 +47,7 @@ Applicando il vincolo di durata ai percorsi hero, le liste **film** del profilo 
 Non è un difetto del vincolo: nel dump, **7.151 dei «film» di animazione sono in realtà OVA/ONA/speciali**, e il **52,4% dura meno di 60 minuti**. Il DNA del profilo otaku però *premia* proprio le keyword `compilation`, `original video animation (ova)`, `edited from tv series` — quindi il pool era pieno di pseudo-film, e il vincolo li ha tolti. Film di animazione giapponesi con durata ≥ 60' nel dump: **1.057**, abbastanza per riempire una pagina, ma non entrano nel pool perché il DNA non li cerca.
 
 Per questo catalogo il fix **non è allentare la durata**: è **allargare il pool** verso i film veri (peso minore alle keyword di compilazione, canali dedicati al cinema d'animazione). Va trattato qui, non nel ticket 07.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

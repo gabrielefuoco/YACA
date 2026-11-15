@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 10 — Hero `trakt_filtered`: percorso reale mai misurato
 
 **Stato**: `chiuso` 07/10/2026 · percorso reale funzionante (P 88 film, P 86 serie) — vedi «Esito» in fondo
@@ -60,3 +62,7 @@ Report completo: [`ricerche/03-trakt-reale.md`](../ricerche/03-trakt-reale.md).
 `3f2f4afd`) richiederebbero di cambiare `activeProfileId` sulla configurazione reale — una scrittura sul profilo
 dell'utente, che cambierebbe ciò che vede in Stremio fino al ripristino. Non si fa: la lacuna resta scritta, e il
 meccanismo (raccomandazioni filtrate dalla policy + top-up) è ormai noto.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

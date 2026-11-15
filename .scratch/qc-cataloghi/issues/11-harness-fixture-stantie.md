@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 11 — Harness della campagna: fixture stantie e comandi che ingannano
 
 **Stato**: `chiuso` 06/10/2026 · contesti rimappati, attesa 5/5 calcolata, fetch validato contro AddonConfig (commit `478b6bb`)
@@ -40,3 +42,7 @@ negli stessi tiri.
 ## Fuori ambito
 
 Rendere `teardown` in grado di parlare con Redis dalla macchina Windows: la nota basta.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

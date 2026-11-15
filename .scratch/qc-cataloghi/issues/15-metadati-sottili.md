@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 15 — Metadati sottili: classifiche costruite su pochi voti
 
 **Stato**: `chiuso` 07/10/2026 · 6 cataloghi con soglia a 50 voti (rumore a 0%) e 5 documentaristici passati a popolarità (`9a2564a`)
@@ -42,3 +44,7 @@ la seconda strada è legittima purché il pool regga: la misura lo dice, non l'i
 - Il contenuto: qui si cambia l'ordine o la soglia, non i titoli.
 - I cataloghi già coperti dal ticket 04 (pool corti) e dal ticket 14 (keyword): se un catalogo compare in due ticket,
   l'ultimo che lo tocca aggiorna la misura nel suo.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 12 — Rubrica: rumore del giudice e promessa tematica
 
 **Stato**: `chiuso` 07/10/2026 · rubrica v2 con pertinenza sdoppiata; rumore misurato su due controlli: Δ medio 6,5, max 11 punti (`b707b4a`)
@@ -36,3 +38,7 @@ vanno corretti **prima** di un secondo giro, altrimenti il ranking sembra più p
 ## Fuori ambito
 
 L'automazione del giudizio (un modello che assegna i punteggi da solo): la campagna vale perché qualcuno legge i titoli.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

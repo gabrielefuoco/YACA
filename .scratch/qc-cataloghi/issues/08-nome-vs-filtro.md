@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 08 — Nome e filtro che non dicono la stessa cosa
 
 **Stato**: `chiuso` 07/10/2026 · 5 cataloghi decisi con l'utente: 2 rinominati, 1 filtrato, 1 accettato, 1 nuovo catalogo 0-3 (`5e9d0d5`)
@@ -33,3 +35,7 @@ bambini): va corretto per primo, indipendentemente dalla decisione sul resto.
 - Per ogni catalogo: o il filtro realizza il nome, o il nome dice cosa fa il filtro. La scelta è scritta nel ticket.
 - `preset_animal_protagonists`: zero titoli con genere Horror e zero protagonisti non-animali nei primi 50.
 - `preset_teen_preteen_tv`: zero titoli prescolari nei primi 50.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

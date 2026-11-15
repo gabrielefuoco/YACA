@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 05 — Soglie di voto e anti-trash
 
 **Stato**: `chiuso` 07/10/2026 · soglie di voto alzate su oltre 20 cataloghi nei tre giri del banco; il pavimento 5.5-6.0 ha azzerato i B-movie trash dove serviva
@@ -37,3 +39,7 @@ Due facce della stessa leva (le soglie sui voti):
 ## Fuori ambito
 
 La qualità percepita dei titoli che restano: il giudizio editoriale si rifà con la campagna (ticket 12), non qui.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

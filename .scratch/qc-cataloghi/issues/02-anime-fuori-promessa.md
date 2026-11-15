@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 02 — Anime fuori promessa nei cataloghi occidentali
 
 **Stato**: `chiuso` 07/10/2026 · 15 cataloghi, anime 4-79% → 0-2% in 13 su 15 (commit `c2e4ce5`)
@@ -45,3 +47,7 @@ due strumenti già documentati nella skill `yaca-catalog-analyzer`.
 ## Fuori ambito
 
 Il contenuto degli anime stessi, la loro qualità, la policy anime del profilo (`animePolicy`: già corretta, misurata al 100% nei hero di un profilo anime).
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

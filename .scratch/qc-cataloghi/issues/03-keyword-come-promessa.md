@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 03 — Promesse appoggiate a una singola keyword
 
 **Stato**: `chiuso` 07/10/2026 · coperto dai tre giri del banco keyword (17 cataloghi riscritti)
@@ -43,3 +45,7 @@ Per ciascun catalogo, in ordine di preferenza:
 ## Fuori ambito
 
 Il comportamento di TMDB sulle keyword (non è sotto il nostro controllo): il punto è smettere di dipenderne.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

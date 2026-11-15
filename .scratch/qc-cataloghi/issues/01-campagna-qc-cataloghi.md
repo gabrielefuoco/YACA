@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 01 — Campagna QC cataloghi (preset + hero)
 
 **Stato**: `eseguito` 06/10/2026 · **Aperto**: solo 20 e 21 (il resto è chiuso; il deploy attende il motore hero)
@@ -241,3 +243,7 @@ Redis), nessuna scrittura su Atlas oltre i documenti `sim_*`, teardown finale ob
 - **Vocabolario**: nel report si usa il linguaggio del progetto — *preset*, *hero*, *promessa*, *pool*,
   *foglio* (le categorie della dashboard), *P/B/N*. «Catalogo sporco» non è un termine: si dice *fuori
   promessa* o *trash*.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

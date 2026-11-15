@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 20 — Il segnale della cronologia: 30 recenti + il DNA del resto
 
 **Stato**: `chiuso` 07/10/2026 · sei opzioni simulate, scelta E (decadimento) applicata e in produzione (immagine `19a6d63`)
@@ -44,3 +46,7 @@ Su due profili simulati con cronologia nota (50 e 100 visti, coerente col gusto 
 - Tabella comparativa delle 5+ opzioni con le 5 misure sopra, per entrambi i profili.
 - Una **raccomandazione motivata** con il numero che la sostiene, e l'elenco di ciò che l'opzione scelta peggiora.
 - Nessuna modifica a `src/` in questo ticket: prima si misura, poi (con l'ok) si applica.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

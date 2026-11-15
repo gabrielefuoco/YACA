@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 21 — Motore hero: pool a monte, flag sdoppiato, cap famiglia
 
 **Stato**: `chiuso` 07/10/2026 · pool a monte (17-19 → 75-100 item), flag sdoppiato, cap famiglia; in produzione (immagine `19a6d63`)
@@ -42,3 +44,7 @@ selvaggio*, *Luck*, *Elio*): i seed blockbuster/sci-fi toccano per affinità di 
 - Per ognuno dei tre: misura prima → dopo con il comando usato, e `git diff --stat` dei file toccati.
 - La disgiunzione fra hero resta un'invariante verificata (0 sovrapposizioni) dopo l'intervento 1.
 - Nessuna modifica ai preset (`src/data/presets.js` ha un altro proprietario) e nessun commit.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

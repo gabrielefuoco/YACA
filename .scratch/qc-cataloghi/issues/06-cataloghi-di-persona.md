@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 06 — Cataloghi di persona: documentari, corti e cameo
 
 **Stato**: `chiuso` 06/10/2026 · documentari fuori e durata minima 60' (commit `2b27480`)
@@ -43,3 +45,7 @@ catalogo intitolato a una persona.
 ## Fuori ambito
 
 L'aggiunta di dati di ruolo principale a TMDB (non dipende da noi).
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

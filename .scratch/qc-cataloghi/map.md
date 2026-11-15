@@ -1,6 +1,6 @@
 # Mappa: QC Cataloghi (preset + hero)
 
-**Aperta**: 06/10/2026 · **Tracker**: markdown locale, `.scratch/qc-cataloghi/issues/` · **Stato**: in corso
+**Aperta**: 06/10/2026 · **Tracker**: markdown locale, `.scratch/qc-cataloghi/issues/` · **Stato**: scartata (11/11/2026)
 
 ## Destinazione
 
@@ -80,3 +80,7 @@ servono titoli non-anime marcati `_isAnime: true` (14 su 20 nel test dedicato) �
 - **Secondo giro di giudizio** su un campione con la rubrica stretta (ticket 12): serve a sapere se il ranking è ripetibile.
 - **Percorso Trakt reale** (ticket 10): senza, un quarto dell'esperienza hero resta non misurato.
 - **Il confine P/B**: 40 verdetti a ridosso della soglia, con o senza seconda campagna, restano bande.
+
+## Chiusura
+
+Scartata l'11/11/2026. Il prodotto è cambiato troppo perché quella campagna di lettura dica ancora qualcosa: i cataloghi sono a modi, il grafo è V46 e i titoli nuovi si collocano. I ventun ticket restano scritti come memoria dei difetti trovati allora, chiusi in blocco.

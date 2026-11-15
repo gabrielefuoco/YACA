@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 07 — Corti, backstage e trailer serviti come film
 
 **Stato**: `chiuso` 06/10/2026 · `F.minRuntime(60)` nei percorsi hero e di persona; 23 item sotto i 40' → 0 (commit `2b27480`)
@@ -42,3 +44,7 @@ assenza negli altri percorsi (fallback popolare, seed network, trakt, e i preset
 ## Fuori ambito
 
 La qualità dei poster e delle card: qui si giudica se l'item è un film, non come viene disegnato.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

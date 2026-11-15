@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 19 — Hero: cosa succede con zero, 50 e 100 titoli visti
 
 **Stato**: `chiuso` 07/10/2026 · 48 combinazioni misurate, 3 difetti e 1 scoperta (il tetto dei 15 titoli); le decisioni sono diventate i ticket 20 e 21
@@ -66,3 +68,7 @@ con verifica di cosa cambia nella lista servita e di come si comportano i percor
 - La rubrica e il rumore del giudice (ticket 18).
 - Il percorso Trakt con token (misurato dal ticket 10 sul profilo reale: funziona).
 - I cataloghi preset (ticket 04/15/17): qui si parla solo di hero.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.

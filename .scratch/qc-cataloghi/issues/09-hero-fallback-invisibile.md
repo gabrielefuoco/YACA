@@ -1,3 +1,5 @@
+Status: wontfix
+
 # 09 — Hero: il fallback non deve travestirsi da raccomandazione
 
 **Stato**: `chiuso` 07/10/2026 · misurato (cold start vero 56,9%) e **deciso con l'utente: lasciare com'è** — vedi «Esito» in fondo
@@ -64,3 +66,7 @@ fallback, la misura e la proposta (nome dinamico nel manifest) sono qui sopra. I
 inquinata, cap di diversità, pochi item Trakt — è stato chiuso dalle misure del ticket 19: la `seed_network` resta da
 ripulire dall'animazione per famiglie (44% in un profilo adulto → ticket 21 §3), il reflusso live-action nel profilo
 anime è **risolto** dal fix del marker (0 live-action su 50), e i pochi item Trakt sono il ticket 21 §1.
+
+## Chiusura
+
+Mappa scartata l'11/11/2026 per decisione esplicita: il QC catalogo-per-catalogo non serve più — i cataloghi sono cambiati (modi, V46, collocatore) e la campagna di lettura del 6-7 ottobre riguardava un prodotto che non esiste più in quella forma.
