@@ -66,18 +66,26 @@ describe('nome del poster: l\'app e il dump offline devono concordare', () => {
         expect(senzaBadge).toMatch(/^tmdb-movie-27205-[0-9a-f]{8}\.jpg$/);
     });
 
-    it('la versione NON dipende dall\'immagine sorgente', () => {
-        // È la condizione che rende possibile la concordanza: la sorgente la conosce
-        // solo l'app, quindi non può entrare in un nome che deve saper calcolare anche
-        // il dump. Il prezzo (accettato) è che un cambio di poster alla sorgente non
-        // invalida il composto: è lo stesso comportamento dei poster nudi.
-        const a = nomeDallApp({ erdbId: 'tmdb:movie:27205', badge: 'ITA' });
+    it('la versione dipende dall\'immagine sorgente se fornita', () => {
+        // Con Ticket 08, un cambio del poster alla sorgente invalida il composto.
+        const a = urlPosterComposto(HOST, {
+            erdbId: 'tmdb:movie:27205',
+            badge: 'ITA',
+            source: 'https://image.tmdb.org/t/p/w500/LOCANDINA_ORIGINALE.jpg'
+        }).split('?')[0].split('/').pop();
         const b = urlPosterComposto(HOST, {
             erdbId: 'tmdb:movie:27205',
             badge: 'ITA',
             source: 'https://image.tmdb.org/t/p/w500/COMPLETAMENTE_DIVERSO.jpg'
         }).split('?')[0].split('/').pop();
-        expect(a).toBe(b);
+        const c = urlPosterComposto(HOST, {
+            erdbId: 'tmdb:movie:27205',
+            badge: 'ITA',
+            source: 'https://other.cdn.com/t/p/w342/COMPLETAMENTE_DIVERSO.jpg?v=2'
+        }).split('?')[0].split('/').pop();
+
+        expect(a).not.toBe(b);
+        expect(b).toBe(c);
     });
 
     it('il nome porta la versione del disegno, non un numero scritto a mano', () => {

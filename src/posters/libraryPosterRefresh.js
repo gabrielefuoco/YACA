@@ -37,6 +37,7 @@ const { BADGE_IMG_VERSION } = require('../stremio/formatters/posterBadgeVersion'
 // intercettava, ed era un avviso vero, non un test fragile).
 const { erdbIdDaNomeFile } = require('./posterDaEvento');
 const { posterFileName } = require('./erdb/build');
+const { leggiToken } = require('./sorgenti');
 const { normalizeLegacyPosterHost } = require('../library/identity');
 
 const COMPOSED_PREFIX = '/images/poster/';
@@ -165,12 +166,16 @@ function refreshStaticPoster(poster, options = {}) {
         if (options.hostUrl) source = normalizeLegacyPosterHost(source, options.hostUrl);
     }
 
+    if (!source) {
+        source = leggiToken(erdbId, options.cacheDir) || null;
+    }
+
     // La versione la deriva `posterFileName` dal contenuto (id + badge + disegno):
     // qui non si ricalcola, altrimenti l'app tornerebbe ad avere una sua idea del nome
     // e il dump offline un'altra. `options.badgeVersion` resta come override per i test.
     let nuovoFile;
     try {
-        nuovoFile = posterFileName({ erdbId, badge, version: options.badgeVersion });
+        nuovoFile = posterFileName({ erdbId, badge, source, version: options.badgeVersion });
     } catch {
         return poster;
     }
