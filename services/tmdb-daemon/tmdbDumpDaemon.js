@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const TmdbDumpStore = require('./tmdbDumpStore');
 const TmdbDumpClient = require('./tmdbDumpClient');
-const { loadTrackedAiringIds, isTrackedAiringId } = require('./tmdbIngestPolicy');
+const { loadTrackedAiringIds, isTrackedAiringId, loadItaDubbedIds } = require('./tmdbIngestPolicy');
 const { chiaveGlobale } = require('../../src/configurazione');
 
 const apiKey = chiaveGlobale('tmdb');
@@ -136,9 +136,10 @@ async function coldStart(store, client) {
         }
 
         // Scarica il Daily Export (sempre, ~2s per file compresso)
+        const itaDubbedIds = await loadItaDubbedIds(mediaType);
         updateStatus(store, { currentTask: `Downloading Daily Export for ${mediaType}` }, true);
         console.log(`[TmdbDump] ${dumpStatus.currentTask}`);
-        const allIds = await client.downloadDailyExport(mediaType);
+        const allIds = await client.downloadDailyExport(mediaType, { itaDubbedIds });
         
         // Determina da dove riprendere
         let startIndex = 0;
@@ -153,6 +154,11 @@ async function coldStart(store, client) {
         
         const trackedIds = await loadTrackedAiringIds();
         let batch = [];
+        const causeCounters = {
+            new_threshold: 0,
+            dubbed_inclusion: 0,
+            airing_exception: 0
+        };
 
         // Concorrenza del cold start: il dump è ~530k titoli e una richiesta alla volta
         // significa ~3 giorni. Con N richieste in volo il tempo si divide quasi per N.
@@ -183,10 +189,24 @@ async function coldStart(store, client) {
 
                 // ponytail: cold start keeps using fetchMovie/fetchTv to avoid overhead/diff churn, discard reasons are logged in dailySync only
                 const rows = await Promise.all(slice.map(id =>
-                    mediaType === 'movies' ? client.fetchMovie(id, { trackedIds }) : client.fetchTv(id, { trackedIds })
+                    mediaType === 'movies' ? client.fetchMovie(id, { trackedIds, itaDubbedIds }) : client.fetchTv(id, { trackedIds, itaDubbedIds })
                 ));
+                const isTv = mediaType === 'tv';
                 for (const row of rows) {
-                    if (row) batch.push(row);
+                    if (row) {
+                        batch.push(row);
+                        if (row.vote_count < 10) {
+                            if (isTrackedAiringId(row.id, trackedIds)) {
+                                causeCounters.airing_exception++;
+                            } else if (row.original_language === 'it' || itaDubbedIds.has(row.id)) {
+                                causeCounters.dubbed_inclusion++;
+                            }
+                        } else if (itaDubbedIds.has(row.id) && row.popularity < (isTv ? 0.6 : 1.0)) {
+                            causeCounters.dubbed_inclusion++;
+                        } else if (isTv && row.popularity >= 0.6 && row.popularity < 1.0) {
+                            causeCounters.new_threshold++;
+                        }
+                    }
                 }
                 doneInChunk += slice.length;
 
@@ -234,6 +254,7 @@ async function coldStart(store, client) {
         const finalCount = await store.countLines(mediaType);
         updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
         console.log(`[TmdbDump] Cold Start for ${mediaType} COMPLETED. Total records: ${finalCount}`);
+        console.log(`[TmdbDump] Cold Start ingestion causes for ${mediaType}: new_threshold=${causeCounters.new_threshold}, dubbed_inclusion=${causeCounters.dubbed_inclusion}, airing_exception=${causeCounters.airing_exception}`);
     }
 
     updateStatus(store, { lastSync: new Date().toISOString() }, true);
@@ -275,10 +296,11 @@ async function dailySync(store, client, options = {}) {
             // Cross-reference con il DB locale (solo colonna ID)
             const localIds = await store.loadIds(mediaType);
             const trackedIds = await loadTrackedAiringIds();
+            const itaDubbedIds = await loadItaDubbedIds(mediaType);
             
             // Scarica Daily Export per filtrare nuovi ID per popolarità
             updateStatus(store, { currentTask: `Downloading Daily Export for ${mediaType}` }, true);
-            const popularIds = await client.downloadDailyExport(mediaType);
+            const popularIds = await client.downloadDailyExport(mediaType, { itaDubbedIds });
             const popularSet = new Set(popularIds);
 
             const idsToFetch = [];
@@ -298,6 +320,11 @@ async function dailySync(store, client, options = {}) {
                 errore: 0,
                 filtered: 0
             };
+            const causeCounters = {
+                new_threshold: 0,
+                dubbed_inclusion: 0,
+                airing_exception: 0
+            };
 
             for (let i = 0; i < idsToFetch.length; i++) {
                 if (!daemonRunning) break;
@@ -310,11 +337,20 @@ async function dailySync(store, client, options = {}) {
 
                 try {
                     const outcome = mediaType === 'movies' 
-                        ? await client.fetchMovieOutcome(id, { trackedIds }) 
-                        : await client.fetchTvOutcome(id, { trackedIds });
+                        ? await client.fetchMovieOutcome(id, { trackedIds, itaDubbedIds }) 
+                        : await client.fetchTvOutcome(id, { trackedIds, itaDubbedIds });
                         
                     if (outcome.status === 'ok' && outcome.row) {
                         toUpsert.push(outcome.row);
+                        const r = outcome.row;
+                        const isTv = mediaType === 'tv';
+                        if (outcome.keepReason === 'airing_exception') {
+                            causeCounters.airing_exception++;
+                        } else if (outcome.keepReason === 'italian_floor' || outcome.keepReason === 'dubbed_floor' || (itaDubbedIds.has(id) && r.popularity < (isTv ? 0.6 : 1.0))) {
+                            causeCounters.dubbed_inclusion++;
+                        } else if (isTv && r.popularity >= 0.6 && r.popularity < 1.0) {
+                            causeCounters.new_threshold++;
+                        }
                     } else {
                         if (outcome.status === 'not_found') {
                             counters.not_found++;
@@ -343,6 +379,7 @@ async function dailySync(store, client, options = {}) {
             // Applica le modifiche al file JSONL
             updateStatus(store, { currentTask: `Writing changes to disk for ${mediaType}` }, true);
             console.log(`[TmdbDump] Disk Apply: ${toUpsert.length} upserts, ${toDelete.length} deletes for ${mediaType} (not_found=${counters.not_found}, errore=${counters.errore}, filtered=${counters.filtered})`);
+            console.log(`[TmdbDump] Ingestion causes for ${mediaType}: new_threshold=${causeCounters.new_threshold}, dubbed_inclusion=${causeCounters.dubbed_inclusion}, airing_exception=${causeCounters.airing_exception}`);
             
             if (toUpsert.length > 0) await store.upsert(toUpsert, mediaType);
             if (toDelete.length > 0) await store.deleteIds(toDelete, mediaType);
