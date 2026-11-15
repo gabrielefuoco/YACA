@@ -282,10 +282,6 @@ class TmdbDumpClient {
         return { status: 'errore', data: null };
     }
 
-    async fetchWithRetryOutcome(url, params = {}, retries = 5) {
-        return this.fetchWithRetry(url, params, retries);
-    }
-
     async fetchMovieOutcome(id, options = {}) {
         const res = await this.fetchWithRetry(`${this.baseUrl}/movie/${id}`, {
             language: 'it-IT',
