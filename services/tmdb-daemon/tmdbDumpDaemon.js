@@ -155,8 +155,8 @@ async function coldStart(store, client) {
         const trackedIds = await loadTrackedAiringIds();
         let batch = [];
         const causeCounters = {
-            new_threshold: 0,
             dubbed_inclusion: 0,
+            italian_floor: 0,
             airing_exception: 0
         };
 
@@ -191,20 +191,19 @@ async function coldStart(store, client) {
                 const rows = await Promise.all(slice.map(id =>
                     mediaType === 'movies' ? client.fetchMovie(id, { trackedIds, itaDubbedIds }) : client.fetchTv(id, { trackedIds, itaDubbedIds })
                 ));
-                const isTv = mediaType === 'tv';
                 for (const row of rows) {
                     if (row) {
                         batch.push(row);
                         if (row.vote_count < 10) {
                             if (isTrackedAiringId(row.id, trackedIds)) {
                                 causeCounters.airing_exception++;
-                            } else if (row.original_language === 'it' || itaDubbedIds.has(row.id)) {
+                            } else if (itaDubbedIds.has(row.id)) {
                                 causeCounters.dubbed_inclusion++;
+                            } else if (row.original_language === 'it') {
+                                causeCounters.italian_floor++;
                             }
-                        } else if (itaDubbedIds.has(row.id) && row.popularity < (isTv ? 0.6 : 1.0)) {
+                        } else if (itaDubbedIds.has(row.id) && row.popularity < 1.0) {
                             causeCounters.dubbed_inclusion++;
-                        } else if (isTv && row.popularity >= 0.6 && row.popularity < 1.0) {
-                            causeCounters.new_threshold++;
                         }
                     }
                 }
@@ -254,7 +253,7 @@ async function coldStart(store, client) {
         const finalCount = await store.countLines(mediaType);
         updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
         console.log(`[TmdbDump] Cold Start for ${mediaType} COMPLETED. Total records: ${finalCount}`);
-        console.log(`[TmdbDump] Cold Start ingestion causes for ${mediaType}: new_threshold=${causeCounters.new_threshold}, dubbed_inclusion=${causeCounters.dubbed_inclusion}, airing_exception=${causeCounters.airing_exception}`);
+        console.log(`[TmdbDump] Cold Start ingestion causes for ${mediaType}: dubbed_inclusion=${causeCounters.dubbed_inclusion}, italian_floor=${causeCounters.italian_floor}, airing_exception=${causeCounters.airing_exception}`);
     }
 
     updateStatus(store, { lastSync: new Date().toISOString() }, true);
@@ -321,8 +320,8 @@ async function dailySync(store, client, options = {}) {
                 filtered: 0
             };
             const causeCounters = {
-                new_threshold: 0,
                 dubbed_inclusion: 0,
+                italian_floor: 0,
                 airing_exception: 0
             };
 
@@ -343,13 +342,12 @@ async function dailySync(store, client, options = {}) {
                     if (outcome.status === 'ok' && outcome.row) {
                         toUpsert.push(outcome.row);
                         const r = outcome.row;
-                        const isTv = mediaType === 'tv';
                         if (outcome.keepReason === 'airing_exception') {
                             causeCounters.airing_exception++;
-                        } else if (outcome.keepReason === 'italian_floor' || outcome.keepReason === 'dubbed_floor' || (itaDubbedIds.has(id) && r.popularity < (isTv ? 0.6 : 1.0))) {
+                        } else if (outcome.keepReason === 'italian_floor') {
+                            causeCounters.italian_floor++;
+                        } else if (outcome.keepReason === 'dubbed_floor' || (itaDubbedIds.has(id) && r.popularity < 1.0)) {
                             causeCounters.dubbed_inclusion++;
-                        } else if (isTv && r.popularity >= 0.6 && r.popularity < 1.0) {
-                            causeCounters.new_threshold++;
                         }
                     } else {
                         if (outcome.status === 'not_found') {
@@ -379,7 +377,7 @@ async function dailySync(store, client, options = {}) {
             // Applica le modifiche al file JSONL
             updateStatus(store, { currentTask: `Writing changes to disk for ${mediaType}` }, true);
             console.log(`[TmdbDump] Disk Apply: ${toUpsert.length} upserts, ${toDelete.length} deletes for ${mediaType} (not_found=${counters.not_found}, errore=${counters.errore}, filtered=${counters.filtered})`);
-            console.log(`[TmdbDump] Ingestion causes for ${mediaType}: new_threshold=${causeCounters.new_threshold}, dubbed_inclusion=${causeCounters.dubbed_inclusion}, airing_exception=${causeCounters.airing_exception}`);
+            console.log(`[TmdbDump] Ingestion causes for ${mediaType}: dubbed_inclusion=${causeCounters.dubbed_inclusion}, italian_floor=${causeCounters.italian_floor}, airing_exception=${causeCounters.airing_exception}`);
             
             if (toUpsert.length > 0) await store.upsert(toUpsert, mediaType);
             if (toDelete.length > 0) await store.deleteIds(toDelete, mediaType);

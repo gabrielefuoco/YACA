@@ -4,8 +4,7 @@ const readline = require('readline');
 const { shouldKeepTmdbRecord, loadItaDubbedIds } = require('./tmdbIngestPolicy');
 const { tmdbBudget, TMDB_CATEGORIES } = require('../../src/clients/tmdbBudget');
 
-const MOVIE_POPULARITY_THRESHOLD = 1.0;
-const TV_POPULARITY_THRESHOLD = 0.6;
+const POPULARITY_THRESHOLD = 1.0;
 
 const TMDB_GENRES_EN_MAP = {
     28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
@@ -380,7 +379,7 @@ class TmdbDumpClient {
                 
                 const gunzip = zlib.createGunzip();
                 const { validIds, counters } = await filterDailyExportStream(res.data.pipe(gunzip), mediaType, options);
-                console.log(`[TmdbDumpClient] Daily export for ${mediaType}: ${validIds.length} IDs kept (threshold=${counters.threshold}, new_threshold=${counters.new_threshold}, dubbed_inclusion=${counters.dubbed_inclusion})`);
+                console.log(`[TmdbDumpClient] Daily export for ${mediaType}: ${validIds.length} IDs kept (threshold=${counters.threshold}, dubbed_inclusion=${counters.dubbed_inclusion})`);
 
                 // Aggiorniamo la cache 
                 if (this.dailyExportCache.dateStr !== dateStr) {
@@ -401,10 +400,8 @@ class TmdbDumpClient {
     }
 }
 
-// ponytail: ceiling — fixed visibility thresholds (tv=0.6, movies=1.0) and in-memory Set for dubbed IDs; titles below threshold without ita annotation are dropped at export level without dynamic ranking
+// ponytail: ceiling — single popularity threshold (1.0) for movies and TV, with in-memory Set for dubbed IDs; titles below 1.0 without ita annotation are dropped at export level
 async function filterDailyExportStream(stream, mediaType, options = {}) {
-    const isMovie = mediaType === 'movies' || mediaType === 'movie';
-    const threshold = isMovie ? MOVIE_POPULARITY_THRESHOLD : TV_POPULARITY_THRESHOLD;
     const dubbedSet = (options && options.itaDubbedIds instanceof Set)
         ? options.itaDubbedIds
         : (options instanceof Set ? options : await loadItaDubbedIds(mediaType));
@@ -416,7 +413,6 @@ async function filterDailyExportStream(stream, mediaType, options = {}) {
     });
 
     let countThreshold = 0;
-    let countNewThreshold = 0;
     let countDubbed = 0;
 
     for await (const line of rl) {
@@ -429,15 +425,12 @@ async function filterDailyExportStream(stream, mediaType, options = {}) {
             if (!Number.isFinite(id) || id <= 0) continue;
 
             const isDubbed = dubbedSet.has(id);
-            const passesThreshold = typeof m.popularity === 'number' && m.popularity >= threshold;
+            const passesThreshold = typeof m.popularity === 'number' && m.popularity >= POPULARITY_THRESHOLD;
 
             if (passesThreshold || isDubbed) {
                 validIds.push(id);
                 if (passesThreshold) {
                     countThreshold++;
-                    if (!isMovie && m.popularity < 1.0) {
-                        countNewThreshold++;
-                    }
                 } else {
                     countDubbed++;
                 }
@@ -449,14 +442,12 @@ async function filterDailyExportStream(stream, mediaType, options = {}) {
         validIds,
         counters: {
             threshold: countThreshold,
-            new_threshold: countNewThreshold,
             dubbed_inclusion: countDubbed
         }
     };
 }
 
-TmdbDumpClient.MOVIE_POPULARITY_THRESHOLD = MOVIE_POPULARITY_THRESHOLD;
-TmdbDumpClient.TV_POPULARITY_THRESHOLD = TV_POPULARITY_THRESHOLD;
+TmdbDumpClient.POPULARITY_THRESHOLD = POPULARITY_THRESHOLD;
 TmdbDumpClient.filterDailyExportStream = filterDailyExportStream;
 TmdbDumpClient.buildMovieRow = buildMovieRow;
 TmdbDumpClient.buildTvRow = buildTvRow;

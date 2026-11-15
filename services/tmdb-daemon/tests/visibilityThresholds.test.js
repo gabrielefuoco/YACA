@@ -62,31 +62,29 @@ test('shouldKeepTmdbRecord: (d) vote_count=10 -> always kept', async () => {
     assert.equal(keptHigher, true);
 });
 
-test('export filter: (e) TV keeps popularity 0.7, movies drop it, dubbed below both thresholds kept', async () => {
+test('export filter: (e) TV and movies use the SAME threshold (1.0), and a dubbed id below 1.0 is kept anyway', async () => {
     const fixtureLines = [
-        JSON.stringify({ id: 10, popularity: 0.7, adult: false }), // TV kept (>=0.6), Movie dropped (<1.0)
-        JSON.stringify({ id: 20, popularity: 0.3, adult: false }), // Dubbed item below both thresholds -> kept for both
-        JSON.stringify({ id: 30, popularity: 1.5, adult: false }), // Kept for both (>=1.0)
-        JSON.stringify({ id: 40, popularity: 2.0, adult: true })   // Adult -> dropped for both
+        JSON.stringify({ id: 10, popularity: 0.7, adult: false }), // pop < 1.0, not dubbed -> dropped for both
+        JSON.stringify({ id: 20, popularity: 0.3, adult: false }), // pop < 1.0, but dubbed -> kept for both
+        JSON.stringify({ id: 30, popularity: 1.5, adult: false }), // pop >= 1.0 -> kept for both
+        JSON.stringify({ id: 40, popularity: 2.0, adult: true })   // adult -> dropped for both
     ];
 
     const dubbedSet = new Set([20]);
 
-    // Test TV filter
+    // Test TV filter (threshold 1.0)
     const tvStream = Readable.from(fixtureLines.join('\n'));
     const tvResult = await TmdbDumpClient.filterDailyExportStream(tvStream, 'tv', { itaDubbedIds: dubbedSet });
-    assert.deepEqual(tvResult.validIds, [10, 20, 30]);
-    assert.equal(tvResult.counters.new_threshold, 1, 'id 10 è nella fascia 0.6 <= pop < 1.0');
+    assert.deepEqual(tvResult.validIds, [20, 30], 'TV keeps popularity >= 1.0 and dubbed id below 1.0');
     assert.equal(tvResult.counters.dubbed_inclusion, 1, 'id 20 è entrato tramite dubbed_inclusion');
-    assert.equal(tvResult.counters.threshold, 2, 'id 10 e 30 sono passati per soglia popolarità');
+    assert.equal(tvResult.counters.threshold, 1, 'solo id 30 è passato per soglia 1.0');
 
-    // Test Movie filter
+    // Test Movie filter (same threshold 1.0)
     const movieStream = Readable.from(fixtureLines.join('\n'));
     const movieResult = await TmdbDumpClient.filterDailyExportStream(movieStream, 'movies', { itaDubbedIds: dubbedSet });
-    assert.deepEqual(movieResult.validIds, [20, 30], 'Movies scarta pop 0.7 (id 10) e include dubbed (id 20) + pop 1.5 (id 30)');
-    assert.equal(movieResult.counters.new_threshold, 0, 'Movies non ha la soglia 0.6');
+    assert.deepEqual(movieResult.validIds, [20, 30], 'Movies usa la stessa soglia 1.0 di TV');
     assert.equal(movieResult.counters.dubbed_inclusion, 1, 'id 20 è entrato tramite dubbed_inclusion');
-    assert.equal(movieResult.counters.threshold, 1, 'solo id 30 è passato per soglia movie 1.0');
+    assert.equal(movieResult.counters.threshold, 1, 'solo id 30 è passato per soglia 1.0');
 });
 
 test('loadItaDubbedIds: (f) ignores null rows and other media type, survives missing file', async () => {
