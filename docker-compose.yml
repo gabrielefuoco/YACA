@@ -49,6 +49,10 @@ services:
       - yaca_erdb_cache:/data/erdb-cache
       # L'artefatto del servizio anime, in SOLA LETTURA: lo produce `anime-source`, lo legge l'app.
       - yaca_anime_source_cache:/data/anime-source:ro
+      # Sidecar dei titoli collocati (ticket 22): i titoli fuori canone con i loro vicini nel grafo.
+      # Read-only: lo scrive il collocatore, l'app lo legge e basta. Senza questo mount il sidecar
+      # esiste sul disco ma non dentro il container, e l'espansione dei semi non trova niente.
+      - ./services/graph/data/collocatore:/app/services/graph/data/collocatore:ro
       # Ticket 24: l'export statico del frontend è DENTRO l'immagine (stessa versione dell'app).
       # Non c'è più un bind mount: niente due artefatti, niente due versioni, niente passo manuale.
     mem_limit: 1536m
