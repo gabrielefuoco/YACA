@@ -72,6 +72,9 @@ function rowToEntry(row, itemType) {
     }
     const entry = { erdbId };
     if (row.ita === true) entry.badge = BADGE_ITA;
+    // Il token dell'immagine sorgente serve al prefill per calcolare lo stesso nome file
+    // che l'app calcola a runtime (ticket 08). Senza, il prefill scriverebbe orfani.
+    if (row.poster_path) entry.source = row.poster_path;
     return entry;
 }
 
@@ -114,6 +117,7 @@ async function hasItaColumn(con, parquetFile) {
 function buildSelect(parquetFile, { withIta }) {
     const columns = ['CAST(id AS BIGINT) AS id'];
     if (withIta) columns.push('CAST(ita AS BOOLEAN) AS ita');
+    columns.push('CAST(poster_path AS VARCHAR) AS poster_path');
     return `SELECT ${columns.join(', ')}
             FROM read_parquet(${toSqlPath(parquetFile)})
             WHERE id IS NOT NULL
