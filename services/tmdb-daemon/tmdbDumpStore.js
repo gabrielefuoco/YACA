@@ -28,7 +28,13 @@ class TmdbDumpStore {
 
     _getFilePath(mediaType) {
         // mediaType = 'movies' o 'tv'
-        return path.join(this.basePath, `master_${mediaType}.jsonl`);
+        const type = mediaType === 'movie' ? 'movies' : mediaType;
+        return path.join(this.basePath, `master_${type}.jsonl`);
+    }
+
+    _getSpoolPath(mediaType) {
+        const type = mediaType === 'movie' ? 'movies' : mediaType;
+        return path.join(this.basePath, `promoted_${type}.jsonl`);
     }
 
     storeExists(mediaType) {
@@ -115,11 +121,29 @@ class TmdbDumpStore {
     }
 
     async upsert(rows, mediaType) {
-        if (!rows || rows.length === 0) return;
+        const spoolPath = this._getSpoolPath(mediaType);
+        let spoolContent = '';
+        const spoolRows = [];
+        if (fs.existsSync(spoolPath)) {
+            try {
+                spoolContent = fs.readFileSync(spoolPath, 'utf8');
+                for (const line of spoolContent.split('\n')) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    try {
+                        const doc = JSON.parse(trimmed);
+                        if (doc && doc.id != null) spoolRows.push(doc);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        }
+
+        const combined = [...spoolRows, ...(rows || [])];
+        if (combined.length === 0) return;
+
         const filePath = this._getFilePath(mediaType);
-        
         const newRowsMap = new Map();
-        for (const r of rows) newRowsMap.set(r.id, r);
+        for (const r of combined) newRowsMap.set(r.id, r);
 
         if (fs.existsSync(filePath)) {
             await this._processFileSafely(
@@ -139,7 +163,20 @@ class TmdbDumpStore {
                 }
             );
         } else {
-            this.appendBatch(rows, mediaType);
+            this.appendBatch(Array.from(newRowsMap.values()), mediaType);
+        }
+
+        // ponytail: merge + troncamento invece di rename + resume. Il ceiling è che un crash
+        // nel millisecondo fra rename e troncamento fa rifare il merge al giro dopo (costo: una
+        // Map di poche righe). Upgrade path se lo spool cresce: rotazione giornaliera dei file.
+        if (spoolContent && fs.existsSync(spoolPath)) {
+            try {
+                const currentContent = fs.readFileSync(spoolPath, 'utf8');
+                const remaining = currentContent.startsWith(spoolContent)
+                    ? currentContent.slice(spoolContent.length)
+                    : '';
+                fs.writeFileSync(spoolPath, remaining);
+            } catch (_) {}
         }
     }
 
