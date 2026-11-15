@@ -1,11 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
 const {
     matchCatalog,
     extractTokens,
-    isStrictContainment
+    isStrictContainment,
+    resolveByYearWithMargin
 } = require('../src/match');
-const { normBase } = require('../src/parse');
+const { normBase, parseIndexPage } = require('../src/parse');
 
 test('match.js - Percorso 1: Titolo unico -> true', () => {
     const catalog = [
@@ -244,4 +247,196 @@ test('match.js - Titoli catalogo non toccati da AG restano false', () => {
     const result = matchCatalog(catalog, agEntries);
     assert.equal(result.catalogStats.falseCount, 1);
     assert.equal(result.annotations[0].ita, false);
+});
+
+test('match.js - isStrictContainment: controlli di lunghezza, df e rapporto', () => {
+    const rareDf = () => 1;
+    const commonDf = () => 5;
+
+    // ['up'] vs ['up','in','the','air'] -> false (minLen / maxLen = 1/4 = 0.25 < 0.5)
+    assert.equal(isStrictContainment(['up'], ['up', 'in', 'the', 'air'], rareDf), false);
+
+    // ['la','casa'] vs ['la','casa','stregata'] -> true (minLen / maxLen = 2/3 = 0.67 >= 0.5)
+    assert.equal(isStrictContainment(['la', 'casa'], ['la', 'casa', 'stregata'], rareDf), true);
+
+    // single token with df > 3 -> false
+    assert.equal(isStrictContainment(['teen'], ['teen', 'wolf'], commonDf), false);
+
+    // single token of length 3 -> false (token length < 4)
+    assert.equal(isStrictContainment(['eva'], ['eva', 'kant'], rareDf), false);
+});
+
+test('match.js - resolveByYearWithMargin: disambiguazione anno e margine', () => {
+    // 1. exact unique -> hit
+    const cands1 = [
+        { id: '1', year: 2020, type: 'movie' },
+        { id: '2', year: 2010, type: 'movie' }
+    ];
+    const res1 = resolveByYearWithMargin(cands1, 2020, 'movie');
+    assert.ok(res1);
+    assert.equal(res1.hit.id, '1');
+    assert.equal(res1.reason, 'R2_exact_year');
+
+    // 2. exact multiple -> null
+    const cands2 = [
+        { id: '1', year: 2020, type: 'movie' },
+        { id: '2', year: 2020, type: 'movie' }
+    ];
+    const res2 = resolveByYearWithMargin(cands2, 2020, 'movie');
+    assert.equal(res2, null);
+
+    // 3. ±1 unique with nothing at distance 2-4 -> hit with motive R2_year_margin_1yr
+    const cands3 = [
+        { id: '1', year: 1982, type: 'movie' },
+        { id: '2', year: 2017, type: 'movie' }
+    ];
+    const res3 = resolveByYearWithMargin(cands3, 1983, 'movie');
+    assert.ok(res3);
+    assert.equal(res3.hit.id, '1');
+    assert.equal(res3.reason, 'R2_year_margin_1yr');
+
+    // 4. ±1 but another candidate at 3 years -> null
+    const cands4 = [
+        { id: '1', year: 1982, type: 'movie' },
+        { id: '2', year: 1986, type: 'movie' } // distance = |1986 - 1983| = 3
+    ];
+    const res4 = resolveByYearWithMargin(cands4, 1983, 'movie');
+    assert.equal(res4, null);
+});
+
+test('match.js - Percorso 2b: R2_year_margin_1yr risolve scarto anno ±1 e riporta motivo', () => {
+    const catalog = [
+        {
+            id: 'tmdb:movie:1982',
+            type: 'movie',
+            title: 'Blade Runner',
+            year: 1982,
+            key: normBase('Blade Runner'),
+            toks: extractTokens(normBase('Blade Runner'))
+        },
+        {
+            id: 'tmdb:movie:2017',
+            type: 'movie',
+            title: 'Blade Runner',
+            year: 2017,
+            key: normBase('Blade Runner'),
+            toks: extractTokens(normBase('Blade Runner'))
+        }
+    ];
+
+    const agEntries = [
+        {
+            href: 'film1/br83.htm',
+            rawTitle: 'Blade Runner (1983)',
+            cleanTitle: 'Blade Runner',
+            key: normBase('Blade Runner'),
+            year: 1983,
+            zone: 'film',
+            type: 'movie'
+        }
+    ];
+
+    const result = matchCatalog(catalog, agEntries);
+    assert.equal(result.catalogStats.trueCount, 1);
+    assert.equal(result.catalogStats.falseCount, 1);
+
+    const hit = result.annotations.find((r) => r.id === 'tmdb:movie:1982');
+    assert.equal(hit.ita, true);
+
+    const agRes = result.agResults.find((r) => r.matchedId === 'tmdb:movie:1982');
+    assert.equal(agRes.reason, 'R2_year_margin_1yr');
+    assert.equal(result.agStats.byReason['R2_year_margin_1yr'], 1);
+});
+
+test('match.js - Regressione: le tre index fixtures in tests/fixtures/ producono lo stesso numero di match CERTE', () => {
+    const catalog = [
+        {
+            id: 'tmdb:movie:101',
+            type: 'movie',
+            title: 'Titolo Unico Film',
+            year: 2020,
+            key: normBase('Titolo Unico Film'),
+            toks: extractTokens(normBase('Titolo Unico Film'))
+        },
+        {
+            id: 'tmdb:movie:201',
+            type: 'movie',
+            title: 'Omonimo Test',
+            year: 1995,
+            key: normBase('Omonimo Test'),
+            toks: extractTokens(normBase('Omonimo Test'))
+        },
+        {
+            id: 'tmdb:movie:202',
+            type: 'movie',
+            title: 'Omonimo Test',
+            year: 2015,
+            key: normBase('Omonimo Test'),
+            toks: extractTokens(normBase('Omonimo Test'))
+        },
+        {
+            id: 'tmdb:movie:301',
+            type: 'movie',
+            title: 'Omonimo Per Tipo',
+            year: 2010,
+            key: normBase('Omonimo Per Tipo'),
+            toks: extractTokens(normBase('Omonimo Per Tipo'))
+        },
+        {
+            id: 'tmdb:tv:302',
+            type: 'series',
+            title: 'Omonimo Per Tipo',
+            year: 2010,
+            key: normBase('Omonimo Per Tipo'),
+            toks: extractTokens(normBase('Omonimo Per Tipo'))
+        },
+        {
+            id: 'tmdb:movie:007',
+            type: 'movie',
+            title: 'Agente 007 - Thunderball - Operazione tuono',
+            year: 1965,
+            key: normBase('Agente 007 - Thunderball - Operazione tuono'),
+            toks: extractTokens(normBase('Agente 007 - Thunderball - Operazione tuono'))
+        },
+        { id: '1', type: 'movie', title: 'Teen Wolf', year: 1985, key: normBase('Teen Wolf'), toks: extractTokens(normBase('Teen Wolf')) },
+        { id: '2', type: 'movie', title: 'Teen Titans', year: 2003, key: normBase('Teen Titans'), toks: extractTokens(normBase('Teen Titans')) },
+        { id: '3', type: 'movie', title: 'Teen Beach', year: 2013, key: normBase('Teen Beach'), toks: extractTokens(normBase('Teen Beach')) },
+        { id: '4', type: 'movie', title: 'Teen Spirit', year: 2018, key: normBase('Teen Spirit'), toks: extractTokens(normBase('Teen Spirit')) },
+        {
+            id: 'tmdb:movie:501',
+            type: 'movie',
+            title: 'Omonimo Irrisolto',
+            year: 1980,
+            key: normBase('Omonimo Irrisolto'),
+            toks: extractTokens(normBase('Omonimo Irrisolto'))
+        },
+        {
+            id: 'tmdb:movie:502',
+            type: 'movie',
+            title: 'Omonimo Irrisolto',
+            year: 2010,
+            key: normBase('Omonimo Irrisolto'),
+            toks: extractTokens(normBase('Omonimo Irrisolto'))
+        },
+        {
+            id: 'tmdb:movie:999',
+            type: 'movie',
+            title: 'Titolo Totalmente Sconosciuto Ad AG',
+            year: 2023,
+            key: normBase('Titolo Totalmente Sconosciuto Ad AG'),
+            toks: extractTokens(normBase('Titolo Totalmente Sconosciuto Ad AG'))
+        }
+    ];
+
+    const fixtures = ['fixture-film.htm', 'fixture-soap.htm', 'fixture-telefilm.htm'];
+    const allEntries = [];
+    for (const f of fixtures) {
+        const html = fs.readFileSync(path.resolve(__dirname, 'fixtures', f), 'latin1');
+        const zone = f.replace('fixture-', '').replace('.htm', '');
+        const entries = parseIndexPage(html, zone);
+        allEntries.push(...entries);
+    }
+
+    const result = matchCatalog(catalog, allEntries);
+    assert.equal(result.catalogStats.trueCount, 5);
 });

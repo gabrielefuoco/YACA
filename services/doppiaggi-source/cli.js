@@ -356,6 +356,33 @@ async function main(customOpts = null) {
     console.log(`  - Matched univoche (true):  ${matchResult.agStats.matchedTrue} (${((matchResult.agStats.matchedTrue / agEntries.length) * 100).toFixed(1)}%)`);
     console.log(`  - Omonimi irrisolti (null): ${matchResult.agStats.ambiguousNull} (${((matchResult.agStats.ambiguousNull / agEntries.length) * 100).toFixed(1)}%)`);
     console.log(`  - Non trovate nel DB:       ${matchResult.agStats.unmatchedZero} (${((matchResult.agStats.unmatchedZero / agEntries.length) * 100).toFixed(1)}%)`);
+    if (matchResult.agStats.byReason) {
+        console.log('  Distribuzione motivi:');
+        const reasons = matchResult.agStats.byReason;
+        const ordered = [
+            'R1_single_candidate',
+            'R2_exact_year',
+            'R2_exact_year_and_type',
+            'R2_year_margin_1yr',
+            'R3_zone_type',
+            'R4_unresolved_homonym',
+            'fuzzy_strict_single',
+            'fuzzy_strict_year',
+            'fuzzy_strict_type',
+            'fuzzy_strict_ambiguous',
+            'no_candidate_in_db'
+        ];
+        for (const r of ordered) {
+            if (reasons[r] !== undefined) {
+                console.log(`    * ${r.padEnd(24)}: ${reasons[r]}`);
+            }
+        }
+        for (const [r, count] of Object.entries(reasons)) {
+            if (!ordered.includes(r)) {
+                console.log(`    * ${r.padEnd(24)}: ${count}`);
+            }
+        }
+    }
     console.log('---------------------------------------------------------------');
     console.log('STATISTICHE SUL CATALOGO (SOLO AG):');
     console.log(`  - Totale record catalogo:   ${matchResult.catalogStats.total}`);
