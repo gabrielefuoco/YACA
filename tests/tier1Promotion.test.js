@@ -7,6 +7,8 @@ const {
     toTier1Json,
     hasTier1Id,
     promoteToTier1,
+    tier1FileFor,
+    promotedFileFor,
     MOVIE_FIELDS,
     TV_FIELDS
 } = require('../src/indice/tier1Promotion');
@@ -111,7 +113,7 @@ describe('Promozione Tier 2 → Tier 1', () => {
 
     beforeEach(() => {
         dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-tier1-promotion-'));
-        moviesFile = path.join(dir, 'master_movies.jsonl');
+        moviesFile = path.join(dir, 'custom_movies.jsonl');
     });
 
     afterEach(() => {
@@ -277,7 +279,7 @@ describe('Promozione Tier 2 → Tier 1', () => {
         });
 
         test('file inesistente: viene creato con la riga promossa', async () => {
-            const nuovo = path.join(dir, 'master_tv.jsonl');
+            const nuovo = path.join(dir, 'custom_tv.jsonl');
             expect(fs.existsSync(nuovo)).toBe(false);
 
             const esito = await promoteToTier1(nuovo, tvDetails(), 'tv');
@@ -330,6 +332,30 @@ describe('Promozione Tier 2 → Tier 1', () => {
 
             expect(secondo.scritto).toBe(false);
             expect(readLinesOf(moviesFile)).toHaveLength(1);
+        });
+
+        test('quando punta a master_*.jsonl scrive nello spool e riporta percorso dello spool', async () => {
+            const master = path.join(dir, 'master_movies.jsonl');
+            const spool = promotedFileFor('movie', dir);
+            expect(spool).toBe(path.join(dir, 'promoted_movies.jsonl'));
+
+            const esito = await promoteToTier1(master, movieDetails({ id: 888 }), 'movie');
+            expect(esito.scritto).toBe(true);
+            expect(esito.percorso).toBe(spool);
+            expect(fs.existsSync(spool)).toBe(true);
+            expect(fs.existsSync(master)).toBe(false);
+
+            const righe = readLinesOf(spool);
+            expect(righe).toHaveLength(1);
+            expect(JSON.parse(righe[0]).id).toBe(888);
+
+            // hasTier1Id trova l'id controllando prima lo spool
+            await expect(hasTier1Id(master, 888)).resolves.toBe(true);
+
+            // Seconda promozione dello stesso id non scrive di nuovo
+            const secondo = await promoteToTier1(master, movieDetails({ id: 888 }), 'movie');
+            expect(secondo.scritto).toBe(false);
+            expect(readLinesOf(spool)).toHaveLength(1);
         });
     });
 });

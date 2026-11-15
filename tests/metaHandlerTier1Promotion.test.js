@@ -182,8 +182,8 @@ describe('tier1LazyPromotion: dedup e silenzio del memo', () => {
         expect(secondo.scritto).toBe(true);
         expect(fetchDetails).toHaveBeenCalledTimes(1);
 
-        // Una sola riga nel JSONL: nessun duplicato.
-        const righe = fs.readFileSync(path.join(tmpDir, 'master_movies.jsonl'), 'utf8').trim().split('\n');
+        // Una sola riga nello spool JSONL: nessun duplicato.
+        const righe = fs.readFileSync(path.join(tmpDir, 'promoted_movies.jsonl'), 'utf8').trim().split('\n');
         expect(righe).toHaveLength(1);
         expect(JSON.parse(righe[0]).id).toBe(4242);
     });
@@ -198,7 +198,7 @@ describe('tier1LazyPromotion: dedup e silenzio del memo', () => {
         expect(esito.scritto).toBe(false);
         expect(esito.motivo).toContain('già nel Tier 1');
         expect(fetchDetails).not.toHaveBeenCalled();
-        expect(fs.readFileSync(path.join(tmpDir, 'master_movies.jsonl'), 'utf8').trim().split('\n')).toHaveLength(1);
+        expect(fs.readFileSync(path.join(tmpDir, 'promoted_movies.jsonl'), 'utf8').trim().split('\n')).toHaveLength(1);
     });
 
     test('`schedulePromotion` non solleva e non lascia rejection non gestite', async () => {
