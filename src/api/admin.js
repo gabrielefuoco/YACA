@@ -10,6 +10,7 @@ const SystemLog = require('../models/SystemLog');
 const adminAuth = require('./middleware/adminAuth');
 const TmdbDumpStore = require('../../services/tmdb-daemon/tmdbDumpStore');
 const tmdbDumpStore = new TmdbDumpStore();
+const { getIngestionStatus } = require('../infra/ingestionStatus');
 const { exec } = require('child_process');
 const path = require('path');
 
@@ -96,6 +97,17 @@ router.get('/tmdb-dump/status', async (req, res) => {
         res.json({ success: true, status });
     } catch (err) {
         console.error('Errore status tmdb dump:', err);
+        res.status(500).json({ error: 'Errore server' });
+    }
+});
+
+// Endpoint per il semaforo dei quattro degradi silenziosi (Ticket 10)
+router.get('/ingestion-status', async (_req, res) => {
+    try {
+        const status = await getIngestionStatus();
+        res.json({ success: true, ...status });
+    } catch (err) {
+        console.error('Errore ingestion status:', err);
         res.status(500).json({ error: 'Errore server' });
     }
 });
