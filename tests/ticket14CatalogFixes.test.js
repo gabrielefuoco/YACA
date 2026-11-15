@@ -245,7 +245,10 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
             ]);
 
             expect(metas.length).toBe(1);
-            expect(metas[0].type).toBe('anime');
+            // L'intento di questo test è che la libreria personale NON venga filtrata dalla
+            // politica anime. Il tipo non è più `anime` (che Stremio non conosce e che faceva
+            // aprire un'altra opera con lo stesso id): ora è il medium, deciso dalla mappatura.
+            expect(['series', 'movie']).toContain(metas[0].type);
             expect(metas[0].releaseInfo).toBe('1997');
         });
     });

@@ -133,11 +133,31 @@ async function enrichWatchlistItemsWithTmdbMetadata(items) {
     });
 }
 
+/**
+ * Il tipo Stremio di un item di libreria. `anime` NON è un tipo Stremio: dichiararlo faceva
+ * ricadere l'apertura su `movie`, e con lo stesso id numerico in `movies` e `tv` si apriva
+ * un'altra opera («I dodici regni» tv:42729 mostrato come «Sherlock Holmes: Notti di terrore»
+ * movie:42729). Il tipo è il MEDIUM: lo dice la mappatura anime, che tiene insiemi separati
+ * per film e per serie.
+ */
+function tipoStremioDi(item) {
+    if (!item || item.type !== 'anime') return item?.type;
+    try {
+        const store = require('../../anime/mapping');
+        const serie = store.statoAnime(item.tmdbId, 'tv') === 'si';
+        const film = store.statoAnime(item.tmdbId, 'movie') === 'si';
+        if (serie && !film) return 'series';
+        if (film && !serie) return 'movie';
+        if (serie) return 'series';
+    } catch (_e) { /* mappatura assente: si ricade sulla scelta prudente */ }
+    return 'series';   // un anime senza informazione: la grande maggioranza sono serie
+}
+
 function transformWatchlistItemToMeta(item) {
     const effectiveId = item.itemId || item._id;
     return {
         id: effectiveId,
-        type: item.type,
+        type: tipoStremioDi(item),
         name: item.name || 'Unknown',
         poster: normalizeLegacyPosterHost(item.poster, process.env.HOST_URL),
         posterShape: item.posterShape || 'poster',
@@ -212,6 +232,7 @@ async function getWatchlistCatalog(id, type, skip, userConfig, activeProfileSett
 }
 
 module.exports = {
+    tipoStremioDi,
     getWatchlistCatalog,
     WATCHLIST_PAGE_SIZE
 };
