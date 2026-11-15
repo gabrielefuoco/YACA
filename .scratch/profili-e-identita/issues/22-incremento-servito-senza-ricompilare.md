@@ -87,3 +87,16 @@ dal sidecar, e non è ancora fatto: è la seconda metà di questo ticket se un g
 Il bisogno dichiarato era: *«il seme non si butta, altrimenti chi guarda solo roba nuova non riceve
 consigli»*. Questo lo risolve con zero rischio sull'artefatto servito, e la verifica del ticket 19 dice
 quando il caso si presenta: finché il contatore resta a zero, questa macchina non serve a nessuno.
+
+## Verifica in produzione (11/11/2026)
+
+| passo | esito |
+|---|---|
+| collocazione di «Street Fighter» (2026, fuori canone) | `colloca-riga.py --scrivi-sidecar`: 16 vicini, somiglianze 0,42–0,53 |
+| sidecar nel container | `percorso: /app/services/graph/data/collocatore/collocati.json`, **1 voce** |
+| espansione | seme `movie:1153576` → **16 vicini**, peso totale **1,000** conservato (0,076 · 0,072 · 0,071…) |
+| cataloghi | 170 elencati, **0 vuoti** |
+
+Il mount read-only in `docker-compose.yml` era **necessario e non ovvio**: senza, il file esiste sul
+disco del mate ma non dentro il container, `caricaVoci()` torna vuoto e l'espansione non trova niente —
+un guasto che non dà errore, solo un sidecar silenziosamente ignorato.
