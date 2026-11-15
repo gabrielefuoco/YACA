@@ -1,0 +1,24 @@
+[Unit]
+Description=YACA Poster GC - Garbage Collector del volume poster (/data/erdb-cache)
+Documentation=file:///srv/yaca/docs/TIMER_POSTER.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+# Il servizio gira come root per comunicare con il demone Docker tramite `docker exec`.
+# Dentro `yaca-app`, `ERDB_CACHE_DIR=/data/erdb-cache` punta al volume `yaca_erdb_cache`.
+# Il GC opera direttamente sul filesystem del volume: rimuove i .tmp orfani (>15m)
+# e i poster composti non più aggiornati oltre ttlDays (60gg), fino al tetto maxDelete.
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+WorkingDirectory=/srv/yaca
+ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node src/posters/gcPosterCache.js --max-delete 500 --ttl-days 60
+Restart=no
+TimeoutStartSec=15min
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
