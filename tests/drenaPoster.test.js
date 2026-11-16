@@ -465,4 +465,25 @@ describe('drenaPoster - i fallimenti si spiegano da sé', () => {
         expect(classificaMotivo('richiesta fallita: fetch failed')).toBe('rete');
         expect(classificaMotivo('boh')).toBe('altro');
     });
+
+    test('golden nomi file prodotti: evento movie con badge ed evento anime (TMDB + Kitsu)', async () => {
+        const coda = creaCoda([
+            { tipo: 'movie', id: 265, badge: 'ITA' },
+            { tipo: 'tv', id: 1234, badge: null }
+        ]);
+        const cercaKitsu = (id, tipo) => (tipo === 'tv' ? '9876' : null);
+        const fetchImpl = creaFetch({
+            [`${BASE}/poster/tmdb:movie:265.jpg?badge=ITA`]: risposta(JPEG),
+            [`${BASE}/poster/tmdb:tv:1234.jpg`]: risposta(JPEG),
+            [`${BASE}/poster/kitsu:9876.jpg`]: risposta(JPEG)
+        });
+
+        const riepilogo = await gira({ ...coda, cercaKitsu, fetchImpl });
+        expect(riepilogo).toMatchObject({ presi: 2, resi: 2, falliti: 0 });
+        expect(fs.readdirSync(dir).sort()).toEqual([
+            'kitsu-9876-19d5fba6.jpg',
+            'tmdb-movie-265-9307414a_ITA.jpg',
+            'tmdb-tv-1234-e10e0f81.jpg'
+        ]);
+    });
 });

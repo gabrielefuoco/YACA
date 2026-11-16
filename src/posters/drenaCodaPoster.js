@@ -15,8 +15,10 @@
  */
 
 const drenaPoster = require('./drenaPoster');
-const { drena, eventoDaErdbId, classificaMotivo, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS } = drenaPoster;
-const { erdbIdsDaEvento, nomeFileDaEvento } = require('./posterDaEvento');
+const { drena, classificaMotivo, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS } = drenaPoster;
+const { erdbIdsDaEvento } = require('./posterDaEvento');
+const { posterFileName } = require('./erdb/build');
+const { leggiToken } = require('./sorgenti');
 const { scriviVersioniVolume, VERSIONI_FILE_NAME } = require('./volumeContract');
 const { aspettaRedis } = require('./codaEventi');
 const DEFAULT_CACHE_DIR = '/data/erdb-cache';
@@ -395,8 +397,9 @@ async function dryRunGiro({ coda, log, store, redis, base, outDir, batch, attesa
         const progresso = `(${posizione + 1}/${eventi.length})`;
         try {
             for (const erdbId of erdbIdsDaEvento(evento, cercaKitsu)) {
-                const { tipo, id, badge } = eventoDaErdbId(erdbId, evento);
-                log.log(`[Drena] da rifare ${nomeFileDaEvento({ tipo, id, badge })} ${progresso}`);
+                const source = leggiToken(erdbId, outDir) || null;
+                const file = posterFileName({ erdbId, badge: evento.badge, source });
+                log.log(`[Drena] da rifare ${file} ${progresso}`);
             }
             stato.daRifare += 1;
         } catch (err) {

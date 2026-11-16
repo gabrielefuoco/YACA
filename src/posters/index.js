@@ -34,7 +34,6 @@ module.exports = {
     scarica: drenaPoster.scarica,
     scrivi: drenaPoster.scrivi,
     classificaMotivo: drenaPoster.classificaMotivo,
-    eventoDaErdbId: drenaPoster.eventoDaErdbId,
     eJpeg: drenaPoster.eJpeg,
     DEFAULT_BATCH: drenaPoster.DEFAULT_BATCH,
     DEFAULT_TIMEOUT_MS: drenaPoster.DEFAULT_TIMEOUT_MS,
