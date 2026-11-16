@@ -11,6 +11,10 @@ Chiudere i modi in cui l'ingestione **perde dati o congela gli aggiornamenti in 
 introdurre servizi nuovi e senza migrazioni manuali (il rilascio è un'immagine nuova sostituita da
 Watchtower: ogni patch deve auto-ripararsi al boot o restare retrocompatibile con i file esistenti).
 
+**Stato 2026-11-16: chiuso.** 12 ticket su 12 in produzione in 4 onde, più il ticket 12 (decode charset)
+emerso durante il primo deploy. Misure e scostamenti in `log/onda-1.md … log/onda-4.md`. Cosa resta
+fuori è elencato in fondo a `log/onda-4.md`.
+
 ## Decisioni prese
 
 **Vincoli di stile (valgono su ogni ticket): ponytail/full — la soluzione più corta che funziona, un solo
