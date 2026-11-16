@@ -45,7 +45,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { erdbIdsDaEvento, nomeFileDaEvento, urlDaEvento } = require('./posterDaEvento');
+const { erdbIdsDaEvento } = require('./posterDaEvento');
+const { posterFileName, posterUrl } = require('./erdb/build');
+const { leggiToken } = require('./sorgenti');
 
 // Quanti eventi per giro se il chiamante non dice nulla. La coda cresce di 10-50 voci al giorno:
 // un lotto piccolo la svuota in qualche giorno e resta una richiesta alla volta, quindi un
@@ -105,28 +107,6 @@ function classificaMotivo(causa) {
     if (/tipo sconosciuto/i.test(testo)) return 'tipo_sconosciuto';
     if (/senza "?id"?|non in forma ERDB|id mancante|non riconosciuto/i.test(testo)) return 'evento_malformato';
     return 'altro';
-}
-
-/**
- * Il `{tipo, id}` da cui ricavare nome file e URL di un id ERDB dell'elenco.
- *
- * `erdbIdsDaEvento` restituisce id già in forma ERDB (`tmdb:movie:265`, `kitsu:265`), mentre
- * `nomeFileDaEvento`/`urlDaEvento` vogliono `{tipo, id, badge}`. Si torna indietro senza
- * ricostruire le stringhe a mano: nome e URL li decide `posterDaEvento` (cioè il costruttore),
- * qui si ricostruisce solo l'input.
- */
-function eventoDaErdbId(erdbId, evento) {
-    const testo = String(erdbId || '').trim();
-    const badge = evento && evento.badge !== undefined ? evento.badge : null;
-
-    // Id già in forma Kitsu: `erdbIdDaEvento` lo riusa cosi' com'e' e il `tipo` non conta.
-    if (testo.startsWith('kitsu:')) return { tipo: evento && evento.tipo, id: testo, badge };
-
-    const parti = testo.split(':');   // tmdb:<tipo>:<id>
-    if (parti.length !== 3 || parti[0] !== 'tmdb' || !parti[1] || !parti[2]) {
-        throw guasto('evento_malformato', `id ERDB non riconosciuto: ${JSON.stringify(erdbId)}`);
-    }
-    return { tipo: parti[1], id: parti[2], badge };
 }
 
 /**
@@ -257,7 +237,8 @@ async function drena({
     fetchImpl = globalThis.fetch,
     batch = DEFAULT_BATCH,
     timeoutMs = DEFAULT_TIMEOUT_MS,
-    log = console
+    log = console,
+    eventi: eventiPassati = null
 } = {}) {
     const riepilogo = {
         presi: 0,
@@ -267,13 +248,15 @@ async function drena({
         note: { take: 0, cartella: 0, chiusura: 0 }
     };
 
-    let eventi;
-    try {
-        eventi = await take(batch);
-    } catch (err) {
-        log.warn(`[DrenaPoster] take fallito: ${err && err.message ? err.message : err}`);
-        riepilogo.note.take += 1;
-        return riepilogo;
+    let eventi = eventiPassati;
+    if (!Array.isArray(eventi)) {
+        try {
+            eventi = await take(batch);
+        } catch (err) {
+            log.warn(`[DrenaPoster] take fallito: ${err && err.message ? err.message : err}`);
+            riepilogo.note.take += 1;
+            return riepilogo;
+        }
     }
     if (!Array.isArray(eventi)) return riepilogo;
     if (!eventi.length) return riepilogo;
@@ -303,9 +286,9 @@ async function drena({
             const ids = erdbIdsDaEvento(evento, cercaKitsu);
             for (const id of ids) {
                 erdbId = id;
-                const { tipo, id: idErdb, badge } = eventoDaErdbId(id, evento);
-                const file = nomeFileDaEvento({ tipo, id: idErdb, badge }, { cacheDir: outDir });
-                const url = urlDaEvento(base, { tipo, id: idErdb, badge });
+                const source = leggiToken(id, outDir) || null;
+                const file = posterFileName({ erdbId: id, badge: evento.badge, source });
+                const url = posterUrl(base, { erdbId: id, badge: evento.badge });
                 const buffer = await scarica(url, { fetchImpl, timeoutMs });
                 await scrivi(path.join(outDir, file), buffer);
                 log.log(`[DrenaPoster] reso ${file}`);
@@ -354,7 +337,6 @@ module.exports = {
     eJpeg,
     scarica,
     scrivi,
-    eventoDaErdbId,
     classificaMotivo,
     DEFAULT_BATCH,
     DEFAULT_TIMEOUT_MS

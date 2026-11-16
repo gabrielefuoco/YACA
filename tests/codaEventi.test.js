@@ -130,21 +130,21 @@ describe('Coda degli eventi di ricomposizione dei poster', () => {
     });
 
     test('push + take: l\'evento esce con tipo, id e badge', async () => {
-        expect(await coda.push(EVENTO)).toBe(true);
+        expect(await coda.push(EVENTO)).toBe('added');
 
         expect(await coda.take(10)).toEqual([{ tipo: 'doppiato', id: 'kitsu:1234', badge: 'ITA' }]);
     });
 
     test('push senza badge: il campo resta null invece di sparire', async () => {
-        await coda.push({ tipo: 'episodio', id: 'anime:999' });
+        expect(await coda.push({ tipo: 'episodio', id: 'anime:999' })).toBe('added');
 
         expect(await coda.take(1)).toEqual([{ tipo: 'episodio', id: 'anime:999', badge: null }]);
     });
 
     test('lo stesso evento due volte lascia una sola voce in coda', async () => {
-        expect(await coda.push(EVENTO)).toBe(true);
-        expect(await coda.push({ ...EVENTO })).toBe(false); // già in attesa
-        expect(await coda.push(EVENTO)).toBe(false);
+        expect(await coda.push(EVENTO)).toBe('added');
+        expect(await coda.push({ ...EVENTO })).toBe('duplicate'); // già in attesa
+        expect(await coda.push(EVENTO)).toBe('duplicate');
 
         expect(await coda.take(10)).toHaveLength(1);
     });
@@ -222,19 +222,26 @@ describe('Coda degli eventi di ricomposizione dei poster', () => {
     });
 
     test('un id numerico viene trattato come stringa, quindi deduplica lo stesso', async () => {
-        expect(await coda.push({ tipo: 'doppiato', id: 1234 })).toBe(true);
-        expect(await coda.push({ tipo: 'doppiato', id: '1234' })).toBe(false);
+        expect(await coda.push({ tipo: 'doppiato', id: 1234 })).toBe('added');
+        expect(await coda.push({ tipo: 'doppiato', id: '1234' })).toBe('duplicate');
 
         expect(await coda.take(10)).toEqual([{ tipo: 'doppiato', id: '1234', badge: null }]);
     });
 
     test('un evento senza tipo o senza id viene rifiutato e non lascia spazzature', async () => {
-        expect(await coda.push({ id: 'kitsu:1234' })).toBe(false);
-        expect(await coda.push({ tipo: 'doppiato' })).toBe(false);
-        expect(await coda.push({ tipo: '  ', id: 'kitsu:1234' })).toBe(false);
-        expect(await coda.push()).toBe(false);
+        expect(await coda.push({ id: 'kitsu:1234' })).toBe('error');
+        expect(await coda.push({ tipo: 'doppiato' })).toBe('error');
+        expect(await coda.push({ tipo: '  ', id: 'kitsu:1234' })).toBe('error');
+        expect(await coda.push()).toBe('error');
 
         expect(await coda.take(10)).toEqual([]);
+    });
+
+    test('push su lista vuota -> added, push doppio -> duplicate, Redis giù -> error', async () => {
+        expect(await coda.push(EVENTO)).toBe('added');
+        expect(await coda.push(EVENTO)).toBe('duplicate');
+        const codaMorta = createCodaEventi(redisRotto());
+        expect(await codaMorta.push(EVENTO)).toBe('error');
     });
 
     test('il TTL lungo viene applicato a tutte le chiavi della coda', async () => {
@@ -249,10 +256,10 @@ describe('Coda degli eventi di ricomposizione dei poster', () => {
         const rpushSano = redis.rpush;
         redis.rpush = async () => { throw new Error('READONLY Redis giù'); };
 
-        expect(await coda.push(EVENTO)).toBe(false);
+        expect(await coda.push(EVENTO)).toBe('error');
 
         redis.rpush = rpushSano;
-        expect(await coda.push(EVENTO)).toBe(true); // non è rimasto "occupato" per sempre
+        expect(await coda.push(EVENTO)).toBe('added'); // non è rimasto "occupato" per sempre
         expect(await coda.take(10)).toHaveLength(1);
     });
 
@@ -266,7 +273,7 @@ describe('Coda degli eventi di ricomposizione dei poster', () => {
         });
 
         test('push, done e fail degradano: nessuno dei chiamanti cade', async () => {
-            await expect(coda.push(EVENTO)).resolves.toBe(false);
+            await expect(coda.push(EVENTO)).resolves.toBe('error');
             await expect(coda.done(EVENTO)).resolves.toBe(false);
             await expect(coda.fail(EVENTO)).resolves.toBe(false);
             expect(warn).toHaveBeenCalled();

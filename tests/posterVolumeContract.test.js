@@ -23,14 +23,12 @@ const {
     CONTRATTO_VERSION,
     calcolaVersioniVolume,
     scriviVersioniVolume,
-    scriviVersioniVolumeSync,
     leggiVersioniVolume,
     getStatoVolume,
     registraRichiestaPoster,
     verificaPresenzaPoster,
     getStatistichePoster,
-    azzeraStatistichePoster,
-    volumeObserver
+    azzeraStatistichePoster
 } = require('../src/posters/volumeContract');
 const { BADGE_IMG_VERSION } = require('../src/stremio/formatters/posterBadgeVersion');
 

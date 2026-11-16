@@ -26,7 +26,6 @@ describe('Modulo Poster — Superficie pubblica', () => {
         expect(typeof posters.scarica).toBe('function');
         expect(typeof posters.scrivi).toBe('function');
         expect(typeof posters.classificaMotivo).toBe('function');
-        expect(typeof posters.eventoDaErdbId).toBe('function');
         expect(typeof posters.eJpeg).toBe('function');
     });
 
