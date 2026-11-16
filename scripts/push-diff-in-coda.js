@@ -69,12 +69,6 @@ const FILE_NAME = 'ita_annotations.diff.json';
 const DEFAULT_ATTESA_REDIS_MS = 10000;
 const INTERVALLO_ATTESA_REDIS_MS = 100;
 
-// Quante voci si guardano per separare "era già in coda" da "non sono riuscito a metterlo in
-// coda". La coda cresce di 10-50 voci al giorno con TTL di 7 giorni, quindi duemila sono
-// abbondanti; e se un giorno non bastassero, lo sbaglio è verso "non spinto" — che è la parte
-// che fa rumore e che si rimedia rilanciando — e non verso "tutto a posto" per un evento perso.
-const LOTTO_VERIFICA_CODA = 2000;
-
 /** Come chiama `codaEventi` le sue chiavi: leggibile nel log, e senza ambiguità. */
 function chiaveEvento(evento) {
     return `${evento.tipo}|${evento.id}`;
@@ -225,35 +219,6 @@ function messaggioRedisNonPronto(tettoMs, eventi) {
     return `Redis NON pronto dopo ${tettoMs} ms: nessuno dei ${eventi} eventi è stato spinto, `
         + 'e non è che la coda li avesse già — è che non sono riuscito a scriverci. '
         + 'Nessun allarme silenzioso: il giro dopo non li riporterà (il diff è un delta).';
-}
-
-/**
- * Una `push` che risponde `false` non dice **perché**: `codaEventi.push` risponde `false` sia per
- * "era già in attesa" (idempotenza, nessun problema) sia per "non sono riuscito a scrivere"
- * (guasto, e l'evento è perso). L'unica fonte pubblica per separarli è la coda stessa: `take`
- * non toglie nulla, quindi si guarda e basta.
- *
- * La fotografia si fa una volta sola e si riusa: nel giro normale nessuna `push` torna `false`
- * (tutti gli eventi sono nuovi) e non si guarda niente; il caso in cui si guarda è il rilancio
- * sullo stesso artefatto o il guasto, ed è quello che va raccontato.
- */
-function verificatoreInCoda(coda, log) {
-    let scatto = null;
-    return async function inCoda(evento) {
-        if (scatto === null) {
-            scatto = [];
-            try {
-                const inAttesa = await coda.take(LOTTO_VERIFICA_CODA);
-                if (Array.isArray(inAttesa)) scatto = inAttesa;
-            } catch (err) {
-                // Una coda che non risponde nemmeno a `take` non può confermare niente: si dice,
-                // e si risponde "non in coda" — la parte che fa rumore.
-                log.warn(`[PushDiff] non riesco a guardare la coda per separare "già in coda" da ` +
-                    `"non spinto": ${err.message}. Lo conto come non spinto.`);
-            }
-        }
-        return scatto.some((e) => e && String(e.tipo) === String(evento.tipo) && String(e.id) === String(evento.id));
-    };
 }
 
 /**
@@ -454,26 +419,20 @@ async function pushDiffInCoda(opts = {}) {
         return riassunto;
     }
 
-    const inCoda = verificatoreInCoda(coda, log);
-
     for (const evento of eventi) {
-        let accodato = false;
+        let stato;
         try {
-            accodato = await coda.push(evento);
+            stato = await (coda.pushWithStatus ? coda.pushWithStatus(evento) : coda.push(evento));
         } catch (err) {
             // `codaEventi` non lancia mai; si è qui perché un `push` finto o un futuro coda
             // diverso non deve trasformare un problema in un'eccezione non gestita dentro un timer.
             log.warn(`[PushDiff] push di ${chiaveEvento(evento)} lanciato: ${err.message}`);
-        }
-        if (accodato) {
-            riassunto.spinte++;
-            continue;
+            stato = 'error';
         }
 
-        // `false` è ambiguo, e l'ambiguità è il difetto: si guarda la coda e si separa. "C'era
-        // già" è idempotenza — nessun problema, e il numero esce accanto agli altri. "Non c'è"
-        // è una perdita, e una perdita ha un nome (`perduti`) e un codice di uscita.
-        if (await inCoda(evento)) {
+        if (stato === 'added' || stato === true) {
+            riassunto.spinte++;
+        } else if (stato === 'duplicate') {
             riassunto.giaInCoda++;
         } else {
             riassunto.falliti++;
@@ -572,7 +531,6 @@ module.exports = {
     FILE_NAME,
     DEFAULT_ATTESA_REDIS_MS,
     INTERVALLO_ATTESA_REDIS_MS,
-    LOTTO_VERIFICA_CODA,
     dirDati,
     percorsoDiffDefault,
     parseArgs,
@@ -581,7 +539,6 @@ module.exports = {
     eventiDaArtefatto,
     aspettaRedis,
     messaggioRedisNonPronto,
-    verificaInCoda: verificatoreInCoda,
     rigaRiepilogo,
     pushDiffInCoda,
     main

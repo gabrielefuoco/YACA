@@ -21,6 +21,7 @@ module.exports = {
     codaEventi,
     createCodaEventi: codaEventi.createCodaEventi,
     push: codaEventi.push,
+    pushWithStatus: codaEventi.pushWithStatus,
     take: codaEventi.take,
     done: codaEventi.done,
     fail: codaEventi.fail,
