@@ -35,8 +35,7 @@ function getTmdbApiKey(opts = {}) {
     const candidates = [
         path.resolve(process.cwd(), '.env'),
         path.resolve(__dirname, '..', '..', '.env'),
-        path.resolve(__dirname, '..', '..', '..', '.env'),
-        'C:/Users/gabri/APP/YACA/.env'
+        path.resolve(__dirname, '..', '..', '..', '.env')
     ];
 
     for (const p of candidates) {
@@ -112,33 +111,20 @@ function buildSanitizedCacheFilename(pathname) {
 }
 
 /**
- * Cerca un file di cache esistente, sia in cacheDir che nelle cartelle di fallback,
- * verificando anche i formati legacy (con api_key nel nome file).
+ * Cerca un file di cache esistente, sia in cacheDir che nelle cartelle di fallback.
  * @param {string} pathname
  * @param {string} cacheDir
  * @param {string[]} [fallbackDirs=[]]
- * @param {string} [apiKey]
  * @returns {string|null} Percorso del file se esiste, altrimenti null
  */
-function findExistingCacheFile(pathname, cacheDir, fallbackDirs = [], apiKey = '') {
+function findExistingCacheFile(pathname, cacheDir, fallbackDirs = []) {
     const sanitizedName = buildSanitizedCacheFilename(pathname);
     const candidateDirs = [cacheDir, ...fallbackDirs].filter(Boolean);
 
-    const candidateFilenames = [sanitizedName];
-    if (apiKey) {
-        // Formato legacy usato dagli script di analisi gate (es. gate-risoluzione-id.js)
-        const legacyWithKey = pathname.includes('api_key=')
-            ? pathname.replace(/[^\w.-]/g, '_').slice(0, 180) + '.json'
-            : pathname.replace(/\?/, `?api_key=${apiKey}&`).replace(/[^\w.-]/g, '_').slice(0, 180) + '.json';
-        candidateFilenames.push(legacyWithKey);
-    }
-
     for (const dir of candidateDirs) {
-        for (const fname of candidateFilenames) {
-            const p = path.join(dir, fname);
-            if (fs.existsSync(p)) {
-                return p;
-            }
+        const p = path.join(dir, sanitizedName);
+        if (fs.existsSync(p)) {
+            return p;
         }
     }
 
@@ -177,7 +163,7 @@ async function callTmdb(pathname, options) {
     }
 
     // 1. Verifica cache su disco
-    const existingFile = findExistingCacheFile(pathname, cacheDir, fallbackDirs, apiKey);
+    const existingFile = findExistingCacheFile(pathname, cacheDir, fallbackDirs);
     if (existingFile) {
         try {
             const data = JSON.parse(fs.readFileSync(existingFile, 'utf8'));
