@@ -30,15 +30,15 @@ const path = require('path');
 const express = require('express');
 
 const registerStaticPostersRoute = require('../../src/api/staticPosters');
+const volumeContract = require('../../src/posters/volumeContract');
 const {
     scriviVersioniVolume,
     leggiVersioniVolume,
     getStatoVolume,
     getStatistichePoster,
     azzeraStatistichePoster,
-    volumeObserver,
     VERSIONI_FILE_NAME
-} = require('../../src/posters/volumeContract');
+} = volumeContract;
 const { BADGE_IMG_VERSION } = require('../../src/stremio/formatters/posterBadgeVersion');
 
 const JPEG_SAMPLE = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x01, 0x99]);
@@ -143,7 +143,7 @@ async function runProbe() {
         // Decisione 34: se la sonda è lanciata con --disable-verification,
         // disabilitiamo l'observer DALLA SONDA tramite patch dell'istanza.
         if (disableVerification) {
-            volumeObserver.registraRichiesta = () => ({ registrato: false, trovato: false });
+            volumeContract.registraRichiestaPoster = () => ({ registrato: false, trovato: false });
             console.log('[Probe] Observer disabilitato tramite patch esterna della sonda.');
         }
 
