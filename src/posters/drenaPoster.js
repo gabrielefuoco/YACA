@@ -257,7 +257,8 @@ async function drena({
     fetchImpl = globalThis.fetch,
     batch = DEFAULT_BATCH,
     timeoutMs = DEFAULT_TIMEOUT_MS,
-    log = console
+    log = console,
+    eventi: eventiPassati = null
 } = {}) {
     const riepilogo = {
         presi: 0,
@@ -267,13 +268,15 @@ async function drena({
         note: { take: 0, cartella: 0, chiusura: 0 }
     };
 
-    let eventi;
-    try {
-        eventi = await take(batch);
-    } catch (err) {
-        log.warn(`[DrenaPoster] take fallito: ${err && err.message ? err.message : err}`);
-        riepilogo.note.take += 1;
-        return riepilogo;
+    let eventi = eventiPassati;
+    if (!Array.isArray(eventi)) {
+        try {
+            eventi = await take(batch);
+        } catch (err) {
+            log.warn(`[DrenaPoster] take fallito: ${err && err.message ? err.message : err}`);
+            riepilogo.note.take += 1;
+            return riepilogo;
+        }
     }
     if (!Array.isArray(eventi)) return riepilogo;
     if (!eventi.length) return riepilogo;

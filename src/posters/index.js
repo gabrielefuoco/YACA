@@ -25,6 +25,7 @@ module.exports = {
     take: codaEventi.take,
     done: codaEventi.done,
     fail: codaEventi.fail,
+    aspettaRedis: codaEventi.aspettaRedis,
     MAX_TENTATIVI: codaEventi.MAX_TENTATIVI,
     TTL_SECONDS: codaEventi.TTL_SECONDS,
 

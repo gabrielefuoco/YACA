@@ -18,6 +18,7 @@ const drenaPoster = require('./drenaPoster');
 const { drena, eventoDaErdbId, classificaMotivo, DEFAULT_BATCH, DEFAULT_TIMEOUT_MS } = drenaPoster;
 const { erdbIdsDaEvento, nomeFileDaEvento } = require('./posterDaEvento');
 const { scriviVersioniVolume, VERSIONI_FILE_NAME } = require('./volumeContract');
+const { aspettaRedis } = require('./codaEventi');
 const DEFAULT_CACHE_DIR = '/data/erdb-cache';
 const getCacheDir = () => process.env.ERDB_CACHE_DIR || DEFAULT_CACHE_DIR;
 
@@ -201,41 +202,6 @@ async function preparaMappa({ store, log, dryRun = false, attesaMs = DEFAULT_ATT
     return { cercaKitsu: adattatoreKitsu(store, stato, log), stato };
 }
 
-function _dormi(ms) {
-    return new Promise((risolvi) => { setTimeout(risolvi, ms); });
-}
-
-async function aspettaRedis(redis, {
-    tettoMs = DEFAULT_ATTESA_REDIS_MS,
-    intervalloMs = INTERVALLO_ATTESA_REDIS_MS,
-    log = console
-} = {}) {
-    const subito = { pronto: true, interrogazioni: 0, attesaMs: 0 };
-    if (!redis) return subito;
-    const ora = redis.isAvailable;
-    if (ora === true) return { ...subito, interrogazioni: 1 };
-    if (typeof ora === 'undefined') return subito;
-
-    if (!(tettoMs > 0)) return { pronto: false, interrogazioni: 1, attesaMs: 0 };
-    const passo = Math.max(1, Math.min(intervalloMs > 0 ? intervalloMs : INTERVALLO_ATTESA_REDIS_MS, tettoMs));
-
-    const inizio = Date.now();
-    let interrogazioni = 1;
-    log.log(`[Drena] Redis non è ancora connesso: aspetto al massimo ${tettoMs} ms (ogni ${passo} ms) ` +
-        'prima di guardare la coda…');
-
-    while (Date.now() - inizio < tettoMs) {
-        await _dormi(passo);
-        interrogazioni += 1;
-        if (redis.isAvailable === true) {
-            const attesaMs = Date.now() - inizio;
-            log.log(`[Drena] Redis connesso dopo ${attesaMs} ms: guardo la coda.`);
-            return { pronto: true, interrogazioni, attesaMs };
-        }
-    }
-    return { pronto: false, interrogazioni, attesaMs: Date.now() - inizio };
-}
-
 function _conTimeout(promessa, ms, cosa) {
     if (!(ms > 0)) return promessa;
     let timer = null;
@@ -321,7 +287,22 @@ async function gira({
     if (dryRun) {
         await dryRunGiro({ coda, log, store, redis, base, outDir, batch, attesaMappaMs, stato });
     } else {
-        const serveMappa = await _serveMappa({ coda, batch, log });
+        let eventi;
+        try {
+            eventi = await coda.take(batch);
+        } catch (err) {
+            log.warn(`[DrenaPoster] take fallito: ${err && err.message ? err.message : err}`);
+            stato.note.take = 1;
+            return stato;
+        }
+
+        const serveMappa = Array.isArray(eventi) && eventi.some((evento) => {
+            const id = evento && evento.id !== undefined && evento.id !== null
+                ? String(evento.id).trim()
+                : '';
+            return id !== '' && !id.startsWith('kitsu:');
+        });
+
         let cercaKitsu = null;
         let mappa = nuovoStatoMappa();
         if (serveMappa) {
@@ -332,7 +313,8 @@ async function gira({
         stato.mappa = mappa;
 
         const riepilogo = await drenaImpl({
-            take: (n) => coda.take(n),
+            take: () => eventi,
+            eventi,
             done: (evento) => coda.done(evento),
             fail: (evento) => coda.fail(evento),
             cercaKitsu,
@@ -364,23 +346,6 @@ async function gira({
     }
 
     return stato;
-}
-
-async function _serveMappa({ coda, batch, log }) {
-    try {
-        const eventi = await coda.take(batch);
-        if (!Array.isArray(eventi) || !eventi.length) return false;
-        return eventi.some((evento) => {
-            const id = evento && evento.id !== undefined && evento.id !== null
-                ? String(evento.id).trim()
-                : '';
-            return id !== '' && !id.startsWith('kitsu:');
-        });
-    } catch (err) {
-        log.warn(`[Drena] non riesco a sbirciare la coda (${err && err.message ? err.message : err}): ` +
-            'carico la mappa anime per sicurezza.');
-        return true;
-    }
 }
 
 function _contaMotivi(stato, riepilogo) {

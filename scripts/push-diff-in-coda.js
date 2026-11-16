@@ -56,7 +56,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { codaEventi } = require('../src/posters');
+const { codaEventi, aspettaRedis } = require('../src/posters');
 const redisClient = require('../src/cache/redisClient');
 
 const FILE_NAME = 'ita_annotations.diff.json';
@@ -72,11 +72,6 @@ const INTERVALLO_ATTESA_REDIS_MS = 100;
 /** Come chiama `codaEventi` le sue chiavi: leggibile nel log, e senza ambiguità. */
 function chiaveEvento(evento) {
     return `${evento.tipo}|${evento.id}`;
-}
-
-/** Una dormita semplice, e non un `setTimeout` lasciato appeso: qui si aspetta sul serio. */
-function _dormi(ms) {
-    return new Promise((risolvi) => { setTimeout(risolvi, ms); });
 }
 
 /**
@@ -162,56 +157,6 @@ function interoPositivo(valore, flag, defaulto) {
         throw new Error(`${flag} vuole un numero positivo di millisecondi, non "${valore}"`);
     }
     return Math.floor(numero);
-}
-
-/**
- * Aspetta che il client Redis sia davvero connesso, **prima della prima `push`**.
- *
- * Stesso contratto di `aspettaRedis` (`src/posters/drenaCodaPoster.js`), che beve dalla stessa
- * coda e ha lo stesso difetto: `isAvailable` è una **getter**, non c'è nessun evento da
- * ascoltare, quindi si interroga a brevi intervalli e si esce comunque al tetto. Un client che
- * non espone la proprietà (uno stub, un fake) non ha niente da aspettare: niente attesa
- * inventata.
- *
- * @param {object} [redis] il client condiviso (o `null`)
- * @param {object} [opzioni]
- * @param {number} [opzioni.tettoMs]      aspetta massima (default `DEFAULT_ATTESA_REDIS_MS`)
- * @param {number} [opzioni.intervalloMs] passo fra un'interrogazione e l'altra
- * @param {object} [opzioni.log]
- * @returns {Promise<{pronto: boolean, interrogazioni: number, attesaMs: number}>}
- */
-async function aspettaRedis(redis, {
-    tettoMs = DEFAULT_ATTESA_REDIS_MS,
-    intervalloMs = INTERVALLO_ATTESA_REDIS_MS,
-    log = console
-} = {}) {
-    const subito = { pronto: true, interrogazioni: 0, attesaMs: 0 };
-    // Una sola lettura per decidere: `isAvailable` è una getter e qua non si fa niente di più.
-    // Senza client, o con un client che non espone la proprietà (uno stub, un fake): niente da
-    // aspettare, e non si deve inventare un'attesa su una proprietà inesistente.
-    if (!redis) return subito;
-    const ora = redis.isAvailable;
-    if (ora === true) return { ...subito, interrogazioni: 1 };
-    if (typeof ora === 'undefined') return subito;
-
-    if (!(tettoMs > 0)) return { pronto: false, interrogazioni: 1, attesaMs: 0 };
-    const passo = Math.max(1, Math.min(intervalloMs > 0 ? intervalloMs : INTERVALLO_ATTESA_REDIS_MS, tettoMs));
-
-    const inizio = Date.now();
-    let interrogazioni = 1;
-    log.log(`[PushDiff] Redis non è ancora connesso: aspetto al massimo ${tettoMs} ms (ogni ${passo} ms) ` +
-        'prima di spingere…');
-
-    while (Date.now() - inizio < tettoMs) {
-        await _dormi(passo);
-        interrogazioni += 1;
-        if (redis.isAvailable === true) {
-            const attesaMs = Date.now() - inizio;
-            log.log(`[PushDiff] Redis connesso dopo ${attesaMs} ms: spingo.`);
-            return { pronto: true, interrogazioni, attesaMs };
-        }
-    }
-    return { pronto: false, interrogazioni, attesaMs: Date.now() - inizio };
 }
 
 /** Perché non si è spinto nulla: la coda irraggiungibile, non una coda già piena. */
@@ -409,7 +354,7 @@ async function pushDiffInCoda(opts = {}) {
     // dopo non lo riporterà mai. Quel poster resta vecchio fino al TTL della sua fascia e non
     // c'è nessun allarme. Quindi si aspetta il client, e se proprio non arriva si dice che è
     // quello il motivo — "coda irraggiungibile" e "già in coda" sono due guasti opposti.
-    const attesa = await aspettaRedis(redis, { tettoMs: attesaRedisMs, intervalloMs: attesaRedisIntervalloMs, log });
+    const attesa = await aspettaRedis(redis, { tettoMs: attesaRedisMs, intervalloMs: attesaRedisIntervalloMs, log, prefisso: 'PushDiff' });
     if (!attesa.pronto) {
         riassunto.saltato = messaggioRedisNonPronto(attesaRedisMs, eventi.length);
         log.warn(`[PushDiff] ${riassunto.saltato}`);

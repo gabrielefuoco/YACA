@@ -224,9 +224,49 @@ function createCodaEventi(client = redisClient) {
 // La coda dell'app: stesso client Redis di cache e admin, stesso processo.
 const codaEventi = createCodaEventi(redisClient);
 
+function _dormi(ms) {
+    return new Promise((risolvi) => { setTimeout(risolvi, ms); });
+}
+
+/**
+ * Aspetta che il client Redis sia pronto.
+ */
+async function aspettaRedis(redis, {
+    tettoMs = 10000,
+    intervalloMs = 100,
+    log = console,
+    prefisso = 'Redis'
+} = {}) {
+    const subito = { pronto: true, interrogazioni: 0, attesaMs: 0 };
+    if (!redis) return subito;
+    const ora = redis.isAvailable;
+    if (ora === true) return { ...subito, interrogazioni: 1 };
+    if (typeof ora === 'undefined') return subito;
+
+    if (!(tettoMs > 0)) return { pronto: false, interrogazioni: 1, attesaMs: 0 };
+    const passo = Math.max(1, Math.min(intervalloMs > 0 ? intervalloMs : 100, tettoMs));
+
+    const inizio = Date.now();
+    let interrogazioni = 1;
+    const tag = prefisso ? `[${prefisso}] ` : '';
+    log.log(`${tag}Redis non è ancora connesso: aspetto al massimo ${tettoMs} ms (ogni ${passo} ms)…`);
+
+    while (Date.now() - inizio < tettoMs) {
+        await _dormi(passo);
+        interrogazioni += 1;
+        if (redis.isAvailable === true) {
+            const attesaMs = Date.now() - inizio;
+            log.log(`${tag}Redis connesso dopo ${attesaMs} ms.`);
+            return { pronto: true, interrogazioni, attesaMs };
+        }
+    }
+    return { pronto: false, interrogazioni, attesaMs: Date.now() - inizio };
+}
+
 module.exports = {
     ...codaEventi,
     createCodaEventi,
+    aspettaRedis,
     MAX_TENTATIVI,
     TTL_SECONDS,
     DEFAULT_BATCH
