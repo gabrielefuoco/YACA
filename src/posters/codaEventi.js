@@ -119,12 +119,12 @@ function createCodaEventi(client = redisClient) {
 
     /**
      * Mette un evento in coda.
-     * @returns {Promise<boolean>} true se è stato accodato adesso, false se era già in attesa
-     *          (o se l'evento è malformato, o se Redis non ha potuto scrivere).
+     * @returns {Promise<'added' | 'duplicate' | 'error'>} 'added' se è stato accodato adesso,
+     *          'duplicate' se era già in attesa, 'error' se l'evento è malformato o Redis non ha potuto scrivere.
      */
     async function push(evento) {
         const chiave = _chiaveDaEvento(evento);
-        if (!chiave) return false;
+        if (!chiave) return 'error';
 
         const daAccodare = {
             tipo: _pulito(evento.tipo),
@@ -136,24 +136,25 @@ function createCodaEventi(client = redisClient) {
         const nuovo = await _esegui(
             `push di ${chiave}`,
             () => client.hsetnx(K_EVENTI, chiave, JSON.stringify(daAccodare)),
-            0
+            null
         );
-        if (!nuovo) return false;
+        if (nuovo === null) return 'error';
+        if (nuovo === 0) return 'duplicate';
 
         const inCoda = await _esegui(
             `push di ${chiave}`,
             () => client.rpush(K_CODA, chiave),
-            0
+            null
         );
         if (!inCoda) {
             // Redis è caduto a metà: senza questo rollback l'evento resterebbe "occupato"
             // (niente duplicati) ma invisibile a `take`, cioè swallowato per una settimana.
             await _esegui(`rollback di ${chiave}`, () => client.hdel(K_EVENTI, chiave));
-            return false;
+            return 'error';
         }
 
         await _rinfrescaTtl();
-        return true;
+        return 'added';
     }
 
     /**
@@ -217,15 +218,55 @@ function createCodaEventi(client = redisClient) {
         return true;
     }
 
-    return { push, take, done, fail };
+    return { push, pushWithStatus: push, take, done, fail };
 }
 
 // La coda dell'app: stesso client Redis di cache e admin, stesso processo.
 const codaEventi = createCodaEventi(redisClient);
 
+function _dormi(ms) {
+    return new Promise((risolvi) => { setTimeout(risolvi, ms); });
+}
+
+/**
+ * Aspetta che il client Redis sia pronto.
+ */
+async function aspettaRedis(redis, {
+    tettoMs = 10000,
+    intervalloMs = 100,
+    log = console,
+    prefisso = 'Redis'
+} = {}) {
+    const subito = { pronto: true, interrogazioni: 0, attesaMs: 0 };
+    if (!redis) return subito;
+    const ora = redis.isAvailable;
+    if (ora === true) return { ...subito, interrogazioni: 1 };
+    if (typeof ora === 'undefined') return subito;
+
+    if (!(tettoMs > 0)) return { pronto: false, interrogazioni: 1, attesaMs: 0 };
+    const passo = Math.max(1, Math.min(intervalloMs > 0 ? intervalloMs : 100, tettoMs));
+
+    const inizio = Date.now();
+    let interrogazioni = 1;
+    const tag = prefisso ? `[${prefisso}] ` : '';
+    log.log(`${tag}Redis non è ancora connesso: aspetto al massimo ${tettoMs} ms (ogni ${passo} ms)…`);
+
+    while (Date.now() - inizio < tettoMs) {
+        await _dormi(passo);
+        interrogazioni += 1;
+        if (redis.isAvailable === true) {
+            const attesaMs = Date.now() - inizio;
+            log.log(`${tag}Redis connesso dopo ${attesaMs} ms.`);
+            return { pronto: true, interrogazioni, attesaMs };
+        }
+    }
+    return { pronto: false, interrogazioni, attesaMs: Date.now() - inizio };
+}
+
 module.exports = {
     ...codaEventi,
     createCodaEventi,
+    aspettaRedis,
     MAX_TENTATIVI,
     TTL_SECONDS,
     DEFAULT_BATCH

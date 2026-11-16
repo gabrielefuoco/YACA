@@ -21,7 +21,10 @@ const path = require('path');
 const {
     resolveCard,
     resolveResidualCards,
-    getAgNameVariants
+    getAgNameVariants,
+    getTmdbApiKey,
+    findExistingCacheFile,
+    buildSanitizedCacheFilename
 } = require('../src/resolver');
 const { mergeAnnotationRows } = require('../src/annotations');
 const { writeAnnotations } = require('../src/writer');
@@ -464,3 +467,56 @@ test('resolver - omonimi: zona->tipo seleziona la serie invece del film', async 
     assert.equal(res.hit.id, 222, 'ha scelto la serie tv in accordo con la zona telefilm');
     assert.equal(res.hit.type, 'tv');
 });
+
+test('resolver - getTmdbApiKey rispetta precedenza senza path cablato Windows', () => {
+    // 1. opts.apiKey ha massima precedenza
+    assert.equal(getTmdbApiKey({ apiKey: 'custom_opt_key' }), 'custom_opt_key');
+
+    // 2. process.env.TMDB_API_KEY
+    const origEnv = process.env.TMDB_API_KEY;
+    try {
+        process.env.TMDB_API_KEY = 'env_key_abc';
+        assert.equal(getTmdbApiKey(), 'env_key_abc');
+
+        delete process.env.TMDB_API_KEY;
+        // In un tempdir senza .env non deve crashare né trovare path estranei
+        const origCwd = process.cwd();
+        const tmp = makeTempDir();
+        try {
+            process.chdir(tmp);
+            const found = getTmdbApiKey();
+            // Se esiste un .env risalendo l'albero di tmpdir, potrebbe trovarlo o ritornare null,
+            // ma non deve mai lanciare errori né dipendere da C:/Users/gabri/APP/YACA/.env
+            assert.ok(found === null || typeof found === 'string');
+        } finally {
+            process.chdir(origCwd);
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    } finally {
+        if (origEnv !== undefined) {
+            process.env.TMDB_API_KEY = origEnv;
+        } else {
+            delete process.env.TMDB_API_KEY;
+        }
+    }
+});
+
+test('resolver - findExistingCacheFile ignora file legacy con api_key nel nome', () => {
+    const tmp = makeTempDir();
+    try {
+        const pathname = '/search/multi?query=test';
+        const sanitized = buildSanitizedCacheFilename(pathname);
+        const legacyName = '_search_multi_api_key_secret123_query_test.json';
+
+        // Scriviamo solo il legacy
+        fs.writeFileSync(path.join(tmp, legacyName), JSON.stringify({ legacy: true }), 'utf8');
+        assert.equal(findExistingCacheFile(pathname, tmp), null, 'il file con formato legacy non viene più cercato');
+
+        // Scriviamo il file normalizzato
+        fs.writeFileSync(path.join(tmp, sanitized), JSON.stringify({ sanitized: true }), 'utf8');
+        assert.equal(findExistingCacheFile(pathname, tmp), path.join(tmp, sanitized));
+    } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+    }
+});
+

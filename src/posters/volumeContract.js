@@ -71,36 +71,6 @@ async function scriviVersioniVolume(dir, { produttore = 'erdb-builder' } = {}) {
 }
 
 /**
- * Versione sincrona di scrittura di versioni.json (utile per test o setup immediati).
- */
-function scriviVersioniVolumeSync(dir, { produttore = 'erdb-builder' } = {}) {
-    if (!dir || typeof dir !== 'string') {
-        throw new Error('scriviVersioniVolumeSync: percorso dir non specificato');
-    }
-
-    fs.mkdirSync(dir, { recursive: true });
-
-    const targetFile = path.join(dir, VERSIONI_FILE_NAME);
-    const tmpFile = `${targetFile}.tmp_${Date.now()}_${process.pid}`;
-
-    const contenuto = {
-        contratto: CONTRATTO_VERSION,
-        schemaVersion: SCHEMA_VERSION,
-        versioni: {
-            disegno: BADGE_IMG_VERSION,
-            convenzione: CONVENZIONE_NOMI
-        },
-        produttore,
-        aggiornatoIl: new Date().toISOString()
-    };
-
-    fs.writeFileSync(tmpFile, `${JSON.stringify(contenuto, null, 2)}\n`, 'utf8');
-    fs.renameSync(tmpFile, targetFile);
-
-    return contenuto;
-}
-
-/**
  * Legge il file versioni.json dal volume della cache e ne valida la coerenza con l'app.
  */
 function leggiVersioniVolume(dir) {
@@ -221,7 +191,10 @@ function azzeraStatistichePoster() {
     statistiche.ultimiMancanti = [];
 }
 
-function _defaultRegistraRichiesta({ fileName, trovato, cacheDir, motivo = null }) {
+function registraRichiestaPoster({ fileName, trovato, cacheDir, motivo = null }) {
+    if (module.exports.registraRichiestaPoster !== registraRichiestaPoster) {
+        return module.exports.registraRichiestaPoster({ fileName, trovato, cacheDir, motivo });
+    }
     statistiche.richieste += 1;
     if (trovato) {
         statistiche.trovati += 1;
@@ -244,7 +217,10 @@ function _defaultRegistraRichiesta({ fileName, trovato, cacheDir, motivo = null 
     return { registrato: true, trovato: false, voce };
 }
 
-function _defaultVerificaPresenza(fileName, dir) {
+function verificaPresenzaPoster(fileName, dir) {
+    if (module.exports.verificaPresenzaPoster !== verificaPresenzaPoster) {
+        return module.exports.verificaPresenzaPoster(fileName, dir);
+    }
     const filePath = path.join(dir, fileName);
     let presente = false;
     try {
@@ -287,23 +263,6 @@ function _defaultVerificaPresenza(fileName, dir) {
 }
 
 /**
- * Observer configurabile/patchabile per test e sonde (decisione 34: il codice di prova
- * disabilita il seam da fuori tramite patch dell'istanza dell'oggetto).
- */
-const volumeObserver = {
-    registraRichiesta: (dati) => _defaultRegistraRichiesta(dati),
-    verificaPresenza: (fileName, dir) => _defaultVerificaPresenza(fileName, dir)
-};
-
-function registraRichiestaPoster(dati) {
-    return volumeObserver.registraRichiesta(dati);
-}
-
-function verificaPresenzaPoster(fileName, dir) {
-    return volumeObserver.verificaPresenza(fileName, dir);
-}
-
-/**
  * Restituisce lo stato globale del volume e delle verifiche,
  * per l'endpoint di health check e le sonde.
  */
@@ -343,12 +302,10 @@ module.exports = {
     SCHEMA_VERSION,
     calcolaVersioniVolume,
     scriviVersioniVolume,
-    scriviVersioniVolumeSync,
     leggiVersioniVolume,
     getStatistichePoster,
     azzeraStatistichePoster,
     registraRichiestaPoster,
     verificaPresenzaPoster,
-    getStatoVolume,
-    volumeObserver
+    getStatoVolume
 };

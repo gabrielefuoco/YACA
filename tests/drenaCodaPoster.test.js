@@ -771,4 +771,21 @@ describe('i motivi si contano su `drena.fallimenti`', () => {
         expect(riga).toMatch(/3 presi, 3 resi, 0 falliti/);
         expect(riga).not.toMatch(/motivi:/);
     });
+
+    test('il drenatore esegue una sola take per giro', async () => {
+        const coda = creaCoda([{ tipo: 'movie', id: 1, badge: null }]);
+        const spiaTake = jest.spyOn(coda, 'take');
+        await gira({
+            coda,
+            fetchImpl: creaFetch({}),
+            store: null,
+            drenaImpl: jest.fn().mockResolvedValue({ presi: 1, resi: 1, falliti: 0, fallimenti: [], note: {} }),
+            redis,
+            log,
+            base: BASE,
+            outDir: dir,
+            batch: 10
+        });
+        expect(spiaTake).toHaveBeenCalledTimes(1);
+    });
 });

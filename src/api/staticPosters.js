@@ -147,7 +147,7 @@ const mettiInCoda = (fileName, badge) => {
             .then((accodato) => {
                 // Solo quando è entrato davvero: se era già in attesa è idempotenza, e
                 // una riga per ogni ricarica di pagina riempirebbe il journal di rumore.
-                if (accodato) console.log(`[StaticPosters] in coda per il drenatore: ${chiave} (${fileName})`);
+                if (accodato === 'added' || accodato === true) console.log(`[StaticPosters] in coda per il drenatore: ${chiave} (${fileName})`);
             })
             .catch((err) => {
                 console.warn(`[StaticPosters] evento ${chiave} non accodato: ${err && err.message ? err.message : err}`);

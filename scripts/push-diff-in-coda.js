@@ -56,7 +56,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { codaEventi } = require('../src/posters');
+const { codaEventi, aspettaRedis } = require('../src/posters');
 const redisClient = require('../src/cache/redisClient');
 
 const FILE_NAME = 'ita_annotations.diff.json';
@@ -69,20 +69,9 @@ const FILE_NAME = 'ita_annotations.diff.json';
 const DEFAULT_ATTESA_REDIS_MS = 10000;
 const INTERVALLO_ATTESA_REDIS_MS = 100;
 
-// Quante voci si guardano per separare "era già in coda" da "non sono riuscito a metterlo in
-// coda". La coda cresce di 10-50 voci al giorno con TTL di 7 giorni, quindi duemila sono
-// abbondanti; e se un giorno non bastassero, lo sbaglio è verso "non spinto" — che è la parte
-// che fa rumore e che si rimedia rilanciando — e non verso "tutto a posto" per un evento perso.
-const LOTTO_VERIFICA_CODA = 2000;
-
 /** Come chiama `codaEventi` le sue chiavi: leggibile nel log, e senza ambiguità. */
 function chiaveEvento(evento) {
     return `${evento.tipo}|${evento.id}`;
-}
-
-/** Una dormita semplice, e non un `setTimeout` lasciato appeso: qui si aspetta sul serio. */
-function _dormi(ms) {
-    return new Promise((risolvi) => { setTimeout(risolvi, ms); });
 }
 
 /**
@@ -170,90 +159,11 @@ function interoPositivo(valore, flag, defaulto) {
     return Math.floor(numero);
 }
 
-/**
- * Aspetta che il client Redis sia davvero connesso, **prima della prima `push`**.
- *
- * Stesso contratto di `aspettaRedis` (`src/posters/drenaCodaPoster.js`), che beve dalla stessa
- * coda e ha lo stesso difetto: `isAvailable` è una **getter**, non c'è nessun evento da
- * ascoltare, quindi si interroga a brevi intervalli e si esce comunque al tetto. Un client che
- * non espone la proprietà (uno stub, un fake) non ha niente da aspettare: niente attesa
- * inventata.
- *
- * @param {object} [redis] il client condiviso (o `null`)
- * @param {object} [opzioni]
- * @param {number} [opzioni.tettoMs]      aspetta massima (default `DEFAULT_ATTESA_REDIS_MS`)
- * @param {number} [opzioni.intervalloMs] passo fra un'interrogazione e l'altra
- * @param {object} [opzioni.log]
- * @returns {Promise<{pronto: boolean, interrogazioni: number, attesaMs: number}>}
- */
-async function aspettaRedis(redis, {
-    tettoMs = DEFAULT_ATTESA_REDIS_MS,
-    intervalloMs = INTERVALLO_ATTESA_REDIS_MS,
-    log = console
-} = {}) {
-    const subito = { pronto: true, interrogazioni: 0, attesaMs: 0 };
-    // Una sola lettura per decidere: `isAvailable` è una getter e qua non si fa niente di più.
-    // Senza client, o con un client che non espone la proprietà (uno stub, un fake): niente da
-    // aspettare, e non si deve inventare un'attesa su una proprietà inesistente.
-    if (!redis) return subito;
-    const ora = redis.isAvailable;
-    if (ora === true) return { ...subito, interrogazioni: 1 };
-    if (typeof ora === 'undefined') return subito;
-
-    if (!(tettoMs > 0)) return { pronto: false, interrogazioni: 1, attesaMs: 0 };
-    const passo = Math.max(1, Math.min(intervalloMs > 0 ? intervalloMs : INTERVALLO_ATTESA_REDIS_MS, tettoMs));
-
-    const inizio = Date.now();
-    let interrogazioni = 1;
-    log.log(`[PushDiff] Redis non è ancora connesso: aspetto al massimo ${tettoMs} ms (ogni ${passo} ms) ` +
-        'prima di spingere…');
-
-    while (Date.now() - inizio < tettoMs) {
-        await _dormi(passo);
-        interrogazioni += 1;
-        if (redis.isAvailable === true) {
-            const attesaMs = Date.now() - inizio;
-            log.log(`[PushDiff] Redis connesso dopo ${attesaMs} ms: spingo.`);
-            return { pronto: true, interrogazioni, attesaMs };
-        }
-    }
-    return { pronto: false, interrogazioni, attesaMs: Date.now() - inizio };
-}
-
 /** Perché non si è spinto nulla: la coda irraggiungibile, non una coda già piena. */
 function messaggioRedisNonPronto(tettoMs, eventi) {
     return `Redis NON pronto dopo ${tettoMs} ms: nessuno dei ${eventi} eventi è stato spinto, `
         + 'e non è che la coda li avesse già — è che non sono riuscito a scriverci. '
         + 'Nessun allarme silenzioso: il giro dopo non li riporterà (il diff è un delta).';
-}
-
-/**
- * Una `push` che risponde `false` non dice **perché**: `codaEventi.push` risponde `false` sia per
- * "era già in attesa" (idempotenza, nessun problema) sia per "non sono riuscito a scrivere"
- * (guasto, e l'evento è perso). L'unica fonte pubblica per separarli è la coda stessa: `take`
- * non toglie nulla, quindi si guarda e basta.
- *
- * La fotografia si fa una volta sola e si riusa: nel giro normale nessuna `push` torna `false`
- * (tutti gli eventi sono nuovi) e non si guarda niente; il caso in cui si guarda è il rilancio
- * sullo stesso artefatto o il guasto, ed è quello che va raccontato.
- */
-function verificatoreInCoda(coda, log) {
-    let scatto = null;
-    return async function inCoda(evento) {
-        if (scatto === null) {
-            scatto = [];
-            try {
-                const inAttesa = await coda.take(LOTTO_VERIFICA_CODA);
-                if (Array.isArray(inAttesa)) scatto = inAttesa;
-            } catch (err) {
-                // Una coda che non risponde nemmeno a `take` non può confermare niente: si dice,
-                // e si risponde "non in coda" — la parte che fa rumore.
-                log.warn(`[PushDiff] non riesco a guardare la coda per separare "già in coda" da ` +
-                    `"non spinto": ${err.message}. Lo conto come non spinto.`);
-            }
-        }
-        return scatto.some((e) => e && String(e.tipo) === String(evento.tipo) && String(e.id) === String(evento.id));
-    };
 }
 
 /**
@@ -444,7 +354,7 @@ async function pushDiffInCoda(opts = {}) {
     // dopo non lo riporterà mai. Quel poster resta vecchio fino al TTL della sua fascia e non
     // c'è nessun allarme. Quindi si aspetta il client, e se proprio non arriva si dice che è
     // quello il motivo — "coda irraggiungibile" e "già in coda" sono due guasti opposti.
-    const attesa = await aspettaRedis(redis, { tettoMs: attesaRedisMs, intervalloMs: attesaRedisIntervalloMs, log });
+    const attesa = await aspettaRedis(redis, { tettoMs: attesaRedisMs, intervalloMs: attesaRedisIntervalloMs, log, prefisso: 'PushDiff' });
     if (!attesa.pronto) {
         riassunto.saltato = messaggioRedisNonPronto(attesaRedisMs, eventi.length);
         log.warn(`[PushDiff] ${riassunto.saltato}`);
@@ -454,26 +364,20 @@ async function pushDiffInCoda(opts = {}) {
         return riassunto;
     }
 
-    const inCoda = verificatoreInCoda(coda, log);
-
     for (const evento of eventi) {
-        let accodato = false;
+        let stato;
         try {
-            accodato = await coda.push(evento);
+            stato = await (coda.pushWithStatus ? coda.pushWithStatus(evento) : coda.push(evento));
         } catch (err) {
             // `codaEventi` non lancia mai; si è qui perché un `push` finto o un futuro coda
             // diverso non deve trasformare un problema in un'eccezione non gestita dentro un timer.
             log.warn(`[PushDiff] push di ${chiaveEvento(evento)} lanciato: ${err.message}`);
-        }
-        if (accodato) {
-            riassunto.spinte++;
-            continue;
+            stato = 'error';
         }
 
-        // `false` è ambiguo, e l'ambiguità è il difetto: si guarda la coda e si separa. "C'era
-        // già" è idempotenza — nessun problema, e il numero esce accanto agli altri. "Non c'è"
-        // è una perdita, e una perdita ha un nome (`perduti`) e un codice di uscita.
-        if (await inCoda(evento)) {
+        if (stato === 'added' || stato === true) {
+            riassunto.spinte++;
+        } else if (stato === 'duplicate') {
             riassunto.giaInCoda++;
         } else {
             riassunto.falliti++;
@@ -572,7 +476,6 @@ module.exports = {
     FILE_NAME,
     DEFAULT_ATTESA_REDIS_MS,
     INTERVALLO_ATTESA_REDIS_MS,
-    LOTTO_VERIFICA_CODA,
     dirDati,
     percorsoDiffDefault,
     parseArgs,
@@ -581,7 +484,6 @@ module.exports = {
     eventiDaArtefatto,
     aspettaRedis,
     messaggioRedisNonPronto,
-    verificaInCoda: verificatoreInCoda,
     rigaRiepilogo,
     pushDiffInCoda,
     main
