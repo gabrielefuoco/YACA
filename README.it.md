@@ -7,6 +7,7 @@ Addon stateful per Stremio che risponde alle richieste di catalogo interrogando 
 ## Indice
 
 - [Features](#features)
+- [Il motore di raccomandazione](#il-motore-di-raccomandazione)
 - [Come funziona](#come-funziona)
 - [Documentazione](#documentazione)
 - [Quickstart](#quickstart)
@@ -20,6 +21,49 @@ Addon stateful per Stremio che risponde alle richieste di catalogo interrogando 
 - **Ricerca in linguaggio naturale.** Un router mappa una frase dalla barra di ricerca Stremio su filtri strutturati (opzionale, richiede una chiave Mistral).
 - **Badge episodio anime e stato del doppiaggio italiano**, tenuti in memoria da un worker.
 - **Sincronizzazione bidirezionale con Trakt** tramite device flow OAuth.
+
+## Il motore di raccomandazione
+
+Non esiste un bacino di utenti da cui imparare: questa è la storia di una persona su una istanza. Il collaborative filtering — la risposta usuale alla raccomandazione — richiede molti utenti che votino gli stessi titoli, e qui ce n'è esattamente uno. Tutto quello che segue nasce da questo vincolo: il segnale è il comportamento dell'utente, e la struttura deve venire dal contenuto.
+
+### Il grafo
+
+Un grafo eterogeneo su **76.497 titoli** con **14 tipi di legame**, ognuno con il proprio peso, fusi con reciprocal rank fusion (k = 15): co-visione, semantica delle keyword, trama, cast, regia, produzione, collezioni, co-occorrenza nelle liste e uno studente denso.
+
+Lo studente è una **matrice 76.497 × 2.048 addestrata sul grafo stesso**; il suo SHA-256 è bloccato nella ricetta congelata. La build è riproducibile: le matrici sorgente sono congelate, ricetta e impronte vivono nel repository, e il grafo servito si ricostruisce da esse invece di essere dato per buono.
+
+**La potatura è un vincolo di progetto.** Il grafo contiene 50.660.592 archi float32; senza potatura servirlo tocca i 627 MiB dentro un container da 512 MiB. Ogni titolo tiene i suoi 16 archi più forti: il 12% degli archi, 8,7× più economico, e la massa che resta sui compagni di saga sale dal 26,6% al 47,8%, contro lo 0,011% di un titolo qualunque. `runtime/bench.py` misura quel compromesso — memoria, tempo di caricamento, p50 e p95 — su tutte le configurazioni di potatura.
+
+### La diffusione
+
+La raccomandazione è un **PageRank personalizzato** che riparte da ciò che l'utente ha davvero segnalato: loved 3, liked 2, library 1, watched 1. Una serie pesa 1 + 2 × la frazione di episodi visti, così una serie da cento episodi vale due terzi di un film e non cento visioni; le ri-visioni di un film si fermano a 3; la watchlist è un desiderio, non un gusto, e arriva all'output solo tramite un ripescaggio limitato. La probabilità di riavvio è 0,60 (misurata, vedi sotto) e la camminata si ferma presto su una tolleranza L1 di 1e-5: il top 60 è identico a 20 iterazioni fisse, usando in media 10,4.
+
+### Iperparametri, con il loro stato
+
+`services/graph/parametri.py` tiene ogni numero in una tabella sola, e ognuno dichiara se è **misurato**, **dichiarato** come scelta di prodotto, o **inventato** — e quest'ultimo è la prima cosa da rivedere. Cinque, e cosa li ha decisi:
+
+| Parametro | Valore | Cosa ha detto la misura |
+|---|---|---|
+| riavvio α | 0,60 | il valore a intuito, 0,15, rendeva peggio: 20,7× contro 29,3× |
+| archi per titolo | top 16 | il 12% degli archi, 8,7× più economico, massa sulla saga 26,6% → 47,8% |
+| tolleranza di convergenza | 1e-5 | top 60 identico a 20 iterazioni, 10,4 iterazioni in media |
+| tetto del peso film | 3,0 | senza, a un utente di soli film le serie prendevano il 67% del seme; con il tetto, il 31% |
+| peso serie | 1 + 2·frazione | evita che una serie lunga valga cento visioni |
+
+### Esperimenti finiti in «no»
+
+Tre idee ovvie sono state misurate e rimosse, e sono scritte perché l'intuito non le riporti dentro: la recenza usata come peso è indistinguibile dalle visioni da sole (18,12× contro 18,17×), il decadimento di rango è peggio di non fare niente (15,9× e 11,2× contro 18,2×), e i boost sui titoli recenti sono vuoti (17,85 → 17,9-18,1). Anche «quanti mondi si accendono» non è un segnale di gusto: una storia casuale della stessa lunghezza ne accende più di una vera (0,9× a ogni soglia), quindi quella soglia non esiste.
+
+### Servizio
+
+| Endpoint | p50 | p95 |
+|---|---|---|
+| `POST /raccomanda` | 1,0 ms | 17,4 ms |
+| `POST /scaffali` | 1.525 ms | 1.698 ms (obiettivo ≤ 3 s per 8 scaffali) |
+
+Il picco di RSS su 30 richieste sequenziali è 323,4 MiB contro un tetto di 512 MiB: il motore carica una matrice di vicini compatta (~65 MiB) e il singleton di runtime (~34 MiB). Il tetto è un vincolo di progetto, non un residuo.
+
+Più in profondo: [docs/ENGINE.md](docs/ENGINE.md).
 
 ## Come funziona
 
@@ -58,24 +102,13 @@ Sei container, ognuno con un tetto di memoria dichiarato. L'app è l'unico compo
 
 **I filtri dei cataloghi sono una query SQL su un dump locale.** Cambiare filtro non costa una chiamata esterna e funziona anche quando TMDB non risponde. L'alternativa — tradurre ogni richiesta in una chiamata di discovery remota — mette latenza e ordinamento del fornitore sul percorso della richiesta. Il prezzo è una pipeline dati che deve girare e restare fresca: `tmdb-daemon` esiste per questa scelta.
 
-**Il grafo gira come processo Python separato.** Caricare l'artefatto costa 2,05 s e 128 MB residenti. In-process si pagherebbe a ogni riavvio dell'app e competererebbe con il percorso delle richieste per la memoria. Dietro HTTP si carica una volta e resta fermo a 128 MB, e il grafo si può ridistribuire senza toccare l'addon.
+**Il grafo gira come processo Python separato.** Tiene 50,7 milioni di archi float32 e tocca 323,4 MiB mentre serve, contro un tetto di 512 MiB per container. In-process competererebbe con il percorso delle richieste per la memoria e si pagherebbe a ogni riavvio dell'app; dietro HTTP si carica una volta e il grafo si può ridistribuire senza toccare l'addon.
 
 **Il taglio delle keyword è alfabetico e deterministico.** Prima campionava 30 keyword a caso tra i figli di un nodo, quindi lo stesso nodo restituiva un insieme diverso a ogni chiamata: osservato su 25 dei 469 nodi L2, il più ricco con 57 keyword. Pool diverso a ogni cache miss, ordinamento irriproducibile, cache che non colpiva mai. Un test di contratto protegge il taglio deterministico.
 
 **La composizione dei poster vive fuori dal processo dell'app.** I badge venivano disegnati in-process con `sharp` e `text-to-svg`, dietro una cache su disco. La composizione ora appartiene a un servizio esterno; YACA rende `/erdb-poster/:file` al primo miss, accoda l'evento se il servizio è giù, e tiene `/images/poster/...` come 302 per i client che conservano URL vecchi. `BadgeDiskCache`, `sharp` e `text-to-svg` non ci sono più, lockfile compresi.
 
 ### Misure
-
-Servizio del grafo — benchmark su campione reale: 100 semi di storia Trakt, 4 liste, cap 60.
-
-| Metrica | Valore | Nota |
-|---|---|---|
-| Avvio del processo, caricamento artefatti | 2,05 s | 66.259 titoli e 3.497 cluster da `.npz` |
-| `GET /health` | 0,25 ms | contratto: sotto 1 ms |
-| `POST /raccomanda` a freddo | 95,44 ms | prima chiamata dopo l'avvio |
-| `POST /raccomanda` a caldo | 92,39 ms | media su 10 iterazioni, minimo 86,62 ms |
-| Memoria residente | 128,4 MB | limite container 512 MB |
-| Volume artefatto sull'host | 138 MB | contro 666 MB con gli scarti locali |
 
 Correzioni misurate in produzione (ottobre 2026):
 

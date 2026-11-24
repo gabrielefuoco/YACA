@@ -7,6 +7,7 @@ A stateful Stremio addon that answers catalog requests from a local columnar dat
 ## Table of contents
 
 - [Features](#features)
+- [The recommendation engine](#the-recommendation-engine)
 - [How it works](#how-it-works)
 - [Documentation](#documentation)
 - [Quickstart](#quickstart)
@@ -20,6 +21,49 @@ A stateful Stremio addon that answers catalog requests from a local columnar dat
 - **Natural-language search.** A router maps a sentence from the Stremio search bar onto structured filters (optional, needs a Mistral key).
 - **Anime episode badges and Italian dubbing state**, kept in memory by a worker.
 - **Two-way Trakt sync** through the OAuth device flow.
+
+## The recommendation engine
+
+There is no user population to learn from: this is one person's history on one instance. Collaborative filtering — the usual answer to recommendation — needs many users rating the same items, and here there is exactly one. Everything below follows from that constraint: the signal is the user's own behaviour, and the structure has to come from the content.
+
+### The graph
+
+A heterogeneous graph over **76,497 titles** with **14 edge types**, each with its own weight, fused with reciprocal rank fusion (k = 15): co-vision, keyword semantics, plot, cast, director, producer, collections, list co-occurrence and a dense student.
+
+The student is a **76,497 × 2,048 matrix trained on the graph itself**; its SHA-256 is pinned in the frozen recipe. The build is replayable: source matrices are frozen, recipe and fingerprints live in the repository, and the served graph is rebuilt from them instead of being trusted.
+
+**Pruning is a design constraint.** The graph holds 50,660,592 float32 edges; unpruned, serving it peaks at 627 MiB inside a 512 MiB container. Each title keeps its 16 strongest edges: 12% of the edges, 8.7× cheaper, and the mass staying on saga companions rises from 26.6% to 47.8%, against 0.011% for an arbitrary title. `runtime/bench.py` measures that trade-off — memory, load time, p50 and p95 — across the pruning configurations.
+
+### The diffusion
+
+Recommendation is a **personalized PageRank** restarting from what the user actually signalled: love 3, like 2, library 1, watch 1. A series weighs 1 + 2 × the fraction of episodes seen, so a hundred-episode series counts like two thirds of a film, not like a hundred plays; rewatches cap at 3; the watchlist is a wish rather than taste, and reaches the output only through a bounded resurfacing. Restart probability is 0.60 (measured, see below) and the walk stops early on an L1 tolerance of 1e-5: the top 60 is identical to fixed 20 iterations while using 10.4 on average.
+
+### Hyperparameters, with their status
+
+`services/graph/parametri.py` keeps every number in one table, and each one declares whether it is **measured**, **declared** as a product choice, or **invented** — the last being the first thing to review. Five of them, and what decided them:
+
+| Parameter | Value | What the measurement said |
+|---|---|---|
+| restart α | 0.60 | the intuitive 0.15 scored worse: 20.7× against 29.3× |
+| edges per title | top 16 | 12% of the edges, 8.7× cheaper, saga mass 26.6% → 47.8% |
+| convergence tolerance | 1e-5 | top 60 identical to 20 iterations, 10.4 iterations on average |
+| film weight cap | 3.0 | without it a film-only user gave series 67% of the seed weight; with it, 31% |
+| series weight | 1 + 2·fraction | keeps a long series from counting as a hundred plays |
+
+### Experiments that ended in "no"
+
+Three obvious ideas were measured and removed, and they are written down so that intuition does not bring them back: recency used as a weight is indistinguishable from plays alone (18.12× against 18.17×), rank decay is worse than nothing (15.9× and 11.2× against 18.2×), and boosts on recent titles are empty (17.85 → 17.9-18.1). "How many worlds light up" is not a taste signal either: a random history of the same length lights up more of them than a real one (0.9× at every threshold), so that threshold does not exist.
+
+### Serving
+
+| Endpoint | p50 | p95 |
+|---|---|---|
+| `POST /raccomanda` | 1.0 ms | 17.4 ms |
+| `POST /scaffali` | 1,525 ms | 1,698 ms (target ≤ 3 s for 8 shelves) |
+
+Peak RSS over 30 sequential requests is 323.4 MiB against a 512 MiB container cap: the engine loads a compact neighbour matrix (~65 MiB) and the runtime singleton (~34 MiB). The ceiling is a design constraint, not a leftover.
+
+Deeper: [docs/ENGINE.md](docs/ENGINE.md).
 
 ## How it works
 
@@ -58,24 +102,13 @@ Six containers, each with a declared memory ceiling. The app is the only compone
 
 **Catalog filters are a SQL query over a local dump.** A filter change costs no external call and works when TMDB does not answer. The alternative — translating each request into a remote discovery call — puts the provider's latency and ordering on the request path. The cost is a data pipeline that must run and stay fresh: `tmdb-daemon` exists because of this choice.
 
-**The graph runs as a separate Python process.** Loading the artifact takes 2.05 s and 128 MB resident. In-process it would be paid at every app restart and would compete with the request path for memory. Behind HTTP it is loaded once and sits idle at 128 MB, and the graph can be redeployed without touching the addon.
+**The graph runs as a separate Python process.** It holds 50.7M float32 edges and peaks at 323.4 MiB while serving, against a 512 MiB container cap. In-process it would compete with the request path for memory and would be paid at every app restart; behind HTTP it is loaded once and the graph can be redeployed without touching the addon.
 
 **The keyword cut is alphabetical and deterministic.** It used to sample 30 keywords at random from a node's children, so the same node returned a different set on every call: observed on 25 of the 469 L2 nodes, the richest having 57 keywords. Different pool on every cache miss, unreproducible ranking, cache that never hit. A contract test protects the deterministic cut.
 
 **Poster composition lives outside the app process.** Badges used to be drawn in-process with `sharp` and `text-to-svg`, behind a disk cache. The composition now belongs to an external service; YACA renders `/erdb-poster/:file` on first miss, queues the event if the service is down, and keeps `/images/poster/...` as a 302 for clients that still hold old URLs. `BadgeDiskCache`, `sharp` and `text-to-svg` are gone, lockfiles included.
 
 ### Measurements
-
-Graph service — benchmark on a real sample: 100 seeds of Trakt history, 4 lists, cap 60.
-
-| Metric | Value | Note |
-|---|---|---|
-| Process start, artifact loading | 2.05 s | 66,259 titles and 3,497 clusters from `.npz` |
-| `GET /health` | 0.25 ms | contract: under 1 ms |
-| `POST /raccomanda`, cold | 95.44 ms | first call after start |
-| `POST /raccomanda`, warm | 92.39 ms | mean of 10 iterations, min 86.62 ms |
-| Resident memory | 128.4 MB | container limit 512 MB |
-| Artifact volume on host | 138 MB | against 666 MB with local leftovers |
 
 Corrections measured in production (October 2026):
 
