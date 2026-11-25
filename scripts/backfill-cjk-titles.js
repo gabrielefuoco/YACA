@@ -32,7 +32,7 @@ const TmdbDumpStore = require('../services/tmdb-daemon/tmdbDumpStore');
 const TmdbDumpClient = require('../services/tmdb-daemon/tmdbDumpClient');
 const { convert } = require('./convert_to_parquet');
 
-const CJK = '[ぁ-ヿ一-鿿]';
+const HAS_LATIN_OR_DIGIT = '[A-Za-z0-9]';
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,7 +97,15 @@ async function findCompromisedIds(dataDir, mediaType, visibleOnly) {
     try {
         const sqlPath = parquetFile.replace(/\\/g, '/');
         const titleField = mediaType === 'movies' ? 'title' : 'name';
-        let filter = `original_language = 'ja' AND regexp_matches(${titleField}, '${CJK}')`;
+        const enField = mediaType === 'movies' ? 'title_en' : 'name_en';
+
+        const cols = (await q(`DESCRIBE SELECT * FROM read_parquet('${sqlPath}')`)).map(c => c.column_name);
+        if (!cols.includes(enField)) {
+            console.warn(`[Backfill] Colonna ${enField} assente in ${parquetFile}.`);
+            return [];
+        }
+
+        let filter = `${titleField} IS NOT NULL AND NOT regexp_matches(${titleField}, '${HAS_LATIN_OR_DIGIT}') AND ${enField} IS NOT NULL AND length(trim(CAST(${enField} AS VARCHAR))) > 0`;
 
         if (visibleOnly) {
             if (mediaType === 'tv') {
