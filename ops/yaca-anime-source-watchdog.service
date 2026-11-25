@@ -1,0 +1,29 @@
+[Unit]
+Description=YACA Anime Source Watchdog - riavvia yaca-anime-source se unhealthy o fermo
+After=network-online.target docker.service
+Wants=network-online.target
+
+# Nota: il servizio gira come root per poter parlare con il demone Docker (`docker exec` / `docker restart`).
+#
+# PERCHÉ UN WATCHDOG SYSTEMD:
+# `yaca-anime-source` ha un healthcheck Docker (`node cli.js --health-check`, exit 1 se nessun
+# giro è riuscito nelle ultime 12 ore), ma Docker NON riavvia autonomamente i container
+# unhealthy: si limita a riportarne lo stato. Se il worker si blocca o muore mentre il
+# container resta "up", i cataloghi simulcast perdono i titoli dopo 3 giorni in silenzio.
+#
+# Restart=no: lo script esce sempre 0 (anche se l'healthcheck fallisce o Docker non risponde)
+# per non accendere il timer come failed nel journal.
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/srv/yaca/.env
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+WorkingDirectory=/srv/yaca
+ExecStart=/bin/bash /srv/yaca/ops/yaca-anime-source-watchdog.sh
+Restart=no
+TimeoutStartSec=2min
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
