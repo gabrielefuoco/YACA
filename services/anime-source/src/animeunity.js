@@ -8,6 +8,8 @@ const { cleanTitle } = require('./aggregate');
 
 const DEFAULT_BASE_URL = process.env.ANIMEUNITY_BASE_URL || 'https://www.animeunity.co';
 const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const MAX_REDIRECTS = 3;
 
 // Finestra del "chi è in simulcast": due settimane. Misurata il 04/10/2026, sei pagine
 // della home coprono esattamente 14 giorni (30 item per pagina, ordine per data).
@@ -133,6 +135,42 @@ class AnimeUnityClient {
         this._lastRequestTime = 0;
         this._csrfData = null;
         this._searchCache = new Map();
+        this._warnedRedirectHosts = new Set();
+    }
+
+    /**
+     * Esegue fetch seguendo esplicitamente i redirect (301/302/303/307/308) fino a MAX_REDIRECTS hop,
+     * mantenendo gli stessi header/UA e avvisando una sola volta se l'host cambia.
+     */
+    async _fetch(url, options = {}) {
+        const baseHost = new URL(this.baseUrl).host;
+        let currentUrl = url;
+
+        for (let hops = 0; ; hops++) {
+            const res = await this.fetchFn(currentUrl, { ...options, redirect: 'manual' });
+            if (!REDIRECT_STATUSES.has(res.status)) return res;
+
+            const location = typeof res.headers?.get === 'function'
+                ? res.headers.get('location')
+                : (res.headers?.location || res.headers?.Location);
+            if (!location) return res;
+
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+
+            if (hops >= MAX_REDIRECTS) {
+                throw new Error(`Troppi redirect (> ${MAX_REDIRECTS}) da ${url}`);
+            }
+
+            const nextUrl = new URL(location, currentUrl).toString();
+            const nextHost = new URL(nextUrl).host;
+            if (nextHost !== baseHost && !this._warnedRedirectHosts.has(nextHost)) {
+                this._warnedRedirectHosts.add(nextHost);
+                console.warn(`[AnimeUnity] redirect: ${baseHost} → ${nextHost} (aggiorna ANIMEUNITY_BASE_URL)`);
+            }
+            currentUrl = nextUrl;
+        }
     }
 
     async _courtesyWait() {
@@ -156,7 +194,7 @@ class AnimeUnityClient {
 
         const url = `${this.baseUrl}/archivio?title=${encodeURIComponent(title.trim())}`;
         try {
-            const res = await this.fetchFn(url, {
+            const res = await this._fetch(url, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -194,7 +232,7 @@ class AnimeUnityClient {
         const url = `${this.baseUrl}/info_api/${animeId}/${dub}?start_range=${start}&end_range=${end}`;
 
         try {
-            const res = await this.fetchFn(url, {
+            const res = await this._fetch(url, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'application/json'
@@ -241,7 +279,7 @@ class AnimeUnityClient {
         let cookieHeader = '';
 
         try {
-            const res = await this.fetchFn(archiveUrl, {
+            const res = await this._fetch(archiveUrl, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -314,7 +352,7 @@ class AnimeUnityClient {
             };
 
             try {
-                const postRes = await this.fetchFn(postUrl, {
+                const postRes = await this._fetch(postUrl, {
                     method: 'POST',
                     headers: {
                         'User-Agent': this.userAgent,
@@ -389,7 +427,7 @@ class AnimeUnityClient {
             };
 
             try {
-                const postRes = await this.fetchFn(postUrl, {
+                const postRes = await this._fetch(postUrl, {
                     method: 'POST',
                     headers: {
                         'User-Agent': this.userAgent,
@@ -442,7 +480,7 @@ class AnimeUnityClient {
         const url = Number(page) <= 1 ? this.baseUrl : `${this.baseUrl}/?page=${page}`;
 
         try {
-            const res = await this.fetchFn(url, {
+            const res = await this._fetch(url, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -455,7 +493,11 @@ class AnimeUnityClient {
             }
 
             const html = await res.text();
-            return extractHomeItems(html);
+            const items = extractHomeItems(html);
+            if (items.length === 0 && html && html.length > 0) {
+                console.error(`[AnimeUnity] Home pagina ${page}: 0 item estratti (status=${res.status}, bytes=${html.length})`);
+            }
+            return items;
         } catch (err) {
             console.error(`[AnimeUnity] Errore durante il fetch della home (pagina ${page}): ${err.message}`);
             return [];
