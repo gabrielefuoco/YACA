@@ -10,8 +10,8 @@ Le logiche di calcolo e raccomandazione si trovano principalmente in:
 *   [src/engines/hybrid/catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js): Strategie di compilazione per i cataloghi speciali (*True Blend*, *Hidden Gems*, ecc.) e i cap di diversità degli hero.
 *   [src/infra/resultMerger.js](../src/infra/resultMerger.js): Algoritmi di Interleaving e Consensus Scoring.
 *   Rarità dolce, saturazione logaritmica e decadimento temporale vivono nello stesso motore (vedi sopra).
-*   [src/engines/hybrid/animePolicy.js](../src/engines/hybrid/animePolicy.js): Risoluzione della politica anime e relativi moltiplicatori di score.
-*   [src/utils/animeIdentity.js](../src/utils/animeIdentity.js): Regola canonica di identità anime (unico default del marker `_isAnime`).
+*   [src/anime/politica.js](../src/anime/politica.js): Risoluzione della politica anime e relativi moltiplicatori di score.
+*   [src/anime/identita.js](../src/anime/identita.js): Regola canonica di identità anime (unico default del marker `_isAnime`).
 *   [src/indice/compiler.js](../src/indice/compiler.js): Compilazione delle query DuckDB: paginazione deterministica, ordinamenti e FTS.
 *   [src/stremio/CatalogRouter.js](../src/stremio/CatalogRouter.js): Instradamento dei cataloghi e dimensione delle pagine.
 
@@ -239,14 +239,14 @@ Contratti da non violare:
 Due livelli distinti, spesso confusi: *identità* (che cosa è un anime) e *politica* (che cosa fare con gli anime).
 
 ### 7.1 Identità: un solo default
-La regola canonica è in [animeIdentity.js](../src/utils/animeIdentity.js#L1-L14): un contenuto è anime se il suo `tmdbId` è presente in `anime_mappings`, **oppure** ha genere 16 *e* (`original_language === 'ja'` **oppure** una keyword TMDB contiene "anime", escludendo i qualificatori `anime-inspired` / `influenced` / `style` per non catturare produzioni occidentali). `normalizeAnimeMarker()` stabilisce un unico default, `ANIME_MARKER_DEFAULT = false`: **senza prove non si abilita niente** — niente enrichment Kitsu, niente filtri anime, niente badge. Un `_isAnime` già presente nel payload è autorevole e viene solo propagato.
+La regola canonica è in [identita.js](../src/anime/identita.js#L1-L16): un contenuto è anime se il suo `tmdbId` è presente in `anime_mappings`, **oppure** ha genere 16 *e* (`original_language === 'ja'` **oppure** una keyword TMDB contiene "anime", escludendo i qualificatori `anime-inspired` / `influenced` / `style` per non catturare produzioni occidentali). `normalizeAnimeMarker()` stabilisce un unico default, `ANIME_MARKER_DEFAULT = false`: **senza prove non si abilita niente** — niente enrichment Kitsu, niente filtri anime, niente badge. Un `_isAnime` già presente nel payload è autorevole e viene solo propagato.
 
 > [!NOTE]
 > Il predicato **SQL** usato nei preset è volutamente più stretto e **non** valuta le keyword:
 > `id IN anime_mappings OR (genres contiene 16 AND original_language = 'ja')` ([filters.js](../src/indice/filters.js#L110)). È una divergenza deliberata e commentata nel codice (le keyword in SQL produrrebbero falsi positivi), quindi un preset basato su keyword anime può dare un insieme più piccolo del corrispondente `normalizeAnimeMarker()` sugli stessi item. Non è un bug da correggere: è il motivo per cui i due percorsi vanno tenuti distinti.
 
 ### 7.2 Politica: risoluzione e moltiplicatori
-`resolveAnimePolicy(profile, typeSelectors)` decide in quest'ordine ([animePolicy.js](../src/engines/hybrid/animePolicy.js#L76-L86)):
+`resolveAnimePolicy(profile, typeSelectors)` decide in quest'ordine ([politica.js](../src/anime/politica.js#L83-L99)):
 
 1.  **Il tag manuale vince sempre**: `typeSelectors.anime` se valorizzato.
 2.  Altrimenti `profile.settings.typeSelectors.anime`.

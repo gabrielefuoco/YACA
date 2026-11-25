@@ -28,10 +28,10 @@ resta **senza dipendenze native**.
 
 ## Cosa fa
 
-1. **Indici** (`src/indici.js`) — scarica le **79 pagine d'indice**: le 4 zone utili (`film.htm`,
+1. **Indici** (`src/indici.js`) — scarica le **81 pagine d'indice** (27 `film`, 25 `telefilm`, 26 `anim`, 3 `soap`): le 4 zone utili (`film.htm`,
    `telefilm.htm`, `anim.htm`, `soap.htm`) e le loro pagine-lettera (`film-1.htm`…`film-24.htm` e simili).
    `altro.htm` **è escluso**: contiene videogiochi, premi, interviste, speciali — non titoli.
-   - cortesia: `User-Agent` identificabile con contatto, delay 800 ms, una sola connessione, cache su disco e
+   - cortesia: `User-Agent` identificabile con contatto, delay 800 ms, una sola connessione, cache su disco con TTL **12 ore** e rotazione di `ceil(pagine/4)` pagine per giro, e
      ripresa dal punto se si interrompe;
    - lettura in **windows-1252** (non UTF-8).
 2. **Parsing** (`src/parse.js`) — da ogni pagina estrae titolo, anno e zona. Tre regole **non negoziabili**,
