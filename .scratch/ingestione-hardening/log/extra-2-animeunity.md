@@ -56,3 +56,35 @@ home, non solo sul battito) e il container viene riavviato da solo.
   lanciato.
 - Valori storici in `anime_airing_state` che vengono da nove giorni di cache: si assestano da soli, ma qualche
   `sub.episode`/`dub.episode` può essere più alto del reale finché il merge non li riconfronta.
+
+---
+
+# Ticket 13 — backfill dei titoli illeggibili (eseguito 25/11)
+
+**Comando**: `node scripts/backfill-cjk-titles.js --all --data-dir=/data/tmdb`, in un container dedicato
+(`--memory 1g`), con il daemon TMDB **fermo** per non far collidere due conversioni parquet.
+
+**Risultato**: 2.290 titoli elaborati (766 serie + 1.524 film), 2.290 chiamate TMDB, ~13 minuti.
+
+| | prima | dopo |
+|---|---:|---:|
+| film con titolo senza caratteri latini | 6.461 | **4.876** |
+| serie con titolo senza caratteri latini | 1.794 | **980** |
+| **totale illeggibili** | **8.255** | **5.856** |
+
+Verifica dall'app (DuckDB): `15226 → C.I.D.`, `5092 → Infinite Challenge`, `70672 → Men on a Mission`.
+
+I **5.856** che restano non hanno alcun titolo inglese su TMDB: lì non c'è niente da recuperare, serve una
+traslitterazione (decisione di prodotto, fuori perimetro).
+
+## Tre inciampi operativi (tutti risolti, tutti da ricordare)
+
+1. **Un job lungo non va lanciato dentro `yaca-app`**: due volte il container è stato ricreato
+   (`docker compose up` da un comando precedente) e il processo è morto a metà, buttando ~1.600 chiamate
+   TMDB per volta. Il backfill scrive **solo alla fine**, quindi non ha lasciato stato sporco.
+2. **`--data-dir` accetta solo la forma `=path`**: `--data-dir /data/tmdb` viene ignorato in silenzio e lo
+   script usa il default `/app/.scratch/brainstorm/data` (un path dell'epoca d'oro del progetto). Da
+   correggere, lui o la doc.
+3. **`node` sull'host è gestito da `mise`**: `sudo node` non funziona e gli script che richiedono `duckdb`
+   non hanno le dipendenze in `/srv/yaca`. Regola pratica: gli script una tantum si eseguono in un
+   container con il volume montato.
