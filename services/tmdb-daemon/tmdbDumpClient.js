@@ -49,7 +49,9 @@ function extractCommonTmdbData(data) {
     };
 }
 
-const CJK_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/;
+function isNotLatin(title) {
+    return typeof title !== 'string' || !/[A-Za-z0-9]/.test(title);
+}
 
 function extractEnglishTitle(data, isMovie = true) {
     const list = Array.isArray(data?.translations?.translations) ? data.translations.translations : [];
@@ -101,11 +103,10 @@ function resolveIngestTitle(data, isMovie = true) {
     const enTitle = extractEnglishTitle(data, isMovie);
 
     const hasIt = hasItalianTranslation(data, isMovie);
-    const isCjk = rawIt && CJK_REGEX.test(rawIt);
 
-    // Policy IT -> EN -> JA:
-    // 1. IT: Se esiste una traduzione italiana ufficiale, o se il titolo restituito da TMDB non è un fallback CJK
-    if (rawIt && (hasIt || !isCjk)) {
+    // Policy IT -> EN -> ORIG:
+    // 1. IT: Se esiste una traduzione italiana ufficiale, o se il titolo restituito da TMDB contiene caratteri latini o cifre
+    if (rawIt && (hasIt || !isNotLatin(rawIt))) {
         return {
             title: rawIt,
             title_en: enTitle
@@ -120,7 +121,7 @@ function resolveIngestTitle(data, isMovie = true) {
         };
     }
 
-    // 3. JA: Fallback sull'originale
+    // 3. ORIG: Fallback sull'originale
     return {
         title: orig || rawIt || null,
         title_en: null
@@ -451,5 +452,7 @@ TmdbDumpClient.POPULARITY_THRESHOLD = POPULARITY_THRESHOLD;
 TmdbDumpClient.filterDailyExportStream = filterDailyExportStream;
 TmdbDumpClient.buildMovieRow = buildMovieRow;
 TmdbDumpClient.buildTvRow = buildTvRow;
+TmdbDumpClient.resolveIngestTitle = resolveIngestTitle;
+TmdbDumpClient.isNotLatin = isNotLatin;
 
 module.exports = TmdbDumpClient;
