@@ -9,7 +9,7 @@ YACA è un addon ibrido, che deve gestire due database di entità radicalmente d
 Stremio utilizza TMDB come sistema primario, tuttavia per gli Anime (specie per fonti come Torrentio o Aniwatch), avere ID Kitsu permette risultati molto più affidabili e precisi per i metadati, evitando il mixing degli episodi.
 
 ## 1. Identità Canonica Anime e Risoluzione TMDB -> Kitsu
-YACA adotta una singola fonte di verità per determinare se un'opera è un anime (`src/utils/animeIdentity.js`):
+YACA adotta una singola fonte di verità per determinare se un'opera è un anime (`src/anime/identita.js`; la politica di scoring è in `src/anime/politica.js`):
 - È presente nel mapping store (`animeMappingStore.isAnimeTmdbId(tmdbId)`) **OPPURE**
 - Ha genere TMDB 16 (Animation) E (`original_language === 'ja'` OR keyword TMDB contiene "anime" case-insensitive, con filtro anti-falsi positivi come "anime-inspired").
 
@@ -18,14 +18,14 @@ La regola vale **sia per le serie sia per i film**: i film anime non hanno un pe
 - **Animazione occidentale** (Arcane, Avatar, Castlevania): fuori. Non è nello store, non è `ja`, e la keyword "anime-inspired/-influenced/-style" è esplicitamente scartata, quindi cade da sola.
 
 ### 1.1 Risoluzione tramite `animeMappingStore` (Anibridge + Fribb + certificati locali)
-Invece di query live a Kitsu o a database esterni non strutturati, YACA carica in memoria e sincronizza periodicamente (ogni 12 ore, ETag) due indici:
+Invece di query live a Kitsu o a database esterni non strutturati, l'app non scarica nulla in proprio: legge l'artefatto prodotto da `anime-source` (`ANIME_MAPPING_PATH`, default `/data/anime-source/anime-mappings.json`) tramite `snapshotDaArtefatto` con TTL **60 s** e politica `keepLastKnown` su errore, che aggrega due indici e gli override:
 1. **Anibridge**: cluster multi-provider (AniDB, AniList, MAL) che collegano ogni stagione TMDB con i rispettivi range di episodi anime.
 2. **Fribb (`anime-list-mini`)**: mapping incrociato Kitsu ID, AniDB, AniList, MAL e TMDB (inclusi film via `tmdbToKitsuMovie`). Nel file reale `themoviedb_id.movie` è un **array** di id (rifacimenti, compilation): in avanti vale il primo, in dietro sono registrati **tutti**, così ogni variante del gruppo torna al suo Kitsu.
 3. **Certificati locali**: la sezione `certify` di `services/anime-source/data/anime-overrides.json` (caricata a ogni sync, loader fail-safe). Serve per i titoli che mancano dagli indici: sono anime per *noi*, anche se Anibridge non li conosce. Va tenuta separata dagli indici perché è **dato curato**, non scaricato.
 4. **Lookup O(1)**: `animeMappingStore.isAnimeTmdbId(id)` verifica l'appartenenza in tempo costante tramite `Set`. Tolera `12345`, `12345:1` e `tmdb:tv:12345`.
 
 ### 1.2 Il marcatore unico `_isAnime`
-La risposta non viaggia come flag opaco tra i moduli: `normalizeAnimeMarker` (`src/utils/animeIdentity.js`) è **l'unico contratto** di normalizzazione. Scrive `_isAnime` sul payload e, se il boolean è già presente, lo propaga senza ricalcolare (chiamate successive O(1)). Prove positive: `type: 'anime'`, id `kitsu:` o `anilist:`, altrimenti `isAnimeContent`. Il default unico è `false`: **senza prove non si abilita** enrichment Kitsu, filtri anime o badge.
+La risposta non viaggia come flag opaco tra i moduli: `normalizeAnimeMarker` (`src/anime/identita.js`) è **l'unico contratto** di normalizzazione. Scrive `_isAnime` sul payload e, se il boolean è già presente, lo propaga senza ricalcolare (chiamate successive O(1)). Prove positive: `type: 'anime'`, id `kitsu:` o `anilist:`, altrimenti `isAnimeContent`. Il default unico è `false`: **senza prove non si abilita** enrichment Kitsu, filtri anime o badge.
 
 I consumatori sono i boundary della pipeline, non i chiamanti sparsi: `DuckDbProvider` e `clients/tmdb.js` lo calcolano sui propri payload, `catalogHandler` lo applica a ogni item in uscita dal routing (è il punto in cui partono filtro selettori anime, badge e clone) e `metaHandler` lo rivalida **sulla copia** — l'oggetto in `finalMetaCache` non si tocca mai (`normalizeAnimeMarker` *scrive* il marker).
 

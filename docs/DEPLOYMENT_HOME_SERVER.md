@@ -68,7 +68,7 @@ Storage locale host:    yaca_tmdb (/data/tmdb, ~200 MB)  |  yaca_badges (/data/b
 | Servizio / Componente | Memoria a Regime | Memoria Max Allocata (Cap) | Note |
 |---|---|---|---|
 | OS + Docker + Tailscale | ~310 MB | — | Linux headless senza desktop |
-| `app` (Node + DuckDB) | ~400 MB | 1536 MB | Express + DuckDB in-memory + cold start |
+| `app` (Node + DuckDB) | ~400 MB | 1536 MB | Express + DuckDB in-memory |
 | `redis` (Cache L1/L2) | ~270 MB | 300 MB | LRU eviction, no snapshot su disco |
 | `anime-source` (Worker Anime) | ~70 MB | 256 MB | Polling periodico AnimeUnity, popola anime_airing_state |
 | `watchtower` | ~20 MB | 50 MB | Polling orario su GHCR con cleanup |
@@ -407,7 +407,7 @@ Se il manifest JSON risponde correttamente, l'addon è pronto per essere install
 ## 5. Cold Start TMDB Daemon (una notte)
 
 ### 5.1 Come Funziona
-All'avvio del container `app`, se la variabile `TMDB_API_KEY` è valida e i dati completi non sono già presenti nel volume `/data/tmdb`, il processo in background `TmdbDumpDaemon` avvia automaticamente il cold start:
+Il container dedicato `tmdb-daemon` in `docker-compose.yml` (`command: ["node", "services/tmdb-daemon/cli.js"]`) gira in ciclo **ogni ora** (il container `app` non avvia il daemon). Al suo avvio, se la variabile `TMDB_API_KEY` è valida e i dati completi non sono già presenti nel volume `/data/tmdb`, `TmdbDumpDaemon` avvia automaticamente il cold start:
 - Scarica l'export giornaliero di TMDB e recupera i dettagli di **tutti i titoli, film e serie** (~533.000 al 2026-10, la conta cresce con TMDB).
 - Esegue le richieste in parallelo con `TMDB_DUMP_CONCURRENCY` richieste in volo (default **8**) e una pausa di `TMDB_DUMP_DELAY_MS` ms fra un gruppo e il successivo (default **285**) per non incappare nel rate limit.
 - Durata stimata con i default: **~9 ore**. Sequenziale (concurrency 1) la stessa mole sarebbe ~3 giorni.
@@ -425,10 +425,10 @@ Il criterio di completezza non è "i 5 file esistono" ma: **i due JSONL `master_
 È possibile monitorare lo stato di avanzamento in tempo reale tramite i log di Docker:
 
 ```bash
-docker compose logs -f app | grep -E "TMDB|Dump|parquet"
+docker compose logs -f tmdb-daemon | grep -E "TMDB|Dump|parquet"
 ```
 
-Oppure interrogando l'endpoint di stato protetto da credenziali admin:
+Oppure interrogando l'endpoint di stato protetto da credenziali admin (che legge `dump_status.json` dal volume `yaca_tmdb`; segnala `isStale: true` se l'heartbeat supera **10 minuti** o `lastSync` supera **36 ore**):
 
 ```bash
 curl -s -H "x-admin-pass: <ADMIN_PASS>" http://127.0.0.1:7860/api/admin/tmdb-dump/status | jq .

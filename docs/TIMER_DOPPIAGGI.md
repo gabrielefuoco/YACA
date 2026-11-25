@@ -7,7 +7,7 @@ Questo documento descrive il funzionamento, l'architettura, l'installazione, la 
 ## 1. Cos'è e Obiettivo Operativo
 
 Il servizio `services/doppiaggi-source` è il componente autonomo di YACA incaricato di costruire la verità sul doppiaggio italiano per film, serie e anime:
-1. **Scraping cortese degli indici**: scarica le 79 pagine d'indice de *Il Mondo dei Doppiatori* (`antoniogenna.net/doppiaggio/`) con delay di 800 ms, connessione singola e `User-Agent` identificativo.
+1. **Scraping cortese degli indici**: scarica le 81 pagine d'indice de *Il Mondo dei Doppiatori* (`antoniogenna.net/doppiaggio/`: 27 film, 25 telefilm, 26 anim, 3 soap) con delay di 800 ms, connessione singola, `User-Agent` identificativo e cache su disco con TTL di **12 ore** e rotazione di `ceil(pagine/4)` pagine per giro (21 a regime).
 2. **Parsing & Disambiguazione**: applica le tre regole misurate (rimozione tag senza spazi, normalizzazione articolo invertito italiano e inglese, estrazione anno esatto di disambiguazione).
 3. **Matching contro il catalogo**: incrocia le schede con i dump JSONL del catalogo YACA (`master_movies.jsonl`, `master_tv.jsonl`), producendo match `true` o `null` (omonimia irrisolta).
 4. **Unione Anime**: interroga in sola lettura la collezione `anime_airing_state` su MongoDB Atlas (AnimeUnity) integrando gli anime doppiati col veto serie (`maxEpisodeNumber > 3` → `tv`).
@@ -16,7 +16,7 @@ Il servizio `services/doppiaggi-source` è il componente autonomo di YACA incari
 ### Cadenza Operativa
 Come stabilito nelle decisioni di cortesia e aggiornamento quotidiano (ticket 05 / 07):
 - **Due passate al giorno: alle 04:00 e alle 16:00**.
-- La cadenza dimezza la latenza di ricezione dei nuovi doppiaggi (massimo 12 ore) con un impatto di sole 158 richieste al giorno verso la fonte.
+- La cadenza dimezza la latenza di ricezione dei nuovi doppiaggi (massimo 12 ore) con un impatto a regime di al più 21 pagine aggiornate per giro (fino a 42 richieste al giorno verso la fonte).
 
 ---
 
