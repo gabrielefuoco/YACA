@@ -1,0 +1,98 @@
+{
+  "episodes": [
+    {
+      "id": 3887,
+      "number": "121",
+      "seq_number_start": 121,
+      "seq_number_end": 121,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 37294,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219683,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3888,
+      "number": "122",
+      "seq_number_start": 122,
+      "seq_number_end": 122,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 37295,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219684,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3889,
+      "number": "123",
+      "seq_number_start": 123,
+      "seq_number_end": 123,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 37296,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219685,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3890,
+      "number": "124",
+      "seq_number_start": 124,
+      "seq_number_end": 124,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 37297,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219686,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3891,
+      "number": "125",
+      "seq_number_start": 125,
+      "seq_number_end": 125,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 37298,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219687,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    }
+  ],
+  "start": 121,
+  "tab_size": 120,
+  "total": 125,
+  "offset": 1
+}

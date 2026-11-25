@@ -1,24 +1,23 @@
 /**
  * animeunity.js
- * Adapter per AnimeUnity (archivio e info_api episodi).
- * Nessuna dipendenza esterna: usa fetch nativo e regex per il parsing.
+ * Adapter per la nuova API JSON di AnimeUnity (/api/home/latest-episodes, /api/archive, /api/anime/{id}/episodes).
+ * Nessuna dipendenza esterna: usa fetch nativo.
  */
 
+const fs = require('fs');
+const path = require('path');
 const { cleanTitle } = require('./aggregate');
 
-const DEFAULT_BASE_URL = process.env.ANIMEUNITY_BASE_URL || 'https://www.animeunity.co';
+const DEFAULT_BASE_URL = process.env.ANIMEUNITY_BASE_URL || 'https://animeunity.cx';
 const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const MAX_REDIRECTS = 3;
 
-// Finestra del "chi è in simulcast": due settimane. Misurata il 04/10/2026, sei pagine
-// della home coprono esattamente 14 giorni (30 item per pagina, ordine per data).
 const HOME_WINDOW_DAYS = 14;
-// Tetto di pagine per un giro completo: rete di sicurezza, NON una taratura. Con la
-// regola "prendi pagine finché la più vecchia è dentro la finestra" il numero di pagine
-// dipende solo da quanti episodi escono al giorno; il tetto serve solo a non girare
-// all'infinito se il sito rispondesse sempre con pagine piene di item freschi.
-const HOME_MAX_PAGES = 25;
+// 5 pagine x 20 item = 100 episodi per passata completa.
+const HOME_MAX_PAGES = 5;
+const SEEN_AIRED_AT_FILE = 'home-observed-at.json';
+const SEEN_AIRED_AT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function decodeHtmlEntities(str) {
     if (!str || typeof str !== 'string') return '';
@@ -40,90 +39,156 @@ function decodeHtmlEntities(str) {
         });
 }
 
-function extractArchiveRecords(input) {
-    if (!input) return [];
+function mapDefaultStatus(status) {
+    if (!status || typeof status !== 'string') return null;
+    const low = status.trim().toLowerCase();
+    if (low === 'ongoing') return 'In Corso';
+    if (low === 'completed') return 'Terminato';
+    return status;
+}
 
-    // Se è già un oggetto JS (es. risposta JSON parsata)
-    if (typeof input === 'object') {
-        if (Array.isArray(input)) return input;
-        if (Array.isArray(input.records)) return input.records;
-        if (Array.isArray(input.data)) return input.data;
-        return [];
+function normalizeArchiveRecord(record, options = {}) {
+    if (!record || typeof record !== 'object') return record;
+    // Record legacy gia' normalizzato (senza variants e con dub numerico)
+    if (record.dub !== undefined && !Array.isArray(record.variants) && record.default_status === undefined) {
+        return record;
+    }
+
+    const variants = Array.isArray(record.variants) ? record.variants : [];
+    const defaultLang = options.defaultDub === 1 ? 'ita' : 'jpn';
+    const preferredVariant = variants.find(v => v && v.language === defaultLang) || variants[0] || null;
+    const hasIta = variants.some(v => v && v.language === 'ita');
+    const hasJpn = variants.some(v => v && v.language === 'jpn');
+
+    let dub = 0;
+    if (record.dub !== undefined && record.dub !== null) {
+        dub = Number(record.dub) === 1 ? 1 : 0;
+    } else if (options.defaultDub !== undefined) {
+        dub = Number(options.defaultDub) === 1 ? 1 : 0;
+    } else if (hasIta && !hasJpn) {
+        dub = 1;
+    }
+
+    const epCount = record.real_episodes_count ?? preferredVariant?.episodes_count ?? record.episodes_count ?? record.total_episodes ?? null;
+    const rawStatus = record.status || preferredVariant?.status || record.default_status || null;
+
+    return {
+        ...record,
+        title_eng: record.title_eng ?? record.title_ja ?? null,
+        date: record.date ?? (record.year !== undefined && record.year !== null ? String(record.year) : null),
+        status: mapDefaultStatus(rawStatus),
+        dub,
+        real_episodes_count: epCount,
+        episodes_count: record.episodes_count ?? preferredVariant?.episodes_count ?? record.total_episodes ?? null
+    };
+}
+
+function parseJsonPayload(input) {
+    if (!input) return null;
+    if (typeof input === 'object') return input;
+    if (typeof input !== 'string') return null;
+    const trimmed = input.trim();
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return null;
+    }
+}
+
+function extractArrayFromPayload(parsed) {
+    if (!parsed || typeof parsed !== 'object') return [];
+    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed.data)) return parsed.data;
+    if (Array.isArray(parsed.records)) return parsed.records;
+    return [];
+}
+
+function extractArchiveRecords(input, options = {}) {
+    const parsed = parseJsonPayload(input);
+    if (parsed) {
+        return extractArrayFromPayload(parsed).map(r => normalizeArchiveRecord(r, options));
     }
 
     if (typeof input !== 'string') return [];
 
-    // Se è una stringa JSON
-    const trimmed = input.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        try {
-            const parsed = JSON.parse(trimmed);
-            if (Array.isArray(parsed)) return parsed;
-            if (parsed && Array.isArray(parsed.records)) return parsed.records;
-            if (parsed && Array.isArray(parsed.data)) return parsed.data;
-        } catch {
-            // Continua con il fallback di estrazione HTML
-        }
-    }
-
-    // Estrazione da attributo HTML records="..."
+    // Fallback retrocompatibile per fixture HTML storiche (records="...")
     const match = input.match(/\brecords="([^"]+)"/) || input.match(/\brecords='([^']+)'/);
     if (!match || !match[1]) return [];
-
-    const decoded = decodeHtmlEntities(match[1]);
     try {
-        const parsed = JSON.parse(decoded);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed && Array.isArray(parsed.data)) return parsed.data;
-        if (parsed && Array.isArray(parsed.records)) return parsed.records;
-        return [];
+        const htmlParsed = JSON.parse(decodeHtmlEntities(match[1]));
+        return extractArrayFromPayload(htmlParsed).map(r => normalizeArchiveRecord(r, options));
     } catch (err) {
         console.error(`[AnimeUnity] Errore nel parsing JSON dei record archivio: ${err.message}`);
         return [];
     }
 }
 
-function extractHomeItems(input) {
-    if (!input) return [];
+function resolveEpisodeNumber(ep) {
+    if (!ep || typeof ep !== 'object') return '';
+    const raw = ep.number !== undefined && ep.number !== null ? String(ep.number).trim() : '';
+    const num = Number(raw);
+    if (raw !== '' && Number.isFinite(num) && num > 0) return raw;
+    const seqEnd = Number(ep.seq_number_end);
+    if (Number.isFinite(seqEnd) && seqEnd > 0) return String(seqEnd);
+    return raw;
+}
 
-    // Se è già un oggetto JS (es. array o oggetto paginatore)
-    if (typeof input === 'object') {
-        if (Array.isArray(input)) return input;
-        if (Array.isArray(input.data)) return input.data;
-        if (Array.isArray(input.records)) return input.records;
-        return [];
-    }
+function normalizeHomeItem(raw, options = {}) {
+    if (!raw || typeof raw !== 'object') return null;
+    // Item gia' normalizzato (fixture legacy con raw.anime diretto e senza raw.episode)
+    if (!raw.episode) return raw;
 
-    if (typeof input !== 'string') return [];
+    const ep = raw.episode;
+    const anime = ep && ep.anime && typeof ep.anime === 'object' ? ep.anime : null;
+    const language = raw.language === 'ita' ? 'ita' : 'jpn';
+    const dub = language === 'ita' ? 1 : 0;
+    const number = resolveEpisodeNumber(ep);
 
-    // Se è una stringa JSON
-    const trimmed = input.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        try {
-            const parsed = JSON.parse(trimmed);
-            if (Array.isArray(parsed)) return parsed;
-            if (parsed && Array.isArray(parsed.data)) return parsed.data;
-            if (parsed && Array.isArray(parsed.records)) return parsed.records;
-        } catch {
-            // Continua con estrazione HTML
+    let createdAt = raw.created_at || ep.created_at || null;
+    if (!createdAt) {
+        if (typeof options.observeAiredAt === 'function') {
+            createdAt = options.observeAiredAt(anime ? anime.id : null, number, language, options.now);
+        } else {
+            const nowMs = Number.isFinite(options.now) ? Number(options.now) : Date.now();
+            createdAt = new Date(nowMs).toISOString();
         }
     }
 
-    // Estrazione da attributo HTML items-json="..." o items-json='...'
-    const match = input.match(/\bitems-json="([^"]+)"/) || input.match(/\bitems-json='([^']+)'/);
-    if (!match || !match[1]) return [];
+    return {
+        id: raw.id,
+        anime_id: anime ? anime.id : null,
+        episode_id: ep ? ep.id : null,
+        language,
+        number,
+        seq_number_end: ep ? ep.seq_number_end : null,
+        created_at: createdAt,
+        anime: anime ? {
+            id: anime.id,
+            slug: anime.slug ?? null,
+            title: anime.title ?? null,
+            title_ja: anime.title_ja ?? null,
+            title_eng: anime.title_eng ?? anime.title_ja ?? null,
+            title_it: anime.title_it ?? null,
+            type: anime.type ?? null,
+            year: anime.year ?? null,
+            date: anime.date ?? (anime.year !== undefined && anime.year !== null ? String(anime.year) : null),
+            total_episodes: anime.total_episodes ?? null,
+            default_status: anime.default_status ?? null,
+            status: anime.status || mapDefaultStatus(anime.default_status),
+            dub,
+            anilist_id: anime.anilist_id ?? null,
+            mal_id: anime.mal_id ?? null
+        } : null
+    };
+}
 
-    const decoded = decodeHtmlEntities(match[1]);
-    try {
-        const parsed = JSON.parse(decoded);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed && Array.isArray(parsed.data)) return parsed.data;
-        if (parsed && Array.isArray(parsed.records)) return parsed.records;
-        return [];
-    } catch (err) {
-        console.error(`[AnimeUnity] Errore nel parsing JSON degli item della home: ${err.message}`);
-        return [];
-    }
+function extractHomeItems(input, options = {}) {
+    const parsed = parseJsonPayload(input);
+    if (!parsed) return [];
+    return extractArrayFromPayload(parsed)
+        .map(item => normalizeHomeItem(item, options))
+        .filter(Boolean);
 }
 
 class AnimeUnityClient {
@@ -132,10 +197,70 @@ class AnimeUnityClient {
         this.userAgent = options.userAgent || DEFAULT_USER_AGENT;
         this.fetchFn = options.fetch || globalThis.fetch;
         this.requestDelayMs = options.requestDelayMs !== undefined ? options.requestDelayMs : 350;
+        this.cacheDir = options.cacheDir || null;
         this._lastRequestTime = 0;
-        this._csrfData = null;
         this._searchCache = new Map();
         this._warnedRedirectHosts = new Set();
+        this._seenAiredAt = new Map();
+        this._loadSeenAiredAt();
+    }
+
+    _seenAiredAtPath() {
+        return this.cacheDir ? path.join(this.cacheDir, SEEN_AIRED_AT_FILE) : null;
+    }
+
+    _loadSeenAiredAt() {
+        const file = this._seenAiredAtPath();
+        if (!file || !fs.existsSync(file)) return;
+        try {
+            const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+            if (raw && typeof raw === 'object') {
+                const cutoff = Date.now() - SEEN_AIRED_AT_TTL_MS;
+                for (const [k, v] of Object.entries(raw)) {
+                    const ms = Date.parse(v);
+                    if (Number.isFinite(ms) && ms >= cutoff) {
+                        this._seenAiredAt.set(k, v);
+                    }
+                }
+            }
+        } catch {
+            // Cache osservazioni corrotta o illeggibile: riparte pulita
+        }
+    }
+
+    _saveSeenAiredAt() {
+        const file = this._seenAiredAtPath();
+        if (!file) return;
+        try {
+            if (!fs.existsSync(this.cacheDir)) {
+                fs.mkdirSync(this.cacheDir, { recursive: true });
+            }
+            const cutoff = Date.now() - SEEN_AIRED_AT_TTL_MS;
+            const out = {};
+            for (const [k, v] of this._seenAiredAt.entries()) {
+                const ms = Date.parse(v);
+                if (Number.isFinite(ms) && ms >= cutoff) out[k] = v;
+            }
+            fs.writeFileSync(file, JSON.stringify(out), 'utf8');
+        } catch {
+            // Non bloccante
+        }
+    }
+
+    // ponytail: /api/home/latest-episodes omits release dates; observation time gives 1-poll-cycle (15m) accuracy. Upgrade: read a real date if the API ever exposes one.
+    _observeAiredAt(animeId, episodeNumber, language, nowMs) {
+        const ts = Number.isFinite(nowMs) ? Number(nowMs) : Date.now();
+        if (!animeId || !episodeNumber) {
+            return new Date(ts).toISOString();
+        }
+        const key = `${animeId}:${episodeNumber}:${language || 'jpn'}`;
+        if (this._seenAiredAt.has(key)) {
+            return this._seenAiredAt.get(key);
+        }
+        const iso = new Date(ts).toISOString();
+        this._seenAiredAt.set(key, iso);
+        this._saveSeenAiredAt();
+        return iso;
     }
 
     /**
@@ -184,7 +309,7 @@ class AnimeUnityClient {
     }
 
     /**
-     * Cerca anime nell'archivio per titolo
+     * Cerca anime nell'archivio per titolo tramite GET /api/search?q=...
      * @param {string} title Titolo da cercare
      * @returns {Promise<Array<Object>>} Lista di record trovati
      */
@@ -192,22 +317,22 @@ class AnimeUnityClient {
         if (!title || typeof title !== 'string') return [];
         await this._courtesyWait();
 
-        const url = `${this.baseUrl}/archivio?title=${encodeURIComponent(title.trim())}`;
+        const url = `${this.baseUrl}/api/search?q=${encodeURIComponent(title.trim())}`;
         try {
             const res = await this._fetch(url, {
                 headers: {
                     'User-Agent': this.userAgent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    'Accept': 'application/json'
                 }
             });
 
             if (!res.ok) {
-                console.error(`[AnimeUnity] Richiesta archivio fallita con status ${res.status} per "${title}"`);
+                console.error(`[AnimeUnity] Richiesta ricerca fallita con status ${res.status} per "${title}"`);
                 return [];
             }
 
-            const html = await res.text();
-            return extractArchiveRecords(html);
+            const data = await res.json();
+            return extractArchiveRecords(data);
         } catch (err) {
             console.error(`[AnimeUnity] Errore di rete nella ricerca archivio per "${title}": ${err.message}`);
             return [];
@@ -215,21 +340,184 @@ class AnimeUnityClient {
     }
 
     /**
-     * Recupera gli episodi di una serie tramite /info_api/{id}/{dub}
+     * Recupera gli episodi di una serie tramite GET /api/anime/{id}/episodes
+     * filtrando per lingua ('jpn' per sub/dub=0, 'ita' per dub=1) e paginando via start.
      * @param {number|string} animeId ID anime su AnimeUnity
-     * @param {number|string} dub 0 per sub, 1 per doppiato
+     * @param {number|string} [dub=0] 0 per sub ('jpn'), 1 per doppiato ('ita')
      * @param {Object} [rangeOptions]
-     * @param {number} [rangeOptions.startRange=1]
-     * @param {number} [rangeOptions.endRange=100]
-     * @returns {Promise<{ episodes_count: number, episodes: Array<Object> }|null>}
+     * @param {number} [rangeOptions.startRange]
+     * @param {number} [rangeOptions.endRange]
+     * @returns {Promise<{ episodes_count: number, current_episode: *, episodes: Array<Object> }|null>}
      */
     async getEpisodes(animeId, dub = 0, rangeOptions = {}) {
         if (!animeId) return null;
+
+        const targetLanguage = (Number(dub) === 1 || dub === 'ita') ? 'ita' : 'jpn';
+        const hasEndRange = rangeOptions.endRange !== undefined && Number.isFinite(Number(rangeOptions.endRange));
+        const endRange = hasEndRange ? Number(rangeOptions.endRange) : null;
+        let currentStart = Math.max(1, Number(rangeOptions.startRange) || 1);
+
+        const rawEpisodes = [];
+        let apiTotal = null;
+        let lastCurrentEpisode = null;
+
+        while (true) {
+            await this._courtesyWait();
+
+            const url = currentStart > 1
+                ? `${this.baseUrl}/api/anime/${animeId}/episodes?start=${currentStart}`
+                : `${this.baseUrl}/api/anime/${animeId}/episodes`;
+
+            try {
+                const res = await this._fetch(url, {
+                    headers: {
+                        'User-Agent': this.userAgent,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!res.ok) {
+                    if (rawEpisodes.length === 0) {
+                        console.error(`[AnimeUnity] Richiesta episodes fallita con status ${res.status} per anime ${animeId} (${targetLanguage})`);
+                        return null;
+                    }
+                    break;
+                }
+
+                const data = await res.json();
+                if (!data || typeof data !== 'object') {
+                    return rawEpisodes.length === 0 ? null : { episodes_count: rawEpisodes.length, current_episode: lastCurrentEpisode, episodes: rawEpisodes };
+                }
+
+                if (data.current_episode !== undefined) {
+                    lastCurrentEpisode = data.current_episode;
+                }
+                if (Number.isFinite(Number(data.total))) {
+                    apiTotal = Number(data.total);
+                }
+
+                const pageEpisodes = Array.isArray(data.episodes) ? data.episodes : [];
+                rawEpisodes.push(...pageEpisodes);
+
+                if (pageEpisodes.length === 0) break;
+                if (apiTotal === null || rawEpisodes.length >= apiTotal) break;
+
+                const pageStart = Number.isFinite(Number(data.start)) ? Number(data.start) : currentStart;
+                const nextStart = pageStart + pageEpisodes.length;
+                if (hasEndRange && nextStart - 1 >= endRange) break;
+                if (nextStart <= currentStart) break;
+                currentStart = nextStart;
+            } catch (err) {
+                console.error(`[AnimeUnity] Errore nel recupero episodi per anime ${animeId} (${targetLanguage}): ${err.message}`);
+                return rawEpisodes.length === 0 ? null : { episodes_count: rawEpisodes.length, current_episode: lastCurrentEpisode, episodes: rawEpisodes };
+            }
+        }
+
+        const filteredEpisodes = rawEpisodes.filter((ep) => {
+            if (!ep || typeof ep !== 'object') return false;
+            if (!Array.isArray(ep.videos)) return true;
+            return ep.videos.some(v => v && v.language === targetLanguage);
+        });
+
+        const episodesCount = (hasEndRange && filteredEpisodes.length === 0 && apiTotal !== null)
+            ? apiTotal
+            : filteredEpisodes.length;
+
+        return {
+            episodes_count: episodesCount,
+            current_episode: lastCurrentEpisode,
+            episodes: filteredEpisodes
+        };
+    }
+
+    async _fetchArchivePages({ query, limit, defaultDub, label }) {
+        const allRecords = [];
+        for (let page = 1; allRecords.length < limit; page++) {
+            await this._courtesyWait();
+
+            const url = page === 1
+                ? `${this.baseUrl}/api/archive?${query}`
+                : `${this.baseUrl}/api/archive?${query}&page=${page}`;
+
+            try {
+                const res = await this._fetch(url, {
+                    headers: {
+                        'User-Agent': this.userAgent,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!res.ok) {
+                    console.error(`[AnimeUnity] Richiesta archive (${label}) fallita con status ${res.status} alla pagina ${page}`);
+                    break;
+                }
+
+                const data = await res.json();
+                const records = extractArchiveRecords(data, { defaultDub });
+                if (!records || records.length === 0) break;
+
+                for (const r of records) {
+                    allRecords.push(r);
+                    if (allRecords.length >= limit) break;
+                }
+
+                if (data.last_page !== undefined && page >= Number(data.last_page)) break;
+                if (data.total !== undefined && allRecords.length >= Number(data.total)) break;
+            } catch (err) {
+                console.error(`[AnimeUnity] Errore durante la paginazione archive (${label}) alla pagina ${page}: ${err.message}`);
+                break;
+            }
+        }
+        return allRecords;
+    }
+
+    /**
+     * Recupera l'elenco delle serie in corso da AnimeUnity (GET /api/archive?status=ongoing)
+     * @param {Object} [options]
+     * @param {number} [options.limit=300] Budget massimo di serie per giro
+     * @param {string} [options.status='ongoing'] Filtro di stato (solo 'ongoing' e' valido sulla nuova API)
+     * @returns {Promise<Array<Object>>} Lista di record trovati
+     */
+    async getOngoingSeries(options = {}) {
+        const limit = options.limit !== undefined ? Number(options.limit) : 300;
+        const rawStatus = options.status ? String(options.status).trim().toLowerCase() : 'ongoing';
+        const status = (rawStatus === 'in corso' || rawStatus === 'in_corso') ? 'ongoing' : rawStatus;
+
+        return this._fetchArchivePages({
+            query: `status=${encodeURIComponent(status)}`,
+            limit,
+            label: `status=${status}`
+        });
+    }
+
+    /**
+     * Recupera l'elenco dei doppiati dall'archivio AnimeUnity (GET /api/archive?language=ita)
+     * @param {Object} [options]
+     * @param {number} [options.limit=1600] Budget massimo di serie per giro
+     * @returns {Promise<Array<Object>>} Lista di record doppiati trovati
+     */
+    async getDubbedSeries(options = {}) {
+        const limit = options.limit !== undefined ? Number(options.limit) : 1600;
+        return this._fetchArchivePages({
+            query: 'language=ita',
+            limit,
+            defaultDub: 1,
+            label: 'language=ita'
+        });
+    }
+
+    /**
+     * UNA pagina della home (GET /api/home/latest-episodes?page=N).
+     * @param {number} [page=1]
+     * @param {Object} [options]
+     * @returns {Promise<Array<Object>>} Item episodio normalizzati ([] se la pagina non c'è più)
+     */
+    async _fetchHomePage(page = 1, options = {}) {
         await this._courtesyWait();
 
-        const start = rangeOptions.startRange || 1;
-        const end = rangeOptions.endRange || 100;
-        const url = `${this.baseUrl}/info_api/${animeId}/${dub}?start_range=${start}&end_range=${end}`;
+        const url = Number(page) <= 1
+            ? `${this.baseUrl}/api/home/latest-episodes`
+            : `${this.baseUrl}/api/home/latest-episodes?page=${page}`;
 
         try {
             const res = await this._fetch(url, {
@@ -240,262 +528,18 @@ class AnimeUnityClient {
             });
 
             if (!res.ok) {
-                console.error(`[AnimeUnity] Richiesta info_api fallita con status ${res.status} per anime ${animeId} dub ${dub}`);
-                return null;
-            }
-
-            const data = await res.json();
-            if (!data || typeof data !== 'object') {
-                return null;
-            }
-
-            return {
-                episodes_count: Number(data.episodes_count) || (Array.isArray(data.episodes) ? data.episodes.length : 0),
-                current_episode: data.current_episode,
-                episodes: Array.isArray(data.episodes) ? data.episodes : []
-            };
-        } catch (err) {
-            console.error(`[AnimeUnity] Errore nel recupero episodi per anime ${animeId} dub ${dub}: ${err.message}`);
-            return null;
-        }
-    }
-
-    /**
-     * Recupera l'elenco delle serie in corso da AnimeUnity (/archivio/get-animes con paginazione)
-     * @param {Object} [options]
-     * @param {number} [options.limit=300] Budget massimo di serie per giro
-     * @param {string} [options.status='In corso'] Filtro di stato
-     * @returns {Promise<Array<Object>>} Lista di record trovati
-     */
-    async _getCsrfAndCookies(forceRefresh = false) {
-        if (!forceRefresh && this._csrfData) {
-            return this._csrfData;
-        }
-
-        await this._courtesyWait();
-
-        const archiveUrl = `${this.baseUrl}/archivio`;
-        let csrfToken = null;
-        let cookieHeader = '';
-
-        try {
-            const res = await this._fetch(archiveUrl, {
-                headers: {
-                    'User-Agent': this.userAgent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                }
-            });
-
-            if (!res.ok) {
-                console.error(`[AnimeUnity] Richiesta archivio fallita con status ${res.status}`);
-                return null;
-            }
-
-            const setCookies = typeof res.headers?.getSetCookie === 'function'
-                ? res.headers.getSetCookie()
-                : (res.headers?.get ? (res.headers.get('set-cookie') ? [res.headers.get('set-cookie')] : []) : []);
-
-            cookieHeader = setCookies.map(c => c.split(';')[0]).join('; ');
-
-            const html = await res.text();
-            const csrfMeta = html.match(/<meta\s+name=["']csrf-token["']\s+content=["']([^"']+)["']/i);
-            if (csrfMeta && csrfMeta[1]) {
-                csrfToken = csrfMeta[1];
-            }
-        } catch (err) {
-            console.error(`[AnimeUnity] Errore di rete nel recupero CSRF da /archivio: ${err.message}`);
-            return null;
-        }
-
-        if (!csrfToken) {
-            console.error('[AnimeUnity] Impossibile trovare il token CSRF nella pagina /archivio');
-            return null;
-        }
-
-        this._csrfData = { csrfToken, cookieHeader };
-        return this._csrfData;
-    }
-
-    /**
-     * Recupera l'elenco delle serie in corso da AnimeUnity (/archivio/get-animes con paginazione)
-     * @param {Object} [options]
-     * @param {number} [options.limit=300] Budget massimo di serie per giro
-     * @param {string} [options.status='In corso'] Filtro di stato
-     * @returns {Promise<Array<Object>>} Lista di record trovati
-     */
-    async getOngoingSeries(options = {}) {
-        const limit = options.limit !== undefined ? Number(options.limit) : 300;
-        const status = options.status || 'In corso';
-
-        const csrfData = await this._getCsrfAndCookies();
-        if (!csrfData || !csrfData.csrfToken) {
-            return [];
-        }
-
-        let offset = 0;
-        const allRecords = [];
-
-        while (offset < limit) {
-            await this._courtesyWait();
-
-            const postUrl = `${this.baseUrl}/archivio/get-animes`;
-            const payload = {
-                title: false,
-                type: false,
-                year: false,
-                order: false,
-                status,
-                genres: [],
-                offset,
-                dubbed: false,
-                season: false
-            };
-
-            try {
-                const postRes = await this._fetch(postUrl, {
-                    method: 'POST',
-                    headers: {
-                        'User-Agent': this.userAgent,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json, text/plain, */*',
-                        'X-CSRF-TOKEN': csrfData.csrfToken,
-                        ...(csrfData.cookieHeader ? { 'Cookie': csrfData.cookieHeader } : {})
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!postRes.ok) {
-                    console.error(`[AnimeUnity] Richiesta get-animes fallita con status ${postRes.status} all'offset ${offset}`);
-                    break;
-                }
-
-                const data = await postRes.json();
-                const records = extractArchiveRecords(data);
-                if (!records || records.length === 0) {
-                    break;
-                }
-
-                for (const r of records) {
-                    allRecords.push(r);
-                    if (allRecords.length >= limit) break;
-                }
-
-                offset += records.length;
-                if (data.tot !== undefined && offset >= data.tot) {
-                    break;
-                }
-            } catch (err) {
-                console.error(`[AnimeUnity] Errore durante la paginazione get-animes all'offset ${offset}: ${err.message}`);
-                break;
-            }
-        }
-
-        return allRecords;
-    }
-
-    /**
-     * Recupera l'elenco dei doppiati dall'archivio AnimeUnity (/archivio/get-animes con dubbed: true, status: false)
-     * @param {Object} [options]
-     * @param {number} [options.limit=1600] Budget massimo di serie per giro
-     * @returns {Promise<Array<Object>>} Lista di record doppiati trovati
-     */
-    async getDubbedSeries(options = {}) {
-        const limit = options.limit !== undefined ? Number(options.limit) : 1600;
-
-        const csrfData = await this._getCsrfAndCookies();
-        if (!csrfData || !csrfData.csrfToken) {
-            return [];
-        }
-
-        let offset = 0;
-        const allRecords = [];
-
-        while (offset < limit) {
-            await this._courtesyWait();
-
-            const postUrl = `${this.baseUrl}/archivio/get-animes`;
-            const payload = {
-                title: false,
-                type: false,
-                year: false,
-                order: false,
-                status: false,
-                genres: [],
-                offset,
-                dubbed: true,
-                season: false
-            };
-
-            try {
-                const postRes = await this._fetch(postUrl, {
-                    method: 'POST',
-                    headers: {
-                        'User-Agent': this.userAgent,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json, text/plain, */*',
-                        'X-CSRF-TOKEN': csrfData.csrfToken,
-                        ...(csrfData.cookieHeader ? { 'Cookie': csrfData.cookieHeader } : {})
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!postRes.ok) {
-                    console.error(`[AnimeUnity] Richiesta get-animes (doppiati) fallita con status ${postRes.status} all'offset ${offset}`);
-                    break;
-                }
-
-                const data = await postRes.json();
-                const records = extractArchiveRecords(data);
-                if (!records || records.length === 0) {
-                    break;
-                }
-
-                for (const r of records) {
-                    allRecords.push(r);
-                    if (allRecords.length >= limit) break;
-                }
-
-                offset += records.length;
-                if (data.tot !== undefined && offset >= data.tot) {
-                    break;
-                }
-            } catch (err) {
-                console.error(`[AnimeUnity] Errore durante la paginazione get-animes (doppiati) all'offset ${offset}: ${err.message}`);
-                break;
-            }
-        }
-
-        return allRecords;
-    }
-
-    /**
-     * UNA pagina della home (pagina 1 = la radice, pagina N = `/?page=N`).
-     * È l'unico posto che conosce l'URL: il resto del modulo ragiona su "pagine".
-     * @param {number} [page=1]
-     * @returns {Promise<Array<Object>>} Item episodio della pagina ([] se la pagina non c'è più)
-     */
-    async _fetchHomePage(page = 1) {
-        await this._courtesyWait();
-
-        const url = Number(page) <= 1 ? this.baseUrl : `${this.baseUrl}/?page=${page}`;
-
-        try {
-            const res = await this._fetch(url, {
-                headers: {
-                    'User-Agent': this.userAgent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                }
-            });
-
-            if (!res.ok) {
                 console.error(`[AnimeUnity] Richiesta home pagina ${page} fallita con status ${res.status}`);
                 return [];
             }
 
-            const html = await res.text();
-            const items = extractHomeItems(html);
-            if (items.length === 0 && html && html.length > 0) {
-                console.error(`[AnimeUnity] Home pagina ${page}: 0 item estratti (status=${res.status}, bytes=${html.length})`);
+            const text = await res.text();
+            const items = extractHomeItems(text, {
+                observeAiredAt: (animeId, number, language, nowMs) => this._observeAiredAt(animeId, number, language, nowMs),
+                now: options.now
+            });
+
+            if (items.length === 0 && text && text.length > 0) {
+                console.error(`[AnimeUnity] Home pagina ${page}: 0 item estratti (status=${res.status}, bytes=${text.length})`);
             }
             return items;
         } catch (err) {
@@ -505,32 +549,22 @@ class AnimeUnityClient {
     }
 
     /**
-     * Le ultime uscite dalla home page di AnimeUnity (componente layout-items con items-json).
-     * È la PRIMA pagina: le 30 uscite più recenti (misurato il 04/10/2026: ~27 ore di uscite).
-     * @returns {Promise<Array<Object>>} Lista di item episodio (ciascuno con .anime, .number, .created_at, ecc.)
+     * Le ultime uscite dalla home page di AnimeUnity (GET /api/home/latest-episodes pagina 1).
+     * @param {Object} [options]
+     * @returns {Promise<Array<Object>>} Lista di item episodio normalizzati
      */
-    async getLatestReleasesFromHome() {
-        return this._fetchHomePage(1);
+    async getLatestReleasesFromHome(options = {}) {
+        return this._fetchHomePage(1, options);
     }
 
     /**
-     * Il giro completo della home, paginato: "le ultime due settimane" lette dalla fonte.
-     *
-     * LA REGOLA SI AUTO-CORREGGE: l'elenco è ordinato per data, quindi si scava finché
-     * l'item PIÙ VECCHIO di una pagina cade fuori dalla finestra. Non c'è nessun numero
-     * di pagine da tarare: oggi sono sei, domani potrebbero essere otto, e la regola
-     * continua a essere giusta. Il tetto `maxPages` è solo la rete di sicurezza.
-     *
-     * La pagina che fa scattare la finestra viene INCLUSA: la decisione "dentro o fuori"
-     * spetta a `summarizeHomeItems` (aggregate.js), che lavora item per item.
+     * Giro completo della home, paginato (fino a HOME_MAX_PAGES = 5 pagine = 100 episodi per giro).
      *
      * @param {Object} [options]
      * @param {number} [options.windowDays=14] Finestra in giorni
      * @param {number} [options.now] "Adesso" in ms (test)
-     * @param {number} [options.maxPages=25] Tetto di pagine (rete di sicurezza)
+     * @param {number} [options.maxPages=5] Tetto di pagine
      * @returns {Promise<{items: Array<Object>, pages: Array<Object>, stoppedBy: string, windowStartMs: number, windowEndMs: number, windowDays: number}>}
-     *   `stoppedBy`: 'window' (la pagina più vecchia è uscita), 'empty' (pagina vuota),
-     *   'max_pages' (tetto), 'unreachable' (nemmeno la prima pagina ha risposto).
      */
     async getHomeReleases(options = {}) {
         const windowDays = Number.isFinite(options.windowDays) && options.windowDays > 0
@@ -547,7 +581,7 @@ class AnimeUnityClient {
         let stoppedBy = 'max_pages';
 
         for (let page = 1; page <= maxPages; page++) {
-            const pageItems = await this._fetchHomePage(page);
+            const pageItems = await this._fetchHomePage(page, { now: nowMs });
 
             if (!Array.isArray(pageItems) || pageItems.length === 0) {
                 stoppedBy = page === 1 ? 'unreachable' : 'empty';
@@ -559,7 +593,10 @@ class AnimeUnityClient {
             let oldestMs = null;
             let newestMs = null;
             for (const item of pageItems) {
-                const at = item && item.created_at ? Date.parse(String(item.created_at).replace(' ', 'T') + 'Z') : NaN;
+                const raw = item && item.created_at ? String(item.created_at) : '';
+                const at = raw
+                    ? Date.parse(raw.includes('T') ? raw : raw.replace(' ', 'T') + 'Z')
+                    : NaN;
                 if (!Number.isFinite(at)) continue;
                 if (oldestMs === null || at < oldestMs) oldestMs = at;
                 if (newestMs === null || at > newestMs) newestMs = at;
@@ -582,14 +619,27 @@ class AnimeUnityClient {
     }
 
     /**
-     * Trova la controparte sub (dub: 0) di un record doppiato (dub: 1)
-     * effettuando una ricerca mirata per titolo in archivio e matchando anilist_id o mal_id.
-     * Ritorna null se la serie non ha controparte sub (es. esiste solo doppiata).
+     * Trova la controparte sub (jpn / dub: 0) di un record doppiato (dub: 1).
+     * Nella nuova API la stessa serie condivide spesso lo stesso id con variants['jpn'].
      * @param {Object} dubbedRecord Record doppiato da AnimeUnity
      * @returns {Promise<Object|null>} Record sub counterpart o null
      */
     async findSubCounterpart(dubbedRecord) {
         if (!dubbedRecord) return null;
+
+        if (Array.isArray(dubbedRecord.variants)) {
+            const jpnVariant = dubbedRecord.variants.find(v => v && v.language === 'jpn');
+            if (jpnVariant) {
+                return {
+                    ...dubbedRecord,
+                    dub: 0,
+                    status: mapDefaultStatus(jpnVariant.status || dubbedRecord.default_status) || dubbedRecord.status,
+                    real_episodes_count: jpnVariant.episodes_count ?? dubbedRecord.real_episodes_count,
+                    episodes_count: jpnVariant.episodes_count ?? dubbedRecord.episodes_count
+                };
+            }
+        }
+
         const rawTitle = dubbedRecord.title || dubbedRecord.title_eng || dubbedRecord.title_it || dubbedRecord.slug;
         if (!rawTitle) return null;
 
@@ -616,8 +666,23 @@ class AnimeUnityClient {
             ((r.anilist_id && dubbedRecord.anilist_id && Number(r.anilist_id) === Number(dubbedRecord.anilist_id)) ||
              (r.mal_id && dubbedRecord.mal_id && Number(r.mal_id) === Number(dubbedRecord.mal_id)))
         );
+        if (match) return match;
 
-        return match || null;
+        const sameOrSlug = records.find(r =>
+            Array.isArray(r.variants) &&
+            r.variants.some(v => v && v.language === 'jpn') &&
+            (Number(r.id) === Number(dubbedRecord.id) || (r.slug && dubbedRecord.slug && r.slug === dubbedRecord.slug))
+        );
+        if (!sameOrSlug) return null;
+
+        const jpnVariant = sameOrSlug.variants.find(v => v && v.language === 'jpn');
+        return {
+            ...sameOrSlug,
+            dub: 0,
+            status: mapDefaultStatus(jpnVariant.status || sameOrSlug.default_status) || sameOrSlug.status,
+            real_episodes_count: jpnVariant.episodes_count ?? sameOrSlug.real_episodes_count,
+            episodes_count: jpnVariant.episodes_count ?? sameOrSlug.episodes_count
+        };
     }
 }
 
