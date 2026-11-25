@@ -301,27 +301,17 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         assert.strictEqual(mergeAiringDocuments(legacy, nullEpisode).sub.episode, 13);
     });
 
-    test('processTmdbGroup: per varianti con real_episodes_count = N > 0 fa richiesta minima con startRange/endRange = N e non blocca il ciclo se fallisce', async () => {
-        const calls = [];
+    test('processTmdbGroup: usa _observeAiredAt senza chiamare getEpisodes e resta resiliente se assente', async () => {
+        const observedCalls = [];
         const mockClient = {
             findSubCounterpart: async () => null,
-            getEpisodes: async (animeId, dub, rangeOpts) => {
-                calls.push({ animeId, dub, rangeOpts });
-                if (animeId === 12) {
-                    return {
-                        episodes_count: 1180,
-                        episodes: [{ number: '1180', created_at: '2026-09-27 17:47:24' }]
-                    };
-                }
-                if (animeId === 2998) {
-                    return {
-                        episodes_count: 936,
-                        episodes: [{ number: '936', created_at: '2026-09-30 20:49:15' }]
-                    };
-                }
-                if (animeId === 99999) {
-                    throw new Error('Network timeout');
-                }
+            getEpisodes: async () => {
+                throw new Error('getEpisodes non deve essere chiamato da processTmdbGroup');
+            },
+            _observeAiredAt: (animeId, episodeNumber, language) => {
+                observedCalls.push({ animeId, episodeNumber, language });
+                if (animeId === 12) return '2026-09-27T17:47:24.000Z';
+                if (animeId === 2998) return '2026-09-30T20:49:15.000Z';
                 return null;
             }
         };
@@ -343,17 +333,18 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
         const doc = await processTmdbGroup(testGroup, mockClient, { listSeenAt: '2026-10-01T12:00:00.000Z' });
 
         assert.ok(doc);
-        assert.strictEqual(calls.length, 2, 'Deve effettuare esattamente una chiamata minima per ciascuna variante');
-        assert.deepStrictEqual(calls[0], { animeId: 12, dub: 0, rangeOpts: { startRange: 1180, endRange: 1180 } });
-        assert.deepStrictEqual(calls[1], { animeId: 2998, dub: 1, rangeOpts: { startRange: 936, endRange: 936 } });
-
+        assert.deepStrictEqual(observedCalls, [
+            { animeId: 12, episodeNumber: 1180, language: 'jpn' },
+            { animeId: 2998, episodeNumber: 936, language: 'ita' }
+        ]);
         assert.strictEqual(doc.sub.airedAt, '2026-09-27T17:47:24.000Z');
         assert.strictEqual(doc.dub.airedAt, '2026-09-30T20:49:15.000Z');
 
-        // Test resilienza: se getEpisodes lancia un errore, airedAt resta null e non crasha
-        const failingGroup = {
+        // Resilienza: un client privo di _observeAiredAt lascia airedAt null senza bloccare il ciclo
+        const minimalClient = { findSubCounterpart: async () => null };
+        const fallbackGroup = {
             tmdbId: '99999',
-            title: 'Fail Show',
+            title: 'No Observer Show',
             orderIndex: 1,
             seasonsMap: new Map([
                 [1, {
@@ -365,9 +356,9 @@ describe('Aggregate & Merge (Sub + Dub + Multi-Season)', () => {
             ])
         };
 
-        const failingDoc = await processTmdbGroup(failingGroup, mockClient);
-        assert.ok(failingDoc, 'Non deve bloccare il ciclo');
-        assert.strictEqual(failingDoc.sub.airedAt, null);
+        const fallbackDoc = await processTmdbGroup(fallbackGroup, minimalClient);
+        assert.ok(fallbackDoc, 'Non deve bloccare il ciclo');
+        assert.strictEqual(fallbackDoc.sub.airedAt, null);
     });
 });
 
