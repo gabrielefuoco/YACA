@@ -1,4 +1,4 @@
-Status: needs-info
+Status: ready-for-agent
 Type: research
 Priorità: P1 (la pipeline anime è ferma: nessun dato nuovo dal 16 novembre)
 Blocked by: nessuno (ma richiede una decisione di prodotto: riscrittura, fonte alternativa, o feature congelata)
@@ -70,6 +70,17 @@ dedicata?).
   italiano). Il badge "ITA n" andrebbe perso o dedotto diversamente.
 - **(c) Congelare la feature**: lasciare i dati attuali in Mongo, il semaforo giallo/rosso come promemoria,
   e il watchdog spento. Il catalogo simulcast si svuota da solo man mano che `homeReleases` invecchia.
+
+## Ricognizione fatta (25/11)
+
+L'API nuova è mappata e **verificata**: endpoint, forme, e la conferma che il doppiaggio italiano c'è
+(`videos[].language === 'ita'`, provato su Black Clover con 120 episodi doppiati). Gli id anime sono
+stabili, i documenti in Mongo restano validi.
+
+Mappa completa, forme dei payload e vincoli per chi implementa:
+[`../ricerche/15-api-animeunity.md`](../ricerche/15-api-animeunity.md).
+
+Il ticket è quindi **implementabile**: resta da riscrivere i tre estrattori dell'worker sulla nuova API.
 
 ## Stato attuale in produzione (per non peggiorare)
 
