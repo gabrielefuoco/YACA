@@ -488,16 +488,17 @@ function mergeAiringDocuments(existing, incoming) {
     let subLatest = null;
     if (subIncoming && subExisting) {
         const cmp = compareEpisodes(subIncoming, subExisting);
-        if (freshWins && hasEpisode(subIncoming)) {
+        if (cmp === 0) {
+            // Non sovrascrivere un airedAt già presente in Mongo per lo stesso episodio.
+            subLatest = withAiredAt({ ...subExisting, ...subIncoming }, subExisting, subIncoming);
+        } else if (freshWins && hasEpisode(subIncoming)) {
             subLatest = withAiredAt(subIncoming, subIncoming, subExisting);
         } else if (cmp > 0) {
             subLatest = withAiredAt(subIncoming, subIncoming, subExisting);
-        } else if (cmp < 0) {
-            // Il documento esistente resta avanti come numero, ma la data del ciclo
-            // corrente va conservata: i doc legacy non hanno airedAt.
-            subLatest = withAiredAt(subExisting, subIncoming, subExisting);
         } else {
-            subLatest = withAiredAt({ ...subExisting, ...subIncoming }, subIncoming, subExisting);
+            // Il documento esistente resta avanti come numero, ma se era legacy senza data
+            // conserva la data del ciclo corrente.
+            subLatest = withAiredAt(subExisting, subExisting, subIncoming);
         }
     } else {
         subLatest = subIncoming || subExisting || null;
@@ -508,14 +509,14 @@ function mergeAiringDocuments(existing, incoming) {
     let dubLatest = null;
     if (dubIncoming && dubExisting) {
         const cmp = compareEpisodes(dubIncoming, dubExisting);
-        if (freshWins && hasEpisode(dubIncoming)) {
+        if (cmp === 0) {
+            dubLatest = withAiredAt({ ...dubExisting, ...dubIncoming }, dubExisting, dubIncoming);
+        } else if (freshWins && hasEpisode(dubIncoming)) {
             dubLatest = withAiredAt(dubIncoming, dubIncoming, dubExisting);
         } else if (cmp > 0) {
             dubLatest = withAiredAt(dubIncoming, dubIncoming, dubExisting);
-        } else if (cmp < 0) {
-            dubLatest = withAiredAt(dubExisting, dubIncoming, dubExisting);
         } else {
-            dubLatest = withAiredAt({ ...dubExisting, ...dubIncoming }, dubIncoming, dubExisting);
+            dubLatest = withAiredAt(dubExisting, dubExisting, dubIncoming);
         }
     } else {
         dubLatest = dubIncoming || dubExisting || null;

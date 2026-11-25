@@ -18,6 +18,7 @@ const HOME_WINDOW_DAYS = 14;
 const HOME_MAX_PAGES = 5;
 const SEEN_AIRED_AT_FILE = 'home-observed-at.json';
 const SEEN_AIRED_AT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_RATE_LIMIT_DELAYS_MS = [2000, 5000];
 
 function decodeHtmlEntities(str) {
     if (!str || typeof str !== 'string') return '';
@@ -197,8 +198,13 @@ class AnimeUnityClient {
         this.userAgent = options.userAgent || DEFAULT_USER_AGENT;
         this.fetchFn = options.fetch || globalThis.fetch;
         this.requestDelayMs = options.requestDelayMs !== undefined ? options.requestDelayMs : 350;
+        this.rateLimitDelaysMs = Array.isArray(options.rateLimitDelaysMs) && options.rateLimitDelaysMs.length > 0
+            ? options.rateLimitDelaysMs
+            : DEFAULT_RATE_LIMIT_DELAYS_MS;
         this.cacheDir = options.cacheDir || null;
         this._lastRequestTime = 0;
+        this._cooldownUntil = 0;
+        this._rateLimitStreak = 0;
         this._searchCache = new Map();
         this._warnedRedirectHosts = new Set();
         this._seenAiredAt = new Map();
@@ -299,13 +305,47 @@ class AnimeUnityClient {
     }
 
     async _courtesyWait() {
-        if (this.requestDelayMs <= 0) return;
         const now = Date.now();
-        const elapsed = now - this._lastRequestTime;
-        if (elapsed < this.requestDelayMs) {
-            await new Promise(r => setTimeout(r, this.requestDelayMs - elapsed));
+        const delayTarget = this.requestDelayMs > 0 ? this._lastRequestTime + this.requestDelayMs : 0;
+        const waitUntil = Math.max(delayTarget, this._cooldownUntil);
+        if (waitUntil > now) {
+            await new Promise(r => setTimeout(r, waitUntil - now));
         }
         this._lastRequestTime = Date.now();
+    }
+
+    /**
+     * Esegue la richiesta rispettando il courtesy delay e riprova UNA sola volta su 429
+     * con pausa crescente, contando l'attesa nel pacing del ciclo.
+     */
+    async _request(url, options = {}, context = '') {
+        await this._courtesyWait();
+        let res = await this._fetch(url, options);
+
+        if (res.status === 429) {
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            const idx = Math.min(this._rateLimitStreak, this.rateLimitDelaysMs.length - 1);
+            const pauseMs = Math.max(0, Number(this.rateLimitDelaysMs[idx]) || 0);
+            this._rateLimitStreak++;
+            console.warn(`[AnimeUnity] 429 rate limit${context ? ` per ${context}` : ''}: attendo ${pauseMs}ms e riprovo una volta`);
+            if (pauseMs > 0) {
+                await new Promise(r => setTimeout(r, pauseMs));
+            }
+            this._lastRequestTime = Date.now();
+            res = await this._fetch(url, options);
+            this._lastRequestTime = Date.now();
+            if (res.status === 429 && pauseMs > 0) {
+                this._cooldownUntil = Math.max(this._cooldownUntil, this._lastRequestTime + pauseMs);
+            }
+            return res;
+        }
+
+        if (res.ok) {
+            this._rateLimitStreak = 0;
+        }
+        return res;
     }
 
     /**
@@ -315,16 +355,15 @@ class AnimeUnityClient {
      */
     async searchArchive(title) {
         if (!title || typeof title !== 'string') return [];
-        await this._courtesyWait();
 
         const url = `${this.baseUrl}/api/search?q=${encodeURIComponent(title.trim())}`;
         try {
-            const res = await this._fetch(url, {
+            const res = await this._request(url, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'application/json'
                 }
-            });
+            }, `ricerca "${title}"`);
 
             if (!res.ok) {
                 console.error(`[AnimeUnity] Richiesta ricerca fallita con status ${res.status} per "${title}"`);
@@ -362,23 +401,21 @@ class AnimeUnityClient {
         let lastCurrentEpisode = null;
 
         while (true) {
-            await this._courtesyWait();
-
             const url = currentStart > 1
                 ? `${this.baseUrl}/api/anime/${animeId}/episodes?start=${currentStart}`
                 : `${this.baseUrl}/api/anime/${animeId}/episodes`;
 
             try {
-                const res = await this._fetch(url, {
+                const res = await this._request(url, {
                     headers: {
                         'User-Agent': this.userAgent,
                         'Accept': 'application/json'
                     }
-                });
+                }, `anime ${animeId} (${targetLanguage})`);
 
                 if (!res.ok) {
+                    console.error(`[AnimeUnity] Richiesta episodes fallita con status ${res.status} per anime ${animeId} (${targetLanguage})`);
                     if (rawEpisodes.length === 0) {
-                        console.error(`[AnimeUnity] Richiesta episodes fallita con status ${res.status} per anime ${animeId} (${targetLanguage})`);
                         return null;
                     }
                     break;
@@ -433,19 +470,17 @@ class AnimeUnityClient {
     async _fetchArchivePages({ query, limit, defaultDub, label }) {
         const allRecords = [];
         for (let page = 1; allRecords.length < limit; page++) {
-            await this._courtesyWait();
-
             const url = page === 1
                 ? `${this.baseUrl}/api/archive?${query}`
                 : `${this.baseUrl}/api/archive?${query}&page=${page}`;
 
             try {
-                const res = await this._fetch(url, {
+                const res = await this._request(url, {
                     headers: {
                         'User-Agent': this.userAgent,
                         'Accept': 'application/json'
                     }
-                });
+                }, `archive (${label}) pagina ${page}`);
 
                 if (!res.ok) {
                     console.error(`[AnimeUnity] Richiesta archive (${label}) fallita con status ${res.status} alla pagina ${page}`);
@@ -513,19 +548,17 @@ class AnimeUnityClient {
      * @returns {Promise<Array<Object>>} Item episodio normalizzati ([] se la pagina non c'è più)
      */
     async _fetchHomePage(page = 1, options = {}) {
-        await this._courtesyWait();
-
         const url = Number(page) <= 1
             ? `${this.baseUrl}/api/home/latest-episodes`
             : `${this.baseUrl}/api/home/latest-episodes?page=${page}`;
 
         try {
-            const res = await this._fetch(url, {
+            const res = await this._request(url, {
                 headers: {
                     'User-Agent': this.userAgent,
                     'Accept': 'application/json'
                 }
-            });
+            }, `home pagina ${page}`);
 
             if (!res.ok) {
                 console.error(`[AnimeUnity] Richiesta home pagina ${page} fallita con status ${res.status}`);
