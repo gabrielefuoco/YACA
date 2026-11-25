@@ -1,21 +1,12 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const { processTmdbGroup } = require('../cli');
-
-/**
- * Client finto: registra le richieste e delega a un handler per id/dub/range.
- */
-function makeClient(handler) {
-    const calls = [];
-    return {
-        calls,
-        async getEpisodes(id, dub, range = {}) {
-            calls.push({ id, dub, start: range.startRange, end: range.endRange });
-            return handler(id, dub, range, calls.length - 1);
-        }
-    };
-}
+const { AnimeUnityClient } = require('../src/animeunity');
+const { mergeAiringDocuments } = require('../src/aggregate');
 
 function makeGroup(seasonEntry, title = 'Titolo Test') {
     return {
@@ -29,57 +20,110 @@ function makeGroup(seasonEntry, title = 'Titolo Test') {
 const identity = { tmdbId: '999', kitsuId: '1', anilistId: 1, malId: 1, season: 1 };
 const noSubSearch = { findSubCounterpart: false };
 
-describe('processTmdbGroup - data di uscita (airedAt)', () => {
-    test('legge la data con una sola richiesta mirata per variante', async () => {
-        const client = makeClient((id) => {
-            if (id === 12) return { episodes_count: 1180, episodes: [{ number: 1180, created_at: '2026-09-27 17:47:24' }] };
-            return { episodes_count: 936, episodes: [{ number: 936, created_at: '2026-09-30 20:49:15' }] };
+describe('processTmdbGroup - data di uscita per osservazione (airedAt)', () => {
+    test('osserva sub e dub senza chiamare /episodes e persiste in home-observed-at.json', async () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-aired-obs-'));
+        try {
+            let fetchCalls = 0;
+            const client = new AnimeUnityClient({
+                cacheDir: tmpDir,
+                requestDelayMs: 0,
+                fetch: async () => {
+                    fetchCalls++;
+                    throw new Error('non deve chiamare rete');
+                }
+            });
+
+            const t1 = Date.parse('2026-11-25T10:00:00.000Z');
+            const t2 = Date.parse('2026-11-25T13:00:00.000Z');
+
+            const doc1 = await processTmdbGroup(makeGroup({
+                season: 1,
+                subRecord: { id: 12, title: 'One Piece', dub: 0, real_episodes_count: 1180 },
+                dubRecord: { id: 2998, title: 'One Piece (ITA)', dub: 1, real_episodes_count: 936 },
+                identity
+            }), client, { ...noSubSearch, now: t1 });
+
+            assert.strictEqual(fetchCalls, 0, 'zero chiamate /episodes per airedAt');
+            assert.strictEqual(doc1.sub.airedAt, '2026-11-25T10:00:00.000Z');
+            assert.strictEqual(doc1.dub.airedAt, '2026-11-25T10:00:00.000Z');
+
+            // Nuova istanza del client ricarica home-observed-at.json e mantiene la prima osservazione
+            const clientReloaded = new AnimeUnityClient({ cacheDir: tmpDir, requestDelayMs: 0 });
+            const doc2 = await processTmdbGroup(makeGroup({
+                season: 1,
+                subRecord: { id: 12, title: 'One Piece', dub: 0, real_episodes_count: 1180 },
+                dubRecord: { id: 2998, title: 'One Piece (ITA)', dub: 1, real_episodes_count: 936 },
+                identity
+            }), clientReloaded, { ...noSubSearch, now: t2 });
+
+            assert.strictEqual(doc2.sub.airedAt, '2026-11-25T10:00:00.000Z');
+            assert.strictEqual(doc2.dub.airedAt, '2026-11-25T10:00:00.000Z');
+            assert.ok(fs.existsSync(path.join(tmpDir, 'home-observed-at.json')));
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('condivide le osservazioni con la passata home (home -> archivio preserva timestamp)', async () => {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-aired-shared-'));
+        try {
+            const tHome = Date.parse('2026-11-25T08:15:00.000Z');
+            const tArchive = Date.parse('2026-11-25T11:30:00.000Z');
+            const client = new AnimeUnityClient({
+                cacheDir: tmpDir,
+                requestDelayMs: 0,
+                fetch: async () => ({
+                    ok: true,
+                    status: 200,
+                    text: async () => JSON.stringify({
+                        data: [{
+                            id: 1,
+                            language: 'jpn',
+                            episode: { id: 10, number: '8', seq_number_end: 8, anime: { id: 7776, title: 'Test', default_status: 'ongoing' } }
+                        }]
+                    })
+                })
+            });
+
+            await client.getLatestReleasesFromHome({ now: tHome });
+            const doc = await processTmdbGroup(makeGroup({
+                season: 1,
+                subRecord: { id: 7776, title: 'Test', dub: 0, real_episodes_count: 8 },
+                identity
+            }), client, { ...noSubSearch, now: tArchive });
+
+            assert.strictEqual(doc.sub.airedAt, '2026-11-25T08:15:00.000Z');
+        } finally {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('senza real_episodes_count usa episodes_count della lista e non emette warning legacy', async () => {
+        const warns = [];
+        const origWarn = console.warn;
+        console.warn = (...args) => warns.push(args.join(' '));
+        try {
+            const client = new AnimeUnityClient({ requestDelayMs: 0 });
+            const t1 = Date.parse('2026-11-25T09:00:00.000Z');
+            const doc = await processTmdbGroup(makeGroup({
+                season: 1,
+                subRecord: { id: 500, title: 'Senza conteggio reale', dub: 0, episodes_count: 14 },
+                identity
+            }), client, { ...noSubSearch, now: t1 });
+
+            assert.strictEqual(doc.sub.airedAt, '2026-11-25T09:00:00.000Z');
+            assert.ok(!warns.some(w => w.includes("l'API riporta") || w.includes('non recuperabile')));
+        } finally {
+            console.warn = origWarn;
+        }
+    });
+
+    test('senza alcun conteggio lascia airedAt null e non chiama la rete', async () => {
+        const client = new AnimeUnityClient({
+            requestDelayMs: 0,
+            fetch: async () => { throw new Error('non deve chiamare rete'); }
         });
-
-        const doc = await processTmdbGroup(makeGroup({
-            season: 1,
-            subRecord: { id: 12, title: 'One Piece', dub: 0, real_episodes_count: 1180 },
-            dubRecord: { id: 2998, title: 'One Piece (ITA)', dub: 1, real_episodes_count: 936 },
-            identity
-        }), client, noSubSearch);
-
-        assert.strictEqual(doc.sub.airedAt, '2026-09-27T17:47:24.000Z');
-        assert.strictEqual(doc.dub.airedAt, '2026-09-30T20:49:15.000Z');
-        assert.strictEqual(client.calls.length, 2, 'una richiesta per variante');
-        assert.deepStrictEqual(client.calls.map(c => [c.id, c.dub, c.start, c.end]), [[12, 0, 1180, 1180], [2998, 1, 936, 936]]);
-    });
-
-    test('senza real_episodes_count usa episodes_count della lista', async () => {
-        const client = makeClient(() => ({ episodes_count: 14, episodes: [{ number: 14, created_at: '2026-09-20 09:00:00' }] }));
-
-        const doc = await processTmdbGroup(makeGroup({
-            season: 1,
-            subRecord: { id: 500, title: 'Senza conteggio reale', dub: 0, episodes_count: 14 },
-            identity
-        }), client, noSubSearch);
-
-        assert.strictEqual(doc.sub.airedAt, '2026-09-20T09:00:00.000Z');
-        assert.deepStrictEqual([client.calls[0].start, client.calls[0].end], [14, 14]);
-    });
-
-    test('conteggio sfasato: la coda esatta e\' vuota, riprova col conteggio reale dell\'API', async () => {
-        const client = makeClient((id, dub, range) => {
-            if (range.startRange === 28) return { episodes_count: 28, episodes: [{ number: 28, created_at: '2026-09-27 10:00:00' }] };
-            return { episodes_count: 28, episodes: [] };
-        });
-
-        const doc = await processTmdbGroup(makeGroup({
-            season: 1,
-            subRecord: { id: 7402, title: 'Meitantei Conan Simulcast', dub: 0, real_episodes_count: 29 },
-            identity
-        }), client, noSubSearch);
-
-        assert.strictEqual(doc.sub.airedAt, '2026-09-27T10:00:00.000Z');
-        assert.ok(client.calls.some(c => c.start === 28 && c.end === 28), 'ha riprovato col conteggio reale');
-    });
-
-    test('senza alcun conteggio non chiama l\'API e lascia airedAt null', async () => {
-        const client = makeClient(() => ({ episodes_count: 0, episodes: [] }));
 
         const doc = await processTmdbGroup(makeGroup({
             season: 1,
@@ -87,44 +131,41 @@ describe('processTmdbGroup - data di uscita (airedAt)', () => {
             identity
         }), client, noSubSearch);
 
-        assert.strictEqual(client.calls.length, 0);
         assert.strictEqual(doc.sub.airedAt, null);
         assert.strictEqual(doc.sub.episode, null);
     });
 
-    test('errori di rete non bloccano il ciclo', async () => {
-        const client = makeClient(() => { throw new Error('boom'); });
+    test('non sovrascrive un airedAt gia\' presente in Mongo sullo stesso episodio', async () => {
+        const client = new AnimeUnityClient({ requestDelayMs: 0 });
+        const existingDoc = {
+            _id: '999',
+            schemaVersion: 1,
+            ids: { tmdb: 999, kitsu: '1', anilist: 1, mal: 1 },
+            title: 'Titolo Test',
+            schedule: { status: 'In corso', nextEpisode: null },
+            sub: { season: 1, episode: 12, airedAt: '2026-10-10T14:00:00.000Z' },
+            dub: { season: 1, episode: 6, airedAt: '2026-10-12T16:00:00.000Z' },
+            italian: {
+                sub: { latest: { season: 1, episode: 12, airedAt: '2026-10-10T14:00:00.000Z' }, status: 'In Corso' },
+                dub: { latest: { season: 1, episode: 6, airedAt: '2026-10-12T16:00:00.000Z' }, status: 'In Corso', isSimuldub: true }
+            }
+        };
 
-        const doc = await processTmdbGroup(makeGroup({
+        const incomingDoc = await processTmdbGroup(makeGroup({
             season: 1,
-            subRecord: { id: 502, title: 'Errore', dub: 0, real_episodes_count: 12 },
+            subRecord: { id: 503, title: 'Titolo Test', dub: 0, real_episodes_count: 12, status: 'In Corso' },
+            dubRecord: { id: 504, title: 'Titolo Test (ITA)', dub: 1, real_episodes_count: 6, status: 'In Corso' },
             identity
-        }), client, noSubSearch);
-
-        assert.ok(doc, 'il documento viene comunque costruito');
-        assert.strictEqual(doc.sub.airedAt, null);
-        assert.strictEqual(client.calls.length, 2, 'esatto + finestra finale, poi si ferma');
-    });
-
-    test('sceglie la data piu\' recente dentro la finestra', async () => {
-        const client = makeClient((id, dub, range) => {
-            if (range.startRange === range.endRange) return { episodes_count: 12, episodes: [] };
-            return {
-                episodes_count: 12,
-                episodes: [
-                    { number: 8, created_at: '2026-08-01 10:00:00' },
-                    { number: 12, created_at: '2026-09-15 10:00:00' },
-                    { number: 11, created_at: '2026-09-08 10:00:00' }
-                ]
-            };
+        }), client, {
+            ...noSubSearch,
+            listSeenAt: '2026-11-25T20:00:00.000Z',
+            now: Date.parse('2026-11-25T20:00:00.000Z')
         });
 
-        const doc = await processTmdbGroup(makeGroup({
-            season: 1,
-            subRecord: { id: 503, title: 'Finestra', dub: 0, real_episodes_count: 12 },
-            identity
-        }), client, noSubSearch);
-
-        assert.strictEqual(doc.sub.airedAt, '2026-09-15T10:00:00.000Z');
+        const merged = mergeAiringDocuments(existingDoc, incomingDoc);
+        assert.strictEqual(merged.sub.airedAt, '2026-10-10T14:00:00.000Z');
+        assert.strictEqual(merged.dub.airedAt, '2026-10-12T16:00:00.000Z');
+        assert.strictEqual(merged.italian.sub.latest.airedAt, '2026-10-10T14:00:00.000Z');
+        assert.strictEqual(merged.italian.dub.latest.airedAt, '2026-10-12T16:00:00.000Z');
     });
 });

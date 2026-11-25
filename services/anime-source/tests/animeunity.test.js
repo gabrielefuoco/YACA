@@ -254,4 +254,125 @@ describe('AnimeUnity Adapter (New JSON API)', () => {
         assert.deepStrictEqual(await client.searchArchive('Qualsiasi'), []);
         assert.strictEqual(await client.getEpisodes(99999, 0), null);
     });
+
+    test('429: riprova UNA volta con pausa crescente, logga warn con animeId e error solo se fallisce anche il retry', async () => {
+        let ep743Calls = 0;
+        let ep744Calls = 0;
+        let ep745Calls = 0;
+        const epFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/api_anime_episodes_120.json'), 'utf8'));
+
+        const mockFetch = async (url) => {
+            if (url.includes('/api/anime/743/episodes')) {
+                ep743Calls++;
+                if (ep743Calls === 1) return { ok: false, status: 429 };
+                return { ok: true, status: 200, json: async () => epFixture };
+            }
+            if (url.includes('/api/anime/744/episodes')) {
+                ep744Calls++;
+                return { ok: false, status: 429 };
+            }
+            if (url.includes('/api/anime/745/episodes')) {
+                ep745Calls++;
+                return { ok: true, status: 200, json: async () => epFixture };
+            }
+            return { ok: false, status: 404 };
+        };
+
+        const warns = [];
+        const errors = [];
+        const origWarn = console.warn;
+        const origError = console.error;
+        console.warn = (...args) => warns.push(args.join(' '));
+        console.error = (...args) => errors.push(args.join(' '));
+
+        try {
+            const client = new AnimeUnityClient({
+                fetch: mockFetch,
+                requestDelayMs: 0,
+                rateLimitDelaysMs: [15, 45]
+            });
+
+            // 1) Anime 743: primo 429 -> warn + attesa 15ms -> retry 200 (nessun error)
+            const t0 = Date.now();
+            const res743 = await client.getEpisodes(743, 0);
+            const elapsed743 = Date.now() - t0;
+            assert.ok(res743 && res743.episodes_count === 120);
+            assert.strictEqual(ep743Calls, 2);
+            assert.ok(elapsed743 >= 10, `attesa primo backoff >= 10ms (got ${elapsed743}ms)`);
+            assert.ok(warns.some(w => w.includes('743') && w.includes('429')));
+            assert.strictEqual(errors.length, 0);
+
+            // 2) Anime 744: 429 poi ancora 429 -> pausa crescente (45ms), un solo retry, poi error e return null senza abortire
+            const t1 = Date.now();
+            const res744 = await client.getEpisodes(744, 0);
+            const elapsed744 = Date.now() - t1;
+            assert.strictEqual(res744, null);
+            assert.strictEqual(ep744Calls, 2, 'riprova esattamente una volta');
+            assert.ok(elapsed744 >= 35, `pausa crescente >= 35ms (got ${elapsed744}ms)`);
+            assert.ok(warns.some(w => w.includes('744') && w.includes('45ms')));
+            assert.ok(errors.some(e => e.includes('744') && e.includes('429')));
+
+            // 3) Il ciclo continua dopo il 429 fallito e il successo pulito azzera lo streak
+            const t2 = Date.now();
+            const res745 = await client.getEpisodes(745, 0);
+            const elapsed745 = Date.now() - t2;
+            assert.ok(res745 && res745.episodes_count === 120);
+            assert.strictEqual(ep745Calls, 1);
+            assert.ok(elapsed745 >= 35, `cooldown dopo retry 429 fallito applicato al pacing (got ${elapsed745}ms)`);
+            assert.strictEqual(client._rateLimitStreak, 0, 'successo pulito azzera la streak 429');
+        } finally {
+            console.warn = origWarn;
+            console.error = origError;
+        }
+    });
+
+    test('429: retry funziona anche su home e archive', async () => {
+        let homeCalls = 0;
+        let archiveCalls = 0;
+        const homeFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/api_home_latest_episodes.json'), 'utf8'));
+        const archiveFixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/api_archive_ongoing.json'), 'utf8'));
+
+        const mockFetch = async (url) => {
+            if (url.includes('/api/home/latest-episodes')) {
+                homeCalls++;
+                if (homeCalls === 1) return { ok: false, status: 429 };
+                return { ok: true, status: 200, text: async () => JSON.stringify(homeFixture) };
+            }
+            if (url.includes('/api/archive')) {
+                archiveCalls++;
+                if (archiveCalls === 1) return { ok: false, status: 429 };
+                return { ok: true, status: 200, json: async () => archiveFixture };
+            }
+            return { ok: false, status: 404 };
+        };
+
+        const warns = [];
+        const errors = [];
+        const origWarn = console.warn;
+        const origError = console.error;
+        console.warn = (...args) => warns.push(args.join(' '));
+        console.error = (...args) => errors.push(args.join(' '));
+
+        try {
+            const client = new AnimeUnityClient({
+                fetch: mockFetch,
+                requestDelayMs: 0,
+                rateLimitDelaysMs: [5, 10]
+            });
+
+            const homeItems = await client.getLatestReleasesFromHome();
+            assert.strictEqual(homeItems.length, 2);
+            assert.strictEqual(homeCalls, 2);
+
+            const archiveRecords = await client.getOngoingSeries({ limit: 50 });
+            assert.strictEqual(archiveRecords.length, 2);
+            assert.strictEqual(archiveCalls, 2);
+
+            assert.strictEqual(warns.length, 2);
+            assert.strictEqual(errors.length, 0);
+        } finally {
+            console.warn = origWarn;
+            console.error = origError;
+        }
+    });
 });
