@@ -1,0 +1,2192 @@
+{
+  "episodes": [
+    {
+      "id": 3767,
+      "number": "1",
+      "seq_number_start": 1,
+      "seq_number_end": 1,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 107514,
+          "language": "ita",
+          "runtime": 1430,
+          "scws_id": 722173,
+          "is_hidden": false,
+          "has_timestamps": true
+        },
+        {
+          "id": 10242,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218897,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3768,
+      "number": "2",
+      "seq_number_start": 2,
+      "seq_number_end": 2,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 107515,
+          "language": "ita",
+          "runtime": 1430,
+          "scws_id": 722174,
+          "is_hidden": false,
+          "has_timestamps": true
+        },
+        {
+          "id": 10243,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218898,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3769,
+      "number": "3",
+      "seq_number_start": 3,
+      "seq_number_end": 3,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 107516,
+          "language": "ita",
+          "runtime": 1430,
+          "scws_id": 722175,
+          "is_hidden": false,
+          "has_timestamps": true
+        },
+        {
+          "id": 10244,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218899,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3770,
+      "number": "4",
+      "seq_number_start": 4,
+      "seq_number_end": 4,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10245,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218900,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3771,
+      "number": "5",
+      "seq_number_start": 5,
+      "seq_number_end": 5,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10246,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218901,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3772,
+      "number": "6",
+      "seq_number_start": 6,
+      "seq_number_end": 6,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10247,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218902,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3773,
+      "number": "7",
+      "seq_number_start": 7,
+      "seq_number_end": 7,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10248,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218903,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3774,
+      "number": "8",
+      "seq_number_start": 8,
+      "seq_number_end": 8,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10249,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218904,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3775,
+      "number": "9",
+      "seq_number_start": 9,
+      "seq_number_end": 9,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10250,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218905,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3776,
+      "number": "10",
+      "seq_number_start": 10,
+      "seq_number_end": 10,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10251,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218906,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3777,
+      "number": "11",
+      "seq_number_start": 11,
+      "seq_number_end": 11,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10252,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218907,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3778,
+      "number": "12",
+      "seq_number_start": 12,
+      "seq_number_end": 12,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10253,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218908,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3779,
+      "number": "13",
+      "seq_number_start": 13,
+      "seq_number_end": 13,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10254,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218909,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3780,
+      "number": "14",
+      "seq_number_start": 14,
+      "seq_number_end": 14,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10255,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218910,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3781,
+      "number": "15",
+      "seq_number_start": 15,
+      "seq_number_end": 15,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10256,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218911,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3782,
+      "number": "16",
+      "seq_number_start": 16,
+      "seq_number_end": 16,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10257,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218912,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3783,
+      "number": "17",
+      "seq_number_start": 17,
+      "seq_number_end": 17,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10258,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218913,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3784,
+      "number": "18",
+      "seq_number_start": 18,
+      "seq_number_end": 18,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10259,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218914,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3785,
+      "number": "19",
+      "seq_number_start": 19,
+      "seq_number_end": 19,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10260,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218915,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3786,
+      "number": "20",
+      "seq_number_start": 20,
+      "seq_number_end": 20,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10261,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218916,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3787,
+      "number": "21",
+      "seq_number_start": 21,
+      "seq_number_end": 21,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10262,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218917,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3788,
+      "number": "22",
+      "seq_number_start": 22,
+      "seq_number_end": 22,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10263,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218918,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3789,
+      "number": "23",
+      "seq_number_start": 23,
+      "seq_number_end": 23,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10264,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218919,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3790,
+      "number": "24",
+      "seq_number_start": 24,
+      "seq_number_end": 24,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10265,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218920,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3791,
+      "number": "25",
+      "seq_number_start": 25,
+      "seq_number_end": 25,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10266,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218921,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3792,
+      "number": "26",
+      "seq_number_start": 26,
+      "seq_number_end": 26,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10267,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218922,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3793,
+      "number": "27",
+      "seq_number_start": 27,
+      "seq_number_end": 27,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10268,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218923,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3794,
+      "number": "28",
+      "seq_number_start": 28,
+      "seq_number_end": 28,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10269,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218924,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3795,
+      "number": "29",
+      "seq_number_start": 29,
+      "seq_number_end": 29,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10270,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218925,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3796,
+      "number": "30",
+      "seq_number_start": 30,
+      "seq_number_end": 30,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10271,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218926,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3797,
+      "number": "31",
+      "seq_number_start": 31,
+      "seq_number_end": 31,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10272,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218927,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3798,
+      "number": "32",
+      "seq_number_start": 32,
+      "seq_number_end": 32,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10273,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218928,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3799,
+      "number": "33",
+      "seq_number_start": 33,
+      "seq_number_end": 33,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10274,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218929,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3800,
+      "number": "34",
+      "seq_number_start": 34,
+      "seq_number_end": 34,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10275,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218930,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3801,
+      "number": "35",
+      "seq_number_start": 35,
+      "seq_number_end": 35,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10276,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218931,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3802,
+      "number": "36",
+      "seq_number_start": 36,
+      "seq_number_end": 36,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10277,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218932,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3803,
+      "number": "37",
+      "seq_number_start": 37,
+      "seq_number_end": 37,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10278,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218933,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3804,
+      "number": "38",
+      "seq_number_start": 38,
+      "seq_number_end": 38,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10279,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218934,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3805,
+      "number": "39",
+      "seq_number_start": 39,
+      "seq_number_end": 39,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10280,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218935,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3806,
+      "number": "40",
+      "seq_number_start": 40,
+      "seq_number_end": 40,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10281,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218936,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3807,
+      "number": "41",
+      "seq_number_start": 41,
+      "seq_number_end": 41,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10282,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218937,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3808,
+      "number": "42",
+      "seq_number_start": 42,
+      "seq_number_end": 42,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10283,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218938,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3809,
+      "number": "43",
+      "seq_number_start": 43,
+      "seq_number_end": 43,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10284,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218939,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3810,
+      "number": "44",
+      "seq_number_start": 44,
+      "seq_number_end": 44,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10285,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218940,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3811,
+      "number": "45",
+      "seq_number_start": 45,
+      "seq_number_end": 45,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10286,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218941,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3812,
+      "number": "46",
+      "seq_number_start": 46,
+      "seq_number_end": 46,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10287,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218942,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3813,
+      "number": "47",
+      "seq_number_start": 47,
+      "seq_number_end": 47,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10288,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218943,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3814,
+      "number": "48",
+      "seq_number_start": 48,
+      "seq_number_end": 48,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10289,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218944,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3815,
+      "number": "49",
+      "seq_number_start": 49,
+      "seq_number_end": 49,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10290,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218945,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3816,
+      "number": "50",
+      "seq_number_start": 50,
+      "seq_number_end": 50,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10291,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218946,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3817,
+      "number": "51",
+      "seq_number_start": 51,
+      "seq_number_end": 51,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10292,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218947,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3818,
+      "number": "52",
+      "seq_number_start": 52,
+      "seq_number_end": 52,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10293,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218948,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3819,
+      "number": "53",
+      "seq_number_start": 53,
+      "seq_number_end": 53,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10294,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218949,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3820,
+      "number": "54",
+      "seq_number_start": 54,
+      "seq_number_end": 54,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10295,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218950,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3821,
+      "number": "55",
+      "seq_number_start": 55,
+      "seq_number_end": 55,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10296,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218951,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3822,
+      "number": "56",
+      "seq_number_start": 56,
+      "seq_number_end": 56,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10297,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218952,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3823,
+      "number": "57",
+      "seq_number_start": 57,
+      "seq_number_end": 57,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10298,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218953,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3824,
+      "number": "58",
+      "seq_number_start": 58,
+      "seq_number_end": 58,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10299,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218954,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3825,
+      "number": "59",
+      "seq_number_start": 59,
+      "seq_number_end": 59,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10300,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218955,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3826,
+      "number": "60",
+      "seq_number_start": 60,
+      "seq_number_end": 60,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10301,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218956,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3827,
+      "number": "61",
+      "seq_number_start": 61,
+      "seq_number_end": 61,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10302,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218957,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3828,
+      "number": "62",
+      "seq_number_start": 62,
+      "seq_number_end": 62,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10303,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218958,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3829,
+      "number": "63",
+      "seq_number_start": 63,
+      "seq_number_end": 63,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10304,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218959,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3830,
+      "number": "64",
+      "seq_number_start": 64,
+      "seq_number_end": 64,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10305,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218960,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3831,
+      "number": "65",
+      "seq_number_start": 65,
+      "seq_number_end": 65,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10306,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218961,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3832,
+      "number": "66",
+      "seq_number_start": 66,
+      "seq_number_end": 66,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10307,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218962,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3833,
+      "number": "67",
+      "seq_number_start": 67,
+      "seq_number_end": 67,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10308,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218963,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3834,
+      "number": "68",
+      "seq_number_start": 68,
+      "seq_number_end": 68,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10309,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218964,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3835,
+      "number": "69",
+      "seq_number_start": 69,
+      "seq_number_end": 69,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10310,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218965,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3836,
+      "number": "70",
+      "seq_number_start": 70,
+      "seq_number_end": 70,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10311,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218966,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3837,
+      "number": "71",
+      "seq_number_start": 71,
+      "seq_number_end": 71,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10312,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218967,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3838,
+      "number": "72",
+      "seq_number_start": 72,
+      "seq_number_end": 72,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10313,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218968,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3839,
+      "number": "73",
+      "seq_number_start": 73,
+      "seq_number_end": 73,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10314,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218969,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3840,
+      "number": "74",
+      "seq_number_start": 74,
+      "seq_number_end": 74,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10315,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218970,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3841,
+      "number": "75",
+      "seq_number_start": 75,
+      "seq_number_end": 75,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10316,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218971,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3842,
+      "number": "76",
+      "seq_number_start": 76,
+      "seq_number_end": 76,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10317,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218972,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3843,
+      "number": "77",
+      "seq_number_start": 77,
+      "seq_number_end": 77,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10318,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218973,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3844,
+      "number": "78",
+      "seq_number_start": 78,
+      "seq_number_end": 78,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10319,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218974,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3845,
+      "number": "79",
+      "seq_number_start": 79,
+      "seq_number_end": 79,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10320,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218975,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3846,
+      "number": "80",
+      "seq_number_start": 80,
+      "seq_number_end": 80,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10321,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218976,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3847,
+      "number": "81",
+      "seq_number_start": 81,
+      "seq_number_end": 81,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10322,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218977,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3848,
+      "number": "82",
+      "seq_number_start": 82,
+      "seq_number_end": 82,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10323,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218978,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3849,
+      "number": "83",
+      "seq_number_start": 83,
+      "seq_number_end": 83,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10324,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218979,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3850,
+      "number": "84",
+      "seq_number_start": 84,
+      "seq_number_end": 84,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10325,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218980,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3851,
+      "number": "85",
+      "seq_number_start": 85,
+      "seq_number_end": 85,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10326,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218981,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3852,
+      "number": "86",
+      "seq_number_start": 86,
+      "seq_number_end": 86,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10327,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218982,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3853,
+      "number": "87",
+      "seq_number_start": 87,
+      "seq_number_end": 87,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10328,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218983,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3854,
+      "number": "88",
+      "seq_number_start": 88,
+      "seq_number_end": 88,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10329,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218984,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3855,
+      "number": "89",
+      "seq_number_start": 89,
+      "seq_number_end": 89,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10330,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218985,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3856,
+      "number": "90",
+      "seq_number_start": 90,
+      "seq_number_end": 90,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10331,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218986,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3857,
+      "number": "91",
+      "seq_number_start": 91,
+      "seq_number_end": 91,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10332,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218987,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3858,
+      "number": "92",
+      "seq_number_start": 92,
+      "seq_number_end": 92,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10333,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218988,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3859,
+      "number": "93",
+      "seq_number_start": 93,
+      "seq_number_end": 93,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10334,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218989,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3860,
+      "number": "94",
+      "seq_number_start": 94,
+      "seq_number_end": 94,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10335,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218990,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3861,
+      "number": "95",
+      "seq_number_start": 95,
+      "seq_number_end": 95,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10336,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218991,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3862,
+      "number": "96",
+      "seq_number_start": 96,
+      "seq_number_end": 96,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10337,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218992,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3863,
+      "number": "97",
+      "seq_number_start": 97,
+      "seq_number_end": 97,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10338,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218993,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3864,
+      "number": "98",
+      "seq_number_start": 98,
+      "seq_number_end": 98,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10339,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218994,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3865,
+      "number": "99",
+      "seq_number_start": 99,
+      "seq_number_end": 99,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10340,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218995,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3866,
+      "number": "100",
+      "seq_number_start": 100,
+      "seq_number_end": 100,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10341,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218996,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3867,
+      "number": "101",
+      "seq_number_start": 101,
+      "seq_number_end": 101,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10342,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218997,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3868,
+      "number": "102",
+      "seq_number_start": 102,
+      "seq_number_end": 102,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10343,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218998,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3869,
+      "number": "103",
+      "seq_number_start": 103,
+      "seq_number_end": 103,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10344,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 218999,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3870,
+      "number": "104",
+      "seq_number_start": 104,
+      "seq_number_end": 104,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10345,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219000,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3871,
+      "number": "105",
+      "seq_number_start": 105,
+      "seq_number_end": 105,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10346,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219001,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3872,
+      "number": "106",
+      "seq_number_start": 106,
+      "seq_number_end": 106,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10347,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219002,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3873,
+      "number": "107",
+      "seq_number_start": 107,
+      "seq_number_end": 107,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10348,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219003,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3874,
+      "number": "108",
+      "seq_number_start": 108,
+      "seq_number_end": 108,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10349,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219004,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3875,
+      "number": "109",
+      "seq_number_start": 109,
+      "seq_number_end": 109,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10350,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219005,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3876,
+      "number": "110",
+      "seq_number_start": 110,
+      "seq_number_end": 110,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10351,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219006,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3877,
+      "number": "111",
+      "seq_number_start": 111,
+      "seq_number_end": 111,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10352,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219007,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3878,
+      "number": "112",
+      "seq_number_start": 112,
+      "seq_number_end": 112,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10353,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219008,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3879,
+      "number": "113",
+      "seq_number_start": 113,
+      "seq_number_end": 113,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10354,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219009,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3880,
+      "number": "114",
+      "seq_number_start": 114,
+      "seq_number_end": 114,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10355,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219010,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3881,
+      "number": "115",
+      "seq_number_start": 115,
+      "seq_number_end": 115,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10356,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219011,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3882,
+      "number": "116",
+      "seq_number_start": 116,
+      "seq_number_end": 116,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10357,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219012,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3883,
+      "number": "117",
+      "seq_number_start": 117,
+      "seq_number_end": 117,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10358,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219013,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3884,
+      "number": "118",
+      "seq_number_start": 118,
+      "seq_number_end": 118,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10359,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219014,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3885,
+      "number": "119",
+      "seq_number_start": 119,
+      "seq_number_end": 119,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10360,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219015,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    },
+    {
+      "id": 3886,
+      "number": "120",
+      "seq_number_start": 120,
+      "seq_number_end": 120,
+      "is_filler": false,
+      "videos": [
+        {
+          "id": 10361,
+          "language": "jpn",
+          "runtime": 1434,
+          "scws_id": 219016,
+          "is_hidden": false,
+          "has_timestamps": true
+        }
+      ],
+      "notices": []
+    }
+  ],
+  "start": 1,
+  "tab_size": 120,
+  "total": 120,
+  "offset": 1
+}

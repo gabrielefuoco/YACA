@@ -52,7 +52,7 @@ function item(animeId, number, createdAt, dub = 0, extra = {}) {
 }
 
 /**
- * Home finta: `pages` array di array di item. La pagina 1 è la radice, la 2 è `/?page=2`.
+ * Home finta: `pages` array di array di item. La pagina 1 è `/api/home/latest-episodes`, la 2 è `?page=2`.
  * Restituisce il fetch finto e il registro degli URL richiesti.
  */
 function fakeHome(pages) {
@@ -63,12 +63,24 @@ function fakeHome(pages) {
         const match = asString.match(/[?&]page=(\d+)/);
         const page = match ? Number(match[1]) : 1;
         const body = pages[page - 1];
-        if (!body || body.length === 0) return { ok: true, status: 200, text: async () => '<html></html>' };
-        const json = JSON.stringify(body).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        if (!body || body.length === 0) {
+            return { ok: true, status: 200, text: async () => JSON.stringify({ data: [] }) };
+        }
+        const apiItems = body.map((it) => ({
+            id: it.id,
+            language: Number(it.anime?.dub) === 1 ? 'ita' : 'jpn',
+            created_at: it.created_at,
+            episode: {
+                id: it.id,
+                number: it.number,
+                seq_number_end: Number(it.number),
+                anime: it.anime
+            }
+        }));
         return {
             ok: true,
             status: 200,
-            text: async () => `<div id="app"><layout-items items-json="${json}"></layout-items></div>`
+            text: async () => JSON.stringify({ current_page: page, data: apiItems })
         };
     };
     return { fetchFn, asked };
@@ -92,10 +104,10 @@ describe('getHomeReleases — il giro completo della home', () => {
         assert.strictEqual(walk.stoppedBy, 'window');
         assert.strictEqual(walk.pages.length, 3, 'si ferma alla terza pagina, non va alla quarta');
         assert.strictEqual(walk.items.length, 15);
-        // La prima pagina è la radice, le successive usano ?page=N.
-        assert.strictEqual(asked[0], 'https://esempio.test');
-        assert.strictEqual(asked[1], 'https://esempio.test/?page=2');
-        assert.strictEqual(asked[2], 'https://esempio.test/?page=3');
+        // La prima pagina è /api/home/latest-episodes, le successive usano ?page=N.
+        assert.strictEqual(asked[0], 'https://esempio.test/api/home/latest-episodes');
+        assert.strictEqual(asked[1], 'https://esempio.test/api/home/latest-episodes?page=2');
+        assert.strictEqual(asked[2], 'https://esempio.test/api/home/latest-episodes?page=3');
         assert.strictEqual(asked.length, 3, 'la quarta pagina non viene neppure richiesta');
         // La pagina che ha fatto scattare la finestra è dentro il giro.
         assert.ok(walk.items.some((i) => i.anime_id === 15));
@@ -156,7 +168,7 @@ describe('getHomeReleases — il giro completo della home', () => {
 
         const items = await client.getLatestReleasesFromHome();
         assert.strictEqual(items.length, 1);
-        assert.deepStrictEqual(asked, ['https://esempio.test']);
+        assert.deepStrictEqual(asked, ['https://esempio.test/api/home/latest-episodes']);
     });
 });
 
