@@ -37,14 +37,16 @@ function parseArgs(argv) {
     const opts = {
         dir: process.env.ERDB_CACHE_DIR || '/data/erdb-cache',
         parquet: process.env.TMDB_DUMP_DIR || (fs.existsSync('/data/tmdb') ? '/data/tmdb' : path.resolve(__dirname, '../.cache/tmdb')),
-        apply: false
+        apply: false,
+        pruneOld: false
     };
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
         if (a === '--apply') opts.apply = true;
+        else if (a === '--prune-old') opts.pruneOld = true;
         else if (a === '--dir') opts.dir = argv[++i];
         else if (a === '--parquet') opts.parquet = argv[++i];
-        else if (a === '--help') { console.log(__filename, '[--dir D] [--parquet D] [--apply]'); process.exit(0); }
+        else if (a === '--help') { console.log(__filename, '[--dir D] [--parquet D] [--apply] [--prune-old]'); process.exit(0); }
         else throw new Error(`argomento non riconosciuto: ${a}`);
     }
     return opts;
@@ -101,7 +103,12 @@ async function main() {
             continue;
         }
         if (nuovoNome === nome) { report.giaOk++; continue; }
-        if (fs.existsSync(path.join(opts.dir, nuovoNome))) { report.conflitti++; continue; }
+        if (fs.existsSync(path.join(opts.dir, nuovoNome))) {
+            // Il sostituto c'è già: questo è il nome vecchio, e con --prune-old si toglie.
+            report.conflitti++;
+            if (opts.pruneOld) rinomine.push([nome, null]);
+            continue;
+        }
         rinomine.push([nome, nuovoNome]);
     }
 
@@ -122,6 +129,13 @@ async function main() {
     }
 
     for (const [vecchio, nuovo] of rinomine) {
+        if (nuovo === null) {
+            if (opts.apply) {
+                try { fs.unlinkSync(path.join(opts.dir, vecchio)); } catch (_) { report.errori++; continue; }
+            }
+            report.pulitiVecchi = (report.pulitiVecchi || 0) + 1;
+            continue;
+        }
         if (opts.apply) {
             try { fs.linkSync(path.join(opts.dir, vecchio), path.join(opts.dir, nuovo)); }
             catch (_) { report.errori++; continue; }
@@ -131,7 +145,7 @@ async function main() {
 
     console.log('[migra] report', JSON.stringify(report));
     if (!opts.apply) {
-        for (const [v, n] of rinomine.slice(0, 5)) console.log(`[migra]   ${v} -> ${n} (hardlink)`);
+        for (const [v, n] of rinomine.slice(0, 5)) console.log(`[migra]   ${v} -> ${n || '(cancellato: nome vecchio)'}`);
         console.log('[migra] dry-run: niente scritto. Rilanciare con --apply per applicare.');
     }
 }
