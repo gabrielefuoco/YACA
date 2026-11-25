@@ -127,6 +127,7 @@ echo "  Output target : ${TMDB_DIR}/ita_annotations.jsonl"
     --movies-path "${MOVIES_PATH}" \
     --tv-path "${TV_PATH}" \
     --cache-dir "${CACHE_DIR}" \
+    --output "${TMDB_DIR}/ita_annotations.jsonl" \
     "$@"
   CLI_STATUS=$?
   set -e
