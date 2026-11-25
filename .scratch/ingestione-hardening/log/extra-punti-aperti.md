@@ -87,3 +87,37 @@ Da riaccendere quando il ticket 15 è chiuso.
   girano **sull'host**, quindi un deploy dei container **non** li aggiorna. Serve `git pull` in `/srv/yaca`.
 - `node` sull'host è gestito da `mise`: `sudo node` non trova la versione. Per gli script una tantum va usato
   il path assoluto (`mise which node`) oppure `docker run`/`docker exec` con l'immagine.
+
+## 3b. Resolver: numeri finali (run reale, 25/11)
+
+```
+Schede esaminate:                 3666
+Identità provata (id confermati): 1853 (50.5%)
+  via titolo italiano / originale / alternativo
+Non confermate / nessun match:    1813
+Chiamate API effettive a TMDB:    4327
+Budget raggiunto:                 NO
+```
+
+Output: **25.847 righe, 21.044 `true`** (prima: 24.428 / 19.661). In produzione, dopo il travaso:
+`itaAnnotations` letto dall'app = **21.044 true / 4.803 null** (+1.383 badge). Diff in coda: **2.210 eventi**
+poster (1.796 nuovi ITA, 414 spostati — il resolver a volte riassegna una scheda a un altro id TMDB, e
+l'annotazione del vecchio id sparisce).
+
+## 3c. Bug trovato durante il travaso: il wrapper non passava `--output`
+
+Il run manuale (`nohup bash ops/yaca-doppiaggi.sh --resolve-ids`) ha scritto in
+`/srv/yaca/.cache/tmdb/ita_annotations.jsonl`, non nel volume. Causa: il wrapper **stampa**
+`Output target : /data/tmdb/ita_annotations.jsonl` ma non lo passa al CLI; il CLI cade sul default
+(`<repo>/.cache/tmdb`). Con systemd funzionava solo perché `EnvironmentFile=/srv/yaca/.env` fornisce
+`TMDB_DUMP_DIR`. Corretto: il wrapper ora passa `--output "${TMDB_DIR}/ita_annotations.jsonl"`.
+
+> Effetto collaterale da sapere: i file travasati a mano hanno richiesto chown root, e il diff è stato
+> rigenerato con `diff-annotazioni.js` (confronto backup vs nuovo) perché il writer lo aveva calcolato sul
+> file sbagliato.
+
+## 7. Nota su un commit fatto per errore
+
+Durante il fix del wrapper è stato committato anche `ops/yaca-grafo.{service,timer}`, che erano **untracked
+nel working tree da prima di questa sessione**. Non sono miei: se non dovevano entrare nel repo, vanno
+rimossi con un commit dedicato.
