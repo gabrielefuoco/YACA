@@ -1,0 +1,59 @@
+{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 7826,
+      "slug": "im-looking-for-a-zombie",
+      "title": "#I'm Looking For a Zombie",
+      "title_ja": "#Zombie Sagashitemasu",
+      "title_it": null,
+      "type": "tv",
+      "season": "fall",
+      "year": 2026,
+      "total_episodes": null,
+      "default_status": "ongoing",
+      "variants": [
+        {
+          "language": "jpn",
+          "status": "ongoing",
+          "airing_day": "saturday",
+          "episodes_count": 7
+        }
+      ],
+      "mal_id": null,
+      "anilist_id": 199007
+    },
+    {
+      "id": 7793,
+      "slug": "magic-knight-rayearth-2026",
+      "title": "Magic Knight Rayearth (2026)",
+      "title_ja": "Magic Knight Rayearth (2026)",
+      "title_it": null,
+      "type": "tv",
+      "season": "fall",
+      "year": 2026,
+      "total_episodes": 0,
+      "default_status": "ongoing",
+      "variants": [
+        {
+          "language": "ita",
+          "status": "ongoing",
+          "airing_day": "wednesday",
+          "episodes_count": 5
+        },
+        {
+          "language": "jpn",
+          "status": "ongoing",
+          "airing_day": "wednesday",
+          "episodes_count": 8
+        }
+      ],
+      "mal_id": null,
+      "anilist_id": 178868
+    }
+  ],
+  "last_page": 1,
+  "next_page_url": null,
+  "per_page": 30,
+  "total": 2
+}

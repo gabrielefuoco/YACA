@@ -86,53 +86,39 @@ describe('Discovery & Observability (Ticket 18, 19, 20)', () => {
     test('AnimeUnityClient.getOngoingSeries rispetta il budget di limite e gestisce la paginazione', async () => {
         const mockRecordsP1 = Array.from({ length: 30 }, (_, i) => ({
             id: 1000 + i,
+            slug: `anime-ep-${i + 1}`,
             title: `Anime Ep ${i + 1}`,
-            status: 'In Corso',
-            dub: 0,
+            default_status: 'ongoing',
+            variants: [{ language: 'jpn', status: 'ongoing', episodes_count: 1 }],
             anilist_id: 2000 + i,
             mal_id: 3000 + i
         }));
 
         const mockRecordsP2 = Array.from({ length: 20 }, (_, i) => ({
             id: 2000 + i,
+            slug: `anime-p2-ep-${i + 1}`,
             title: `Anime P2 Ep ${i + 1}`,
-            status: 'In Corso',
-            dub: 0,
+            default_status: 'ongoing',
+            variants: [{ language: 'jpn', status: 'ongoing', episodes_count: 1 }],
             anilist_id: 4000 + i,
             mal_id: 5000 + i
         }));
 
         const mockFetch = async (url, options = {}) => {
-            if (url.includes('/archivio') && (!options.method || options.method === 'GET')) {
+            assert.strictEqual(options.method || 'GET', 'GET');
+            if (url.includes('/api/archive?status=ongoing')) {
+                if (url.includes('page=2')) {
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => ({ current_page: 2, last_page: 2, total: 50, data: mockRecordsP2 })
+                    };
+                }
                 return {
                     ok: true,
                     status: 200,
-                    headers: {
-                        getSetCookie: () => ['XSRF-TOKEN=mock-token; Path=/', 'animeunity_session=mock-session; Path=/'],
-                        get: () => 'XSRF-TOKEN=mock-token;'
-                    },
-                    text: async () => '<html><head><meta name="csrf-token" content="mock-csrf-123"></head><body></body></html>'
+                    json: async () => ({ current_page: 1, last_page: 2, total: 50, data: mockRecordsP1 })
                 };
-            }
-
-            if (url.includes('/archivio/get-animes') && options.method === 'POST') {
-                const body = JSON.parse(options.body);
-                assert.strictEqual(body.status, 'In corso');
-                assert.strictEqual(options.headers['X-CSRF-TOKEN'], 'mock-csrf-123');
-
-                if (body.offset === 0) {
-                    return {
-                        ok: true,
-                        status: 200,
-                        json: async () => ({ tot: 50, records: mockRecordsP1 })
-                    };
-                } else if (body.offset === 30) {
-                    return {
-                        ok: true,
-                        status: 200,
-                        json: async () => ({ tot: 50, records: mockRecordsP2 })
-                    };
-                }
             }
 
             return { ok: false, status: 404 };

@@ -1,0 +1,61 @@
+{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 112424,
+      "language": "jpn",
+      "runtime": 1420,
+      "scws_id": 802020,
+      "is_hidden": false,
+      "episode": {
+        "id": 89884,
+        "number": "8",
+        "seq_number_start": 8,
+        "seq_number_end": 8,
+        "is_filler": false,
+        "anime": {
+          "id": 7776,
+          "slug": "a-returners-magic-should-be-special-2",
+          "title": "A Returner's Magic Should be Special 2",
+          "title_ja": "Kikansha no Mahou wa Tokubetsu desu 2",
+          "title_it": null,
+          "type": "tv",
+          "season": "fall",
+          "year": 2026,
+          "total_episodes": 0,
+          "default_status": "ongoing"
+        }
+      }
+    },
+    {
+      "id": 112422,
+      "language": "ita",
+      "runtime": 1389,
+      "scws_id": 802014,
+      "is_hidden": false,
+      "episode": {
+        "id": 89420,
+        "number": "5",
+        "seq_number_start": 5,
+        "seq_number_end": 5,
+        "is_filler": false,
+        "anime": {
+          "id": 7793,
+          "slug": "magic-knight-rayearth-2026",
+          "title": "Magic Knight Rayearth (2026)",
+          "title_ja": "Magic Knight Rayearth (2026)",
+          "title_it": null,
+          "type": "tv",
+          "season": "fall",
+          "year": 2026,
+          "total_episodes": 0,
+          "default_status": "ongoing"
+        }
+      }
+    }
+  ],
+  "last_page": 1,
+  "next_page_url": null,
+  "per_page": 20,
+  "total": 2
+}

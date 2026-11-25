@@ -195,7 +195,22 @@ function groupRecordsByTmdb(records, identityResolver) {
         }
 
         const seasonEntry = group.seasonsMap.get(seasonNum);
-        if (Number(rec.dub) === 1) {
+        if (Array.isArray(rec.variants) && rec.variants.length > 0) {
+            for (const v of rec.variants) {
+                if (!v) continue;
+                const isDub = v.language === 'ita';
+                const status = v.status === 'ongoing' ? 'In Corso' : (v.status === 'completed' ? 'Terminato' : (v.status || rec.status));
+                const variantRec = {
+                    ...rec,
+                    dub: isDub ? 1 : 0,
+                    status,
+                    real_episodes_count: v.episodes_count ?? rec.real_episodes_count,
+                    episodes_count: v.episodes_count ?? rec.episodes_count
+                };
+                if (isDub) seasonEntry.dubRecord = variantRec;
+                else seasonEntry.subRecord = variantRec;
+            }
+        } else if (Number(rec.dub) === 1) {
             seasonEntry.dubRecord = rec;
         } else {
             seasonEntry.subRecord = rec;
@@ -333,16 +348,29 @@ async function processTmdbGroup(group, animeClient, options = {}) {
  * @param {Object} identityResolver
  * @returns {{groups: Array<Object>, unresolved: Array<Object>}}
  */
-function groupHomeRowsByTmdb(rows, animeById, identityResolver) {
+function groupHomeRowsByTmdb(rows, animeById, identityResolver, fallbackByAnimeId = null) {
     const groups = new Map();
     const unresolved = [];
 
     for (const row of Array.isArray(rows) ? rows : []) {
         const anime = animeById.get(Number(row.animeId)) || null;
-        const identity = identityResolver.resolve({
+        let identity = identityResolver.resolve({
             anilistId: anime ? anime.anilist_id : null,
             malId: anime ? anime.mal_id : null
         });
+
+        if ((!identity || !identity.tmdbId) && fallbackByAnimeId) {
+            const fb = fallbackByAnimeId.get(Number(row.animeId));
+            if (fb && fb.tmdbId) {
+                identity = {
+                    tmdbId: String(fb.tmdbId),
+                    kitsuId: null,
+                    anilistId: anime?.anilist_id ?? null,
+                    malId: anime?.mal_id ?? null,
+                    season: fb.season || 1
+                };
+            }
+        }
 
         const rawTitle = (anime && (anime.title || anime.title_eng || anime.title_it || anime.slug)) || `Anime #${row.animeId}`;
         if (!identity || !identity.tmdbId) {
@@ -437,6 +465,25 @@ async function runHomePass({
         return { read: items.length, written: 0, unresolved: [], items };
     }
 
+    // L'API /api/home/latest-episodes non espone anilist_id/mal_id: arricchiamo dalla cache dell'archivio se presente.
+    const cachedIds = new Map();
+    for (const list of [discoveryManager.loadCachedList?.(), discoveryManager.loadCachedDubbedList?.()]) {
+        for (const r of (list && Array.isArray(list.records) ? list.records : [])) {
+            if (r && r.id && (r.anilist_id || r.mal_id)) {
+                cachedIds.set(Number(r.id), { anilist_id: r.anilist_id ?? null, mal_id: r.mal_id ?? null });
+            }
+        }
+    }
+    for (const anime of animeById.values()) {
+        if (!anime.anilist_id && !anime.mal_id) {
+            const ids = cachedIds.get(Number(anime.id));
+            if (ids) {
+                anime.anilist_id = ids.anilist_id;
+                anime.mal_id = ids.mal_id;
+            }
+        }
+    }
+
     // Identità: stesse regole del ciclo dell'archivio (mapping ufficiale, override,
     // ponte TVDB, fallback per titolo). Un anime senza identità non ha documento.
     const resolutionRecords = Array.from(animeById.values()).map((anime) => ({
@@ -451,12 +498,18 @@ async function runHomePass({
         anilist_id: anime.anilist_id,
         mal_id: anime.mal_id
     }));
-    await identityResolver.enrichWithFallbacks(resolutionRecords, {
+    const enriched = await identityResolver.enrichWithFallbacks(resolutionRecords, {
         dryRun,
         refreshFallbacks
     });
+    const fallbackByAnimeId = new Map();
+    for (const e of (Array.isArray(enriched) ? enriched : [])) {
+        if (e?.record?.id && e?.match?.tmdbId) {
+            fallbackByAnimeId.set(Number(e.record.id), e.match);
+        }
+    }
 
-    const { groups, unresolved } = groupHomeRowsByTmdb(rows, animeById, identityResolver);
+    const { groups, unresolved } = groupHomeRowsByTmdb(rows, animeById, identityResolver, fallbackByAnimeId);
     const checkedAt = new Date().toISOString();
     let written = 0;
 
@@ -519,7 +572,7 @@ async function main() {
     }
 
     console.log('[AnimeSource] Avvio servizio sorgente anime...');
-    const animeClient = new AnimeUnityClient();
+    const animeClient = new AnimeUnityClient({ cacheDir: discoveryManager.cacheDir });
     const identityResolver = new IdentityResolver({
         mappingIndexPath: opts.exportMappingPath
     });

@@ -10,24 +10,24 @@ const { AnimeUnityClient } = require('../src/animeunity');
 const { SeriesDiscoveryManager, LAST_HOME_RUN_FILE } = require('../src/discovery');
 const { runHomePass } = require('../cli');
 
-function makeHomeHtml(items) {
-    const json = JSON.stringify(items).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    return `<div id="app"><layout-items items-json="${json}"></layout-items></div>`;
+function makeHomeJson(items) {
+    return JSON.stringify({ data: items });
 }
 
 function sampleHomeItem(id = 7701) {
     return {
         id: 100 + id,
-        anime_id: id,
-        number: '6',
-        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        anime: {
-            id,
-            dub: 0,
-            title: `Anime Test ${id}`,
-            anilist_id: 171018,
-            mal_id: 57334,
-            status: 'In Corso'
+        language: 'jpn',
+        episode: {
+            id: 200 + id,
+            number: '6',
+            seq_number_end: 6,
+            anime: {
+                id,
+                slug: `anime-test-${id}`,
+                title: `Anime Test ${id}`,
+                default_status: 'ongoing'
+            }
         }
     };
 }
@@ -59,7 +59,7 @@ describe('AnimeUnity HTTP redirect & zero-item guard (t14)', () => {
         const seenHeaders = [];
         const srv = await startServer((req, res) => {
             seenHeaders.push({ url: req.url, ua: req.headers['user-agent'] });
-            if (req.url === '/') {
+            if (req.url === '/api/home/latest-episodes') {
                 res.writeHead(301, { Location: '/hop-308' });
                 res.end('<html>301</html>');
                 return;
@@ -70,8 +70,8 @@ describe('AnimeUnity HTTP redirect & zero-item guard (t14)', () => {
                 return;
             }
             if (req.url === '/nuova-home') {
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(makeHomeHtml([sampleHomeItem(8801)]));
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(makeHomeJson([sampleHomeItem(8801)]));
                 return;
             }
             res.writeHead(404);
@@ -101,8 +101,8 @@ describe('AnimeUnity HTTP redirect & zero-item guard (t14)', () => {
 
     test('301 verso un host diverso viene seguito ed emette un warning una sola volta', async () => {
         const targetSrv = await startServer((req, res) => {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(makeHomeHtml([sampleHomeItem(8802)]));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(makeHomeJson([sampleHomeItem(8802)]));
         });
         const oldSrv = await startServer((req, res) => {
             res.writeHead(301, { Location: `http://localhost:${targetSrv.port}${req.url}` });
@@ -138,16 +138,16 @@ describe('AnimeUnity HTTP redirect & zero-item guard (t14)', () => {
         let requests = 0;
         const srv = await startServer((req, res) => {
             requests++;
-            const step = req.url === '/' ? 0 : Number(req.url.replace('/hop', ''));
+            const step = req.url === '/api/home/latest-episodes' ? 0 : Number(req.url.replace('/hop', ''));
             if (req.url.startsWith('/ok-after-3')) {
-                const n = req.url === '/ok-after-3' ? 0 : Number(req.url.replace('/ok-after-3-', ''));
+                const n = req.url.startsWith('/ok-after-3/api') ? 0 : Number(req.url.replace('/ok-after-3-', ''));
                 if (n < 3) {
                     res.writeHead(302, { Location: `/ok-after-3-${n + 1}` });
                     res.end();
                     return;
                 }
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(makeHomeHtml([sampleHomeItem(8803)]));
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(makeHomeJson([sampleHomeItem(8803)]));
                 return;
             }
             res.writeHead(301, { Location: `/hop${step + 1}` });
