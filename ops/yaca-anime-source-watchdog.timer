@@ -1,0 +1,12 @@
+[Unit]
+Description=Timer ogni 30 minuti (ai minuti :07 e :37) per il watchdog di yaca-anime-source
+
+[Timer]
+# Ogni 30 minuti fuori dallo scoccare dell'ora per non sovrapporsi agli altri job.
+OnCalendar=*-*-* *:07,37:00
+Persistent=true
+# Jitter piccolo (come su yaca-poster-eventi.timer) per evitare collisioni esatte al secondo.
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

@@ -386,6 +386,116 @@ function collectHomeAnimes(items) {
     return animeById;
 }
 
+/**
+ * LA PASSATA HOME: la fonte del catalogo "Simulcast (Nuovi Episodi)".
+ *
+ * `full: false` (incrementale, ogni 15 minuti) legge la prima pagina: le uscite degli
+ * ultimi ~27 ore. `full: true` (giornaliero) cammina le pagine finché la più vecchia
+ * esce dalle due settimane.
+ *
+ * Cosa scrive: per ogni anime in finestra, l'episodio più recente sub e doppiato, con la
+ * sua data, nel campo `homeReleases` del documento. Nient'altro del documento viene
+ * toccato (vedi `buildHomeStateDocument`): tutto il resto resta al ciclo dell'archivio.
+ */
+async function runHomePass({
+    full = false,
+    announce = true,
+    animeClient,
+    discoveryManager,
+    identityResolver,
+    store = null,
+    windowDays = HOME_WINDOW_DAYS,
+    dryRun = false,
+    refreshFallbacks = false
+} = {}) {
+    const startedAt = Date.now();
+    if (announce) {
+        console.log(`\n======================================================`);
+        console.log(`[AnimeSource] PASSATA HOME ${full ? 'COMPLETA (giro paginato)' : 'INCREMENTALE (prima pagina)'}`);
+        console.log(`[AnimeSource] Finestra: ${windowDays} giorni`);
+        console.log(`======================================================\n`);
+    }
+
+    const letti = full
+        ? (await animeClient.getHomeReleases({ windowDays })).items
+        : await animeClient.getLatestReleasesFromHome();
+
+    const items = Array.isArray(letti) ? letti : [];
+    if (items.length === 0) {
+        console.warn(`[AnimeSource] Passata home ${full ? 'completa' : 'incrementale'}: nessun item letto. Nessuna scrittura.`);
+        discoveryManager.writeHomeHeartbeat(new Date(), { items: 0 });
+        return { read: 0, written: 0, unresolved: [], items: [], stoppedBy: full ? 'unreachable' : 'first_page_only' };
+    }
+
+    const rows = summarizeHomeItems(items, { windowDays });
+    const animeById = collectHomeAnimes(items);
+    console.log(`[AnimeSource] Home: ${items.length} item letti, ${animeById.size} anime distinti, ${rows.length} episodi negli ultimi ${windowDays} giorni.`);
+
+    if (rows.length === 0) {
+        console.warn('[AnimeSource] Nessun episodio in finestra: la lista non si tocca.');
+        discoveryManager.writeHomeHeartbeat(new Date(), { items: items.length });
+        return { read: items.length, written: 0, unresolved: [], items };
+    }
+
+    // Identità: stesse regole del ciclo dell'archivio (mapping ufficiale, override,
+    // ponte TVDB, fallback per titolo). Un anime senza identità non ha documento.
+    const resolutionRecords = Array.from(animeById.values()).map((anime) => ({
+        id: anime.id,
+        dub: anime.dub,
+        title: anime.title,
+        title_eng: anime.title_eng,
+        title_it: anime.title_it,
+        slug: anime.slug,
+        date: anime.date,
+        status: anime.status,
+        anilist_id: anime.anilist_id,
+        mal_id: anime.mal_id
+    }));
+    await identityResolver.enrichWithFallbacks(resolutionRecords, {
+        dryRun,
+        refreshFallbacks
+    });
+
+    const { groups, unresolved } = groupHomeRowsByTmdb(rows, animeById, identityResolver);
+    const checkedAt = new Date().toISOString();
+    let written = 0;
+
+    for (const group of groups) {
+        const doc = buildHomeStateDocument({
+            tmdbId: group.tmdbId,
+            kitsuId: group.kitsuId,
+            anilistId: group.anilistId,
+            malId: group.malId,
+            title: group.title,
+            status: group.status,
+            homeReleases: buildHomeReleases(group.rows, { checkedAt }),
+            now: checkedAt
+        });
+        if (!doc) continue;
+
+        if (dryRun || !store) {
+            console.log(`\n--- DOCUMENTO HOME (DRY-RUN) TMDB ${doc._id} (${doc.title}) ---`);
+            console.log(JSON.stringify(doc, null, 2));
+            console.log('---------------------------------------------------------\n');
+            written++;
+            continue;
+        }
+        const result = await store.upsert(doc);
+        console.log(`[AnimeSource] Home → TMDB ${doc._id} "${doc.title}" [sub ${doc.homeReleases.sub ? `EP ${doc.homeReleases.sub.episode}` : '—'}${doc.homeReleases.dub ? `, dub ITA ${doc.homeReleases.dub.episode}` : ''}] [matched: ${result.matchedCount}]`);
+        written++;
+    }
+
+    for (const row of unresolved) {
+        console.warn(`[AnimeSource] Home: "${row.title}" (anime ${row.animeId}) non risolto in TMDB: niente documento, quindi niente card. È l'unica differenza ammessa fra la fonte e il catalogo.`);
+    }
+
+    discoveryManager.writeHomeHeartbeat(new Date(), { items: items.length });
+    if (full) discoveryManager.writeHomeFullHeartbeat();
+
+    console.log(`[AnimeSource] Passata home ${full ? 'completa' : 'incrementale'} conclusa: ${written} titoli scritti, ${unresolved.length} non risolti, ${((Date.now() - startedAt) / 1000).toFixed(1)}s.`);
+    return { read: items.length, written, unresolved, items };
+}
+
 async function main() {
     const opts = parseArgs(process.argv.slice(2));
 
@@ -499,104 +609,16 @@ async function main() {
         return { count: records.length, groupsCount: groups.length, elapsedMs };
     };
 
-    /**
-     * LA PASSATA HOME: la fonte del catalogo "Simulcast (Nuovi Episodi)".
-     *
-     * `full: false` (incrementale, ogni 15 minuti) legge la prima pagina: le uscite degli
-     * ultimi ~27 ore. `full: true` (giornaliero) cammina le pagine finché la più vecchia
-     * esce dalle due settimane.
-     *
-     * Cosa scrive: per ogni anime in finestra, l'episodio più recente sub e doppiato, con la
-     * sua data, nel campo `homeReleases` del documento. Nient'altro del documento viene
-     * toccato (vedi `buildHomeStateDocument`): tutto il resto resta al ciclo dell'archivio.
-     */
-    const runHomePass = async ({ full = false, announce = true } = {}) => {
-        const startedAt = Date.now();
-        const windowDays = opts.homeWindowDays;
-        if (announce) {
-            console.log(`\n======================================================`);
-            console.log(`[AnimeSource] PASSATA HOME ${full ? 'COMPLETA (giro paginato)' : 'INCREMENTALE (prima pagina)'}`);
-            console.log(`[AnimeSource] Finestra: ${windowDays} giorni`);
-            console.log(`======================================================\n`);
-        }
-
-        const letti = full
-            ? (await animeClient.getHomeReleases({ windowDays })).items
-            : await animeClient.getLatestReleasesFromHome();
-
-        const items = Array.isArray(letti) ? letti : [];
-        if (items.length === 0) {
-            console.warn(`[AnimeSource] Passata home ${full ? 'completa' : 'incrementale'}: nessun item letto. Nessuna scrittura.`);
-            return { read: 0, written: 0, unresolved: [], items: [], stoppedBy: full ? 'unreachable' : 'first_page_only' };
-        }
-
-        const rows = summarizeHomeItems(items, { windowDays });
-        const animeById = collectHomeAnimes(items);
-        console.log(`[AnimeSource] Home: ${items.length} item letti, ${animeById.size} anime distinti, ${rows.length} episodi negli ultimi ${windowDays} giorni.`);
-
-        if (rows.length === 0) {
-            console.warn('[AnimeSource] Nessun episodio in finestra: la lista non si tocca.');
-            return { read: items.length, written: 0, unresolved: [], items };
-        }
-
-        // Identità: stesse regole del ciclo dell'archivio (mapping ufficiale, override,
-        // ponte TVDB, fallback per titolo). Un anime senza identità non ha documento.
-        const resolutionRecords = Array.from(animeById.values()).map((anime) => ({
-            id: anime.id,
-            dub: anime.dub,
-            title: anime.title,
-            title_eng: anime.title_eng,
-            title_it: anime.title_it,
-            slug: anime.slug,
-            date: anime.date,
-            status: anime.status,
-            anilist_id: anime.anilist_id,
-            mal_id: anime.mal_id
-        }));
-        await identityResolver.enrichWithFallbacks(resolutionRecords, {
-            dryRun: opts.dryRun,
-            refreshFallbacks: opts.refreshFallbacks
-        });
-
-        const { groups, unresolved } = groupHomeRowsByTmdb(rows, animeById, identityResolver);
-        const checkedAt = new Date().toISOString();
-        let written = 0;
-
-        for (const group of groups) {
-            const doc = buildHomeStateDocument({
-                tmdbId: group.tmdbId,
-                kitsuId: group.kitsuId,
-                anilistId: group.anilistId,
-                malId: group.malId,
-                title: group.title,
-                status: group.status,
-                homeReleases: buildHomeReleases(group.rows, { checkedAt }),
-                now: checkedAt
-            });
-            if (!doc) continue;
-
-            if (opts.dryRun || !store) {
-                console.log(`\n--- DOCUMENTO HOME (DRY-RUN) TMDB ${doc._id} (${doc.title}) ---`);
-                console.log(JSON.stringify(doc, null, 2));
-                console.log('---------------------------------------------------------\n');
-                written++;
-                continue;
-            }
-            const result = await store.upsert(doc);
-            console.log(`[AnimeSource] Home → TMDB ${doc._id} "${doc.title}" [sub ${doc.homeReleases.sub ? `EP ${doc.homeReleases.sub.episode}` : '—'}${doc.homeReleases.dub ? `, dub ITA ${doc.homeReleases.dub.episode}` : ''}] [matched: ${result.matchedCount}]`);
-            written++;
-        }
-
-        for (const row of unresolved) {
-            console.warn(`[AnimeSource] Home: "${row.title}" (anime ${row.animeId}) non risolto in TMDB: niente documento, quindi niente card. È l'unica differenza ammessa fra la fonte e il catalogo.`);
-        }
-
-        discoveryManager.writeHomeHeartbeat();
-        if (full) discoveryManager.writeHomeFullHeartbeat();
-
-        console.log(`[AnimeSource] Passata home ${full ? 'completa' : 'incrementale'} conclusa: ${written} titoli scritti, ${unresolved.length} non risolti, ${((Date.now() - startedAt) / 1000).toFixed(1)}s.`);
-        return { read: items.length, written, unresolved, items };
-    };
+    const runHome = (args = {}) => runHomePass({
+        ...args,
+        animeClient,
+        discoveryManager,
+        identityResolver,
+        store,
+        windowDays: opts.homeWindowDays,
+        dryRun: opts.dryRun,
+        refreshFallbacks: opts.refreshFallbacks
+    });
 
     const runDailyHomeCheck = async (homeItems = null) => {
         console.log('\n======================================================');
@@ -749,7 +771,7 @@ async function main() {
     }
 
     if (opts.home || opts.homeFull) {
-        await runHomePass({ full: !!opts.homeFull });
+        await runHome({ full: !!opts.homeFull });
         if (store) await store.close();
         console.log(`[AnimeSource] Passata home ${opts.homeFull ? 'completa' : 'incrementale'} completata.`);
         process.exit(0);
@@ -763,14 +785,14 @@ async function main() {
     let lastFullHomeItems = null;
     let lastHomeCheckTime = Date.now();
     const giraHomeCompletaSeTocca = async () => {
-        const esito = await runHomePass({ full: true });
+        const esito = await runHome({ full: true });
         lastFullHomeItems = esito && Array.isArray(esito.items) ? esito.items : null;
         lastFullAt = Date.now();
         return esito;
     };
     if (!opts.dryRun && !opts.once) {
         try {
-            await runHomePass({ full: false, announce: true });
+            await runHome({ full: false, announce: true });
             if (!lastFullAt || (Date.now() - lastFullAt) >= HOME_FULL_MS) {
                 await giraHomeCompletaSeTocca();
                 // Il controllo dei doppiati riusa gli item appena letti: una richiesta in meno.
@@ -821,7 +843,7 @@ async function main() {
     // non per la completezza (a coprire le due settimane ci pensa il giro completo).
     const homeInterval = setInterval(async () => {
         try {
-            await runHomePass({ full: false, announce: false });
+            await runHome({ full: false, announce: false });
         } catch (e) {
             console.error(`[AnimeSource] Passata home incrementale fallita: ${e.message}`);
         }
@@ -864,6 +886,8 @@ module.exports = {
     groupHomeRowsByTmdb,
     collectHomeAnimes,
     processTmdbGroup,
+    runHomePass,
+    main,
     parseArgs,
     HOME_INCREMENTAL_MS,
     HOME_FULL_MS

@@ -210,6 +210,21 @@ class SeriesDiscoveryManager {
             }
 
             if (ageMs <= this.maxHealthAgeMs) {
+                if (fs.existsSync(this.lastHomeRunFile)) {
+                    try {
+                        const homeData = JSON.parse(fs.readFileSync(this.lastHomeRunFile, 'utf8'));
+                        if (homeData && homeData.zeroItems === true) {
+                            return {
+                                ok: false,
+                                ageHours,
+                                timestamp: data.timestamp,
+                                message: `FAIL: Ultima passata home ha estratto 0 item (${homeData.timestamp || 'sconosciuto'}).`
+                            };
+                        }
+                    } catch {
+                        // File home illeggibile: trattato come sconosciuto per retrocompatibilità.
+                    }
+                }
                 return {
                     ok: true,
                     ageHours,
@@ -340,14 +355,20 @@ class SeriesDiscoveryManager {
     }
 
     /**
-     * Scrive il timestamp dell'ultimo controllo della home page
+     * Scrive il timestamp e l'esito dell'ultimo controllo della home page
      * @param {Date} [timestamp]
+     * @param {Object} [options]
+     * @param {number|null} [options.items=null] Numero di item estratti
      * @returns {Object}
      */
-    writeHomeHeartbeat(timestamp = new Date()) {
+    writeHomeHeartbeat(timestamp = new Date(), { items = null } = {}) {
         this._ensureCacheDir();
         const iso = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
         const data = { timestamp: iso };
+        if (typeof items === 'number' && Number.isFinite(items)) {
+            data.items = items;
+            data.zeroItems = items === 0;
+        }
         fs.writeFileSync(this.lastHomeRunFile, JSON.stringify(data, null, 2), 'utf8');
         return data;
     }
@@ -442,7 +463,7 @@ class SeriesDiscoveryManager {
             console.log(`[Discovery] Rilevati ${newDubbedRecords.length} nuovi titoli doppiati dalla home. Lista aggiornata a ${updatedRecords.length} serie.`);
         }
 
-        this.writeHomeHeartbeat();
+        this.writeHomeHeartbeat(new Date(), { items: items.length });
 
         return {
             newDubbedRecords,

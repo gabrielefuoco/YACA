@@ -34,12 +34,12 @@ Tuttavia, i motori di raccomandazione di YACA e le API di ricerca globale operan
 > La stessa logica vale per gli anime (`kitsu:…:ep`), documentata qui sotto.
 
 ### La Soluzione: Traduzione Bidirezionale degli ID tramite Mapping Store
-YACA implementa un'architettura ad alta efficienza basata su mapping statici pre-elaborati in [animeMappingStore.js](../src/data/animeMappingStore.js) e sulla regola canonica di rilevamento in [animeIdentity.js](../src/utils/animeIdentity.js):
+YACA implementa un'architettura ad alta efficienza basata su mapping statici pre-elaborati in [mapping.js](../src/anime/mapping.js) e sulla regola canonica di rilevamento in [identita.js](../src/anime/identita.js):
 
 ```mermaid
 graph TD
     subgraph Anime Identity & Mapping Store
-        A[Risorsa TMDB] --> B{animeIdentity: È Anime?}
+        A[Risorsa TMDB] --> B{identita.js: È Anime?}
         B -->|No| C[Mantieni ID e metadati nativi TMDB]
         B -->|Sì: Store o 16+ja/keyword| D[animeMappingStore: Lookup O(1)]
         D -->|Serie TV| E[Anibridge: Mapping Stagione ed Episodi]
@@ -57,13 +57,13 @@ graph TD
 ```
 
 #### 1. Rilevamento Canonico dell'Identità Anime
-L'identità anime è unificata nel modulo [animeIdentity.js](../src/utils/animeIdentity.js) (`isAnimeContent`) condiviso da tutti i percorsi dati (DuckDB locale e client TMDB live):
+L'identità anime è unificata nel modulo [identita.js](../src/anime/identita.js) (`isAnimeContent`) condiviso da tutti i percorsi dati (DuckDB locale e client TMDB live):
 - **Store Match**: Il TMDB ID è presente in `animeMappingStore` (Anibridge / Fribb);
 - **Euristica TMDB**: Genere TMDB *16* (Animation) **E** (`original_language === 'ja'` **OPPURE** esiste una keyword TMDB che include la parola `"anime"` case-insensitive, con filtro anti-falsi positivi per escludere animazioni occidentali come "anime-inspired" o "anime-influenced").
 - La regola vale in modo identico per **serie TV** e per **film**, includendo donghua cinesi/coreani censiti ed escludendo produzioni occidentali.
 
 #### 2. Risoluzione tramite `animeMappingStore` (Anibridge + Fribb)
-Invece di lente chiamate HTTP live verso API esterne, YACA mantiene in memoria due dataset ad alte prestazioni sincronizzati ogni 12 ore con supporto ETag/304:
+Invece di lente chiamate HTTP live verso API esterne, l'app non scarica nulla in proprio: legge l'artefatto prodotto da `anime-source` (`ANIME_MAPPING_PATH`, default `/data/anime-source/anime-mappings.json`) tramite `snapshotDaArtefatto` con TTL **60 s** e politica `keepLastKnown` su errore, che aggrega due dataset pre-elaborati:
 1. **Anibridge**: Mappature multi-provider (AniDB, AniList, MAL) con offset e range per convertire episodi TMDB in episodi Anime progressivi.
 2. **Fribb (`anime-list-mini`)**: Mapping incrociato diretto per Kitsu ID, AniDB, AniList, MAL e TMDB (inclusi film).
 3. **Lookup O(1) e Indici RAM**: Lo store popola un `Set` di TMDB ID anime per lookup a tempo costante (`isAnimeTmdbId(tmdbId)`) e aggiorna la tabella in-memory `anime_mappings` di DuckDB per consentire filtri nativi zero-latency (`F.anime`).

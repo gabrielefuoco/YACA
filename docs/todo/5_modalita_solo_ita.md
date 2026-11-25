@@ -119,7 +119,7 @@ con il vincolo che il dato vada in un **sidecar**, non nella tabella principale 
 ## Vincoli (già decisi)
 
 - Nessun campo di confidenza nella colonna: solo `true` / `null` / `false`.
-- Nessuna pagina di dettaglio AG scrapata: il match usa solo gli indici (79 pagine).
+- Nessuna pagina di dettaglio AG scrapata: il match usa solo gli indici (81 pagine).
 - Il match è **calcolo offline ricalcolabile**: cambiare le regole non costa una richiesta al sito.
 
 ## Riferimenti
