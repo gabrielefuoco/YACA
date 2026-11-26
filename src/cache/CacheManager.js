@@ -127,7 +127,13 @@ class CacheManager {
         const fetchPromise = (async () => {
             try {
                 const fresh = await fetchFn();
-                if (fresh !== undefined) {
+                // `skipIf` esiste per un caso solo: un risultato *vuoto* che è uno stato legittimo
+                // ma transitorio (es. catalogo alimentato da una fonte esterna che in quel momento
+                // non ha nulla). Memorizzarlo lo congela per tutto il TTL, e se ogni richiesta lo
+                // riscrive la cache resta avvelenata anche dopo che la fonte è tornata: è successo
+                // davvero, con il catalogo Simulcast fermo per giorni su una risposta vuota.
+                const daScartare = typeof options.skipIf === 'function' && options.skipIf(fresh);
+                if (fresh !== undefined && !daScartare) {
                     await this.set(key, fresh, ttlMs || this.redisTtlMs, options);
                 }
                 return fresh;
