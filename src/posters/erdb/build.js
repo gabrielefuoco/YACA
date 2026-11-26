@@ -17,6 +17,7 @@
  *   --concurrency <n>    worker in parallelo (default 1: servizio di una persona sola)
  *
  * Alla fine scrive <out>/report.json con resi / saltati / falliti e i motivi dei fallimenti.
+ * È l'unica traccia di un giro che dura ore: la legge l'operatore, non il codice.
  */
 
 const fs = require('fs');
@@ -361,7 +362,8 @@ async function run({
 
     await fs.promises.writeFile(
         path.join(outDir, REPORT_FILE),
-        `${JSON.stringify(report, null, 2)}\n`,
+        `${JSON.stringify(report, null, 2)}
+`,
         'utf8'
     );
 

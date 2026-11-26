@@ -69,7 +69,7 @@ function snapshotDaArtefatto({ leggi, ttlMs = 60000, suErrore = 'keepLastKnown',
                     return customResult;
                 }
 
-                if (suErrore === 'emptyAndRetry' || suErrore === 'vuotoERitenta') {
+                if (suErrore === 'emptyAndRetry') {
                     // Non memorizziamo fetchedAt: il chiamante riceve lo snapshot vuoto,
                     // ma la chiamata successiva riproverà immediatamente senza aspettare il TTL.
                     return getEmpty(error);
@@ -103,19 +103,9 @@ function snapshotDaArtefatto({ leggi, ttlMs = 60000, suErrore = 'keepLastKnown',
         inFlight = null;
     }
 
-    function getCache() {
-        return cache;
-    }
-
-    function setSnapshot(snapshot) {
-        cache = { snapshot, fetchedAt: Date.now() };
-    }
-
     return {
         getSnapshot,
-        reset,
-        getCache,
-        setSnapshot
+        reset
     };
 }
 
