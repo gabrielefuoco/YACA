@@ -77,25 +77,31 @@ Nelle nove giornate di pipeline morta il catalogo era vuoto **per tutti**: nessu
 
 
 ---
-
 ## Causa trovata e fix (2026-11-26)
 
-Strumentando la produzione (patch del solo  dentro il container, senza build) la risposta è
-diventata chiara: **con l'id corto il percorso è identico a quello lungo** — ,
-, provider 20 item,  vero per 19, . Nessun bug di
-dispatch, nessun filtro che svuota.
+Strumentando la produzione (patch del solo `catalogHandler` dentro il container, senza build) la risposta è
+diventata chiara: **con l'id corto il percorso è identico a quello lungo** —
+`catalogMeta._provider=airing_state`, `isAnimeCatalog=true`, provider 20 item, `isItemAnime` vero per 19,
+`dopo_filtri=20`. Nessun bug di dispatch, nessun filtro che svuota.
 
 Il problema era **la cache**: una risposta vuota (dei giorni in cui la fonte era morta) era stata memorizzata
 e **riscritta a ogni richiesta**, quindi restava vuota per sempre anche dopo il ritorno dei dati. Il TTL di
-20 minuti non aiutava perché veniva continuamente rinfrescato dall'uso.
+20 minuti non aiutava, perché veniva continuamente rinfrescato dall'uso.
 
-**Fix** ():  accetta un  opzionale;  lo passa
-**solo** per i cataloghi con provider  e scarta il salvataggio quando  è vuoto. Un
+**Fix** (`6b22ae27`): `CacheManager.getOrFetch` accetta un `skipIf` opzionale; `catalogHandler` lo passa
+**solo** per i cataloghi con provider `airing_state` e scarta il salvataggio quando `metas` è vuoto. Un
 catalogo esterno vuoto è uno stato transitorio, non una verità da congelare. Gli altri cataloghi non
 cambiano comportamento (un vuoto lì è una scelta dell'utente e va memorizzata).
 
-Test:  (3 casi: vuoto non memorizzato e ricostruito, pieno memorizzato,
-senza  comportamento invariato). Suite completa: **200 suite / 1988 test**.
+Test: `tests/cacheManagerSkipIf.test.js` (3 casi: vuoto non memorizzato e ricostruito, pieno memorizzato,
+senza `skipIf` comportamento invariato). Suite completa: **200 suite / 1988 test**.
 
-Verifica in produzione (account reale ):  → **34.214 byte, 20 item**;
- 21.858 byte;  22.796 byte;  13.512 byte.
+Verifica in produzione (account reale `REOZrGNRr3`): `preset_anime_simulcast` → **34.214 byte, 20 item**;
+`preset_pop_anime` 21.858 byte; `preset_anime_movies_top` 22.796 byte; `yaca_watchlist_anime` 13.512 byte.
+
+## Lezione
+
+Il ticket diceva "il catalogo è vuoto per colpa di un filtro o del dispatch". Era la terza ipotesi, quella
+che nessuno guarda: **la cache che si rinfresca da sola su una risposta sbagliata**. Un degrado transitorio
+della fonte non deve diventare uno stato persistente; il `ponytail:` qui è che la regola vale solo per il
+catalogo airing, dove il vuoto è per definizione sospetto.
