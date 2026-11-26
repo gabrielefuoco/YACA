@@ -15,6 +15,7 @@
  */
 
 const fs = require('fs');
+const { leggiIdentitaRisolte, aggiungiIdentitaRisolte } = require('./src/resolvedIdentities');
 const path = require('path');
 const { fetchAllIndices } = require('./src/indici');
 const { parseIndexPage } = require('./src/parse');
@@ -321,6 +322,11 @@ async function main(customOpts = null) {
         }
     }
 
+    // Le identità provate dal resolver (--resolve-ids) vivono in un sidecar, non nel file che
+    // questo giro rigenera: senza, il giro successivo le perderebbe tutte e la guardia lo
+    // bloccherebbe (successo davvero il 26/11: -6,5% e job fermo). Si uniscono sempre.
+    const identitaRisolte = leggiIdentitaRisolte(path.dirname(opts.moviesPath));
+
     // 6. Fusione multi-fonte con precedenza true > null > assente
     let finalRows = agRows;
     if (animeRows.length > 0) {
@@ -489,6 +495,10 @@ async function main(customOpts = null) {
         if (writeResult.written) {
             console.log(`[Writer] Annotazioni aggiornate con successo in: ${writeResult.path}`);
             console.log(`[Writer]   ${writeResult.counts.rows} righe totali (true ${writeResult.counts.true} · null ${writeResult.counts.null}) · meta: ${writeResult.metaPath}`);
+            const sidecar = await aggiungiIdentitaRisolte(path.dirname(outputPath), resolveRes.resolvedRows);
+            if (sidecar.aggiunte > 0) {
+                console.log(`[ResolveIDs] ${sidecar.aggiunte} identità scritte nel sidecar durevole (${sidecar.totali} totali): ${sidecar.path}`);
+            }
         } else if (writeResult.reason === 'guard') {
             const drop = (100 - (writeResult.counts.true / writeResult.previous.counts.true) * 100).toFixed(1);
             console.error('[Writer] GUARDIA: le voci vere sono calate a ' + writeResult.counts.true +
@@ -498,6 +508,11 @@ async function main(customOpts = null) {
         }
 
         return { matchResult, resolveResult: resolveRes, writeResult };
+    }
+
+    if (identitaRisolte.length > 0) {
+        finalRows = mergeAnnotationRows(finalRows, identitaRisolte);
+        console.log(`[ResolveIDs] Identità provate riusate dal sidecar: ${identitaRisolte.length}`);
     }
 
     // 7. Scrittura annotazioni: NDJSON accanto al parquet/dump
