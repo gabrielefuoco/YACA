@@ -105,3 +105,29 @@ Il ticket diceva "il catalogo è vuoto per colpa di un filtro o del dispatch". E
 che nessuno guarda: **la cache che si rinfresca da sola su una risposta sbagliata**. Un degrado transitorio
 della fonte non deve diventare uno stato persistente; il `ponytail:` qui è che la regola vale solo per il
 catalogo airing, dove il vuoto è per definizione sospetto.
+
+---
+
+## Generalizzazione (stessa data)
+
+La domanda "vale per tutti i cataloghi?" ha aperto una falla più grande: **no, valeva solo per airing**, e
+misurando le cache di produzione sono saltate fuori **19 entry vuote sotto `tmdb_catalog:`** con TTL fino a
+**1.242.721 s ≈ 14 giorni** (il default di `resolveCatalogTtl` quando il preset non dichiara un TTL) e altre
+fra 2 e 4 giorni. Cioè: un catalogo qualunque che risponde vuoto per un guasto transitorio (DuckDB freddo,
+filtro, errore) può restare vuoto **due settimane**, rinfrescandosi a ogni uso.
+
+Fix definitivo (`6b22ae27` → commit successivo): la regola esce dal catalogo airing e diventa una sola, nella
+cache. `CacheManager.getOrFetch`, prima di scrivere, guarda se il payload è vuoto nelle forme che la cache
+maneggia davvero (`metas`, `scaffali`, array nudo) e in quel caso usa `min(ttl, 60 s)`.
+
+Perché 60 s e non "non memorizzare": la fonte si ritenta, ma non a ogni singola richiesta — l'obiettivo era
+smettere di congelare un guasto, non esporre la fonte a un martellamento.
+
+Il `skipIf` specifico per airing è stato rimosso: una regola sola, in un posto solo.
+
+**Pulizia**: le 19 entry avvelenate sono state cancellate a mano (si ricostruiscono alla prima richiesta).
+Dopo il deploy, le entry vuote rimaste avevano TTL 27-40 s, cioè la regola nuova — verificato in produzione.
+
+Test: `tests/cacheManagerSkipIf.test.js`, 5 casi (metas vuoto → TTL 60 s, scaffali vuoti → TTL 60 s, metas
+piene → TTL normale, oggetto singolo → non scambiato per vuoto, il vuoto non fa ricostruire a ogni
+richiesta).
