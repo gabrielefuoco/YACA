@@ -96,7 +96,6 @@ async function cloneTasteProfile(db, sourceContext, targetOwner, targetContext, 
         idNames: src.idNames || {},
         syncStatus: { isSyncing: false, total: 0, current: 0, lastSync: null },
         onboardingCompleted: true,
-        signatureTitles: src.signatureTitles || { core: null, blend: null, star: null },
         lastUpdated: now,
         createdAt: now,
         updatedAt: now
@@ -122,7 +121,6 @@ async function writeColdProfile(db, targetOwner, targetContext, mode) {
         idNames: {},
         syncStatus: { isSyncing: false, total: 0, current: 0, lastSync: null },
         onboardingCompleted: false,
-        signatureTitles: { core: null, blend: null, star: null },
         lastUpdated: now,
         createdAt: now,
         updatedAt: now

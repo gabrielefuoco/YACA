@@ -32,9 +32,8 @@ function rinominaSync(tmp, target, tentativi = 6) {
             return;
         } catch (err) {
             if (!CODICI_DA_RITENTARE.has(err.code) || i === tentativi - 1) throw err;
-            const attesa = Math.min(25 * 2 ** i, 500);
-            const fine = Date.now() + attesa;
-            while (Date.now() < fine) { /* attesa occupata: questo helper è sincrono per scelta */ }
+            // Attesa sincrona senza busy-loop: la primitiva stdlib per dormire in un contesto sync.
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.min(25 * 2 ** i, 500));
         }
     }
 }

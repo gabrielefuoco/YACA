@@ -1,14 +1,11 @@
 /**
  * tests/itaSqlFilter.test.js
  *
- * Test della colonna `ita` in DuckDB e del filtro `onlyIta` (Ticket 06):
+ * Test della colonna `ita` in DuckDB e del filtro `onlyIta` (Ticket 06, ridotto dal ticket 17):
  * 1. Semantica a 3 stati di `F.onlyIta`: true, null, false (senza COALESCE).
  * 2. Wiring in `buildPresetFromFilters` con `onlyIta`, `isDubbed` e `strictIta`.
- * 3. `syncItaAnnotationsLive`: aggiunge la colonna se manca, allinea i valori,
- *    salta al secondo giro se l'mtime è invariato (`already_fresh`).
- * 4. Test di swap: DB su file, UPDATE + CHECKPOINT (elimina il WAL), simulazione dello
- *    swap del daemon e riapertura con riallineamento senza corruzione da WAL stantio.
- * 5. File mancante: no-op, no throw.
+ * 3. `ensureItaColumn`: la colonna esiste sempre (ALTER), e i valori NON vengono toccati —
+ *    li scrive `convert_to_parquet`, non più un allineamento a caldo dal JSONL.
  */
 
 const duckdb = require('duckdb');
@@ -37,7 +34,7 @@ function queryAll(con, sql, params = []) {
     });
 }
 
-describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
+describe('Ticket 06 — Filtro onlyIta e colonna ita', () => {
 
     describe('1. Semantica trivalente del filtro F.onlyIta e assenza di COALESCE', () => {
         let db;
@@ -116,7 +113,6 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
         });
 
         test('aggiunge la colonna ita a una tabella che non ce l ha', async () => {
-            store.con = { /* connessione finta: usiamo _exec vero su un DuckDB in memoria */ };
             const duckdb = require('duckdb');
             const db = new duckdb.Database(':memory:');
             store.con = db.connect();
@@ -146,4 +142,10 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
             await expect(store.ensureItaColumn()).resolves.toEqual({ ok: false, reason: 'no_connection' });
         });
     });
+});
+
+afterAll(() => {
+    // Il test isola `TMDB_DUMP_DIR`/`DUCKDB_PATH` su una cartella temporanea: va rimossa, o ogni
+    // esecuzione ne lascia una dietro.
+    try { fs.rmSync(moduleTempDir, { recursive: true, force: true }); } catch (_) {}
 });

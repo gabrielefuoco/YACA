@@ -712,6 +712,9 @@ class DuckDbStore {
         try {
             await this._exec(this.con, 'ALTER TABLE movies ADD COLUMN IF NOT EXISTS ita BOOLEAN DEFAULT false;');
             await this._exec(this.con, 'ALTER TABLE tv ADD COLUMN IF NOT EXISTS ita BOOLEAN DEFAULT false;');
+            // Il WAL è legato al PATH: se resta in giro, lo swap del daemon lo rigioca contro il
+            // database nuovo. Il CHECKPOINT lo consuma qui.
+            await this._exec(this.con, 'CHECKPOINT;');
             return { ok: true };
         } catch (err) {
             console.warn('[DuckDB Store] Warning ensureItaColumn:', err.message);
