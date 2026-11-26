@@ -22,6 +22,7 @@
  */
 
 const fs = require('fs');
+const { scriviAtomicoSync } = require('../../../src/infra/atomicWrite');
 const path = require('path');
 
 const SCHEMA_VERSION = 1;
@@ -123,11 +124,8 @@ async function writeAnnotations(annotations, opts = {}) {
         }
     }
 
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    const tmpPath = `${outputPath}.tmp`;
     const body = rows.length ? `${rows.map((r) => JSON.stringify(r)).join('\n')}\n` : '';
-    fs.writeFileSync(tmpPath, body, 'utf8');
-    fs.renameSync(tmpPath, outputPath); // atomica: o il file vecchio, o quello nuovo, mai un mezzo file
+    scriviAtomicoSync(outputPath, body);
 
     const meta = {
         schemaVersion: SCHEMA_VERSION,

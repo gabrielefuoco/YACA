@@ -11,6 +11,7 @@
  */
 
 const fs = require('fs');
+const { scriviAtomicoSync } = require('../../../src/infra/atomicWrite');
 const path = require('path');
 
 const BASE_URL = 'https://www.antoniogenna.net/doppiaggio/';
@@ -245,9 +246,7 @@ async function fetchAllIndices(options = {}) {
                 throw new Error(`Risposta troppo breve per ${url} (${buf.length} bytes < ${minBytes})`);
             }
 
-            const tmpPath = `${targetPath}.tmp.${process.pid}`;
-            fs.writeFileSync(tmpPath, buf);
-            fs.renameSync(tmpPath, targetPath);
+            scriviAtomicoSync(targetPath, buf);
             const html = decodeHtml(buf);
 
             if (delayMs > 0) {
