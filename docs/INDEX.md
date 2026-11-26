@@ -8,7 +8,7 @@ Benvenuto nella documentazione tecnica di **YACA (Yet Another Catalog Addon)**. 
 
 YACA è un addon per Stremio progettato con un'architettura **stateful** e modulare, basata sui seguenti pilastri:
 - **MongoDB Atlas**: Configurazioni utente, profili, cronologia delle visioni e archivio della libreria.
-- **Redis**: Caching distribuito L2 ad alte prestazioni con pattern SWR (Stale-While-Revalidate).
+- **Redis**: Caching distribuito L2 ad alte prestazioni (un solo TTL per voce: scaduto, si rigenera).
 - **DuckDB**: Motore analitico SQL in-memory su dataset Parquet (ZSTD) per interrogazioni dei cataloghi a zero latenza (<10ms) e zero chiamate a `/discover` di TMDB.
 - **Motore Grafo delle Raccomandazioni (Python)**: Servizio separato e persistente su porta `7862` che calcola la diffusione PageRank e le affinità dei cluster/mondi, dialogando via HTTP col prodotto Node.js.
 - **Modulo Pool (`src/pool/`)**: Porta unica di composizione dei cataloghi hero del feed, con assegnazione pairwise mutuamente esclusiva e inserimento additivo delle righe del grafo.

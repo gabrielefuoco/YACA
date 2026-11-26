@@ -14,7 +14,7 @@ graph TD
     B -->|Invoca| C[catalogHandler.js]
     C -->|Genera Hash| D{L2 Cache Check}
     D -->|Fresh| E[Ritorna Dati Cache]
-    D -->|Stale / SWR| F[Ritorna Stale + Trigger Revalidate]
+    D -->|Scaduto| F[Rigenera: niente stale]
     D -->|Miss| G[Esegui Fetch Pipeline]
     
     subgraph Fetch Pipeline
@@ -42,10 +42,10 @@ graph TD
    - Impostazioni del profilo (`kidsMode`, `typeSelectors`, orientamento poster).
    - Versione della configurazione canonica del catalogo (`catalogDef`: l'impronta di `where`, `orderBy`, `queries`, `isAnime`, provider…). Ha sostituito `configVersion` come ingrediente della chiave: quest'ultimo era un contatore rigenerato a ogni salvataggio, quindi bastava salvare un profilo per svuotare la cache di tutti.
    - Versione dei badge degli episodi (`BADGE_CATALOG_VERSION`: 24 dal ticket 14/18/32).
-4. **Strategia SWR (Stale-While-Revalidate)**:
+4. **Nessuna finestra stale-while-revalidate**:
    - Se l'hash è presente in cache ed è **fresh**, viene restituito immediatamente.
-   - Se è **stale** (nella finestra SWR), viene restituito subito il dato archiviato e viene avviata una Promise asincrona in background per aggiornare la cache.
-   - Se è un **miss**, la pipeline attende la risoluzione sincrona della fetch.
+   - Se è scaduto, è un **miss**: la pipeline attende la risoluzione sincrona della fetch.
+   - Un `swrMs` esisteva ma non poteva mai attivarsi (la voce salvata porta sempre il suo `ttl`): è stato rimosso, insieme ai rami `stale` dei chiamanti.
 5. **Risoluzione del Catalogo**: `routeCatalogRequest` in [CatalogRouter.js](../src/stremio/CatalogRouter.js) mappa l'ID del catalogo al provider corretto. **Prima ancora**, se il catalogo richiesto non è conforme ai selettori di tipo del profilo attivo, `catalogHandler` risponde `{ metas: [] }`: copre la finestra in cui Stremio ha ancora in mano il manifest vecchio, senza mai tirare un errore.
 6. **Filtri Post-Fetch**:
    - **Esclusione di tipi errati**: Filtra elementi il cui `media_type` non corrisponde alla richiesta (es. rimuove film da richieste di serie).
@@ -166,9 +166,9 @@ Per evitare di superare i rate limit delle API esterne (TMDB, Kitsu, Trakt) e ga
 
 ### Meccanismi di Protezione Avanzati:
 
-1.  **Stale-While-Revalidate (SWR)**:
-    Se un dato in cache L1/L2 supera il tempo di freschezza (`ramTtlMs`) ma rientra nella finestra `swrMs`, YACA restituisce subito il dato vecchio al client. Contestualmente, invoca una fetch asincrona per aggiornare la cache senza bloccare il thread di rendering di Stremio.
-2.  **Mitigazione del Thundering Herd (SWR Stampede)**:
+1.  **Nessuno SWR.**
+    Ogni voce ha un solo TTL: superato quello è un miss e si ricostruisce. Non c'è una finestra in cui si serve il dato vecchio mentre si aggiorna in background — c'era un `swrMs`, ma la voce salvata porta sempre il proprio `ttl`, quindi la finestra risultava sempre zero.
+2.  **Mitigazione del Thundering Herd**:
     Quando più richieste concorrenti per lo stesso catalogo non trovano riscontro in cache (cache miss), potrebbe verificarsi un sovraccarico dovuto a chiamate API duplicate in parallelo. `CacheManager` risolve questo problema registrando la Promise di fetch in una mappa in RAM (`this.activePromises`). Le richieste successive per la stessa chiave attendono la risoluzione della medesima Promise anziché invocare nuovamente le API esterne.
 3.  **TTL Jitter (Variazione Temporale)**:
     Per evitare che centinaia di cataloghi pre-riscaldati scadano simultaneamente a livello di database L2 (causando picchi improvvisi di richieste API per la rigenerazione), il `CacheManager` applica un fattore di variazione casuale (jitter) del **$\pm 5\%$** sul TTL programmato al momento del salvataggio:
