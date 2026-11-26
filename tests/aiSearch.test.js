@@ -100,11 +100,11 @@ describe('AI Search (Mistral & Caching) Tests', () => {
             ])
         }));
         
+        // La firma è a tre argomenti: chiave, valore, ttl. Il quarto (options) non esiste più.
         expect(aiPromptCache.set).toHaveBeenCalledWith(
             expectedBaseKey,
             expect.objectContaining({ strategy: 'discovery', genre_ids: [28] }),
-            expect.any(Number),
-            expect.anything()
+            expect.any(Number)
         );
         expect(result).toEqual({ strategy: 'discovery', genre_ids: [28], target: 'tmdb' });
     });

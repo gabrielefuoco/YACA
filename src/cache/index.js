@@ -251,8 +251,8 @@ function deriva(descrizione) {
 /**
  * Legge una risorsa dalla cache a partire dalla sua descrizione.
  * 
- * Se viene fornito `costruttore`, in caso di miss o stale lo esegue per calcolare
- * il valore fresco e memorizzarlo (con gestione SWR in background).
+ * Se viene fornito `costruttore`, in caso di miss lo esegue per calcolare il valore fresco e
+ * memorizzarlo. Non c'è stale-while-revalidate: una voce scaduta è un miss.
  * Se `costruttore` non è una funzione, restituisce l'oggetto { value, status, chiave, ttl }.
  *
  * @param {object} descrizione
@@ -272,7 +272,7 @@ async function leggi(descrizione, costruttore, options = {}) {
     }
 
     // Se è fornito un costruttore, delega a getOrFetch dell'istanza
-    return instance.getOrFetch(chiave, costruttore, ttl, options);
+    return instance.getOrFetch(chiave, costruttore, ttl);
 }
 
 /**
@@ -289,7 +289,7 @@ async function scrivi(descrizione, valore, options = {}) {
     const chiave = derived.chiave;
     const ttl = options.ttl !== undefined ? options.ttl : derived.ttl;
 
-    await instance.set(chiave, valore, ttl, options);
+    await instance.set(chiave, valore, ttl);
     return { chiave, ttl };
 }
 

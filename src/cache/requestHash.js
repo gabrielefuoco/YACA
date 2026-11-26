@@ -25,7 +25,8 @@ function generateRequestHash(endpoint, params, skip, type) {
         }
     }
 
-    // Ordina le chiavi alfabeticamente
+    // Ordina le chiavi alfabeticamente. Nota: NON si può usare `JSON.stringify(obj, keys)` per
+    // farlo: il replacer-array pota le chiavi anche negli oggetti annidati e cambia l'hash.
     const sortedKeys = Object.keys(normalized).sort();
     const sortedObj = {};
     for (const key of sortedKeys) {

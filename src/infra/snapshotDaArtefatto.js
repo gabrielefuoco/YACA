@@ -20,9 +20,7 @@
  * @param {any|Function} [config.vuoto] Snapshot vuoto da restituire come degrado iniziale o su errore
  * @returns {{
  *   getSnapshot: (options?: { force?: boolean }) => Promise<any>,
- *   reset: () => void,
- *   getCache: () => { snapshot: any, fetchedAt: number },
- *   setSnapshot: (snapshot: any) => void
+ *   reset: () => void
  * }}
  */
 function snapshotDaArtefatto({ leggi, ttlMs = 60000, suErrore = 'keepLastKnown', vuoto = () => ({}), onError = null }) {

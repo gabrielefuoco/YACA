@@ -259,12 +259,11 @@ describe('Modulo Cache (Ticket 24)', () => {
         let testCache;
 
         beforeEach(() => {
-            // Istanza con RAM TTL = 7 giorni e SWR = 1 ora
+            // Istanza con TTL in RAM = 7 giorni: serve a dimostrare che il TTL esplicito vince.
             testCache = new CacheManager('test_ttl_bug', {
                 ramMax: 50,
-                ramTtlMs: 7 * 24 * 60 * 60 * 1000, // 7 giorni in RAM
-                redisTtlMs: 7 * 24 * 60 * 60 * 1000,
-                swrMs: 60 * 60 * 1000               // 3600 secondi di SWR
+                ramTtlMs: 7 * 24 * 60 * 60 * 1000,
+                redisTtlMs: 7 * 24 * 60 * 60 * 1000
             });
             jest.useFakeTimers();
         });
@@ -273,7 +272,7 @@ describe('Modulo Cache (Ticket 24)', () => {
             jest.useRealTimers();
         });
 
-        test('una voce scritta con TTL esplicito di 60 s scade a 60 s, non a quello in RAM (7 giorni) né a 60+SWR (3660s)', async () => {
+        test('una voce scritta con TTL esplicito di 60 s scade a 60 s, non a quello in RAM (7 giorni)', async () => {
             const key = 'voce_con_ttl_breve_60s';
             const value = { dato: 'valore_transitorio_e5' };
             const explicitTtl = 60 * 1000; // 60 secondi
@@ -286,9 +285,8 @@ describe('Modulo Cache (Ticket 24)', () => {
             expect(statusAt30s.status).toBe('fresh');
             expect(statusAt30s.value).toEqual(value);
 
-            // A 61 secondi (> 60s): la voce DEVE essere scaduta (status 'miss')
-            // NON deve essere fresh (confrontata col TTL RAM di 7 giorni)
-            // e NON deve essere stale (gonfiata con 3600s di SWR a 3660s)
+            // A 61 secondi (> 60s): la voce DEVE essere scaduta. Non esiste una finestra stale
+            // che possa tenerla viva oltre il TTL: scaduto il TTL è un miss.
             jest.advanceTimersByTime(31 * 1000); // totale 61s
             const statusAt61s = await testCache.getWithStatus(key);
             expect(statusAt61s.status).toBe('miss');

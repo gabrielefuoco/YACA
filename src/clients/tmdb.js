@@ -8,7 +8,6 @@ const {
     SERIES_META_CACHE_TTL_MS,
     SERIES_META_SWR_MS,
     MOVIE_META_CACHE_TTL_MS,
-    MOVIE_META_SWR_MS,
     MOVIE_DETAILS_TTL_MS,
     SERIES_FINISHED_TTL_MS,
     SERIES_ONGOING_TTL_MS
@@ -86,10 +85,10 @@ const createTmdbClient = (apiKey) => {
 };
 
 const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 500, ramTtlMs: 1000 * 60 * 60, redisTtlMs: 1000 * 60 * 60 });
-const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 500, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
-const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 500, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS, swrMs: MOVIE_META_SWR_MS });
-const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
-const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
+const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 500, ramTtlMs: 1000 * 60 * 60 * 24 * 7, redisTtlMs: 1000 * 60 * 60 * 24 * 7 });
+const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 500, ramTtlMs: MOVIE_META_CACHE_TTL_MS, redisTtlMs: MOVIE_META_CACHE_TTL_MS });
+const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, redisTtlMs: SERIES_META_CACHE_TTL_MS });
+const tvEpisodesCache = new CacheManager('tmdb_episodes', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, redisTtlMs: SERIES_META_CACHE_TTL_MS });
 
 /**
  * Traduce una stringa (es. nome attore o keyword) nel suo ID TMDB effettuando una fetch al volo
@@ -749,7 +748,7 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}, option
     return meta;
 }
 
-const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 500, ramTtlMs: 24 * 60 * 60 * 1000, mongoTtlMs: MOVIE_DETAILS_TTL_MS });
+const tmdbDetailsCache = new CacheManager('tmdb_details_raw', { ramMax: 500, ramTtlMs: 24 * 60 * 60 * 1000, redisTtlMs: MOVIE_DETAILS_TTL_MS });
 
 /**
  * Ottiene i dettagli grezzi di un contenuto TMDB (inclusi credits e keywords)

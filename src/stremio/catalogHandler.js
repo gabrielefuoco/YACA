@@ -129,7 +129,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
         graphVersions
     });
 
-    // managed SWR: Fetch or Revalidate
     const ttl = CACHE_TTL_MS;
 
     let builds = 0;
@@ -293,10 +292,13 @@ async function catalogHandler(args, userConfig, hostUrl) {
     // Un solo posto decide il TTL effettivo. Le finestre strette non sono un dettaglio di cache:
     // un catalogo che si muove (watchlist) o che cambia ogni giorno (daily window, simulcast) non
     // deve restare fermo 14 giorni come i cataloghi stabili.
+    const TTL_WATCHLIST = 2 * 60 * 1000;          // la libreria dell'utente si muove a ogni visione
+    const TTL_DAILY_WINDOW = 36 * 60 * 60 * 1000; // "novità": cambia ogni giorno
+    const TTL_SIMULCAST = 20 * 60 * 1000;         // episodi: la fonte si aggiorna ogni 15 minuti
     let ttlEffettivo = ttl;
-    if (isWatchlistCatalog) ttlEffettivo = Math.min(ttlEffettivo, 2 * 60 * 1000);
-    if (isDailyWindow) ttlEffettivo = Math.min(ttlEffettivo, 36 * 60 * 60 * 1000);
-    if (isAiringStateCatalogId) ttlEffettivo = Math.min(ttlEffettivo, 20 * 60 * 1000);
+    if (isWatchlistCatalog) ttlEffettivo = Math.min(ttlEffettivo, TTL_WATCHLIST);
+    if (isDailyWindow) ttlEffettivo = Math.min(ttlEffettivo, TTL_DAILY_WINDOW);
+    if (isAiringStateCatalogId) ttlEffettivo = Math.min(ttlEffettivo, TTL_SIMULCAST);
     catalogDesc.ttl = ttlEffettivo;
 
     const requestStartedAt = Date.now();
