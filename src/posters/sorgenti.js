@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { scriviAtomicoSync } = require('../infra/atomicWrite');
 const { estraiTokenSorgente } = require('../stremio/formatters/posterBadgeVersion');
 
 const SORGENTI_FILE_NAME = 'sorgenti.json';
@@ -78,7 +79,6 @@ function leggiToken(erdbId, dir, options = {}) {
     return map.get(erdbId) || '';
 }
 
-let _tmpCounter = 0;
 function scriviToken(erdbId, tokenOrSource, options = {}) {
     const token = estraiTokenSorgente(tokenOrSource);
     if (!erdbId || !token) return;
@@ -108,18 +108,15 @@ function scriviMappa(nuoveVoci, options = {}) {
         if (id && token) currentObj[id] = token;
     }
 
-    const tmp = `${target}.${process.pid}-${Date.now()}-${++_tmpCounter}.tmp`;
     try {
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(tmp, JSON.stringify(currentObj), 'utf8');
-        fs.renameSync(tmp, target);
+        scriviAtomicoSync(target, JSON.stringify(currentObj));
 
         // Aggiorna la cache in RAM direttamente
         const stat = fs.statSync(target);
         const map = new Map(Object.entries(currentObj));
         _cachePerDir.set(dir, { map, mtimeMs: stat.mtimeMs, lastCheckMs: Date.now() });
     } catch {
-        try { fs.unlinkSync(tmp); } catch {}
+        // Volume non scrivibile: la mappa resta quella che c'era, il prossimo giro riprova.
     }
 }
 

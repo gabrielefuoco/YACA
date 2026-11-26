@@ -19,16 +19,7 @@ const tasteProfileSchema = new mongoose.Schema({
         V_active: { type: mongoose.Schema.Types.Mixed, default: {} },
         V_final: { type: mongoose.Schema.Types.Mixed, default: {} },
         V_clusters: { type: mongoose.Schema.Types.Mixed, default: [] },
-        clustersMeta: { type: mongoose.Schema.Types.Mixed, default: null },
         lastComputed: { type: Date }
-    },
-    // Metriche di Flatness del DNA calcolate a ogni sync/ricalcolo
-    flatnessMetrics: {
-        dimensions: { type: Number, default: 0 },
-        sum: { type: Number, default: 0 },
-        entropyBits: { type: Number, default: 0 },
-        top10Share: { type: Number, default: 0 },
-        lastCalculated: { type: Date }
     },
     // ID to human-readable Name mapping
     idNames: {
@@ -46,11 +37,6 @@ const tasteProfileSchema = new mongoose.Schema({
     onboardingCompleted: { 
         type: Boolean, 
         default: false 
-    },
-    signatureTitles: {
-        core: { type: String, default: null },
-        blend: { type: String, default: null },
-        star: { type: String, default: null }
     },
     lastUpdated: {
         type: Date,

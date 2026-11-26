@@ -108,270 +108,42 @@ describe('Ticket 06 — Filtro onlyIta e Live Sync colonna ita', () => {
         });
     });
 
-    describe('2. syncItaAnnotationsLive: aggiunta colonna, allineamento e cache mtime', () => {
-        let tempDir;
-        let annotationsFile;
+    describe('2. ensureItaColumn: la colonna esiste sempre, i valori arrivano dal parquet', () => {
         let store;
 
-        beforeEach(async () => {
-            tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-ita-test-'));
-            annotationsFile = path.join(tempDir, 'ita_annotations.jsonl');
-            fs.writeFileSync(annotationsFile, [
-                JSON.stringify({ t: 'movie', id: 101, ita: true }),
-                JSON.stringify({ t: 'movie', id: 102, ita: null }),
-                JSON.stringify({ t: 'tv', id: 201, ita: true }),
-                JSON.stringify({ t: 'tv', id: 202, ita: null })
-            ].join('\n') + '\n', 'utf8');
-
-            process.env.DUCKDB_PATH = ':memory:';
-            store = new (duckDbStore.constructor)({
-                basePath: tempDir,
-                dbPath: ':memory:'
-            });
-            await store.init();
-
-            // Creiamo tabelle senza la colonna ita per verificare l'ALTER TABLE idempotente
-            await execSql(store.con, `
-                DROP TABLE IF EXISTS movies;
-                DROP TABLE IF EXISTS tv;
-                CREATE TABLE movies (id BIGINT, title VARCHAR);
-                INSERT INTO movies VALUES
-                    (101, 'Movie 101'),
-                    (102, 'Movie 102'),
-                    (103, 'Movie 103 Senza Annotazione');
-                CREATE TABLE tv (id BIGINT, name VARCHAR);
-                INSERT INTO tv VALUES
-                    (201, 'TV 201'),
-                    (202, 'TV 202'),
-                    (203, 'TV 203 Senza Annotazione');
-            `);
-            store._lastItaMtimeMs = null;
+        beforeEach(() => {
+            store = new duckDbStore.DuckDbStore({ basePath: moduleTempDir, dbPath: ':memory:' });
         });
 
-        afterEach(async () => {
-            delete process.env.ITA_ANNOTATIONS_PATH;
-            if (store) await store.close();
-            try {
-                fs.rmSync(tempDir, { recursive: true, force: true });
-            } catch (_) {}
+        test('aggiunge la colonna ita a una tabella che non ce l ha', async () => {
+            store.con = { /* connessione finta: usiamo _exec vero su un DuckDB in memoria */ };
+            const duckdb = require('duckdb');
+            const db = new duckdb.Database(':memory:');
+            store.con = db.connect();
+            store.activeQueries = 0;
+            store._zeroActiveQueriesWaiters = [];
+            await new Promise((res, rej) => store.con.exec('CREATE TABLE movies (id BIGINT, title VARCHAR); CREATE TABLE tv (id BIGINT, name VARCHAR);', (e) => (e ? rej(e) : res())));
+            const esito = await store.ensureItaColumn();
+            expect(esito.ok).toBe(true);
+            const colonne = await new Promise((res, rej) => store.con.all("SELECT column_name FROM (DESCRIBE movies)", (e, r) => (e ? rej(e) : res(r))));
+            expect(colonne.map((c) => c.column_name)).toContain('ita');
         });
 
-        test('aggiunge la colonna ita se assente e allinea i tre stati su movies e tv', async () => {
-            const res = await store.syncItaAnnotationsLive({ annotationsPath: annotationsFile });
-            expect(res.synced).toBe(true);
-            expect(typeof res.durationMs).toBe('number');
-
-            const movies = await queryAll(store.con, 'SELECT id, ita FROM movies ORDER BY id;');
-            expect(movies).toEqual([
-                { id: 101n, ita: true },
-                { id: 102n, ita: null },
-                { id: 103n, ita: false }
-            ]);
-
-            const tvs = await queryAll(store.con, 'SELECT id, ita FROM tv ORDER BY id;');
-            expect(tvs).toEqual([
-                { id: 201n, ita: true },
-                { id: 202n, ita: null },
-                { id: 203n, ita: false }
-            ]);
+        test('non tocca i valori gia presenti nella colonna', async () => {
+            const duckdb = require('duckdb');
+            const db = new duckdb.Database(':memory:');
+            store.con = db.connect();
+            store.activeQueries = 0;
+            store._zeroActiveQueriesWaiters = [];
+            await new Promise((res, rej) => store.con.exec("CREATE TABLE movies (id BIGINT, ita BOOLEAN); INSERT INTO movies VALUES (1, true), (2, false); CREATE TABLE tv (id BIGINT, ita BOOLEAN);", (e) => (e ? rej(e) : res())));
+            await store.ensureItaColumn();
+            const righe = await new Promise((res, rej) => store.con.all('SELECT id, ita FROM movies ORDER BY id', (e, r) => (e ? rej(e) : res(r))));
+            expect(righe.map((r) => r.ita)).toEqual([true, false]);
         });
 
-        test('seconda chiamata con mtime invariato ritorna already_fresh senza ri-eseguire UPDATE', async () => {
-            const first = await store.syncItaAnnotationsLive({ annotationsPath: annotationsFile });
-            expect(first.synced).toBe(true);
-
-            const second = await store.syncItaAnnotationsLive({ annotationsPath: annotationsFile });
-            expect(second).toEqual({ synced: false, reason: 'already_fresh' });
-
-            // Con force: true ri-esegue anche con stesso mtime
-            const third = await store.syncItaAnnotationsLive({ annotationsPath: annotationsFile, force: true });
-            expect(third.synced).toBe(true);
+        test('senza connessione non lancia', async () => {
+            store.con = null;
+            await expect(store.ensureItaColumn()).resolves.toEqual({ ok: false, reason: 'no_connection' });
         });
-
-        test('file assente: no-op, nessun throw, ritorna missing_file', async () => {
-            const missingPath = path.join(tempDir, 'non_existent_annotations.jsonl');
-            const res = await store.syncItaAnnotationsLive({ annotationsPath: missingPath });
-            expect(res).toEqual({ synced: false, reason: 'missing_file' });
-        });
-    });
-
-    describe('3. Test di swap atomico con CHECKPOINT: prevenzione corruzione da WAL stantio', () => {
-        let tempDir;
-        let dbFile;
-        let stagingPath;
-        let annotationsFile;
-        let store;
-
-        beforeEach(async () => {
-            tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaca-swap-test-'));
-            dbFile = path.join(tempDir, 'catalog.duckdb');
-            stagingPath = path.join(tempDir, 'catalog.duckdb.staging');
-            annotationsFile = path.join(tempDir, 'ita_annotations.jsonl');
-
-            fs.writeFileSync(annotationsFile, [
-                JSON.stringify({ t: 'movie', id: 1, ita: true }),
-                JSON.stringify({ t: 'movie', id: 2, ita: null }),
-                JSON.stringify({ t: 'tv', id: 10, ita: true })
-            ].join('\n') + '\n', 'utf8');
-
-            process.env.TMDB_DUMP_DIR = tempDir;
-            process.env.DUCKDB_PATH = dbFile;
-            process.env.DUCKDB_STAGING_PATH = stagingPath;
-            process.env.ITA_ANNOTATIONS_PATH = annotationsFile;
-        });
-
-        afterEach(async () => {
-            delete process.env.TMDB_DUMP_DIR;
-            delete process.env.DUCKDB_PATH;
-            delete process.env.DUCKDB_STAGING_PATH;
-            delete process.env.ITA_ANNOTATIONS_PATH;
-            if (store) await store.close();
-            try {
-                fs.rmSync(tempDir, { recursive: true, force: true });
-            } catch (_) {}
-        });
-
-        test('UPDATE + CHECKPOINT consuma il WAL su file; lo swap del file DB riapre senza replay stantio e il sync ripristina i valori', async () => {
-            const walFile = `${dbFile}.wal`;
-
-            // Guard obbligatorio (punto 3): fallisce rumorosamente se il DB risolto non è dentro tempDir
-            const dbPath = dbFile;
-            const tmpDir = tempDir;
-            expect(dbPath.startsWith(tmpDir)).toBe(true);
-
-            // 1. Creazione iniziale del database su file da parte dello store
-            store = new (duckDbStore.constructor)({
-                basePath: tempDir,
-                dbPath: dbFile,
-                stagingDbPath: stagingPath
-            });
-            expect(store.dbPath.startsWith(tempDir)).toBe(true);
-            expect(store.targetDbPath.startsWith(tempDir)).toBe(true);
-            expect(store.stagingDbPath.startsWith(tempDir)).toBe(true);
-            expect(store.moviesParquetPath.startsWith(tempDir)).toBe(true);
-            expect(store.tvParquetPath.startsWith(tempDir)).toBe(true);
-
-            await store.init();
-
-            // Popola tabelle di base con schema TMDB e anime_mappings
-            await execSql(store.con, `
-                DROP TABLE IF EXISTS movies;
-                DROP TABLE IF EXISTS tv;
-                DROP TABLE IF EXISTS anime_mappings;
-                CREATE TABLE movies (id BIGINT, title VARCHAR, ita BOOLEAN);
-                INSERT INTO movies VALUES
-                    (1, 'Vecchio Movie 1', false),
-                    (2, 'Vecchio Movie 2', false),
-                    (3, 'Vecchio Movie 3', false);
-                CREATE TABLE tv (id BIGINT, name VARCHAR, ita BOOLEAN);
-                INSERT INTO tv VALUES
-                    (10, 'Vecchia TV 10', false),
-                    (20, 'Vecchia TV 20', false);
-                CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));
-                CHECKPOINT;
-            `);
-
-            // 2. Esegui live sync (ALTER + UPDATE + CHECKPOINT)
-            const syncRes = await store.syncItaAnnotationsLive({ annotationsPath: annotationsFile, force: true });
-            expect(syncRes.synced).toBe(true);
-
-            // Verifica che i valori siano aggiornati
-            const beforeSwap = await queryAll(store.con, 'SELECT id, ita FROM movies ORDER BY id;');
-            expect(beforeSwap).toEqual([
-                { id: 1n, ita: true },
-                { id: 2n, ita: null },
-                { id: 3n, ita: false }
-            ]);
-
-            // MANDATORY CHECKPOINT VERIFICATION:
-            // Grazie a CHECKPOINT;, il file WAL non deve esistere su disco (o essere 0 byte)
-            const walExists = fs.existsSync(walFile);
-            if (walExists) {
-                const walSize = fs.statSync(walFile).size;
-                expect(walSize).toBe(0);
-            } else {
-                expect(walExists).toBe(false);
-            }
-
-            // 3. Simula il daemon tmdb che costruisce un NUOVO database su stagingPath e fa rename
-            const stagingDb = new duckdb.Database(stagingPath);
-            const stagingCon = stagingDb.connect();
-
-            await execSql(stagingCon, `
-                CREATE TABLE movies (id BIGINT, title VARCHAR, ita BOOLEAN);
-                INSERT INTO movies VALUES
-                    (1, 'Nuovo TMDB Movie 1', false),
-                    (2, 'Nuovo TMDB Movie 2', false),
-                    (3, 'Nuovo TMDB Movie 3', false),
-                    (4, 'Nuovissimo Movie 4', false);
-                CREATE TABLE tv (id BIGINT, name VARCHAR, ita BOOLEAN);
-                INSERT INTO tv VALUES
-                    (10, 'Nuova TMDB TV 10', false),
-                    (20, 'Nuova TMDB TV 20', false);
-                CREATE TABLE anime_mappings (tmdb_id BIGINT, tipo VARCHAR, PRIMARY KEY (tmdb_id, tipo));
-                CHECKPOINT;
-            `);
-
-            await new Promise((resolve) => stagingCon.close(() => stagingDb.close(resolve)));
-
-            // 4. Chiudi la connessione corrente prima di simulare lo swap (gestione lock Windows)
-            await store.close();
-
-            // Assicurati ancora che non ci sia WAL stantio dal DB vecchio
-            expect(fs.existsSync(walFile) ? fs.statSync(walFile).size === 0 : true).toBe(true);
-            if (fs.existsSync(walFile)) {
-                fs.unlinkSync(walFile);
-            }
-
-            // Simula lo swap atomico del daemon (rename sopra dbFile con retry su Windows)
-            let swapped = false;
-            for (let i = 0; i < 20; i++) {
-                try {
-                    try { fs.unlinkSync(dbFile); } catch (_) {}
-                    fs.renameSync(stagingPath, dbFile);
-                    swapped = true;
-                    break;
-                } catch (_) {
-                    await new Promise(r => setTimeout(r, 100));
-                }
-            }
-            expect(swapped).toBe(true);
-
-            // 5. Riapri lo store sul nuovo database scambiato
-            store = new (duckDbStore.constructor)({
-                basePath: tempDir,
-                dbPath: dbFile,
-                stagingDbPath: stagingPath
-            });
-            expect(store.dbPath.startsWith(tempDir)).toBe(true);
-            await store.init();
-
-            // Verifica che il database aperto sia quello NUOVO (movie 4 presente)
-            const freshRows = await queryAll(store.con, 'SELECT id, title, ita FROM movies ORDER BY id;');
-            expect(freshRows.length).toBe(4);
-            expect(freshRows[3].title).toBe('Nuovissimo Movie 4');
-
-            // 6. Il sync live riallinea i valori sul nuovo file senza errori Binder o conflitti WAL
-            const afterSyncRows = await queryAll(store.con, 'SELECT id, ita FROM movies ORDER BY id;');
-            expect(afterSyncRows).toEqual([
-                { id: 1n, ita: true },
-                { id: 2n, ita: null },
-                { id: 3n, ita: false },
-                { id: 4n, ita: false }
-            ]);
-
-            // Verifica che non sia rimasto alcun file .wal non checkpointato
-            if (fs.existsSync(walFile)) {
-                expect(fs.statSync(walFile).size).toBe(0);
-            }
-        });
-    });
-
-    afterAll(() => {
-        delete process.env.TMDB_DUMP_DIR;
-        delete process.env.DUCKDB_PATH;
-        try {
-            fs.rmSync(moduleTempDir, { recursive: true, force: true });
-        } catch (_) {}
     });
 });

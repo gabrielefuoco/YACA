@@ -15,6 +15,7 @@
  */
 
 const fs = require('fs');
+const { scriviAtomico } = require('../infra/atomicWrite');
 const path = require('path');
 const { BADGE_IMG_VERSION } = require('../stremio/formatters/posterBadgeVersion');
 
@@ -48,10 +49,7 @@ async function scriviVersioniVolume(dir, { produttore = 'erdb-builder' } = {}) {
         throw new Error('scriviVersioniVolume: percorso dir non specificato');
     }
 
-    await fs.promises.mkdir(dir, { recursive: true });
-
     const targetFile = path.join(dir, VERSIONI_FILE_NAME);
-    const tmpFile = `${targetFile}.tmp_${Date.now()}_${process.pid}`;
 
     const contenuto = {
         contratto: CONTRATTO_VERSION,
@@ -64,8 +62,7 @@ async function scriviVersioniVolume(dir, { produttore = 'erdb-builder' } = {}) {
         aggiornatoIl: new Date().toISOString()
     };
 
-    await fs.promises.writeFile(tmpFile, `${JSON.stringify(contenuto, null, 2)}\n`, 'utf8');
-    await fs.promises.rename(tmpFile, targetFile);
+    await scriviAtomico(targetFile, `${JSON.stringify(contenuto, null, 2)}\n`);
 
     return contenuto;
 }

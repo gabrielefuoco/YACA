@@ -30,6 +30,7 @@
  */
 
 const fs = require('fs');
+const { scriviAtomicoSync } = require('../../../src/infra/atomicWrite');
 const path = require('path');
 const readline = require('readline');
 
@@ -387,10 +388,7 @@ async function writeDiff(esito = {}, opts = {}) {
         artefatto.nonPiuDoppiati = nonPiuDoppiati;
     }
 
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    const tmpPath = `${target}.tmp`;
-    fs.writeFileSync(tmpPath, `${JSON.stringify(artefatto, null, 1)}\n`, 'utf8');
-    fs.renameSync(tmpPath, target); // atomica
+    scriviAtomicoSync(target, `${JSON.stringify(artefatto, null, 1)}\n`);
 
     if (!opts.quiet) {
         if (esito.primoGiro) {
