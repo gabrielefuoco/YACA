@@ -85,7 +85,7 @@ const createTmdbClient = (apiKey) => {
     return client;
 };
 
-const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 500, ramTtlMs: 1000 * 60 * 60, mongoTtlMs: 1000 * 60 * 60 });
+const idNameCache = new CacheManager('tmdb_id_name', { ramMax: 500, ramTtlMs: 1000 * 60 * 60, redisTtlMs: 1000 * 60 * 60 });
 const imdbIdCache = new CacheManager('tmdb_imdb_id', { ramMax: 500, ramTtlMs: 1000 * 60 * 60 * 24 * 7, mongoTtlMs: 1000 * 60 * 60 * 24 * 7 });
 const movieMetaCache = new CacheManager('tmdb_movie_meta', { ramMax: 500, ramTtlMs: MOVIE_META_CACHE_TTL_MS, mongoTtlMs: MOVIE_META_CACHE_TTL_MS, swrMs: MOVIE_META_SWR_MS });
 const seriesMetaCache = new CacheManager('tmdb_series_meta', { ramMax: 500, ramTtlMs: SERIES_META_CACHE_TTL_MS, mongoTtlMs: SERIES_META_CACHE_TTL_MS, swrMs: SERIES_META_SWR_MS });
@@ -506,11 +506,6 @@ async function fetchTmdbEpisodes(client, tmdbId, totalSeasons, imdbId, originalL
 
         return videos;
     };
-
-    if (status === 'stale') {
-        fetchAllSeasonEpisodes().catch(e => console.error('[SWR] Episode revalidation error:', e.message));
-        return cached;
-    }
 
     try {
         return await fetchAllSeasonEpisodes();

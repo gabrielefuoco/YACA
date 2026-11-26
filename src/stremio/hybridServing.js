@@ -118,10 +118,6 @@ async function serveHybridCatalog(catalogId, skip, traktToken, tmdbApiKey, userI
         if (cacheStatus !== 'miss' && Array.isArray(cachedEntry?.ids)) {
             recommendationIds = cachedEntry.ids;
             console.log(`[Hybrid Debug] returning ${recommendationIds.length} IDs from cache`);
-            if (cacheStatus === 'stale') {
-                console.log(`[Hybrid-SWR] Revalidando catalogo ${catalogId} in background...`);
-                buildRecommendIds().catch(e => console.error('[Hybrid-SWR] Error:', e.message));
-            }
         }
 
         if (!recommendationIds) {

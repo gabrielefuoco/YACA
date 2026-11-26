@@ -2,7 +2,7 @@ const { getPresets } = require('../src/catalog/presets');
 const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { sanitizeCatalogMeta } = require('../src/stremio/formatters/StremioFormatter');
-const { aiPromptCache, catalogRequestCache, catalogFallbackCache, simulcastDatesCache } = require('../src/cache/cacheInstances');
+const { aiPromptCache, catalogRequestCache } = require('../src/cache/cacheInstances');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const CacheManager = require('../src/cache/CacheManager');
 
@@ -63,9 +63,7 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
 
     test('Cache RAM tuning: ramMax limits calibrated for container environment', () => {
         expect(aiPromptCache.lruFallback.max).toBe(50);
-        expect(catalogFallbackCache.lruFallback.max).toBe(100);
         expect(catalogRequestCache.lruFallback.max).toBe(0);
-        expect(simulcastDatesCache.lruFallback.max).toBe(100);
 
         const defaultManager = new CacheManager('test_default');
         expect(defaultManager.lruFallback.max).toBe(200);

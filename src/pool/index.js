@@ -733,12 +733,8 @@ async function buildAndCacheSharedHeroCatalogs(args, keyOrDesc) {
 
 async function getSharedHeroCatalogs(args, keyOrDesc) {
     const heroDesc = toHeroDesc(args, keyOrDesc);
-    const { value, status } = await cache.leggi(heroDesc);
+    const { value } = await cache.leggi(heroDesc);
     if (isSharedHeroCacheEntry(value, args.mediaType)) {
-        if (status === 'stale') {
-            buildAndCacheSharedHeroCatalogs(args, heroDesc)
-                .catch(error => console.error('[Hero-SWR] Error:', error?.message || error));
-        }
         return value;
     }
     // Una voce presente ma non valida (schema vecchio, o catalogs incompleti) si rigenera: e' uno
