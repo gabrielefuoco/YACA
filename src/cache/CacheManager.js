@@ -3,6 +3,28 @@ const redisClient = require('./redisClient');
 
 const NEGATIVE_CACHE_MARKER = '__NULL__';
 
+/**
+ * Quanto vive in cache una risposta VUOTA.
+ *
+ * Un catalogo vuoto è quasi sempre uno stato transitorio (fonte esterna giù, DuckDB non ancora
+ * caldo, filtro che non trova nulla in questo istante): tenerlo per il TTL normale significa
+ * congelare un guasto. Un minuto basta per non martellare la fonte e per far guarire la cache da
+ * sola appena i dati tornano.
+ */
+const EMPTY_PAYLOAD_TTL_MS = 60 * 1000;
+
+/**
+ * Vero se il payload è "vuoto" nelle forme che la cache maneggia davvero: liste di catalogo
+ * (`metas`), scaffali della home (`scaffali`), o un array nudo.
+ */
+function ePayloadVuoto(value) {
+    if (Array.isArray(value)) return value.length === 0;
+    if (!value || typeof value !== 'object') return false;
+    if (Array.isArray(value.metas)) return value.metas.length === 0;
+    if (Array.isArray(value.scaffali)) return value.scaffali.length === 0;
+    return false;
+}
+
 class CacheManager {
     static instances = [];
 
@@ -127,14 +149,17 @@ class CacheManager {
         const fetchPromise = (async () => {
             try {
                 const fresh = await fetchFn();
-                // `skipIf` esiste per un caso solo: un risultato *vuoto* che è uno stato legittimo
-                // ma transitorio (es. catalogo alimentato da una fonte esterna che in quel momento
-                // non ha nulla). Memorizzarlo lo congela per tutto il TTL, e se ogni richiesta lo
-                // riscrive la cache resta avvelenata anche dopo che la fonte è tornata: è successo
-                // davvero, con il catalogo Simulcast fermo per giorni su una risposta vuota.
-                const daScartare = typeof options.skipIf === 'function' && options.skipIf(fresh);
-                if (fresh !== undefined && !daScartare) {
-                    await this.set(key, fresh, ttlMs || this.redisTtlMs, options);
+                if (fresh !== undefined) {
+                    // Un risultato VUOTO non è una verità: è quasi sempre un guasto transitorio
+                    // (DuckDB non ancora caldo, fonte esterna a zero, token scaduto). Memorizzarlo
+                    // col TTL normale lo congela — e siccome ogni richiesta lo riscrive, la cache
+                    // resta vuota anche dopo il ritorno dei dati: è successo davvero, con 19 cataloghi
+                    // vuoti in cache fino a 14 giorni. Vuoto = TTL corto, non zero: la fonte si
+                    // ritenta, ma non a ogni singola richiesta.
+                    const ttlDaUsare = ePayloadVuoto(fresh)
+                        ? Math.min(ttlMs || this.redisTtlMs, EMPTY_PAYLOAD_TTL_MS)
+                        : (ttlMs || this.redisTtlMs);
+                    await this.set(key, fresh, ttlDaUsare, options);
                 }
                 return fresh;
             } catch (err) {

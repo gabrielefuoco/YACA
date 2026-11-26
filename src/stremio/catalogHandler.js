@@ -296,14 +296,6 @@ async function catalogHandler(args, userConfig, hostUrl) {
     });
 
     const requestStartedAt = Date.now();
-
-    // Un catalogo alimentato da una fonte esterna può essere vuoto per un guasto transitorio: quella
-    // risposta non si memorizza, altrimenti la cache resta vuota anche dopo che la fonte è tornata.
-    // Solo per lo stato airing: gli altri cataloghi un vuoto ce l'hanno per costruzione (filtri
-    // dell'utente) e lì memorizzarlo è corretto.
-    const opzioniCacheAiring = isAiringStateCatalogId
-        ? { skipIf: (v) => !Array.isArray(v?.metas) || v.metas.length === 0 }
-        : {};
     // Se il grafo non ha risposto, la chiave di una riga hero sarebbe SENZA le sue versioni:
     // usarla — in lettura o in scrittura — riapre il baco del ticket 55, cioè una riga vecchia
     // servita per 14 giorni sotto una chiave che non sa distinguere le ricette. Un guasto
@@ -316,9 +308,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
     } else if (versioniGrafoIgnote) {
         responseData = await fetchCatalog();
     } else if (extra?.warmupMode) {
-        responseData = await cache.leggi(catalogDesc, fetchCatalog, opzioniCacheAiring);
+        responseData = await cache.leggi(catalogDesc, fetchCatalog);
     } else {
-        responseData = await cache.leggi(catalogDesc, fetchCatalog, opzioniCacheAiring);
+        responseData = await cache.leggi(catalogDesc, fetchCatalog);
     }
 
     if (builds === 0 && !versioniGrafoIgnote) {
