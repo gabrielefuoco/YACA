@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P5 (ultima onda: solo dopo che i fix funzionali sono in produzione)
 Blocked by: 07 (il taglio 6 è lo stesso lavoro del ticket 07)

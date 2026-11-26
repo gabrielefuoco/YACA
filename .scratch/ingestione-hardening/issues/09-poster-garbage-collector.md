@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P4 (quinta onda)
 Blocked by: 00 (punto 1: baseline del volume)

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: research
 Priorità: P1 (la pipeline anime è ferma: nessun dato nuovo dal 16 novembre)
 Blocked by: nessuno (ma richiede una decisione di prodotto: riscrittura, fonte alternativa, o feature congelata)

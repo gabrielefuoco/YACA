@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P1 (prima onda: ferma le cancellazioni spurie)
 Blocked by: 00 (punto 2: estrazione `buildMovieRow`/`buildTvRow`)

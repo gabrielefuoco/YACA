@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P4 (quinta onda)
 Blocked by: nessuno (usa API già esistenti; adattare al loro vero shape)

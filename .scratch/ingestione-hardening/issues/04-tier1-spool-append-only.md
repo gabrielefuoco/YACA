@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P1 (seconda onda)
 Blocked by: nessuno

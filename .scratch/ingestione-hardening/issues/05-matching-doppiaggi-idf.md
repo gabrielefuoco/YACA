@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P2 (quarta onda: cambia quanti badge ITA compaiono)
 Blocked by: 00 (baseline dei motivi di match)

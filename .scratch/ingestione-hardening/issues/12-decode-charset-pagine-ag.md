@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P0 (hotfix: la freschezza del ticket 01 ha esposto un bug che costa badge veri)
 Blocked by: nessuno

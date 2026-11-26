@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P2 (quarta onda: cambia il contenuto del catalogo)
 Blocked by: 02 (stessi file), 00 (baseline dei volumi)

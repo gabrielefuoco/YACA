@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P4 (quinta onda)
 Blocked by: nessuno (ma sequenziare con 09: la nuova versione crea orfani che il GC pulisce)

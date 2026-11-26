@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P3 (terza onda)
 Blocked by: 00 (solo per il comando del prefill, punto 7)

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: task
 Priorità: P3 (terza onda)
 Blocked by: nessuno (il test di swap è dentro il ticket)

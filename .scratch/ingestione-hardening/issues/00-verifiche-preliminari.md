@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Type: research
 Priorità: P0 (blocca 07, 10 e la taratura di 01/05/09)
 
