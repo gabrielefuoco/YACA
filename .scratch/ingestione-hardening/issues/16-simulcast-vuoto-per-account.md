@@ -1,4 +1,4 @@
-Status: needs-info
+Status: resolved
 Type: research
 Priorità: P1 (il catalogo anime più visibile dell'addon è vuoto per l'account principale)
 Blocked by: nessuno
@@ -74,3 +74,28 @@ deve applicarsi ai cataloghi con `_provider === 'airing_state'` (la fonte *è* a
 
 Nelle nove giornate di pipeline morta il catalogo era vuoto **per tutti**: nessuno poteva distinguere
 "fonte vuota" da "percorso rotto". La riparazione della fonte ha reso visibile questo secondo difetto.
+
+
+---
+
+## Causa trovata e fix (2026-11-26)
+
+Strumentando la produzione (patch del solo  dentro il container, senza build) la risposta è
+diventata chiara: **con l'id corto il percorso è identico a quello lungo** — ,
+, provider 20 item,  vero per 19, . Nessun bug di
+dispatch, nessun filtro che svuota.
+
+Il problema era **la cache**: una risposta vuota (dei giorni in cui la fonte era morta) era stata memorizzata
+e **riscritta a ogni richiesta**, quindi restava vuota per sempre anche dopo il ritorno dei dati. Il TTL di
+20 minuti non aiutava perché veniva continuamente rinfrescato dall'uso.
+
+**Fix** ():  accetta un  opzionale;  lo passa
+**solo** per i cataloghi con provider  e scarta il salvataggio quando  è vuoto. Un
+catalogo esterno vuoto è uno stato transitorio, non una verità da congelare. Gli altri cataloghi non
+cambiano comportamento (un vuoto lì è una scelta dell'utente e va memorizzata).
+
+Test:  (3 casi: vuoto non memorizzato e ricostruito, pieno memorizzato,
+senza  comportamento invariato). Suite completa: **200 suite / 1988 test**.
+
+Verifica in produzione (account reale ):  → **34.214 byte, 20 item**;
+ 21.858 byte;  22.796 byte;  13.512 byte.
