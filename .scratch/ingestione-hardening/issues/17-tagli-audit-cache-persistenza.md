@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 Type: task
 Priorità: P3 (igiene, non urgenza: nessun dato sbagliato in giro)
 Blocked by: nessuno
