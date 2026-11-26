@@ -11,26 +11,20 @@ module.exports = {
     DEFAULT_REGION: 'IT',
     DEFAULT_LANGUAGE: 'it-IT',
 
-    // ─── Catalog Page Cache (L1 RAM + L2 MongoDB) ───
-    // Fast catalogs (New Releases, Anime Trending)
-    FAST_CATALOG_PAGE1_L2_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 days
-    // Slow catalogs (Top Rated, Oscar, Decades)
-    SLOW_CATALOG_L2_TTL_MS: 14 * 24 * 60 * 60 * 1000,       // 14 days
-
-    // Legacy aliases (kept for backward compat)
+    // ─── Cache dei cataloghi (L1 RAM + L2 Redis) ───
+    // Un solo TTL di partenza; le finestre più strette (watchlist, daily window, simulcast) le
+    // applica `catalogHandler` con un `Math.min`.
     CACHE_TTL_MS: 14 * 24 * 60 * 60 * 1000, // 14 giorni (default)
 
     // ─── Metadata Cache (single items) ───
     // Movies (completed)
     MOVIE_META_CACHE_TTL_MS: 14 * 24 * 60 * 60 * 1000,     // 14 days L2
-    MOVIE_META_SWR_MS: 7 * 24 * 60 * 60 * 1000,             // 7 days SWR
     // Series (ongoing / anime)
     SERIES_META_CACHE_TTL_MS: 6 * 60 * 60 * 1000,           // 6 hours L2
-    SERIES_META_SWR_MS: 30 * 60 * 1000,                     // 30 min SWR
+    SERIES_META_SWR_MS: 30 * 60 * 1000,                     // dichiarato in tmdbBudget, non applicato
 
     // Cache Hybrid Recommendations
     RECOMMENDATIONS_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000,  // 7 giorni
-    RECOMMENDATIONS_SWR_MS: 60 * 60 * 1000,                 // 1 ora SWR
 
     // Rating Configuration
     // Bayesian Weighted Rating parameters (IMDb formula)

@@ -12,7 +12,7 @@
 
 const { createTmdbClient } = require('../clients/tmdb');
 const cache = require('../cache');
-const { getCacheConfig } = require('../cache/CacheManager');
+const { CACHE_TTL_MS } = require('../config');
 const { getPresets } = require('../catalog/presets');
 const { EPISODE_CATALOG_IDS } = require('./constants');
 
@@ -72,7 +72,9 @@ async function catalogHandler(args, userConfig, hostUrl) {
         throw new Error("Manca la TMDB API KEY nella configurazione.");
     }
     const tmdbClient = createTmdbClient(tmdbApiKey);
-    const { cacheOptions: tmdbFetchOptions } = getCacheConfig(userConfig.ttl);
+    // Il tier "fast/slow" non esisteva: `userConfig.ttl` non è mai impostato e `catalogTier` non
+    // era letto da nessuno. Un solo TTL di partenza, poi le finestre strette sotto.
+    const tmdbFetchOptions = {};
 
     let baseId = id;
     if (id && id.startsWith('yaca_preset_')) {
@@ -127,8 +129,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
         graphVersions
     });
 
-    // managed SWR: Fetch or Revalidate
-    const { ttl } = getCacheConfig(userConfig.ttl);
+    const ttl = CACHE_TTL_MS;
 
     let builds = 0;
 
@@ -288,12 +289,17 @@ async function catalogHandler(args, userConfig, hostUrl) {
     const isDailyWindow = isDailyWindowCatalog(id);
     const isAiringStateCatalogId = isAiringStateCatalog(baseId, catalogMeta);
 
-    catalogDesc.ttl = cache.resolveCatalogTtl({
-        baseTtl: ttl,
-        isWatchlist: isWatchlistCatalog,
-        isDailyWindow,
-        isAiringState: isAiringStateCatalogId
-    });
+    // Un solo posto decide il TTL effettivo. Le finestre strette non sono un dettaglio di cache:
+    // un catalogo che si muove (watchlist) o che cambia ogni giorno (daily window, simulcast) non
+    // deve restare fermo 14 giorni come i cataloghi stabili.
+    const TTL_WATCHLIST = 2 * 60 * 1000;          // la libreria dell'utente si muove a ogni visione
+    const TTL_DAILY_WINDOW = 36 * 60 * 60 * 1000; // "novità": cambia ogni giorno
+    const TTL_SIMULCAST = 20 * 60 * 1000;         // episodi: la fonte si aggiorna ogni 15 minuti
+    let ttlEffettivo = ttl;
+    if (isWatchlistCatalog) ttlEffettivo = Math.min(ttlEffettivo, TTL_WATCHLIST);
+    if (isDailyWindow) ttlEffettivo = Math.min(ttlEffettivo, TTL_DAILY_WINDOW);
+    if (isAiringStateCatalogId) ttlEffettivo = Math.min(ttlEffettivo, TTL_SIMULCAST);
+    catalogDesc.ttl = ttlEffettivo;
 
     const requestStartedAt = Date.now();
     // Se il grafo non ha risposto, la chiave di una riga hero sarebbe SENZA le sue versioni:

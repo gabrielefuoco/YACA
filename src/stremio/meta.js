@@ -12,7 +12,6 @@
 
 const { getTmdbMetaDetails, fetchTmdbEpisodes, createTmdbClient, resolveImdbId } = require('../clients/tmdb');
 const { translateImdbToTmdb } = require('../clients');
-const CacheManager = require('../cache/CacheManager');
 const cache = require('../cache');
 const {
     animeMappingStore,
@@ -24,8 +23,6 @@ const { schedulePromotion } = require('../indice');
 const indice = require('../indice');
 const itaAnnotations = require('../catalog/itaAnnotations');
 
-// Cache per l'oggetto meta finale combinato
-const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
 
 // --- Monitoraggio e Statistiche Kitsu Mapping (bounded in RAM) ---
 const MAX_TRACKED_KEYS = 200; // Tetto massimo chiavi in memoria per il container (1536MB)
@@ -392,64 +389,37 @@ async function metaHandler(args, userConfig) {
                     ttl: type === 'movie' ? (14 * 24 * 60 * 60 * 1000) : (6 * 60 * 60 * 1000)
                 };
 
-                const cached = await cache.leggi(metaDesc, null, { instance: finalMetaCache });
+                const cached = await cache.leggi(metaDesc, null);
                 const cacheStatus = cached.status;
                 const cachedMeta = cached.value;
 
                 if (cacheStatus === 'fresh') {
                     meta = cachedMeta;
                 } else {
-                    if (cacheStatus === 'stale' && cachedMeta) {
-                        meta = cachedMeta;
-                        (async () => {
-                            try {
-                                const bgMeta = await indice.getMetaDetails(tmdbId, type);
-                                
-                                let finalBgMeta = bgMeta;
-                                if (!finalBgMeta) {
-                                    finalBgMeta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
-                                }
+                    meta = await indice.getMetaDetails(tmdbId, type);
 
-                                if (finalBgMeta) {
-                                    if (type === 'series') {
-                                        await resolveAnimeEpisodes(finalBgMeta, tmdbId, tmdbApiKey);
-                                    }
-                                    
-                                    await applyKitsuMappingToMeta(finalBgMeta, tmdbId);
+                    if (!meta) {
+                        meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
 
-                                    delete finalBgMeta._keywordNames;
-                                    delete finalBgMeta._numberOfSeasons;
-                                    delete finalBgMeta._originalLanguage;
-                                    await cache.scrivi(metaDesc, finalBgMeta, { instance: finalMetaCache });
-                                }
-                            } catch (_e) { /* silent background revalidation */ }
-                        })();
-                    } else {
-                        meta = await indice.getMetaDetails(tmdbId, type);
-                        
-                        if (!meta) {
-                             meta = await getTmdbMetaDetails(tmdbApiKey, tmdbId, type, {});
-
-                             if (meta) {
-                                 try {
-                                     schedulePromotion({ tmdbId, type, apiKey: tmdbApiKey });
-                                 } catch (_e) { /* promozione mai sul percorso di risposta */ }
-                             }
-                        }
-                        
                         if (meta) {
-                            if (type === 'series') {
-                                await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey);
-                            }
-
-                            await applyKitsuMappingToMeta(meta, tmdbId);
-
-                            delete meta._keywordNames;
-                            delete meta._numberOfSeasons;
-                            delete meta._originalLanguage;
-
-                            await cache.scrivi(metaDesc, meta, { instance: finalMetaCache });
+                            try {
+                                schedulePromotion({ tmdbId, type, apiKey: tmdbApiKey });
+                            } catch (_e) { /* promozione mai sul percorso di risposta */ }
                         }
+                    }
+
+                    if (meta) {
+                        if (type === 'series') {
+                            await resolveAnimeEpisodes(meta, tmdbId, tmdbApiKey);
+                        }
+
+                        await applyKitsuMappingToMeta(meta, tmdbId);
+
+                        delete meta._keywordNames;
+                        delete meta._numberOfSeasons;
+                        delete meta._originalLanguage;
+
+                        await cache.scrivi(metaDesc, meta);
                     }
                 }
             }

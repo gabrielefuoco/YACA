@@ -4,7 +4,7 @@ const cacheInstances = require('./cacheInstances');
 const redisClient = require('./redisClient');
 const { generateRequestHash } = require('./requestHash');
 
-const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000, swrMs: 600000 });
+const finalMetaCache = new CacheManager('final_meta_cache', { ramMax: 300, ramTtlMs: 3600000 });
 const defaultCache = new CacheManager('default_cache', { ramMax: 100, ramTtlMs: 300000 });
 
 function hashObject(obj) {
@@ -251,8 +251,8 @@ function deriva(descrizione) {
 /**
  * Legge una risorsa dalla cache a partire dalla sua descrizione.
  * 
- * Se viene fornito `costruttore`, in caso di miss o stale lo esegue per calcolare
- * il valore fresco e memorizzarlo (con gestione SWR in background).
+ * Se viene fornito `costruttore`, in caso di miss lo esegue per calcolare il valore fresco e
+ * memorizzarlo. Non c'è stale-while-revalidate: una voce scaduta è un miss.
  * Se `costruttore` non è una funzione, restituisce l'oggetto { value, status, chiave, ttl }.
  *
  * @param {object} descrizione
@@ -272,7 +272,7 @@ async function leggi(descrizione, costruttore, options = {}) {
     }
 
     // Se è fornito un costruttore, delega a getOrFetch dell'istanza
-    return instance.getOrFetch(chiave, costruttore, ttl, options);
+    return instance.getOrFetch(chiave, costruttore, ttl);
 }
 
 /**
@@ -289,7 +289,7 @@ async function scrivi(descrizione, valore, options = {}) {
     const chiave = derived.chiave;
     const ttl = options.ttl !== undefined ? options.ttl : derived.ttl;
 
-    await instance.set(chiave, valore, ttl, options);
+    await instance.set(chiave, valore, ttl);
     return { chiave, ttl };
 }
 
@@ -323,28 +323,12 @@ function buildRecommendationCacheKey({ userId, context, catalogId, kidsMode, typ
     return chiave;
 }
 
-const WATCHLIST_TTL_MS = 2 * 60 * 1000;
-const DAILY_WINDOW_TTL_MS = 36 * 60 * 60 * 1000;
-const SIMULCAST_TTL_MS = 20 * 60 * 1000;
-
-function resolveCatalogTtl({ baseTtl, isWatchlist, isDailyWindow, isAiringState } = {}) {
-    let effectiveTtl = typeof baseTtl === 'number' ? baseTtl : (14 * 24 * 60 * 60 * 1000);
-    if (isWatchlist) effectiveTtl = Math.min(effectiveTtl, WATCHLIST_TTL_MS);
-    if (isDailyWindow) effectiveTtl = Math.min(effectiveTtl, DAILY_WINDOW_TTL_MS);
-    if (isAiringState) effectiveTtl = Math.min(effectiveTtl, SIMULCAST_TTL_MS);
-    return effectiveTtl;
-}
-
 module.exports = {
     leggi,
     scrivi,
     cancella,
-    invalida: cancella,
     deriva,
     buildRecommendationCacheKey,
-    DAILY_WINDOW_TTL_MS,
-    SIMULCAST_TTL_MS,
-    resolveCatalogTtl,
     finalMetaCache,
     CacheManager,
     cacheInstances,

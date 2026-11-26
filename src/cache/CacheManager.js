@@ -34,18 +34,19 @@ class CacheManager {
      * @param {number} opts.ramMax      - Max items in L1 cache
      * @param {number} opts.ramTtlMs    - L1 TTL in ms
      * @param {number} opts.redisTtlMs  - L2 TTL in ms (Redis expiration)
-     * @param {number} opts.swrMs       - Stale-While-Revalidate window in ms
-     * 
-     * Note: "mongoTtlMs" parameter is supported for backwards compatibility.
+     *
+     * Non c'è una finestra stale-while-revalidate: ogni voce ha un solo TTL, e scaduto quello
+     * si ricostruisce. Un `swrMs` esisteva ma non poteva mai attivarsi (la voce salvata porta
+     * sempre il suo `ttl`, quindi la lettura calcolava sempre zero): è stato rimosso invece di
+     * essere lasciato lì a far credere che il revalidate in background esista.
      */
-    constructor(namespace, { ramMax = 200, ramTtlMs = 300000, redisTtlMs, mongoTtlMs, swrMs = 0 } = {}) {
+    constructor(namespace, { ramMax = 200, ramTtlMs = 300000, redisTtlMs } = {}) {
         this.namespace = namespace;
         this.ramTtlMs = ramTtlMs;
-        this.redisTtlMs = redisTtlMs || mongoTtlMs || 86400000;
-        this.swrMs = swrMs;
+        this.redisTtlMs = redisTtlMs || 86400000;
 
         // L1: Fast in-memory buffer to absorb burst requests
-        this.lruFallback = new LRUCache({ max: ramMax, ttl: ramTtlMs + swrMs });
+        this.lruFallback = new LRUCache({ max: ramMax, ttl: ramTtlMs });
         
         // Prevents thundering herd on cache miss
         this.activePromises = new Map();
@@ -57,43 +58,17 @@ class CacheManager {
         return `${this.namespace}:${key}`;
     }
 
-    // ─── L1 helpers (Pure In-Memory LRU) ───
-
-    async _l1Get(key) {
-        return this.lruFallback.get(key);
-    }
-
-    async _l1Set(key, envelope, ttlMs) {
-        this.lruFallback.set(key, envelope);
-    }
-
-    async _l1Delete(key) {
-        this.lruFallback.delete(key);
-    }
-
-    async _l1Clear() {
-        this.lruFallback.clear();
-    }
-
-    async _l1Size() {
-        return this.lruFallback.size;
-    }
-
     // ─── Public API ───
 
     async getWithStatus(key) {
         // 1. Check L1
-        const envelope = await this._l1Get(key);
+        const envelope = this.lruFallback.get(key);
         if (envelope !== undefined && envelope !== null) {
             if (typeof envelope === 'object' && 't' in envelope && 'v' in envelope) {
                 const age = Date.now() - envelope.t;
                 const effectiveRamTtl = envelope.ttl || this.ramTtlMs;
                 if (age <= effectiveRamTtl) {
                     return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'fresh' };
-                }
-                const effectiveSwr = envelope.ttl ? 0 : this.swrMs;
-                if (effectiveSwr > 0 && age <= effectiveRamTtl + effectiveSwr) {
-                    return { value: envelope.v === NEGATIVE_CACHE_MARKER ? null : envelope.v, status: 'stale' };
                 }
             } else {
                 return { value: envelope === NEGATIVE_CACHE_MARKER ? null : envelope, status: 'fresh' };
@@ -112,11 +87,9 @@ class CacheManager {
                         
                         // Promote to L1
                         const effectiveTtl = parsed.ttl || this.ramTtlMs;
-                        const effectiveSwr = parsed.ttl ? 0 : this.swrMs;
-                        const l1Ttl = effectiveTtl + effectiveSwr;
-                        await this._l1Set(key, parsed, l1Ttl);
+                        this.lruFallback.set(key, parsed);
 
-                        const status = age <= effectiveTtl ? 'fresh' : (effectiveSwr > 0 && age <= effectiveTtl + effectiveSwr ? 'stale' : 'miss');
+                        const status = age <= effectiveTtl ? 'fresh' : 'miss';
                         const finalValue = parsed.v === NEGATIVE_CACHE_MARKER ? null : parsed.v;
                         return { value: finalValue, status };
                     }
@@ -134,7 +107,7 @@ class CacheManager {
         return value;
     }
 
-    async getOrFetch(key, fetchFn, ttlMs = null, options = {}) {
+    async getOrFetch(key, fetchFn, ttlMs = null) {
         const { value, status } = await this.getWithStatus(key);
         
         if (status === 'fresh') {
@@ -142,7 +115,6 @@ class CacheManager {
         }
 
         if (this.activePromises.has(key)) {
-            if (status === 'stale') return value;
             return this.activePromises.get(key);
         }
 
@@ -159,11 +131,11 @@ class CacheManager {
                     const ttlDaUsare = ePayloadVuoto(fresh)
                         ? Math.min(ttlMs || this.redisTtlMs, EMPTY_PAYLOAD_TTL_MS)
                         : (ttlMs || this.redisTtlMs);
-                    await this.set(key, fresh, ttlDaUsare, options);
+                    await this.set(key, fresh, ttlDaUsare);
                 }
                 return fresh;
             } catch (err) {
-                console.error(`[CacheManager:${this.namespace}] SWR revalidation failed for ${key}:`, err.message);
+                console.error(`[CacheManager:${this.namespace}] fetch failed for ${key}:`, err.message);
                 throw err;
             } finally {
                 this.activePromises.delete(key);
@@ -171,36 +143,25 @@ class CacheManager {
         })();
 
         this.activePromises.set(key, fetchPromise);
-
-        if (status === 'stale') {
-            // Prevent unhandled promise rejection for background SWR fetch
-            fetchPromise.catch(() => {});
-            return value;
-        }
         return fetchPromise;
     }
 
-    async set(key, value, ttlMs = null, options = { useRam: true }) {
+    async set(key, value, ttlMs = null) {
         if (!key) return;
 
         const effectiveTtl = ttlMs || this.redisTtlMs;
-        const effectiveSwr = ttlMs ? 0 : this.swrMs;
-        const useRam = options.useRam !== false;
         const storageValue = value === null ? NEGATIVE_CACHE_MARKER : value;
         const envelope = { v: storageValue, t: Date.now(), ttl: effectiveTtl };
 
         // 1. L1 (RAM)
-        if (useRam) {
-            const l1Ttl = effectiveTtl + effectiveSwr;
-            await this._l1Set(key, envelope, l1Ttl);
-        }
+        this.lruFallback.set(key, envelope);
 
         // 2. L2 (Redis)
         if (redisClient.isAvailable) {
             try {
                 const jitter = effectiveTtl * 0.05 * (Math.random() * 2 - 1);
                 const jitteredTtl = Math.max(0, effectiveTtl + jitter);
-                const expireMs = Math.round(jitteredTtl + effectiveSwr); // Keep alive during SWR
+                const expireMs = Math.round(jitteredTtl);
 
                 await redisClient.set(
                     this._getRedisKey(key),
@@ -215,7 +176,7 @@ class CacheManager {
     }
 
     async delete(key) {
-        await this._l1Delete(key);
+        this.lruFallback.delete(key);
         if (redisClient.isAvailable) {
             try {
                 await redisClient.del(this._getRedisKey(key));
@@ -226,7 +187,7 @@ class CacheManager {
     }
 
     async clear() {
-        await this._l1Clear();
+        this.lruFallback.clear();
         if (redisClient.isAvailable) {
             try {
                 const keys = await redisClient.keys(`${this.namespace}:*`);
@@ -254,7 +215,7 @@ class CacheManager {
 
         return {
             namespace: this.namespace,
-            l1Count: await this._l1Size(),
+            l1Count: this.lruFallback.size,
             l2Count
         };
     }
@@ -264,31 +225,4 @@ class CacheManager {
     }
 }
 
-function getCacheConfig(requestedTtl) {
-    const { 
-        FAST_CATALOG_PAGE1_L2_TTL_MS, 
-        SLOW_CATALOG_L2_TTL_MS, 
-        CACHE_TTL_MS 
-    } = require('../config');
-
-    if (requestedTtl === 'fast') {
-        return {
-            ttl: FAST_CATALOG_PAGE1_L2_TTL_MS,
-            cacheOptions: { catalogTier: 'fast' }
-        };
-    }
-    if (requestedTtl === 'slow') {
-        return {
-            ttl: SLOW_CATALOG_L2_TTL_MS,
-            cacheOptions: { catalogTier: 'slow' }
-        };
-    }
-    const ttl = typeof requestedTtl === 'number' ? requestedTtl : CACHE_TTL_MS;
-    return {
-        ttl,
-        cacheOptions: { cacheTtlMs: ttl }
-    };
-}
-
-CacheManager.getCacheConfig = getCacheConfig;
 module.exports = CacheManager;

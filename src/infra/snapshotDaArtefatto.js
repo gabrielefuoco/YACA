@@ -20,9 +20,7 @@
  * @param {any|Function} [config.vuoto] Snapshot vuoto da restituire come degrado iniziale o su errore
  * @returns {{
  *   getSnapshot: (options?: { force?: boolean }) => Promise<any>,
- *   reset: () => void,
- *   getCache: () => { snapshot: any, fetchedAt: number },
- *   setSnapshot: (snapshot: any) => void
+ *   reset: () => void
  * }}
  */
 function snapshotDaArtefatto({ leggi, ttlMs = 60000, suErrore = 'keepLastKnown', vuoto = () => ({}), onError = null }) {
@@ -69,7 +67,7 @@ function snapshotDaArtefatto({ leggi, ttlMs = 60000, suErrore = 'keepLastKnown',
                     return customResult;
                 }
 
-                if (suErrore === 'emptyAndRetry' || suErrore === 'vuotoERitenta') {
+                if (suErrore === 'emptyAndRetry') {
                     // Non memorizziamo fetchedAt: il chiamante riceve lo snapshot vuoto,
                     // ma la chiamata successiva riproverà immediatamente senza aspettare il TTL.
                     return getEmpty(error);
@@ -103,19 +101,9 @@ function snapshotDaArtefatto({ leggi, ttlMs = 60000, suErrore = 'keepLastKnown',
         inFlight = null;
     }
 
-    function getCache() {
-        return cache;
-    }
-
-    function setSnapshot(snapshot) {
-        cache = { snapshot, fetchedAt: Date.now() };
-    }
-
     return {
         getSnapshot,
-        reset,
-        getCache,
-        setSnapshot
+        reset
     };
 }
 
