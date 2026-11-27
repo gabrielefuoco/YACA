@@ -5,9 +5,13 @@
  *
  * Comunica con il servizio Python via HTTP secondo il contratto deciso in
  * .scratch/confini/contratto-motore.md:
- * - GET /health     -> Recupera versioni di artefatto e ricetta (cache in RAM ~60s, E3)
- * - POST /raccomanda -> Invia semi e opzioni, riceve liste spiegate (E1, E2, E4)
- * - Degrado / E5    -> Timeout 10s, nessun salvataggio 7gg in cache su guasto
+ * - GET /health       -> versioni di artefatto e ricetta (cache in RAM ~60s, E3)
+ * - POST /scaffali    -> le righe del feed (v2, il motore vivo)
+ * - POST /vicini      -> i vicini di uno o più titoli, dalla matrice precalcolata
+ * - Degrado / E5      -> Timeout 10s, nessun salvataggio 7gg in cache su guasto
+ *
+ * `POST /raccomanda` (v1) non c'è più: nessun client lo chiamava e il payload
+ * `il_tuo_mondo`/`un_passo_fuori` era un nome del prodotto, non una semantica.
  */
 
 const axios = require('axios');
@@ -61,27 +65,37 @@ async function getGraphHealthVersions({ baseUrl = GRAPH_SERVICE_URL, timeout = 2
 }
 
 /**
- * Invia una richiesta di raccomandazione al servizio Python (POST /raccomanda).
+ * I vicini di uno o più titoli, dalla matrice precalcolata (POST /vicini).
+ *
+ * È l'unico modo in cui la ricerca chiede al grafo: la matrice `vicini-top100.npz` è già costruita
+ * offline (top-100 pesati per titolo), quindi la richiesta è una **lettura di riga** — 0,02 ms per
+ * un seme, ~1 ms per venti. `POST /raccomanda` (contratto v1) è stato rimosso: nessuno lo chiamava
+ * e il suo payload (`il_tuo_mondo`/`un_passo_fuori`) era un nome del prodotto, non una semantica.
  *
  * Payload:
  * {
- *   semi: [ { tmdbId: number, medium: "movie"|"series", tipo?: string, peso?: number, recente?: boolean } ],
- *   // `recente` (Ticket 07): il seme e' fra gli ultimi 15 visti; e' una selezione, non un peso.
+ *   semi: [ { tmdbId: number, medium: "movie"|"series" } ],
  *   medium?: "movie"|"series",
- *   opzioni?: { largo, lontano, cozy, canone },
  *   cap?: number
  * }
+ *
+ * Risposta: `{ contratto: 2, versioni, semi: {n, scartati}, vicini: [{tmdbId, medium, punteggio}], motivi }`.
  */
-async function raccomanda({ semi = [], medium, opzioni, sliders, slider, cap = 60 } = {}, { baseUrl = GRAPH_SERVICE_URL, timeout = GRAPH_TIMEOUT_MS } = {}) {
-    const opts = opzioni || sliders || slider;
+async function vicini({ semi = [], medium, cap = 60 } = {}, { baseUrl = GRAPH_SERVICE_URL, timeout = GRAPH_TIMEOUT_MS } = {}) {
+    const mediumRichiesto = medium === 'tv' ? 'series' : medium;
     const payload = {
-        semi,
-        ...(medium ? { medium } : {}),
-        ...(opts && typeof opts === 'object' && Object.keys(opts).length > 0 ? { opzioni: opts } : {}),
+        semi: (Array.isArray(semi) ? semi : [])
+            .map(seme => {
+                const tmdbId = Number(seme && typeof seme === 'object' ? (seme.tmdbId ?? seme.id) : seme);
+                const m = seme && typeof seme === 'object' && seme.medium ? seme.medium : mediumRichiesto;
+                return { tmdbId, medium: m === 'tv' ? 'series' : m };
+            })
+            .filter(seme => Number.isFinite(seme.tmdbId) && seme.tmdbId > 0),
+        ...(mediumRichiesto ? { medium: mediumRichiesto } : {}),
         cap: Number(cap) || 60
     };
 
-    const response = await axios.post(`${baseUrl}/raccomanda`, payload, {
+    const response = await axios.post(`${baseUrl}/vicini`, payload, {
         timeout,
         headers: {
             'Content-Type': 'application/json',
@@ -219,7 +233,7 @@ module.exports = {
     sanitizeScaffaliSeed,
     getGraphHealthVersionsCached,
     getGraphHealthVersions,
-    raccomanda,
+    vicini,
     scaffali,
     resetHealthCache
 };

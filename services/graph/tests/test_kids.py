@@ -128,8 +128,8 @@ def test_missing_blacklist_loud_degradation(monkeypatch, tmp_path, warnok_seeds)
     assert res_scaffali["ok"] is False
     assert "blacklist.json" in res_scaffali["errore"]
 
-    # 3b. Richiesta kids=True via opzioni.filtri.kids su /raccomanda -> rifiuto esplicito 503 (NON 500)
-    status_racc, res_racc = servizio.esegui_richiesta({
+    # 3b. Richiesta kids=True via opzioni.filtri.kids -> rifiuto esplicito 503 (NON 500)
+    status_racc, res_racc = servizio.esegui_scaffali({
         "semi": warnok_seeds[:10],
         "opzioni": {"filtri": {"kids": True}},
     })

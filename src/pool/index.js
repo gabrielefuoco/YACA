@@ -508,7 +508,7 @@ async function righeDelGrafo(ctx, { assigned, sharedState, rawTraktResult = { tr
                     n: SCAFFALI_PER_MODALITA
                 }));
             } catch (scaffaliErr) {
-                if (!isMockFunction(graphClient.raccomanda)) {
+                if (!isMockFunction(graphClient.scaffali)) {
                     throw scaffaliErr;
                 }
             }

@@ -102,17 +102,9 @@ def test_regressione_slider_zero_identico_a_oggi(engine, warnok_seeds):
         assert b_item["medium"] == z_item["medium"]
         assert pytest.approx(b_item["punteggio"], rel=1e-6) == z_item["punteggio"]
 
-    # Verifica anche su endpoint /raccomanda
-    status_b, res_b = servizio.esegui_richiesta({"semi": warnok_seeds[:5], "cap": 20}, engine)
-    status_z, res_z = servizio.esegui_richiesta({"semi": warnok_seeds[:5], "cap": 20, "tono": 0.0, "complessita": 0.0}, engine)
-
-    assert status_b == 200 and status_z == 200
-    titoli_b = res_b["liste"][0]["titoli"]
-    titoli_z = res_z["liste"][0]["titoli"]
-    assert len(titoli_b) == len(titoli_z)
-    for tb, tz in zip(titoli_b, titoli_z):
-        assert tb["tmdbId"] == tz["tmdbId"]
-        assert tb["punteggio"] == tz["punteggio"]
+    # La verifica sull'endpoint v1 e' sparita con l'endpoint stesso (26/11/2026): `POST /raccomanda`
+    # e' stato rimosso. Il contratto che resta da difendere e' quello del motore, qui sopra, e
+    # `POST /scaffali`/`POST /vicini` hanno i loro test.
 
 
 # ==============================================================================
@@ -151,14 +143,6 @@ def test_efficacia_slider_tono_e_complessita(engine, warnok_seeds):
 
 def test_validazione_input_servizio(engine):
     """I valori fuori dal range [-1.0, 1.0] o malformati vengono respinti con 400."""
-    status, res = servizio.esegui_richiesta({"semi": [{"tmdbId": 655, "medium": "series"}], "tono": 2.5}, engine)
-    assert status == 400
-    assert "tono" in res["errore"]
-
-    status, res = servizio.esegui_richiesta({"semi": [{"tmdbId": 655, "medium": "series"}], "complessita": "invalido"}, engine)
-    assert status == 400
-    assert "complessita" in res["errore"]
-
     status, res = servizio.esegui_scaffali({"semi": [{"tmdbId": 655, "medium": "series"}], "tono": -1.5}, engine)
     assert status == 400
     assert "tono" in res["errore"]

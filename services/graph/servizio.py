@@ -2,8 +2,11 @@
 
 Espone il contratto deciso in `.scratch/confini/contratto-motore.md`:
   - GET  /health      -> {"ok": true, "contratto": 1, "versioni": {artefatto, ricetta}} in <1 ms
-  - POST /raccomanda  -> {"contratto": 1, "versioni": {...}, "semi": {...}, "liste": [...], "motivi": [...]}
-  - POST /            -> alias di POST /raccomanda
+  - POST /scaffali    -> {"contratto": 2, ..., "liste": [...]}        (v2, il motore vivo)
+  - POST /vicini      -> {"contratto": 2, "vicini": [{tmdbId, medium, punteggio}], ...}
+
+`POST /raccomanda` e il suo alias `POST /` (contratto v1, `il_tuo_mondo`/`un_passo_fuori`) sono
+stati **rimossi** il 26/11/2026: nessun client li chiamava, e il loro payload era fuorviante.
 
 Un solo processo, un solo worker: nessun sottoprocesso né thread pool.
 """
@@ -94,224 +97,6 @@ def _estrai_kids_param(dati: dict, opzioni: dict | None = None) -> bool:
     return False
 
 
-def esegui_richiesta(dati: dict, engine: Any = _UNSET, motore: Any = _UNSET) -> tuple[int, dict]:
-    """Valida la richiesta e genera raccomandazioni usando l'Engine V45
-    mantenendo la piena compatibilità con il contratto consumato dai client YACA."""
-    if not isinstance(dati, dict):
-        return 400, {"ok": False, "errore": "il corpo della richiesta deve essere un oggetto JSON"}
-
-    if engine is _UNSET:
-        engine = motore if motore is not _UNSET else _UNSET
-
-    if engine is _UNSET:
-        try:
-            engine = get_engine_v45()
-        except FileNotFoundError as exc:
-            return 503, {"ok": False, "errore": str(exc)}
-        except Exception:
-            return 503, {"ok": False, "errore": MSG_ERR_TRANSIZIONE}
-
-    if engine is None or getattr(engine, "Tr", None) is None:
-        return 503, {"ok": False, "errore": MSG_ERR_TRANSIZIONE}
-
-    semi_raw = dati.get("semi")
-    if semi_raw is None or not isinstance(semi_raw, list):
-        return 400, {"ok": False, "errore": "il campo 'semi' deve essere una lista"}
-
-    req_medium = dati.get("medium")
-    if req_medium is not None:
-        if req_medium == "tv":
-            req_medium = "series"
-        elif req_medium not in ("movie", "series"):
-            return 400, {"ok": False, "errore": f"medium non valido: {req_medium} (ammessi 'movie' o 'series')"}
-
-    opzioni = dati.get("opzioni")
-    if opzioni is not None and not isinstance(opzioni, dict):
-        return 400, {"ok": False, "errore": "il campo 'opzioni' deve essere un oggetto"}
-
-    tono_raw = dati.get("tono")
-    if tono_raw is None and opzioni:
-        tono_raw = opzioni.get("tono", opzioni.get("cozy"))
-    if tono_raw is None:
-        tono_raw = dati.get("cozy", 0.0)
-
-    if isinstance(tono_raw, bool):
-        return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
-    try:
-        tono = float(tono_raw)
-        if math.isnan(tono) or tono < -1.0 or tono > 1.0:
-            return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
-    except (ValueError, TypeError):
-        return 400, {"ok": False, "errore": "il campo 'tono' deve essere un numero compreso tra -1.0 e 1.0"}
-
-    comp_raw = dati.get("complessita")
-    if comp_raw is None and opzioni:
-        comp_raw = opzioni.get("complessita")
-    if comp_raw is None:
-        comp_raw = 0.0
-
-    if isinstance(comp_raw, bool):
-        return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
-    try:
-        complessita = float(comp_raw)
-        if math.isnan(complessita) or complessita < -1.0 or complessita > 1.0:
-            return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
-    except (ValueError, TypeError):
-        return 400, {"ok": False, "errore": "il campo 'complessita' deve essere un numero compreso tra -1.0 e 1.0"}
-
-    if abs(tono) > 1e-6 or abs(complessita) > 1e-6:
-        try:
-            get_assi_canone()
-        except FileNotFoundError as exc:
-            return 503, {"ok": False, "errore": str(exc)}
-        except Exception:
-            return 503, {"ok": False, "errore": MSG_ERR_ASSI}
-        if getattr(engine, "assi_errore", None):
-            return 503, {"ok": False, "errore": MSG_ERR_ASSI}
-
-    kids = _estrai_kids_param(dati, opzioni)
-    if kids:
-        if getattr(engine, "kids_ok", None) is None:
-            return 503, {"ok": False, "errore": getattr(engine, "kids_errore", None) or MSG_ERR_BLACKLIST}
-
-    cap_val = dati.get("cap", 60)
-    try:
-        cap = int(cap_val)
-        if cap < 1:
-            cap = 60
-    except (ValueError, TypeError):
-        return 400, {"ok": False, "errore": "il campo 'cap' deve essere un intero positivo"}
-
-    validi_seeds = []
-    da_catalogo = False
-    recenti_count = 0
-    semi_ids = []
-    esclusi_semi = set()
-
-    for s in semi_raw:
-        if not isinstance(s, dict):
-            continue
-        tmdb_id = s.get("tmdbId") or s.get("tmdb_id")
-        med = s.get("medium", "")
-        if tmdb_id is None and "key" in s and ":" in str(s["key"]):
-            try:
-                pref, id_str = str(s["key"]).split(":", 1)
-                if pref in ("movie", "tv") and id_str.isdigit():
-                    tmdb_id = int(id_str)
-                    if not med:
-                        med = "series" if pref == "tv" else "movie"
-            except Exception:
-                pass
-
-        if tmdb_id is None:
-            continue
-        try:
-            tmdb_id = int(tmdb_id)
-        except (ValueError, TypeError):
-            continue
-        if not med:
-            med = s.get("medium", "")
-        if med in ("series", "tv"):
-            ch = f"tv:{tmdb_id}"
-        elif med == "movie":
-            ch = f"movie:{tmdb_id}"
-        else:
-            continue
-
-        if ch in engine.row_of:
-            validi_seeds.append(s)
-            semi_ids.append(tmdb_id)
-            esclusi_semi.add(ch)
-            if s.get("tipo") == "catalogo":
-                da_catalogo = True
-            if s.get("recente"):
-                recenti_count += 1
-
-    if not validi_seeds:
-        return 200, {
-            "contratto": 1,
-            "versioni": {"artefatto": engine.artefatto, "ricetta": P.impronta()},
-            "semi": {"n": 0, "da_catalogo": False, "recenti": 0},
-            "liste": [],
-            "motivi": ["storia fuori dal canone"]
-        }
-
-    esclusi_req = dati.get("esclusi", [])
-    tutti_esclusi = set(esclusi_req) | esclusi_semi
-
-    # Esecuzione Personalized PageRank su grafo V45 con eventuale filtro di retrieval tono/complessità
-    racs = engine.raccomanda(
-        validi_seeds,
-        cap=cap * 2,
-        medium=req_medium,
-        esclusi=tutti_esclusi,
-        tono=tono,
-        complessita=complessita,
-        kids=kids,
-    )
-
-    meta_vot = K.metadati().get("VOT")
-
-    # Costruzione liste: 'il_tuo_mondo' (top cap) e 'un_passo_fuori' (secondo blocco)
-    t_mondo = racs[:cap]
-    titoli_mondo_out = [
-        {"tmdbId": int(t["tmdbId"]), "medium": str(t["medium"]), "punteggio": round(float(t["punteggio"]), 6)}
-        for t in t_mondo
-    ]
-    att_m = round(float(np.mean([t["punteggio"] for t in titoli_mondo_out])), 4) if titoli_mondo_out else 0.0
-    voti_m = [float(meta_vot[engine.row_of[t["key"]]]) for t in t_mondo if t["key"] in engine.row_of] if meta_vot is not None else []
-    med_v_m = round(float(np.median(voti_m)), 1) if voti_m else 0.0
-    q_ser_m = round(float(sum(1 for t in titoli_mondo_out if t["medium"] == "series") / len(titoli_mondo_out)), 2) if titoli_mondo_out else 0.0
-
-    lista_mondo = {
-        "ruolo": "il_tuo_mondo",
-        "mondo": None,
-        "descrizione": f"il tuo mondo — {len(titoli_mondo_out)} titoli",
-        "attivazione": att_m,
-        "mediana_voti": med_v_m,
-        "quota_serie": q_ser_m,
-        "semi": list(dict.fromkeys(semi_ids)),
-        "titoli": titoli_mondo_out,
-    }
-
-    t_passo = racs[cap:cap * 2]
-    titoli_passo_out = [
-        {"tmdbId": int(t["tmdbId"]), "medium": str(t["medium"]), "punteggio": round(float(t["punteggio"]), 6)}
-        for t in t_passo
-    ]
-    att_p = round(float(np.mean([t["punteggio"] for t in titoli_passo_out])), 4) if titoli_passo_out else 0.0
-    voti_p = [float(meta_vot[engine.row_of[t["key"]]]) for t in t_passo if t["key"] in engine.row_of] if meta_vot is not None else []
-    med_v_p = round(float(np.median(voti_p)), 1) if voti_p else 0.0
-    q_ser_p = round(float(sum(1 for t in titoli_passo_out if t["medium"] == "series") / len(titoli_passo_out)), 2) if titoli_passo_out else 0.0
-
-    lista_passo = {
-        "ruolo": "un_passo_fuori",
-        "mondo": None,
-        "descrizione": f"un passo fuori — {len(titoli_passo_out)} titoli",
-        "attivazione": att_p,
-        "mediana_voti": med_v_p,
-        "quota_serie": q_ser_p,
-        "semi": list(dict.fromkeys(semi_ids)),
-        "titoli": titoli_passo_out,
-    }
-
-    risposta = {
-        "contratto": 1,
-        "versioni": {
-            "artefatto": engine.artefatto,
-            "ricetta": P.impronta(),
-        },
-        "semi": {
-            "n": len(validi_seeds),
-            "da_catalogo": da_catalogo,
-            "recenti": recenti_count,
-        },
-        "liste": [lista_mondo, lista_passo],
-        "motivi": [],
-    }
-    return 200, risposta
-
-
 # ==============================================================================
 # GESTIONE ARTEFATTI, SINGLETON E STATO DI SALUTE (Ticket Container & Health)
 # ==============================================================================
@@ -328,6 +113,8 @@ BLACKLIST_PATH: str | Path | None = os.environ.get("BLACKLIST_BAMBINI_PATH") or 
 
 _ENGINE_V45: Engine | None = None
 _W_AFF: sp.csr_matrix | None = None
+_W_AFF_DEG: np.ndarray | None = None
+_VICINI_PROV: dict = {}
 _ASSI_CACHE: tuple[np.ndarray, np.ndarray] | None = None
 
 ALLOWED_SEED_KEYS: frozenset[str] = frozenset({
@@ -384,8 +171,12 @@ def get_engine_v45(path: str | Path | None = None) -> Engine:
 
 
 def get_vicini_affinita(path: str | Path | None = None) -> sp.csr_matrix:
-    """Ritorna la matrice singleton top-100 vicini non potati per l'affinità."""
-    global _W_AFF
+    """Ritorna la matrice singleton top-100 vicini non potati per l'affinità.
+
+    Tiene anche la provenienza (`_VICINI_PROV`): il contratto la dichiara in `versioni`, così il
+    client può verificare che la matrice servita sia quella del grafo confermato.
+    """
+    global _W_AFF, _W_AFF_DEG, _VICINI_PROV
     p = risolvi_percorso_vicini(path)
     if not p.is_file():
         raise FileNotFoundError(MSG_ERR_VICINI)
@@ -394,6 +185,21 @@ def get_vicini_affinita(path: str | Path | None = None) -> sp.csr_matrix:
             _W_AFF = I.carica_matrice_affinita(p)
         except FileNotFoundError as exc:
             raise FileNotFoundError(MSG_ERR_VICINI) from exc
+        try:
+            # Il grado di riga serve alla somma multi-seme: ognuno deve pesare 1, non "quanto e'
+            # densa la sua riga". Misurato su 100 profili reali (hold-out 20%): normalizzare per
+            # riga porta il recall@60 da 0,0873 a 0,1114, contro 0,0759 del PageRank.
+            _W_AFF_DEG = np.asarray(_W_AFF.sum(1)).ravel()
+            _W_AFF_DEG[_W_AFF_DEG <= 0] = 1.0
+            z = np.load(p, allow_pickle=False)
+            prov = json.loads(str(z["_provenance"])) if "_provenance" in z else {}
+            _VICINI_PROV = {
+                "artefatto": str(prov.get("sha256", ""))[:16],
+                "ricetta": str(prov.get("params_sha", ""))[:16],
+                "input": next(iter((prov.get("inputs") or {}).values()), "")[:16],
+            }
+        except Exception:
+            _VICINI_PROV = {}
     return _W_AFF
 
 
@@ -594,6 +400,137 @@ def _anime_di(engine, chiave: str):
     if riga is None or anime is None or len(anime) <= riga:
         return None
     return bool(anime[riga])
+
+
+def _chiave_seme(item: Any, medium_default: str | None = None) -> str | None:
+    """La chiave di canone di un seme: `"movie:603"` oppure `{tmdbId, medium}`.
+
+    Le serie vivono sotto `tv:` nel canone (non `series:`): è il formato di `canon.titoli()`.
+    """
+    if isinstance(item, str):
+        chiave = item.strip()
+        return chiave if ":" in chiave else None
+    if isinstance(item, dict):
+        chiave = item.get("key")
+        if chiave:
+            return str(chiave)
+        tmdb = item.get("tmdbId", item.get("tmdb_id"))
+        # Il medium del seme, se manca, è quello della richiesta (poi 'movie'): un client che manda
+        # solo `{tmdbId}` non deve perdere il seme in silenzio.
+        medium = item.get("medium", item.get("tipo")) or medium_default or "movie"
+        if tmdb is None:
+            return None
+        try:
+            numero = int(tmdb)
+        except (TypeError, ValueError):
+            return None
+        if numero <= 0:
+            return None
+        prefisso = "tv" if str(medium) in ("series", "tv") else "movie"
+        return f"{prefisso}:{numero}"
+    return None
+
+
+def esegui_vicini(dati: dict, W_aff: sp.csr_matrix | None = None) -> tuple[int, dict]:
+    """I vicini di uno o più titoli, letti dalla **matrice precalcolata** dei top-100.
+
+    Non calcola niente: prende le righe dei semi, somma i pesi (chi è vicino a più semi sale),
+    toglie i semi stessi e filtra per medium. È il contratto che sostituisce `POST /raccomanda`
+    (v1): stesso mestiere — «la diffusione intorno a questi titoli» — senza PageRank e senza le
+    due liste spiegate, che servivano alla home e non alla ricerca.
+
+    Misurato: 0,02 ms per un seme, ~1 ms per venti (contro 32 ms di PageRank).
+    """
+    if not isinstance(dati, dict):
+        return 400, {"ok": False, "errore": "il corpo della richiesta deve essere un oggetto JSON"}
+
+    semi_raw = dati.get("semi")
+    if not isinstance(semi_raw, list) or len(semi_raw) == 0:
+        return 400, {"ok": False, "errore": "il campo 'semi' deve essere una lista non vuota"}
+
+    req_medium = dati.get("medium")
+    if req_medium == "tv":
+        req_medium = "series"
+    if req_medium is not None and req_medium not in ("movie", "series"):
+        return 400, {"ok": False, "errore": f"medium non valido: {req_medium} (ammessi 'movie' o 'series')"}
+
+    try:
+        cap = int(dati.get("cap", 60))
+        if cap < 1:
+            raise ValueError
+    except (TypeError, ValueError):
+        return 400, {"ok": False, "errore": "il campo 'cap' deve essere un intero positivo"}
+    cap = min(cap, 200)
+
+    if W_aff is None:
+        try:
+            W_aff = get_vicini_affinita()
+        except FileNotFoundError as exc:
+            return 503, {"ok": False, "errore": str(exc)}
+
+    keys, row_of, n, is_tv = K.titoli()
+
+    righe: list[int] = []
+    scartati = 0
+    for item in semi_raw:
+        chiave = _chiave_seme(item, None if req_medium is None else req_medium)
+        riga = row_of.get(chiave) if chiave else None
+        if riga is None:
+            scartati += 1
+            continue
+        if riga not in righe:
+            righe.append(riga)
+
+    if not righe:
+        return 200, {
+            "contratto": 2,
+            "versioni": dict(_VICINI_PROV),
+            "semi": {"n": 0, "scartati": scartati},
+            "vicini": [],
+            "motivi": ["semi fuori dal canone"],
+        }
+
+    # Ogni seme versa **1,0 di massa**, come fa PageRank: senza questa divisione un seme con molti
+    # archi forti domina sugli altri, e con più semi la lista si sbilancia. Non cambia nulla sul
+    # singolo seme (la divisione per una costante non riordina una riga), migliora sul multi-seme.
+    gradi = _W_AFF_DEG if _W_AFF_DEG is not None and len(_W_AFF_DEG) == n else None
+    pesi = np.zeros(n, dtype=np.float64)
+    for riga in righe:
+        start, end = W_aff.indptr[riga], W_aff.indptr[riga + 1]
+        contributo = W_aff.data[start:end]
+        if gradi is not None:
+            contributo = contributo / gradi[riga]
+        np.add.at(pesi, W_aff.indices[start:end], contributo)
+
+    # Un seme non è vicino di sé stesso, e le controproposte non devono tornare indietro.
+    pesi[righe] = 0.0
+    if req_medium == "movie":
+        pesi[is_tv] = 0.0
+    elif req_medium == "series":
+        pesi[~is_tv] = 0.0
+
+    ordine = np.argsort(-pesi)[: cap * 2]
+    vicini = []
+    for riga in ordine:
+        peso = float(pesi[riga])
+        if peso <= 0.0:
+            break
+        tmdb = keys[riga].split(":", 1)[1]
+        vicini.append({
+            "tmdbId": int(tmdb),
+            "medium": "series" if bool(is_tv[riga]) else "movie",
+            "punteggio": round(peso, 6),
+        })
+        if len(vicini) >= cap:
+            break
+
+    return 200, {
+        "contratto": 2,
+        "versioni": dict(_VICINI_PROV),
+        "semi": {"n": len(righe), "scartati": scartati},
+        "vicini": vicini,
+        "motivi": [],
+    }
 
 
 def esegui_scaffali(
@@ -1028,7 +965,7 @@ class ServizioHandler(BaseHTTPRequestHandler):
         self.wfile.write(b'{"ok":false,"errore":"not found"}')
 
     def do_POST(self):
-        if self.path in ("/", "/raccomanda"):
+        if self.path == "/vicini":
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(length)
@@ -1040,7 +977,7 @@ class ServizioHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"ok": False, "errore": f"richiesta malformata: {e}"}).encode("utf-8"))
                 return
 
-            status, resp = esegui_richiesta(dati, self.engine_v45)
+            status, resp = esegui_vicini(dati, W_aff=self.w_aff)
             resp_bytes = json.dumps(resp, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")

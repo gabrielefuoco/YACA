@@ -269,14 +269,6 @@ def test_artefatto_transizione_mancante_restituisce_503(monkeypatch):
     assert "transizione-pota16.npz" in res["errore"]
     assert "graph.runtime.prepara --pota 16" in res["errore"]
 
-    # Verifica su /raccomanda (esegui_richiesta)
-    status_r, res_r = servizio.esegui_richiesta({
-        "semi": [{"key": "movie:603", "plays": 1.0}]
-    })
-    assert status_r == 503
-    assert res_r["ok"] is False
-    assert "transizione-pota16.npz" in res_r["errore"]
-    assert "graph.runtime.prepara --pota 16" in res_r["errore"]
 
 
 def test_artefatto_vicini_mancante_restituisce_503(monkeypatch):

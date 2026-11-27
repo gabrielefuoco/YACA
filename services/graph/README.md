@@ -19,14 +19,13 @@ input densi e gli embedding già materializzati rimangono nella cache locale
 
 ## Runtime
 
-- `servizio.py` espone l'API storica `/raccomanda` e la rotta di aggregazione `POST /scaffali`. **V10 è stato completamente rimosso dal servizio runtime**: entrambe le rotte sono alimentate esclusivamente da `graph.runtime.Engine` (V45). Il vecchio modulo `motore.py` non è più importato né istanziato dal servizio (è conservato unicamente per script offline).
+- `servizio.py` espone `POST /scaffali` (v2, il motore vivo), `POST /vicini` (la matrice precalcolata) e `GET /health`. **V10 è stato completamente rimosso dal servizio runtime**: le rotte sono alimentate da `graph.runtime.Engine` (V45). L'API storica `POST /raccomanda` **non esiste più** (26/11/2026). Il vecchio modulo `motore.py` non è più importato né istanziato dal servizio (è conservato unicamente per script offline).
 - `runtime/` contiene il motore sparse V45 (`Engine`, PageRank personalizzato) e il banco di misura.
 - L'immagine Docker è runtime-only: `.dockerignore` esclude `build/`; gli artefatti si promuovono
   offline e il volume dati resta read-only.
 
-### Endpoint `/raccomanda` (Cutover V45) e `/scaffali` (V45 Standalone)
+### Endpoint `/scaffali` (V45 Standalone) e `/vicini` (matrice)
 
-- **`POST /raccomanda` (contratto versione 1)**: Preserva al 100% la compatibilità a livello di chiavi e tipi con i client YACA (`src/clients/graphClient.js`), producendo `il_tuo_mondo` e `un_passo_fuori`. È servito da `graph.runtime.Engine` (latenza: **p50 = 1,0 ms**, **p95 = 17,4 ms**). *Nota compatibilità:* questo endpoint è mantenuto temporaneamente per retrocompatibilità fino alla migrazione del lato Node; anche i suoi ruoli `il_tuo_mondo` e `un_passo_fuori` sono da considerarsi legacy (il client cesserà di richiederli passando unicamente a `POST /scaffali`).
 - **`POST /scaffali` (contratto versione 2)**: Implementa la ricetta congelata di clustering e ranking a due livelli (etichette tassonomiche in testa e fallback «Perché hai visto» in coda) con separazione rigorosa del medium per riga (policy P2), ammissione controparti permissive a $\tau = 2.5\%$ e decoupling candidati serviti (tra 20 e 60 per riga).
 
 **Realtà della memoria (misure effettive RSS con V45 standalone, non stime):**
@@ -35,7 +34,8 @@ input densi e gli embedding già materializzati rimangono nella cache locale
 - **Margine di sicurezza**: **188,59 MiB** di headroom nel container Docker da 512 MiB (`mem_limit: 512m`), e **76,59 MiB** stabilmente sotto la soglia di guardia di 400 MB.
 - **Latenze misurate su 30 richieste sequenziali warm su `warnok`**:
   - `/scaffali`: **p50 = 1,525 s**, **p95 = 1,698 s** (ampiamente entro il target <= 3,0 s per 8 scaffali con walk PPR e clustering).
-  - `/raccomanda`: **p50 = 1,0 ms**, **p95 = 17,4 ms**.
+  - `/vicini`: **0,02 ms** con un seme, **0,8 ms** con tre (lettura della matrice).
+  - `/raccomanda`: rimosso (v1, nessun consumatore).
 
 ### Politica del Medium e Scaffali (Policy P2 e Controparti)
 Stremio impone cataloghi rigorosamente omogenei per tipologia (`movie` o `series`). Gli archi cross-medium nel grafo vengono preservati (rafforzano la camminata e catturano il gusto), ma le righe esposte applicano la politica **P2** con omogeneità assoluta:
@@ -59,7 +59,7 @@ PYTHONPATH=services py -m graph.runtime.bench   # la tabella memoria/latenza
 ```python
 from graph.runtime import Engine
 engine = Engine.carica_transizione("services/graph/data/v45-transizione/transizione-pota16.npz")
-engine.raccomanda([("movie:603", None, "loved")], cap=60, medium="movie", esclusi=esclusi)
+engine.vicini(...)  # vedi POST /vicini in servizio.py; engine.raccomanda resta per test offline
 ```
 
 Misurato sulla transizione precalcolata: **190,7 MiB** di picco, **1,05 s** di avvio, **134 ms** per
@@ -126,7 +126,7 @@ PYTHONPATH=services py -m graph.runtime.prepara --target tutti
 - **Avviso loud allo startup**: se uno qualunque dei tre artefatti non è presente su disco all'avvio, il servizio stampa immediatamente un warning in `stderr` (visibile in `docker logs yaca-graph` prima di qualsiasi chiamata).
 - **GET `/health`**: espone il blocco `artefatti` indicando per ciascun file `{present: bool, path: str, sha: str, loaded: bool}` insieme a `versioni` (`artefatto`, `ricetta`) per retrocompatibilità.
 - **Fail-fast mirato**:
-  - `POST /raccomanda` richiede la transizione: se manca `transizione-pota16.npz`, risponde HTTP 503 con il nome del file e il comando di rigenerazione.
+  - `POST /scaffali` richiede transizione e matrice: se mancano, risponde HTTP 503 con il nome del file e il comando di rigenerazione.
   - `POST /scaffali` richiede transizione + vicini + assi: se manca qualunque artefatto, risponde HTTP 503 indicando chiaramente quale file è assente e come rigenerarlo.
 - **Regola di Rollback**: in caso di rollback a release precedenti di YACA, gli artefatti preparati DEVONO rimanere intatti sul disco dell'host (`/srv/yaca/services/graph/data`). Niente deve cancellarli.
 
