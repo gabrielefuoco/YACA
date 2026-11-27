@@ -96,7 +96,9 @@ router.post('/preview-catalog', async (req, res) => {
                 testo: sanitizedPrompt,
                 type: tipoRichiesta,
                 contesto: profileContext,
-                cap: 20
+                // La stessa misura del catalogo servito a Stremio: l'anteprima deve mostrare
+                // quello che l'utente vedrà davvero, non una versione ridotta a venti.
+                cap: require('../config').CATALOG_PAGE_SIZE
             });
 
             const card = (item) => ({
