@@ -121,43 +121,53 @@ function keywordPerRefuso(cercato) {
 }
 
 // ============================================================================
-// ESPANSIONE DAL GRAFO GERARCHICO
+// ESPANSIONE: LE SORELLE AFFINI (precalcolate)
 // ============================================================================
 
-let _grafo = null;
-function grafo() {
-    if (_grafo) return _grafo;
+let _affini = null;
+
+/**
+ * L'artefatto `src/data/sorelle-affini.json`: per ogni ancora, le sorelle del suo cluster L1 che
+ * nel dump hanno **davvero** titoli in comune (≥15% dei titoli della sorella, ≥3 in assoluto).
+ *
+ * Perché precalcolato e non chiesto al grafo a ogni ricerca: il cluster L1 mescola livelli diversi
+ * e include keyword generiche che sostituiscono il tema invece di allargarlo. Misurato: 10.126
+ * sorelle su 12.631 non hanno affinità sufficiente — `princess`+`enchant` condividono 4 titoli su
+ * 125 (3%), ed è così che «tema principesse» restituiva Harry Potter; `isekai`+`mature` zero.
+ * Il criterio e il conto stanno in `scripts/build-sorelle-affini.js`; qui si legge e basta.
+ */
+function sorelleAffini() {
+    if (_affini !== null) return _affini;
     try {
-        _grafo = indice().grafoGerarchico;
+        const dati = require('../data/sorelle-affini.json');
+        _affini = (dati && dati.affini) || {};
     } catch (_err) {
-        _grafo = false;
+        // Senza artefatto non si espande: l'ancora da sola è un filtro preciso, l'espansione no.
+        _affini = {};
     }
-    return _grafo;
+    return _affini;
 }
 
 /**
- * L'ancora più le keyword sorelle del suo micro-cluster L1.
+ * L'ancora più le keyword sorelle che le somigliano davvero.
  *
- * Il grafo è indicizzato per **nome** di keyword (`kw_to_L1`), quindi l'ancora deve essere un nome
- * canonico: le si passa quello che torna da `keywordNameForId`, non quello che ha scritto l'utente.
+ * Il grafo è indicizzato per **nome** di keyword, quindi l'ancora deve essere un nome canonico: le
+ * si passa quello che torna da `keywordNameForId`, non quello che ha scritto l'utente.
+ *
+ * Un'ancora che non è nell'artefatto **non viene espansa**: meglio un tema stretto che un tema
+ * sostituito da una parola generica dello stesso cluster.
  */
 function espandiConcetto(ancora) {
     const nome = String(ancora || '').trim();
     if (!nome) return [];
     if (ESPANSIONE_MAX === 0) return [nome];
 
-    const g = grafo();
-    const dati = g && g.data;
-    if (!dati || !dati.kw_to_L1) return [nome];
+    const sorelle = sorelleAffini()[normalizza(nome)];
+    if (!Array.isArray(sorelle) || sorelle.length === 0) return [nome];
 
-    const l1 = dati.kw_to_L1[nome] || dati.kw_to_L1[normalizza(nome)] || null;
-    if (!l1) return [nome];
-
-    const sorelle = (dati.L1 && dati.L1[l1] && dati.L1[l1].keywords) || [];
     const expansion = [nome];
     for (const sorella of sorelle) {
         if (expansion.length >= ESPANSIONE_MAX + 1) break;
-        if (normalizza(sorella) === normalizza(nome)) continue;
         if (!expansion.includes(sorella)) expansion.push(sorella);
     }
     return expansion;

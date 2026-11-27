@@ -63,7 +63,13 @@ Regole che cambiano il risultato:
 - **i titoli con la virgola restano interi**: si prova il prefisso più lungo che l'indice conosce
   (`amici miei, atto ii` resta un film);
 - `eta` confronta per **fasce**, non in ordine alfabetico: il dump mescola sistemi (R, PG-13, T,
-  VM14, 14+) e `NR` resta fuori («non sappiamo» non è «va bene»).
+  VM14, 14+) e `NR` resta fuori («non sappiamo» non è «va bene»);
+- **`tema` espande solo con le sorelle affini**: il cluster L1 del grafo contiene anche keyword
+  generiche che sostituiscono il tema invece di allargarlo, e la scelta è precalcolata nel dump
+  (`src/data/sorelle-affini.json`, costruito da `scripts/build-sorelle-affini.js`). Tiene una
+  sorella solo se almeno il 15% dei suoi titoli ha anche l'ancora (≥3 in assoluto): così `mecha`
+  porta `gundam` (97% di sovrapposizione) e `princess` non porta `enchant` (3%, cioè Harry Potter
+  dentro «principesse»). Ciò che non è nell'artefatto non si espande.
 
 ---
 
@@ -167,5 +173,5 @@ Nessuna funzione del percorso solleva: il caso normale è `{ items, motivi }`.
 | :--- | :--- | :--- |
 | `TMDB_API_KEY` | Risoluzione dei nomi non ingeriti e metadati | usata in modo residuale: keyword e titoli si risolvono in locale |
 | `RICERCA_GRAFO_TIMEOUT_MS` | Budget della chiamata `/vicini` | default `4000` |
-| `RICERCA_ESPANSIONE` / `RICERCA_ESPANSIONE_MAX` | Espansione dei concetti dal grafo gerarchico | default attiva, 4 sorelle; `RICERCA_ESPANSIONE=0` la spegne |
+| `RICERCA_ESPANSIONE` / `RICERCA_ESPANSIONE_MAX` | Espansione dei concetti con le sorelle affini (artefatto precalcolato) | default attiva, al massimo 4 sorelle; `RICERCA_ESPANSIONE=0` la spegne |
 | `MISTRAL_API_KEY` / `MISTRAL_MODEL` | **non più usate** | la ricerca non chiama modelli; la chiave è stata rimossa dalla configurazione |
