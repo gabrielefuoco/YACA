@@ -267,9 +267,16 @@ function risolviPersona(valore, { ruolo = null } = {}) {
 /**
  * `regista X`: il ruolo giusto per il tipo. Per le serie TMDB non ha i registi — ha i creatori
  * (`created_by`), e `people.db` li tiene sotto `creator`.
+ *
+ * Se fra i creatori il nome non si trova, si riprova come regista: un regista che non ha creato
+ * serie non è una persona sconosciuta, ed è la differenza fra «nessuna serie di costui» (pagina
+ * vuota, ma vera) e «nome non risolto» (pagina vuota che sembra colpa del nome). Resta il fatto
+ * che un cognome da solo può indicare due persone diverse nei due tipi — `regista nolan` sui film
+ * è Christopher (525), sulle serie è Jonathan (527), che è chi le serie le ha create.
  */
 function risolviCrew(valore, { type = 'movie' } = {}) {
-    return risolviPersona(valore, { ruolo: type === 'series' ? 'creator' : 'director' });
+    if (type !== 'series') return risolviPersona(valore, { ruolo: 'director' });
+    return risolviPersona(valore, { ruolo: 'creator' }) || risolviPersona(valore, { ruolo: 'director' });
 }
 
 // ============================================================================

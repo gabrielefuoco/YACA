@@ -221,8 +221,10 @@ router.get([
         extra = { ...extra, ...req.query };
     }
 
-    if (extra.skip) extra.skip = parseInt(extra.skip, 10) || 0;
-    else extra.skip = 0;
+    // Lo `skip` è un indice di pagina: negativo non ha senso, e passato così a DuckDB (`OFFSET -5`)
+    // restituisce una pagina vuota che sembra «catalogo finito». Si azzera.
+    const skipRichiesto = parseInt(extra.skip, 10);
+    extra.skip = Number.isFinite(skipRichiesto) && skipRichiesto > 0 ? skipRichiesto : 0;
 
     // Traccia delle ricerche che arrivano da Stremio: serve a sapere se il client chiede la
     // pagina successiva (`skip`), perché il comportamento varia fra la schermata di ricerca e il
