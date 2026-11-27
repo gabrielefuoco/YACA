@@ -7,10 +7,6 @@ jest.mock('nanoid', () => ({
     nanoid: jest.fn(() => 'generated_id')
 }));
 
-jest.mock('../src/ricerca/router', () => ({
-    generateTmdbFiltersFromPrompt: jest.fn()
-}));
-
 
 // La generazione del DNA salva i vettori in background: senza questi mock la suite
 // resterebbe appesa in attesa di MongoDB (motivo per cui era disattivata).

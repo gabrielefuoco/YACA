@@ -2,7 +2,7 @@
  * Modulo Configurazione Utente (Ticket 26)
  *
  * Confine di dominio per tutto ciò che appartiene all'identità e ai segreti dell'utente:
- * - Le chiavi API (TMDB, Mistral, Stremio) e la risoluzione pura (Decisione 3)
+ * - Le chiavi API (TMDB, Stremio, Trakt) e la risoluzione pura (Decisione 3)
  * - Il degrado dichiarato col motivo per assenza chiave (Decisione 4)
  * - L'account raw (`accountDi`, `accountPerAddonUuid`)
  * - Il blocco unico delle credenziali e stato Trakt (`traktDi`, `segnaTrakt*`) (Decisione 5)

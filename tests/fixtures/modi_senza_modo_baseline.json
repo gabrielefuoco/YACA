@@ -60,7 +60,7 @@
     ],
     "customCatalogs": []
   },
-  "fingerprint": "a566d42210d024e038c98fa030b8b88421cb9cce3f97606b2e75911097ef2768",
+  "fingerprint": "ce711eb9a73805abcbb8cc5098a86bd0698afe60eb58d68013c5c567b18ee0bd",
   "manifest": {
     "id": "org.stremio.yaca.catalog",
     "version": "1.0.4",
@@ -81,7 +81,7 @@
       {
         "id": "yaca_search_standard",
         "type": "movie",
-        "name": "YACA: Ricerca Veloce TMDB",
+        "name": "YACA: Ricerca (tema · cast · anno · simili)",
         "extra": [
           {
             "name": "search",
@@ -92,29 +92,7 @@
       {
         "id": "yaca_search_standard",
         "type": "series",
-        "name": "YACA: Ricerca Veloce TMDB",
-        "extra": [
-          {
-            "name": "search",
-            "isRequired": true
-          }
-        ]
-      },
-      {
-        "id": "yaca_search_ai",
-        "type": "movie",
-        "name": "YACA: Deep AI Search",
-        "extra": [
-          {
-            "name": "search",
-            "isRequired": true
-          }
-        ]
-      },
-      {
-        "id": "yaca_search_ai",
-        "type": "series",
-        "name": "YACA: Deep AI Search",
+        "name": "YACA: Ricerca (tema · cast · anno · simili)",
         "extra": [
           {
             "name": "search",

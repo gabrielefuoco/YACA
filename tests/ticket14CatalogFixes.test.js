@@ -49,9 +49,6 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
             expect(searchStandardOccurrences.length).toBe(2);
             expect(searchStandardOccurrences.map(c => c.type).sort()).toEqual(['movie', 'series']);
 
-            const searchAiOccurrences = manifest.catalogs.filter(c => c.id === 'yaca_search_ai');
-            expect(searchAiOccurrences.length).toBe(2);
-            expect(searchAiOccurrences.map(c => c.type).sort()).toEqual(['movie', 'series']);
         });
 
         test('BUG-03-H: non appiattisce il tipo anime a movie nei cataloghi attivi', () => {

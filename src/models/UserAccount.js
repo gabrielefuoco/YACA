@@ -27,7 +27,6 @@ const userAccountSchema = new mongoose.Schema({
     apiKeys: {
         stremio: String,
         tmdb: String,
-        mistral: String,
         trakt: String,
         traktRefreshToken: String,
         traktExpiresAt: Date

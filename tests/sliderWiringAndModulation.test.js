@@ -7,7 +7,7 @@
  * 1. Il contratto del cablaggio:
  *    - I 4 valori di slider (largo, lontano, cozy, canone) salvati nel profilo
  *      viaggiano attraverso contestoDi -> getHeroPool -> HERO_STRATEGIES (graph_rows)
- *      -> graphClient.raccomanda -> body di POST /raccomanda ({ opzioni: { largo, lontano, cozy, canone } }).
+ *      -> graphClient.scaffali -> body di POST /scaffali ({ opzioni: { largo, lontano, cozy, canone } }).
  *    - Se gli slider sono assenti o predefiniti, il contratto predefinito tiene (opzioni: undefined / defaults)
  *      senza rompere il comportamento esistente.
  *    - Cache isolation: la chiave di cache del pool varia solo se gli slider differiscono dai default.
@@ -38,7 +38,7 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
         graphClient.resetHealthCache();
     });
 
-    describe('1. graphClient.raccomanda inoltra opzioni/sliders nel payload POST', () => {
+    describe('1. graphClient.scaffali inoltra opzioni/sliders nel payload POST', () => {
         test('invia opzioni nel corpo JSON quando fornito come opzioni', async () => {
             const postSpy = jest.spyOn(axios, 'post').mockResolvedValue({
                 status: 200,
@@ -46,7 +46,7 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
             });
 
             const sliders = { largo: 6, lontano: 0.5, cozy: 0.2, canone: -0.3 };
-            await graphClient.raccomanda({
+            await graphClient.scaffali({
                 semi: [{ tmdbId: 603, medium: 'movie', tipo: 'liked', peso: 3 }],
                 medium: 'movie',
                 opzioni: sliders,
@@ -55,11 +55,12 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
 
             expect(postSpy).toHaveBeenCalledTimes(1);
             const [url, payload] = postSpy.mock.calls[0];
-            expect(url).toContain('/raccomanda');
+            expect(url).toContain('/scaffali');
             expect(payload.opzioni).toEqual(sliders);
             expect(payload.cap).toBe(45);
             expect(payload.medium).toBe('movie');
-            expect(payload.semi).toEqual([{ tmdbId: 603, medium: 'movie', tipo: 'liked', peso: 3 }]);
+            // `scaffali` sanitizza i semi: le chiavi sconosciute (`peso`) cadono, `plays` entra a 1.
+            expect(payload.semi).toEqual([{ tmdbId: 603, medium: 'movie', tipo: 'liked', plays: 1 }]);
 
             postSpy.mockRestore();
         });
@@ -71,7 +72,7 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
             });
 
             const sliders = { largo: 8, lontano: 0.0, cozy: 0.8, canone: 0.5 };
-            await graphClient.raccomanda({
+            await graphClient.scaffali({
                 semi: [{ tmdbId: 1396, medium: 'series' }],
                 medium: 'series',
                 sliders,
@@ -91,7 +92,7 @@ describe('Ticket 41: Cablaggio slider dal profilo al motore', () => {
                 data: { ok: true, versioni: {}, liste: [] }
             });
 
-            await graphClient.raccomanda({
+            await graphClient.scaffali({
                 semi: [{ tmdbId: 603, medium: 'movie' }],
                 cap: 60
             });

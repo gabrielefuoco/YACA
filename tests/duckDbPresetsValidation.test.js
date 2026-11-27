@@ -2,7 +2,7 @@ const { getPresets } = require('../src/catalog/presets');
 const { compileQuery } = require('../src/indice/compiler');
 const duckDbStore = require('../src/indice/duckDbStore');
 const { sanitizeCatalogMeta } = require('../src/stremio/formatters/StremioFormatter');
-const { aiPromptCache, catalogRequestCache } = require('../src/cache/cacheInstances');
+const { catalogRequestCache } = require('../src/cache/cacheInstances');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
 const CacheManager = require('../src/cache/CacheManager');
 
@@ -62,7 +62,7 @@ describe('DuckDB Native Presets & Architectural Optimizations', () => {
     });
 
     test('Cache RAM tuning: ramMax limits calibrated for container environment', () => {
-        expect(aiPromptCache.lruFallback.max).toBe(50);
+        // `aiPromptCache` non c'è più: era la cache dei piani del modello, rimosso con la fetta 7.
         expect(catalogRequestCache.lruFallback.max).toBe(0);
 
         const defaultManager = new CacheManager('test_default');

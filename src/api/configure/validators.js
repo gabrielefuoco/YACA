@@ -46,7 +46,6 @@ function validateAuth(req) {
 
 function validateKeys(body, existingUser, warnings) {
     const personalTmdbKey = normalizeInputString(body.tmdbKey);
-    const personalMistralKey = normalizeInputString(body.mistralKey);
     let traktToken = normalizeInputString(body.traktToken);
     let traktRefreshToken = normalizeInputString(body.traktRefreshToken);
 
@@ -69,9 +68,6 @@ function validateKeys(body, existingUser, warnings) {
 
     const { chiaveEffettiva } = require('../../configurazione');
     const effectiveTmdbKey = chiaveEffettiva({ account: existingUser, richiesta: personalTmdbKey, servizio: 'tmdb' });
-    const effectiveMistralKey = (personalMistralKey === undefined || personalMistralKey === null || personalMistralKey === 'null' || personalMistralKey === '')
-        ? (existingUser?.apiKeys?.mistral || null)
-        : (personalMistralKey || null);
 
     if (!effectiveTmdbKey) {
         throw { status: 400, message: "TMDB API key non configurata sul server o mancante." };
@@ -79,9 +75,6 @@ function validateKeys(body, existingUser, warnings) {
 
     if (personalTmdbKey && (personalTmdbKey.length > LIMITS.MAX_KEY_LENGTH)) {
         throw { status: 400, message: "TMDB Key non valida." };
-    }
-    if (personalMistralKey && (personalMistralKey.length > LIMITS.MAX_KEY_LENGTH)) {
-        throw { status: 400, message: "Mistral Key non valida." };
     }
     if (traktToken && !isValidTraktTokenCandidate(traktToken)) {
         throw { status: 400, message: "Token Trakt non valido." };
@@ -113,7 +106,6 @@ function validateKeys(body, existingUser, warnings) {
 
     return {
         effectiveTmdbKey,
-        mistralKey: effectiveMistralKey,
         traktToken,
         traktRefreshToken,
         traktExpiresAt,

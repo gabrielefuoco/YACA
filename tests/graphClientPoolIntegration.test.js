@@ -97,7 +97,7 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
         });
 
         test('quando il motore fallisce (503, timeout, rifiutata), graphCallFailed viene marcato true', async () => {
-            jest.spyOn(graphClient, 'raccomanda').mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:7862'));
+            jest.spyOn(graphClient, 'scaffali').mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:7862'));
             const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
             const assigned = {};
@@ -118,7 +118,7 @@ describe('Ticket 08: Il prodotto parla col servizio grafo', () => {
 
         test('in caso di fallimento del motore, la cache memorizza con TTL 60s invece di 7 giorni', async () => {
             const cacheSetSpy = jest.spyOn(hybridRecommendationsCache, 'set').mockResolvedValue();
-            jest.spyOn(graphClient, 'raccomanda').mockRejectedValue(new Error('timeout of 10000ms exceeded'));
+            jest.spyOn(graphClient, 'scaffali').mockRejectedValue(new Error('timeout of 10000ms exceeded'));
             jest.spyOn(console, 'warn').mockImplementation(() => {});
 
             // Chiamata a buildSharedHeroCatalogs che esegue le strategie

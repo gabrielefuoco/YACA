@@ -164,20 +164,19 @@ function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userH
     const catalogs = onlyShelves
         ? [...activeHeroCatalogs]
         : [
-            { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-            { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca Veloce TMDB', extra: searchExtra },
-            { id: 'yaca_search_ai', type: 'movie', name: 'YACA: Deep AI Search', extra: searchExtra },
-            { id: 'yaca_search_ai', type: 'series', name: 'YACA: Deep AI Search', extra: searchExtra },
+            // Una sola ricerca. Il nome porta la sintassi: in Stremio è l'unico posto visibile.
+            { id: 'yaca_search_standard', type: 'movie', name: 'YACA: Ricerca (tema · cast · anno · simili)', extra: searchExtra },
+            { id: 'yaca_search_standard', type: 'series', name: 'YACA: Ricerca (tema · cast · anno · simili)', extra: searchExtra },
             ...WATCHLIST_CATALOGS.map(c => ({ ...c })),
             ...activeHeroCatalogs
         ];
 
     // Tracciamo gli ID già presenti per deduplicare cataloghi custom e di profilo
-    // (escludendo yaca_search_standard e yaca_search_ai che compaiono 2 volte per movie e series)
+    // (escludendo yaca_search_standard, che compare 2 volte per movie e series)
     const seenCatalogIds = new Set(
         catalogs
             .map(c => c.id)
-            .filter(id => id !== 'yaca_search_standard' && id !== 'yaca_search_ai')
+            .filter(id => id !== 'yaca_search_standard')
     );
 
     // Add User Presets

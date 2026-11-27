@@ -65,7 +65,6 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [configDecoded, setConfigDecoded] = useState(false);
   const [globalTmdbKey, setGlobalTmdbKey] = useState<string>('');
-  const [, setGlobalMistralKey] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(true);
   const autoConfigCalledRef = useRef(false);
   const pathname = usePathname();
@@ -109,7 +108,6 @@ export default function Home() {
             if (data.configVersion) setConfigVersion(String(data.configVersion));
             if (data.apiKeys) {
               if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
-              if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
               if (data.apiKeys.trakt) setTraktToken(data.apiKeys.trakt);
               if (data.apiKeys.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
               if (data.apiKeys.traktExpiresAt) setTraktExpiresAt(data.apiKeys.traktExpiresAt);
@@ -149,7 +147,6 @@ export default function Home() {
 
           if (data.apiKeys) {
             if (data.apiKeys.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
-            if (data.apiKeys.mistral) setGlobalMistralKey(data.apiKeys.mistral);
             if (data.apiKeys.trakt) setTraktToken(data.apiKeys.trakt);
             if (data.apiKeys.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
             if (data.apiKeys.traktExpiresAt) setTraktExpiresAt(data.apiKeys.traktExpiresAt);
@@ -387,7 +384,6 @@ export default function Home() {
     newTraktRefreshToken: string | null,
     existingUserId?: string,
     tmdbKey?: string,
-    mistralKey?: string,
     existingProfiles?: BackendProfile[],
     existingActiveProfileId?: string,
     newTraktExpiresAt?: string | null
@@ -416,7 +412,6 @@ export default function Home() {
       localStorage.setItem(LOCAL_STORAGE_KEYS.USER_ID, existingUserId);
     }
     if (tmdbKey) setGlobalTmdbKey(tmdbKey);
-    if (mistralKey) setGlobalMistralKey(mistralKey);
 
     // Generate initial config — no auth tokens in body, cookie handles identity
     try {
@@ -424,7 +419,6 @@ export default function Home() {
         profiles: profilesToApiPayload(activeProfiles),
         activeProfileId: existingActiveProfileId || activeProfileId,
         tmdbKey: tmdbKey ?? undefined,
-        mistralKey: mistralKey ?? undefined,
         stremioAuthKey: newStremioAuth?.authKey || undefined,
         email: newStremioAuth?.email,
         traktToken: newTraktToken ?? undefined,
@@ -441,7 +435,6 @@ export default function Home() {
         if (data.apiKeys?.traktRefreshToken) setTraktRefreshToken(data.apiKeys.traktRefreshToken);
         if (data.apiKeys?.traktExpiresAt) setTraktExpiresAt(data.apiKeys.traktExpiresAt);
         if (data.apiKeys?.tmdb) setGlobalTmdbKey(data.apiKeys.tmdb);
-        if (data.apiKeys?.mistral) setGlobalMistralKey(data.apiKeys.mistral);
 
         // Auto-install addon in Stremio
         if (newStremioAuth?.authKey) {

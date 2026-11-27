@@ -4,7 +4,7 @@ const CacheManager = require('../cache/CacheManager');
 const redisClient = require('../cache/redisClient');
 const { clearAllTmdbCaches } = require('../clients/tmdb');
 const { clearIdCache } = require('../clients');
-const { aiPromptCache, aiDiscoveryCache, hybridRecommendationsCache } = require('../cache/cacheInstances');
+const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 const { contaAccount } = require('../configurazione');
 const SystemLog = require('../models/SystemLog');
 const adminAuth = require('./middleware/adminAuth');
@@ -47,8 +47,6 @@ router.post('/system/flush', async (req, res) => {
             await clearAllTmdbCaches();
             await clearIdCache();
             await hybridRecommendationsCache.clear();
-            await aiPromptCache.clear();
-            await aiDiscoveryCache.clear();
             return res.json({ success: true, message: 'Tutte le cache svuotate.' });
         }
 

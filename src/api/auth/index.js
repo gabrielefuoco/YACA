@@ -207,7 +207,6 @@ async function meHandler(req, res) {
             apiKeys: {
                 stremio: account.apiKeys?.stremio || null,
                 tmdb: account.apiKeys?.tmdb || null,
-                mistral: account.apiKeys?.mistral || null,
                 trakt: account.apiKeys?.trakt || null,
                 // NB: il refresh token NON esce dal server (credenziale long-lived).
                 // Il backend lo preserva da sé quando il client non lo rimanda.

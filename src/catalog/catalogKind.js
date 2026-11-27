@@ -19,7 +19,6 @@ const { getHeroCatalogKindMap, isHeroCatalogId } = require('./registry');
 const FIXED_CATALOGS_REGISTRY = {
     // Utility e libreria personale (sempre visibili nel manifest)
     'yaca_search_standard': { mediaSet: ['film', 'serie'], anime: 'mixed', alwaysVisible: true },
-    'yaca_search_ai': { mediaSet: ['film', 'serie'], anime: 'mixed', alwaysVisible: true },
     'yaca_watchlist_movies': { mediaSet: ['film'], anime: 'no', alwaysVisible: true },
     'yaca_watchlist_series': { mediaSet: ['serie'], anime: 'no', alwaysVisible: true },
     'yaca_watchlist_anime': { mediaSet: ['film', 'serie'], anime: 'yes', alwaysVisible: true },

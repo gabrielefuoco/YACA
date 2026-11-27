@@ -15,7 +15,6 @@ interface LoginPageProps {
     traktRefreshToken: string | null,
     existingUserId?: string,
     tmdbKey?: string,
-    mistralKey?: string,
     existingProfiles?: any[],
     existingActiveProfileId?: string,
     traktExpiresAt?: string | null
@@ -63,7 +62,6 @@ export function LoginPage({ onComplete }: LoginPageProps) {
             data.traktRefreshToken || null,
             data.userId || undefined,
             undefined,
-            undefined,
             data.profiles || undefined,
             data.activeProfileId || undefined,
             data.traktExpiresAt || null
@@ -89,7 +87,6 @@ export function LoginPage({ onComplete }: LoginPageProps) {
       tkn,
       refresh,
       sessionUserId,
-      undefined,
       undefined,
       undefined,
       undefined,

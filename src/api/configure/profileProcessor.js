@@ -24,11 +24,10 @@ function createGlobalProfileInput() {
  * 
  * @param {Array} inputProfiles - Raw profile objects from request body
  * @param {string} userId - Current user ID
- * @param {string} mistralKey - Mistral API Key for AI synthesis
  * @param {Array} warnings - Array to collect processing warnings
  * @returns {Promise<Array>} Processed profile objects
  */
-async function processProfiles(inputProfiles, userId, mistralKey, warnings, tmdbKey) {
+async function processProfiles(inputProfiles, userId, warnings, tmdbKey) {
     const allPresets = getPresets();
     const presetMap = new Map(allPresets.map(p => [p.id, p]));
     

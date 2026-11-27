@@ -22,7 +22,7 @@ const {
     LibrarySyncService
 } = require('../library');
 const { syncAllStremioData, updateStremioAddonCollection } = require('../stremio');
-const { hybridRecommendationsCache, aiDiscoveryCache } = require('../cache/cacheInstances');
+const { hybridRecommendationsCache } = require('../cache/cacheInstances');
 
 /**
  * GET /api/profilo
@@ -40,7 +40,6 @@ router.get('/', async (req, res) => {
         const safeApiKeys = {
             stremio: Boolean(user.apiKeys?.stremio),
             tmdb: user.apiKeys?.tmdb || null,
-            mistral: user.apiKeys?.mistral || null,
             trakt: Boolean(user.apiKeys?.trakt),
             traktExpiresAt: user.apiKeys?.traktExpiresAt || null
         };
@@ -573,7 +572,6 @@ router.post('/sincronizzazione', async (req, res) => {
 router.post('/aggiorna', async (req, res) => {
     try {
         await hybridRecommendationsCache.clear();
-        await aiDiscoveryCache.clear();
         return res.json({ success: true, message: 'Suggerimenti aggiornati con successo.' });
     } catch (err) {
         console.error('[ProfiloAPI] Errore aggiornamento suggerimenti:', err.message);

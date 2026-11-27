@@ -120,28 +120,5 @@ router.post('/validate-tmdb-key', async (req, res) => {
     }
 });
 
-// Endpoint per validare una Mistral API Key (BYOK verification)
-router.post('/validate-mistral-key', async (req, res) => {
-    const { mistralKey } = req.body;
-    if (!mistralKey) {
-        return res.status(400).json({ valid: false, error: 'Chiave Mistral non fornita.' });
-    }
-    try {
-        const { Mistral } = require('@mistralai/mistralai');
-        const client = new Mistral({ apiKey: mistralKey, timeout: 10000 });
-        const response = await client.models.list();
-        if (response?.data && Array.isArray(response.data)) {
-            return res.json({ valid: true });
-        }
-        return res.json({ valid: false, error: 'Risposta non valida da Mistral.' });
-    } catch (err) {
-        const status = err.status || err.statusCode;
-        if (status === 401) {
-            return res.json({ valid: false, error: 'Chiave Mistral non valida (401 Unauthorized).' });
-        }
-        return res.json({ valid: false, error: 'Impossibile verificare la chiave Mistral. Riprova.' });
-    }
-});
-
 module.exports = router;
 

@@ -59,7 +59,6 @@ module.exports = async (req, res) => {
         const warnings = [];
         const {
             effectiveTmdbKey, // not used directly here but validated
-            mistralKey,
             traktToken,
             traktRefreshToken,
             traktExpiresAt,
@@ -86,7 +85,7 @@ module.exports = async (req, res) => {
                 inputProfiles = [createGlobalProfileInput(), ...inputProfiles];
             }
 
-            parsedProfiles = await processProfiles(inputProfiles, userId, mistralKey, warnings, effectiveTmdbKey);
+            parsedProfiles = await processProfiles(inputProfiles, userId, warnings, effectiveTmdbKey);
         }
 
         // Se il profilo attivo inviato dal client non esiste più, si conserva quello già salvato.
@@ -118,7 +117,6 @@ module.exports = async (req, res) => {
         // Map validated key names to DB field names
         const validatedKeyMap = {
             effectiveTmdbKey: 'tmdb',
-            mistralKey: 'mistral',
             traktToken: 'trakt',
             traktRefreshToken: 'traktRefreshToken',
             traktExpiresAt: 'traktExpiresAt',
@@ -128,7 +126,7 @@ module.exports = async (req, res) => {
         // Only include keys that were explicitly provided in the request body
         // and have a non-empty validated value. Ignore empty/undefined values
         // to prevent accidental overwrite of existing DB tokens.
-        const validatedValues = { effectiveTmdbKey, mistralKey, traktToken, traktRefreshToken, traktExpiresAt, stremioAuthKey };
+        const validatedValues = { effectiveTmdbKey, traktToken, traktRefreshToken, traktExpiresAt, stremioAuthKey };
         for (const [validatedName, dbKey] of Object.entries(validatedKeyMap)) {
             const value = validatedValues[validatedName];
             if (value !== undefined && value !== null && value !== '') {

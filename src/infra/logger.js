@@ -8,7 +8,7 @@ const LOG_TO_MONGO = process.env.SYSTEM_LOG === 'mongo';
  * Registra un errore o evento: sempre su console, su MongoDB solo con SYSTEM_LOG=mongo.
  * Ignora silenziosamente gli errori di scrittura per non bloccare l'applicazione.
  * 
- * @param {string} context Il componente che ha generato l'errore (es. 'TMDB', 'Trakt', 'Mistral')
+ * @param {string} context Il componente che ha generato l'errore (es. 'TMDB', 'Trakt', 'Stremio')
  * @param {string} message Il messaggio dell'errore
  * @param {Object} [meta] Dati opzionali aggiuntivi
  * @param {string} [level='error'] Livello di gravità: 'info', 'warning', 'error'

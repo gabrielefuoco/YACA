@@ -30,10 +30,6 @@ function getCacheInstanceForNome(nome) {
         case 'meta':
         case 'final_meta':
             return finalMetaCache;
-        case 'ai_prompt':
-            return cacheInstances.aiPromptCache;
-        case 'ai_discovery':
-            return cacheInstances.aiDiscoveryCache;
         default:
             return defaultCache;
     }

@@ -108,13 +108,12 @@ async function getTmdbIdByName(apiKey, endpoint, query) {
             const exactMatch = results.find(r => r.name && r.name.toLowerCase() === query.toLowerCase());
             id = exactMatch ? exactMatch.id : results[0].id;
         }
-        // Cache sia dei risultati positivi che negativi (null)
-        await idNameCache.set(cacheKey, id);
+        // Cache SOLO dei risultati positivi. Un `null` in cache (titolo non trovato, o TMDB che
+        // non risponde) è un buco che la ricerca non vede più: la voce scade dopo un'ora, ma per
+        // un'ora il titolo resta irraggiungibile anche se nel frattempo è entrato nel dump.
+        if (id) await idNameCache.set(cacheKey, id);
         return id;
     } catch (e) {
-        if (e.response?.status === 404) {
-            await idNameCache.set(cacheKey, null, 86400000); // Negative cache 24h
-        }
         console.error(`Errore getTmdbIdByName (${endpoint} - ${query}):`, e.message);
         return null;
     }

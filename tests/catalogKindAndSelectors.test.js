@@ -72,7 +72,6 @@ describe('TICKET 09: Selettori di tipo nel profilo (catalogKind, Manifest e Guar
 
         it('riconosce i cataloghi alwaysVisible (utility e libreria)', () => {
             expect(isAlwaysVisible('yaca_search_standard')).toBe(true);
-            expect(isAlwaysVisible('yaca_search_ai')).toBe(true);
             expect(isAlwaysVisible('yaca_watchlist_movies')).toBe(true);
             expect(isAlwaysVisible('yaca_watchlist_series')).toBe(true);
             expect(isAlwaysVisible('yaca_watchlist_anime')).toBe(true);

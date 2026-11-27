@@ -1,10 +1,9 @@
 const { getTmdbIdByName, createTmdbClient } = require('../../clients/tmdb');
-const { routeLiveStremioSearch } = require('../../ricerca/router');
 const { applyConsensusScoring } = require('../../infra');
 const { getDuckDbCatalogFromFilters } = require('../../indice');
-const { normalizeAiDiscoveryQueries } = require('./AiQueryNormalizer');
 const { hydrateResultsFromLocalDetailsCache } = require('../processors/MetadataHydrator');
 const { G } = require('../../indice/filters');
+const { normalizza } = require('../../infra/testo');
 
 function getTmdbVoteScore(item) {
     const rawVote = item?.rawTMDB?.vote_average ?? item?.vote_average ?? item?.imdbRating;
@@ -12,7 +11,6 @@ function getTmdbVoteScore(item) {
     return Number.isFinite(vote) ? vote : 0;
 }
 
-const { computeTopGenres, computeTopKeywords } = require('../../profile');
 
 function applyAiQualityFilters(query) {
     if (query.strategy === 'discovery') {
@@ -54,18 +52,49 @@ function getKeywordFallbackSequence(originalKeyword, fallbackArray = []) {
     return sequence;
 }
 
-async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}) {
-    const searchType = type === 'series' ? 'tv' : 'movie';
+/** Il primo risultato locale è davvero il titolo chiesto? (non «Batman Begins» per «batman») */
+function titoloCorrisponde(nome, item) {
+    const atteso = normalizza(nome);
+    if (!atteso) return false;
+    const raw = item?.rawTMDB || {};
+    return [item?.name, raw.title, raw.original_title, raw.name, raw.original_name]
+        .filter(Boolean)
+        .some(candidato => normalizza(candidato) === atteso);
+}
 
+/**
+ * L'id TMDB di un titolo, cercato PRIMA nel nostro indice e solo dopo su TMDB.
+ *
+ * `similar_to` arriva dal catalogo salvato come nome e finiva sempre su una chiamata di rete
+ * (`/search/movie`). Il titolo, se è nostro, è già in DuckDB: dieci millisecondi invece di un
+ * giro su internet. TMDB resta il ripiego per i titoli che conosciamo solo di nome.
+ */
+async function risolviIdTitolo(nome, type, tmdbApiKey, settings) {
+    const pulito = String(nome || '').trim();
+    if (!pulito) return null;
+
+    try {
+        const locali = await getDuckDbCatalogFromFilters({ text_search: pulito }, type, 0, 1, settings);
+        const primo = Array.isArray(locali) ? locali[0] : null;
+        const id = Number(String(primo?.id || '').replace(/^tmdb:/i, ''));
+        if (Number.isFinite(id) && id > 0 && titoloCorrisponde(pulito, primo)) return id;
+    } catch (_err) {
+        // Indice non pronto: si prova TMDB, come prima.
+    }
+
+    return await getTmdbIdByName(tmdbApiKey, type === 'series' ? 'tv' : 'movie', pulito);
+}
+
+async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, skip, settings = {}, cacheOptions = {}, limit = PAGE_SIZE) {
     if (filters.strategy === "similar" && filters.similar_to) {
-        const targetId = await getTmdbIdByName(tmdbApiKey, searchType, filters.similar_to);
+        const targetId = await risolviIdTitolo(filters.similar_to, type, tmdbApiKey, settings);
         if (targetId) {
-            return await getDuckDbCatalogFromFilters({ similar_to: targetId }, type, skip, PAGE_SIZE, settings);
+            return await getDuckDbCatalogFromFilters({ similar_to: targetId }, type, skip, limit, settings);
         }
         return [];
     }
     if (filters.strategy === "multi_search" || filters.strategy === "lexical_search") {
-        return await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, PAGE_SIZE, settings);
+        return await getDuckDbCatalogFromFilters({ text_search: filters.text_search || filters.keyword }, type, skip, limit, settings);
     }
     if (filters.strategy === "manual_list") {
         let tmdbIds = [];
@@ -77,10 +106,10 @@ async function executeComplexStrategy(filters, tmdbClient, tmdbApiKey, type, ski
             tmdbIds = [filters.with_id || filters.params.with_id];
         }
         if (tmdbIds.length === 0) return [];
-        return await getDuckDbCatalogFromFilters({ tmdbIds, uniqueById: filters.uniqueById }, type, skip, PAGE_SIZE, settings);
+        return await getDuckDbCatalogFromFilters({ tmdbIds, uniqueById: filters.uniqueById }, type, skip, limit, settings);
     }
     // Usa DuckDB per tutti i cataloghi discovery nativi (inclusi preset e hybrid fallback)
-    return await getDuckDbCatalogFromFilters(filters, type, skip, PAGE_SIZE, settings);
+    return await getDuckDbCatalogFromFilters(filters, type, skip, limit, settings);
 }
 
 function collectManualListItems(queries) {
@@ -94,18 +123,6 @@ function collectManualListItems(queries) {
         }
     }
     return items;
-}
-
-function getPagesToFetchForQuery(query, requestedPages) {
-    if (query.strategy !== 'manual_list') return requestedPages;
-
-    let itemCount = null;
-    if (Array.isArray(query.items)) itemCount = query.items.length;
-    else if (Array.isArray(query.tmdbIds)) itemCount = query.tmdbIds.length;
-    else if (query.with_id || query.params?.with_id) itemCount = 1;
-
-    if (itemCount === null) return requestedPages;
-    return Math.max(1, Math.min(requestedPages, Math.ceil(itemCount / PAGE_SIZE)));
 }
 
 // Fase 2: Processa qualsiasi catalogo tramite array "queries" (LookAhead, Consensus)
@@ -171,8 +188,12 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
 
         finalResults = primaryResults || [];
     } else {
-        const totalNeeded = skip + PAGE_SIZE;
-        const pagesToFetch = Math.max(LOOKAHEAD_PAGES, Math.ceil(totalNeeded / PAGE_SIZE));
+        // Una lettura sola per query. DuckDB è locale e `LIMIT skip + PAGE_SIZE` in una query
+        // restituisce esattamente la concatenazione delle pagine: tre query da 20 diventano una
+        // da 60. La finestra resta `LOOKAHEAD_PAGES * PAGE_SIZE` perché **identica fra pagina 1 e
+        // pagina 2** è ciò che rende le pagine disgiunte (contratto H5): cambiando la finestra
+        // cambia il consensus, e gli item già mostrati tornano in pagina 2.
+        const fetchLimit = Math.max(LOOKAHEAD_PAGES * PAGE_SIZE, skip + PAGE_SIZE);
 
         const queryResults = await Promise.all(
             queries.map(async (queryDef) => {
@@ -180,18 +201,10 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                 if (!query.strategy) query.strategy = 'discovery';
                 query = applyAiQualityFilters(query);
 
-                const pagePromises = [];
-                const queryPagesToFetch = getPagesToFetchForQuery(query, pagesToFetch);
-                for (let p = 0; p < queryPagesToFetch; p++) {
-                    const pageSkip = p * PAGE_SIZE;
-                    pagePromises.push(
-                        executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions)
-                    );
-                }
-                let pageResults = await Promise.all(pagePromises);
-                let flatResults = pageResults.flat().map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef.keyword, _sourceGenres: query.with_genres || queryDef.with_genres }));
-                
-                // Fallback morbido se le keyword di Mistral sono allucinate o inesistenti
+                const primari = await executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, 0, settings, cacheOptions, fetchLimit);
+                let flatResults = (primari || []).map(item => ({ ...item, _sourceKeyword: query.keyword || queryDef.keyword, _sourceGenres: query.with_genres || queryDef.with_genres }));
+
+                // Fallback morbido se le keyword salvate non esistono nel dump
                 if (!settings?.noFallback && flatResults.length === 0 && (query.with_keywords || query.keyword)) {
                     const fallbackKeywords = getKeywordFallbackSequence(query.keyword || query.with_keywords, query.fallback_keywords);
                     let relaxedResults = [];
@@ -204,15 +217,9 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
                             relaxedQuery.keyword = fallbackKw;
                             delete relaxedQuery.with_keywords;
                         }
-                        
-                        const relaxedPromises = [];
-                        for (let p = 0; p < pagesToFetch; p++) {
-                            const pageSkip = p * PAGE_SIZE;
-                            relaxedPromises.push(executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, pageSkip, settings, cacheOptions));
-                        }
-                        const pageResults = await Promise.all(relaxedPromises);
-                        relaxedResults = pageResults.flat();
-                        if (relaxedResults && relaxedResults.length > 0) {
+
+                        relaxedResults = await executeComplexStrategy(relaxedQuery, tmdbClient, tmdbApiKey, type, 0, settings, cacheOptions, fetchLimit) || [];
+                        if (relaxedResults.length > 0) {
                             relaxedResults = relaxedResults.map(item => ({ ...item, _sourceKeyword: fallbackKw || queryDef.keyword, _sourceGenres: query.with_genres || queryDef.with_genres }));
                             break;
                         }
@@ -238,135 +245,7 @@ async function executeUniversalPipeline(universalCatalog, tmdbClient, tmdbApiKey
     return finalResults;
 }
 
-// Automatic query injection from profile
-async function injectProfilePreferences(filters, userId, profileId) {
-    if (!userId) return filters;
-    // Il gusto si chiede alla porta del profilo: solo il profilo tocca i suoi modelli (map §16).
-    const { getTasteProfile } = require('../../profile');
-    const profile = await getTasteProfile(userId, profileId || 'global');
-    if (!profile) return filters;
-
-    const enriched = { ...filters };
-    
-    // Use VSM-based top features (V_final) with legacy fallback
-    const topKeywords = computeTopKeywords(profile, 3);
-    const topGenres = computeTopGenres(profile, 2);
-    const alignedTopGenres = [...new Set(topGenres.flatMap(genre => {
-        const id = Number(genre);
-        return Number.isFinite(id) ? [id, ...G.getEquivalentGenreIds(id)] : [];
-    }))];
-
-    // Le keyword del profilo sono un fallback di personalizzazione, non un
-    // sostituto del tema esplicito chiesto dall'utente. Se la discovery ha già
-    // una keyword/cast risolto, accodare i ID del profilo con OR trasformerebbe
-    // "superhero" in qualunque film del DNA e ricreerebbe il catalogo generico.
-    const hasExplicitNameFilter = Boolean(enriched._keywordNames || enriched.with_keywords || enriched.with_cast);
-    if (topKeywords.length > 0 && !hasExplicitNameFilter) {
-        enriched.with_keywords = topKeywords.join('|');
-    }
-
-    if (alignedTopGenres.length > 0) {
-        if (enriched.with_genres) {
-            const separator = enriched.with_genres.includes(',') ? ',' : '|';
-            const existingGenres = enriched.with_genres.split(separator).map(s => s.trim()).filter(Boolean);
-            enriched.with_genres = [...new Set([...existingGenres, ...alignedTopGenres])].join(separator);
-        } else {
-            enriched.with_genres = alignedTopGenres.join('|');
-        }
-    }
-
-    return enriched;
-}
-
 // Esegue Deep AI Search, consensus ranking e profilazione
-async function executeCombinedSearch(search, userConfig, type, skip, activeProfileSettings, cacheOptions) {
-    const { chiaveEffettiva } = require('../../configurazione');
-    const tmdbApiKey = chiaveEffettiva({ account: userConfig, servizio: 'tmdb' });
-    const mistralKey = chiaveEffettiva({ account: userConfig, servizio: 'mistral' });
-    const tmdbClient = createTmdbClient(tmdbApiKey);
-    const userId = userConfig.userId;
-    const profileId = userConfig.activeProfileId;
-    const activeContext = profileId || 'global';
-    
-    let plannedQueries = [];
-    let usingLexicalFallback = false;
-    try {
-        if (mistralKey) {
-            const routing = await routeLiveStremioSearch(search, mistralKey);
-            
-            if (routing?.filters?.strategy === 'static_list') {
-                const titles = routing.filters.static_items || [];
-                const titlePromises = titles.map(title =>
-                    getDuckDbCatalogFromFilters({ text_search: title }, type, 0, 1, activeProfileSettings)
-                );
-                const titleResults = await Promise.all(titlePromises);
-                return titleResults.flat().filter(Boolean);
-            }
-
-            const rawQueries = Array.isArray(routing?.filters?.queries) ? routing.filters.queries : [];
-            plannedQueries = rawQueries.filter(query => !query?.target || query.target === 'tmdb' || query.target === 'kitsu');
-        }
-    } catch (e) {
-        console.error("Errore AI Search (Mistral down):", e.message);
-    }
-
-    // Boundary unico dello schema planner → schema DuckDB. La risoluzione dei
-    // nomi può scartare una discovery irrisolvibile; in quel caso non deve
-    // degenerare silenziosamente nel catalogo popolare generico.
-    if (plannedQueries.length > 0) {
-        plannedQueries = await normalizeAiDiscoveryQueries(plannedQueries, { type, tmdbClient });
-    }
-
-    if (plannedQueries.length === 0) {
-        // Senza un piano Mistral (o senza nomi risolvibili) non fingiamo una
-        // ricerca semantica: il fallback dichiara esplicitamente una ricerca
-        // lessicale stretta sui titoli. Il provider applica BM25, copertura di
-        // tutti i termini e boost esatto.
-        usingLexicalFallback = true;
-        plannedQueries = [{ strategy: 'lexical_search', text_search: search, target: 'tmdb' }];
-        console.info(`[AiDiscoveryProvider] Router AI non disponibile o query non risolvibile: fallback lessicale stretto per "${search}".`);
-    }
-
-    const enrichedQueries = usingLexicalFallback
-        ? plannedQueries
-        : await Promise.all(
-            plannedQueries.map(query => injectProfilePreferences(query, userId, profileId))
-        );
-    const queryResults = await Promise.all(
-        enrichedQueries.map(query =>
-            executeComplexStrategy(query, tmdbClient, tmdbApiKey, type, skip, activeProfileSettings, cacheOptions)
-        )
-    );
-
-    const finalItems = applyConsensusScoring(queryResults);
-    await hydrateResultsFromLocalDetailsCache(finalItems, tmdbApiKey, type);
-
-    if (usingLexicalFallback) {
-        // executeComplexStrategy ha già applicato skip e limite: non riordinare
-        // per voto/profilo, altrimenti il fallback nasconderebbe la rilevanza BM25.
-        return finalItems;
-    }
-
-    for (const item of finalItems) {
-        const consensusBonus = item.consensusCount > 1 ? (item.consensusCount ** 2) - 1 : 0;
-        const tmdbVote = getTmdbVoteScore(item);
-        item.affinity = 0;
-        item.finalScore = tmdbVote + consensusBonus;
-        item.consensusBonus = consensusBonus;
-        delete item.queryIndexes;
-    }
-
-    finalItems.sort((a, b) => {
-        if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
-        if ((b.popularity || 0) !== (a.popularity || 0)) return (b.popularity || 0) - (a.popularity || 0);
-        return (b.consensusCount || 0) - (a.consensusCount || 0);
-    });
-
-    return finalItems.slice(0, 20);
-}
-
-
 module.exports = {
-    executeUniversalPipeline,
-    executeCombinedSearch
+    executeUniversalPipeline
 };

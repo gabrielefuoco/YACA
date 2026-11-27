@@ -27,7 +27,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@mistralai/mistralai": "^1.14.0",
     "axios": "^1.13.5",
     "better-sqlite3": "^12.11.1",
     "cookie-parser": "^1.4.7",

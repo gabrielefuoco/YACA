@@ -119,12 +119,12 @@ describe('Modulo Configurazione Utente (Ticket 26)', () => {
             process.env = originalEnv;
         });
 
-        test('restituisce la chiave globale per tmdb e mistral da process.env', () => {
+        test('restituisce la chiave globale solo per i servizi che ne hanno una', () => {
             process.env.TMDB_API_KEY = 'global_tmdb';
-            process.env.MISTRAL_API_KEY = 'global_mistral';
 
             expect(chiaveGlobale('tmdb')).toBe('global_tmdb');
-            expect(chiaveGlobale('mistral')).toBe('global_mistral');
+            // Mistral non è più un servizio: non esiste una chiave globale da leggere.
+            expect(chiaveGlobale('mistral')).toBeNull();
             expect(chiaveGlobale('sconosciuto')).toBeNull();
             expect(chiaveGlobale(null)).toBeNull();
         });
@@ -132,7 +132,6 @@ describe('Modulo Configurazione Utente (Ticket 26)', () => {
 
     describe('3. Degrado dichiarato e motivi assenza chiave (Decisione 4)', () => {
         test('motivoAssenzaChiave formatta il codice standardizzato', () => {
-            expect(motivoAssenzaChiave('mistral')).toBe('chiave_mistral_assente');
             expect(motivoAssenzaChiave('tmdb')).toBe('chiave_tmdb_assente');
             expect(motivoAssenzaChiave('stremio')).toBe('chiave_stremio_assente');
             expect(motivoAssenzaChiave('trakt')).toBe('chiave_trakt_assente');
@@ -140,8 +139,6 @@ describe('Modulo Configurazione Utente (Ticket 26)', () => {
         });
 
         test('motivoDegradoFeature mappa le feature note al motivo corretto', () => {
-            expect(motivoDegradoFeature('ricerca_semantica')).toBe('chiave_mistral_assente');
-            expect(motivoDegradoFeature('cataloghi_ai')).toBe('chiave_mistral_assente');
             expect(motivoDegradoFeature('daemon_dump_tmdb')).toBe('chiave_tmdb_assente');
             expect(motivoDegradoFeature('conversione_libreria')).toBe('chiave_tmdb_assente');
         });

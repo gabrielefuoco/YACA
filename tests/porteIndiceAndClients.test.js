@@ -87,7 +87,7 @@ describe('Porta src/indice (Ticket 53)', () => {
 describe('Porta src/clients (Ticket 53)', () => {
     test('la porta dei client espone graphClient con i metodi di contratto', () => {
         expect(clients.graphClient).toBeDefined();
-        expect(typeof clients.graphClient.raccomanda).toBe('function');
+        expect(typeof clients.graphClient.vicini).toBe('function');
         expect(typeof clients.graphClient.getGraphHealthVersionsCached).toBe('function');
         expect(typeof clients.graphClient.getGraphHealthVersions).toBe('function');
     });
@@ -95,6 +95,6 @@ describe('Porta src/clients (Ticket 53)', () => {
     test('la destrutturazione di graphClient da src/clients fornisce il modulo reale', () => {
         const { graphClient } = require('../src/clients');
         expect(graphClient).toBe(clients.graphClient);
-        expect(typeof graphClient.raccomanda).toBe('function');
+        expect(typeof graphClient.vicini).toBe('function');
     });
 });

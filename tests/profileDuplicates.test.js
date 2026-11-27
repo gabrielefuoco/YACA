@@ -37,7 +37,7 @@ describe('Profile and Catalog Deduplication Tests', () => {
             }];
 
             const warnings = [];
-            const result = await processProfiles(inputProfiles, 'u1', null, warnings, null);
+            const result = await processProfiles(inputProfiles, 'u1', warnings, null);
 
             expect(result).toHaveLength(1);
             const globalProfile = result[0];
@@ -64,7 +64,7 @@ describe('Profile and Catalog Deduplication Tests', () => {
             }];
 
             const warnings = [];
-            const result = await processProfiles(inputProfiles, 'u1', null, warnings, null);
+            const result = await processProfiles(inputProfiles, 'u1', warnings, null);
 
             const profile = result[0];
 

@@ -6,18 +6,6 @@ const TEN_MINUTES_MS = 1000 * 60 * 10;
 const ONE_HOUR_MS = 1000 * 60 * 60;
 const ONE_MINUTE_MS = 1000 * 60;
 
-const aiPromptCache = new CacheManager('ai_prompt_cache', {
-    ramMax: 50,
-    ramTtlMs: ONE_MINUTE_MS,
-    redisTtlMs: ONE_MINUTE_MS
-});
-
-const aiDiscoveryCache = new CacheManager('ai_discovery_queries', {
-    ramMax: 50,
-    ramTtlMs: ONE_MINUTE_MS,
-    redisTtlMs: ONE_MINUTE_MS
-});
-
 const hybridRecommendationsCache = new CacheManager('recommendation_cache', {
     ramMax: 30,
     ramTtlMs: RECOMMENDATIONS_CACHE_TTL_MS,
@@ -47,8 +35,6 @@ const shelvesCache = new CacheManager('shelves', {
 });
 
 module.exports = {
-    aiPromptCache,
-    aiDiscoveryCache,
     hybridRecommendationsCache,
     catalogRequestCache,
     shelvesCache

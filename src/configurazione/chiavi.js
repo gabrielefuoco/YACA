@@ -12,7 +12,6 @@
 
 const SERVIZI = Object.freeze({
     TMDB: 'tmdb',
-    MISTRAL: 'mistral',
     STREMIO: 'stremio',
     TRAKT: 'trakt'
 });
@@ -22,9 +21,6 @@ const SERVIZI = Object.freeze({
  * Quando una chiave manca, il chiamante degrada dichiarando il motivo esplicito.
  */
 const DIPENDENZE_SERVIZI = Object.freeze({
-    ricerca_semantica: SERVIZI.MISTRAL,
-    cataloghi_ai: SERVIZI.MISTRAL,
-    fusione_nomi_cataloghi: SERVIZI.MISTRAL,
     ricerca_tmdb: SERVIZI.TMDB,
     ricerca_keyword: SERVIZI.TMDB,
     ricerca_persona: SERVIZI.TMDB,
@@ -35,7 +31,7 @@ const DIPENDENZE_SERVIZI = Object.freeze({
 
 /**
  * Restituisce il motivo standardizzato di degrado per assenza chiave.
- * Esempio: 'mistral' -> 'chiave_mistral_assente'
+ * Esempio: 'tmdb' -> 'chiave_tmdb_assente'
  *
  * @param {string} servizio
  * @returns {string}
@@ -60,7 +56,7 @@ function motivoDegradoFeature(feature) {
  * Legge la chiave globale di sistema da process.env per i lavori offline.
  * È l'UNICO punto dell'intera applicazione autorizzato a leggere le API key da process.env.
  *
- * @param {string} servizio - 'tmdb' | 'mistral' | 'stremio' | 'trakt'
+ * @param {string} servizio - 'tmdb' | 'stremio' | 'trakt'
  * @returns {string|null}
  */
 function chiaveGlobale(servizio) {
@@ -68,9 +64,6 @@ function chiaveGlobale(servizio) {
     const s = String(servizio).toLowerCase().trim();
     if (s === 'tmdb') {
         return process.env.TMDB_API_KEY || null;
-    }
-    if (s === 'mistral') {
-        return process.env.MISTRAL_API_KEY || null;
     }
     return null;
 }
@@ -85,7 +78,7 @@ function chiaveGlobale(servizio) {
  *
  * @param {Object} params
  * @param {Object} [params.account] - Documento o oggetto account dell'utente
- * @param {string} params.servizio - 'tmdb' | 'mistral' | 'stremio' | 'trakt'
+ * @param {string} params.servizio - 'tmdb' | 'stremio' | 'trakt'
  * @param {string} [params.richiesta] - Chiave opzionale passata nella specifica richiesta
  * @param {Object} [params.env] - Iniezione opzionale variabili ambiente (default: process.env)
  * @returns {string|null}
@@ -120,11 +113,6 @@ function chiaveEffettiva({ account = null, servizio = '', richiesta = null, env 
         const globalTmdb = env?.TMDB_API_KEY;
         if (globalTmdb && typeof globalTmdb === 'string' && globalTmdb.trim().length > 0) {
             return globalTmdb.trim();
-        }
-    } else if (s === 'mistral') {
-        const globalMistral = env?.MISTRAL_API_KEY;
-        if (globalMistral && typeof globalMistral === 'string' && globalMistral.trim().length > 0) {
-            return globalMistral.trim();
         }
     }
 

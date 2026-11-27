@@ -81,7 +81,7 @@ describe('Manifest with dynamic shelves (Task 5)', () => {
         expect(shelfCatalogs[2]).toMatchObject({ id: 'yaca_330459_movie', type: 'movie', name: 'Space opera (film)' });
 
         // Total catalogs: 4 search + 3 watchlist + 3 shelves = 10
-        expect(manifest.catalogs).toHaveLength(10);
+        expect(manifest.catalogs).toHaveLength(8);
 
         // ZERO legacy editorial role IDs
         for (const legacyId of LEGACY_ROLE_IDS) {
@@ -97,7 +97,7 @@ describe('Manifest with dynamic shelves (Task 5)', () => {
         expect(Array.isArray(manifest.catalogs)).toBe(true);
 
         // Should declare only the 7 non-personal catalogs
-        expect(manifest.catalogs).toHaveLength(7);
+        expect(manifest.catalogs).toHaveLength(5);
 
         const catalogIds = manifest.catalogs.map(c => c.id);
         // ZERO legacy editorial role IDs
