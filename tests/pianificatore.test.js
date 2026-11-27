@@ -334,6 +334,18 @@ describe('risolvi — dai valori agli id', () => {
         expect(motivi.some(m => m.startsWith('risolutore_in_errore'))).toBe(true);
     });
 
+    it('i nomi dei campi dello schema funzionano come operatori', () => {
+        // Chi legge la documentazione o guarda l'editor prova `provider` e `crew`: prima finivano
+        // in una ricerca testuale che non trovava niente, senza dirlo.
+        expect(analizza('provider netflix').grezzo.provider).toBe('netflix');
+        expect(analizza('servizio disney').grezzo.provider).toBe('disney');
+        expect(analizza('crew aaron sorkin').grezzo.crew).toEqual(['aaron sorkin']);
+        // Le forme di sempre restano.
+        expect(analizza('su netflix').grezzo.provider).toBe('netflix');
+        expect(analizza('piattaforma netflix').grezzo.provider).toBe('netflix');
+        expect(analizza('regista nolan').grezzo.crew).toEqual(['nolan']);
+    });
+
     it('il caso tutto-in-uno della spec', async () => {
         const esito = await pianifica(
             'cast leonardo dicaprio tema navi anno 1990-2000 su netflix lingua inglese',

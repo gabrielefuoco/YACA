@@ -47,13 +47,16 @@ const OPERATORI = Object.freeze([
     { chiave: 'generi', forme: ['generi', 'genere'], tipo: 'lista' },
     { chiave: 'anno', forme: ['anno', 'anni'], tipo: 'valore' },
     { chiave: 'anime', forme: ['anime'], tipo: 'flag' },
-    { chiave: 'provider', forme: ['su', 'piattaforma'], tipo: 'valore' },
+    // Le prime forme sono la lingua di tutti i giorni; in coda ci sono i nomi dei campi dello
+    // schema (`provider`, `crew`), perché chi legge la documentazione o guarda l'editor li prova
+    // e prima finiva in una ricerca testuale che non trovava niente.
+    { chiave: 'provider', forme: ['su', 'piattaforma', 'provider', 'servizio'], tipo: 'valore' },
     { chiave: 'lingua', forme: ['lingua'], tipo: 'valore' },
     { chiave: 'paese', forme: ['paese', 'nazione'], tipo: 'valore' },
     // Aggiunti il 26/11/2026 per allineare il block editor del creator alla sintassi: erano le
     // uniche dimensioni dell'editor che la lingua non sapeva esprimere.
     { chiave: 'testo', forme: ['titolo'], tipo: 'valore' },
-    { chiave: 'crew', forme: ['regista', 'registi', 'autore', 'creatore'], tipo: 'lista' },
+    { chiave: 'crew', forme: ['regista', 'registi', 'autore', 'creatore', 'crew'], tipo: 'lista' },
     { chiave: 'voto', forme: ['voto', 'voti'], tipo: 'numero' },
     { chiave: 'durata', forme: ['durata'], tipo: 'numero' },
     { chiave: 'eta', forme: ['eta', 'certificazione'], tipo: 'valore' },
