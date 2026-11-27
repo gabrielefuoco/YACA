@@ -247,8 +247,29 @@ async function eseguiPiano(piano, {
         if (piano.modo === 'semi') {
             return await eseguiSemi(piano, { type, skip, cap, contesto, cerca: cercaLocale, vicini });
         }
+
         const items = await cercaLocale(piano.filtri, type, skip, cap, contesto) || [];
-        return { items, motivi: [] };
+        if (items.length > 0 || skip > 0 || !piano.filtri || !piano.filtri.text_search) {
+            return { items, motivi: [] };
+        }
+
+        // La ricerca testuale è severa: cerca le parole **come sono scritte**. Ma un titolo lo si
+        // scrive in mille modi — senza accenti («la citta incantata»), attaccato («spiderman»),
+        // senza articolo («cavaliere oscuro»), con un refuso («batmn») — e il testo non trova
+        // niente. L'indice dei semi sa risolverli (è lo stesso che risolve `simili`): qui si usa
+        // solo per riparare un vuoto, quindi quando la ricerca normale trova non cambia nulla.
+        // Misurato su 181 richieste: 11 pagine vuote su 12 erano esattamente questo.
+        const { risolviSemeDettagliato } = require('./semiTitoli');
+        const riparato = await risolviSemeDettagliato(piano.filtri.text_search, { type });
+        if (!riparato) return { items: [], motivi: [] };
+
+        const ripescati = await cercaLocale({ ids: [riparato.id] }, type, 0, cap, contesto) || [];
+        if (ripescati.length === 0) return { items: [], motivi: [] };
+
+        return {
+            items: ripescati,
+            motivi: [`testo_riparato: ${piano.filtri.text_search} → ${riparato.titolo}`]
+        };
     } catch (_err) {
         return { items: [], motivi: ['errore_indice'] };
     }

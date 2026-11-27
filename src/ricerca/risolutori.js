@@ -19,8 +19,10 @@
  *      le sorelle del suo cluster L1 sono un'aggiunta, con un tetto (`RICERCA_ESPANSIONE_MAX`,
  *      default 4; `RICERCA_ESPANSIONE=0` spegne l'espansione).
  *
- * Il `genere` non ha un risolutore: i 19 generi sono un dizionario puro in `generi.js`, e il parser
- * lo usa da solo. Iniettare anche quello avrebbe significato due fonti di verità.
+ * Il `genere` non ha una tabella sua: i 19 generi sono un dizionario puro in `generi.js`, e il
+ * parser lo usa da solo. Qui si offre solo la variante che conosce il **tipo** della richiesta
+ * (film o serie), perché TMDB dà id diversi allo stesso genere: Fantasy è 14 nei film e 10765
+ * nelle serie, e senza il tipo `anime genere fantasy` sulle serie restituiva zero risultati.
  */
 
 const indice = () => require('../indice');
@@ -28,6 +30,7 @@ const indice = () => require('../indice');
 /** Le mappe keyword, chieste alla porta dell'indice al primo uso (non all'import). */
 const keywordIds = () => indice().keywordIds;
 const { concettiDaNome } = require('./lessico_it');
+const { genereDaNome } = require('./generi');
 const { normalizza } = require('../infra/testo');
 const { distanza } = require('../indice/people');
 
@@ -381,6 +384,10 @@ async function risolviProvider(valore) {
 function creaRisolutori({ type = 'movie', contesto = {} } = {}) {
     return {
         concetto: (valore) => risolviConcetto(valore),
+        // Il genere ha id diversi in TMDB fra film e serie (Fantasy: 14 nei film, 10765 nelle
+        // serie «Sci-Fi & Fantasy»): senza il tipo, `anime genere fantasy` sulle serie filtrava
+        // l'id dei film e restituiva zero risultati.
+        genere: (valore) => genereDaNome(valore, { tipo: type }),
         persona: (valore) => risolviPersona(valore),
         crew: (valore) => risolviCrew(valore, { type }),
         titolo: (valore) => risolviTitolo(valore, { type, contesto }),

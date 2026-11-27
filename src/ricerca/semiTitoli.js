@@ -93,6 +93,7 @@ function vocabolario(indice) {
             }
         }
         indice.parole = Array.from(conteggio.entries());
+        indice.paroleConosciute = conteggio;
     }
     return indice.parole;
 }
@@ -103,9 +104,18 @@ function vocabolario(indice) {
  */
 function correggiParola(indice, parola) {
     if (parola.length < MIN_REFUSO) return null;
-    const limite = refusiAmmessi(parola);
+
+    // Se la parola è già nell'indice non c'è niente da correggere: senza questo controllo,
+    // «guere stellari» diventava «guerre *stellare*» (la parola buona veniva "corretta" verso un
+    // vicino più frequente) e il titolo non si trovava più.
     const memo = indice.refusi || (indice.refusi = new Map());
     if (memo.has(parola)) return memo.get(parola);
+    if (indice.paroleConosciute && indice.paroleConosciute.has(parola)) {
+        memo.set(parola, null);
+        return null;
+    }
+
+    const limite = refusiAmmessi(parola);
 
     let migliore = null;
     for (const [candidata, frequenza] of vocabolario(indice)) {
@@ -238,11 +248,21 @@ async function indiceDelMedium(medium) {
  * Non solleva: senza indice la ricerca continua senza seme, e il motivo lo dichiara.
  */
 async function risolviSeme(scritto, { type = 'movie' } = {}) {
+    const scelto = await risolviSemeDettagliato(scritto, { type });
+    return scelto ? [scelto.id] : null;
+}
+
+/**
+ * Come `risolviSeme`, ma restituisce anche il titolo trovato: serve a chi deve dire *cosa* ha
+ * riparato (la ricerca testuale lo scrive nei motivi).
+ *
+ * @returns {Promise<{id: number, titolo: string, voti: number}|null>}
+ */
+async function risolviSemeDettagliato(scritto, { type = 'movie' } = {}) {
     const medium = type === 'series' ? 'series' : 'movie';
     try {
         const indice = await indiceDelMedium(medium);
-        const scelto = cercaSeme(indice, scritto);
-        return scelto ? [scelto.id] : null;
+        return cercaSeme(indice, scritto);
     } catch (err) {
         console.error('[SemiTitoli] indice dei semi non disponibile:', err.message);
         return null;
@@ -258,5 +278,6 @@ module.exports = {
     creaIndiceSemi,
     cercaSeme,
     risolviSeme,
+    risolviSemeDettagliato,
     svuotaCache
 };

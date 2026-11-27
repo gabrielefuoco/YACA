@@ -305,3 +305,63 @@ haDump('compilatore — sul dump vero', () => {
         expect(piano.filtri.with_keywords).toBeDefined();
     }, 60000);
 });
+
+/**
+ * La riparazione del testo che non trova.
+ *
+ * La ricerca testuale cerca le parole **come sono scritte**: «spiderman» non trova *Spider-Man*,
+ * «batmn» non trova *Batman*, «la citta incantata» non trova *La città incantata*. Su 181
+ * richieste reali, 11 pagine vuote su 12 erano titoli scritti in un modo normalissimo.
+ *
+ * La regola: se il testo non trova niente (e siamo in prima pagina), si chiede il titolo
+ * all'indice dei semi — lo stesso che risolve `simili` — e si ripesca per id. Quando la ricerca
+ * normale trova, questo ramo non esiste. L'indice dei semi è finto: qui si prova il cablaggio.
+ */
+jest.mock('../src/ricerca/semiTitoli', () => ({
+    risolviSeme: jest.fn(async () => [268]),
+    risolviSemeDettagliato: jest.fn(async () => ({ id: 268, titolo: 'batman', voti: 100 }))
+}));
+
+describe('eseguiPiano — il testo che non trova viene riparato', () => {
+    const { eseguiPiano } = require('../src/ricerca/compilatore');
+
+    it('un refuso ricade sull\'id risolto, e il motivo lo dice', async () => {
+        const chiamate = [];
+        const cerca = jest.fn(async (filtri) => {
+            chiamate.push(filtri);
+            if (filtri && filtri.ids) return [{ id: 'tmdb:268', name: 'Batman' }];
+            return [];
+        });
+
+        const esito = await eseguiPiano(
+            { modo: 'testo', filtri: { text_search: 'batmn' } },
+            { type: 'movie', cerca }
+        );
+
+        expect(esito.items).toHaveLength(1);
+        expect(esito.items[0].name).toBe('Batman');
+        expect(esito.motivi[0]).toBe('testo_riparato: batmn → batman');
+        expect(cerca).toHaveBeenCalledTimes(2);
+        expect(chiamate[1]).toEqual({ ids: [268] });
+    });
+
+    it('quando il testo trova, non si ripara niente', async () => {
+        const cerca = jest.fn(async () => [{ id: 'tmdb:1', name: 'Batman' }]);
+        const esito = await eseguiPiano(
+            { modo: 'testo', filtri: { text_search: 'batman' } },
+            { type: 'movie', cerca }
+        );
+        expect(cerca).toHaveBeenCalledTimes(1);
+        expect(esito.motivi).toEqual([]);
+    });
+
+    it('in seconda pagina non si ripara (la pagina vuota è legittima)', async () => {
+        const cerca = jest.fn(async () => []);
+        const esito = await eseguiPiano(
+            { modo: 'testo', filtri: { text_search: 'batmn' } },
+            { type: 'movie', skip: 20, cerca }
+        );
+        expect(cerca).toHaveBeenCalledTimes(1);
+        expect(esito.items).toEqual([]);
+    });
+});

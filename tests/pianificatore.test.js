@@ -357,3 +357,40 @@ describe('pianifica — la porta', () => {
         expect(motivi).toEqual([]);
     });
 });
+
+/**
+ * Il genere ha id diversi fra film e serie in TMDB. Senza il tipo, `anime genere fantasy` sulle
+ * serie filtrava l'id dei film (14) e restituiva zero risultati: «Fantasy» per le serie è
+ * `10765` (Sci-Fi & Fantasy). Misurato su 181 ricerche reali: era l'unico filtro che sbagliava
+ * sistematicamente su un intero medium.
+ */
+describe('i generi delle serie hanno un altro id', () => {
+    const { genereDaNome } = require('../src/ricerca/generi');
+
+    it('Fantasy e Fantascienza nelle serie sono Sci-Fi & Fantasy (10765)', () => {
+        expect(genereDaNome('fantasy')).toBe(14);
+        expect(genereDaNome('fantasy', { tipo: 'series' })).toBe(10765);
+        expect(genereDaNome('fantascienza', { tipo: 'series' })).toBe(10765);
+        expect(genereDaNome('fantascienza')).toBe(878);
+    });
+
+    it('Azione e Avventura nelle serie sono Action & Adventure (10759)', () => {
+        expect(genereDaNome('azione', { tipo: 'series' })).toBe(10759);
+        expect(genereDaNome('avventura', { tipo: 'tv' })).toBe(10759);
+        expect(genereDaNome('azione')).toBe(28);
+    });
+
+    it('Guerra nelle serie è War & Politics (10768)', () => {
+        expect(genereDaNome('guerra', { tipo: 'series' })).toBe(10768);
+    });
+
+    it('gli id condivisi restano gli stessi', () => {
+        expect(genereDaNome('horror', { tipo: 'series' })).toBe(27);
+        expect(genereDaNome('commedia', { tipo: 'series' })).toBe(35);
+        expect(genereDaNome('animazione', { tipo: 'series' })).toBe(16);
+    });
+
+    it('i refusi seguono il tipo', () => {
+        expect(genereDaNome('fantasyy', { tipo: 'series' })).toBe(10765);
+    });
+});

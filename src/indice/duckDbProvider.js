@@ -23,6 +23,12 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     if (q._search || q.text_search) {
         where.push({ _fts: q._search || q.text_search });
     }
+
+    // Id già risolti (la ricerca testuale che ha riparato un titolo scritto male): è un filtro
+    // esatto, non una ricerca.
+    if (Array.isArray(q.ids) && q.ids.length > 0) {
+        where.push(F.ids(...q.ids));
+    }
     
     if (q.similar_to) {
         where.push({ _similar: true, tmdbId: q.similar_to });

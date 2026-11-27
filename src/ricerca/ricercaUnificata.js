@@ -51,7 +51,20 @@ async function candidatiLocali({
         const tier2Items = searchTier2(q, { type, limit });
         const learnedItems = await searchLearnedTitles(q, { type, limit: limiteImparati }).catch(() => []);
 
-        return mergeLocalWithTier2(mergeLocalWithTier2(localItems, tier2Items), learnedItems);
+        const fusi = mergeLocalWithTier2(mergeLocalWithTier2(localItems, tier2Items), learnedItems);
+        if (fusi.length > 0 || skip > 0) return fusi;
+
+        // Vuoto: forse il titolo è scritto come lo scrivono le persone — senza accenti («la citta
+        // incantata»), attaccato («spiderman»), con un refuso («batmn»), senza articolo. La
+        // ricerca testuale cerca le parole come sono scritte e non trova; l'indice dei semi sa
+        // risolverle. Si usa solo per riparare un vuoto: quando la ricerca trova, non cambia nulla.
+        // Misurato su 181 richieste reali: 11 pagine vuote su 12 erano questo.
+        const { risolviSemeDettagliato } = require('./semiTitoli');
+        const riparato = await risolviSemeDettagliato(q, { type });
+        if (!riparato) return fusi;
+
+        const ripescati = await getDuckDbCatalogFromFilters({ ids: [riparato.id] }, type, 0, limit, contesto).catch(() => []);
+        return ripescati.length > 0 ? ripescati : fusi;
     } catch (_err) {
         return [];
     }

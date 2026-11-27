@@ -74,6 +74,11 @@ const F = {
     crew: (...ids) => `(${ids.map(id => `(${jsonHas('directors', id)} OR ${jsonHas('writers', id)})`).join(' OR ')})`,
     company: (...ids) => `(${ids.map(id => jsonHas('production_companies', id)).join(' OR ')})`,
     network: (...ids) => `(${ids.map(id => jsonHas('networks', id)).join(' OR ')})`,
+    // Per id esatto: serve quando il titolo è già stato risolto (es. la ricerca testuale riparata).
+    ids: (...ids) => {
+        const validi = ids.map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
+        return validi.length > 0 ? `id IN (${validi.join(',')})` : '1=0';
+    },
     collections: (...ids) => {
         const validIds = ids.map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
         return validIds.length > 0 ? `"collection_id" IN (${validIds.join(',')})` : '1=0';
