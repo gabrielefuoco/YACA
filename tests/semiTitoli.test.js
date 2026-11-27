@@ -9,7 +9,7 @@
  *   5. il troncato che deve prendere il più visto (`hunger game` → *Hunger Games*), senza però
  *      rubare il posto al titolo giusto quando il seguito è più popolare (`cavaliere oscuro`
  *      resta *Il cavaliere oscuro*, non *Il ritorno*);
- *   6. niente refusi: `batmn` non è *Batman* — scelta, non svista.
+ *   6. il refuso (`batmn` → *Batman*), con misura: un carattere fino a sei lettere, due da sette.
  */
 
 const { creaIndiceSemi, cercaSeme } = require('../src/ricerca/semiTitoli');
@@ -94,9 +94,17 @@ describe('il seme di simili: i modi in cui si scrive un titolo', () => {
         expect(idDi('   ')).toBeNull();
     });
 
-    test('il refuso non passa: limite dichiarato, non svista', () => {
-        expect(idDi('batmn')).toBeNull();
-        expect(idDi('interstelar')).toBeNull();
+    test('il refuso si accetta, ma con misura', () => {
+        expect(idDi('batmn')).toBe(268);           // un carattere, parola corta
+        expect(idDi('padrimo')).toBe(238);
+        expect(idDi('interstelar')).toBe(157336);  // due caratteri, parola lunga
+        expect(idDi('guere stellari')).toBe(11);   // una lettera in meno
+    });
+
+    test('tre errori sono un\'altra parola, e sotto le cinque lettere non si tenta', () => {
+        expect(idDi('intrstlr')).toBeNull();
+        expect(idDi('btmn')).toBeNull();           // quattro lettere: troppo poche per indovinare
+        expect(idDi('zzzzzz')).toBeNull();         // niente di somigliante nell'indice
     });
 
     test('le serie non pescano nei film: l\'indice è per medium', () => {

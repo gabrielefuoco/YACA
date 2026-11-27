@@ -22,10 +22,12 @@
  * Così «cavaliere oscuro» trova *Il cavaliere oscuro* e non il seguito, «godfather» trova *The
  * Godfather* e non l'omonimo sconosciuto, «batman» trova *Batman* e non *Batman Begins*.
  *
- * Il refuso vero resta fuori: `batmn` non trova *Batman*. È un limite dichiarato, non una svista —
- * un seme sbagliato produce vicini sbagliati, e non si vede.
+ * Il refuso si accetta, ma solo come **ultima spiaggia** e con una misura: fino a un carattere
+ * sotto le sette lettere, due da sette in su (parole corte con due errori sono un'altra parola).
+ * Si applica quando nient'altro ha risposto, e solo se esiste una parola dell'indice che ci
+ * somiglia davvero: `batmn` → *Batman*, `interstelar` → *Interstellar*.
  */
-const { normalizza } = require('../infra/testo');
+const { normalizza, distanza } = require('../infra/testo');
 
 /** Sotto i tre caratteri ogni titolo che contiene quelle lettere va bene: non è una risposta. */
 const MIN_LUNGHEZZA = 3;
@@ -39,6 +41,12 @@ const MIN_UNITE = 6;
  * chi scrive una parola sola non intende quello.
  */
 const QUOTA_ESATTO = 0.05;
+
+/** Sotto le cinque lettere ogni parola somiglia a troppe altre: il refuso non si tenta. */
+const MIN_REFUSO = 5;
+
+/** Un carattere di errore fino a sei lettere, due da sette in su. */
+const refusiAmmessi = (parola) => (parola.length >= 7 ? 2 : 1);
 
 /**
  * L'indice dei semi a partire dalle righe dell'indice: una voce per titolo, e una per il titolo
@@ -73,30 +81,89 @@ function creaIndiceSemi(righe) {
 }
 
 /**
+ * Il vocabolario delle parole dei titoli (parola → quante volte compare), costruito alla prima
+ * ricerca con un refuso: chi non sbaglia mai non paga niente.
+ */
+function vocabolario(indice) {
+    if (!indice.parole) {
+        const conteggio = new Map();
+        for (const norm of indice.norme) {
+            for (const parola of norm.split(' ')) {
+                if (parola) conteggio.set(parola, (conteggio.get(parola) || 0) + 1);
+            }
+        }
+        indice.parole = Array.from(conteggio.entries());
+    }
+    return indice.parole;
+}
+
+/**
+ * La parola dell'indice che somiglia di più a quella scritta, o `null` se nessuna ci arriva.
+ * A parità di distanza vince la più frequente: `batmn` → *batman*, non `batmen`.
+ */
+function correggiParola(indice, parola) {
+    if (parola.length < MIN_REFUSO) return null;
+    const limite = refusiAmmessi(parola);
+    const memo = indice.refusi || (indice.refusi = new Map());
+    if (memo.has(parola)) return memo.get(parola);
+
+    let migliore = null;
+    for (const [candidata, frequenza] of vocabolario(indice)) {
+        if (Math.abs(candidata.length - parola.length) > limite) continue;
+        const d = distanza(parola, candidata, limite);
+        if (d > limite || d === 0) continue;
+        if (!migliore || d < migliore.d || (d === migliore.d && frequenza > migliore.frequenza)) {
+            migliore = { parola: candidata, d, frequenza };
+        }
+    }
+
+    const esito = migliore ? migliore.parola : null;
+    memo.set(parola, esito);
+    return esito;
+}
+
+/** La query con le parole corrette; `null` se nessuna parola è stata corretta. */
+function correggiQuery(indice, query) {
+    const parole = query.split(' ');
+    let corrette = 0;
+    const uscita = parole.map(parola => {
+        const corretta = correggiParola(indice, parola);
+        if (!corretta) return parola;
+        corrette += 1;
+        return corretta;
+    });
+    return corrette > 0 ? uscita.join(' ') : null;
+}
+
+/**
  * Il titolo che l'utente intendeva, o `null`.
  *
- * Il match è a **confine di parola** (` padrino` dentro ` il padrino`), quindi un prefisso funziona
- * e `man` non pesca `batman`. Il titolo scritto attaccato (`spiderman`) si prova in un secondo
- * passaggio, solo quando il primo non ha trovato niente.
+ * Tre passaggi, dal più stretto al più indulgente:
+ *   1. il match a **confine di parola** (` padrino` dentro ` il padrino`): un prefisso funziona e
+ *      `man` non pesca `batman`;
+ *   2. il titolo scritto attaccato (`spiderman` → *Spider-Man*);
+ *   3. il **refuso** (`batmn` → *batman*), al massimo due caratteri e solo da sette lettere in su.
  *
- * @param {{ids: number[], voti: number[], norme: string[]}} indice
+ * @param {{ids: number[], voti: number[], norme: string[], cercabili?: string[]}} indice
  * @param {string} scritto
  * @returns {{id: number, titolo: string, voti: number}|null}
  */
 function cercaSeme(indice, scritto) {
-    if (!indice || !Array.isArray(indice.norme) || indice.norme.length === 0) return null;
-
     const query = normalizza(scritto);
-    if (query.length < MIN_LUNGHEZZA) return null;
+    if (!indice || indice.norme.length === 0 || query.length < MIN_LUNGHEZZA) return null;
 
-    const ancorata = ` ${query}`;
     const candidati = [];
-    const raccogli = (i) => candidati.push({ i, esatto: indice.norme[i] === query });
+    const cercabili = indice.cercabili || (indice.cercabili = indice.norme.map(norm => ` ${norm}`));
+    const cerca = (testo) => {
+        const ancorata = ` ${testo}`;
+        for (let i = 0; i < indice.norme.length; i++) {
+            if (cercabili[i].indexOf(ancorata) !== -1) {
+                candidati.push({ i, esatto: indice.norme[i] === testo });
+            }
+        }
+    };
 
-    const cercabili = indice.cercabili || indice.norme.map(norm => ` ${norm}`);
-    for (let i = 0; i < indice.norme.length; i++) {
-        if (cercabili[i].indexOf(ancorata) !== -1) raccogli(i);
-    }
+    cerca(query);
 
     if (candidati.length === 0 && query.length >= MIN_UNITE) {
         const unite = query.replace(/ /g, '');
@@ -105,6 +172,11 @@ function cercaSeme(indice, scritto) {
             // «Attaccato uguale» è esatto: `spiderman` è *Spider-Man*, non *Spider-Man: No Way Home*.
             if (unito.includes(unite)) candidati.push({ i, esatto: unito === unite });
         }
+    }
+
+    if (candidati.length === 0) {
+        const corretta = correggiQuery(indice, query);
+        if (corretta) cerca(corretta);
     }
 
     if (candidati.length === 0) return null;
