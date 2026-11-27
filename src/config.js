@@ -6,17 +6,12 @@ module.exports = {
     // Paginators & Timeouts
     PAGES_PER_REQUEST: 3, // How many TMDB pages to fetch concurrently per Stremio request
     ITEMS_PER_PAGE: 20,   // Default items per page for TMDB
-    // Quanti titoli servire in una pagina di catalogo o di ricerca. Stremio chiede la successiva
-    // con `skip`; cento è la sua misura naturale, e una ricerca di tema ne ha spesso mille da dare
-    // (`tema commedia, romantica, natalizia` → 1.331 titoli). Misurato: 100 invece di 60 non costa
-    // niente sui filtri (160 ms per `tema horror` in entrambi i casi) — il costo è il filtro, non
-    // le righe. Configurabile con CATALOG_PAGE_SIZE.
-    CATALOG_PAGE_SIZE: Number(process.env.CATALOG_PAGE_SIZE) > 0 ? Number(process.env.CATALOG_PAGE_SIZE) : 100,
-    // Quanti titoli al massimo in una risposta quando la richiesta è **generica** (temi, generi,
-    // cast, regista, simili): lì non c'è rete da pagare, quindi non c'è motivo di tagliare a cento
-    // — una ricerca di tema ne ha anche mille e trecento. Il tetto è una guardia di memoria, non
-    // un limite di prodotto: si alza con CATALOG_MAX_ITEMS.
-    CATALOG_MAX_ITEMS: Number(process.env.CATALOG_MAX_ITEMS) > 0 ? Number(process.env.CATALOG_MAX_ITEMS) : 2000,
+    // Quanti titoli per pagina di catalogo o di ricerca: venti, la prassi di Stremio e di TMDB.
+    // Il limite che l'utente vedeva non era questo numero: era che il catalogo di ricerca non
+    // dichiarava `skip`, quindi Stremio non chiedeva **mai** la pagina successiva e i venti erano
+    // tutti (corretto in a8a56bd2). Con `skip` dichiarato la lista si scorre a pagine, come per
+    // ogni altro addon. Configurabile con CATALOG_PAGE_SIZE se serve una pagina più grande.
+    CATALOG_PAGE_SIZE: Number(process.env.CATALOG_PAGE_SIZE) > 0 ? Number(process.env.CATALOG_PAGE_SIZE) : 20,
 
     // Default Fallbacks
     DEFAULT_REGION: 'IT',

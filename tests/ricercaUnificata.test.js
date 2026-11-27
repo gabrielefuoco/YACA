@@ -111,7 +111,7 @@ describe('cercaUnificata — il percorso di Stremio', () => {
             expect.objectContaining({ 'primary_release_date.gte': '1980-01-01' }),
             'movie',
             0,
-            require('../src/config').CATALOG_MAX_ITEMS,
+            require('../src/config').CATALOG_PAGE_SIZE,
             {}
         );
         expect(items.map(item => item._tmdbId)).toEqual([1]);
