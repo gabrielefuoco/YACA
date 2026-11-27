@@ -66,6 +66,15 @@ class IndiceModule {
     }
 
     /**
+     * Identità del file del database (mtime + dimensione), o `null` se non è ancora noto.
+     * Serve ai consumatori che tengono una copia in RAM dei titoli e devono sapere quando è
+     * vecchia: senza, resterebbero sulla fotografia di ieri dopo lo scambio del daemon.
+     */
+    identita() {
+        return this.duckDb && this.duckDb.fileIdentity ? this.duckDb.fileIdentity : null;
+    }
+
+    /**
      * Esecuzione di SQL grezza direttamente sul database DuckDB (Ticket 53).
      * Deliberatamente separato da query(), che compila filtri dichiarativi.
      *
@@ -319,6 +328,9 @@ module.exports.tier2 = tier2;
 // L'indice delle persone (people.db): file e costruzione sono dell'indice, il parser della
 // ricerca lo consuma da qui — non dal file interno.
 module.exports.people = require('./people');
+// Identità del database per chi tiene una copia in RAM (i semi di `simili`): passa dalla porta,
+// non dal file interno dello store.
+module.exports.identita = indice.identita.bind(indice);
 // Le mappe e il grafo gerarchico: li consumano i risolutori della ricerca, e passano da qui.
 module.exports.keywordIds = require('./keywordIds');
 module.exports.grafoGerarchico = require('./HierarchicalGraph');

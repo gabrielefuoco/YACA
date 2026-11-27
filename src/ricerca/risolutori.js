@@ -262,58 +262,19 @@ function numeroId(item) {
     return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-function titoliDi(item) {
-    const raw = (item && item.rawTMDB) || {};
-    return [item && item.name, raw.title, raw.original_title, raw.name, raw.original_name].filter(Boolean);
-}
-
-/**
- * Il titolo cercato fra i risultati dell'indice, o `null`.
- *
- * Il match esatto vince sempre, e il prefisso si accetta dai 5 caratteri in su. Se il prefisso
- * identifica un solo titolo, è quello. Se ne identifica più d'uno vince il **più visto**: chi
- * scrive «hunger game» intende la saga che conosce tutti, non il documentario dietro le quinte, e
- * chi scrive «inter» intende *Interstellar*, non *Inter. Due Stelle sul Cuore*.
- *
- * Perché `vote_count` e non `popularity`: la popolarità è un punteggio del giorno e mette davanti
- * l'ultimo capitolo di una saga invece del primo.
- */
-function scegliTitolo(cercato, risultati) {
-    const atteso = normalizza(cercato);
-    if (!atteso) return null;
-    const elenco = Array.isArray(risultati) ? risultati : [];
-
-    const esatto = elenco.find(item => titoliDi(item).some(titolo => normalizza(titolo) === atteso));
-    if (esatto) return numeroId(esatto);
-
-    if (atteso.length < 5) return null;
-    const perPrefisso = elenco.filter(item => titoliDi(item).some(titolo => normalizza(titolo).startsWith(atteso)));
-    if (perPrefisso.length === 0) return null;
-    if (perPrefisso.length === 1) return numeroId(perPrefisso[0]);
-
-    const voti = item => Number((item && item.rawTMDB && item.rawTMDB.vote_count) || 0) || 0;
-    const popolarita = item => Number((item && item.rawTMDB && item.rawTMDB.popularity) || 0) || 0;
-    const ordinati = [...perPrefisso].sort((a, b) => voti(b) - voti(a) || popolarita(b) - popolarita(a));
-    return numeroId(ordinati[0]);
-}
-
 /**
  * Il titolo cercato nel nostro indice. Il tipo è quello della richiesta (film o serie): un seme
  * serie dentro la ricerca film non serve a niente.
+ *
+ * La scelta del titolo vive in `semiTitoli.js`: qui passa solo la forma che il parser si aspetta
+ * (`[id]` o `null`). Era una regola sui primi dodici risultati della ricerca testuale, e sbagliava
+ * metà dei titoli scritti come li scrivono le persone (articolo omesso, parole attaccate, accenti).
  */
-async function risolviTitolo(valore, { type = 'movie', contesto = {} } = {}) {
+async function risolviTitolo(valore, { type = 'movie' } = {}) {
     const cercato = String(valore || '').trim();
     if (!cercato) return null;
-    try {
-        const { getDuckDbCatalogFromFilters } = require('../indice');
-        // Dodici e non cinque: con un prefisso ambiguo il più visto può stare oltre i primi
-        // risultati che l'indice considera più pertinenti.
-        const risultati = await getDuckDbCatalogFromFilters({ text_search: cercato }, type, 0, 12, contesto);
-        const id = scegliTitolo(cercato, risultati);
-        return id ? [id] : null;
-    } catch (_err) {
-        return null;
-    }
+    const { risolviSeme } = require('./semiTitoli');
+    return risolviSeme(cercato, { type });
 }
 
 // ============================================================================
@@ -422,7 +383,6 @@ module.exports = {
     risolviCrew,
     chiudiPersone,
     numeroId,
-    scegliTitolo,
     risolviTitolo,
     mappaProvider,
     azzeraProvider,
