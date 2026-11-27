@@ -405,9 +405,23 @@ describe('i generi delle serie hanno un altro id', () => {
     });
 
     it('gli id condivisi restano gli stessi', () => {
-        expect(genereDaNome('horror', { tipo: 'series' })).toBe(27);
         expect(genereDaNome('commedia', { tipo: 'series' })).toBe(35);
         expect(genereDaNome('animazione', { tipo: 'series' })).toBe(16);
+        expect(genereDaNome('dramma', { tipo: 'series' })).toBe(18);
+    });
+
+    it('i generi che nelle serie non esistono non hanno un id (e si ripiega sulla keyword)', () => {
+        // TMDB non prevede Horror, Thriller e Musica per la televisione: filtrare l'id dei film
+        // dava zero risultati in silenzio (`genere horror` sulle serie). Il `null` fa scattare il
+        // ripiego sul concetto omonimo, che ha dati (362 serie con la keyword `horror`).
+        expect(genereDaNome('horror', { tipo: 'series' })).toBeNull();
+        expect(genereDaNome('thriller', { tipo: 'series' })).toBeNull();
+        expect(genereDaNome('musica', { tipo: 'series' })).toBeNull();
+        // Per i film restano, ovviamente.
+        expect(genereDaNome('horror', { tipo: 'movie' })).toBe(27);
+        // E quelli che nelle serie ci sono (anche con pochi titoli) restano condivisi.
+        expect(genereDaNome('romantico', { tipo: 'series' })).toBe(10749);
+        expect(genereDaNome('western', { tipo: 'series' })).toBe(37);
     });
 
     it('i refusi seguono il tipo', () => {
