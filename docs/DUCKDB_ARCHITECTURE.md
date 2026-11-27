@@ -37,6 +37,32 @@ Ogni funzione restituisce un frammento SQL.
 ### C. `src/indice/duckDbProvider.js`
 Il provider che connette la logica astratta al database fisico di esecuzione. Esegue il compilatore dell'indice (`src/indice/compiler.js`), incanala i dati grezzi estratti (spesso in ~10-15ms) e mappa le colonne lette nella sintassi unificata di risposta *Stremio Light Meta*, che arricchirà il frontend senza effettuare alcuna richiesta web.
 
+### C-bis. `src/indice/people.js` — l'indice delle persone (`people.db`)
+
+La ricerca a sintassi esplicita ha bisogno di rispondere a `cast leonardo dicaprio`. Scandire il JSON del cast a ogni query costa **711 ms misurati** su `movies.parquet` (`unnest` + `group by`): più del doppio di una ricerca intera. Le persone sono **483.485** nel cast dei film, **73.490** nelle serie, **39.369** registi, **62.130** sceneggiatori, **11.940** creator: una Map in RAM sarebbe 60-80 MB e 1-2 s di avvio, e volatile.
+
+Quindi un file SQLite **persistente** accanto a `titles_fts5.db`, con FTS5 sul nome normalizzato:
+
+| Tabella | Contenuto |
+|---|---|
+| `people` (FTS5) | `name_norm`, `tmdb_id`, `name`, `ruolo`, `titoli`, `popolarita` — una riga per (persona, ruolo) |
+| `people_words` | una riga per (parola del nome → rowid della persona), indice su `word` |
+
+L'ordinamento è per **popolarità** (somma della `popularity` dei titoli in cui la persona compare), non per numero di titoli. Misurato: con l'ordinamento per numero di titoli, `nolan` restituiva *Nolan North* (54 titoli, doppiatore) prima di *Christopher Nolan* (30 titoli, regista di blockbuster); con la popolarità, Christopher Nolan 1721 contro 475.
+
+`people_words` esiste per i refusi: FTS5 non è fuzzy, e un errore sul **primo** token di un nome non si recupera con un `LIKE` sul nome intero. La ricerca per prefisso è un **range scan** (`word >= 'non' AND word < 'noo'`), non un `LIKE`: misurato, `LIKE 'non%'` non usa l'indice (83 ms per 500 candidati) mentre il range ne costa 1-2.
+
+Misure sul dump reale (26/11/2026), 621.034 righe, file 94 MB, build 14 s:
+
+| Query | Prima (JSON scan) | Ora |
+|---|---|---|
+| `leonardo dicaprio` | 711 ms | **1 ms** |
+| `dicaprio` (solo cognome) | 711 ms | **0-1 ms** |
+| `cristopher nolan` (refuso) | 711 ms | **14 ms** |
+| `xyzzy nonexistent` | 711 ms | **2 ms** |
+
+Si costruisce con `node scripts/build-people-index.js`, e il daemon del dump la rifà quando i parquet cambiano (e al boot se il file manca). I titoli `adult` non contribuiscono ai conteggi: una persona che compare solo in quelli non affiora. Senza il file, `cast <nome>` degrada con un motivo dichiarato e la ricerca continua.
+
 ### D. Il dump TMDB e la politica dei titoli
 
 > [!NOTE]

@@ -89,6 +89,22 @@ async function buildTier2Index() {
     }
 }
 
+/**
+ * L'indice delle persone (people.db): 621k righe (persona, ruolo) dai parquet, FTS5 sul nome
+ * normalizzato. Stesso ciclo di vita del Tier 2: si ricostruisce quando i parquet cambiano, e al
+ * boot se il file non c'è. Senza, `cast <nome>` degrada (motivo dichiarato), il resto funziona.
+ */
+async function buildPeopleIndexFile() {
+    try {
+        const { buildPeopleIndex } = require('../../src/indice/people');
+        console.log('[TmdbDump] Ricostruzione indice delle persone (people.db) su disco...');
+        const res = await buildPeopleIndex();
+        console.log(`[TmdbDump] Indice persone completato: ${res.count} righe in ${(res.durationMs / 1000).toFixed(1)}s`);
+    } catch (peopleErr) {
+        console.error('[TmdbDump] Errore durante la build people.db:', peopleErr.message);
+    }
+}
+
 async function convertAndReloadDuckDb(store) {
     updateStatus(store, { currentTask: 'Converting Parquet and Reloading DuckDB...' }, true);
     console.log('[TmdbDump] Esecuzione conversione in Parquet...');
@@ -109,6 +125,8 @@ async function convertAndReloadDuckDb(store) {
 
         // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)
         await buildTier2Index();
+        // Persone: stesso ciclo di vita dei parquet (dipendono da cast/directors/writers)
+        await buildPeopleIndexFile();
     } catch (convertErr) {
         console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
         updateStatus(store, { error: convertErr.message }, true);
@@ -453,6 +471,15 @@ async function runTmdbDumpDaemon(options = {}, client = null) {
                     await buildTier2Index();
                 } else {
                     console.log('[TmdbDump] titles_fts5.db già presente sul volume. Ricostruzione Tier 2 al boot saltata.');
+                }
+
+                // Persone: stesso controllo di presenza del Tier 2
+                const peopleDbFile = path.join(store.basePath, 'people.db');
+                if (!fs.existsSync(peopleDbFile)) {
+                    console.log('[TmdbDump] people.db non presente su disco. Costruzione al boot...');
+                    await buildPeopleIndexFile();
+                } else {
+                    console.log('[TmdbDump] people.db già presente sul volume. Costruzione al boot saltata.');
                 }
             }
         }

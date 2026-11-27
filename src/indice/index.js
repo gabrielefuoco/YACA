@@ -316,6 +316,12 @@ module.exports = indice;
 module.exports.IndiceModule = IndiceModule;
 module.exports.compiler = compiler;
 module.exports.tier2 = tier2;
+// L'indice delle persone (people.db): file e costruzione sono dell'indice, il parser della
+// ricerca lo consuma da qui — non dal file interno.
+module.exports.people = require('./people');
+// Le mappe e il grafo gerarchico: li consumano i risolutori della ricerca, e passano da qui.
+module.exports.keywordIds = require('./keywordIds');
+module.exports.grafoGerarchico = require('./HierarchicalGraph');
 module.exports.duckDbProvider = require('./duckDbProvider');
 module.exports.buildPresetFromFilters = (...args) => require('./duckDbProvider').buildPresetFromFilters(...args);
 module.exports.mapDuckDbRowToMeta = (...args) => require('./duckDbProvider').mapDuckDbRowToMeta(...args);
