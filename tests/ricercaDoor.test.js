@@ -43,9 +43,7 @@ const {
     findSourceForCatalog,
     findSourcesForSearch,
     mergeLocalWithTier2,
-    fondiEOrdina,
-    richiediComprensioneAI,
-    buildSearchUnderstandingPrompt
+    fondiEOrdina
 } = require('../src/ricerca');
 
 describe('Modulo Ricerca (Ticket 22 — seconda metà)', () => {
@@ -374,23 +372,6 @@ describe('Modulo Ricerca (Ticket 22 — seconda metà)', () => {
         });
     });
 
-    describe('6. L AI fuori dal modulo ricerca (meccanismo vs prompt)', () => {
 
-        test('buildSearchUnderstandingPrompt costruisce il prompt specialistico di ricerca', () => {
-            const prompt = buildSearchUnderstandingPrompt('film spaziali anni 80', { kidsMode: true });
-            expect(prompt).toContain('film spaziali anni 80');
-            expect(prompt).toContain('Kids');
-        });
-
-        test('richiediComprensioneAI degrada senza eccezioni se la chiave non è configurata', async () => {
-            const res = await richiediComprensioneAI({
-                query: 'fantascienza cyberpunk',
-                mistralKey: null
-            });
-
-            expect(res.degraded).toBe(true);
-            expect(res.comprensione).toBeNull();
-            expect(res.reason).toBe('chiave_ai_assente');
-        });
-    });
+    
 });

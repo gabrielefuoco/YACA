@@ -6,6 +6,18 @@ const jsonHas = (col, id) => `("${col}" LIKE '%"id":${id},%' OR "${col}" LIKE '%
 const jsonHasStr = (col, val) => `"${col}" LIKE '%"${val}"%'`;
 
 // === FILTRI CONTENUTO (F) ===
+/**
+ * Le fasce di età, allineate fra i sistemi che il dump mescola: americano (G/PG/PG-13/R/NC-17),
+ * italiano (T/VM14/VM18) e numerico (6+/14+/18+). `NR` (non classificato) resta fuori: per un
+ * filtro genitori «non sappiamo» non è «va bene».
+ */
+const ETA_RANK = Object.freeze({
+    g: 0, '6+': 1, t: 1, pg: 1,
+    'pg-13': 2, '14+': 2, vm14: 2,
+    r: 3,
+    '18+': 4, vm18: 4, 'nc-17': 4
+});
+
 const F = {
     // --- Generi ---
     genre: (...ids) => `(${ids.map(id => jsonHas('genres', id)).join(' OR ')})`,
@@ -41,11 +53,25 @@ const F = {
         if (/^\d+$/.test(strVal)) return `NOT ${jsonHas('keywords', strVal)}`;
         return `"keywords" NOT ILIKE '%"${strVal.replace(/'/g, "''")}"%'`;
     }).join(' AND ')})`,
-    
-    // --- Persone ---
+// --- Persone ---
     director: (id) => jsonHas('directors', id),
+    // Le serie non hanno `directors`: TMDB mette i creatori in `created_by`.
+    creator: (...ids) => `(${ids.map(id => jsonHas('created_by', id)).join(' OR ')})`,
+
+    // --- Età / certificazione ---
+    // Il dump mescola sistemi (R, PG-13, T, VM14, 14+): un confronto alfabetico non ha senso,
+    // quindi si confronta per **fascia** con una tabella esplicita. `NR` (non classificato) resta
+    // fuori: per un filtro genitori «non sappiamo» non è «va bene».
+    ratingMax: (valore) => {
+        const v = String(valore || '').trim().toLowerCase();
+        const rank = ETA_RANK[v];
+        if (rank === undefined) return `lower("content_rating") = '${v.replace(/'/g, "''")}'`;
+        const ammessi = Object.keys(ETA_RANK).filter(k => ETA_RANK[k] <= rank);
+        return `lower("content_rating") IN (${ammessi.map(k => `'${k}'`).join(', ')})`;
+    },
     actor: (...ids) => `(${ids.map(id => jsonHas('cast', id)).join(' OR ')})`,
-    crew: (id) => `(${jsonHas('directors', id)} OR ${jsonHas('writers', id)})`,
+    // Più registi = OR (più valori dello stesso operatore sono alternative).
+    crew: (...ids) => `(${ids.map(id => `(${jsonHas('directors', id)} OR ${jsonHas('writers', id)})`).join(' OR ')})`,
     company: (...ids) => `(${ids.map(id => jsonHas('production_companies', id)).join(' OR ')})`,
     network: (...ids) => `(${ids.map(id => jsonHas('networks', id)).join(' OR ')})`,
     collections: (...ids) => {
@@ -68,8 +94,10 @@ const F = {
     minVotes: (n) => `"vote_count" >= ${n}`,
     maxVotes: (n) => `"vote_count" <= ${n}`,
     minScore: (n) => `"vote_average" >= ${n}`,
+    maxScore: (n) => `"vote_average" <= ${n}`,
     maxPopularity: (n) => `"popularity" <= ${n}`,
     minRuntime: (m) => `"runtime" >= ${m}`,
+    maxRuntime: (m) => `"runtime" <= ${m}`,
     // Ticket 35: Pavimento permissivo sui recenti (discovery permissiva)
     permissiveFloor: (standardFloor, recentDate, recentFloor = 0, isTv = false) => {
         const col = isTv ? '"first_air_date"' : '"release_date"';

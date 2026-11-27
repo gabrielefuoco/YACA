@@ -288,10 +288,26 @@ describe('CatalogRouter: la ricerca standard interroga anche il Tier 2', () => {
 
         const items = await search();
 
-        expect(items).toHaveLength(40);
-        expect(items.slice(0, 20).map(m => m._tmdbId)).toEqual(Array.from({ length: 20 }, (_, i) => 1000 + i));
-        expect(items.slice(20).map(m => m._tmdbId)).toEqual(Array.from({ length: 20 }, (_, i) => 2000 + i));
-        expect(items.every((m, i) => (i < 20 ? m._tier2 === undefined : m._tier2 === true))).toBe(true);
+        // La sorgente restituisce UNA pagina, non la fusione intera: da quando la ricerca è
+        // unificata (locale + AI) la pagina la compone lei, altrimenti i risultati dell'AI
+        // finirebbero in coda a 40 titoli locali e verrebbero tagliati dal catalogHandler.
+        expect(items).toHaveLength(20);
+        expect(items.map(m => m._tmdbId)).toEqual(Array.from({ length: 20 }, (_, i) => 1000 + i));
+        expect(items.every(m => m._tier2 === undefined)).toBe(true);
+    });
+
+    it('con pochi locali il resto della pagina lo riempie il Tier 2, in ordine d indice', async () => {
+        getDuckDbCatalogFromFilters.mockResolvedValue([localItem(1000, 'Locale 0'), localItem(1001, 'Locale 1')]);
+        stubTier2Index({
+            rows: Array.from({ length: 20 }, (_, i) => tier2Row(2000 + i, `Coda ${i}`))
+        });
+
+        const items = await search();
+
+        expect(items).toHaveLength(20);
+        expect(items.slice(0, 2).map(m => m._tmdbId)).toEqual([1000, 1001]);
+        expect(items.slice(2).map(m => m._tmdbId)).toEqual(Array.from({ length: 18 }, (_, i) => 2000 + i));
+        expect(items.every((m, i) => (i < 2 ? m._tier2 === undefined : m._tier2 === true))).toBe(true);
     });
 
     it('con zero risultati locali restituisce comunque i titoli del Tier 2', async () => {
@@ -331,17 +347,19 @@ describe('CatalogRouter: la ricerca standard interroga anche il Tier 2', () => {
         httpsSpy.mockRestore();
     });
 
-    it('la ricerca AI profonda non viene toccata', async () => {
+    it('la ricerca unificata: anche `yaca_search_ai` parte dal locale e non chiama il piano AI per un titolo secco', async () => {
         executeCombinedSearch.mockResolvedValue([localItem(1, 'Da AI')]);
-        stubTier2Index({ rows: [tier2Row(2, 'Da indice')] });
+        getDuckDbCatalogFromFilters.mockResolvedValue([]);
+        stubTier2Index({ rows: [tier2Row(272, 'Batman Begins')] });
 
         const items = await routeCatalogRequest(
             { id: 'yaca_search_ai', type: 'movie', extra: { search: 'batman' } },
             {}, null, null, {}
         );
 
-        expect(items.map(m => m.name)).toEqual(['Da AI']);
-        expect(executeCombinedSearch).toHaveBeenCalled();
-        expect(Tier2SearchClient).not.toHaveBeenCalled();
+        // Una parola sola è un titolo: la FTS locale basta, l'AI non serve (e non viene chiamata).
+        expect(items.map(m => m._tmdbId)).toEqual([272]);
+        expect(executeCombinedSearch).not.toHaveBeenCalled();
+        expect(Tier2SearchClient).toHaveBeenCalled();
     });
 });

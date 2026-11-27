@@ -60,9 +60,10 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     }
     if (q['vote_count.lte']) where.push(F.maxVotes(q['vote_count.lte']));
     if (q['vote_average.gte']) where.push(F.minScore(q['vote_average.gte']));
+    if (q['vote_average.lte']) where.push(F.maxScore(q['vote_average.lte']));
     if (q['popularity.lte']) where.push(F.maxPopularity(q['popularity.lte']));
-    // Durata minima in minuti (F.maxRuntime non esiste nella DSL filters.js, supportato solo with_runtime.gte)
     if (q['with_runtime.gte']) where.push(F.minRuntime(q['with_runtime.gte']));
+    if (q['with_runtime.lte']) where.push(F.maxRuntime(q['with_runtime.lte']));
     if (q.with_status) where.push(F.status(q.with_status));
     if (q['number_of_seasons.lte'] !== undefined) where.push(F.maxSeasons(q['number_of_seasons.lte']));
     if (q['number_of_episodes.lte'] !== undefined) where.push(F.maxEpisodes(q['number_of_episodes.lte']));
@@ -126,10 +127,23 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
     // Pertanto, F.crew DEVE rimanere guardato da !isTv per evitare errori Binder SQL in DuckDB
     // ("Referenced column directors not found in FROM clause").
     if (!isTv) {
-        if (q.with_crew) where.push(F.crew(q.with_crew));
+        if (q.with_crew) where.push(F.crew(...String(q.with_crew).split(/[,|]/).map(Number)));
+    }
+    // `regista` sulle serie: TMDB non ha i registi, ha i creatori (`created_by`).
+    if (isTv && q.with_created_by) {
+        where.push(F.creator(...String(q.with_created_by).split(/[,|]/).map(Number)));
     }
     if (q.with_cast) where.push(F.actor(...String(q.with_cast).split('|').map(Number)));
-    if (q.with_watch_providers) where.push(F.provider(q.with_watch_providers, q.watch_region));
+    if (q.with_watch_providers) {
+        // Più provider = OR (regola della sintassi: valori dello stesso operatore sono alternative).
+        // `F.provider` conosce un id solo, quindi la lista si spezza qui.
+        const providerIds = String(q.with_watch_providers).split(/[,|]/).map(s => s.trim()).filter(Boolean);
+        where.push(
+            providerIds.length <= 1
+                ? F.provider(providerIds[0], q.watch_region)
+                : F.any(...providerIds.map(id => F.provider(id, q.watch_region)))
+        );
+    }
     if (q.with_companies) where.push(F.company(...String(q.with_companies).split('|').map(Number)));
     if (q.with_collections) where.push(F.collections(...String(q.with_collections).split('|').map(Number)));
     if (q.with_networks) where.push(F.network(...String(q.with_networks).split('|').map(Number)));
@@ -182,6 +196,8 @@ function buildPresetFromFilters(q, type = 'movie', options = {}) {
             where.push('1=0');
         }
     }
+
+    if (q['certification.lte']) where.push(F.ratingMax(q['certification.lte']));
 
     const preset = {
         type,

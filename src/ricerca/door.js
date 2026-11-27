@@ -17,35 +17,17 @@
 
 const { findSourcesForSearch } = require('./registry');
 const { mergeLocalWithTier2, fondiEOrdina } = require('./fusione');
-const { richiediComprensioneAI } = require('./aiAdapter');
 const { createTmdbClient } = require('../clients/tmdb');
+const { elencoGeneri } = require('./generi');
 
 const TIPI_TITOLO = new Set(['titolo', 'multi', 'movie', 'series', 'film', 'serie']);
 const TIPI_GENERE = new Set(['genere', 'genre']);
 const TIPI_KEYWORD = new Set(['keyword']);
 const TIPI_PERSONA = new Set(['persona', 'person']);
 
-const FALLBACK_GENRES = [
-    { id: 28, name: 'Azione' },
-    { id: 12, name: 'Avventura' },
-    { id: 16, name: 'Animazione' },
-    { id: 35, name: 'Commedia' },
-    { id: 80, name: 'Crime' },
-    { id: 99, name: 'Documentario' },
-    { id: 18, name: 'Dramma' },
-    { id: 10751, name: 'Famiglia' },
-    { id: 14, name: 'Fantasy' },
-    { id: 36, name: 'Storia' },
-    { id: 27, name: 'Horror' },
-    { id: 10402, name: 'Musica' },
-    { id: 9648, name: 'Mistero' },
-    { id: 10749, name: 'Romance' },
-    { id: 878, name: 'Fantascienza' },
-    { id: 10770, name: 'Film TV' },
-    { id: 53, name: 'Thriller' },
-    { id: 10752, name: 'Guerra' },
-    { id: 37, name: 'Western' }
-];
+// I 19 generi vivono in un posto solo (`src/ricerca/generi.js`): la porta li mostra quando TMDB
+// non risponde, il parser li riconosce, il compilatore li filtra. Tre copie divergono sempre.
+const FALLBACK_GENRES = elencoGeneri();
 
 /**
  * Ottiene o crea il client TMDB in sicurezza.
@@ -72,7 +54,6 @@ function getSafeTmdbClient(client, apiKey) {
  * @param {number} [params.cap=20] - Limite massimo di risultati
  * @param {string} [params.tmdbApiKey] - Chiave TMDB opzionale
  * @param {Object} [params.client] - Client TMDB opzionale
- * @param {string} [params.mistralKey] - Chiave Mistral opzionale per comprensione semantica
  * @returns {Promise<{ items: Array<Object>, motivi: Array<string> }>}
  */
 async function cerca({
@@ -81,8 +62,7 @@ async function cerca({
     contesto = {},
     cap = 20,
     tmdbApiKey = null,
-    client = null,
-    mistralKey = null
+    client = null
 } = {}) {
     const motivi = [];
 
@@ -169,20 +149,13 @@ async function cerca({
         // 5. TIPO: TITOLO / MULTI (Fusione multi-fonte)
         // ============================================
 
-        // A. Comprensione AI opzionale se la query sembra naturale o complessa
-        const isNaturalQuery = query.split(/\s+/).length > 3;
-        if (isNaturalQuery) {
-            const aiResult = await richiediComprensioneAI({
-                query,
-                mistralKey,
-                context: contesto
-            });
-            if (aiResult.degraded) {
-                motivi.push(aiResult.reason || 'ai_degradata');
-            }
-        }
+        // Nessuna comprensione AI qui. C'era una chiamata a `richiediComprensioneAI` per ogni
+        // query di più di tre parole, e il suo risultato **non veniva letto**: l'unico effetto era
+        // pagare fino a 25 secondi su un autocomplete. Il modulo AI resta (è il meccanismo
+        // condiviso e la ricerca unificata lo usa — una volta sola, con un budget), ma non su
+        // questa porta: qui la risposta arriva dall'indice locale.
 
-        // B. Raccolta candidati dalle fonti abilitate nel registro
+        // A. Raccolta candidati dalle fonti abilitate nel registro
         const searchCtx = {
             q: query,
             tipo: normTipo,

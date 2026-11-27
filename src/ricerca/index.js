@@ -45,19 +45,65 @@ const {
 } = require('./fusione');
 
 const {
-    richiediComprensioneAI
-} = require('./aiAdapter');
+    compilaIntenti,
+    eseguiPiani
+} = require('./compilatore');
 
 const {
-    SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
-    buildSearchUnderstandingPrompt,
-    buildAiPrompt
-} = require('./prompts');
+    creaRisolutori,
+    risolviConcetto,
+    risolviPersona,
+    risolviTitolo,
+    risolviProvider,
+    chiudiPersone
+} = require('./risolutori');
 
 const {
-    generateTmdbFiltersFromPrompt,
-    routeLiveStremioSearch
-} = require('./router');
+    OPERATORI,
+    analizza: analizzaSintassi,
+    risolvi: risolviSintassi,
+    pianifica,
+    interpretaAnno
+} = require('./pianificatore');
+
+const {
+    cercaUnificata,
+    ricercaLocale,
+    candidatiLocali
+} = require('./ricercaUnificata');
+
+/**
+ * Da un testo in sintassi alla pagina d'anteprima: intenti, `queries` compilate, titoli e motivi.
+ *
+ * Un posto solo per la pipeline che le due rotte di anteprima condividono (`/api/catalog/preview-catalog`
+ * e `/api/configurazione/anteprima`) — e un posto solo che conosce l'ordine parser → compilatore →
+ * indice. Le rotte non importano più i file interni del modulo.
+ *
+ * @param {Object} params
+ * @param {string} params.testo
+ * @param {'movie'|'series'} [params.type='movie']
+ * @param {Object} [params.contesto] contesto di profilo risolto
+ * @param {number} [params.cap=20]
+ * @returns {Promise<{intenti: Object[], motivi: string[], queries: Object[], items: Object[]}>}
+ */
+async function compilaTesto({ testo, type = 'movie', contesto = null, cap = 20 } = {}) {
+    const analisi = await pianifica(testo, { risolutori: creaRisolutori({ type, contesto }) });
+    const compilato = compilaIntenti(analisi.intenti, { type });
+    const esecuzione = await eseguiPiani(compilato.piani, { type, cap, contesto });
+
+    const queries = compilato.piani.map(piano => ({
+        strategy: piano.modo === 'semi' ? 'similar' : 'discovery',
+        ...piano.filtri,
+        ...(piano.modo === 'semi' && piano.semi.length > 0 ? { similar_to: piano.semi[0] } : {})
+    }));
+
+    return {
+        intenti: analisi.intenti,
+        motivi: [...new Set([...analisi.motivi, ...compilato.motivi, ...(esecuzione.motivi || [])])],
+        queries,
+        items: esecuzione.items || []
+    };
+}
 
 module.exports = {
     // La porta unica
@@ -89,13 +135,28 @@ module.exports = {
     mergeLocalWithTier2,
     fondiEOrdina,
 
-    // AI
-    richiediComprensioneAI,
-    SEARCH_UNDERSTANDING_SYSTEM_PROMPT,
-    buildSearchUnderstandingPrompt,
-    buildAiPrompt,
-    generateTmdbFiltersFromPrompt,
-    routeLiveStremioSearch,
+    // La ricerca unificata di Stremio (locale + AI quando serve)
+    cercaUnificata,
+    ricercaLocale,
+    candidatiLocali,
+
+    // La pipeline dell'anteprima (parser → compilatore → indice), per le rotte di creator
+    compilaTesto,
+
+    // Il parser della sintassi esplicita (fetta 2)
+    OPERATORI,
+    analizzaSintassi,
+    risolviSintassi,
+    pianifica,
+    interpretaAnno,
+
+    // I risolutori veri (fetta 3): lessico, grafo, people.db, FTS, provider
+    creaRisolutori,
+    risolviConcetto,
+    risolviPersona,
+    risolviTitolo,
+    risolviProvider,
+    chiudiPersone,
 
     // Learned names (archivio titoli appresi - getter pigri per non anticipare better-sqlite3)
     get LearnedNamesStore() { return require('./learnedNames').LearnedNamesStore; },

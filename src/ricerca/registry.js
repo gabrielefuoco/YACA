@@ -26,8 +26,6 @@ const {
     aiDiscoverySource
 } = require('../catalog/capabilities');
 
-const { mergeLocalWithTier2 } = require('./fusione');
-
 /**
  * Validatore e factory di un'entrata nel registro delle fonti.
  */
@@ -57,6 +55,48 @@ function defineSourceEntry(spec) {
     });
 }
 
+/**
+ * Un catalogo **scritto in sintassi** (`testo`) o già compilato (`intenti`).
+ *
+ * È il formato nuovo dei cataloghi personalizzati: il testo è la verità leggibile, gli `intenti`
+ * sono lo snapshot stabile. Stesso parser/compilatore della ricerca — cambia solo chi li invoca.
+ * Non solleva: un testo che non produce piani è una riga vuota con il motivo nei log.
+ */
+async function serveCatalogoScritto({ testo, intenti, ctx }) {
+    try {
+        const { compilaIntenti, eseguiPiani } = require('./compilatore');
+        let elenco = Array.isArray(intenti) && intenti.length > 0 ? intenti : null;
+        let motivi = [];
+
+        if (!elenco && testo) {
+            const { pianifica } = require('./pianificatore');
+            const { creaRisolutori } = require('./risolutori');
+            const analisi = await pianifica(testo, {
+                risolutori: creaRisolutori({ type: ctx.type, contesto: ctx.activeProfileSettings })
+            });
+            elenco = analisi.intenti;
+            motivi = analisi.motivi;
+        }
+
+        const compilato = compilaIntenti(elenco || [], { type: ctx.type });
+        const esecuzione = await eseguiPiani(compilato.piani, {
+            type: ctx.type,
+            skip: ctx.skip || 0,
+            cap: 20,
+            contesto: ctx.activeProfileSettings
+        });
+
+        const tutti = [...motivi, ...compilato.motivi, ...(esecuzione.motivi || [])];
+        if (tutti.length > 0) {
+            console.log(`[CatalogoScritto] ${ctx.baseId || ctx.id}: ${tutti.join(' | ')}`);
+        }
+        return esecuzione.items || [];
+    } catch (err) {
+        console.error(`[CatalogoScritto] ${ctx.baseId || ctx.id}: ${err.message}`);
+        return [];
+    }
+}
+
 // ============================================
 // LE SEI FONTI CONTRATTUALIZZATE
 // ============================================
@@ -78,28 +118,17 @@ const duckDbSourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { getDuckDbCatalogFromFilters } = require('../indice');
-
-        // SCENARIO 1: Ricerca standard (locale + Tier 2 + nomi appresi)
+        // SCENARIO 1: Ricerca (locale + AI quando serve). Un solo percorso per la Ricerca Veloce
+        // e per la Deep Search: la decisione se chiedere il piano AI vive in `ricercaUnificata`.
         if (ctx.search) {
-            
-            const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('./tier2Search');
-            const { enrichTier2Items } = require('./tier2Enrich');
-
-            const PRESET_PAGE_SIZE = 20;
-            const localItems = await getDuckDbCatalogFromFilters(
-                { _search: ctx.search },
-                ctx.type,
-                ctx.skip || 0,
-                PRESET_PAGE_SIZE,
-                ctx.activeProfileSettings
-            );
-
-            const tier2Items = searchTier2(ctx.search, { type: ctx.type, limit: PRESET_PAGE_SIZE });
-            const merged = mergeLocalWithTier2(localItems, tier2Items);
-
-            const learnedItems = await searchLearnedTitles(ctx.search, { type: ctx.type, limit: LEARNED_PAGE_SIZE });
-            return await enrichTier2Items(mergeLocalWithTier2(merged, learnedItems), { apiKey: ctx.tmdbApiKey });
+            const { cercaUnificata } = require('./ricercaUnificata');
+            return await cercaUnificata({
+                q: ctx.search,
+                type: ctx.type,
+                skip: ctx.skip || 0,
+                activeProfileSettings: ctx.activeProfileSettings,
+                tmdbApiKey: ctx.tmdbApiKey
+            });
         }
 
         // SCENARIO 2: SQL Diretto da preset/where
@@ -126,28 +155,17 @@ const duckDbSourceEntry = defineSourceEntry({
     },
 
     async search(searchCtx) {
-        try {
-            const { getDuckDbCatalogFromFilters } = require('../indice');
-            const { searchTier2, searchLearnedTitles, LEARNED_PAGE_SIZE } = require('./tier2Search');
-
-            const limit = searchCtx.cap || 20;
-            const type = searchCtx.tipo === 'series' ? 'series' : 'movie';
-
-            const localItems = await getDuckDbCatalogFromFilters(
-                { _search: searchCtx.q },
-                type,
-                0,
-                limit,
-                searchCtx.contesto
-            ).catch(() => []);
-
-            const tier2Items = searchTier2(searchCtx.q, { type, limit });
-            const learnedItems = await searchLearnedTitles(searchCtx.q, { type, limit: LEARNED_PAGE_SIZE }).catch(() => []);
-
-            return mergeLocalWithTier2(mergeLocalWithTier2(localItems, tier2Items), learnedItems);
-        } catch (_) {
-            return [];
-        }
+        // Un solo estrattore di candidati locali per la porta e per il servire: se cambia la
+        // fusione Tier 1/Tier 2/nomi appresi, cambia per entrambi (o per nessuno).
+        const { candidatiLocali } = require('./ricercaUnificata');
+        const type = searchCtx.tipo === 'series' ? 'series' : 'movie';
+        return candidatiLocali({
+            q: searchCtx.q,
+            type,
+            skip: 0,
+            limit: searchCtx.cap || 20,
+            contesto: searchCtx.contesto
+        });
     }
 });
 
@@ -293,21 +311,34 @@ const aiDiscoverySourceEntry = defineSourceEntry({
     },
 
     async serveCatalog(ctx) {
-        const { executeCombinedSearch, executeUniversalPipeline } = require('../stremio/providers/AiDiscoveryProvider');
+        const { executeUniversalPipeline } = require('../stremio/providers/AiDiscoveryProvider');
         const { normalizeToUniversalSchema } = require('../infra/resultMerger');
 
+        // La ricerca non ha più due percorsi: `yaca_search_ai` e `yaca_search_standard` passano
+        // dalla stessa funzione, che chiede il piano all'AI solo quando il locale non basta.
         if (ctx.search) {
-            return await executeCombinedSearch(
-                ctx.search,
-                ctx.userConfig,
-                ctx.type,
-                ctx.skip || 0,
-                ctx.activeProfileSettings,
-                ctx.tmdbFetchOptions
-            );
+            const { cercaUnificata } = require('./ricercaUnificata');
+            return await cercaUnificata({
+                q: ctx.search,
+                type: ctx.type,
+                skip: ctx.skip || 0,
+                activeProfileSettings: ctx.activeProfileSettings,
+                tmdbApiKey: ctx.tmdbApiKey
+            });
         }
 
         if (ctx.catalogMeta || ctx.directFilters) {
+            // Formato nuovo: il catalogo è scritto in sintassi (`testo`) o ha gli `intenti`.
+            const testo = typeof ctx.catalogMeta?.testo === 'string'
+                ? ctx.catalogMeta.testo
+                : (typeof ctx.directFilters?.testo === 'string' ? ctx.directFilters.testo : null);
+            const intenti = Array.isArray(ctx.catalogMeta?.intenti)
+                ? ctx.catalogMeta.intenti
+                : (Array.isArray(ctx.directFilters?.intenti) ? ctx.directFilters.intenti : null);
+            if (testo || intenti) {
+                return await serveCatalogoScritto({ testo, intenti, ctx });
+            }
+
             const universalCatalog = normalizeToUniversalSchema(ctx.catalogMeta, ctx.directFilters);
             if (ctx.sortBy && universalCatalog.queries) {
                 for (const q of universalCatalog.queries) {
@@ -329,24 +360,13 @@ const aiDiscoverySourceEntry = defineSourceEntry({
         return [];
     },
 
-    appliesToSearch(searchCtx) {
-        return Boolean(searchCtx.deepAi || searchCtx.semantic || searchCtx.useAi);
+    // La ricerca non ha più un percorso AI: tutto passa dal parser della sintassi.
+    appliesToSearch() {
+        return false;
     },
 
-    async search(searchCtx) {
-        try {
-            const { executeCombinedSearch } = require('../stremio/providers/AiDiscoveryProvider');
-            return await executeCombinedSearch(
-                searchCtx.q,
-                searchCtx.userConfig || {},
-                searchCtx.type || 'movie',
-                0,
-                searchCtx.contesto || {},
-                {}
-            );
-        } catch (_) {
-            return [];
-        }
+    async search() {
+        return [];
     }
 });
 

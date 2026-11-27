@@ -226,15 +226,17 @@ describe('CatalogRouter: i nomi appresi vanno in coda, senza duplicare e senza r
     });
 
     it('tabella vuota e ricerca piena di risultati: la risposta e\' identica a prima', async () => {
-        getDuckDbCatalogFromFilters.mockResolvedValue(Array.from({ length: 20 }, (_, i) => localItem(1000 + i, `Locale ${i}`)));
+        // La sorgente restituisce UNA pagina (20), quindi per vedere il Tier 2 in pagina i locali
+        // devono essere meno di 20: il contratto è l'ordine, non il numero di righe restituite.
+        getDuckDbCatalogFromFilters.mockResolvedValue(Array.from({ length: 5 }, (_, i) => localItem(1000 + i, `Locale ${i}`)));
         stubTier2Index(Array.from({ length: 20 }, (_, i) => tier2Row(2000 + i, `Coda ${i}`)));
         mockSearchLearnedNames.mockResolvedValue([]);
 
         const items = await search('batman');
 
         expect(items.map(m => m._tmdbId)).toEqual([
-            ...Array.from({ length: 20 }, (_, i) => 1000 + i),
-            ...Array.from({ length: 20 }, (_, i) => 2000 + i)
+            ...Array.from({ length: 5 }, (_, i) => 1000 + i),
+            ...Array.from({ length: 15 }, (_, i) => 2000 + i)
         ]);
     });
 });
