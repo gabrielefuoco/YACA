@@ -9,8 +9,18 @@ const { catalogDefinitionsFromShelves } = require('../catalog/registry');
 const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
 // La ricerca dichiara anche `skip`: senza, Stremio non chiede mai la pagina successiva e la
-// ricerca resta ferma alla prima (era il motivo per cui «sembrava» limitata a venti titoli).
+// ricerca resta ferma alla prima.
 const searchExtra = [{ name: 'search', isRequired: true }, { name: 'skip' }];
+
+/**
+ * La versione del manifest. **Va alzata ogni volta che cambia la forma del manifest** (catalogs,
+ * extra, resources, behaviorHints): Stremio tiene il manifest in cache e lo richiede solo quando
+ * la stringa di versione cambia. Il 27/11/2026 è successo esattamente questo: `searchExtra` ha
+ * guadagnato `skip`, ma la versione era ferma a 1.0.4, quindi il client ha continuato a usare il
+ * manifest vecchio e non ha mai chiesto la seconda pagina di una ricerca — mentre i cataloghi,
+ * che avevano già `skip`, paginavano benissimo.
+ */
+const VERSIONE_MANIFEST = '1.1.0';
 
 /**
  * Le tre righe della libreria personale. Estratte qui perché sono una sola verità
@@ -74,7 +84,7 @@ function resolveCatalogType(cat) {
 function buildRootManifest(hostUrl = 'http://localhost:7000') {
     return {
         id: 'org.stremio.yaca.catalog',
-        version: '1.0.4',
+        version: VERSIONE_MANIFEST,
         name: 'YACA 🇮🇹 (Yet Another Catalog Addon)',
         description: 'Catalogo Intelligente Potenziato da AI - Configurazione Richiesta',
         logo: `${hostUrl}/fiamma_yaca.png`,
@@ -93,7 +103,7 @@ function buildRootManifest(hostUrl = 'http://localhost:7000') {
 
 function buildManifest(userConfig = {}, hostUrl = 'http://localhost:7000', userHandle = null, options = {}) {
     const cv = userConfig?.configVersion?.toString().replace(/_/g, '-');
-    const dynamicVersion = cv ? `1.0.4+${cv}` : '1.0.4';
+    const dynamicVersion = cv ? `${VERSIONE_MANIFEST}+${cv}` : VERSIONE_MANIFEST;
 
     const { risolviProfiloAttivo } = require('../profile');
     const {

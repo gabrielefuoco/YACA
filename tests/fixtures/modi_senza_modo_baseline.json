@@ -63,7 +63,7 @@
   "fingerprint": "ce711eb9a73805abcbb8cc5098a86bd0698afe60eb58d68013c5c567b18ee0bd",
   "manifest": {
     "id": "org.stremio.yaca.catalog",
-    "version": "1.0.4",
+    "version": "1.1.0",
     "name": "YACA 🇮🇹 (Yet Another Catalog Addon)",
     "description": "Catalogo Intelligente Potenziato da AI",
     "logo": "http://localhost:7000/fiamma_yaca.png",
