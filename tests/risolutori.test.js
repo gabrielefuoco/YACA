@@ -41,11 +41,11 @@ describe('risolutori — le parti pure', () => {
     });
 
     describe('scegliTitolo', () => {
-        const risultato = (id, nome, originale) => ({
+        const risultato = (id, nome, originale, extra = {}) => ({
             id: `tmdb:${id}`,
             _tmdbId: id,
             name: nome,
-            rawTMDB: { title: nome, original_title: originale || nome }
+            rawTMDB: { title: nome, original_title: originale || nome, ...extra }
         });
 
         it('prende il match esatto, anche se non è il primo', () => {
@@ -58,15 +58,30 @@ describe('risolutori — le parti pure', () => {
             expect(scegliTitolo('inter', [risultato(157336, 'Interstellar')])).toBe(157336);
         });
 
-        it('un prefisso ambiguo non sceglie: un seme sbagliato produce vicini sbagliati', () => {
+        it('un prefisso ambiguo prende il più visto, non il primo che capita', () => {
             const risultati = [risultato(11, 'Batman Begins'), risultato(272, 'Batman')];
             expect(scegliTitolo('batman', risultati)).toBe(272);   // esatto, vince lui
-            const senzaEsatto = [risultato(11, 'Batman Begins'), risultato(364, 'Batman Returns')];
-            expect(scegliTitolo('batman', senzaEsatto)).toBeNull();
+
+            // «hunger game» è prefisso di tutta la saga: vince il primo capitolo, che è il più visto.
+            const saga = [
+                risultato(101299, 'Hunger Games: La ragazza di fuoco', null, { vote_count: 18895 }),
+                risultato(70160, 'Hunger Games', null, { vote_count: 23851 }),
+                risultato(131631, 'Hunger Games: Il canto della rivolta - Parte 1', null, { vote_count: 17098 })
+            ];
+            expect(scegliTitolo('hunger game', saga)).toBe(70160);
         });
 
-        it('un prefisso cortissimo non è un titolo', () => {
-            expect(scegliTitolo('bat', [risultato(11, 'Batman Begins')])).toBeNull();
+        it('a parità di voti decide la popolarità, poi l\'ordine dell\'indice', () => {
+            const pari = [
+                risultato(1, 'Hunger Games', null, { vote_count: 100, popularity: 5 }),
+                risultato(2, 'Hunger Game X', null, { vote_count: 100, popularity: 9 })
+            ];
+            expect(scegliTitolo('hunger game', pari)).toBe(2);
+        });
+
+        it('sotto i 5 caratteri non si indovina niente', () => {
+            const senzaEsatto = [risultato(11, 'Batman Begins'), risultato(364, 'Batman Returns')];
+            expect(scegliTitolo('bat', senzaEsatto)).toBeNull();
         });
 
         it('i titoli originali contano quanto quelli localizzati', () => {

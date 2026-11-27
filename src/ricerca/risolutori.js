@@ -270,10 +270,13 @@ function titoliDi(item) {
 /**
  * Il titolo cercato fra i risultati dell'indice, o `null`.
  *
- * Il match esatto vince sempre. Il prefisso si accetta **solo** se è unico e lungo almeno 5
- * caratteri («inter» → *Interstellar*): un seme sbagliato produce vicini sbagliati, e non si vede.
- * Per questo «batman» non diventa «Batman Begins» quando il primo esiste, e un prefisso ambiguo
- * («batman» con *Batman Begins* e *Batman Returns*) resta senza seme invece di sceglierne uno.
+ * Il match esatto vince sempre, e il prefisso si accetta dai 5 caratteri in su. Se il prefisso
+ * identifica un solo titolo, è quello. Se ne identifica più d'uno vince il **più visto**: chi
+ * scrive «hunger game» intende la saga che conosce tutti, non il documentario dietro le quinte, e
+ * chi scrive «inter» intende *Interstellar*, non *Inter. Due Stelle sul Cuore*.
+ *
+ * Perché `vote_count` e non `popularity`: la popolarità è un punteggio del giorno e mette davanti
+ * l'ultimo capitolo di una saga invece del primo.
  */
 function scegliTitolo(cercato, risultati) {
     const atteso = normalizza(cercato);
@@ -285,7 +288,13 @@ function scegliTitolo(cercato, risultati) {
 
     if (atteso.length < 5) return null;
     const perPrefisso = elenco.filter(item => titoliDi(item).some(titolo => normalizza(titolo).startsWith(atteso)));
-    return perPrefisso.length === 1 ? numeroId(perPrefisso[0]) : null;
+    if (perPrefisso.length === 0) return null;
+    if (perPrefisso.length === 1) return numeroId(perPrefisso[0]);
+
+    const voti = item => Number((item && item.rawTMDB && item.rawTMDB.vote_count) || 0) || 0;
+    const popolarita = item => Number((item && item.rawTMDB && item.rawTMDB.popularity) || 0) || 0;
+    const ordinati = [...perPrefisso].sort((a, b) => voti(b) - voti(a) || popolarita(b) - popolarita(a));
+    return numeroId(ordinati[0]);
 }
 
 /**
@@ -297,7 +306,9 @@ async function risolviTitolo(valore, { type = 'movie', contesto = {} } = {}) {
     if (!cercato) return null;
     try {
         const { getDuckDbCatalogFromFilters } = require('../indice');
-        const risultati = await getDuckDbCatalogFromFilters({ text_search: cercato }, type, 0, 5, contesto);
+        // Dodici e non cinque: con un prefisso ambiguo il più visto può stare oltre i primi
+        // risultati che l'indice considera più pertinenti.
+        const risultati = await getDuckDbCatalogFromFilters({ text_search: cercato }, type, 0, 12, contesto);
         const id = scegliTitolo(cercato, risultati);
         return id ? [id] : null;
     } catch (_err) {

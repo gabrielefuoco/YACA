@@ -120,6 +120,12 @@ I titoli arrivano per id e punteggio e si **idratano dall'indice conservando l'o
 altri vincoli dell'intento si applicano dentro (`simili interstellar anno 2010`), per questo si
 chiedono più vicini di una pagina.
 
+Come si sceglie il seme di un titolo scritto: vince il **match esatto**; poi un prefisso di almeno
+cinque caratteri, se ne identifica uno solo; se ne identifica più d'uno vince il **più visto**
+(`vote_count`, poi popolarità) — «hunger game» è *Hunger Games*, non il documentario dietro le
+quinte. Un titolo che non si risolve resta un motivo (`titolo_non_risolto: X`) e non svuota la
+ricerca: `simili got, X` usa il seme che conosce.
+
 Se il grafo non risponde — servizio giù, semi fuori canone, nessun vicino nel nostro dump — si
 ripiega sulla colonna `recommendations` del parquet (una query per seme, poi consensus) e il motivo
 dice quale delle due ha risposto: `simile:grafo` o `simile:colonna`. Budget: 4000 ms
