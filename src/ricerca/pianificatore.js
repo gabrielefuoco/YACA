@@ -36,6 +36,7 @@
  */
 
 const { genereDaNome } = require('./generi');
+const { interpretaEta } = require('./eta');
 const { normalizza } = require('../infra/testo');
 
 /** Le forme accettate per ogni operatore: campo canonico → parole. */
@@ -453,9 +454,9 @@ function analizza(query) {
     }
 
     if (grezzo.eta !== null) {
-        const eta = String(grezzo.eta).trim().toUpperCase().replace(/[^A-Z0-9+-]/g, '');
-        if (!eta) motivi.push(`eta_non_valida: ${grezzo.eta}`);
-        grezzo.eta = eta || null;
+        const { eta, motivo } = interpretaEta(grezzo.eta);
+        grezzo.eta = eta;
+        if (motivo) motivi.push(motivo);
     }
 
     return { grezzo, testo, motivi };

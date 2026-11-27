@@ -200,7 +200,9 @@ describe('analizza — gli operatori allineati al block editor', () => {
     });
 
     it('`eta` normalizza la certificazione', async () => {
-        expect(analizza('eta pg-13').grezzo.eta).toBe('PG-13');
+        // Minuscolo: è la forma che `ETA_RANK` confronta con `content_rating`.
+        expect(analizza('eta pg-13').grezzo.eta).toBe('pg-13');
+        expect(analizza('eta 0-6').grezzo.eta).toBe('6+');
     });
 
     it('gli operatori numerici non si mangiano le parole', async () => {
