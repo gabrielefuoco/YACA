@@ -219,6 +219,13 @@ router.get([
     if (extra.skip) extra.skip = parseInt(extra.skip, 10) || 0;
     else extra.skip = 0;
 
+    // Traccia delle ricerche che arrivano da Stremio: serve a sapere se il client chiede la
+    // pagina successiva (`skip`), perché il comportamento varia fra la schermata di ricerca e il
+    // catalogo. Una riga sola, solo per le ricerche.
+    if (extra.search) {
+        console.log(`[StremioSearch] skip=${extra.skip} q=${JSON.stringify(extra.search)} ua=${JSON.stringify(req.get('user-agent') || '')}`);
+    }
+
     const sortBy = extra.sortBy || extra.genre || null;
     if (sortBy) {
         extra.sortBy = getSortByValue(sortBy, type);
