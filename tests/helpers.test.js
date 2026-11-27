@@ -20,6 +20,17 @@ describe('parseExtra', () => {
         expect(parseExtra('search=film%20d%27azione')).toEqual({ search: "film d'azione" });
     });
 
+    it('una percentuale non codificata non fa esplodere il parsing', () => {
+        // Express decodifica una volta: `search=100%25` arriva qui come `100%`, e
+        // `decodeURIComponent('100%')` sollevava. La porta deve rispondere, non cadere.
+        expect(parseExtra('search=100%')).toEqual({ search: '100%' });
+        expect(parseExtra('search=%zz')).toEqual({ search: '%zz' });
+        expect(parseExtra('search=%E0%A4%A')).toEqual({ search: '%E0%A4%A' });
+    });
+
+    it('un valore puo contenere un uguale', () => {
+        expect(parseExtra('search=voto=8&skip=20')).toEqual({ search: 'voto=8', skip: '20' });
+    });
     it('should skip entries without value', () => {
         expect(parseExtra('search=test&empty=')).toEqual({ search: 'test' });
         expect(parseExtra('novalue&search=test')).toEqual({ search: 'test' });

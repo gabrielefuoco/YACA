@@ -2,14 +2,29 @@ const { isRetiredTmdbKeywordId } = require('../indice/keywordIds');
 
 /**
  * Parsa i parametri "extra" stile Stremio (es. "search=avengers&skip=20")
+ *
+ * La decodifica non deve mai sollevare: Express decodifica gia' il percorso della rotta e una
+ * ricerca con un `%` non codificato (`100%`) fa rispondere **500** invece del vuoto che il
+ * protocollo Stremio si aspetta (le porte non sollevano mai). In caso di sequenza non valida
+ * resta il valore grezzo: e' comunque un testo di ricerca, e la ricerca sa gestirlo.
  */
 function parseExtra(extraString) {
     if (!extraString) return {};
     const extra = {};
     const params = extraString.split('&');
     for (const p of params) {
-        const [k, v] = p.split('=');
-        if (k && v) extra[k] = decodeURIComponent(v);
+        // Solo il primo `=`: un valore puo' contenerne altri (`search=voto=8`).
+        const separatore = p.indexOf('=');
+        if (separatore <= 0) continue;
+        const k = p.slice(0, separatore);
+        const v = p.slice(separatore + 1);
+        let decodificato = v;
+        try {
+            decodificato = decodeURIComponent(v);
+        } catch (_err) {
+            // `%`, `%zz`, `%E0%A4%A`: si tiene com'e' scritto.
+        }
+        if (k && decodificato) extra[k] = decodificato;
     }
     return extra;
 }
