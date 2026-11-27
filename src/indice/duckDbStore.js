@@ -50,6 +50,8 @@ class DuckDbStore {
         // Tracciamento identità file e riapertura automatica dopo scambio (Ticket 59)
         this.fileIdentity = null;
         this.lastIdentityCheckTime = 0;
+        // Divieto breve dopo una riapertura fallita: si e' senza connessione, non si martella il file.
+        this._riprovaDopo = 0;
         const envCheck = Number(process.env.DUCKDB_CHECK_INTERVAL_MS);
         this.checkIntervalMs = Number.isFinite(envCheck) && envCheck >= 0 ? envCheck : 10000;
         this.activeQueries = 0;
@@ -324,32 +326,40 @@ class DuckDbStore {
         }
     }
 
+    /**
+     * Apre il database persistente e lo valida (FTS caricato, schema verificato).
+     *
+     * Non tocca `this.db`/`this.con`: chi chiama decide quando il nuovo handle subentra. È la
+     * differenza che evita l'outage descritto in `_reopenDueToSwap`.
+     */
+    async _apriEValida() {
+        const db = await this._openDb(this.dbPath);
+        let con = null;
+        try {
+            con = db.connect();
+            await this._exec(con, "INSTALL fts;");
+            await this._exec(con, "LOAD fts;");
+            await this._exec(con, "SET scalar_subquery_error_on_multiple_rows=false;");
+            await this._verifyDatabase(con);
+            return { db, con };
+        } catch (err) {
+            await this._closeCon(con);
+            await this._closeDb(db);
+            throw err;
+        }
+    }
+
     async _openPersistentWithRetry(options = {}) {
         const maxRetries = Number(options.maxRetries || process.env.DUCKDB_LOCK_MAX_RETRIES || 3);
         const retryDelayMs = Number(options.retryDelayMs || process.env.DUCKDB_LOCK_RETRY_DELAY_MS || 2000);
         let lastErr = null;
 
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            let testDb = null;
-            let testCon = null;
             try {
-                testDb = await this._openDb(this.dbPath);
-                testCon = testDb.connect();
-                await this._exec(testCon, "INSTALL fts;");
-                await this._exec(testCon, "LOAD fts;");
-                await this._exec(testCon, "SET scalar_subquery_error_on_multiple_rows=false;");
-                await this._verifyDatabase(testCon);
-
-                this.db = testDb;
-                this.con = testCon;
-                this._recordFileIdentity(this.dbPath);
-                return { success: true };
+                const { db, con } = await this._apriEValida();
+                return { success: true, db, con };
             } catch (err) {
                 lastErr = err;
-                await this._closeCon(testCon);
-                await this._closeDb(testDb);
-                testCon = null;
-                testDb = null;
 
                 if (this._isLockConflictError(err) && attempt < maxRetries) {
                     const delay = retryDelayMs * attempt;
@@ -375,6 +385,37 @@ class DuckDbStore {
 
         if (this.reopenPromise) {
             await this.reopenPromise;
+            return;
+        }
+
+        // Senza connessione — init fallita, o un tentativo di riapertura che l'aveva azzerata — si
+        // riapre subito, con un divieto breve se il file è ancora occupato. Aspettare che il file
+        // cambi di nuovo identità vorrebbe dire servire cataloghi vuoti fino al prossimo ciclo del
+        // daemon, cioè fino a un'ora.
+        if (!this.con) {
+            if (Date.now() < (this._riprovaDopo || 0)) return;
+
+            this.reopenPromise = (async () => {
+                const res = await this._openPersistentWithRetry(options);
+                if (!res.success) {
+                    this._riprovaDopo = Date.now() + this.checkIntervalMs;
+                    return;
+                }
+                this.db = res.db;
+                this.con = res.con;
+                this._riprovaDopo = 0;
+                this._recordFileIdentity(this.dbPath);
+                this.lastIdentityCheckTime = Date.now();
+                console.log('[DuckDB Store] Connessione ripristinata.');
+            })();
+
+            try {
+                await this.reopenPromise;
+            } catch (_err) {
+                this._riprovaDopo = Date.now() + this.checkIntervalMs;
+            } finally {
+                this.reopenPromise = null;
+            }
             return;
         }
 
@@ -429,8 +470,8 @@ class DuckDbStore {
 
         // Ticket 60: La barriera copre l'INTERA operazione (riapertura file E ripopolamento tabelle/cache)
         this.reopenPromise = (async () => {
-            await this._reopenDueToSwap(options);
-            await repopulatePostReopen();
+            const sostituito = await this._reopenDueToSwap(options);
+            if (sostituito) await repopulatePostReopen();
         })();
 
         try {
@@ -440,6 +481,17 @@ class DuckDbStore {
         }
     }
 
+    /**
+     * Sostituisce l'handle dopo che il daemon ha scambiato il file.
+     *
+     * L'ordine conta: si apre e si valida il NUOVO handle, e solo dopo si chiude il vecchio. Prima
+     * era il contrario (chiudi → apri), e bastava un lock conteso — il daemon che tiene il file, o
+     * un handle nostro non ancora rilasciato — perché il processo restasse senza `con`: ogni
+     * catalogo a filtri rispondeva `[]` con `Cannot read properties of null (reading 'all')`
+     * finché il file non cambiava di nuovo identità, cioè fino a un'ora. Servito vuoto, non rotto.
+     *
+     * @returns {Promise<boolean>} true se l'handle è stato sostituito
+     */
     async _reopenDueToSwap(options = {}) {
         while (this.activeQueries > 0) {
             await new Promise(resolve => {
@@ -447,21 +499,25 @@ class DuckDbStore {
             });
         }
 
+        const res = await this._openPersistentWithRetry(options);
+        if (!res.success) {
+            // Il vecchio handle resta al suo posto e continua a rispondere (le tabelle sono in RAM).
+            // Si riprova al prossimo giro: un guasto di riapertura non spegne il database.
+            console.error(`[DuckDB Store] Database scambiato non ancora leggibile (${res.error ? res.error.message : 'sconosciuto'}): resto sul vecchio handle e riprovo.`);
+            return false;
+        }
+
         const oldCon = this.con;
         const oldDb = this.db;
-        this.con = null;
-        this.db = null;
+        this.db = res.db;
+        this.con = res.con;
+        this._recordFileIdentity(this.dbPath);
 
         await this._closeCon(oldCon);
         await this._closeDb(oldDb);
 
-        const res = await this._openPersistentWithRetry(options);
-        if (!res.success) {
-            console.error(`[DuckDB Store] Impossibile riaprire il database scambiato da ${this.dbPath}:`, res.error);
-            throw res.error || new Error(`Impossibile riaprire ${this.dbPath} dopo lo scambio`);
-        }
-
         console.log('[DuckDB Store] Database scambiato: riaperto');
+        return true;
     }
 
     async init(options = {}) {
@@ -488,6 +544,10 @@ class DuckDbStore {
             if (!isMemory && !forceRebuild && !staging && this._isDatabaseFresh()) {
                 const res = await this._openPersistentWithRetry(options);
                 if (res.success) {
+                    this.db = res.db;
+                    this.con = res.con;
+                    this._recordFileIdentity(this.dbPath);
+                    this._riprovaDopo = 0;
                     reopened = true;
                     console.log(`[DuckDB Store] Database persistente valido riaperto con successo da ${this.dbPath}.`);
                 } else {
