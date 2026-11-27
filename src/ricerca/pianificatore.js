@@ -70,6 +70,17 @@ const OPERATORI_NUMERICI = Object.freeze({
     durata: /^[-+.,0-9]+$/
 });
 
+/**
+ * I comparatori del linguaggio comune: `voto > 7`, `durata < 90`, `voto ≥ 8`.
+ *
+ * Sono il caso in cui il numero da solo direbbe il contrario di quello che l'utente ha chiesto:
+ * `durata < 90` letto come «minimo 90» restituisce film di due ore e mezza. Si accettano sciolti
+ * (`>` da solo, poi il numero) e attaccati al numero (`<90`), e le forme tipografiche `≤ ≥`.
+ */
+const COMPARATORE = /^(<=|>=|<|>|≤|≥|=)$/;
+const COMPARATORE_CON_NUMERO = /^(<=|>=|<|>|≤|≥=|=)[-+.,0-9]+$/;
+const PREFISSO_COMPARATORE = /^(<=|>=|<|>|≤|≥)([-+]?[0-9]*[.,]?[0-9]+)$/;
+
 /** parola normalizzata → operatore. */
 const INDICE_OPERATORI = (() => {
     const mappa = new Map();
@@ -212,6 +223,22 @@ function numeroDa(testo) {
 function interpretaIntervallo(valore) {
     const pulito = String(valore === null || valore === undefined ? '' : valore).replace(/,/g, '.').replace(/\s+/g, '');
     if (!pulito) return { intervallo: null, motivo: 'numero_non_valido: (vuoto)' };
+
+    // `> 7`, `<90`, `≥ 8`: il comparatore decide il verso. Senza, `7` è un minimo (il caso più
+    // frequente) — ma un `<` non può essere letto come un `>` senza dire bugie.
+    const conComparatore = pulito.match(PREFISSO_COMPARATORE);
+    if (conComparatore) {
+        const verso = conComparatore[1];
+        const numero = numeroDa(conComparatore[2]);
+        if (numero === null) return { intervallo: null, motivo: `numero_non_valido: ${valore}` };
+        // `>` e `>=` coincidono qui: i filtri dell'indice conoscono solo gte/lte, e arrotondare
+        // per eccesso (7.1 per un `> 7`) inventerebbe un decimale che nessuno ha chiesto.
+        return { intervallo: ['<', '<=', '≤'].includes(verso) ? [null, numero] : [numero, null], motivo: null };
+    }
+    // Un comparatore davanti a un intervallo (`< 4-9`) non ha un significato ovvio: si rifiuta.
+    if (COMPARATORE.test(pulito) || COMPARATORE_CON_NUMERO.test(pulito)) {
+        return { intervallo: null, motivo: `numero_non_valido: ${valore}` };
+    }
 
     if (pulito.endsWith('+')) {
         const minimo = numeroDa(pulito.slice(0, -1));
@@ -377,9 +404,18 @@ function analizza(query) {
             // Gli operatori numerici non si mangiano le parole che seguono: senza questa guardia
             // «anni 80 sulle navi» diventava un anno chiamato «80 sulle navi» (non valido) e il
             // resto andava perso.
+            // Un comparatore è parte del valore, non testo da buttare: si accumula nel buffer
+            // insieme al numero che segue, e `interpretaIntervallo` lo usa per la direzione.
             const numerico = OPERATORI_NUMERICI[operatoreCorrente.chiave];
-            if (numerico && buffer.length > 0) testoLibero.push(pezzo);
-            else if (numerico && !numerico.test(pezzo)) testoLibero.push(pezzo);
+            if (!numerico) {
+                buffer.push(pezzo);
+                continue;
+            }
+            const attendeNumero = buffer.length > 0 && COMPARATORE.test(buffer[buffer.length - 1]);
+            if (COMPARATORE.test(pezzo) || COMPARATORE_CON_NUMERO.test(pezzo)) buffer.push(pezzo);
+            else if (attendeNumero && numerico.test(pezzo)) buffer.push(pezzo);
+            else if (buffer.length > 0) testoLibero.push(pezzo);
+            else if (!numerico.test(pezzo)) testoLibero.push(pezzo);
             else buffer.push(pezzo);
         } else testoLibero.push(pezzo);
     }

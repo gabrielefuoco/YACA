@@ -150,6 +150,26 @@ describe('analizza — gli operatori allineati al block editor', () => {
         expect(analizza('durata -150').grezzo.durata).toEqual([null, 150]);
     });
 
+    it('i comparatori danno il verso giusto: `<` non è un minimo', async () => {
+        // Il difetto che questa prova difende: `voto < 7` diventava `vote_average.gte: 7`, cioè
+        // l'opposto, e la pagina tornava piena di titoli sbagliati senza un avviso.
+        expect(analizza('voto < 7').grezzo.voto).toEqual([null, 7]);
+        expect(analizza('voto <= 6').grezzo.voto).toEqual([null, 6]);
+        expect(analizza('voto ≤ 6').grezzo.voto).toEqual([null, 6]);
+        expect(analizza('voto > 7').grezzo.voto).toEqual([7, null]);
+        expect(analizza('voto >= 8').grezzo.voto).toEqual([8, null]);
+        expect(analizza('voto ≥ 8').grezzo.voto).toEqual([8, null]);
+        expect(analizza('durata < 90').grezzo.durata).toEqual([null, 90]);
+        expect(analizza('durata > 150').grezzo.durata).toEqual([150, null]);
+        // Attaccato al numero, senza spazio: è come si scrive di fretta.
+        expect(analizza('durata <90').grezzo.durata).toEqual([null, 90]);
+        expect(analizza('voto >7').grezzo.voto).toEqual([7, null]);
+        // Un comparatore da solo (o davanti a una parola) è un errore dichiarato, non un silenzio.
+        expect(analizza('voto <').grezzo.voto).toBeNull();
+        expect(analizza('voto <').motivi.some(m => m.includes('voto_numero_non_valido'))).toBe(true);
+        expect(analizza('voto < abc').grezzo.voto).toBeNull();
+    });
+
     it('un intervallo impossibile è un motivo, non un filtro', async () => {
         const { grezzo, motivi } = analizza('voto 9-6');
         expect(grezzo.voto).toBeNull();
