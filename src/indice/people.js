@@ -334,7 +334,11 @@ class PeopleSearchClient {
         this.dbPath = path.resolve(dbPath);
         this.readOnly = readOnly;
         this.db = null;
-        this.broken = false;
+        // Un errore di apertura non è per sempre: il file può essere nel mezzo di una riscrittura
+        // (il daemon lo sostituisce dopo ogni Tier 2), o il disco può essere occupato un istante.
+        // Marcarlo "rotto" per la vita del processo vorrebbe dire che una ricerca `cast`/`regista`
+        // resta vuota fino al riavvio: si riprova, ma non a ogni singola query.
+        this.brokenUntil = 0;
         this._stmt = null;
         this._stmtRuolo = null;
         this._stmtWords = null;
@@ -343,7 +347,7 @@ class PeopleSearchClient {
 
     init() {
         if (this.db) return true;
-        if (this.broken) return false;
+        if (Date.now() < this.brokenUntil) return false;
         if (!fs.existsSync(this.dbPath)) return false;
 
         try {
@@ -376,12 +380,14 @@ class PeopleSearchClient {
         `);
         return true;
         } catch (err) {
-            // File corrotto, non-SQLite, permessi: non si riprova a ogni ricerca (sarebbe un log
-            // e un'apertura per query) e la ricerca continua senza persone.
-            console.error('[PeopleIndex] Indice non utilizzabile:', err.message);
+            // File corrotto, non-SQLite, permessi: non si riprova a ogni ricerca (sarebbe un log e
+            // un'apertura per query), ma nemmeno si rinuncia per sempre. Sessanta secondi di
+            // divieto bastano a non tempestare il disco, e a far guarire l'indice da solo appena
+            // il file torna leggibile — è la stessa regola dei payload vuoti in cache.
+            console.error('[PeopleIndex] Indice non utilizzabile (nuovo tentativo fra 60s):', err.message);
             try { if (this.db) this.db.close(); } catch (_e) { /* niente */ }
             this.db = null;
-            this.broken = true;
+            this.brokenUntil = Date.now() + 60 * 1000;
             return false;
         }
     }

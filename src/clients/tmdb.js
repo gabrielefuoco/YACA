@@ -133,12 +133,13 @@ async function resolveImdbId(tmdbId, type, apiKey) {
         const searchType = type === 'movie' ? 'movie' : 'tv';
         const res = await client.get(`/${searchType}/${tmdbId}/external_ids`);
         const imdbId = res.data?.imdb_id || null;
-        // Cache sia dei risultati positivi che negativi (null)
-        await imdbIdCache.set(cacheKey, imdbId);
+        // Cache sia dei risultati positivi che negativi (null). Il negativo qui è una RISPOSTA
+        // (200 senza imdb_id, 404 dichiarato), non un guasto: si conserva col TTL pieno.
+        await imdbIdCache.set(cacheKey, imdbId, null, { conservaNegativo: true });
         return imdbId;
     } catch (e) {
         if (e.response?.status === 404) {
-            await imdbIdCache.set(cacheKey, null, 86400000); // Negative cache 24h
+            await imdbIdCache.set(cacheKey, null, 86400000, { conservaNegativo: true }); // Negative cache 24h
         }
         return null;
     }
@@ -573,7 +574,8 @@ async function getTmdbMetaDetails(apiKey, id, type, externalRatings = {}, option
             logError('TMDB', `Richiesta fallita: ${endpoint}`, { params: { append_to_response: 'videos,credits,images,external_ids,release_dates,content_ratings,keywords', include_image_language: 'it,en,null' }, status: err.response?.status, data: err.response?.data });
 
             if (err.response?.status === 404) {
-                await tmdbDetailsCache.set(cacheKey, null, 86400000); // Negative cache 24h
+                // 404 è una risposta, non un guasto: il titolo non esiste, e lo si ricorda 24 h.
+                await tmdbDetailsCache.set(cacheKey, null, 86400000, { conservaNegativo: true });
             }
             console.error("Errore TMDB Meta Fetch:", err.message);
             return null;

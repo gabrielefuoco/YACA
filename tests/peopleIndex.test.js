@@ -204,6 +204,30 @@ describe('people.db — la lingua che serve al parser', () => {
             fs.unlinkSync(rotto);
         });
 
+        it('un errore non è per sempre: sostituito il file, l\'indice torna a funzionare senza riavvio', async () => {
+            await buildPeopleIndex({ dataDir: tempDir });
+            const percorso = path.join(tempDir, 'people.db');
+            const buono = path.join(tempDir, 'people-buono.db');
+            fs.copyFileSync(percorso, buono);
+
+            // 1. Al posto dell'indice c'è un file qualunque (il daemon lo sta sostituendo,
+            //    o il disco l'ha consegnato a metà): la ricerca degrada, ma non si arrende.
+            fs.writeFileSync(percorso, 'non sono un database');
+            const client = new PeopleSearchClient({ dbPath: percorso });
+            expect(client.search('leonardo dicaprio')).toEqual([]);
+
+            // 2. Il file torna leggibile.
+            fs.copyFileSync(buono, percorso);
+
+            // 3. Passati i 60 s di divieto, LA STESSA istanza ritrova le persone. Con il vecchio
+            //    flag `broken` sarebbe rimasta vuota fino al riavvio del container.
+            client.brokenUntil = 0;
+            const risultati = client.search('leonardo dicaprio');
+            expect(risultati.map(r => r.name)).toContain('Leonardo DiCaprio');
+            expect(String(risultati[0].tmdbId)).toBe('6193');
+            client.close();
+        });
+
         it('il percorso di default segue la cartella del dump', () => {
             const atteso = process.env.TMDB_DUMP_DIR
                 ? path.resolve(process.env.TMDB_DUMP_DIR, 'people.db')

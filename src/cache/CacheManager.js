@@ -4,25 +4,53 @@ const redisClient = require('./redisClient');
 const NEGATIVE_CACHE_MARKER = '__NULL__';
 
 /**
- * Quanto vive in cache una risposta VUOTA.
+ * Quanto vive in cache una risposta VUOTA (o un `null`).
  *
  * Un catalogo vuoto è quasi sempre uno stato transitorio (fonte esterna giù, DuckDB non ancora
  * caldo, filtro che non trova nulla in questo istante): tenerlo per il TTL normale significa
  * congelare un guasto. Un minuto basta per non martellare la fonte e per far guarire la cache da
  * sola appena i dati tornano.
+ *
+ * Vale anche per `null`: un produttore che risponde `null` sta dicendo "non ho potuto", non "ho
+ * guardato e non c'è". Se lo si memorizza col TTL pieno — che per un catalogo sono 14 giorni — un
+ * solo errore congela la chiave per due settimane, ed è esattamente il guasto che questa costante
+ * esiste per impedire.
  */
 const EMPTY_PAYLOAD_TTL_MS = 60 * 1000;
 
 /**
- * Vero se il payload è "vuoto" nelle forme che la cache maneggia davvero: liste di catalogo
- * (`metas`), scaffali della home (`scaffali`), o un array nudo.
+ * I campi che portano le righe di un payload. Se uno di questi è presente ed è vuoto il payload è
+ * vuoto: `metas` (catalogo), `scaffali` (home), `ids` (raccomandazioni), `catalogs` (gruppo hero).
+ */
+const CAMPI_RIGHE = ['metas', 'scaffali', 'ids', 'items', 'risultati', 'results', 'titles', 'rows'];
+
+/**
+ * Vero se il payload è "vuoto" nelle forme che la cache maneggia davvero: array nudo, `null`, un
+ * oggetto con un campo-righe vuoto (`metas`, `scaffali`, `ids`, …), o un gruppo hero senza righe.
  */
 function ePayloadVuoto(value) {
+    if (value === null) return true;
     if (Array.isArray(value)) return value.length === 0;
     if (!value || typeof value !== 'object') return false;
-    if (Array.isArray(value.metas)) return value.metas.length === 0;
-    if (Array.isArray(value.scaffali)) return value.scaffali.length === 0;
+    for (const campo of CAMPI_RIGHE) {
+        if (Array.isArray(value[campo])) return value[campo].length === 0;
+    }
+    // I gruppi hero sono una mappa nome -> righe: è vuoto se non ha righe o se le ha tutte vuote.
+    if (value.catalogs && typeof value.catalogs === 'object' && !Array.isArray(value.catalogs)) {
+        const righe = Object.values(value.catalogs);
+        return righe.length === 0 || righe.every(r => Array.isArray(r) && r.length === 0);
+    }
     return false;
+}
+
+/**
+ * Un solo posto decide quanto vive un payload: se è vuoto (o nullo) si ritenta presto, mai oltre il
+ * TTL richiesto. Usato sia da `getOrFetch` sia da `set`, perché chi scrive direttamente non passa
+ * dal primo (`scrivi()` dei gruppi hero, degli id di raccomandazione, della meta).
+ */
+function ttlPerPayload(value, ttlMs, fallbackTtlMs) {
+    const base = ttlMs || fallbackTtlMs;
+    return ePayloadVuoto(value) ? Math.min(base, EMPTY_PAYLOAD_TTL_MS) : base;
 }
 
 class CacheManager {
@@ -128,9 +156,7 @@ class CacheManager {
                     // resta vuota anche dopo il ritorno dei dati: è successo davvero, con 19 cataloghi
                     // vuoti in cache fino a 14 giorni. Vuoto = TTL corto, non zero: la fonte si
                     // ritenta, ma non a ogni singola richiesta.
-                    const ttlDaUsare = ePayloadVuoto(fresh)
-                        ? Math.min(ttlMs || this.redisTtlMs, EMPTY_PAYLOAD_TTL_MS)
-                        : (ttlMs || this.redisTtlMs);
+                    const ttlDaUsare = ttlPerPayload(fresh, ttlMs, this.redisTtlMs);
                     await this.set(key, fresh, ttlDaUsare);
                 }
                 return fresh;
@@ -146,10 +172,22 @@ class CacheManager {
         return fetchPromise;
     }
 
-    async set(key, value, ttlMs = null) {
+    /**
+     * Scrive una voce.
+     *
+     * Il TTL di un payload vuoto lo decide `ttlPerPayload` anche qui, non solo in `getOrFetch`: chi
+     * chiama `set` direttamente (via `scrivi()`) scriveva un gruppo vuoto col TTL pieno — 7 giorni
+     * di home vuota per un guasto di un istante.
+     *
+     * `opzioni.conservaNegativo` è l'uscita esplicita per un negativo LUNGO e voluto: le cache
+     * anti-budget del client TMDB, dove "questo titolo non c'è" è una risposta pagata, non un guasto.
+     */
+    async set(key, value, ttlMs = null, opzioni = {}) {
         if (!key) return;
 
-        const effectiveTtl = ttlMs || this.redisTtlMs;
+        const effectiveTtl = opzioni.conservaNegativo
+            ? (ttlMs || this.redisTtlMs)
+            : ttlPerPayload(value, ttlMs, this.redisTtlMs);
         const storageValue = value === null ? NEGATIVE_CACHE_MARKER : value;
         const envelope = { v: storageValue, t: Date.now(), ttl: effectiveTtl };
 

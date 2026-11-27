@@ -48,11 +48,77 @@ describe('CacheManager.getOrFetch + payload vuoto', () => {
         expect(cm.set.mock.calls[0][2]).toBe(TTL_NORMALE);
     });
 
+    test('un produttore che risponde null non congela la chiave col TTL normale', async () => {
+        const cm = managerDiProva();
+        await cm.getOrFetch('c6', async () => null, TTL_NORMALE);
+        expect(cm.set.mock.calls[0][2]).toBe(60 * 1000);
+    });
+
     test('il vuoto resta in cache breve: la seconda richiesta non ricostruisce subito', async () => {
         const cm = managerDiProva();
         const fetchFn = jest.fn(async () => ({ metas: [] }));
         await cm.getOrFetch('c5', fetchFn, TTL_NORMALE);
         await cm.getOrFetch('c5', fetchFn, TTL_NORMALE);
         expect(fetchFn).toHaveBeenCalledTimes(1);
+    });
+});
+
+/**
+ * La stessa regola deve valere per chi scrive direttamente, senza passare da `getOrFetch`:
+ * `scrivi()` (i gruppi hero, gli id di raccomandazione, la meta) chiama `set`. Prima di questa
+ * correzione un gruppo vuoto ci finiva col TTL pieno — 7 giorni di home vuota per un guasto di un
+ * istante — e un `null` ci finiva come "fresco" per il TTL del catalogo, cioè 14 giorni.
+ */
+describe('CacheManager.set + payload vuoto (scrittura diretta)', () => {
+    const TTL_RACCOMANDAZIONI = 7 * 24 * 60 * 60 * 1000;
+
+    function managerReale() {
+        return new CacheManager('test-set-vuoto', { ramMax: 10, ramTtlMs: 60000, redisTtlMs: 60000 });
+    }
+
+    /** Il TTL con cui la voce è stata davvero scritta (l'envelope porta il suo `ttl`). */
+    function ttlScritto(cm, key) {
+        const envelope = cm.lruFallback.get(key);
+        return envelope ? envelope.ttl : undefined;
+    }
+
+    test('raccomandazioni vuote ({ids: []}) => TTL corto, non 7 giorni', async () => {
+        const cm = managerReale();
+        await cm.set('rec1', { ids: [] }, TTL_RACCOMANDAZIONI);
+        expect(ttlScritto(cm, 'rec1')).toBe(60 * 1000);
+    });
+
+    test('gruppo hero senza righe ({catalogs: {}}) => TTL corto', async () => {
+        const cm = managerReale();
+        await cm.set('hero1', { catalogs: {} }, TTL_RACCOMANDAZIONI);
+        expect(ttlScritto(cm, 'hero1')).toBe(60 * 1000);
+
+        await cm.set('hero2', { catalogs: { top: [], amati: [] } }, TTL_RACCOMANDAZIONI);
+        expect(ttlScritto(cm, 'hero2')).toBe(60 * 1000);
+    });
+
+    test('raccomandazioni piene => TTL pieno', async () => {
+        const cm = managerReale();
+        await cm.set('rec2', { ids: [1, 2, 3] }, TTL_RACCOMANDAZIONI);
+        expect(ttlScritto(cm, 'rec2')).toBe(TTL_RACCOMANDAZIONI);
+    });
+
+    test('gruppo hero con almeno una riga => TTL pieno', async () => {
+        const cm = managerReale();
+        await cm.set('hero3', { catalogs: { top: [{ id: 'tmdb:1' }], amati: [] } }, TTL_RACCOMANDAZIONI);
+        expect(ttlScritto(cm, 'hero3')).toBe(TTL_RACCOMANDAZIONI);
+    });
+
+    test('null => TTL corto: "non ho potuto" non è una verità da 14 giorni', async () => {
+        const cm = managerReale();
+        await cm.set('n1', null, TTL_NORMALE);
+        expect(ttlScritto(cm, 'n1')).toBe(60 * 1000);
+    });
+
+    test('un negativo VOLUTO (conservaNegativo) resta lungo: il 404 pagato non si butta', async () => {
+        const cm = managerReale();
+        const ventiquattroOre = 24 * 60 * 60 * 1000;
+        await cm.set('n2', null, ventiquattroOre, { conservaNegativo: true });
+        expect(ttlScritto(cm, 'n2')).toBe(ventiquattroOre);
     });
 });
