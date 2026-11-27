@@ -44,7 +44,10 @@ const ESPANSIONE_MAX = (() => {
 
 /** Tolleranza di un refuso: una lettera sotto le 5, due sopra. Oltre, non è lo stesso nome. */
 function sogliaPer(nome) {
-    return String(nome || '').length <= 4 ? 1 : 2;
+    // Un carattere di errore fino a sette lettere, due da otto in su. Con la soglia larga (due
+    // caratteri anche su parole corte) «famiglia» diventava `familiar`, «guerra» diventava
+    // `guerra malvinas`, e il tema finiva su una pagina vuota o su un documentario.
+    return String(nome || '').length >= 8 ? 2 : 1;
 }
 
 /**
@@ -188,15 +191,19 @@ function risolviConcetto(valore) {
     const voce = concettiDaNome(cercato);
     if (voce) return espandiConcetto(voce[0]);
 
-    const idEsatto = keywordIds().keywordIdForName(cercato);
-    if (idEsatto) return espandiConcetto(keywordIds().keywordNameForId(idEsatto) || cercato);
-
+    // Il refuso italiano PRIMA del nome esatto, per lo stesso motivo: nel dump esistono keyword
+    // sbagliate o in italiano usate da pochi titoli — c'è letteralmente una keyword `horor` e una
+    // `tortura`. Col nome esatto per primo, «tema horor» filtrava quella e restituiva una pagina
+    // vuota invece dei film horror.
     const chiavi = require('./lessico_it').chiaviLessico();
     const chiaveVicina = migliorPerDistanza(cercato, chiavi);
     if (chiaveVicina) {
         const voci = concettiDaNome(chiaveVicina);
         if (voci) return espandiConcetto(voci[0]);
     }
+
+    const idEsatto = keywordIds().keywordIdForName(cercato);
+    if (idEsatto) return espandiConcetto(keywordIds().keywordNameForId(idEsatto) || cercato);
 
     const nomeInglese = keywordPerRefuso(cercato);
     if (nomeInglese) {

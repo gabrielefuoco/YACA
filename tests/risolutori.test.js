@@ -136,6 +136,36 @@ haDump('risolutori — sul dump vero', () => {
         expect(risolviConcetto('zombi')[0]).toBe('zombie');
     });
 
+    it('una keyword sbagliata o italiana del dump non batte il lessico curato', () => {
+        // Nel dump esistono keyword usate da pochi titoli e scritte male (`horor`) o in italiano
+        // (`tortura`): col nome esatto per primo, «tema horor» filtrava quella e dava una pagina
+        // vuota invece dei film horror.
+        const { risolviConcetto } = require('../src/ricerca/risolutori');
+        expect(risolviConcetto('horor')[0]).toBe('horror');
+        expect(risolviConcetto('tortura')[0]).toBe('torture');
+        expect(risolviConcetto('sequestro')[0]).toBe('kidnapping');
+    });
+
+    it('i temi che mancavano dal lessico ora si risolvono', () => {
+        const { risolviConcetto } = require('../src/ricerca/risolutori');
+        expect(risolviConcetto('guerra')[0]).toBe('war');
+        expect(risolviConcetto('famiglia')[0]).toBe('family');
+        expect(risolviConcetto('resurrezione')[0]).toBe('resurrection');
+        expect(risolviConcetto('omofobia')[0]).toBe('homophobia');
+        expect(risolviConcetto('scuola')[0]).toBe('school');
+        expect(risolviConcetto('arti marziali')[0]).toBe('martial arts');
+    });
+
+    it('la punteggiatura nel nome della keyword non impedisce di trovarla', () => {
+        // `post-apocalyptic` è una keyword vera, ma chi scrive arriva con «post apocalittico».
+        const { keywordIds } = require('../src/indice');
+        const conTrattino = keywordIds.keywordIdForName('post-apocalyptic');
+        expect(conTrattino).toBeTruthy();
+        expect(keywordIds.keywordIdForName('post apocalyptic')).toBe(conTrattino);
+        const { risolviConcetto } = require('../src/ricerca/risolutori');
+        expect(risolviConcetto('post apocalittico')[0]).toBe('post-apocalyptic');
+    });
+
     it('una parola inventata non diventa un filtro', () => {
         const { risolviConcetto } = require('../src/ricerca/risolutori');
         expect(risolviConcetto('parola-inventata-xyz')).toBeNull();

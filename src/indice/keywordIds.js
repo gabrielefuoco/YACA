@@ -1,3 +1,5 @@
+const { normalizza } = require('../infra/testo');
+
 // TMDB v3 `/keyword/{id}` e `/keyword/{id}/movies|tv` restituiscono 404
 // per questi ID (verifica 2026-09-24). Non hanno un nome affidabile nel
 // dataset locale: vengono esclusi, senza inventare etichette o pesi negativi.
@@ -39,6 +41,8 @@ function isRetiredTmdbKeywordId(value) {
 
 let keywordIdToName = null;
 let keywordNameToId = null;
+// nome senza punteggiatura → nome vero: si costruisce alla prima ricerca tollerante.
+let keywordNameNormalizzatoToId = null;
 
 const normalizeKeywordName = (value) => {
     if (typeof value !== 'string') return null;
@@ -53,6 +57,7 @@ const normalizeKeywordName = (value) => {
 function setKeywordNameMaps({ idToName = null, nameToId = null } = {}) {
     keywordIdToName = idToName instanceof Map ? idToName : null;
     keywordNameToId = nameToId instanceof Map ? nameToId : null;
+    keywordNameNormalizzatoToId = null;
 }
 
 /**
@@ -69,13 +74,34 @@ function keywordNameForId(value) {
 
 /**
  * Id numerico di una keyword a partire dal nome (forma usata dal grafo).
+ *
+ * Due passaggi: il nome com'è, e poi il nome **senza punteggiatura**. Il secondo serve perché chi
+ * scrive cerca parole, non grafie: `post-apocalyptic` nel dump è una keyword vera, ma la ricerca
+ * arriva con «post apocalittico»; senza questo passaggio la voce non si trovava e il tema restava
+ * irrisolto. La mappa normalizzata si costruisce alla prima richiesta (38k nomi, una volta).
+ *
  * @param {string} value
  * @returns {string|null}
  */
 function keywordIdForName(value) {
     const name = normalizeKeywordName(value);
     if (name === null || !keywordNameToId) return null;
-    return keywordNameToId.get(name) || null;
+
+    const esatto = keywordNameToId.get(name);
+    if (esatto) return esatto;
+
+    if (!keywordNameNormalizzatoToId) {
+        keywordNameNormalizzatoToId = new Map();
+        for (const chiave of keywordNameToId.keys()) {
+            const normalizzata = normalizza(chiave);
+            if (normalizzata && !keywordNameNormalizzatoToId.has(normalizzata)) {
+                keywordNameNormalizzatoToId.set(normalizzata, chiave);
+            }
+        }
+    }
+
+    const chiave = keywordNameNormalizzatoToId.get(normalizza(name));
+    return chiave ? (keywordNameToId.get(chiave) || null) : null;
 }
 
 /** Solo per i test e per chi deve verificare che la mappa sia quella giusta. */
