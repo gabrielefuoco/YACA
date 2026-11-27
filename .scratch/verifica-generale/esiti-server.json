@@ -1,0 +1,1418 @@
+{
+  "base": "http://127.0.0.1:7860",
+  "quando": "2026-11-27T18:00:52.141Z",
+  "esiti": [
+    {
+      "gruppo": "A. manifest",
+      "nome": "manifest radice",
+      "ok": false,
+      "nota": "status 200, body {\"id\":\"org.stremio.yaca.catalog\",\"version\":\"1.1.0\",\"name\":\"YACA 🇮🇹 (Yet Another Catalog Addon)\",\"description\":\"Catalogo Intelligente Potenziato da AI - Config",
+      "ms": 58,
+      "url": "/manifest.json",
+      "status": 200,
+      "bytes": 444
+    },
+    {
+      "gruppo": "A. manifest",
+      "nome": "manifest utente",
+      "ok": true,
+      "nota": "",
+      "ms": 357,
+      "url": "/REOZrGNRr3/manifest.json",
+      "status": 200,
+      "bytes": 2395
+    },
+    {
+      "gruppo": "A. manifest",
+      "nome": "manifest con config",
+      "ok": false,
+      "nota": "status 200, body {\"id\":\"org.stremio.yaca.catalog\",\"version\":\"1.1.0+sfVgg2ns\",\"name\":\"YACA 🇮🇹 (Yet Another Catalog Addon)\",\"description\":\"Catalogo Intelligente Potenziato da AI",
+      "ms": 307,
+      "url": "/REOZrGNRr3/BauPSauk/manifest.json",
+      "status": 200,
+      "bytes": 2395
+    },
+    {
+      "gruppo": "A. manifest",
+      "nome": "manifest utente inesistente",
+      "ok": false,
+      "nota": "status 400, body {\"error\":\"Configurazione non valida\"}",
+      "ms": 99,
+      "url": "/utente-che-non-esiste/manifest.json",
+      "status": 400,
+      "bytes": 37
+    },
+    {
+      "gruppo": "A. manifest",
+      "nome": "manifest config inesistente",
+      "ok": true,
+      "nota": "",
+      "ms": 275,
+      "url": "/REOZrGNRr3/CONFIGCHE NON ESISTE/manifest.json",
+      "status": 200,
+      "bytes": 2395
+    },
+    {
+      "gruppo": "A. manifest",
+      "nome": "configure",
+      "ok": true,
+      "nota": "",
+      "ms": 4,
+      "url": "/REOZrGNRr3/BauPSauk/configure",
+      "status": 200,
+      "bytes": 12380
+    },
+    {
+      "gruppo": "A. manifest",
+      "nome": "rotta inesistente",
+      "ok": true,
+      "nota": "",
+      "ms": 207,
+      "url": "/REOZrGNRr3/catalog/movie/non_esiste.json",
+      "status": 200,
+      "bytes": 12
+    },
+    {
+      "gruppo": "A. catalogs",
+      "nome": "catalogo movie/yaca_watchlist_movies",
+      "ok": true,
+      "nota": "",
+      "ms": 207,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "A. catalogs",
+      "nome": "catalogo series/yaca_watchlist_series",
+      "ok": true,
+      "nota": "",
+      "ms": 1268,
+      "titoli": 20,
+      "bytes": 18243
+    },
+    {
+      "gruppo": "A. catalogs",
+      "nome": "catalogo series/yaca_watchlist_anime",
+      "ok": true,
+      "nota": "",
+      "ms": 1048,
+      "titoli": 17,
+      "bytes": 13512
+    },
+    {
+      "gruppo": "A. catalogs",
+      "nome": "catalogo series/yaca_94997_series",
+      "ok": true,
+      "nota": "",
+      "ms": 229,
+      "titoli": 20,
+      "bytes": 18846
+    },
+    {
+      "gruppo": "A. catalogs",
+      "nome": "catalogo series/yaca_295778_series",
+      "ok": true,
+      "nota": "",
+      "ms": 210,
+      "titoli": 20,
+      "bytes": 21194
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip=0",
+      "ok": true,
+      "nota": "",
+      "ms": 281,
+      "titoli": 20,
+      "bytes": 17386
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip=20",
+      "ok": true,
+      "nota": "",
+      "ms": 260,
+      "titoli": 20,
+      "bytes": 17448
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip oltre la fine (12000)",
+      "ok": true,
+      "nota": "",
+      "ms": 266,
+      "titoli": 20,
+      "bytes": 12625
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip negativo",
+      "ok": true,
+      "nota": "",
+      "ms": 208,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip non numerico",
+      "ok": true,
+      "nota": "",
+      "ms": 267,
+      "titoli": 20,
+      "bytes": 17386
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip decimale",
+      "ok": true,
+      "nota": "",
+      "ms": 285,
+      "titoli": 20,
+      "bytes": 17154
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip enorme (9e15)",
+      "ok": true,
+      "nota": "",
+      "ms": 259,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip duplicato",
+      "ok": true,
+      "nota": "",
+      "ms": 256,
+      "titoli": 20,
+      "bytes": 17448
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip come query string",
+      "ok": true,
+      "nota": "",
+      "ms": 255,
+      "titoli": 20,
+      "bytes": 17448
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "skip prima della ricerca",
+      "ok": true,
+      "nota": "",
+      "ms": 261,
+      "titoli": 20,
+      "bytes": 17448
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca vuota",
+      "ok": true,
+      "nota": "",
+      "ms": 205,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca solo spazi",
+      "ok": true,
+      "nota": "",
+      "ms": 205,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca con e commerciale",
+      "ok": true,
+      "nota": "",
+      "ms": 226,
+      "titoli": 20,
+      "bytes": 22894
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca con uguale",
+      "ok": true,
+      "nota": "",
+      "ms": 209,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca accentata",
+      "ok": true,
+      "nota": "",
+      "ms": 3275,
+      "titoli": 20,
+      "bytes": 19195
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca unicode (emoji)",
+      "ok": true,
+      "nota": "",
+      "ms": 880,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca con null byte",
+      "ok": true,
+      "nota": "",
+      "ms": 2306,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca lunghissima (600 char)",
+      "ok": true,
+      "nota": "",
+      "ms": 1993,
+      "titoli": 20,
+      "bytes": 13285
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca HTML",
+      "ok": true,
+      "nota": "",
+      "ms": 500,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "ricerca SQL",
+      "ok": true,
+      "nota": "",
+      "ms": 264,
+      "titoli": 0,
+      "bytes": 12
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "tipo serie",
+      "ok": true,
+      "nota": "",
+      "ms": 2648,
+      "titoli": 20,
+      "bytes": 19712
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "tipo sconosciuto",
+      "ok": true,
+      "nota": "",
+      "ms": 3149,
+      "titoli": 20,
+      "bytes": 17930
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "metodo HEAD",
+      "ok": true,
+      "nota": "",
+      "ms": 1155,
+      "titoli": null,
+      "bytes": 0
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "metodo OPTIONS",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "titoli": null,
+      "bytes": 0
+    },
+    {
+      "gruppo": "B. bordi",
+      "nome": "pagine complementari",
+      "ok": true,
+      "nota": ""
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: tema",
+      "ok": true,
+      "nota": "",
+      "ms": 552,
+      "titoli": 20,
+      "query": "tema pirati"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: tema",
+      "ok": true,
+      "nota": "",
+      "ms": 317,
+      "titoli": 20,
+      "query": "tema pirati"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: tema composto",
+      "ok": true,
+      "nota": "",
+      "ms": 469,
+      "titoli": 20,
+      "query": "tema commedia, romantica, natalizia"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: tema composto",
+      "ok": true,
+      "nota": "",
+      "ms": 305,
+      "titoli": 20,
+      "query": "tema commedia, romantica, natalizia"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: genere",
+      "ok": true,
+      "nota": "",
+      "ms": 280,
+      "titoli": 20,
+      "query": "genere horror"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: genere",
+      "ok": true,
+      "nota": "",
+      "ms": 221,
+      "titoli": 0,
+      "query": "genere horror"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: genere multiplo",
+      "ok": true,
+      "nota": "",
+      "ms": 290,
+      "titoli": 20,
+      "query": "genere horror, thriller"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: genere multiplo",
+      "ok": true,
+      "nota": "",
+      "ms": 240,
+      "titoli": 0,
+      "query": "genere horror, thriller"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: genere con accento",
+      "ok": true,
+      "nota": "",
+      "ms": 261,
+      "titoli": 20,
+      "query": "genere azione"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: genere con accento",
+      "ok": true,
+      "nota": "",
+      "ms": 226,
+      "titoli": 20,
+      "query": "genere azione"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: anno secco",
+      "ok": true,
+      "nota": "",
+      "ms": 223,
+      "titoli": 20,
+      "query": "anno 1994"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: anno secco",
+      "ok": true,
+      "nota": "",
+      "ms": 225,
+      "titoli": 20,
+      "query": "anno 1994"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: anno intervallo",
+      "ok": true,
+      "nota": "",
+      "ms": 233,
+      "titoli": 20,
+      "query": "anno 1990-1999"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: anno intervallo",
+      "ok": true,
+      "nota": "",
+      "ms": 221,
+      "titoli": 20,
+      "query": "anno 1990-1999"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: anno intervallo al rovescio",
+      "ok": true,
+      "nota": "",
+      "ms": 211,
+      "titoli": 0,
+      "query": "anno 1999-1990"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: anno intervallo al rovescio",
+      "ok": true,
+      "nota": "",
+      "ms": 204,
+      "titoli": 0,
+      "query": "anno 1999-1990"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: anno futuro",
+      "ok": true,
+      "nota": "",
+      "ms": 218,
+      "titoli": 0,
+      "query": "anno 2099"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: anno futuro",
+      "ok": true,
+      "nota": "",
+      "ms": 214,
+      "titoli": 0,
+      "query": "anno 2099"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: voto minimo",
+      "ok": true,
+      "nota": "",
+      "ms": 217,
+      "titoli": 20,
+      "query": "voto 8"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: voto minimo",
+      "ok": true,
+      "nota": "",
+      "ms": 214,
+      "titoli": 20,
+      "query": "voto 8"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: voto con confronto",
+      "ok": true,
+      "nota": "",
+      "ms": 232,
+      "titoli": 20,
+      "query": "voto > 8"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: voto con confronto",
+      "ok": true,
+      "nota": "",
+      "ms": 215,
+      "titoli": 20,
+      "query": "voto > 8"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: voto impossibile",
+      "ok": true,
+      "nota": "",
+      "ms": 213,
+      "titoli": 0,
+      "query": "voto 11"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: voto impossibile",
+      "ok": true,
+      "nota": "",
+      "ms": 215,
+      "titoli": 0,
+      "query": "voto 11"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: durata",
+      "ok": true,
+      "nota": "",
+      "ms": 226,
+      "titoli": 20,
+      "query": "durata < 90"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: durata",
+      "ok": true,
+      "nota": "",
+      "ms": 217,
+      "titoli": 20,
+      "query": "durata < 90"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: eta",
+      "ok": true,
+      "nota": "",
+      "ms": 218,
+      "titoli": 0,
+      "query": "eta 0-6"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: eta",
+      "ok": true,
+      "nota": "",
+      "ms": 221,
+      "titoli": 0,
+      "query": "eta 0-6"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: cast",
+      "ok": true,
+      "nota": "",
+      "ms": 821,
+      "titoli": 20,
+      "query": "cast leonardo dicaprio"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: cast",
+      "ok": true,
+      "nota": "",
+      "ms": 278,
+      "titoli": 1,
+      "query": "cast leonardo dicaprio"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: cast con refuso",
+      "ok": true,
+      "nota": "",
+      "ms": 773,
+      "titoli": 20,
+      "query": "cast leonardo dicapry"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: cast con refuso",
+      "ok": true,
+      "nota": "",
+      "ms": 1182,
+      "titoli": 1,
+      "query": "cast leonardo dicapry"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: regista",
+      "ok": true,
+      "nota": "",
+      "ms": 330,
+      "titoli": 16,
+      "query": "regista nolan"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: regista",
+      "ok": true,
+      "nota": "",
+      "ms": 227,
+      "titoli": 2,
+      "query": "regista nolan"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: regista nome completo",
+      "ok": true,
+      "nota": "",
+      "ms": 299,
+      "titoli": 16,
+      "query": "regista christopher nolan"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: regista nome completo",
+      "ok": true,
+      "nota": "",
+      "ms": 223,
+      "titoli": 0,
+      "query": "regista christopher nolan"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: crew",
+      "ok": true,
+      "nota": "",
+      "ms": 1445,
+      "titoli": 0,
+      "query": "crew hans zimmer"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: crew",
+      "ok": true,
+      "nota": "",
+      "ms": 448,
+      "titoli": 0,
+      "query": "crew hans zimmer"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: provider",
+      "ok": true,
+      "nota": "",
+      "ms": 563,
+      "titoli": 0,
+      "query": "provider netflix"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: provider",
+      "ok": true,
+      "nota": "",
+      "ms": 302,
+      "titoli": 0,
+      "query": "provider netflix"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: lingua",
+      "ok": true,
+      "nota": "",
+      "ms": 241,
+      "titoli": 20,
+      "query": "lingua giapponese"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: lingua",
+      "ok": true,
+      "nota": "",
+      "ms": 227,
+      "titoli": 20,
+      "query": "lingua giapponese"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: paese",
+      "ok": true,
+      "nota": "",
+      "ms": 226,
+      "titoli": 20,
+      "query": "paese francia"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: paese",
+      "ok": true,
+      "nota": "",
+      "ms": 220,
+      "titoli": 20,
+      "query": "paese francia"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: anime",
+      "ok": true,
+      "nota": "",
+      "ms": 405,
+      "titoli": 20,
+      "query": "anime"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: anime",
+      "ok": true,
+      "nota": "",
+      "ms": 246,
+      "titoli": 20,
+      "query": "anime"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: simili",
+      "ok": true,
+      "nota": "",
+      "ms": 430,
+      "titoli": 20,
+      "query": "simili interstellar"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: simili",
+      "ok": true,
+      "nota": "",
+      "ms": 225,
+      "titoli": 0,
+      "query": "simili interstellar"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: simili con due semi",
+      "ok": true,
+      "nota": "",
+      "ms": 475,
+      "titoli": 20,
+      "query": "simili alien, prometheus"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: simili con due semi",
+      "ok": true,
+      "nota": "",
+      "ms": 312,
+      "titoli": 20,
+      "query": "simili alien, prometheus"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: simili titolo inesistente",
+      "ok": true,
+      "nota": "",
+      "ms": 368,
+      "titoli": 0,
+      "query": "simili filmche noneista"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: simili titolo inesistente",
+      "ok": true,
+      "nota": "",
+      "ms": 254,
+      "titoli": 0,
+      "query": "simili filmche noneista"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: titolo",
+      "ok": true,
+      "nota": "",
+      "ms": 1941,
+      "titoli": 20,
+      "query": "titolo matrix"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: titolo",
+      "ok": true,
+      "nota": "",
+      "ms": 1993,
+      "titoli": 9,
+      "query": "titolo matrix"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: senza genere",
+      "ok": true,
+      "nota": "",
+      "ms": 305,
+      "titoli": 20,
+      "query": "genere horror senza splatter"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: senza genere",
+      "ok": true,
+      "nota": "",
+      "ms": 224,
+      "titoli": 0,
+      "query": "genere horror senza splatter"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: ordina voto",
+      "ok": true,
+      "nota": "",
+      "ms": 389,
+      "titoli": 20,
+      "query": "tema guerra ordina voto"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: ordina voto",
+      "ok": true,
+      "nota": "",
+      "ms": 251,
+      "titoli": 20,
+      "query": "tema guerra ordina voto"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: combinata lunga",
+      "ok": true,
+      "nota": "",
+      "ms": 329,
+      "titoli": 3,
+      "query": "genere thriller anno 2000-2010 voto > 7 cast tom cruise"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: combinata lunga",
+      "ok": true,
+      "nota": "",
+      "ms": 238,
+      "titoli": 0,
+      "query": "genere thriller anno 2000-2010 voto > 7 cast tom cruise"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: contraddizione",
+      "ok": true,
+      "nota": "",
+      "ms": 235,
+      "titoli": 0,
+      "query": "anno 2030 genere horror voto > 9.5"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: contraddizione",
+      "ok": true,
+      "nota": "",
+      "ms": 212,
+      "titoli": 0,
+      "query": "anno 2030 genere horror voto > 9.5"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: parola sola",
+      "ok": true,
+      "nota": "",
+      "ms": 923,
+      "titoli": 20,
+      "query": "matrix"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: parola sola",
+      "ok": true,
+      "nota": "",
+      "ms": 525,
+      "titoli": 9,
+      "query": "matrix"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: parola sola con refuso",
+      "ok": true,
+      "nota": "",
+      "ms": 1293,
+      "titoli": 1,
+      "query": "matrx"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: parola sola con refuso",
+      "ok": true,
+      "nota": "",
+      "ms": 429,
+      "titoli": 0,
+      "query": "matrx"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: titolo con apostrofo",
+      "ok": true,
+      "nota": "",
+      "ms": 936,
+      "titoli": 1,
+      "query": "schindlers list"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: titolo con apostrofo",
+      "ok": true,
+      "nota": "",
+      "ms": 298,
+      "titoli": 0,
+      "query": "schindlers list"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: titolo con accento",
+      "ok": true,
+      "nota": "",
+      "ms": 701,
+      "titoli": 1,
+      "query": "la citta incantata"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: titolo con accento",
+      "ok": true,
+      "nota": "",
+      "ms": 286,
+      "titoli": 0,
+      "query": "la citta incantata"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: tre intenti (righe)",
+      "ok": true,
+      "nota": "",
+      "ms": 829,
+      "titoli": 20,
+      "query": "genere horror\ncast tom cruise"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: tre intenti (righe)",
+      "ok": true,
+      "nota": "",
+      "ms": 1232,
+      "titoli": 1,
+      "query": "genere horror\ncast tom cruise"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: operatore sconosciuto",
+      "ok": true,
+      "nota": "",
+      "ms": 1474,
+      "titoli": 0,
+      "query": "colore rosso"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: operatore sconosciuto",
+      "ok": true,
+      "nota": "",
+      "ms": 444,
+      "titoli": 0,
+      "query": "colore rosso"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: operatore senza valore",
+      "ok": true,
+      "nota": "",
+      "ms": 205,
+      "titoli": 0,
+      "query": "tema"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: operatore senza valore",
+      "ok": true,
+      "nota": "",
+      "ms": 204,
+      "titoli": 0,
+      "query": "tema"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: solo virgole",
+      "ok": true,
+      "nota": "",
+      "ms": 216,
+      "titoli": 0,
+      "query": ",,,"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: solo virgole",
+      "ok": true,
+      "nota": "",
+      "ms": 223,
+      "titoli": 0,
+      "query": ",,,"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: maiuscole",
+      "ok": true,
+      "nota": "",
+      "ms": 261,
+      "titoli": 20,
+      "query": "TEMA HORROR"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: maiuscole",
+      "ok": true,
+      "nota": "",
+      "ms": 224,
+      "titoli": 0,
+      "query": "TEMA HORROR"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: punteggiatura",
+      "ok": true,
+      "nota": "",
+      "ms": 259,
+      "titoli": 20,
+      "query": "tema: horror!"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: punteggiatura",
+      "ok": true,
+      "nota": "",
+      "ms": 221,
+      "titoli": 0,
+      "query": "tema: horror!"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "movie: due punti e virgola",
+      "ok": true,
+      "nota": "",
+      "ms": 257,
+      "titoli": 20,
+      "query": "genere: horror; anno: 1990"
+    },
+    {
+      "gruppo": "C. sintassi",
+      "nome": "series: due punti e virgola",
+      "ok": true,
+      "nota": "",
+      "ms": 215,
+      "titoli": 0,
+      "query": "genere: horror; anno: 1990"
+    },
+    {
+      "gruppo": "D. pagine",
+      "nome": "yaca_watchlist_movies paginazione",
+      "ok": true,
+      "nota": "",
+      "titoliP0": 0,
+      "titoliP1": 0,
+      "msP0": 208,
+      "msP1": 207
+    },
+    {
+      "gruppo": "D. pagine",
+      "nome": "yaca_watchlist_series paginazione",
+      "ok": true,
+      "nota": "",
+      "titoliP0": 20,
+      "titoliP1": 13,
+      "msP0": 220,
+      "msP1": 269
+    },
+    {
+      "gruppo": "D. pagine",
+      "nome": "yaca_watchlist_anime paginazione",
+      "ok": true,
+      "nota": "",
+      "titoliP0": 17,
+      "titoliP1": 0,
+      "msP0": 212,
+      "msP1": 260
+    },
+    {
+      "gruppo": "D. pagine",
+      "nome": "yaca_94997_series paginazione",
+      "ok": true,
+      "nota": "",
+      "titoliP0": 20,
+      "titoliP1": 20,
+      "msP0": 1974,
+      "msP1": 3440
+    },
+    {
+      "gruppo": "D. pagine",
+      "nome": "yaca_295778_series paginazione",
+      "ok": true,
+      "nota": "",
+      "titoliP0": 20,
+      "titoliP1": 20,
+      "msP0": 1355,
+      "msP1": 2404
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "film imdb",
+      "ok": true,
+      "nota": "",
+      "ms": 183,
+      "haMeta": true,
+      "bytes": 1180
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "film tmdb",
+      "ok": true,
+      "nota": "",
+      "ms": 153,
+      "haMeta": false,
+      "bytes": 13
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "serie imdb",
+      "ok": true,
+      "nota": "",
+      "ms": 416,
+      "haMeta": true,
+      "bytes": 790
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "episodio stile stremio",
+      "ok": true,
+      "nota": "",
+      "ms": 152,
+      "haMeta": false,
+      "bytes": 13
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "id inesistente",
+      "ok": true,
+      "nota": "",
+      "ms": 479,
+      "haMeta": false,
+      "bytes": 13
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "id spazzatura",
+      "ok": true,
+      "nota": "",
+      "ms": 153,
+      "haMeta": false,
+      "bytes": 13
+    },
+    {
+      "gruppo": "E. meta",
+      "nome": "percorso sospetto",
+      "ok": true,
+      "nota": "",
+      "ms": 155,
+      "haMeta": false,
+      "bytes": 13
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preset",
+      "ok": false,
+      "nota": "status 401, body {\"error\":{\"code\":\"non_autenticato\",\"message\":\"Sessione assente o scaduta.\"}}",
+      "ms": 5,
+      "bytes": 76
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview canonica",
+      "ok": false,
+      "nota": "status 400, body {\"error\":\"id, filters o prompt obbligatori\"}",
+      "ms": 8,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview vuoto",
+      "ok": true,
+      "nota": "",
+      "ms": 2,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview null",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview numero",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview array",
+      "ok": true,
+      "nota": "",
+      "ms": 4,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview oggetto",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview SQL",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview XSS",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "preview corpo enorme",
+      "ok": true,
+      "nota": "",
+      "ms": 7,
+      "bytes": 44
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "admin senza password",
+      "ok": false,
+      "nota": "status 200, body <!DOCTYPE html><!--TqzW0SOk2ssqCoZJs83bD--><html lang=\"it\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, i",
+      "ms": 4,
+      "bytes": 12380
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "admin password sbagliata",
+      "ok": false,
+      "nota": "status 200, body <!DOCTYPE html><!--TqzW0SOk2ssqCoZJs83bD--><html lang=\"it\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, i",
+      "ms": 3,
+      "bytes": 12380
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "admin api senza password",
+      "ok": true,
+      "nota": "",
+      "ms": 2,
+      "bytes": 56
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "tmdb keyword senza q",
+      "ok": true,
+      "nota": "",
+      "ms": 2,
+      "bytes": 14
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "tmdb person senza q",
+      "ok": true,
+      "nota": "",
+      "ms": 4,
+      "bytes": 14
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "tmdb genre",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 14
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "profilo senza cookie",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 76
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "ricerca legacy",
+      "ok": true,
+      "nota": "",
+      "ms": 4,
+      "bytes": 76
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "prototype pollution",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 76
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "poster traversal",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 103
+    },
+    {
+      "gruppo": "F. api",
+      "nome": "sync-status senza auth",
+      "ok": true,
+      "nota": "",
+      "ms": 3,
+      "bytes": 76
+    },
+    {
+      "gruppo": "G. carico",
+      "nome": "15 ricerche concorrenti",
+      "ok": true,
+      "nota": "",
+      "ms": 1204,
+      "msPerRichiesta": 80
+    },
+    {
+      "gruppo": "G. carico",
+      "nome": "10 cataloghi concorrenti",
+      "ok": true,
+      "nota": "",
+      "ms": 566,
+      "msPerRichiesta": 57
+    },
+    {
+      "gruppo": "G. carico",
+      "nome": "catalogo inesistente",
+      "ok": true,
+      "nota": "",
+      "ms": 203
+    },
+    {
+      "gruppo": "G. carico",
+      "nome": "utente simulato manifest",
+      "ok": true,
+      "nota": "",
+      "ms": 102
+    },
+    {
+      "gruppo": "G. carico",
+      "nome": "utente simulato ricerca",
+      "ok": true,
+      "nota": "",
+      "ms": 162,
+      "titoli": 20
+    }
+  ]
+}
