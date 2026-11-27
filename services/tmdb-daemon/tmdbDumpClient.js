@@ -149,7 +149,10 @@ function buildMovieRow(data) {
         original_language: data.original_language,
         overview: data.overview,
         release_date: data.release_date || null,
-        runtime: data.runtime,
+        // TMDB risponde `runtime: 0` quando la durata non la conosce: nel dump «non lo so» è NULL,
+        // come già per le serie (`episode_run_time` assente → null). Uno zero qui è un dato falso
+        // che i filtri sulla durata leggono come «zero minuti».
+        runtime: Number(data.runtime) > 0 ? Number(data.runtime) : null,
         vote_average: data.vote_average,
         vote_count: data.vote_count,
         popularity: data.popularity,

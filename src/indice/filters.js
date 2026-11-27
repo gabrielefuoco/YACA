@@ -102,7 +102,10 @@ const F = {
     maxScore: (n) => `"vote_average" <= ${n}`,
     maxPopularity: (n) => `"popularity" <= ${n}`,
     minRuntime: (m) => `"runtime" >= ${m}`,
-    maxRuntime: (m) => `"runtime" <= ${m}`,
+    // «Non lo so» non è «corto»: un film senza durata nota (TMDB risponde `runtime: 0`) non deve
+    // comparire in una ricerca di film sotto i N minuti. Il preset `shortFilm` lo faceva già
+    // (`BETWEEN 1 AND 45`); qui mancava, e `durata < 90` pescava 658 titoli di durata ignota.
+    maxRuntime: (m) => `"runtime" BETWEEN 1 AND ${m}`,
     // Ticket 35: Pavimento permissivo sui recenti (discovery permissiva)
     permissiveFloor: (standardFloor, recentDate, recentFloor = 0, isTv = false) => {
         const col = isTv ? '"first_air_date"' : '"release_date"';

@@ -210,3 +210,23 @@ test('findCompromisedIds: selects non-Latin rows across languages only when titl
         } catch (_) {}
     }
 });
+
+// TMDB risponde `runtime: 0` quando la durata non la conosce. Nel dump «non lo so» deve essere
+// null, non zero: uno zero è un numero e i filtri sulla durata lo leggono come «zero minuti»
+// (`durata < 90` pescava 658 film di durata ignota).
+test('buildMovieRow: runtime sconosciuto (0 o assente) diventa null', () => {
+    const base = {
+        id: 1,
+        title: 'Film',
+        original_title: 'Film',
+        original_language: 'en',
+        translations: { translations: [] },
+        credits: { crew: [] },
+        release_dates: { results: [] }
+    };
+    assert.equal(TmdbDumpClient.buildMovieRow({ ...base, runtime: 0 }).runtime, null);
+    assert.equal(TmdbDumpClient.buildMovieRow({ ...base, runtime: undefined }).runtime, null);
+    assert.equal(TmdbDumpClient.buildMovieRow({ ...base, runtime: null }).runtime, null);
+    assert.equal(TmdbDumpClient.buildMovieRow({ ...base, runtime: 121 }).runtime, 121);
+    assert.equal(TmdbDumpClient.buildMovieRow({ ...base, runtime: '95' }).runtime, 95);
+});
