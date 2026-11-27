@@ -4,7 +4,7 @@
  * I contratti che questo file difende:
  *   1. il piano AI si chiede **solo quando serve** (frase naturale, pochi risultati locali,
  *      nessun titolo esatto, prima pagina, chiave presente) — mai per un titolo secco;
- *   2. la pagina è composta qui (massimo 20), con i locali davanti e l'AI in coda, senza doppioni;
+ *   2. la pagina è composta qui (max CATALOG_PAGE_SIZE), con i locali davanti, senza doppioni;
  *   3. nessuna funzione solleva: AI giù, indice giù o budget scaduto ⇒ si risponde col locale;
  *   4. la ricerca NON usa la cache dei cataloghi: non legge e non scrive (né con risultati,
  *      né con zero risultati).
@@ -74,7 +74,8 @@ describe('cercaUnificata — il percorso di Stremio', () => {
     });
 
     it('una pagina piena di locali: la risposta è la loro, in ordine', async () => {
-        stubIndiceLocale(Array.from({ length: 20 }, (_, i) => locale(1000 + i, `Titolo ${i}`)));
+        const pagina = require('../src/config').CATALOG_PAGE_SIZE;
+        stubIndiceLocale(Array.from({ length: pagina }, (_, i) => locale(1000 + i, `Titolo ${i}`)));
 
         const items = await cercaUnificata({
             q: 'parole qualunque di prova',
@@ -82,7 +83,7 @@ describe('cercaUnificata — il percorso di Stremio', () => {
             activeProfileSettings: {}
         });
 
-        expect(items).toHaveLength(20);
+        expect(items).toHaveLength(pagina);
     });
 
     it('una frase naturale con pochi locali: si risponde col locale, senza modelli', async () => {
@@ -110,7 +111,7 @@ describe('cercaUnificata — il percorso di Stremio', () => {
             expect.objectContaining({ 'primary_release_date.gte': '1980-01-01' }),
             'movie',
             0,
-            20,
+            require('../src/config').CATALOG_PAGE_SIZE,
             {}
         );
         expect(items.map(item => item._tmdbId)).toEqual([1]);

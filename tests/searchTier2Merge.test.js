@@ -281,32 +281,33 @@ describe('CatalogRouter: la ricerca standard interroga anche il Tier 2', () => {
     });
 
     it('ordina tutti i locali prima di tutti i Tier 2, rispettando l ordine dell indice', async () => {
-        getDuckDbCatalogFromFilters.mockResolvedValue(Array.from({ length: 20 }, (_, i) => localItem(1000 + i, `Locale ${i}`)));
+        const pagina = require('../src/config').CATALOG_PAGE_SIZE;
+        getDuckDbCatalogFromFilters.mockResolvedValue(Array.from({ length: pagina }, (_, i) => localItem(1000 + i, `Locale ${i}`)));
         stubTier2Index({
-            rows: Array.from({ length: 20 }, (_, i) => tier2Row(2000 + i, `Coda ${i}`))
+            rows: Array.from({ length: pagina }, (_, i) => tier2Row(2000 + i, `Coda ${i}`))
         });
 
         const items = await search();
 
-        // La sorgente restituisce UNA pagina, non la fusione intera: da quando la ricerca è
-        // unificata (locale + AI) la pagina la compone lei, altrimenti i risultati dell'AI
-        // finirebbero in coda a 40 titoli locali e verrebbero tagliati dal catalogHandler.
-        expect(items).toHaveLength(20);
-        expect(items.map(m => m._tmdbId)).toEqual(Array.from({ length: 20 }, (_, i) => 1000 + i));
+        // La sorgente restituisce UNA pagina, non la fusione intera: la pagina la compone la
+        // ricerca, altrimenti i Tier 2 finirebbero in coda a titoli locali e verrebbero tagliati.
+        expect(items).toHaveLength(pagina);
+        expect(items.map(m => m._tmdbId)).toEqual(Array.from({ length: pagina }, (_, i) => 1000 + i));
         expect(items.every(m => m._tier2 === undefined)).toBe(true);
     });
 
     it('con pochi locali il resto della pagina lo riempie il Tier 2, in ordine d indice', async () => {
+        const pagina = require('../src/config').CATALOG_PAGE_SIZE;
         getDuckDbCatalogFromFilters.mockResolvedValue([localItem(1000, 'Locale 0'), localItem(1001, 'Locale 1')]);
         stubTier2Index({
-            rows: Array.from({ length: 20 }, (_, i) => tier2Row(2000 + i, `Coda ${i}`))
+            rows: Array.from({ length: pagina }, (_, i) => tier2Row(2000 + i, `Coda ${i}`))
         });
 
         const items = await search();
 
-        expect(items).toHaveLength(20);
+        expect(items).toHaveLength(pagina);
         expect(items.slice(0, 2).map(m => m._tmdbId)).toEqual([1000, 1001]);
-        expect(items.slice(2).map(m => m._tmdbId)).toEqual(Array.from({ length: 18 }, (_, i) => 2000 + i));
+        expect(items.slice(2).map(m => m._tmdbId)).toEqual(Array.from({ length: pagina - 2 }, (_, i) => 2000 + i));
         expect(items.every((m, i) => (i < 2 ? m._tier2 === undefined : m._tier2 === true))).toBe(true);
     });
 

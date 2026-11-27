@@ -24,8 +24,10 @@
 const { Tier2SearchClient } = require('../indice/tier2');
 const { TIER2_FLAG, mergeLocalWithTier2 } = require('../ricerca/fusione');
 
-// Quanti titoli del Tier 2 aggiungere a una pagina di ricerca (20 = PRESET_PAGE_SIZE).
-const TIER2_PAGE_SIZE = 20;
+// Quanti titoli del Tier 2 aggiungere a una pagina di ricerca: la stessa misura della pagina,
+// così la coda lunga può riempirla invece di fermarsi a venti.
+const { CATALOG_PAGE_SIZE } = require('../config');
+const TIER2_PAGE_SIZE = CATALOG_PAGE_SIZE;
 
 // Quanti nomi appresi aggiungere. Sono un di piu', non il cuore della pagina: 5 bastano a far
 // emergere il titolo che l'utente sta cercando per nome, senza spostare il resto in giu'.

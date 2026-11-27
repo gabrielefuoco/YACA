@@ -8,7 +8,9 @@ const { catalogDefinitionsFromShelves } = require('../catalog/registry');
 
 const defaultExtra = [{ name: 'skip' }];
 const presetExtra = [{ name: 'sortBy', isRequired: false, options: SORT_OPTIONS }, { name: 'skip' }];
-const searchExtra = [{ name: 'search', isRequired: true }];
+// La ricerca dichiara anche `skip`: senza, Stremio non chiede mai la pagina successiva e la
+// ricerca resta ferma alla prima (era il motivo per cui «sembrava» limitata a venti titoli).
+const searchExtra = [{ name: 'search', isRequired: true }, { name: 'skip' }];
 
 /**
  * Le tre righe della libreria personale. Estratte qui perché sono una sola verità

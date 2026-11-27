@@ -159,8 +159,12 @@ function compilaIntento(intento, { type = 'movie', risolviKeyword = null } = {})
  */
 const GRAFO_TIMEOUT_MS = Math.max(500, Number(process.env.RICERCA_GRAFO_TIMEOUT_MS) || 4000);
 
-/** Quanti vicini chiedere: più di una pagina, perché gli altri filtri dell'intento ne tolgono. */
-const SEMI_CAP = 60;
+/**
+ * Quanti vicini chiedere. La matrice porta i 100 più vicini di ogni titolo: si chiedono tutti e
+ * cento, così la prima pagina è piena (60) e la seconda non è vuota. Con 60 si serviva una pagina
+ * sola e la successiva restava senza niente, anche se il grafo aveva altro da dire.
+ */
+const SEMI_CAP = 100;
 
 /** L'id numerico di un meta (`tmdb:123` o `123`). */
 function idNumerico(item) {

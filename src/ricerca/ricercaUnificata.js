@@ -18,7 +18,12 @@
 const { mergeLocalWithTier2 } = require('./fusione');
 const { compilaIntenti, eseguiPiani } = require('./compilatore');
 
-const PRESET_PAGE_SIZE = 20;
+const { CATALOG_PAGE_SIZE } = require('../config');
+
+// Quanti titoli per pagina: la stessa misura dei cataloghi (Stremio chiede la successiva con
+// `skip`). Era 20 per scelta, ma l'indice ne ha molti di più e una ricerca di tema si fermava
+// alla prima ventina senza motivo.
+const PRESET_PAGE_SIZE = CATALOG_PAGE_SIZE;
 
 /**
  * Candidati locali: Tier 1 (DuckDB) + Tier 2 (FTS5) + nomi appresi, fusi e deduplicati.

@@ -12,7 +12,7 @@
 
 const { createTmdbClient } = require('../clients/tmdb');
 const cache = require('../cache');
-const { CACHE_TTL_MS } = require('../config');
+const { CACHE_TTL_MS, CATALOG_PAGE_SIZE } = require('../config');
 const { getPresets } = require('../catalog/presets');
 const { EPISODE_CATALOG_IDS } = require('./constants');
 
@@ -176,8 +176,12 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 return true;
             }
 
-            const TARGET_PAGE_SIZE = 20;
-            const MAX_PAGES = 5; // Paginazione delimitata (max 5 fetch / 100 elementi) per riempire la pagina
+            const TARGET_PAGE_SIZE = CATALOG_PAGE_SIZE;
+            // La fonte pagina di suo (TMDB: 20 per pagina). Una pagina **più corta di così** vuol
+            // dire fonte esaurita: si smette senza una fetch in più. Più corta del nostro
+            // obiettivo, invece, non basta a fermarsi — la fonte è solo più stretta di noi.
+            const PAGINA_SORGENTE = 20;
+            const MAX_PAGES = Math.ceil(TARGET_PAGE_SIZE / PAGINA_SORGENTE) + 3;
             const seenIds = new Set();
             const deduplicatedResults = [];
 
@@ -238,7 +242,7 @@ async function catalogHandler(args, userConfig, hostUrl) {
                     }
 
                     if (deduplicatedResults.length >= TARGET_PAGE_SIZE) break;
-                    if (batch.length < TARGET_PAGE_SIZE) break;
+                    if (batch.length < PAGINA_SORGENTE) break;
                     currentSkip += batch.length;
                 }
             }

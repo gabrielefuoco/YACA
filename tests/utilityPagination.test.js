@@ -69,7 +69,7 @@ describe('U-03: paginazione utility a 20 item', () => {
         expect(limit).toHaveBeenCalledWith(20);
     });
 
-    test('la ricerca standard usa 20 item e propaga lo skip reale', async () => {
+    test('la ricerca standard usa la pagina del catalogo e propaga lo skip reale', async () => {
         const activeProfileSettings = { kidsMode: true };
 
         await routeCatalogRequest(
@@ -90,7 +90,7 @@ describe('U-03: paginazione utility a 20 item', () => {
             { _search: 'Spider-Man' },
             'series',
             20,
-            20,
+            require('../src/config').CATALOG_PAGE_SIZE,
             activeProfileSettings
         );
     });
