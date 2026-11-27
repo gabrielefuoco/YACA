@@ -7,9 +7,11 @@ module.exports = {
     PAGES_PER_REQUEST: 3, // How many TMDB pages to fetch concurrently per Stremio request
     ITEMS_PER_PAGE: 20,   // Default items per page for TMDB
     // Quanti titoli servire in una pagina di catalogo o di ricerca. Stremio chiede la successiva
-    // con `skip`: senza un numero alto la ricerca finiva a venti titoli e basta, anche quando
-    // l'indice ne aveva centinaia. Configurabile con CATALOG_PAGE_SIZE.
-    CATALOG_PAGE_SIZE: Number(process.env.CATALOG_PAGE_SIZE) > 0 ? Number(process.env.CATALOG_PAGE_SIZE) : 60,
+    // con `skip`; cento è la sua misura naturale, e una ricerca di tema ne ha spesso mille da dare
+    // (`tema commedia, romantica, natalizia` → 1.331 titoli). Misurato: 100 invece di 60 non costa
+    // niente sui filtri (160 ms per `tema horror` in entrambi i casi) — il costo è il filtro, non
+    // le righe. Configurabile con CATALOG_PAGE_SIZE.
+    CATALOG_PAGE_SIZE: Number(process.env.CATALOG_PAGE_SIZE) > 0 ? Number(process.env.CATALOG_PAGE_SIZE) : 100,
 
     // Default Fallbacks
     DEFAULT_REGION: 'IT',

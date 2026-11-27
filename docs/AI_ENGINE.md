@@ -84,7 +84,7 @@ graph TD
     D -->|filtri| F[DuckDB: getDuckDbCatalogFromFilters]
     D -->|semi| G[POST /vicini: i vicini dalla matrice]
     D -->|più righe| H[Una lettura per riga + consensus]
-    E --> I[Pagina: CATALOG_PAGE_SIZE titoli (60), Stremio chiede la successiva con skip]
+    E --> I[Pagina: CATALOG_PAGE_SIZE titoli (100), Stremio chiede la successiva con skip]
     F --> I
     G --> I
     H --> I
