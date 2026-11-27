@@ -41,13 +41,13 @@ tranne `anno` (intervallo) e `simili` (semi della stessa diffusione).
 | `generi` | i 19 generi (nomi italiani) | `generi horror, commedia` |
 | `tema` | genere o keyword, anche italiano | `tema horror, navi, natalizi` |
 | `cast` | una o più persone | `cast leonardo dicaprio` |
-| `regista` | una o più persone (film: registi; serie: creatori) | `regista nolan, villeneuve` |
+| `regista` (anche `crew`, `autore`, `creatore`) | una o più persone (film: registi; serie: creatori, e in mancanza registi) | `regista nolan, villeneuve` |
 | `anno` | `1997` · `1990-2000` · `80` · `80-90` · `1990-` · `-1999` | `anno 1980-1989` |
-| `voto` | `7+` · `7-9` · `-4` · `7.5+` | `voto 7+` |
-| `durata` | minuti: `90-120` · `180-` · `-150` | `durata 90-150` |
-| `eta` | certificazione per fasce (G, PG, PG-13, R, T, VM14, VM18, 6+/14+/18+) | `eta PG-13` |
+| `voto` | `7+` · `7-9` · `-4` · `7.5+` · `< 7` · `> 7` · `≤ 6` · `≥ 8` | `voto 7+` |
+| `durata` | minuti: `90-120` · `180-` · `-150` · `< 90` · `> 150` | `durata 90-150` |
+| `eta` | fasce (G, PG, PG-13, R, T, VM14, VM18, 6+/14+/18+) e età/età-intervallo (`6`, `0-6`, `6-14`) | `eta PG-13` · `eta 0-6` |
 | `senza` | genere o tema da escludere (il tipo si ricorda fra le virgole) | `senza genere horror, commedia senza tema splatter` |
-| `su` | piattaforma | `su netflix, prime` |
+| `su` (anche `piattaforma`, `provider`) | piattaforma | `su netflix, prime` |
 | `lingua` | nome italiano o codice | `lingua giapponese` |
 | `paese` | nome italiano o codice | `paese giappone` |
 | `anime` | (nessun valore: è un flag) | `anime tema isekai` |
@@ -63,7 +63,14 @@ Regole che cambiano il risultato:
 - **i titoli con la virgola restano interi**: si prova il prefisso più lungo che l'indice conosce
   (`amici miei, atto ii` resta un film);
 - `eta` confronta per **fasce**, non in ordine alfabetico: il dump mescola sistemi (R, PG-13, T,
-  VM14, 14+) e `NR` resta fuori («non sappiamo» non è «va bene»);
+  VM14, 14+) e `NR` resta fuori («non sappiamo» non è «va bene»). Le forme numeriche prendono la
+  fascia che le copre (`0-6` → `6+`, `12` → `PG-13`), quelle non riconosciute sono un motivo;
+- **un comparatore conta**: `voto < 7` e `durata < 90` non sono minimi (era un difetto: il `<`
+  finiva nel testo scartato e il numero diventava un `gte`, cioè l'opposto). `>` e `>=` coincidono,
+  perché l'indice conosce solo `gte`/`lte`;
+- **i generi che nelle serie non esistono** (Horror, Thriller, Musica, Film TV) ripiegano sulla
+  keyword omonima: TMDB non li prevede per la televisione, e filtrare l'id dei film dava zero
+  titoli in silenzio. Con `generi` il degrado si vede (`genere_degradato_a_tema`);
 - **`tema` espande solo con le sorelle affini**: il cluster L1 del grafo contiene anche keyword
   generiche che sostituiscono il tema invece di allargarlo, e la scelta è precalcolata nel dump
   (`src/data/sorelle-affini.json`, costruito da `scripts/build-sorelle-affini.js`). Tiene una
