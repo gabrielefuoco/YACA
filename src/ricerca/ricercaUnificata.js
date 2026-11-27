@@ -18,11 +18,13 @@
 const { mergeLocalWithTier2 } = require('./fusione');
 const { compilaIntenti, eseguiPiani } = require('./compilatore');
 
-const { CATALOG_PAGE_SIZE } = require('../config');
+const { CATALOG_PAGE_SIZE, CATALOG_MAX_ITEMS } = require('../config');
 
-// Quanti titoli per pagina: la stessa misura dei cataloghi (Stremio chiede la successiva con
-// `skip`). Era 20 per scelta, ma l'indice ne ha molti di più e una ricerca di tema si fermava
-// alla prima ventina senza motivo.
+// Quanti titoli per pagina. Due misure, perché i costi sono diversi:
+//   - `testo`: ogni titolo del Tier 2 va arricchito via TMDB, quindi la pagina resta 100;
+//   - `filtri` e `semi`: i titoli vengono dall'indice locale, senza rete. Lì non c'è motivo di
+//     tagliare a cento: `tema commedia, romantica, natalizia` ne ha 1.331 in 365 ms e ~1,4 MB.
+//     Il tetto è una guardia di memoria, non un limite di prodotto.
 const PRESET_PAGE_SIZE = CATALOG_PAGE_SIZE;
 
 /**
@@ -161,10 +163,11 @@ async function cercaUnificata({
     // lo stesso percorso serve i cataloghi multi-blocco.
     const soloTesto = piani.length === 1 && piani[0].modo === 'testo';
     if (!soloTesto) {
+        const cap = CATALOG_MAX_ITEMS;
         const esito = await eseguiPiani(piani, {
             type,
             skip,
-            cap: PRESET_PAGE_SIZE,
+            cap,
             contesto: activeProfileSettings
         });
         const items = esito.items || [];
@@ -176,7 +179,7 @@ async function cercaUnificata({
                 ? ` motivi=${JSON.stringify([...new Set([...tuttiIMotivi, ...motiviEsecuzione])])}`
                 : '')
         );
-        return items.slice(0, PRESET_PAGE_SIZE);
+        return items.slice(0, cap);
     }
 
     // 3. Testo: il percorso locale completo (Tier 1 + Tier 2 + nomi appresi + arricchimento).

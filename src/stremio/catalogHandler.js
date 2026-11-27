@@ -12,7 +12,7 @@
 
 const { createTmdbClient } = require('../clients/tmdb');
 const cache = require('../cache');
-const { CACHE_TTL_MS, CATALOG_PAGE_SIZE } = require('../config');
+const { CACHE_TTL_MS, CATALOG_PAGE_SIZE, CATALOG_MAX_ITEMS } = require('../config');
 const { getPresets } = require('../catalog/presets');
 const { EPISODE_CATALOG_IDS } = require('./constants');
 
@@ -176,12 +176,18 @@ async function catalogHandler(args, userConfig, hostUrl) {
                 return true;
             }
 
-            const TARGET_PAGE_SIZE = CATALOG_PAGE_SIZE;
+            // Una richiesta **generica** (temi, generi, cast, regista, simili) non ha rete da
+            // pagare: la fonte è l'indice locale, e `tema commedia, romantica, natalizia` ne ha
+            // 1.331 in 365 ms e ~1,4 MB di risposta. Lì il taglio a cento non serve a niente.
+            // Il testo invece resta a una pagina: ogni titolo del Tier 2 va arricchito via TMDB.
+            const isSearchRequest = Boolean(extra?.search) || baseId === 'yaca_search_history';
+            const TARGET_PAGE_SIZE = isSearchRequest ? CATALOG_MAX_ITEMS : CATALOG_PAGE_SIZE;
             // La fonte pagina di suo (TMDB: 20 per pagina). Una pagina **più corta di così** vuol
             // dire fonte esaurita: si smette senza una fetch in più. Più corta del nostro
             // obiettivo, invece, non basta a fermarsi — la fonte è solo più stretta di noi.
             const PAGINA_SORGENTE = 20;
-            const MAX_PAGES = Math.ceil(TARGET_PAGE_SIZE / PAGINA_SORGENTE) + 3;
+            // Per la ricerca non si rifà la pagina: la fonte l'ha già composta tutta.
+            const MAX_PAGES = isSearchRequest ? 1 : Math.ceil(TARGET_PAGE_SIZE / PAGINA_SORGENTE) + 3;
             const seenIds = new Set();
             const deduplicatedResults = [];
 

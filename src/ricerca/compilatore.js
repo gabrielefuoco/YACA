@@ -193,8 +193,10 @@ async function semiDaGrafo(piano, { type, skip, cap, contesto, cerca, vicini }) 
     let risposta;
     try {
         const chiedi = vicini || require('../clients/graphClient').vicini;
+        // Si chiedono i vicini che la matrice ha (100), non la pagina: la pagina può essere più
+        // grande per le richieste generiche, ma il grafo non ha altro da dare.
         risposta = await chiedi(
-            { semi, medium, cap: Math.max(SEMI_CAP, cap) },
+            { semi, medium, cap: SEMI_CAP },
             { timeout: GRAFO_TIMEOUT_MS }
         );
     } catch (_err) {

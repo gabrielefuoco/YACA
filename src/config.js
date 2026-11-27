@@ -12,6 +12,11 @@ module.exports = {
     // niente sui filtri (160 ms per `tema horror` in entrambi i casi) — il costo è il filtro, non
     // le righe. Configurabile con CATALOG_PAGE_SIZE.
     CATALOG_PAGE_SIZE: Number(process.env.CATALOG_PAGE_SIZE) > 0 ? Number(process.env.CATALOG_PAGE_SIZE) : 100,
+    // Quanti titoli al massimo in una risposta quando la richiesta è **generica** (temi, generi,
+    // cast, regista, simili): lì non c'è rete da pagare, quindi non c'è motivo di tagliare a cento
+    // — una ricerca di tema ne ha anche mille e trecento. Il tetto è una guardia di memoria, non
+    // un limite di prodotto: si alza con CATALOG_MAX_ITEMS.
+    CATALOG_MAX_ITEMS: Number(process.env.CATALOG_MAX_ITEMS) > 0 ? Number(process.env.CATALOG_MAX_ITEMS) : 2000,
 
     // Default Fallbacks
     DEFAULT_REGION: 'IT',
