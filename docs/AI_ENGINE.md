@@ -1,81 +1,165 @@
-# Motore AI (Mistral AI & Live Search Router)
+# La Ricerca
 
-Questo documento descrive in dettaglio l'integrazione dell'Intelligenza Artificiale all'interno di YACA (Yet Another Catalog Addon). Il motore AI ha il compito di tradurre le ricerche libere in linguaggio naturale inserite dall'utente in query strutturate ed estremamente mirate per i provider di contenuti (TMDB, Kitsu, Trakt).
+Questo documento descrive come YACA trasforma una richiesta in una pagina di risultati.
 
-Il sistema si appoggia sulle API di **Mistral AI** ed è implementato principalmente all'interno dei seguenti componenti:
-*   [src/ricerca/router.js](../src/ricerca/router.js): Traduce le ricerche libere in linguaggio naturale (Live Search) in filtri TMDB e instrada le query al provider corretto.
-*   [src/ricerca/prompts.js](../src/ricerca/prompts.js): Contiene le definizioni delle regole di base, dei dizionari di traduzione delle keyword e dei JSON schema per la ricerca.
+Dal **26/11/2026** non c'è più un modello nel percorso: la frase che l'utente scrive è un programma
+in una sintassi piccola (§0), un parser deterministico la traduce in **intenti**, e un compilatore li
+traduce nei filtri dell'indice. Spariti insieme al modello: il pianificatore Mistral, la cache dei
+piani, l'adattatore AI, il secondo catalogo di ricerca (`yaca_search_ai`) e la chiave Mistral dalla
+configurazione.
+
+Componenti:
+
+* [src/ricerca/pianificatore.js](../src/ricerca/pianificatore.js): il parser (`analizza` puro,
+  `risolvi` con risolutori iniettati, `pianifica` come porta).
+* [src/ricerca/risolutori.js](../src/ricerca/risolutori.js): i risolutori veri — lessico italiano,
+  grafo gerarchico, `people.db`, FTS dei titoli, provider.
+* [src/ricerca/compilatore.js](../src/ricerca/compilatore.js): intenti → filtri dell'indice
+  (`compilaIntento`, `eseguiPiano`, `eseguiPiani` con consensus).
+* [src/ricerca/ricercaUnificata.js](../src/ricerca/ricercaUnificata.js): il percorso unico.
+* [src/ricerca/registry.js](../src/ricerca/registry.js): il registro delle fonti; la ricerca e i
+  cataloghi scritti delegano qui.
 
 > [!NOTE]
-> La generazione e il pre-filtraggio dei cataloghi personalizzati (es. *True Blend*, *Smart AND*, *Top Genres*) non richiedono chiamate esterne ad ogni richiesta: sono eseguiti a latenza zero dal motore SQL in-memory **DuckDB** e dal calcolatore bayesiano **VSM** ([catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js)).
+> La generazione dei cataloghi personalizzati (*True Blend*, *Smart AND*, *Top Genres*) non richiede
+> chiamate esterne: è eseguita dal motore SQL in-memory **DuckDB** e dal calcolatore bayesiano
+> **VSM** ([catalogStrategies.js](../src/engines/hybrid/catalogStrategies.js)).
 
 ---
 
-## Architettura del Flusso AI
+## 0. La sintassi (l'unico modo per chiedere)
 
-L'AI all'interno di YACA interviene primariamente nello scenario di **Live Search (Ricerche Libere)**:
-Quando l'utente inserisce una frase di ricerca arbitraria nella barra di ricerca di Stremio (es. *"Film horror anni 80 sulle navi"* o *"Io amo Game of Thrones ma la mia ragazza Bridgerton"*), l'AI converte questa stringa in parametri strutturati di TMDB.
+La ricerca non interpreta il linguaggio naturale: **la frase è un programma**, e il parser è
+deterministico. Una riga = un'intenzione; nel creator di cataloghi ogni riga è un blocco, e il
+consensus le fonde. Le virgole separano i valori; più valori dello stesso operatore sono **OR**,
+tranne `anno` (intervallo) e `simili` (semi della stessa diffusione).
+
+| Operatore | Valore | Esempio |
+|---|---|---|
+| `simili` | uno o più titoli | `simili interstellar, arrival` |
+| `titolo` | testo sul titolo | `titolo batman` |
+| `generi` | i 19 generi (nomi italiani) | `generi horror, commedia` |
+| `tema` | genere o keyword, anche italiano | `tema horror, navi, natalizi` |
+| `cast` | una o più persone | `cast leonardo dicaprio` |
+| `regista` | una o più persone (film: registi; serie: creatori) | `regista nolan, villeneuve` |
+| `anno` | `1997` · `1990-2000` · `80` · `80-90` · `1990-` · `-1999` | `anno 1980-1989` |
+| `voto` | `7+` · `7-9` · `-4` · `7.5+` | `voto 7+` |
+| `durata` | minuti: `90-120` · `180-` · `-150` | `durata 90-150` |
+| `eta` | certificazione per fasce (G, PG, PG-13, R, T, VM14, VM18, 6+/14+/18+) | `eta PG-13` |
+| `senza` | genere o tema da escludere (il tipo si ricorda fra le virgole) | `senza genere horror, commedia senza tema splatter` |
+| `su` | piattaforma | `su netflix, prime` |
+| `lingua` | nome italiano o codice | `lingua giapponese` |
+| `paese` | nome italiano o codice | `paese giappone` |
+| `anime` | (nessun valore: è un flag) | `anime tema isekai` |
+| `ordina` | `popolarita` · `voto` · `data` · `incasso` | `ordina voto` |
+
+Regole che cambiano il risultato:
+
+- **senza operatori = ricerca sul titolo** (`batman` funziona come sempre);
+- **con almeno un operatore, il testo che avanza si scarta** e finisce nei `motivi`
+  (`motivi: ["ignorato: film"]`);
+- **un valore non risolto non svuota la ricerca**: è un motivo (`tema_non_riconosciuto: X`,
+  `regista_non_risolto: X`, `valore_mancante: anno`, `anno_non_valido: X`, …);
+- **i titoli con la virgola restano interi**: si prova il prefisso più lungo che l'indice conosce
+  (`amici miei, atto ii` resta un film);
+- `eta` confronta per **fasce**, non in ordine alfabetico: il dump mescola sistemi (R, PG-13, T,
+  VM14, 14+) e `NR` resta fuori («non sappiamo» non è «va bene»).
+
+---
+
+## 1. Il percorso unico
 
 ```mermaid
 graph TD
-    A[Input Utente Stremio Search] --> B[routeLiveStremioSearch]
-    B --> C[generateTmdbFiltersFromPrompt]
-    C -->|Model: mistral-small-latest| D[Mistral AI]
-    D --> E[Risposta JSON Grezza]
-    E --> F{Validazione & Sanitizzazione}
-    F -->|Valido| G[Esecuzione Query Strutturate su TMDB]
-    F -->|Iniezione o Fallito| H[Fallback automatico a Multi-Search o Parametri Base]
+    A[Ricerca Stremio: yaca_search_standard] --> B[Parser della sintassi]
+    B --> C[Intento: generi, tema, persone, anno, voto, …]
+    C --> D{Quale modo?}
+    D -->|testo| E[Indice locale: DuckDB FTS + Tier 2 FTS5 + nomi appresi]
+    D -->|filtri| F[DuckDB: getDuckDbCatalogFromFilters]
+    D -->|semi| G[POST /vicini: i vicini dalla matrice]
+    D -->|più righe| H[Una lettura per riga + consensus]
+    E --> I[Pagina: 20 titoli]
+    F --> I
+    G --> I
+    H --> I
 ```
 
----
+Una riga sola in Stremio; più righe (`intenti` multipli) nei cataloghi scritti, dove il consensus
+fonde le liste. Ogni passo lascia un **motivo** (`tema_non_riconosciuto`, `ignorato: …`,
+`simile:colonna`, `anno_non_valido`, …): in Stremio finiscono nei log, nel creator sono visibili.
 
-## Live Search & Routing AI
+## 2. L'indice locale (il modo `testo`)
 
-All'interno di [src/ricerca/router.js](../src/ricerca/router.js), YACA espone una logica per mappare le ricerche libere dell'utente in parametri TMDB. Questo permette una ricerca di tipo semantico all'interno dell'addon.
+1. **Tier 1 — DuckDB.** `getDuckDbCatalogFromFilters({ _search: q })`: BM25 come candidato veloce,
+   **ogni termine deve comparire** nel titolo (`title`/`original_title`), titolo esatto come primo
+   criterio d'ordine ([compiler.js:60-97](../src/indice/compiler.js)).
+2. **Tier 2 — SQLite FTS5** ([tier2.js](../src/indice/tier2.js)): 1,48 M titoli del daily export
+   TMDB, ultimo token con prefisso `*`. Arrivano grezzi e vengono arricchiti dopo.
+3. **Nomi appresi** ([learnedNames.js](../src/ricerca/learnedNames.js)): i titoli italiani già visti
+   una volta, massimo 5, in coda.
+4. **Arricchimento** ([tier2Enrich.js](../src/ricerca/tier2Enrich.js)): poster e titolo italiano per i
+   soli item del Tier 2, concorrenza 5, budget 3500 ms.
 
-### 1. Traduzione semantica e Regole Generali
-Per garantire che le API di TMDB possano digerire l'input dell'utente, l'AI applica una serie di regole stringenti (configurate in [src/ricerca/prompts.js](../src/ricerca/prompts.js)):
-*   **Traduzione concettuale**: I concetti descrittivi in lingua italiana vengono tradotti nei corrispettivi sostantivi inglesi più semplici (es. *"balene"* $\rightarrow$ *"whale"*, *"natalizia"* $\rightarrow$ *"christmas"*).
-*   **Regola dell'operatore singolo**: Nelle keyword è consentito un solo operatore per blocco di query: o solo AND (`,`) o solo OR (`|`). Non è ammesso mischiarli in una singola stringa (es. `cyberpunk|neon` è valido, `cyberpunk|neon,hacker` viene scartato o corretto).
-*   **Mappatura dei codici lingua**: Riconosce indicazioni geografiche e linguistiche (es. *"film americani"* $\rightarrow$ `original_language: "en"`, *"in italiano"* $\rightarrow$ `language: "it-IT"`).
+## 3. I vicini (`simili X`)
 
-### 2. Risposta JSON Schema
-L'AI deve rispondere restituendo un oggetto JSON che segue una delle due strutture definite in [src/ricerca/prompts.js](../src/ricerca/prompts.js):
+`simili interstellar` (o `simili got, bridgerton`: più semi, una lettura sola) chiede i vicini al
+**servizio del grafo** con `POST /vicini`:
 
-*   `single_query`: Per mappare una ricerca singola.
-*   `multi_query`: Per pianificare più ricerche in parallelo (es. se la ricerca contiene concetti slegati).
-
-Esempio di query generata dall'AI per la frase *"Film di fantascienza anni 90 con viaggi nel tempo"* (risoluzione in `single_query`):
-```json
-{
-  "strategy": "discovery",
-  "genre_ids": [878],
-  "year_from": "1990",
-  "year_to": "1999",
-  "keyword": "time travel",
-  "target": "tmdb"
-}
+```
+POST /vicini  { semi: [{ tmdbId: 157336, medium: "movie" }], medium: "movie", cap: 60 }
+→ { contratto: 2, versioni: {…}, semi: { n: 1, scartati: 0 },
+    vicini: [{ tmdbId: 27205, medium: "movie", punteggio: 3.83 }, …], motivi: [] }
 ```
 
----
+La rotta legge la **matrice precalcolata** `vicini-top100.npz` (top-100 pesati per titolo, costruita
+offline): è una lettura di riga — **0,8 ms con tre semi**. La provenienza (`versioni.input`, sha del
+triangolo) dice da quale grafo nasce la matrice. Ogni seme versa **1,0 di massa** (normalizzazione
+per riga): un titolo co-visto con molti semi sale.
 
-## Sicurezza, Validazione e Fallback (Defensive Design)
+I titoli arrivano per id e punteggio e si **idratano dall'indice conservando l'ordine del grafo**. Gli
+altri vincoli dell'intento si applicano dentro (`simili interstellar anno 2010`), per questo si
+chiedono più vicini di una pagina.
 
-Il sistema è protetto da allucinazioni dell'AI, errori di parsing JSON e prompt injection attraverso un solido strato di difesa nel codice JS:
+Se il grafo non risponde — servizio giù, semi fuori canone, nessun vicino nel nostro dump — si
+ripiega sulla colonna `recommendations` del parquet (una query per seme, poi consensus) e il motivo
+dice quale delle due ha risposto: `simile:grafo` o `simile:colonna`. Budget: 4000 ms
+(`RICERCA_GRAFO_TIMEOUT_MS`).
 
-1.  **Whitelisting dei campi**: La funzione `sanitizeSingleQuery` analizza l'output restituito da Mistral e rimuove qualsiasi campo non esplicitamente definito all'interno del set `ALLOWED_AI_FIELDS`.
-2.  **Validazione dei tipi**: Vengono eseguiti controlli di tipo bloccanti (es. `genre_ids` deve essere un array di soli numeri interi, `people_list` deve contenere solo stringhe).
-3.  **Kids Mode Enforcement**: Se la modalità Kids è attiva sul profilo utente corrente, al system prompt viene concatenata una direttiva critica invalicabile:
-    > *"CRITICAL: The user is in KIDS MODE. You MUST ONLY generate queries for family-friendly, children-appropriate content. Never generate queries containing adult, violent, scary, or sexually suggestive keywords or themes."*
-4.  **Fallback Resiliente**: In caso di errore di connessione con Mistral AI o di un output corrotto non riparabile, la funzione `parseMistralResponse` devia su un fallback sicuro strutturato in modalità `multi_search`, che esegue una ricerca testuale classica su TMDB usando l'input originario dell'utente, impedendo che l'addon smetta di funzionare.
+## 4. Cache
 
----
+La ricerca **non ha una cache di risultati**: l'indice risponde in ~250 ms e ogni pagina si ricalcola.
+La cache dei piani (`ai_prompt`) è stata rimossa insieme al modello. Restano le cache dei metadati
+(`tmdb_details_raw`, che è ciò che rende gratis l'arricchimento) e dei cataloghi (che la ricerca non
+usa: `extra.search` la bypassa).
 
-## Variabili d'Ambiente Utilizzate
+## 5. I cataloghi scritti
 
-Il modulo AI utilizza le seguenti chiavi di configurazione (lette prima dalle preferenze salvate dell'utente e poi, come fallback globale, dal file `.env` del server):
+Un catalogo personalizzato può essere **scritto in sintassi**: una riga per blocco, salvate come
+`testo` più lo snapshot compilato `intenti`. Al serving, `serveCatalogoScritto`
+([registry.js](../src/ricerca/registry.js)) passa dal medesimo parser e compilatore della ricerca. I
+cataloghi salvati prima del 26/11/2026 (forma `queries`) continuano a funzionare sul percorso
+precedente (`executeUniversalPipeline`).
+
+Le **liste manuali** di titoli restano `queries`: un elenco non è una ricerca.
+
+## 6. Degrado dichiarato
+
+Nessuna funzione del percorso solleva: il caso normale è `{ items, motivi }`.
+
+| Guasto | Risposta |
+|---|---|
+| valore non riconosciuto (`tema`, `cast`, `regista`, `ordine`) | il valore si scarta, il motivo resta (`tema_non_riconosciuto: X`) |
+| titolo non trovato per `simili` | nessun seme, motivo `titolo_non_risolto: X`; la ricerca resta valida |
+| indice FTS5 assente | si continua sui soli titoli locali (log una volta sola) |
+| arricchimento lento | si risponde con quello che è pronto, il resto alla richiesta successiva |
+| indice DuckDB non pronto | lista vuota + `motivi`, mai un'eccezione |
+| grafo giù | `simili` ripiega sulla colonna del parquet (`simile:colonna`) |
+
+## 7. Variabili d'Ambiente
 
 | Chiave | Scopo | Note |
 | :--- | :--- | :--- |
-| `MISTRAL_API_KEY` | Chiave di autenticazione per le chiamate a Mistral AI. | Obbligatoria per attivare le funzionalità AI di Live Search. |
-| `TMDB_API_KEY` | Chiave di autenticazione TMDB. | Utilizzata in concomitanza per tradurre keyword testuali in ID numerici TMDB. |
+| `TMDB_API_KEY` | Risoluzione dei nomi non ingeriti e metadati | usata in modo residuale: keyword e titoli si risolvono in locale |
+| `RICERCA_GRAFO_TIMEOUT_MS` | Budget della chiamata `/vicini` | default `4000` |
+| `RICERCA_ESPANSIONE` / `RICERCA_ESPANSIONE_MAX` | Espansione dei concetti dal grafo gerarchico | default attiva, 4 sorelle; `RICERCA_ESPANSIONE=0` la spegne |
+| `MISTRAL_API_KEY` / `MISTRAL_MODEL` | **non più usate** | la ricerca non chiama modelli; la chiave è stata rimossa dalla configurazione |

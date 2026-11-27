@@ -157,14 +157,15 @@ tarato su esperimenti di struttura, non su un giudizio di qualità misurato.
 
 | Endpoint | Contratto | Cosa restituisce |
 |---|---|---|
-| `POST /raccomanda` | v1 | liste spiegate (`il_tuo_mondo`, `un_passo_fuori`); mantenuto per retrocompatibilità |
 | `POST /scaffali` | v2 | scaffali a due livelli: etichette tassonomiche in testa, fallback «Perché hai visto» in coda |
+| `POST /vicini` | v2 | i vicini di uno o più titoli, **letti dalla matrice** `vicini-top100.npz` (0,02–1 ms) |
 
 Lo scaffale v2 applica la separazione rigorosa del medium per riga (policy P2), ammissione permissiva
 delle controparti a τ = 2,5% e un numero di candidati serviti compreso fra 20 e 60 per riga.
 
-Misure di servizio (engine V45 standalone): `POST /raccomanda` **p50 1,0 ms / p95 17,4 ms**;
-`POST /scaffali` **p50 1,525 s / p95 1,698 s** con obiettivo ≤ 3,0 s per 8 scaffali. Picco RSS su 30
+Misure di servizio: `POST /vicini` **0,02 ms** (un seme) / **0,8 ms** (tre semi);
+`POST /scaffali` **p50 1,525 s / p95 1,698 s** con obiettivo ≤ 3,0 s per 8 scaffali.
+La rotta v1 `POST /raccomanda` è stata **rimossa** il 26/11/2026: nessun client la chiamava. Picco RSS su 30
 richieste sequenziali: **323,41 MiB** (a riposo 299,1 MiB), con **188,59 MiB** di margine nel container
 da 512 MiB.
 

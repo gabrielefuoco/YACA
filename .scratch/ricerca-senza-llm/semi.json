@@ -1,0 +1,293 @@
+{
+ "sci-fi moderno": [
+  {
+   "tmdbId": 157336,
+   "tipo": "movie",
+   "titolo": "Interstellar"
+  },
+  {
+   "tmdbId": 27205,
+   "tipo": "movie",
+   "titolo": "Inception"
+  },
+  {
+   "tmdbId": 329865,
+   "tipo": "movie",
+   "titolo": "Arrival"
+  },
+  {
+   "tmdbId": 335984,
+   "tipo": "movie",
+   "titolo": "Blade Runner 2049"
+  },
+  {
+   "tmdbId": 438631,
+   "tipo": "movie",
+   "titolo": "Dune"
+  },
+  {
+   "tmdbId": 286217,
+   "tipo": "movie",
+   "titolo": "The Martian"
+  },
+  {
+   "tmdbId": 49047,
+   "tipo": "movie",
+   "titolo": "Gravity"
+  },
+  {
+   "tmdbId": 17431,
+   "tipo": "movie",
+   "titolo": "Moon"
+  },
+  {
+   "tmdbId": 300668,
+   "tipo": "movie",
+   "titolo": "Annihilation"
+  },
+  {
+   "tmdbId": 264660,
+   "tipo": "movie",
+   "titolo": "Ex Machina"
+  },
+  {
+   "tmdbId": 152601,
+   "tipo": "movie",
+   "titolo": "Her"
+  },
+  {
+   "tmdbId": 1272,
+   "tipo": "movie",
+   "titolo": "Sunshine"
+  },
+  {
+   "tmdbId": 14337,
+   "tipo": "movie",
+   "titolo": "Primer"
+  },
+  {
+   "tmdbId": 686,
+   "tipo": "movie",
+   "titolo": "Contact"
+  }
+ ],
+ "horror": [
+  {
+   "tmdbId": 694,
+   "tipo": "movie",
+   "titolo": "The Shining"
+  },
+  {
+   "tmdbId": 1091,
+   "tipo": "movie",
+   "titolo": "The Thing"
+  },
+  {
+   "tmdbId": 348,
+   "tipo": "movie",
+   "titolo": "Alien"
+  },
+  {
+   "tmdbId": 493922,
+   "tipo": "movie",
+   "titolo": "Hereditary"
+  },
+  {
+   "tmdbId": 530385,
+   "tipo": "movie",
+   "titolo": "Midsommar"
+  },
+  {
+   "tmdbId": 310131,
+   "tipo": "movie",
+   "titolo": "The Witch"
+  },
+  {
+   "tmdbId": 270303,
+   "tipo": "movie",
+   "titolo": "It Follows"
+  },
+  {
+   "tmdbId": 242224,
+   "tipo": "movie",
+   "titolo": "The Babadook"
+  },
+  {
+   "tmdbId": 419430,
+   "tipo": "movie",
+   "titolo": "Get Out"
+  },
+  {
+   "tmdbId": 11906,
+   "tipo": "movie",
+   "titolo": "Suspiria"
+  },
+  {
+   "tmdbId": 805,
+   "tipo": "movie",
+   "titolo": "Rosemary's Baby"
+  },
+  {
+   "tmdbId": 9552,
+   "tipo": "movie",
+   "titolo": "The Exorcist"
+  },
+  {
+   "tmdbId": 9392,
+   "tipo": "movie",
+   "titolo": "The Descent"
+  },
+  {
+   "tmdbId": 8329,
+   "tipo": "movie",
+   "titolo": "[REC]"
+  }
+ ],
+ "arthouse": [
+  {
+   "tmdbId": 1398,
+   "tipo": "movie",
+   "titolo": "Stalker"
+  },
+  {
+   "tmdbId": 422,
+   "tipo": "movie",
+   "titolo": "8½"
+  },
+  {
+   "tmdbId": 797,
+   "tipo": "movie",
+   "titolo": "Persona"
+  },
+  {
+   "tmdbId": 1018,
+   "tipo": "movie",
+   "titolo": "Mulholland Drive"
+  },
+  {
+   "tmdbId": 843,
+   "tipo": "movie",
+   "titolo": "In the Mood for Love"
+  },
+  {
+   "tmdbId": 279977,
+   "tipo": "movie",
+   "titolo": "The Mirror"
+  },
+  {
+   "tmdbId": 20108,
+   "tipo": "movie",
+   "titolo": "Au Hasard Balthazar"
+  },
+  {
+   "tmdbId": 973471,
+   "tipo": "movie",
+   "approssimato": "The Sacrifice Game",
+   "titolo": "The Sacrifice"
+  },
+  {
+   "tmdbId": 1394,
+   "tipo": "movie",
+   "titolo": "Nostalghia"
+  }
+ ],
+ "commedia italiana": [
+  {
+   "tmdbId": 20914,
+   "tipo": "movie",
+   "titolo": "Amici miei"
+  },
+  {
+   "tmdbId": 24188,
+   "tipo": "movie",
+   "titolo": "Il sorpasso"
+  },
+  {
+   "tmdbId": 24382,
+   "tipo": "movie",
+   "titolo": "I soliti ignoti"
+  },
+  {
+   "tmdbId": 32480,
+   "tipo": "movie",
+   "titolo": "Il marchese del Grillo"
+  },
+  {
+   "tmdbId": 55823,
+   "tipo": "movie",
+   "titolo": "La grande guerra"
+  },
+  {
+   "tmdbId": 43294,
+   "tipo": "movie",
+   "titolo": "Un americano a Roma"
+  },
+  {
+   "tmdbId": 58007,
+   "tipo": "movie",
+   "titolo": "Miseria e nobiltà"
+  },
+  {
+   "tmdbId": 55960,
+   "tipo": "movie",
+   "titolo": "Totò, Peppino e la... malafemmina"
+  },
+  {
+   "tmdbId": 81831,
+   "tipo": "movie",
+   "titolo": "Il boom"
+  }
+ ],
+ "crime serie": [
+  {
+   "tmdbId": 1396,
+   "tipo": "tv",
+   "titolo": "Breaking Bad"
+  },
+  {
+   "tmdbId": 46648,
+   "tipo": "tv",
+   "titolo": "True Detective"
+  },
+  {
+   "tmdbId": 1438,
+   "tipo": "tv",
+   "titolo": "The Wire"
+  },
+  {
+   "tmdbId": 67744,
+   "tipo": "tv",
+   "titolo": "Mindhunter"
+  },
+  {
+   "tmdbId": 275,
+   "tipo": "movie",
+   "titolo": "Fargo"
+  },
+  {
+   "tmdbId": 63351,
+   "tipo": "tv",
+   "titolo": "Narcos"
+  },
+  {
+   "tmdbId": 60574,
+   "tipo": "tv",
+   "titolo": "Peaky Blinders"
+  },
+  {
+   "tmdbId": 1398,
+   "tipo": "tv",
+   "titolo": "The Sopranos"
+  },
+  {
+   "tmdbId": 60059,
+   "tipo": "tv",
+   "titolo": "Better Call Saul"
+  },
+  {
+   "tmdbId": 46561,
+   "tipo": "movie",
+   "titolo": "Sherlock"
+  }
+ ]
+}

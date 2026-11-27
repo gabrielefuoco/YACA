@@ -215,5 +215,5 @@ I comportamenti di caching e di interconnessione con i provider sono influenzati
 *   `MONGODB_URI`: Stringa di connessione a MongoDB Atlas per profili, impostazioni e configurazioni account.
 *   `REDIS_URL`: URL di connessione a Redis per il caching L2 distribuito (default: `redis://127.0.0.1:6379`).
 *   `TMDB_API_KEY`: API Key utilizzata per interrogare TMDB e per arricchire i metadati.
-*   `MISTRAL_API_KEY`: Chiave API per Mistral AI, necessaria per abilitare la ricerca semantica Live Search.
+*   `TMDB_API_KEY`: risolve in rete solo i nomi non ingeriti; la ricerca è locale.
 *   `KITSU_ENDPOINT`: Endpoint dell'API di Kitsu (default: `https://kitsu.io/api/edge`) — **vestigio**: è dichiarato in `src/config.js` ma nessun modulo del core lo legge, perché il mapping Kitsu passa da Anibridge/Fribb e il core non fa query a Kitsu. Se si aggiunge un consumer, la variabile torna ad avere un significato.

@@ -286,7 +286,6 @@ Configurare le variabili minime necessarie:
 - `HOST_URL=https://<nome-nodo>.<tailnet>.ts.net` (verrà popolato/verificato dopo l'avvio di Tailscale Funnel)
 - `MONGODB_URI=<stringa-di-connessione-atlas>`
 - `TMDB_API_KEY=<tua-chiave-api-tmdb>`
-- `MISTRAL_API_KEY=<tua-chiave-mistral>`
 - `JWT_SECRET=<stringa-casuale-generata-con-openssl-rand-hex-32>`
 - `ADMIN_PASS=<password-admin-desiderata>`
 - `TRAKT_CLIENT_ID` e `TRAKT_CLIENT_SECRET` (se abilitati)
@@ -298,7 +297,6 @@ Configurare le variabili minime necessarie:
 
 Variabili opzionali ma che vale la pena conoscere prima di un problema:
 
-- `MISTRAL_MODEL` — modello del motore di ricerca AI, default `open-mistral-nemo`. **Non hardcodare `mistral-small-latest`**: su alcuni piani ha `limit-req-minute = 0`, ogni chiamata torna 429 e la ricerca AI degrada in silenzio a zero risultati.
 - `TMDB_DUMP_CONCURRENCY` (default 8) e `TMDB_DUMP_DELAY_MS` (default 285) — ritmo del cold start, vedi §5.
 
 La cartella dei poster già composti (`ERDB_CACHE_DIR`, default `/data/erdb-cache`, montata come volume `yaca_erdb_cache`) si popola copiandoci dentro i poster prodotti fuori dal server con una build una tantum; la rotta `/erdb-poster/<file>` li serve da lì.
@@ -612,7 +610,7 @@ Non installare agenti pesanti sul server. Configurare un servizio esterno gratui
 | Il volume `yaca_tmdb` resta vuoto e il cold start riparte a ogni riavvio | `TmdbDumpStore` sceglie `/data/tmdb` solo se esiste `/data`: senza volume montato scrive silenziosamente in `.cache/tmdb` dentro il container, che sparisce a ogni `docker compose up` | verifica `docker compose config` e `docker volume ls \| grep yaca_tmdb`; il path del container deve contenere `master_movies.jsonl` |
 | `ls /data/db` dal nome di qualche documentazione | path fantasma del vecchio Mongo locale | non montarlo: i dati utente stanno su Atlas via `MONGODB_URI`, il resto è rigenerabile |
 | Cataloghi vuoti per ore | cold start TMDB in corso, oppure `TMDB_API_KEY` assente | `curl -H "x-admin-pass: <ADMIN_PASS>" http://127.0.0.1:7860/api/admin/tmdb-dump/status` |
-| La ricerca AI non restituisce nulla | modello Mistral senza quota (`limit-req-minute = 0`, es. `mistral-small-latest`): ogni chiamata è 429 e il fallback è silenzioso | `MISTRAL_MODEL=open-mistral-nemo` nel `.env` (è il default), poi `docker compose up -d app` |
+| La ricerca non trova una frase naturale | la frase non è nella sintassi: il testo libero si cerca solo senza operatori, e con un operatore il resto è `ignorato` | scrivere gli operatori (`tema`, `anno`, `cast`, …); i motivi sono nei log `[RicercaUnificata]` |
 | Backup notturno mai eseguito | rclone configurato per l'utente, ma il servizio gira come root | `sudo rclone config` (remote `r2`), oppure `User=<utente>` nel unit systemd |
 | Dopo un blackout l'app non riparte | spegnimento sporco (batteria rimossa) | riavvia il server; i dati utente sono su Atlas e i parquet si rigenerano — in ultima istanza si reinstalla |
 

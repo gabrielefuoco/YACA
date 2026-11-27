@@ -33,7 +33,7 @@ graph TD
 
     subgraph GraphService ["Servizio Grafo Raccomandazioni (services/graph, Python :7862)"]
         HealthEndpoint["GET /health (<1 ms, versioni artefatto/ricetta)"]
-        RaccomandaEndpoint["POST /raccomanda (liste spiegate: il_tuo_mondo, un_passo_fuori)"]
+        RaccomandaEndpoint["POST /scaffali (le righe del feed) · POST /vicini (la matrice)"]
         GraphEngine["Motore PageRank / Bolle (138 MB in RAM)"]
     end
 
@@ -59,7 +59,7 @@ graph TD
     Backend <--> Pool
     Backend <--> LibraryDomain
     Backend <--> Engine
-    Pool <--> |HTTP POST /raccomanda (cache-miss)| GraphService
+    Pool <--> |HTTP POST /scaffali (cache-miss)| GraphService
     Pool <--> |semiDi| LibraryDomain
     GraphService <--> GraphVolume
     Engine <--> Data
@@ -84,7 +84,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 2. 🌐 Motore Grafo delle Raccomandazioni & Modulo Pool
 *   **[RECOMMENDATION_GRAPH.md](RECOMMENDATION_GRAPH.md)**
-    *   *Descrizione*: Architettura completa del motore di raccomandazione a grafo Python (`services/graph/`), contratto HTTP (`GET /health` e `POST /raccomanda`), integrazione nel modulo Pool (`src/pool/index.js`), metriche misurate di runtime e le 5 trappole architetturali già pagate (chiave cache v13, veleno 7 giorni, cap prima/dopo i filtri, `node -e` pendente, `tv`/`series`).
+    *   *Descrizione*: Architettura completa del motore di raccomandazione a grafo Python (`services/graph/`), contratto HTTP (`GET /health`, `POST /scaffali`, `POST /vicini`), integrazione nel modulo Pool (`src/pool/index.js`), metriche misurate di runtime e le 5 trappole architetturali già pagate (chiave cache v13, veleno 7 giorni, cap prima/dopo i filtri, `node -e` pendente, `tv`/`series`).
 
 ### 3. 📚 Dominio Libreria & Ingestione Dati
 *   **[LIBRARY_MODULE.md](LIBRARY_MODULE.md)**
@@ -100,7 +100,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 6. 🤖 Motore AI ed Elaborazione del Linguaggio Naturale
 *   **[AI_ENGINE.md](AI_ENGINE.md)**
-    *   *Descrizione*: Dettagli sull'integrazione con **Mistral AI**. Copre il funzionamento del router AI (`router.js`) per tradurre il linguaggio naturale in filtri TMDB e l'integrazione del motore di ricerca semantica *Live Search* direttamente dalla barra di ricerca di Stremio.
+    *   *Descrizione*: La ricerca di YACA: la **sintassi** (operatori e regole), il parser deterministico, i risolutori (lessico, `people.db`, grafo), il compilatore verso l'indice DuckDB, i vicini da `POST /vicini` e i cataloghi scritti in sintassi. Nessun modello nel percorso.
 
 ### 7. 🖥️ Architettura Frontend (SPA)
 *   **[FRONTEND.md](FRONTEND.md)**

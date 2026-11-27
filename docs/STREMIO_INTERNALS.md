@@ -157,7 +157,7 @@ Contratti coperti da [manifestFingerprint.test.js](../tests/manifestFingerprint.
 Ogni route di protocollo è `/:userHandle/...` e `resolveUserConfig(handle)` ([UserConfig.js](../src/models/UserConfig.js#L301-L319)) accetta **due identificatori diversi** per la stessa persona, in quest'ordine:
 
 1. **`addonUuid`** — UUID v4 dell'`AddonConfig`, il documento **anonimo** che contiene profili, cataloghi, DNA e scelte UI (e non contiene `userId`);
-2. **`userId`** — NanoID dell'`UserAccount`, che porta le credenziali private (authKey Stremio, token Trakt, chiavi TMDB/Mistral) e un puntatore `addonUuid`.
+2. **`userId`** — NanoID dell'`UserAccount`, che porta le credenziali private (authKey Stremio, token Trakt, chiave TMDB) e un puntatore `addonUuid`.
 
 È la separazione *Two-Table Split*: il manifest e i cataloghi si possono servire da una tabella che non contiene nessun segreto, mentre le chiavi restano nell'altra. Due conseguenze pratiche: un `/:userHandle/manifest.json` può essere messo in cache o condiviso senza esporre credenziali, e l'URL d'installazione può cambiare forma (`/{userId}/{configVersion}/manifest.json`) senza toccare l'anonimato dell'`AddonConfig`.
 

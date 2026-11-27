@@ -26,8 +26,9 @@ A partire dalla ristrutturazione architetturale di ottobre 2026, il calcolo dell
 |          [src/clients/graphClient.js] (Client HTTP axios, timeout 10s)         |
 +---------------+---------------------------------------------------------------+
                 |
-                | HTTP POST /raccomanda (JSON, porta 7862)
-                | HTTP GET  /health     (Hash artefatto & ricetta in <1 ms)
+                | HTTP POST /scaffali (le righe del feed, JSON, porta 7862)
+                | HTTP POST /vicini   (i vicini dalla matrice precalcolata)
+                | HTTP GET  /health   (hash artefatto & ricetta in <1 ms)
                 v
 +-------------------------------------------------------------------------------+
 | CONTAINER yaca-graph (Python 3)                                               |
@@ -72,72 +73,46 @@ Il servizio risponde su porta `7862` (configurabile tramite variabile d'ambiente
      ```
   3. Il client Node [src/clients/graphClient.js:37](../src/clients/graphClient.js#L37) interroga `/health` memorizzando la risposta in RAM per **60 secondi** (`HEALTH_CACHE_TTL_MS = 60000`). La versione viene incorporata direttamente nella chiave di cache delle raccomandazioni: quando l'artefatto viene aggiornato sul motore e il servizio riavviato, la cache del prodotto decade automaticamente senza riavviare l'app.
 
-### 2.2 Endpoint `POST /raccomanda` (e alias `POST /`)
-- **Implementazione**: [services/graph/servizio.py:247-267](../services/graph/servizio.py#L247-L267) tramite `esegui_richiesta` ([services/graph/servizio.py:26](../services/graph/servizio.py#L26)).
-- **Richiesta conforme al contratto**:
-  ```json
-  {
-    "semi": [
-      { "tmdbId": 655, "medium": "series", "tipo": "watched", "peso": 0.42 },
-      { "tmdbId": 1399, "medium": "series", "tipo": "loved", "peso": 4.0, "recente": true }
-    ],
-    "medium": "series",
-    "opzioni": { "largo": 4, "lontano": 0.0, "cozy": 0.0, "canone": 0.0 },
-    "cap": 60
-  }
-  ```
-  - `semi` (array obbligatorio): Storia dei titoli dell'utente. Titoli non presenti nel canone del grafo vengono scartati silenziosamente.
-  - `peso` (numerico, opzionale - Emendamento E1): Preserva il decadimento temporale misurato dal prodotto (`max(0.20, 0.5^(giorni/60))`). Se assente, il motore ripiega sui pesi statici per tipo.
-  - `recente` (booleano, opzionale - Ticket 07): il seme e' fra le **ultime visioni** del profilo. Il prodotto marca i **15 piu' recenti fra i semi che invia** (`SEED_RECENTI_QUANTI`), usando la data vera di `WatchHistory` (`lastWatchedAt` / `signals[].at` / `createdAt` / `daysAgo`); una data mancante non e' mai "adesso" e non e' mai recente. **Non e' un peso**: il motore lo usa solo come selezione, per la seconda camminata della riga `ultime_visioni`. Assente equivale a `false`.
-  - Tipo `"catalogo"` (Emendamento E2): Ammesso per i semi da freddo (< 3 titoli in cronologia). Diffonde la probabilità nel PageRank ma non viene mai restituito nei titoli raccomandati (`semi.da_catalogo: true`).
-  - `medium` (stringa `"movie"` | `"series"`, opzionale - Emendamento E4): Se specificato, filtra la risposta per il medium richiesto; se assente, restituisce entrambi i medium con una sola camminata di diffusione.
-  - `opzioni` (oggetto opzionale): Slider di modulazione (`largo`, `lontano`, `cozy`, `canone`). Se assente, applica `SLIDER_DEFAULT`.
-  - `cap` (intero, default `60`): Numero massimo di titoli per singola lista.
+### 2.2 Endpoint `POST /vicini` (la matrice precalcolata)
 
-- **Risposta del Motore (Liste Spiegate)**:
-  ```json
-  {
-    "contratto": 1,
-    "versioni": { "artefatto": "f8a92...", "ricetta": "e12c4..." },
-    "semi": { "n": 2, "da_catalogo": false, "recenti": 1 },
-    "liste": [
-      {
-        "ruolo": "il_tuo_mondo",
-        "mondo": 4192,
-        "descrizione": "mondo 4192 — 128 titoli, voti mediani 7.4",
-        "attivazione": 0.8312,
-        "mediana_voti": 7.4,
-        "quota_serie": 0.85,
-        "semi": [655],
-        "titoli": [
-          { "tmdbId": 1396, "medium": "series", "punteggio": 0.421503 }
-        ]
-      },
-      {
-        "ruolo": "un_passo_fuori",
-        "mondo": null,
-        "descrizione": "mondi vicini (104, 812)",
-        "attivazione": 0.5120,
-        "mediana_voti": 7.1,
-        "quota_serie": 0.60,
-        "semi": [1399],
-        "titoli": [
-          { "tmdbId": 60059, "medium": "series", "punteggio": 0.312940 }
-        ]
-      }
-    ],
-    "motivi": []
-  }
-  ```
-  - Ogni lista porta una spiegazione globale (mondo, descrizione, attivazione, mediana voti, semi attivatori).
-  - Ogni titolo porta `tmdbId`, `medium` (`"movie"` o `"series"`) e `punteggio` (attivazione utile per il merge).
-  - Ruoli derivati: `uscite_nuove`, `nicchia_di_qualita`, `ultime_visioni`, `micro_cluster_*` e `punti_incontro_*` portano `parziale: true` perché il prodotto può rifinirle col catalogo locale DuckDB più aggiornato.
-  - `uscite_nuove` (Ticket 10): porta `fonte` (`collocate` = cache offline, `canone` = ripiego sul canone storico), `candidati` (con `fonte: collocate` = le uscite della cache per quel medium; con `fonte: canone` = quelle recenti già filtrate sul bacino), `nel_bacino`, `gia_visti`, `senza_attivazione`, `scartati_pavimento` e, se vuota, `vuota: true` + `motivo`. I titoli collocati non sono nodi del canone: non hanno un `VOT` nel grafo, e la mediana voti è calcolata su quelli che ce l'hanno (0.0 se nessuno).
-  - `punti_incontro_*` (Ticket 09): il ponte fra due filoni, `sqrt(r_a[x] * r_b[x])`, con `VAVE >= 6.8` e i cap anti-monopolio. Porta `coppia_id` (le ancore dei due filoni, `b<a>_b<b>`) e `fallback: true` quando il profilo ha un filone solo e la riga unisce i due mondi più lontani. I titoli a massa zero da una delle due parti non entrano: non si riempie con gli zeri.
-  - `micro_cluster_*` (Ticket 08): lo **slot** (`micro_cluster_1..3`) è posizionale e segue il peso del filone; l'identità stabile del filone viaggia in `cluster_id` (`b<bolla>`, bolla più bassa del filone), con `titoli_seme` (i due semi più pesanti) e `quota_peso`. Le righe sono nel payload di `/api/mondi` e `/api/bolle`; non arrivano ai cataloghi Stremio finché non c'è il ticket 13. Con meno di 3 semi o di 10% del peso un filone viene scartato e loggato; oltre 3 filoni restano i primi per peso.
-  - `ultime_visioni` (Ticket 07) può essere `corta: true` con `target_dimensione`, `totale_sopravvissuti` e `motivo`; se i semi recenti sono meno di 3 arriva `vuota: true` con `motivo` (la lista non sparisce in silenzio). Non arriva ai cataloghi Stremio: e' nel payload delle rotte `/api/mondi` e `/api/bolle` (vuota, perche' non mandano flag), e arriva al client col ticket 13.
+I vicini di uno o più titoli, **letti dalla matrice** `vicini-top100.npz` (top-100 pesati per
+titolo, costruita offline). Non calcola niente: prende le righe dei semi, somma i pesi (chi è vicino
+a più semi sale), toglie i semi e filtra per medium.
 
----
+```
+POST /vicini
+  { semi: [{ tmdbId: 157336, medium: "movie" }], medium: "movie", cap: 60 }
+
+→ { contratto: 2,
+    versioni: { artefatto, ricetta, input },   // sha del triangolo da cui nasce la matrice
+    semi: { n: 1, scartati: 0 },
+    vicini: [{ tmdbId: 27205, medium: "movie", punteggio: 3.83 }, …],
+    motivi: [] }
+```
+
+- **Costo**: 0,02 ms per un seme, ~0,8 ms con tre (contro i 32 ms di PageRank su 60 semi).
+- **Semi fuori canone**: 200 con `motivi: ["semi fuori dal canone"]` e `semi.scartati`, non un errore.
+- **Medium**: i vicini di un film sono quasi tutti film (il grafo è omogeneo per medium per
+  costruzione, P2): chiedere le *serie* vicine di un film può dare zero. Non è un guasto; per le
+  controparti dell'altro medium il motore usa l'affinità (`calcola_sim_affinity`), non questa rotta.
+- **Allineamento**: la provenienza della matrice dichiara lo sha256 del triangolo da cui è nata;
+  `test_vicini.py` lo confronta col triangolo servito. Se il grafo cambia e la matrice no, il test
+  lo dice.
+
+> [!IMPORTANT]
+> **La rotta v1 `POST /raccomanda` (e il suo alias `POST /`) non esiste più** (26/11/2026): nessun
+> client la chiamava, e il suo payload — `il_tuo_mondo` / `un_passo_fuori`, i due blocchi in cui
+> tagliava la classifica — era un nome del prodotto, non una semantica. La ricerca usa `/vicini`;
+> il feed usa `/scaffali`.
+
+### 2.3 Chi usa cosa
+
+| Consumatore | Rotta | Perché |
+|---|---|---|
+| feed / hero / scaffali (`src/pool`, `shelvesResolver`) | `POST /scaffali` | 16 righe composte, etichette, waterfall: è il motore vivo |
+| ricerca (`src/ricerca/compilatore.js`, «simili X») | `POST /vicini` | una lettura di riga: 0,02–1 ms |
+| health / chiavi di cache | `GET /health` | versioni di artefatto e ricetta |
+
 
 ## ⚡ 3. Misure Reali di Runtime
 
@@ -147,8 +122,8 @@ I numeri seguenti sono stati misurati con benchmark su un campione reale (storia
 |---|---|---|
 | **Avvio del processo / caricamento artefatti** | **2.05 s** | Inizializza `Motore` caricando 66.259 titoli e 3.497 bolle da `transizione-potata.npz`. |
 | **Latenza `GET /health`** | **0.25 ms** | Limite di contratto: < 1 ms. |
-| **Latenza `POST /raccomanda` (a freddo)** | **95.44 ms** | Prima invocazione dopo avvio. |
-| **Latenza `POST /raccomanda` (a caldo)** | **92.39 ms** | Media su 10 iterazioni consecutive (minimo: 86.62 ms). |
+| **Latenza `POST /vicini`** | **0,8 ms** (3 semi) · **0,02 ms** (1 seme) | lettura della matrice: 76.497 × 76.497, 100 vicini per riga |
+| **Latenza `POST /scaffali`** | **1,5 s** p50 · **1,7 s** p95 | 16 righe composte; il PageRank batched pesa ~30 ms, il resto è composizione |
 | **Memoria RAM residente (RSS)** | **128.4 MB** | Singolo worker Python in `docker-compose.yml` (`mem_limit: 512m`). |
 | **Dimensione volume artefatto host** | **138 MB** | `/srv/yaca/services/graph/data` sul mate (contro i 666 MB completi di scarti locali). |
 
@@ -156,8 +131,10 @@ I numeri seguenti sono stati misurati con benchmark su un campione reale (storia
 
 ## 🛡️ 4. Regole di Degrado ed Errori
 
-1. **Il caso normale non è mai un errore**: Se l'utente non ha cronologia, o se nessun ID della cronologia ricade nel canone del grafo, il servizio risponde HTTP `200` con `liste: []` e motivo esplicito:
-   `"motivi": ["storia fuori dal canone"]`.
+1. **Il caso normale non è mai un errore**: Se l'utente non ha cronologia, o se nessun ID della
+   cronologia ricade nel canone del grafo, il servizio risponde HTTP `200` con `liste: []` (o
+   `vicini: []` per `/vicini`) e motivo esplicito: `"motivi": ["storia fuori dal canone"]` /
+   `["semi fuori dal canone"]`.
 2. **Nessun ripiego popolare**: Se la storia non trova corrispondenza, il motore **non** restituisce titoli popolari o casuali. Restituire un catalogo generico spacciato per personalizzato distrugge la fiducia dell'utente nel raccomandatore.
 3. **Artefatto non caricato**: HTTP `503` con `{"ok": false, "errore": "motore non pronto o artefatto non caricato"}`.
 4. **Richiesta non valida / JSON malformato**: HTTP `400` con spiegazione del campo non conforme.

@@ -193,5 +193,5 @@ const handleAddManualDna = (item: DNAItem) => {
 ## 🤖 Ispettore AI (Hero Catalogs)
 
 L'interfaccia include una sezione avanzata per sviluppatori e power-user, volta a ispezionare il comportamento degli algoritmi di YACA:
-*   **Per i cataloghi AI (True Blend / Hidden Gems)**: L'interfaccia interroga `/api/profiles/:id/analytics` e renderizza i log grezzi del *Query Synthesizer* di Mistral AI. L'utente può leggere la query esatta formulata dall'AI e la spiegazione di come l'engine ha convertito la descrizione in vettori di ricerca.
+*   **Per i cataloghi del motore (True Blend / Hidden Gems)**: l'interfaccia interroga `/api/profiles/:id/analytics` e mostra i log del motore ibrido: la query compilata e la spiegazione di come la descrizione è diventata filtri e vettori di ricerca.
 *   **Per i cataloghi Algoritmici (Seed Network / Trakt Filtered)**: Mostra l'esplosione dei filtri TMDB effettivamente iniettati nel calcolo. L'utente può vedere quali ID Genere e quali ID Keyword il Taste Profile ha estratto e inviato come parametri di query.
