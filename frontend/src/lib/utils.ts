@@ -45,6 +45,9 @@ interface BackendCatalog {
   name: string;
   type: string;
   filters?: Record<string, unknown>;
+  // La sintassi della ricerca e il suo snapshot compilato (fetta 6).
+  testo?: string;
+  intenti?: Record<string, unknown>[];
   raw_prompt?: string;
   source?: string;
   emoji?: string;
@@ -147,6 +150,8 @@ export function mapBackendProfile(backendProfile: BackendProfile): Profile {
       name: c.name,
       type: c.type === 'series' ? 'series' : 'movie',
       filters: c.filters,
+      testo: c.testo,
+      intenti: c.intenti,
       raw_prompt: c.raw_prompt,
       source: c.source,
       emoji: c.emoji,

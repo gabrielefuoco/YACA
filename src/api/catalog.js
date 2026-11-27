@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { catalogHandler } = require('../stremio');
-const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
 const { getPresets } = require('../catalog/presets');
 
 const { sanitizeString } = require('../infra/helpers');
@@ -15,12 +14,11 @@ const tmdbClient = createTmdbClient();
 
 router.post('/preview-catalog', async (req, res) => {
     try {
-        const { id, type: customType, filters: customFilters, prompt, tmdbKey, profileId: reqProfileId, userId: reqUserId } = req.body;
+        const { id, type: customType, filters: customFilters, prompt, testo, tmdbKey, profileId: reqProfileId, userId: reqUserId } = req.body;
         
         const { chiaveEffettiva } = require('../configurazione');
-        let reqMistralKey = chiaveEffettiva({ richiesta: req.body.mistralKey, servizio: 'mistral' });
         let reqTmdbKey = chiaveEffettiva({ richiesta: tmdbKey, servizio: 'tmdb' });
-        let fullUserConfig = { apiKeys: { tmdb: reqTmdbKey, mistral: reqMistralKey } };
+        let fullUserConfig = { apiKeys: { tmdb: reqTmdbKey } };
 
         // 1. Resolve User Config first to get API keys if not passed directly
         const token = req.cookies?.yaca_session;
@@ -33,9 +31,8 @@ router.post('/preview-catalog', async (req, res) => {
                     const UserConfig = require('../models/UserConfig');
                     const u = await UserConfig.resolveUserConfig(decoded.userId);
                     if (u) {
-                        reqMistralKey = chiaveEffettiva({ account: u, richiesta: req.body.mistralKey, servizio: 'mistral' });
                         reqTmdbKey = chiaveEffettiva({ account: u, richiesta: tmdbKey, servizio: 'tmdb' });
-                        fullUserConfig = { ...u, apiKeys: { ...u.apiKeys, tmdb: reqTmdbKey, mistral: reqMistralKey } };
+                        fullUserConfig = { ...u, apiKeys: { ...u.apiKeys, tmdb: reqTmdbKey } };
                     }
                 }
             } catch (jwtErr) {
@@ -54,7 +51,6 @@ router.post('/preview-catalog', async (req, res) => {
         let discoverType = null;
         let strategy = null;
         let sanitizedPrompt = null;
-        let aiFilters = null;
         const { contestoDi } = require('../profile');
         const profileContext = await contestoDi({
             userId: fullUserConfig.userId,
@@ -62,7 +58,6 @@ router.post('/preview-catalog', async (req, res) => {
             addonUuid: fullUserConfig.addonUuid
         });
         const activeProfileId = profileContext.profileId;
-        kidsMode = profileContext.kidsMode;
         
         // Imposta activeProfileId e context in fullUserConfig per catalogHandler
         fullUserConfig.activeProfileId = activeProfileId;
@@ -85,73 +80,45 @@ router.post('/preview-catalog', async (req, res) => {
             const { strategy: queryStrategy, ...queryFilters } = firstQuery;
             discoverFilters = queryFilters;
             strategy = queryStrategy || 'discovery';
-        } else if (prompt) {
-            if (!reqMistralKey) {
-                return res.status(403).json({ error: 'Per generare cataloghi AI è necessaria una chiave Mistral personale.' });
-            }
-            sanitizedPrompt = sanitizeString(String(prompt)).substring(0, MAX_PROMPT_LENGTH);
+        } else if (prompt || testo) {
+            // La frase scritta dall'utente **non passa da un modello**: è la sintassi della ricerca
+            // (fetta 6). Stesso parser, stesso compilatore, stesso indice di Stremio — qui cambia
+            // solo il consumatore, che mostra anche i motivi (in Stremio non c'è dove metterli).
+            sanitizedPrompt = sanitizeString(String(testo || prompt)).substring(0, MAX_PROMPT_LENGTH);
             if (!sanitizedPrompt) {
-                return res.status(400).json({ error: 'Prompt non valido' });
-            }
-            aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, reqMistralKey, 'multi_query', kidsMode);
-            
-            if (aiFilters?.strategy === 'static_list') {
-                const { getTmdbIdByName, getTmdbMovieDetails } = require('../clients/tmdb');
-                const { rateLimitedMap } = require('../infra/rateLimiter');
-                const titles = aiFilters.static_items || [];
-                const tmdbType = customType === 'series' ? 'tv' : 'movie';
-
-                const resolvedItems = await rateLimitedMap(titles, async (title) => {
-                    const tmdbId = await getTmdbIdByName(sanitizedTmdbKey, tmdbType, title);
-                    if (!tmdbId) return null;
-                    const details = await getTmdbMovieDetails(sanitizedTmdbKey, tmdbId, tmdbType);
-                    if (!details) return null;
-                    return {
-                        id: `tmdb:${tmdbId}`,
-                        title: details.title || details.name || title,
-                        poster: details.poster_path ? `https://image.tmdb.org/t/p/w342${details.poster_path}` : null,
-                        vote: details.vote_average || 0,
-                        year: details.release_date || details.first_air_date ? (details.release_date || details.first_air_date).substring(0, 4) : ''
-                    };
-                }, { batchSize: 5, delayMs: 0 });
-
-                const filteredResults = resolvedItems.filter(Boolean);
-
-                return res.json({
-                    name: sanitizedPrompt ? sanitizedPrompt.substring(0, MAX_PREVIEW_CATALOG_NAME_LENGTH) : null,
-                    type: customType || (aiType === 'series' ? 'series' : 'movie'),
-                    strategy: 'static_list',
-                    static_items: aiFilters.static_items,
-                    results: filteredResults,
-                    items: filteredResults
-                });
+                return res.status(400).json({ error: 'Testo non valido' });
             }
 
-            const aiType = customType === 'series' ? 'series' : 'movie';
-            discoverType = aiType === 'series' ? 'tv' : 'movie';
-            strategy = aiFilters.strategy || 'discovery';
-            let originalAiKeywords = null;
-            
-            if (aiFilters.queries && Array.isArray(aiFilters.queries)) {
-                // Process each query to resolve TMDB IDs and keyword names
-                aiFilters.queries = aiFilters.queries.map((q) => {
-                    if (q.strategy === 'discovery') {
-                        const qKeywords = q.keyword || null;
-                        const tmdbParams = { ...q };
-                        if (tmdbParams.provider === 'kitsu') tmdbParams.provider = 'tmdb';
-                        if (qKeywords) tmdbParams._keywordNames = qKeywords;
-                        return tmdbParams;
-                    }
-                    return q;
-                });
-                discoverFilters = aiFilters;
-            } else {
-                // Single query processing
-                originalAiKeywords = aiFilters.keyword || null;
-                discoverFilters = { ...aiFilters };
-                if (discoverFilters.provider === 'kitsu') discoverFilters.provider = 'tmdb';
-                if (originalAiKeywords) discoverFilters._keywordNames = originalAiKeywords;
-            }
+            const { compilaTesto } = require('../ricerca');
+
+            const tipoRichiesta = customType === 'series' ? 'series' : 'movie';
+            const esito = await compilaTesto({
+                testo: sanitizedPrompt,
+                type: tipoRichiesta,
+                contesto: profileContext,
+                cap: 20
+            });
+
+            const card = (item) => ({
+                id: item.id,
+                title: item.name || '',
+                poster: item.poster || null,
+                vote: item.vote_average || item.imdbRating || 0,
+                year: item.releaseInfo ? String(item.releaseInfo).slice(0, 4) : '',
+                _yacaMatch: item._yacaMatch
+            });
+            const results = esito.items.map(card);
+
+            return res.json({
+                name: sanitizedPrompt.slice(0, MAX_PREVIEW_CATALOG_NAME_LENGTH),
+                type: tipoRichiesta,
+                testo: sanitizedPrompt,
+                intenti: esito.intenti,
+                queries: esito.queries,
+                motivi: esito.motivi,
+                results,
+                items: results
+            });
         } else if (customFilters) {
             discoverType = customType === 'series' ? 'tv' : 'movie';
             discoverFilters = {};
@@ -232,7 +199,7 @@ router.post('/preview-catalog', async (req, res) => {
                     name: sanitizedPrompt ? sanitizedPrompt.substring(0, 50) : null,
                     type: discoverType,
                     filters: discoverFilters,
-                    queries: aiFilters?.queries || discoverFilters?.queries || undefined,
+                    queries: discoverFilters?.queries || undefined,
                     presentation_strategy: strategy,
                     isAnime: isAnimeRequested || undefined,
                     results: items

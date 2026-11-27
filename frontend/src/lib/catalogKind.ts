@@ -2,7 +2,6 @@ import { CatalogKind, TypeSelectors } from '@/types';
 
 const ALWAYS_VISIBLE_IDS = new Set([
   'yaca_search_standard',
-  'yaca_search_ai',
   'yaca_watchlist_movies',
   'yaca_watchlist_series',
   'yaca_watchlist_anime',

@@ -17,6 +17,27 @@ import { generateId } from '@/lib/utils';
 
 const MAX_AI_CATALOG_NAME_LENGTH = 30;
 
+/** Gli operatori della sintassi, nell'ordine in cui servono. La legenda è l'unico aiuto possibile:
+ *  in Stremio la ricerca non ha spazio per spiegare una lingua. */
+const LEGENDA = [
+  { operatore: 'simili', esempio: 'titolo' },
+  { operatore: 'titolo', esempio: 'testo' },
+  { operatore: 'generi', esempio: 'a, b' },
+  { operatore: 'tema', esempio: 'a, b' },
+  { operatore: 'cast', esempio: 'nome' },
+  { operatore: 'regista', esempio: 'nome' },
+  { operatore: 'anno', esempio: '1980-1989' },
+  { operatore: 'voto', esempio: '7+' },
+  { operatore: 'durata', esempio: '90-120' },
+  { operatore: 'eta', esempio: 'PG-13' },
+  { operatore: 'su', esempio: 'netflix' },
+  { operatore: 'lingua', esempio: 'giapponese' },
+  { operatore: 'paese', esempio: 'italia' },
+  { operatore: 'senza', esempio: 'genere horror' },
+  { operatore: 'anime', esempio: '' },
+  { operatore: 'ordina', esempio: 'voto' },
+];
+
 interface CreatorPanelProps {
   onAddCatalog: (catalog: Catalog) => void;
   editCatalog?: Catalog;
@@ -106,6 +127,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
   const [previewFilters, setPreviewFilters] = useState<Record<string, unknown> | null>(null);
   const [previewType, setPreviewType] = useState<'movie' | 'series'>('movie');
   const [saved, setSaved] = useState(false);
+  const [motivi, setMotivi] = useState<string[]>([]);
 
   // Convert API filters to a BlockState
   const filtersToBlock = useCallback((f: Record<string, unknown>): BlockState => {
@@ -254,13 +276,14 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     }));
   }, []);
 
-  // --- AI Generation ---
-  const handleAiGenerateBlock = async (blockId: string, promptText: string) => {
+  // --- Generazione dal testo (la sintassi della ricerca) ---
+  const handleApplicaTesto = async (blockId: string, promptText: string) => {
     const trimmed = promptText.trim();
     if (!trimmed) return;
     updateBlock(blockId, { aiLoading: true });
     try {
-      const result = await api.previewCatalog({ prompt: trimmed, type });
+      const result = await api.previewCatalog({ testo: trimmed, type });
+      setMotivi(Array.isArray(result?.motivi) ? result.motivi : []);
       const aiType = result?.type === 'series' ? 'series' as const : 'movie' as const;
       setType(aiType);
       setPreviewType(aiType);
@@ -338,6 +361,39 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
     return q;
   }, [type, isAnime]);
 
+  /**
+   * Un blocco del creator → **una riga di sintassi**. È l'allineamento della fetta 6: il block
+   * editor resta, ma la forma salvata è il testo (una riga per blocco, `intenti` multipli).
+   * I nomi vengono dallo stato del blocco (che li ha), non dai filtri compilati (che hanno gli id).
+   */
+  const testoDaBlocco = useCallback((block: BlockState): string => {
+    const nomeGenere = (id: string) => GENRE_NAMES[id] || id;
+    const parti: string[] = [];
+
+    if (block.similarTo) parti.push(`simili ${block.similarTo}`);
+    if (block.textSearch) parti.push(`titolo ${block.textSearch}`);
+    if (block.genres.length) parti.push(`generi ${block.genres.map(nomeGenere).join(', ')}`);
+    if (block.keywords.length) parti.push(`tema ${block.keywords.map(k => k.name).join(', ')}`);
+    if (block.cast.length) parti.push(`cast ${block.cast.map(c => c.name).join(', ')}`);
+    if (block.crew.length) parti.push(`regista ${block.crew.map(c => c.name).join(', ')}`);
+    if (block.yearFrom || block.yearTo) parti.push(`anno ${block.yearFrom || ''}-${block.yearTo || ''}`);
+    if (block.voteMin > 0 || block.voteMax < 10) parti.push(`voto ${block.voteMin > 0 ? block.voteMin : ''}-${block.voteMax < 10 ? block.voteMax : ''}`);
+    if (block.runtimeGte || block.runtimeLte) parti.push(`durata ${block.runtimeGte || ''}-${block.runtimeLte || ''}`);
+    if (block.certificationLte) parti.push(`eta ${block.certificationLte}`);
+    if (block.withoutGenres.length) parti.push(`senza genere ${block.withoutGenres.map(nomeGenere).join(', ')}`);
+    if (block.withoutKeywords.length) parti.push(`senza tema ${block.withoutKeywords.map(k => k.name).join(', ')}`);
+    if (isAnime) parti.push('anime');
+    const ORDINE: Record<string, string> = {
+      'vote_average.desc': 'voto',
+      'popularity.desc': 'popolarita',
+      'revenue.desc': 'incasso',
+      'primary_release_date.desc': 'data'
+    };
+    if (block.sortBy && ORDINE[block.sortBy]) parti.push(`ordina ${ORDINE[block.sortBy]}`);
+
+    return parti.join(' ');
+  }, [isAnime]);
+
   // Build a flat filters object from a block (for preview backward compat)
   const buildFiltersFromBlock = useCallback((block: BlockState): Record<string, unknown> => {
     const q = buildQueryBlock(block) as Record<string, unknown>;
@@ -363,7 +419,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       });
     }
     setPreviewType(type);
-  }, [blocks, type, isAnime, buildQueryBlock, buildFiltersFromBlock]);
+  }, [blocks, type, isAnime, testoDaBlocco, buildQueryBlock]);
 
   // Auto-update global preview when type or isAnime changes
   useEffect(() => {
@@ -411,19 +467,28 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
       return;
     }
 
-    const queries = blocks.map(buildQueryBlock);
+    // La forma salvata è il testo: una riga per blocco. Il testo scritto a mano in un blocco
+    // (`aiPrompt`) vince sulla sua traduzione, così non si perde nulla nel giro blocco → testo.
+    const righe = blocks
+      .map(b => (b.aiPrompt || '').trim() || testoDaBlocco(b))
+      .map(riga => riga.trim())
+      .filter(Boolean);
+    const testo = righe.join(String.fromCharCode(10));
+
+    // Le liste manuali di titoli non sono una ricerca: restano `queries`, la forma che il
+    // compilatore dei cataloghi conosce da sempre. Tutto il resto è `testo`.
+    const haListaManuale = blocks.some(b => b.strategy === 'manual_list');
     const catalog: Catalog = {
       id: editCatalog ? editCatalog.id : generateId(),
       name: name.trim() || 'Lista senza nome',
       type,
       source: editCatalog ? editCatalog.source : 'manual',
-      queries,
+      ...(haListaManuale
+        ? { queries: blocks.map(buildQueryBlock) }
+        // Niente `intenti` salvati dal client: sarebbero lo snapshot della versione *precedente*
+        // del testo, e il serving li preferirebbe. Si ri-parsa `testo` a ogni lettura.
+        : { testo: testo || undefined }),
       isAnime: isAnime ? true : undefined,
-      // For multi-query: put queries[] in filters so the backend normalizer picks them up
-      // For single-query: flatten the block as a simple filters object
-      filters: blocks.length > 1
-        ? { queries, ...(isAnime ? { isAnime: true } : {}) }
-        : { ...buildFiltersFromBlock(blocks[0]), ...(isAnime ? { isAnime: true } : {}) },
       emoji: editCatalog ? editCatalog.emoji : '🎨',
     };
     onAddCatalog(catalog);
@@ -470,7 +535,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
             Query {index + 1}
             <span className="text-xs font-medium normal-case text-marrow-light/70 hidden sm:inline truncate">
-              — {block.strategy === 'ai' ? 'Genera con AI' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'manual_list' ? 'Lista Manuale' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
+              — {block.strategy === 'ai' ? 'Scrivi in sintassi' : block.strategy === 'static_list' ? 'Lista Statica AI' : block.strategy === 'manual_list' ? 'Lista Manuale' : block.strategy === 'discovery' ? 'Discovery (Filtri)' : block.strategy === 'similar' ? 'Simili a...' : 'Ricerca Testuale'}
             </span>
           </span>
           <span className={`transition-transform ${block.collapsed ? '' : 'rotate-180'} text-marrow-light/40 ml-2 shrink-0`}>
@@ -521,7 +586,7 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
                   }`}
                 >
                   <Wand2 className="h-3.5 w-3.5" />
-                  Genera con AI
+                  Scrivi in sintassi
                 </button>
                 <button
                   type="button"
@@ -565,19 +630,41 @@ export function CreatorPanel({ onAddCatalog, editCatalog, onCancel }: CreatorPan
             {block.strategy === 'ai' && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 mt-3">
                 <p className="text-xs text-marrow-light font-medium">
-                  Descrivi il catalogo che vuoi creare. L&apos;AI interpreterà la tua richiesta e configurerà questo blocco per te.
+                  Scrivi il catalogo in sintassi. Una riga = un blocco; gli operatori sono in legenda.
                 </p>
+                <textarea
+                  value={block.aiPrompt || ''}
+                  onChange={(e) => updateBlock(block.id, { aiPrompt: e.target.value })}
+                  rows={2}
+                  placeholder="es. tema horror, navi anno 1980-1989 voto 6+"
+                  className="w-full rounded-lg bg-white border border-marrow-light/20 text-marrow-deep font-mono placeholder:text-marrow-light/40 text-base sm:text-sm p-3 min-h-[64px]"
+                />
+                {/* Legenda cliccabile: il click inserisce l'operatore nel testo. In Stremio non c'è
+                    un posto dove metterla, quindi questa è l'unica superficie che può insegnarla. */}
+                <div className="flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-marrow-light font-mono">
+                  {LEGENDA.map(({ operatore, esempio }) => (
+                    <button
+                      key={operatore}
+                      type="button"
+                      onClick={() => updateBlock(block.id, {
+                        aiPrompt: `${(block.aiPrompt || '').trim()} ${operatore} `.trimStart()
+                      })}
+                      className="rounded border border-marrow-light/25 px-1.5 py-0.5 hover:border-primary hover:text-primary touch-manipulation"
+                      title={`Inserisci «${operatore}»`}
+                    >
+                      <b>{operatore}</b> {esempio}
+                    </button>
+                  ))}
+                </div>
+                {motivi.length > 0 && (
+                  <ul className="text-[11px] text-amber-700 font-mono space-y-0.5">
+                    {motivi.map((m, i) => <li key={i}>· {m}</li>)}
+                  </ul>
+                )}
                 <div className="flex gap-2">
-                  <Input
-                    value={block.aiPrompt || ''}
-                    onChange={(e) => updateBlock(block.id, { aiPrompt: e.target.value })}
-                    placeholder="es. Film horror italiani degli anni 80..."
-                    className="flex-1 bg-white border-marrow-light/20 text-marrow-deep font-black placeholder:text-marrow-light/40 text-base sm:text-sm h-11 min-h-[44px]"
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); } }}
-                  />
-                  <Button onClick={(e) => { e.preventDefault(); handleAiGenerateBlock(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110 min-h-[44px] touch-manipulation">
+                  <Button onClick={(e) => { e.preventDefault(); handleApplicaTesto(block.id, block.aiPrompt || ''); }} disabled={block.aiLoading || !block.aiPrompt?.trim()} className="shrink-0 bg-primary text-white hover:brightness-110 min-h-[44px] touch-manipulation">
                     {block.aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
-                    Genera
+                    Applica
                   </Button>
                 </div>
               </div>

@@ -23,6 +23,10 @@ const catalogSchema = new mongoose.Schema({
     source: String,
     filters: mongoose.Schema.Types.Mixed,
     queries: [mongoose.Schema.Types.Mixed],
+    // La sintassi della ricerca (fetta 6): forma canonica del catalogo.
+    testo: String,
+    // Snapshot compilato di `testo`; si rilegge da qui e si ri-parsa solo se manca.
+    intenti: [mongoose.Schema.Types.Mixed],
     raw_prompt: String,
     emoji: String,
     isAnime: Boolean

@@ -13,7 +13,6 @@ const { getHeroUiGroups } = require('../catalog/registry');
 const { formatPreviewResponse } = require('../catalog/previewContract');
 const { catalogHandler } = require('../stremio');
 const { createTmdbClient } = require('../clients/tmdb');
-const { generateTmdbFiltersFromPrompt } = require('../ricerca/router');
 const { sanitizeString } = require('../infra/helpers');
 
 
@@ -46,7 +45,7 @@ router.post('/', async (req, res) => {
  */
 router.post('/anteprima', async (req, res) => {
     try {
-        const { id, type: customType, filters: customFilters, prompt, modo: modoRichiesto } = req.body || {};
+        const { id, type: customType, filters: customFilters, prompt, testo, modo: modoRichiesto } = req.body || {};
         const user = await UserConfig.resolveUserConfig(req.utenteId);
         if (!user) {
             return erroreDominio(res, 404, 'non_trovato', 'Utente non trovato.');
@@ -71,7 +70,6 @@ router.post('/anteprima', async (req, res) => {
 
         const { chiaveEffettiva } = require('../configurazione');
         let tmdbKey = chiaveEffettiva({ account: user, richiesta: req.body.tmdbKey, servizio: 'tmdb' });
-        let mistralKey = chiaveEffettiva({ account: user, richiesta: req.body.mistralKey, servizio: 'mistral' });
 
         // Con una modalità dichiarata, contesto e selettori si leggono DA QUELLA modalità.
         const utentePerAnteprima = modoDiAnteprima
@@ -102,7 +100,6 @@ router.post('/anteprima', async (req, res) => {
             apiKeys: {
                 ...user.apiKeys,
                 tmdb: tmdbKey,
-                mistral: mistralKey
             }
         };
 
@@ -117,7 +114,7 @@ router.post('/anteprima', async (req, res) => {
         // preset: si serve con lo stesso handler che usa Stremio. Se un catalogo è valido
         // nell'app, deve esserlo anche qui — altrimenti l'anteprima mente.
         const ePreset = Boolean(id) && (id.startsWith('yaca_preset_') || id.startsWith('preset_') || getPresets().some(p => p.id === id));
-        if (id && !ePreset && !prompt) {
+        if (id && !ePreset && !prompt && !testo) {
             const { catalogHandler } = require('../stremio/catalogHandler');
             const hostUrl = `${req.protocol}://${req.get('host') || 'localhost'}`;
             const esito = await catalogHandler(
@@ -156,20 +153,49 @@ router.post('/anteprima', async (req, res) => {
             const { strategy: queryStrategy, ...queryFilters } = firstQuery;
             discoverFilters = queryFilters;
             strategy = queryStrategy || 'discovery';
-        } else if (prompt) {
-            if (!mistralKey) {
-                return erroreDominio(res, 400, 'chiave_non_valida', 'Per generare cataloghi AI è necessaria una chiave Mistral.');
-            }
-            sanitizedPrompt = sanitizeString(String(prompt)).substring(0, MAX_PROMPT_LENGTH);
+        } else if (prompt || testo) {
+            // La frase è la sintassi della ricerca: nessun modello da chiamare.
+            sanitizedPrompt = sanitizeString(String(testo || prompt)).substring(0, MAX_PROMPT_LENGTH);
             if (!sanitizedPrompt) {
-                return erroreDominio(res, 400, 'richiesta_non_valida', 'Prompt non valido.');
+                return erroreDominio(res, 400, 'richiesta_non_valida', 'Testo non valido.');
             }
 
-            const aiFilters = await generateTmdbFiltersFromPrompt(sanitizedPrompt, mistralKey, 'multi_query', kidsMode);
-            const aiType = customType === 'series' ? 'series' : 'movie';
-            discoverType = aiType === 'series' ? 'tv' : 'movie';
-            strategy = aiFilters?.strategy || 'discovery';
-            discoverFilters = aiFilters;
+            const { compilaTesto } = require('../ricerca');
+
+            const tipoRichiesta = customType === 'series' ? 'series' : 'movie';
+            const esito = await compilaTesto({
+                testo: sanitizedPrompt,
+                type: tipoRichiesta,
+                contesto: profileContext,
+                cap: 20
+            });
+
+            const card = (item) => ({
+                id: item.id,
+                titolo: item.name || '',
+                title: item.name || '',
+                poster: item.poster || null,
+                anno: item.releaseInfo ? String(item.releaseInfo).slice(0, 4) : '',
+                year: item.releaseInfo ? String(item.releaseInfo).slice(0, 4) : '',
+                voto: item.vote_average || item.imdbRating || 0,
+                type: item.type || tipoRichiesta
+            });
+            const cards = esito.items.map(card);
+
+            // Forma propria (non `formatPreviewResponse`): il creator deve vedere i **motivi**, gli
+            // **intenti** e le `queries` compilate, e il tipo deve restare `series` (il contratto
+            // delle card lo normalizza a `tv` perché parla la lingua di Stremio).
+            return res.json({
+                name: sanitizedPrompt.slice(0, MAX_PREVIEW_CATALOG_NAME_LENGTH),
+                type: tipoRichiesta,
+                testo: sanitizedPrompt,
+                intenti: esito.intenti,
+                queries: esito.queries,
+                motivi: esito.motivi,
+                items: cards,
+                cards,
+                total: cards.length
+            });
         } else if (customFilters) {
             discoverType = customType === 'series' ? 'tv' : 'movie';
             discoverFilters = { ...customFilters };
@@ -265,16 +291,14 @@ router.post('/anteprima', async (req, res) => {
 
 /**
  * POST /api/configurazione/verifica
- * Verifica la validità delle chiavi di configurazione (TMDB, Mistral, Stremio).
- * Replaces POST /api/validate-tmdb-key e POST /api/validate-mistral-key.
+ * Verifica la validità delle chiavi di configurazione (TMDB, Stremio).
  */
 router.post('/verifica', async (req, res) => {
-    const { tmdbKey, mistralKey, stremioKey, chiavi } = req.body || {};
+    const { tmdbKey, stremioKey, chiavi } = req.body || {};
     const effectiveTmdb = tmdbKey || chiavi?.tmdb;
-    const effectiveMistral = mistralKey || chiavi?.mistral;
     const effectiveStremio = stremioKey || chiavi?.stremio;
 
-    if (!effectiveTmdb && !effectiveMistral && !effectiveStremio) {
+    if (!effectiveTmdb && !effectiveStremio) {
         return erroreDominio(res, 400, 'richiesta_non_valida', 'Nessuna chiave fornita per la verifica.');
     }
 
@@ -295,23 +319,7 @@ router.post('/verifica', async (req, res) => {
         }
     }
 
-    // 2. Verifica chiave Mistral
-    if (effectiveMistral) {
-        try {
-            const { Mistral } = require('@mistralai/mistralai');
-            const client = new Mistral({ apiKey: effectiveMistral, timeout: 8000 });
-            const response = await client.models.list();
-            if (response?.data && Array.isArray(response.data)) {
-                verificati.mistral = true;
-            } else {
-                return erroreDominio(res, 400, 'chiave_non_valida', 'Risposta non valida da Mistral.');
-            }
-        } catch (err) {
-            return erroreDominio(res, 400, 'chiave_non_valida', 'Chiave Mistral non valida o non autorizzata.');
-        }
-    }
-
-    // 3. Verifica chiave Stremio
+    // 2. Verifica chiave Stremio
     if (effectiveStremio) {
         if (typeof effectiveStremio === 'string' && effectiveStremio.trim().length >= 10) {
             verificati.stremio = true;

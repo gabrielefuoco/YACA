@@ -71,6 +71,10 @@ export interface QueryBlock {
 export interface Catalog {
   id: string;
   name: string;
+  /** La sintassi della ricerca: è la forma canonica del catalogo. */
+  testo?: string;
+  /** Snapshot compilato di `testo` (lo scrive il backend al salvataggio). */
+  intenti?: Record<string, unknown>[];
   raw_prompt?: string;
   type: 'movie' | 'series';
   source?: string;
@@ -97,6 +101,8 @@ export interface CatalogCardData {
   stremioType?: 'movie' | 'series' | 'anime';
   emoji?: string;
   source?: string;
+  /** La sintassi (fetta 6): descrizione naturale di un catalogo scritto. */
+  testo?: string;
   raw_prompt?: string;
   description?: string;
   filters?: Record<string, unknown>;

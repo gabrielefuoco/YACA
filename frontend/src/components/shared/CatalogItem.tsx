@@ -89,7 +89,8 @@ export function CatalogItem({
   const previewType = catalog.stremioType || (catalog.type === 'both' ? 'movie' : (catalog.type || (tipoEffettivo === 'serie' ? 'series' : 'movie')));
 
   // Filtra la dicitura generica del preset (ticket 06: via dicitura fissa)
-  const rawDesc = description || catalog.description || catalog.raw_prompt;
+  // La sintassi è la descrizione naturale di un catalogo scritto (fetta 6).
+  const rawDesc = description || catalog.description || catalog.testo || catalog.raw_prompt;
   const isGenericDesc = rawDesc && /catalogo tematico preconfigurato/i.test(rawDesc);
   const effectiveDescription = isGenericDesc ? null : rawDesc;
 
@@ -283,7 +284,7 @@ export function CatalogItem({
           presetId={isPreset ? (catalog.id.startsWith('yaca_preset_') ? catalog.id : `yaca_preset_${catalog.id}`) : catalog.id}
           type={previewType}
           filters={catalog.filters}
-          prompt={catalog.raw_prompt}
+          prompt={catalog.testo || catalog.raw_prompt}
           modo={modo}
         />
       </div>

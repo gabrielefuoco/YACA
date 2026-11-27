@@ -134,8 +134,6 @@ export const api = {
     post('/api/configurazione', { stremioAuthKey: authKey, manifestUrl }),
   validateTmdbKey: (tmdbKey: string) =>
     post('/api/configurazione/verifica', { tmdbKey }),
-  validateMistralKey: (mistralKey: string) =>
-    post('/api/configurazione/verifica', { mistralKey }),
   generateMergedName: (nameA: string, nameB: string) =>
     post('/api/configurazione/nome', { nameA, nameB }),
 
