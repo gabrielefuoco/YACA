@@ -182,7 +182,12 @@ router.get('/manifest.json', (req, res) => {
 router.get(['/:userHandle/manifest.json', '/:userHandle/:configVersion/manifest.json'], async (req, res) => {
     const userConfig = await getUserConfig().resolveUserConfig(req.params.userHandle);
     if (!userConfig) {
-        return res.status(400).json({ error: "Configurazione non valida" });
+        // Un utente che non esiste non è un guasto del server: era un 400, che Stremio legge come
+        // «addon non installabile» e mostra come errore. Si risponde con il manifest radice, che
+        // dichiara `configurationRequired` e porta l'utente alla pagina di configurazione.
+        const hostUrl = req.context?.hostUrl || `${req.protocol}://${req.get('host')}`;
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        return res.json(buildRootManifest(hostUrl));
     }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     try {
