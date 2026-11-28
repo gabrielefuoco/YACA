@@ -24,6 +24,8 @@ Suite: **2.167 passati**, 1 saltato, resta solo il timeout noto di `heroMovieDat
 
 Cosa non è cambiato, di proposito: `Romantico` e `Storia` restano generi condivisi con le serie (40 e 10 titoli nel dump — un fatto dei dati, non un difetto); `crew hans zimmer` resta vuoto perché l'indice ha registi e sceneggiatori, non compositori, ma adesso lo dice con un motivo.
 
+**Durata ignota, chiusa il 28/11.** TMDB risponde `runtime: 0` quando non conosce la durata, e il daemon scriveva quello zero: 653 film indistinguibili da film da zero minuti (`durata < 90` ne pescava 658). Due lati: il filtro in lettura esclude lo zero (`runtime BETWEEN 1 AND N`, come faceva già `shortFilm`), e il daemon ora scrive `null`. Il dato nel file è stato sistemato con `scripts/backfill-runtime-ignoto.js` (653 riletti in 50 s: 6 avevano imparato la durata, 647 sono diventati `null`). Dopo la conversione: `runtime = 0` da 653 a **0**, `null` 652, minima durata nota 1.
+
 ---
 
 ## Esito in breve
