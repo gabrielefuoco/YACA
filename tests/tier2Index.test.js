@@ -92,21 +92,20 @@ describe('Tier 2 SQLite FTS5 + Parquet Index', () => {
     });
 
     describe('buildTier2', () => {
-        it('costruisce con successo sia il parquet Tier 2 che titles_fts5.db', async () => {
+        it('costruisce titles_fts5.db e basta (niente parquet intermedio)', async () => {
             const result = await buildTier2({ dataDir: tempDir, exportDir: false });
 
             expect(result.success).toBe(true);
             expect(result.count).toBe(8); // 5 movies + 3 tv
-            expect(fs.existsSync(result.parquetFile)).toBe(true);
             expect(fs.existsSync(result.dbFile)).toBe(true);
-            expect(result.parquetSizeBytes).toBeGreaterThan(0);
             expect(result.dbSizeBytes).toBeGreaterThan(0);
             expect(result.durationMs).toBeGreaterThan(0);
+            // Il parquet Tier 2 non si scrive più: era un artefatto che nessuno leggeva.
+            expect(fs.existsSync(path.join(tempDir, 'tier2_titles.parquet'))).toBe(false);
 
             const stats = getTier2Stats({ dataDir: tempDir });
             expect(stats.dbExists).toBe(true);
             expect(stats.dbRows).toBe(8);
-            expect(stats.parquetExists).toBe(true);
         });
 
         it('è idempotente: una seconda esecuzione non duplica i record', async () => {
@@ -132,11 +131,10 @@ describe('Tier 2 SQLite FTS5 + Parquet Index', () => {
                 sourceParquet: badParquetPath
             })).rejects.toThrow();
 
-            // Il DB e il parquet precedenti devono rimanere esattamente intatti
+            // Il DB precedente deve rimanere esattamente intatto
             const statsDopo = getTier2Stats({ dataDir: tempDir });
             expect(statsDopo.dbExists).toBe(true);
             expect(statsDopo.dbRows).toBe(8);
-            expect(statsDopo.parquetExists).toBe(true);
         });
     });
 

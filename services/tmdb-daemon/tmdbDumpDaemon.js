@@ -477,11 +477,13 @@ async function runTmdbDumpDaemon(options = {}, client = null) {
                 if (parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                     console.log('[TmdbDump] Parquet già presenti e aggiornati rispetto ai JSONL. Conversione al boot saltata.');
                 }
-                if (!indice.isInitialized) {
-                    await indice.init();
-                    await indice.close();
-                }
-                console.log('[TmdbDump] DuckDB pronto su database persistente.');
+                // Il daemon NON apre il database vivo: lo tiene aperto l'app, e DuckDB ammette un
+                // solo scrittore per file. Aprirlo qui era la causa del lock conteso all'avvio
+                // (`Conflicting lock is held`, tre tentativi da due secondi) e, se il daemon lo
+                // teneva mentre l'app provava a riaprire dopo uno swap, di un'app senza indice.
+                // Il daemon scrive solo su staging (`rebuildAndSwap`) e poi scambia i file:
+                // l'unico momento in cui i due processi si toccano e' il rename, che e' atomico.
+                console.log("[TmdbDump] Indice DuckDB lasciato all'app: il daemon lavora su staging.");
 
                 // Tier 2: controlla se titles_fts5.db esiste già
                 const tier2DbFile = path.join(store.basePath, 'titles_fts5.db');

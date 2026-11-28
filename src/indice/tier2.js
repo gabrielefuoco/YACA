@@ -264,16 +264,12 @@ function buildUnifiedSelect({ sourceParquet, moviesParquet, tvParquet, moviesJso
 async function buildTier2({
     dataDir = defaultDataDir(),
     dbFile,
-    parquetFile,
     sourceParquet,
     exportDir,
     batchSize = 25000
 } = {}) {
     const resolvedDataDir = path.resolve(dataDir);
     const resolvedDbFile = dbFile ? path.resolve(dbFile) : path.join(resolvedDataDir, 'titles_fts5.db');
-    const resolvedParquetFile = parquetFile ? path.resolve(parquetFile) : path.join(resolvedDataDir, 'tier2_titles.parquet');
-
-    const tmpParquet = resolvedParquetFile + '.tmp';
     const tmpDb = resolvedDbFile + '.tmp';
     const tmpTsv = path.join(resolvedDataDir, `tier2_titles_tmp_${Date.now()}_${process.pid}.tsv`);
 
@@ -283,7 +279,7 @@ async function buildTier2({
     const tvJsonl = path.join(resolvedDataDir, 'master_tv.jsonl');
 
     // Clean up any stale temp files
-    [tmpParquet, tmpDb, tmpTsv].forEach(f => {
+    [tmpDb, tmpTsv].forEach(f => {
         if (fs.existsSync(f)) {
             try { fs.unlinkSync(f); } catch (_) {}
         }
@@ -318,19 +314,14 @@ async function buildTier2({
             });
         }
 
-        // 1. DuckDB: crea vista unificata ed esporta Parquet + TSV
+        // 1. DuckDB: crea la vista unificata ed esporta il TSV che alimenta FTS5.
+        //    Non si scrive più `tier2_titles.parquet`: era un artefatto da 1,5 milioni di righe
+        //    (46 MB) che nessuno leggeva — la ricerca usa il database FTS5, non il parquet.
         duckDb = new duckdb.Database(':memory:');
         duckCon = duckDb.connect();
 
         await new Promise((resolve, reject) => {
             duckCon.run(`CREATE VIEW unified_titles AS ${unifiedSelect}`, (err) => err ? reject(err) : resolve());
-        });
-
-        await new Promise((resolve, reject) => {
-            duckCon.run(
-                `COPY (SELECT * FROM unified_titles) TO ${toSqlPath(tmpParquet)} (FORMAT PARQUET, COMPRESSION 'ZSTD')`,
-                (err) => err ? reject(err) : resolve()
-            );
         });
 
         await new Promise((resolve, reject) => {
@@ -398,19 +389,14 @@ async function buildTier2({
             try { fs.unlinkSync(tmpTsv); } catch (_) {}
         }
 
-        await replaceFile(tmpParquet, resolvedParquetFile);
         await replaceFile(tmpDb, resolvedDbFile);
 
         const durationMs = Date.now() - startTime;
-        const parquetSize = fs.statSync(resolvedParquetFile).size;
         const dbSize = fs.statSync(resolvedDbFile).size;
 
         return {
             success: true,
             count,
-            parquetFile: resolvedParquetFile,
-            parquetSizeBytes: parquetSize,
-            parquetSizeMb: Number((parquetSize / (1024 * 1024)).toFixed(2)),
             dbFile: resolvedDbFile,
             dbSizeBytes: dbSize,
             dbSizeMb: Number((dbSize / (1024 * 1024)).toFixed(2)),
@@ -424,7 +410,7 @@ async function buildTier2({
         if (sqliteDb) {
             try { sqliteDb.close(); } catch (_) {}
         }
-        [tmpParquet, tmpDb, tmpTsv].forEach(f => {
+        [tmpDb, tmpTsv].forEach(f => {
             if (fs.existsSync(f)) {
                 try { fs.unlinkSync(f); } catch (_) {}
             }
@@ -493,13 +479,11 @@ class Tier2SearchClient {
     }
 }
 
-function getTier2Stats({ dataDir = defaultDataDir(), dbFile, parquetFile } = {}) {
+function getTier2Stats({ dataDir = defaultDataDir(), dbFile } = {}) {
     const resolvedDataDir = path.resolve(dataDir);
     const resolvedDbFile = dbFile ? path.resolve(dbFile) : path.join(resolvedDataDir, 'titles_fts5.db');
-    const resolvedParquetFile = parquetFile ? path.resolve(parquetFile) : path.join(resolvedDataDir, 'tier2_titles.parquet');
 
     const dbExists = fs.existsSync(resolvedDbFile);
-    const parquetExists = fs.existsSync(resolvedParquetFile);
 
     let dbRows = null;
     let dbSizeMb = 0;
@@ -513,20 +497,12 @@ function getTier2Stats({ dataDir = defaultDataDir(), dbFile, parquetFile } = {})
         } catch (_) {}
     }
 
-    let parquetSizeMb = 0;
-    if (parquetExists) {
-        parquetSizeMb = Number((fs.statSync(resolvedParquetFile).size / (1024 * 1024)).toFixed(2));
-    }
-
     return {
         dataDir: resolvedDataDir,
         dbFile: resolvedDbFile,
         dbExists,
         dbSizeMb,
-        dbRows,
-        parquetFile: resolvedParquetFile,
-        parquetExists,
-        parquetSizeMb
+        dbRows
     };
 }
 
