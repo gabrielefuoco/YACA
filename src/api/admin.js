@@ -11,8 +11,6 @@ const adminAuth = require('./middleware/adminAuth');
 const TmdbDumpStore = require('../../services/tmdb-daemon/tmdbDumpStore');
 const tmdbDumpStore = new TmdbDumpStore();
 const { getIngestionStatus } = require('../infra/ingestionStatus');
-const { exec } = require('child_process');
-const path = require('path');
 
 // Applica il middleware di autenticazione a tutte le rotte admin
 router.use(adminAuth);
@@ -64,30 +62,6 @@ router.post('/system/flush', async (req, res) => {
 });
 
 // Trigger per eseguire utility in background
-router.post('/scripts/trigger', async (req, res) => {
-    const { action } = req.body;
-    
-    try {
-
-        
-        if (action === 'analyze_presets') {
-            const scriptPath = path.join(__dirname, '../../scripts/analyze_presets.js');
-            exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`analyze_presets exec error: ${error}`);
-                }
-                // Idealmente potremmo leggere il json di report, ma per ora confermiamo il via.
-            });
-            return res.json({ success: true, message: 'Analisi preset avviata in background.' });
-        }
-
-        return res.status(400).json({ error: 'Azione non riconosciuta.' });
-    } catch (err) {
-        console.error('Errore trigger script:', err);
-        res.status(500).json({ error: 'Errore durante innesco script.' });
-    }
-});
-
 // Endpoint per controllare lo stato del daemon TMDB Dump (letto dall'artefatto su volume yaca_tmdb)
 router.get('/tmdb-dump/status', async (req, res) => {
     try {
@@ -108,15 +82,6 @@ router.get('/ingestion-status', async (_req, res) => {
         console.error('Errore ingestion status:', err);
         res.status(500).json({ error: 'Errore server' });
     }
-});
-
-// Endpoint per innescare un backup
-router.post('/tmdb-dump/backup', async (req, res) => {
-    // Il backup dei dati è gestito in ops/yaca-backup.sh (dump MongoDB Atlas -> storage remoto).
-    res.json({ 
-        success: true, 
-        message: 'Il backup dei dati è gestito in ops/yaca-backup.sh'
-    });
 });
 
 module.exports = router;
