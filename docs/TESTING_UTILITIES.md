@@ -73,59 +73,23 @@ Esecuzione: `npx jest tests/diag.recommender`.
 
 ---
 
-## 2. Script di Rilevanza e Validazione
+## 2. Validazione dei cataloghi
 
-Nella cartella `scripts/` sono presenti strumenti di validazione e analisi programmatica della rilevanza dei cataloghi/preset.
-
-### [test_relevance_all_presets.js](../scripts/test_relevance_all_presets.js)
-Questo script automatizza la validazione della rilevanza per ciascuno dei preset configurati nell'addon (ad esempio i preset degli anime, documentari, ecc.).
-* **Flusso di funzionamento**:
-  1. Recupera la lista dei preset disponibili.
-  2. Esegue una chiamata di `discover` a TMDB per i primi 20 elementi di ogni preset.
-  3. Per ciascun elemento trovato, interroga TMDB recuperando i dettagli estesi (`credits`, `watch/providers`, `keywords`).
-  4. Valida se l'elemento rispetta rigorosamente i filtri impostati sul preset (genere, lingua originale, parole chiave incluse o escluse, cast, crew, watch provider).
-  5. Calcola un tasso di successo complessivo ("Success Rate") e salva un report JSON dettagliato (`scripts/relevance_validation_report.json`).
-* **Esecuzione**: `node scripts/test_relevance_all_presets.js`
-
-### [analyze_presets.js](../scripts/analyze_presets.js)
-Strumento di **analisi statica** dei preset. Esamina tutti i cataloghi registrati nel sistema alla ricerca di anomalie strutturali o potenziali bug di configurazione, scrivendo i risultati nel file `.agents/scratch/analysis_report.json`.
-Gli errori e i warning evidenziati comprendono:
-*   `similar`: Preset duplicati o quasi identici (stessi generi, keyword e crew, ma ID o nomi differenti).
-*   `wrong`: Errori come mismatch di tipo (ID genere TV su cataloghi film) o serie standard senza esclusione anime (`210024`).
-*   `tooEmpty`: Rilevamento di troppi filtri cumulativi che rischiano di svuotare il catalogo.
-*   `needsQuality`: Verifica che i cataloghi ordinati per voto medio abbiano un `vote_count.gte` adeguato.
-*   `needsSorting`: Controlla la coerenza tra il nome (es. "Top", "Popolari") e il criterio di ordinamento.
-* **Esecuzione**: `node scripts/analyze_presets.js`
+La validazione della rilevanza dei preset si fa **offline**, sul dump, con
+[`scripts/qa/catalog-audit.js`](../scripts/qa/catalog-audit.js) (qualita', sovrapposizione fra
+preset, drift; `--gate` per farlo diventare un cancello). I vecchi `test_relevance_all_presets.js`
+(chiamate TMDB live) e `analyze_presets.js` (analisi statica dei preset) sono stati rimossi: il
+primo costava rete per un risultato che il dump da' gratis, il secondo e' superato dall'audit.
 
 ---
 
 ## 3. Script Amministrativi e Utility di Sistema
 
-All'interno della cartella `scripts/` risiedono gli script di manutenzione canonici per la gestione del sistema, della cache e dei dati:
-
-### [clear_caches.js](../scripts/clear_caches.js)
-Svuota la cache L2 su Redis e azzera lo stato della cache in memoria:
-- Esegue `redisClient.flushdb()` su Redis.
-- Garantisce la propagazione immediata dopo modifiche a preset, logiche di formattazione o metadati.
-* **Esecuzione**: `node scripts/clear_caches.js`
-
-### [find_user.js](../scripts/find_user.js)
-Utility di lookup per ispezionare gli account utente, le configurazioni addon e lo stato del `TasteProfile` memorizzato su MongoDB Atlas. Supporta parametri CLI:
-* `node scripts/find_user.js` (ispezione del primo account o preset attivi)
-* `node scripts/find_user.js --handle <handle>`
-* `node scripts/find_user.js --userId <id>`
-* `node scripts/find_user.js --addonUuid <uuid>`
-
-### [fetch_catalogs.js](../scripts/fetch_catalogs.js)
-Utility per simulare richieste client, estrarre lo stato formattato dei cataloghi e validare i badge degli episodi e i flussi bypassando Stremio.
-Salva l'output in `.agents/scratch/` (`catalogs_output.txt` o `catalog_state.json`).
-* **Opzioni principali**:
-  - `--url <base>`: URL base dell'istanza YACA (default `http://127.0.0.1:7860`, o es. `https://mate.hyena-alphard.ts.net`)
-  - `--config <addonUuid>`: UUID dell'addon da testare (se omesso, recuperato automaticamente dal DB)
-  - `--catalogs <id1,id2>`: Filtra cataloghi specifici
-  - `--text`: Output in formato testuale sintetico
-  - `--nocache`: Bypassa la cache per generare dati freschi
-* **Esecuzione rapida**: `node scripts/fetch_catalogs.js --text --nocache`
+Restano gli script che servono davvero: quelli sotto, piu' `convert_to_parquet.js` e
+`build-people-index.js` (li guida il daemon) e `backfill-runtime-ignoto.js`. Le utility di
+ispezione e svuotamento cache si fanno dalle rotte admin (`GET /api/admin/metrics`,
+`POST /api/admin/system/flush`), non da script: `clear_caches.js`, `find_user.js` e
+`fetch_catalogs.js` sono stati rimossi.
 
 ### [push-diff-in-coda.js](../scripts/push-diff-in-coda.js)
 Legge `ita_annotations.diff.json` (l'artefatto del diff di doppiaggio scritto da
@@ -138,28 +102,14 @@ Un file assente, illeggibile o malformato è una condizione attesa: lo dice e es
 * **Opzioni**: `--dry-run` (legge e conta, non accoda), `--help`
 * **Esecuzione**: `node scripts/push-diff-in-coda.js` (o `--file /data/tmdb/ita_annotations.diff.json`)
 
-### [verifyTypeSelectors.js](../scripts/qa/verifyTypeSelectors.js)
-Harness di QA che verifica end-to-end il selettore anime del profilo (`Solo Anime` / `No Anime`) in quattro fasi: **(1)** compila il `frontend/src/lib/utils.ts` reale e verifica `profilesToApiPayload` / `mapBackendProfile` / `sanitizeTypeSelectors`; **(2)** prova A/B sul server, contando i cataloghi del manifest per ciascuno stato; **(3)** round-trip completo `POST /api/configure` → `GET /api/user` → `mapBackendProfile` sugli stati canonici più un input sporco; **(4)** distingue «catalogo assente dal manifest» (ciò che Stremio mostra) dalla guardia «0 item» (richiesta HTTP diretta).
-
-È nato il 24/09/2026 per riprodurre il bug dei selettori: il backend filtrava correttamente, ma il frontend scartava `typeSelectors` nelle due mappe allow-list e il sintomo era «il manifest non cambia». Serve ogni volta che si tocca `settings` del profilo — vedi l'avvertenza in [CATALOG_LOGIC.md §1.1](CATALOG_LOGIC.md#11-il-selettore-solo-anime--no-anime).
-
-* **Opzioni**: `--base-url <url>` (default `http://127.0.0.1:7032`), `--frontend-utils <path>` (default il proprio `frontend/src/lib/utils.ts`), `--baseline-utils <path>` (per il confronto A/B con un'altra worktree), `--test-user <nome>` (default `sim_user_repro_v`), `--strict-pass` (exit code 1 se un controllo fallisce)
-* **Attenzione**: scrive davvero, via `POST /api/configure`, il profilo dell'utente di prova: va eseguito contro un'istanza **locale**, mai in produzione.
-
-```bash
-node scripts/qa/verifyTypeSelectors.js --base-url http://127.0.0.1:7032 --strict-pass
-```
-
 ### [convert_to_parquet.js](../scripts/convert_to_parquet.js)
 Converte il dump giornaliero JSONL esportato da TMDB in formato compresso Apache Parquet (ZSTD). Questo file alimenta il motore SQL in-memory DuckDB per interrogazioni istantanee.
 * **Esecuzione**: `node scripts/convert_to_parquet.js`
 
-### [migrate_library_itemid_null.js](../scripts/migrate_library_itemid_null.js)
-Script di migrazione sicura del database per normalizzare record orfani o con `itemId: null` all'interno della collezione `UserLibraryItem`.
-* **Esecuzione (Dry-run)**: `node scripts/migrate_library_itemid_null.js`
-* **Applicazione effettiva**: `node scripts/migrate_library_itemid_null.js --apply`
+### Perché la libreria ha avuto documenti senza `itemId` (e cosa ne è stato fatto)
 
-#### Perché la libreria ha dei documenti senza `itemId` (e cosa ne è stato fatto)
+Lo script di migrazione una tantum è stato rimosso dopo essere stato applicato; la regola che ha
+lasciato, invece, vale ancora.
 
 Misurato sulla libreria di produzione il **20/09/2026** (368 item): **169 documenti legacy** senza `itemId` (la loro chiave è `_id`) e **70 titoli presenti due volte**. La causa è una sola: il sync fa upsert con filtro `{ addonUuid, itemId }`, quindi per un titolo che esiste **solo** come documento legacy il filtro non trova nulla e **crea un secondo documento**. Lo stesso difetto spiega perché l'indice unico `{ addonUuid, itemId }` dichiarato nel modello non era mai entrato in funzione: non può essere creato finché esistono più documenti con `itemId` nullo per lo stesso `addonUuid`.
 

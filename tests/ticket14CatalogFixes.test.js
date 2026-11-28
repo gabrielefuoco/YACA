@@ -2,7 +2,6 @@ const stremioRouter = require('../src/api/stremio');
 const { routeCatalogRequest } = require('../src/stremio/CatalogRouter');
 const { getWatchlistCatalog } = require('../src/stremio/providers/WatchlistProvider');
 const LibrarySyncService = require('../src/library/ingestion/LibrarySyncService');
-const { normalizeLegacyId } = require('../scripts/migrate_library_itemid_null');
 const UserLibraryItem = require('../src/library/models/UserLibraryItem');
 const { executeUniversalPipeline } = require('../src/stremio/providers/AiDiscoveryProvider');
 
@@ -292,14 +291,4 @@ describe('Ticket 14: Fix Cataloghi & Manifest', () => {
         });
     });
 
-    describe('6. BUG-03-C (b): Script di migrazione normalizzazione ID', () => {
-        test('normalizeLegacyId rimuove spazi interni ed esterni', () => {
-            expect(normalizeLegacyId('kitsu:142')).toBe('kitsu:142');
-            expect(normalizeLegacyId('tmdb: 12477 ')).toBe('tmdb:12477');
-            expect(normalizeLegacyId(' tmdb:  999  ')).toBe('tmdb:999');
-            expect(normalizeLegacyId('tt0111161 ')).toBe('tt0111161');
-            expect(normalizeLegacyId('')).toBeNull();
-            expect(normalizeLegacyId(null)).toBeNull();
-        });
-    });
 });

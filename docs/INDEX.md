@@ -130,7 +130,7 @@ La documentazione è suddivisa in moduli specifici che analizzano le singole com
 
 ### 12. 🧪 Testing, Strumenti di Amministrazione e Storico
 *   **[TESTING_UTILITIES.md](TESTING_UTILITIES.md)**
-    *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest, la validazione della rilevanza dei preset e gli script amministrativi attivi (`clear_caches.js`, `convert_to_parquet.js`, `find_user.js`, `migrate_library_itemid_null.js`).
+    *   *Descrizione*: Manuale per sviluppatori e amministratori del sistema. Copre l'esecuzione dei test di unità/integrazione tramite Jest, la validazione dei cataloghi (`scripts/qa/catalog-audit.js`) e gli script amministrativi attivi (`convert_to_parquet.js`, `build-people-index.js`, `backfill-runtime-ignoto.js`).
 *   **[storico-script.md](storico-script.md)**
     *   *Descrizione*: Registro storico dei 19 script rimossi da `scripts/` (Ticket 06), con data ultimo commit, scopo, SHA di recupero (`git show <sha>:<path>`) e stato di verifica dell'esecuzione.
 

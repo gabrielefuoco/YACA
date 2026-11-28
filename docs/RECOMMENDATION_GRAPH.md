@@ -287,7 +287,7 @@ Cinque trappole insidiose sono state scoperte e pagate durante lo sviluppo. Sono
      **mai visti** — dopo la cache delle righe, quindi nessuna invalidazione del grafo. Costo: una query per
      chiamata di `getHeroPool` (i 20 cataloghi in un `$in`) e una **memo di 60 s** per utente/profilo/media,
      perché `composer` chiama il pool una volta per catalogo. Non si cancella niente: si riordina, e la riga resta intera.
-     **Taratura misurata** (sonda `scripts/qa/probe-ticket-14-impressioni.js`): con i punteggi del grafo in
+     **Taratura misurata** (sonda `probe-ticket-14-impressioni.js`, rimossa dopo la chiusura del ticket 14): con i punteggi del grafo in
      banda stretta (il #1 vale 1.00, il #20 vale 0.77), `0.85^1 = 0.85` basta già a far scendere **tutti** i
      dieci titoli di ieri sotto la banda 11-20. In pratica: nei primi due giorni non cambia nulla (sotto
      soglia), dal terzo la prima pagina si rinnova **tutta**. Se il prodotto vuole continuità, la leva è il
@@ -299,4 +299,4 @@ Cinque trappole insidiose sono state scoperte e pagate durante lo sviluppo. Sono
      ancora in home; se non compare in pagina 1 da **4 giorni** torna al punteggio pieno. La soglia è
      misurata, non scelta a occhio: con 2 giorni la pagina faceva il pendolo (92 rientri su 10 giornate,
      restavano 7,6/20 titoli da ieri), con 4 si calma (53 rientri, 10,7/20) e i titoli utili tornano.
-     Sonda: `scripts/qa/probe-ticket-21-taratura.js`.
+     Sonda: `probe-ticket-21-taratura.js` (rimossa dall'albero dopo la chiusura del ticket 21; sta nella storia di git).
