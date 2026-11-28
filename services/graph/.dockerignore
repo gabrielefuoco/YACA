@@ -2,6 +2,11 @@
 # ciò che non serve all'immagine. I 138 MB dell'artefatto arrivano da un bind mount read-only
 # (decisione ticket 07/18), non dall'immagine.
 data/
+
+# Rami non raggiungibili dal servizio (servizio.py): fuori dall'immagine, come build/.
+upstream/
+fetch/
+tests/
 log/
 build/
 recipes/
