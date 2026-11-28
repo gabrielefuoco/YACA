@@ -64,3 +64,23 @@ Tre proposte sono state respinte leggendo il codice:
 - `catalogRequestCache ramMax: 0` → non è un bug: Redis locale, il guadagno non giustifica il rischio.
 - `/images/fallback` → non è codice morto: ha un test nato da un guasto vero (Stremio mette in cache gli errori, 172 titoli su 117k restavano neri).
 - `ProfileManager`/`ProfileSettingsDialog` → **confermati** morti (0 import, `tsc` pulito dopo la rimozione).
+
+---
+
+## Code review (due revisori in parallelo, poi corretto)
+
+`review-standard.md` (standard del repo: porte, confini, doc, test) e `review-correct.md` (correttezza, avversariale). Esito: **2 blocker, 13 should-fix, 14 nit** — i due blocker e le correzioni di sostanza sono in `fc490619`.
+
+| trovato | gravità | esito |
+|---|---|---|
+| `tests/backupDumpRetry.test.js` cancellato per sbaglio: prova `ops/yaca-backup.sh`, che ho tenuto | blocker | ripristinato, 2/2 verdi |
+| `flock` prima del ramo `--health-check` in `ops/yaca-doppiaggi.sh`: un controllo di salute in coda a una scrape di 10 minuti, che poi esce 0 per timeout | blocker | spostato dopo l'health-check, dove iniziano le scritture |
+| `COMPARATORE_CON_NUMERO` con `≥=` al posto di `>=`: `voto ≥7` e `durata ≥90` si perdevano (`valore_mancante` + numero trattato come minimo) | should-fix | corretto, con due prove nuove |
+| `senza genere horror` sulle serie perdeva l'esclusione (genere `soloFilm` → `null` → «genere sconosciuto») | should-fix | ripiega sulla keyword e lo dichiara (`genere_degradato_a_tema`) |
+| Tier 2 e people.db catturavano l'errore e proseguivano: `phase` tornava `idle`, `--health-check` diceva sano con l'indice rotto | should-fix | le due build restituiscono `{ok,error}`, l'errore va in `phase: 'error'` |
+| `lastSync` avanzava anche su un giro fallito (è la data che il health-check guarda per «sync recente») | should-fix | avanza solo se il giro è sano |
+| `erroreDiConversione` non azzerato a inizio giro (`skipParquetRebuild` si portava dietro l'errore) | should-fix | azzerato a ogni avvio |
+
+Restano aperti dal review: il daemon che raggiunge `tier2`/`people` senza passare dalla porta
+`src/indice/index.js` (violazione di confine, pre-esistente) e una manciata di nit su commenti e
+nomi. Non cambiano il comportamento: sono nel backlog del blocco B.
