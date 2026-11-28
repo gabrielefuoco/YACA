@@ -14,12 +14,6 @@
 
 set -euo pipefail
 
-# Un giro alla volta. Lo script scrive `ita_annotations.jsonl` nel volume dei dump, dove scrive
-# anche il daemon TMDB: due giri sovrapposti (o un giro lanciato a mano mentre il timer gira)
-# scriverebbero lo stesso artefatto. -w 300: se un giro e' in corso, aspetta 5 minuti e rinuncia.
-exec 9>/run/yaca-doppiaggi.lock
-flock -w 300 9 || { echo "[doppiaggi] un altro giro e' gia' in corso: esco"; exit 0; }
-
 # 1. Caricamento ambiente di produzione
 if [ -f /srv/yaca/.env ]; then
   set -a
@@ -93,7 +87,15 @@ for arg in "$@"; do
   fi
 done
 
-# 6. Risoluzione percorso dump catalogo TMDB
+# 6. Un giro alla volta (ma solo per il giro vero: `--health-check` e' gia' uscito sopra,
+#    e non deve mai aspettare un altro giro — un controllo di salute in coda a una scrape di
+#    dieci minuti, che poi esce 0 per timeout, e' un controllo che mente).
+#    Lo script scrive `ita_annotations.jsonl` nel volume dei dump, dove scrive anche il daemon
+#    TMDB: due giri sovrapposti scriverebbero lo stesso artefatto.
+exec 9>/run/yaca-doppiaggi.lock
+flock -w 300 9 || { echo "[doppiaggi] un altro giro e' gia' in corso: esco"; exit 0; }
+
+# 7. Risoluzione percorso dump catalogo TMDB
 TMDB_DIR="${TMDB_DIR:-}"
 if [ -z "${TMDB_DIR}" ]; then
   if [ -f "/data/tmdb/master_movies.jsonl" ]; then

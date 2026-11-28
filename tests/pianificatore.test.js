@@ -442,3 +442,26 @@ describe('i generi delle serie hanno un altro id', () => {
         expect(genereDaNome('fantasyy', { tipo: 'series' })).toBe(10765);
     });
 });
+
+describe('esclusioni e comparatori: i casi che il revisore ha trovato', () => {
+    it('un comparatore tipografico attaccato al numero non si perde', () => {
+        // Il refuso era una `≥=` al posto di `>=` nella forma senza spazio: `voto ≥7` finiva nel
+        // testo scartato e il numero restava un minimo, cioè l'opposto di «fino a 7».
+        expect(analizza('voto ≥7').grezzo.voto).toEqual([7, null]);
+        expect(analizza('voto ≤6').grezzo.voto).toEqual([null, 6]);
+        expect(analizza('durata ≥90').grezzo.durata).toEqual([90, null]);
+    });
+
+    it('`senza genere horror` sulle serie ripiega sulla keyword invece di perdersi', async () => {
+        // Horror non esiste come genere nelle serie (`soloFilm`): l'esclusione si faceva cadere in
+        // silenzio. Ora si esclude il concetto omonimo, e il degrado si dichiara.
+        const risolutori = {
+            genere: () => null,
+            concetto: async (v) => (v === 'horror' ? ['horror'] : null)
+        };
+        const { intenti, motivi } = await pianifica('senza genere horror', { risolutori });
+        expect(intenti[0].senzaConcetti).toEqual(['horror']);
+        expect(intenti[0].senzaGeneri).toEqual([]);
+        expect(motivi).toContain('genere_degradato_a_tema: horror');
+    });
+});

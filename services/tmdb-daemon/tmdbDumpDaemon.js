@@ -84,8 +84,12 @@ async function buildTier2Index() {
         console.log('[TmdbDump] Ricostruzione indice Tier 2 e SQLite FTS5 su disco...');
         const res = await buildTier2();
         console.log(`[TmdbDump] Indice Tier 2 completato: ${res.count} record in ${res.durationSeconds}s`);
+        return { ok: true };
     } catch (tier2Err) {
+        // Non si solleva: senza Tier 2 l'app funziona (perde la coda lunga). Ma il guasto deve
+        // arrivare a chi chiama, altrimenti `phase` torna `idle` e `--health-check` dice sano.
         console.error('[TmdbDump] Errore durante la build Tier 2 FTS5:', tier2Err.message);
+        return { ok: false, error: `tier2: ${tier2Err.message}` };
     }
 }
 
@@ -100,8 +104,10 @@ async function buildPeopleIndexFile() {
         console.log('[TmdbDump] Ricostruzione indice delle persone (people.db) su disco...');
         const res = await buildPeopleIndex();
         console.log(`[TmdbDump] Indice persone completato: ${res.count} righe in ${(res.durationMs / 1000).toFixed(1)}s`);
+        return { ok: true };
     } catch (peopleErr) {
         console.error('[TmdbDump] Errore durante la build people.db:', peopleErr.message);
+        return { ok: false, error: `people: ${peopleErr.message}` };
     }
 }
 
@@ -123,11 +129,12 @@ async function convertAndReloadDuckDb(store) {
         await indice.rebuildAndSwap();
         console.log('[TmdbDump] DuckDB scambiato atomicamente su database persistente.');
 
-        // Tier 2: indice export TMDB + FTS5 su disco (ticket #40)
-        await buildTier2Index();
-        // Persone: stesso ciclo di vita dei parquet (dipendono da cast/directors/writers)
-        await buildPeopleIndexFile();
-        erroreDiConversione = null;
+        // Tier 2 e persone: stesso ciclo di vita dei parquet. Non si solleva (senza l'uno o
+        // l'altro l'app funziona, degradata e con il motivo), ma il loro esito conta: un Tier 2
+        // fallito che lasciasse `erroreDiConversione` a null farebbe dire `sano` al health-check.
+        const esiti = [await buildTier2Index(), await buildPeopleIndexFile()];
+        const guasti = esiti.filter(e => e && e.ok === false).map(e => e.error);
+        erroreDiConversione = guasti.length > 0 ? guasti.join('; ') : null;
     } catch (convertErr) {
         console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
         // `phase: 'error'` e' l'unico modo perche' il guasto si veda: senza, il giro successivo
@@ -462,6 +469,8 @@ async function runTmdbDumpDaemon(options = {}, client = null) {
     }
 
     daemonRunning = true;
+    // L'errore del giro precedente non si eredita: se questo giro va bene lo stato torna sano.
+    erroreDiConversione = null;
     updateStatus(store, { isRunning: true, error: null, phase: 'starting' }, true);
 
     try {
@@ -527,7 +536,9 @@ async function runTmdbDumpDaemon(options = {}, client = null) {
             phase: erroreDiConversione ? 'error' : 'idle',
             currentTask: erroreDiConversione ? 'Conversione fallita' : 'Waiting for next sync...',
             isRunning: !once,
-            lastSync: new Date().toISOString()
+            // `lastSync` e' la data che il health-check considera "sync riuscito": non avanza se
+            // il giro si chiude in errore, altrimenti un guasto sembra un successo.
+            lastSync: erroreDiConversione ? dumpStatus.lastSync : new Date().toISOString()
         }, true);
 
         if (once) {

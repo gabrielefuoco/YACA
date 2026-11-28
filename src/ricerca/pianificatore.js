@@ -82,7 +82,7 @@ const OPERATORI_NUMERICI = Object.freeze({
  * (`>` da solo, poi il numero) e attaccati al numero (`<90`), e le forme tipografiche `≤ ≥`.
  */
 const COMPARATORE = /^(<=|>=|<|>|≤|≥|=)$/;
-const COMPARATORE_CON_NUMERO = /^(<=|>=|<|>|≤|≥=|=)[-+.,0-9]+$/;
+const COMPARATORE_CON_NUMERO = /^(<=|>=|<|>|≤|≥|=)[-+.,0-9]+$/;
 const PREFISSO_COMPARATORE = /^(<=|>=|<|>|≤|≥)([-+]?[0-9]*[.,]?[0-9]+)$/;
 
 /** parola normalizzata → operatore. */
@@ -621,8 +621,19 @@ async function risolvi(analisi, risolutori = {}) {
     for (const escluso of grezzo.senza || []) {
         if (escluso.tipo === 'genere') {
             const id = genereRisolto(escluso.nome, risolutori);
-            if (id === null) motivi.push(`genere_non_riconosciuto: ${escluso.nome}`);
-            else if (!intento.senzaGeneri.includes(id)) intento.senzaGeneri.push(id);
+            if (id !== null) {
+                if (!intento.senzaGeneri.includes(id)) intento.senzaGeneri.push(id);
+                continue;
+            }
+            // Un genere che nelle serie non esiste (Horror, Thriller, Musica: vedi `soloFilm`)
+            // non deve sparire dall'esclusione: si esclude la keyword omonima, che e' il modo in cui
+            // quelle serie sono etichettate davvero.
+            const concetti = await provaSingola(risolutori.concetto, escluso.nome);
+            if (concetti.length === 0) motivi.push(`genere_non_riconosciuto: ${escluso.nome}`);
+            else {
+                motivi.push(`genere_degradato_a_tema: ${escluso.nome}`);
+                for (const nome of concetti) if (!intento.senzaConcetti.includes(nome)) intento.senzaConcetti.push(nome);
+            }
             continue;
         }
         const concetti = await provaSingola(risolutori.concetto, escluso.nome);
