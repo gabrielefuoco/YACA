@@ -31,7 +31,9 @@ Type=oneshot
 EnvironmentFile=-/srv/yaca/.env
 Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 WorkingDirectory=/srv/yaca
-ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=${ERDB_LOCAL_BASE} -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node src/posters/drenaCodaPoster.js
+# `flock -n`: un giro alla volta. Il timer e' da 5 minuti e il giro puo' durare 10-15 (watchdog
+# interno): senza lock due drenaggi sovrapposti rifanno gli stessi poster e si pestano sui file.
+ExecStart=/usr/bin/flock -n /run/yaca-poster-eventi.lock /usr/bin/docker exec --workdir /app -e ERDB_LOCAL_BASE=${ERDB_LOCAL_BASE} -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node src/posters/drenaCodaPoster.js
 Restart=no
 # Lo script ha già un watchdog interno di 10 minuti (coda + mappa anime). Il default di systemd
 # per un oneshot sono 90 s e taglierebbe un giro che sta caricando la mappa: qui si lascia il

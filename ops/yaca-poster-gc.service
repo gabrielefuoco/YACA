@@ -8,13 +8,18 @@ Wants=network-online.target
 # Dentro `yaca-app`, `ERDB_CACHE_DIR=/data/erdb-cache` punta al volume `yaca_erdb_cache`.
 # Il GC opera direttamente sul filesystem del volume: rimuove i .tmp orfani (>15m)
 # e i poster composti non più aggiornati oltre ttlDays (60gg), fino al tetto maxDelete.
+#
+# Perché 3000 e non 500: la cache cresce di ~850 file al giorno (misurato il 28/11/2026 su
+# 109.887 file / 15,9 GB). Con il tetto a 500 il debito cresceva di ~350 file al giorno per
+# costruzione, e la soglia dei 60 giorni non mordeva mai. Il tetto serve solo a non fare un
+# giro distruttivo se un giorno la cartella fosse sbagliata: 3000 lo supera con margine.
 
 [Service]
 Type=oneshot
 EnvironmentFile=-/srv/yaca/.env
 Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 WorkingDirectory=/srv/yaca
-ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node src/posters/gcPosterCache.js --max-delete 500 --ttl-days 60
+ExecStart=/usr/bin/docker exec --workdir /app -e ERDB_CACHE_DIR=${ERDB_CACHE_DIR} yaca-app node src/posters/gcPosterCache.js --max-delete 3000 --ttl-days 60
 Restart=no
 TimeoutStartSec=15min
 StandardOutput=journal

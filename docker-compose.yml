@@ -136,7 +136,12 @@ services:
     container_name: yaca-tmdb-daemon
     restart: unless-stopped
     command: ["node", "services/tmdb-daemon/cli.js"]
-    mem_limit: 1024m
+    # 2 GB e non 1: la build del Tier 2 apre DuckDB in memoria su 1,5 milioni di righe e il client
+    # DuckDB dichiara `max_memory: '2GB'` (src/indice/duckDbStore.js). Con il limite a 1 GB il
+    # processo poteva essere ucciso dall'OOM a meta' build, e un daemon ucciso a meta' lascia il
+    # journal dello stato a meta' strada. L'host ha 7 GB: il daemon e' batch, la sua finestra di
+    # picco e' di ~1 minuto due volte al giorno.
+    mem_limit: 2048m
     env_file:
       - .env
     volumes:

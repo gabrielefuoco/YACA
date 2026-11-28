@@ -14,6 +14,12 @@
 
 set -euo pipefail
 
+# Un giro alla volta. Lo script scrive `ita_annotations.jsonl` nel volume dei dump, dove scrive
+# anche il daemon TMDB: due giri sovrapposti (o un giro lanciato a mano mentre il timer gira)
+# scriverebbero lo stesso artefatto. -w 300: se un giro e' in corso, aspetta 5 minuti e rinuncia.
+exec 9>/run/yaca-doppiaggi.lock
+flock -w 300 9 || { echo "[doppiaggi] un altro giro e' gia' in corso: esco"; exit 0; }
+
 # 1. Caricamento ambiente di produzione
 if [ -f /srv/yaca/.env ]; then
   set -a

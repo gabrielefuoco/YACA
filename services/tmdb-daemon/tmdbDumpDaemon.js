@@ -127,10 +127,32 @@ async function convertAndReloadDuckDb(store) {
         await buildTier2Index();
         // Persone: stesso ciclo di vita dei parquet (dipendono da cast/directors/writers)
         await buildPeopleIndexFile();
+        erroreDiConversione = null;
     } catch (convertErr) {
         console.error('[TmdbDump] Errore durante la conversione Parquet / Reload DuckDB:', convertErr);
-        updateStatus(store, { error: convertErr.message }, true);
+        // `phase: 'error'` e' l'unico modo perche' il guasto si veda: senza, il giro successivo
+        // riscriveva `phase: 'idle'` e `--health-check` rispondeva sano su un indice fermo.
+        erroreDiConversione = convertErr.message;
+        updateStatus(store, { phase: 'error', error: convertErr.message }, true);
     }
+}
+
+/**
+ * Le conversioni non si sovrappongono mai.
+ *
+ * Durante il cold start ce n'e' una ogni 5000 titoli (per rendere visibile il progresso) e
+ * quella finale del giro: due `convert_to_parquet.js` insieme scrivono sugli stessi `.tmp` e la
+ * seconda cancellava i file della prima. Qui si accodano: chi arriva dopo aspetta, e se una
+ * fallisce la coda prosegue.
+ */
+let codaConversioni = Promise.resolve();
+let erroreDiConversione = null;
+function accodaConversione(store, { aspetta = true } = {}) {
+    const esecuzione = codaConversioni.then(() => convertAndReloadDuckDb(store));
+    codaConversioni = esecuzione.catch(() => {});
+    if (aspetta) return esecuzione;
+    esecuzione.catch(e => console.error('[TmdbDump] Conversione in background fallita:', e.message));
+    return Promise.resolve();
 }
 
 /**
@@ -248,11 +270,10 @@ async function coldStart(store, client) {
             const percent = ((cursor.index / allIds.length) * 100).toFixed(1);
             console.log(`[TmdbDump] [${mediaType.toUpperCase()}] Progress: ${cursor.index}/${allIds.length} (${percent}%)`);
 
-            // Conversione parziale in background ogni 5000 item
+            // Conversione parziale in background ogni 5000 item, in coda a quella eventualmente in corso.
             if (cursor.index % 5000 === 0 && cursor.index > 0) {
                 console.log(`[TmdbDump] Triggering intermediate Parquet conversion at ${cursor.index}...`);
-                // Non usiamo await così non fermiamo il download
-                convertAndReloadDuckDb(store).catch(e => console.error(e));
+                accodaConversione(store, { aspetta: false });
             }
 
             if (!daemonRunning) {
@@ -404,13 +425,11 @@ async function dailySync(store, client, options = {}) {
             updateStatus(store, { stats: { ...dumpStatus.stats, [mediaType]: finalCount } }, true);
         }
 
-        if (!options.skipParquetRebuild) {
-            console.log('[TmdbDump] Daily Sync COMPLETED. Triggering Parquet rebuild...');
-            try {
-                await convertAndReloadDuckDb(store);
-            } catch (err) {
-                console.error('[TmdbDump] Error rebuilding Parquet after Daily Sync:', err);
-            }
+        // Niente conversione qui: il giro la fa una volta sola in fondo (`accodaConversione`).
+        // Prima erano due — una a fine `dailySync` e una qui — e ogni conversione costa ~55 s
+        // (parquet 14 s + swap + Tier 2 28 s + people.db 12 s) per lo stesso identico risultato.
+        if (options.skipParquetRebuild) {
+            console.log('[TmdbDump] Parquet rebuild saltato su richiesta (skipParquetRebuild).');
         }
         updateStatus(store, { lastSync: new Date().toISOString() }, true);
     } finally {
@@ -453,7 +472,7 @@ async function runTmdbDumpDaemon(options = {}, client = null) {
             const parquetFresh = isParquetFresh(store, indice);
             if (!parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                 console.log('[TmdbDump] Pre-existing JSONL detected. Parquet missing or stale: running boot conversion...');
-                await convertAndReloadDuckDb(store);
+                await accodaConversione(store);
             } else {
                 if (parquetFresh && (store.storeExists('movies') || store.storeExists('tv'))) {
                     console.log('[TmdbDump] Parquet già presenti e aggiornati rispetto ai JSONL. Conversione al boot saltata.');
@@ -498,12 +517,13 @@ async function runTmdbDumpDaemon(options = {}, client = null) {
         
         // Conversione DuckDB e Hot-Reload (Eseguito sempre alla fine del sync)
         if (!options.skipParquetRebuild) {
-            await convertAndReloadDuckDb(store);
+            await accodaConversione(store);
         }
-        
+
+        // Se la conversione e' fallita lo stato resta `error`: `--health-check` deve dire 1, non 0.
         updateStatus(store, {
-            phase: 'idle',
-            currentTask: 'Waiting for next sync...',
+            phase: erroreDiConversione ? 'error' : 'idle',
+            currentTask: erroreDiConversione ? 'Conversione fallita' : 'Waiting for next sync...',
             isRunning: !once,
             lastSync: new Date().toISOString()
         }, true);
