@@ -42,7 +42,27 @@ const TMDB_NETWORKS = {
     HBOMax: '49|3186'
 };
 
+/**
+ * I preset si costruiscono una volta al giorno.
+ *
+ * Sono un letterale di ~250 righe con quattro date calcolate (oggi, due mesi fa, sei mesi fa, 45
+ * giorni fa) e vengono chiesti a ogni richiesta di catalogo: manifest, risoluzione dell'id,
+ * definizione del catalogo, `catalogKind`. Ricostruirli ogni volta significa rifare il map e i
+ * sort ricorsivi per un risultato che cambia solo allo scoccare della mezzanotte.
+ *
+ * La forma restituita è condivisa: nessun chiamante la muta (verificato con rg), tutti la leggono.
+ */
+let _cachePresets = { giorno: null, valore: null };
+
 const getPresets = () => {
+    const giorno = new Date().toISOString().split('T')[0];
+    if (_cachePresets.giorno === giorno) return _cachePresets.valore;
+    const valore = _costruisciPresets();
+    _cachePresets = { giorno, valore };
+    return valore;
+};
+
+const _costruisciPresets = () => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
